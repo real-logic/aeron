@@ -465,6 +465,36 @@ static const char *dissect_timestamp(int64_t time_ms)
     return buffer;
 }
 
+static const char *dissect_command_type_id(int64_t cmd_type_id)
+{
+    switch (cmd_type_id)
+    {
+        case AERON_COMMAND_ADD_PUBLICATION:
+            return "ADD_PUBLICATION";
+
+        case AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION:
+            return "ADD_EXCLUSIVE_PUBLICATION";
+
+        case AERON_COMMAND_REMOVE_PUBLICATION:
+            return "REMOVE_PUBLICATION";
+
+        case AERON_COMMAND_REMOVE_SUBSCRIPTION:
+            return "REMOVE_SUBSCRIPTION";
+
+        case AERON_COMMAND_REMOVE_COUNTER:
+            return "REMOVE_COUNTER";
+
+        case AERON_COMMAND_ADD_DESTINATION:
+            return "ADD_DESTINATION";
+
+        case AERON_COMMAND_REMOVE_DESTINATION:
+            return "REMOVE_DESTINATION";
+
+        default:
+            return "unknown command";
+    }
+}
+
 static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t length)
 {
     static char buffer[256];
@@ -479,7 +509,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
 
             const char *channel = (const char *)message + sizeof(aeron_publication_command_t);
             snprintf(buffer, sizeof(buffer) - 1, "%s %d %*s [%" PRId64 ":%" PRId64 "]",
-                (cmd_id == AERON_COMMAND_ADD_PUBLICATION) ? "ADD_PUBLICATION" : "ADD_EXCLUSIVE_PUBLCIATION",
+                dissect_command_type_id(cmd_id),
                 command->stream_id,
                 command->channel_length,
                 channel,
@@ -490,11 +520,12 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
 
         case AERON_COMMAND_REMOVE_PUBLICATION:
         case AERON_COMMAND_REMOVE_SUBSCRIPTION:
+        case AERON_COMMAND_REMOVE_COUNTER:
         {
             aeron_remove_command_t *command = (aeron_remove_command_t *)message;
 
             snprintf(buffer, sizeof(buffer) - 1, "%s %" PRId64 " [%" PRId64 ":%" PRId64 "]",
-                (cmd_id == AERON_COMMAND_REMOVE_PUBLICATION) ? "REMOVE_PUBLICATION" : "REMOVE_SUBSCRIPTION",
+                dissect_command_type_id(cmd_id),
                 command->registration_id,
                 command->correlated.client_id,
                 command->correlated.correlation_id);
@@ -527,6 +558,44 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             break;
         }
 
+        case AERON_COMMAND_ADD_DESTINATION:
+        case AERON_COMMAND_REMOVE_DESTINATION:
+        {
+            aeron_destination_command_t *command = (aeron_destination_command_t *)message;
+
+            const char *channel = (const char *)message + sizeof(aeron_destination_command_t);
+            snprintf(buffer, sizeof(buffer) - 1, "%s %*s %" PRId64 " [%" PRId64 ":%" PRId64 "]",
+                dissect_command_type_id(cmd_id),
+                command->channel_length,
+                channel,
+                command->registration_id,
+                command->correlated.client_id,
+                command->correlated.correlation_id);
+            break;
+        }
+
+        case AERON_COMMAND_ADD_COUNTER:
+        {
+            aeron_counter_command_t *command = (aeron_counter_command_t *)message;
+
+            const uint8_t *cursor = (const uint8_t *)message + sizeof(aeron_counter_command_t);
+            int32_t key_length = *((int32_t *)cursor);
+            const uint8_t *key = cursor + sizeof(int32_t);
+
+            cursor = key + key_length;
+            int32_t label_length = *((int32_t *)cursor);
+
+            snprintf(buffer, sizeof(buffer) - 1, "ADD_COUNTER %d [%d %d][%d %d][%" PRId64 ":%" PRId64 "]",
+                command->type_id,
+                (int)(sizeof(aeron_counter_command_t) + sizeof(int32_t)),
+                key_length,
+                (int)(sizeof(aeron_counter_command_t) + (2 * sizeof(int32_t)) + key_length),
+                label_length,
+                command->correlated.client_id,
+                command->correlated.correlation_id);
+            break;
+        }
+
         default:
             break;
     }
@@ -543,11 +612,9 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
     {
         case AERON_RESPONSE_ON_OPERATION_SUCCESS:
         {
-            aeron_correlated_command_t *command = (aeron_correlated_command_t *)message;
+            aeron_operation_succeeded_t *command = (aeron_operation_succeeded_t *)message;
 
-            snprintf(buffer, sizeof(buffer) - 1, "ON_OPERATION_SUCCESS [%" PRId64 ":%" PRId64 "]",
-                command->client_id,
-                command->correlation_id);
+            snprintf(buffer, sizeof(buffer) - 1, "ON_OPERATION_SUCCEEDED %" PRId64, command->correlation_id);
             break;
         }
 
@@ -557,15 +624,26 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             aeron_publication_buffers_ready_t *command = (aeron_publication_buffers_ready_t *)message;
 
             const char *log_file_name = (const char *)message + sizeof(aeron_publication_buffers_ready_t);
-            snprintf(buffer, sizeof(buffer) - 1, "%s %d:%d %d [%" PRId64 " %" PRId64 "]\n    \"%*s\"",
+            snprintf(buffer, sizeof(buffer) - 1, "%s %d:%d %d %d [%" PRId64 " %" PRId64 "]\n    \"%*s\"",
                 (cmd_id == AERON_RESPONSE_ON_PUBLICATION_READY) ? "ON_PUBLICATION_READY" : "ON_EXCLUSIVE_PUBLICATION_READY",
                 command->session_id,
                 command->stream_id,
                 command->position_limit_counter_id,
+                command->channel_status_indicator_id,
                 command->correlation_id,
                 command->registration_id,
                 command->log_file_length,
                 log_file_name);
+            break;
+        }
+
+        case AERON_RESPONSE_ON_SUBSCRIPTION_READY:
+        {
+            aeron_subscription_ready_t *command = (aeron_subscription_ready_t *)message;
+
+            snprintf(buffer, sizeof(buffer) - 1, "ON_SUBSCRIPTION_READY %" PRId64 " %d",
+                command->correlation_id,
+                command->channel_status_indicator_id);
             break;
         }
 
@@ -619,6 +697,16 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
                 *source_identity_length, source_identity, command->correlation_id);
 
             len += snprintf(ptr + len, sizeof(buffer) - 1 - len, "    \"%*s\"", *log_file_name_length, log_file_name);
+            break;
+        }
+
+        case AERON_RESPONSE_ON_COUNTER_READY:
+        {
+            aeron_counter_update_t *command = (aeron_counter_update_t *)message;
+
+            snprintf(buffer, sizeof(buffer) -1 , "ON_COUNTER_READY %" PRId64 " %d",
+                command->correlation_id,
+                command->counter_id);
             break;
         }
 

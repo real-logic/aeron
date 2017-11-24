@@ -23,7 +23,10 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Readonly View of an associated {@link io.aeron.Counter}.
- */
+ * <p>
+ * <b>Note:</b>The user should call {@link #isClosed()} and ensure the result is false to avoid a race on reading a
+ * closed counter.
+ * */
 public class ReadableCounter implements AutoCloseable
 {
     private final long addressOffset;
@@ -119,6 +122,9 @@ public class ReadableCounter implements AutoCloseable
 
     /**
      * Get the latest value for the counter with volatile semantics.
+     * <p>
+     * <b>Note:</b>The user should call {@link #isClosed()} and ensure the result is false to avoid a race on reading
+     * a closed counter.
      *
      * @return the latest value for the counter.
      */

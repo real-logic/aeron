@@ -259,19 +259,7 @@ public abstract class Publication implements AutoCloseable
      */
     public void close()
     {
-        conductor.clientLock().lock();
-        try
-        {
-            if (!isClosed)
-            {
-                isClosed = true;
-                conductor.releasePublication(this);
-            }
-        }
-        finally
-        {
-            conductor.clientLock().unlock();
-        }
+        conductor.releasePublication(this);
     }
 
     /**
@@ -445,20 +433,12 @@ public abstract class Publication implements AutoCloseable
      */
     public void addDestination(final String endpointChannel)
     {
-        conductor.clientLock().lock();
-        try
+        if (isClosed)
         {
-            if (isClosed)
-            {
-                throw new IllegalStateException("Publication is closed");
-            }
+            throw new IllegalStateException("Publication is closed");
+        }
 
-            conductor.addDestination(registrationId, endpointChannel);
-        }
-        finally
-        {
-            conductor.clientLock().unlock();
-        }
+        conductor.addDestination(registrationId, endpointChannel);
     }
 
     /**
@@ -468,32 +448,17 @@ public abstract class Publication implements AutoCloseable
      */
     public void removeDestination(final String endpointChannel)
     {
-        conductor.clientLock().lock();
-        try
+        if (isClosed)
         {
-            if (isClosed)
-            {
-                throw new IllegalStateException("Publication is closed");
-            }
+            throw new IllegalStateException("Publication is closed");
+        }
 
-            conductor.removeDestination(registrationId, endpointChannel);
-        }
-        finally
-        {
-            conductor.clientLock().unlock();
-        }
+        conductor.removeDestination(registrationId, endpointChannel);
     }
 
-    /**
-     * Forcibly close the Publication and release resources
-     */
-    void forceClose()
+    void internalClose()
     {
-        if (!isClosed)
-        {
-            isClosed = true;
-            conductor.asyncReleasePublication(this);
-        }
+        isClosed = true;
     }
 
     int channelStatusId()

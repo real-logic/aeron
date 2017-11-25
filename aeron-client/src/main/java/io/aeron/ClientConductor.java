@@ -111,17 +111,25 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             isClosed = true;
 
-            final int lingeringResourcesSize = lingeringResources.size();
-            forceCloseResources();
-
-            if (lingeringResources.size() > lingeringResourcesSize)
+            clientLock.lock();
+            try
             {
-                sleep(1);
+                final int lingeringResourcesSize = lingeringResources.size();
+                forceCloseResources();
+
+                if (lingeringResources.size() > lingeringResourcesSize)
+                {
+                    sleep(1);
+                }
+
+                for (int i = 0, size = lingeringResources.size(); i < size; i++)
+                {
+                    lingeringResources.get(i).delete();
+                }
             }
-
-            for (int i = 0, size = lingeringResources.size(); i < size; i++)
+            finally
             {
-                lingeringResources.get(i).delete();
+                clientLock.unlock();
             }
         }
     }
@@ -345,11 +353,6 @@ class ClientConductor implements Agent, DriverEventsListener
         return countersReader;
     }
 
-    Lock clientLock()
-    {
-        return clientLock;
-    }
-
     void handleError(final Throwable ex)
     {
         ctx.errorHandler().onError(ex);
@@ -357,46 +360,77 @@ class ClientConductor implements Agent, DriverEventsListener
 
     ConcurrentPublication addPublication(final String channel, final int streamId)
     {
-        ensureOpen();
+        clientLock.lock();
+        try
+        {
+            ensureOpen();
 
-        stashedChannel = channel;
-        final long registrationId = driverProxy.addPublication(channel, streamId);
-        awaitResponse(registrationId);
+            stashedChannel = channel;
+            final long registrationId = driverProxy.addPublication(channel, streamId);
+            awaitResponse(registrationId);
 
-        return (ConcurrentPublication)resourceByRegIdMap.get(registrationId);
+            return (ConcurrentPublication)resourceByRegIdMap.get(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     ExclusivePublication addExclusivePublication(final String channel, final int streamId)
     {
-        ensureOpen();
+        clientLock.lock();
+        try
+        {
+            ensureOpen();
 
-        stashedChannel = channel;
-        final long registrationId = driverProxy.addExclusivePublication(channel, streamId);
-        awaitResponse(registrationId);
+            stashedChannel = channel;
+            final long registrationId = driverProxy.addExclusivePublication(channel, streamId);
+            awaitResponse(registrationId);
 
-        return (ExclusivePublication)resourceByRegIdMap.get(registrationId);
+            return (ExclusivePublication)resourceByRegIdMap.get(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     void releasePublication(final Publication publication)
     {
-        ensureOpen();
-
-        if (publication == resourceByRegIdMap.remove(publication.registrationId()))
+        clientLock.lock();
+        try
         {
-            releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
-            awaitResponse(driverProxy.removePublication(publication.registrationId()));
-        }
-    }
+            if (!publication.isClosed())
+            {
+                publication.internalClose();
 
-    void asyncReleasePublication(final Publication publication)
-    {
-        releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
-        driverProxy.removePublication(publication.registrationId());
+                ensureOpen();
+
+                if (publication == resourceByRegIdMap.remove(publication.registrationId()))
+                {
+                    releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
+                    awaitResponse(driverProxy.removePublication(publication.registrationId()));
+                }
+            }
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     Subscription addSubscription(final String channel, final int streamId)
     {
-        return addSubscription(channel, streamId, defaultAvailableImageHandler, defaultUnavailableImageHandler);
+        clientLock.lock();
+        try
+        {
+            return addSubscription(channel, streamId, defaultAvailableImageHandler, defaultUnavailableImageHandler);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     Subscription addSubscription(
@@ -405,50 +439,82 @@ class ClientConductor implements Agent, DriverEventsListener
         final AvailableImageHandler availableImageHandler,
         final UnavailableImageHandler unavailableImageHandler)
     {
-        ensureOpen();
+        clientLock.lock();
+        try
+        {
+            ensureOpen();
 
-        final long correlationId = driverProxy.addSubscription(channel, streamId);
-        final Subscription subscription = new Subscription(
-            this,
-            channel,
-            streamId,
-            correlationId,
-            availableImageHandler,
-            unavailableImageHandler);
+            final long correlationId = driverProxy.addSubscription(channel, streamId);
+            final Subscription subscription = new Subscription(
+                this,
+                channel,
+                streamId,
+                correlationId,
+                availableImageHandler,
+                unavailableImageHandler);
 
-        resourceByRegIdMap.put(correlationId, subscription);
+            resourceByRegIdMap.put(correlationId, subscription);
 
-        awaitResponse(correlationId);
+            awaitResponse(correlationId);
 
-        return subscription;
+            return subscription;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     void releaseSubscription(final Subscription subscription)
     {
-        ensureOpen();
+        clientLock.lock();
+        try
+        {
+            if (!subscription.isClosed())
+            {
+                subscription.internalClose();
 
-        final long registrationId = subscription.registrationId();
-        awaitResponse(driverProxy.removeSubscription(registrationId));
-        resourceByRegIdMap.remove(registrationId);
-    }
+                ensureOpen();
 
-    void asyncReleaseSubscription(final Subscription subscription)
-    {
-        driverProxy.removeSubscription(subscription.registrationId());
+                final long registrationId = subscription.registrationId();
+                awaitResponse(driverProxy.removeSubscription(registrationId));
+                resourceByRegIdMap.remove(registrationId);
+            }
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     void addDestination(final long registrationId, final String endpointChannel)
     {
-        ensureOpen();
+        clientLock.lock();
+        try
+        {
+            ensureOpen();
 
-        awaitResponse(driverProxy.addDestination(registrationId, endpointChannel));
+            awaitResponse(driverProxy.addDestination(registrationId, endpointChannel));
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     void removeDestination(final long registrationId, final String endpointChannel)
     {
-        ensureOpen();
+        clientLock.lock();
+        try
+        {
+            ensureOpen();
 
-        awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel));
+            awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel));
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     Counter addCounter(
@@ -460,39 +526,54 @@ class ClientConductor implements Agent, DriverEventsListener
         final int labelOffset,
         final int labelLength)
     {
-        ensureOpen();
-
-        if (keyLength < 0 || keyLength > CountersManager.MAX_KEY_LENGTH)
+        clientLock.lock();
+        try
         {
-            throw new IllegalArgumentException("key length out of bounds: " + keyLength);
-        }
+            ensureOpen();
 
-        if (labelLength < 0 || labelLength > CountersManager.MAX_LABEL_LENGTH)
+            if (keyLength < 0 || keyLength > CountersManager.MAX_KEY_LENGTH)
+            {
+                throw new IllegalArgumentException("key length out of bounds: " + keyLength);
+            }
+
+            if (labelLength < 0 || labelLength > CountersManager.MAX_LABEL_LENGTH)
+            {
+                throw new IllegalArgumentException("label length out of bounds: " + labelLength);
+            }
+
+            final long registrationId = driverProxy.addCounter(
+                typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+
+            awaitResponse(registrationId);
+
+            return (Counter)resourceByRegIdMap.get(registrationId);
+        }
+        finally
         {
-            throw new IllegalArgumentException("label length out of bounds: " + labelLength);
+            clientLock.unlock();
         }
-
-        final long registrationId = driverProxy.addCounter(
-            typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
-
-        awaitResponse(registrationId);
-
-        return (Counter)resourceByRegIdMap.get(registrationId);
     }
 
     void releaseCounter(final Counter counter)
     {
-        ensureOpen();
+        clientLock.lock();
+        try
+        {
+            if (!counter.isClosed())
+            {
+                counter.internalClose();
 
-        final long registrationId = counter.registrationId();
-        awaitResponse(driverProxy.removeCounter(registrationId));
-        resourceByRegIdMap.remove(registrationId);
-    }
+                ensureOpen();
 
-
-    void asyncReleaseCounter(final Counter counter)
-    {
-        driverProxy.removeCounter(counter.registrationId());
+                final long registrationId = counter.registrationId();
+                awaitResponse(driverProxy.removeCounter(registrationId));
+                resourceByRegIdMap.remove(registrationId);
+            }
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
     }
 
     void releaseImage(final Image image)
@@ -699,15 +780,22 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (resource instanceof Subscription)
             {
-                ((Subscription)resource).forceClose();
+                final Subscription subscription = (Subscription)resource;
+                subscription.internalClose();
+                driverProxy.removeSubscription(subscription.registrationId());
             }
             else if (resource instanceof Publication)
             {
-                ((Publication)resource).forceClose();
+                final Publication publication = (Publication)resource;
+                publication.internalClose();
+                releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
+                driverProxy.removePublication(publication.registrationId());
             }
             else if (resource instanceof Counter)
             {
-                ((Counter)resource).forceClose();
+                final Counter counter = (Counter)resource;
+                counter.internalClose();
+                driverProxy.removeCounter(counter.registrationId());
             }
         }
 

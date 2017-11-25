@@ -56,21 +56,7 @@ public class Counter extends AtomicCounter
      */
     public void close()
     {
-        clientConductor.clientLock().lock();
-        try
-        {
-            if (!isClosed)
-            {
-                super.close();
-                isClosed = true;
-
-                clientConductor.releaseCounter(this);
-            }
-        }
-        finally
-        {
-            clientConductor.clientLock().unlock();
-        }
+        clientConductor.releaseCounter(this);
     }
 
     /**
@@ -83,16 +69,9 @@ public class Counter extends AtomicCounter
         return isClosed;
     }
 
-    /**
-     * Forcibly close the counter and release resources.
-     */
-    void forceClose()
+    void internalClose()
     {
-        if (!isClosed)
-        {
-            super.close();
-            isClosed = true;
-            clientConductor.asyncReleaseCounter(this);
-        }
+        super.close();
+        isClosed = true;
     }
 }

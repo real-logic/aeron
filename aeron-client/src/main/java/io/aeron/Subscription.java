@@ -388,22 +388,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      */
     public void close()
     {
-        conductor.clientLock().lock();
-        try
-        {
-            if (!isClosed)
-            {
-                isClosed = true;
-
-                closeImages();
-
-                conductor.releaseSubscription(this);
-            }
-        }
-        finally
-        {
-            conductor.clientLock().unlock();
-        }
+        conductor.releaseSubscription(this);
     }
 
     /**
@@ -446,13 +431,10 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         return channelStatusId;
     }
 
-    void forceClose()
+    void internalClose()
     {
         isClosed = true;
-
         closeImages();
-
-        conductor.asyncReleaseSubscription(this);
     }
 
     boolean containsImage(final long correlationId)
@@ -504,8 +486,8 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     private void closeImages()
     {
         final Image[] images = this.images;
-        imageIdSet.clear();
         this.images = EMPTY_ARRAY;
+        imageIdSet.clear();
 
         for (final Image image : images)
         {

@@ -89,7 +89,6 @@ public final class Aeron implements AutoCloseable
     public static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
 
     private final long clientId;
-    private final Lock clientLock;
     private final Context ctx;
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
@@ -102,7 +101,6 @@ public final class Aeron implements AutoCloseable
 
         this.ctx = ctx;
         clientId = ctx.clientId();
-        clientLock = ctx.clientLock();
         commandBuffer = ctx.toDriverBuffer();
         conductor = new ClientConductor(ctx);
 
@@ -203,24 +201,16 @@ public final class Aeron implements AutoCloseable
      */
     public void close()
     {
-        clientLock.lock();
-        try
+        if (null != conductorRunner)
         {
-            if (null != conductorRunner)
-            {
-                conductorRunner.close();
-            }
-            else
-            {
-                conductorInvoker.close();
-            }
+            conductorRunner.close();
+        }
+        else
+        {
+            conductorInvoker.close();
+        }
 
-            ctx.close();
-        }
-        finally
-        {
-            clientLock.unlock();
-        }
+        ctx.close();
     }
 
     /**
@@ -232,15 +222,7 @@ public final class Aeron implements AutoCloseable
      */
     public ConcurrentPublication addPublication(final String channel, final int streamId)
     {
-        clientLock.lock();
-        try
-        {
-            return conductor.addPublication(channel, streamId);
-        }
-        finally
-        {
-            clientLock.unlock();
-        }
+        return conductor.addPublication(channel, streamId);
     }
 
     /**
@@ -252,15 +234,7 @@ public final class Aeron implements AutoCloseable
      */
     public ExclusivePublication addExclusivePublication(final String channel, final int streamId)
     {
-        clientLock.lock();
-        try
-        {
-            return conductor.addExclusivePublication(channel, streamId);
-        }
-        finally
-        {
-            clientLock.unlock();
-        }
+        return conductor.addExclusivePublication(channel, streamId);
     }
 
     /**
@@ -276,15 +250,7 @@ public final class Aeron implements AutoCloseable
      */
     public Subscription addSubscription(final String channel, final int streamId)
     {
-        clientLock.lock();
-        try
-        {
-            return conductor.addSubscription(channel, streamId);
-        }
-        finally
-        {
-            clientLock.unlock();
-        }
+        return conductor.addSubscription(channel, streamId);
     }
 
     /**
@@ -309,15 +275,7 @@ public final class Aeron implements AutoCloseable
         final AvailableImageHandler availableImageHandler,
         final UnavailableImageHandler unavailableImageHandler)
     {
-        clientLock.lock();
-        try
-        {
-            return conductor.addSubscription(channel, streamId, availableImageHandler, unavailableImageHandler);
-        }
-        finally
-        {
-            clientLock.unlock();
-        }
+        return conductor.addSubscription(channel, streamId, availableImageHandler, unavailableImageHandler);
     }
 
     /**
@@ -378,15 +336,7 @@ public final class Aeron implements AutoCloseable
         final int labelOffset,
         final int labelLength)
     {
-        clientLock.lock();
-        try
-        {
-            return conductor.addCounter(typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
-        }
-        finally
-        {
-            clientLock.unlock();
-        }
+        return conductor.addCounter(typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
     }
 
     /**

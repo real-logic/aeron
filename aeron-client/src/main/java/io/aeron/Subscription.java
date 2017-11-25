@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.logbuffer.*;
+import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.LongHashSet;
 
@@ -421,11 +422,17 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      * The status will be {@link io.aeron.status.ChannelEndpointStatus#ERRORED} if a socket exception occurs on setup
      * and {@link io.aeron.status.ChannelEndpointStatus#ACTIVE} if all is well.
      *
-     * @return status for the channel.
+     * @return status for the channel as one of the constants from {@link ChannelEndpointStatus} with it being
+     * {@link ChannelEndpointStatus#NO_ID_ALLOCATED} if the subscription is closed.
      * @see io.aeron.status.ChannelEndpointStatus
      */
     public long channelStatus()
     {
+        if (isClosed)
+        {
+            return ChannelEndpointStatus.NO_ID_ALLOCATED;
+        }
+
         return conductor.channelStatus(channelStatusId);
     }
 

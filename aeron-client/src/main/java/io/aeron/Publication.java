@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.logbuffer.*;
+import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
@@ -289,11 +290,17 @@ public abstract class Publication implements AutoCloseable
      * The status will be {@link io.aeron.status.ChannelEndpointStatus#ERRORED} if a socket exception occurs on setup
      * and {@link io.aeron.status.ChannelEndpointStatus#ACTIVE} if all is well.
      *
-     * @return status for the channel.
+     * @return status for the channel as one of the constants from {@link ChannelEndpointStatus} with it being
+     * {@link ChannelEndpointStatus#NO_ID_ALLOCATED} if the publication is closed.
      * @see io.aeron.status.ChannelEndpointStatus
      */
     public long channelStatus()
     {
+        if (isClosed)
+        {
+            return ChannelEndpointStatus.NO_ID_ALLOCATED;
+        }
+
         return conductor.channelStatus(channelStatusId);
     }
 
@@ -441,6 +448,11 @@ public abstract class Publication implements AutoCloseable
         conductor.clientLock().lock();
         try
         {
+            if (isClosed)
+            {
+                throw new IllegalStateException("Publication is closed");
+            }
+
             conductor.addDestination(registrationId, endpointChannel);
         }
         finally
@@ -459,6 +471,11 @@ public abstract class Publication implements AutoCloseable
         conductor.clientLock().lock();
         try
         {
+            if (isClosed)
+            {
+                throw new IllegalStateException("Publication is closed");
+            }
+
             conductor.removeDestination(registrationId, endpointChannel);
         }
         finally

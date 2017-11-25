@@ -422,15 +422,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     Subscription addSubscription(final String channel, final int streamId)
     {
-        clientLock.lock();
-        try
-        {
-            return addSubscription(channel, streamId, defaultAvailableImageHandler, defaultUnavailableImageHandler);
-        }
-        finally
-        {
-            clientLock.unlock();
-        }
+        return addSubscription(channel, streamId, defaultAvailableImageHandler, defaultUnavailableImageHandler);
     }
 
     Subscription addSubscription(

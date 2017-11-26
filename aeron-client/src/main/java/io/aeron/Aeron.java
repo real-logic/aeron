@@ -89,6 +89,7 @@ public final class Aeron implements AutoCloseable
     public static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
 
     private final long clientId;
+    private volatile boolean isClosed;
     private final Context ctx;
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
@@ -164,6 +165,16 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
+     * Has the client been closed? If not then the CnC file may not be unmapped.
+     *
+     * @return true if the client has been explicitly closed otherwise false.
+     */
+    public boolean isClosed()
+    {
+        return isClosed;
+    }
+
+    /**
      * Get the {@link Aeron.Context} that is used by this client.
      *
      * @return the {@link Aeron.Context} that is use by this client.
@@ -201,16 +212,21 @@ public final class Aeron implements AutoCloseable
      */
     public void close()
     {
-        if (null != conductorRunner)
+        if (!isClosed)
         {
-            conductorRunner.close();
-        }
-        else
-        {
-            conductorInvoker.close();
-        }
+            isClosed = true;
 
-        ctx.close();
+            if (null != conductorRunner)
+            {
+                conductorRunner.close();
+            }
+            else
+            {
+                conductorInvoker.close();
+            }
+
+            ctx.close();
+        }
     }
 
     /**
@@ -290,7 +306,7 @@ public final class Aeron implements AutoCloseable
      */
     public long nextCorrelationId()
     {
-        if (conductor.isClosed())
+        if (isClosed)
         {
             throw new IllegalStateException("Client is closed");
         }
@@ -305,7 +321,7 @@ public final class Aeron implements AutoCloseable
      */
     public CountersReader countersReader()
     {
-        if (conductor.isClosed())
+        if (isClosed)
         {
             throw new IllegalStateException("Client is closed");
         }

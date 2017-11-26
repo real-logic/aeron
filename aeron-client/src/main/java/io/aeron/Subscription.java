@@ -446,6 +446,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     {
         if (isClosed)
         {
+            image.close();
             conductor.releaseImage(image);
         }
         else
@@ -477,6 +478,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
             }
 
             images = ArrayUtil.remove(oldArray, i);
+            removedImage.close();
             conductor.releaseImage(removedImage);
         }
 
@@ -487,6 +489,12 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     {
         final Image[] images = this.images;
         this.images = EMPTY_ARRAY;
+
+        for (final Image image : images)
+        {
+            image.close();
+        }
+
         imageIdSet.clear();
 
         for (final Image image : images)

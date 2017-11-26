@@ -55,7 +55,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private long timeOfLastKeepAliveNs;
     private long timeOfLastResourcesCheckNs;
     private long timeOfLastServiceNs;
-    private volatile boolean isClosed;
+    private boolean isClosed;
     private String stashedChannel;
     private RegistrationException driverException;
 
@@ -107,13 +107,13 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onClose()
     {
-        if (!isClosed)
+        clientLock.lock();
+        try
         {
-            isClosed = true;
-
-            clientLock.lock();
-            try
+            if (!isClosed)
             {
+                isClosed = true;
+
                 final int lingeringResourcesSize = lingeringResources.size();
                 forceCloseResources();
 
@@ -127,10 +127,10 @@ class ClientConductor implements Agent, DriverEventsListener
                     lingeringResources.get(i).delete();
                 }
             }
-            finally
-            {
-                clientLock.unlock();
-            }
+        }
+        finally
+        {
+            clientLock.unlock();
         }
     }
 
@@ -570,7 +570,6 @@ class ClientConductor implements Agent, DriverEventsListener
 
     void releaseImage(final Image image)
     {
-        image.close();
         releaseLogBuffers(image.logBuffers(), image.correlationId());
     }
 
@@ -608,7 +607,7 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         if (isClosed)
         {
-            throw new IllegalStateException("Aeron client is closed");
+            throw new IllegalStateException("Aeron client conductor is closed");
         }
     }
 

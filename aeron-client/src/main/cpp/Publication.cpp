@@ -68,11 +68,21 @@ Publication::~Publication()
 
 void Publication::addDestination(const std::string& endpointChannel)
 {
+    if (isClosed())
+    {
+        throw util::IllegalStateException(std::string("Publication is closed"), SOURCEINFO);
+    }
+
     m_conductor.addDestination(m_registrationId, endpointChannel);
 }
 
 void Publication::removeDestination(const std::string& endpointChannel)
 {
+    if (isClosed())
+    {
+        throw util::IllegalStateException(std::string("Publication is closed"), SOURCEINFO);
+    }
+
     m_conductor.removeDestination(m_registrationId, endpointChannel);
 }
 

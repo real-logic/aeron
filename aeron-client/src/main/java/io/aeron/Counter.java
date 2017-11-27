@@ -17,6 +17,7 @@ package io.aeron;
 
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersReader;
 
 /**
  * Counter stored in the counters file managed by the media driver which can be read with AeronStat.
@@ -40,6 +41,30 @@ public class Counter extends AtomicCounter
     }
 
     /**
+     * Construct a read-write view of an existing counter.
+     *
+     * @param countersReader for getting access to the buffers.
+     * @param registrationId assigned by the driver for the counter or -1 if not known.
+     * @param counterId      for the counter to be viewed.
+     * @throws IllegalStateException if the id has for the counter has not been allocated.
+     */
+    Counter(
+        final CountersReader countersReader,
+        final long registrationId,
+        final int counterId)
+    {
+        super(countersReader.valuesBuffer(), counterId);
+
+        if (countersReader.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
+        {
+            throw new IllegalStateException("Counter id has not been allocated: " + counterId);
+        }
+
+        this.registrationId = registrationId;
+        this.clientConductor = null;
+    }
+
+    /**
      * Return the registration id used to register this counter with the media driver.
      *
      * @return registration id
@@ -50,13 +75,20 @@ public class Counter extends AtomicCounter
     }
 
     /**
-     * Close the counter which will release the resource managed by the media driver.
+     * Close the counter, releasing the resource managed by the media driver if this was the creator of the Counter.
      * <p>
      * This method is idempotent.
      */
     public void close()
     {
-        clientConductor.releaseCounter(this);
+        if (null != clientConductor)
+        {
+            clientConductor.releaseCounter(this);
+        }
+        else
+        {
+            isClosed = true;
+        }
     }
 
     /**

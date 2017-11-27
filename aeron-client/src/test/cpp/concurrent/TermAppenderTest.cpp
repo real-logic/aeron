@@ -130,7 +130,7 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
 {
     const util::index_t msgLength = 20;
     const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
-    const std::int64_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     util::index_t tail = 0;
     testing::Sequence sequence1;
     testing::Sequence sequence2;

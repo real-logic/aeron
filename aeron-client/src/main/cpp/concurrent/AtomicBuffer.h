@@ -138,7 +138,7 @@ public:
         }
 #endif
 
-        m_length = length;
+        m_length = static_cast<util::index_t>(length);
     }
 
     inline std::uint8_t *buffer() const

@@ -2,6 +2,37 @@
 
 SOURCE_DIR="`pwd`"
 BUILD_DIR="`pwd`/cppbuild/Release"
+EXTRA_CMAKE_ARGS=""
+
+for option in "$@"
+do
+  case $option in
+    --c-warnings-as-errors)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DC_WARNINGS_AS_ERRORS=ON"
+      echo "Enabling warnings as errors for c"
+      shift
+      ;;
+    --cxx-warnings-as-errors)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCXX_WARNINGS_AS_ERRORS=ON"
+      echo "Enabling warnings as errors for c++"
+      shift
+      ;;
+    -b|--build-aeron-driver)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DBUILD_AERON_DRIVER=ON"
+      echo "Enabling building of aeron driver"
+      shift
+      ;;
+    -h|--help)
+      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver]"
+      exit
+      ;;
+    *)
+      echo "Unknown option $option"
+      echo "Use --help for help"
+      exit
+      ;;
+  esac
+done
 
 ncpus=1
 case "`uname`" in
@@ -22,4 +53,4 @@ fi
 
 mkdir -p $BUILD_DIR
 
-(cd $BUILD_DIR && cmake -G "Unix Makefiles" $SOURCE_DIR && make clean && make -j "$ncpus" all && ctest -C Release)
+(cd $BUILD_DIR && cmake -G "Unix Makefiles" $EXTRA_CMAKE_ARGS $SOURCE_DIR && make clean && make -j "$ncpus" all && ctest -C Release)

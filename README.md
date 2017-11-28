@@ -119,7 +119,7 @@ For convenience, a script is provided that does a full clean, build, and test of
 C++ API and the C Media Driver.
 
 ```shell
-    $ ./cppbuild/cppbuild-driver
+    $ ./cppbuild/cppbuild -b
 ```
 
 If you are comfortable with using CMake, then a full clean, build, and test looks like:

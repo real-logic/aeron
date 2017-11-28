@@ -31,10 +31,11 @@ import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.IoUtil.mapExistingFile;
 
 /**
@@ -48,6 +49,11 @@ import static org.agrona.IoUtil.mapExistingFile;
  */
 public final class Aeron implements AutoCloseable
 {
+    /**
+     * Using an integer because there is no support for boolean. 1 is closed and 0 is not closed.
+     */
+    private static final AtomicIntegerFieldUpdater<Aeron> IS_CLOSED_UPDATER = newUpdater(Aeron.class, "isClosed");
+
     /**
      * The Default handler for Aeron runtime exceptions.
      * When a {@link io.aeron.exceptions.DriverTimeoutException} is encountered, this handler will
@@ -89,14 +95,13 @@ public final class Aeron implements AutoCloseable
      */
     public static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
 
-    private volatile boolean isClosed;
+    private volatile int isClosed;
     private final long clientId;
     private final ClientConductor conductor;
     private final RingBuffer commandBuffer;
     private final AgentInvoker conductorInvoker;
     private final AgentRunner conductorRunner;
     private final Context ctx;
-    private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     Aeron(final Context ctx)
     {
@@ -173,7 +178,7 @@ public final class Aeron implements AutoCloseable
      */
     public boolean isClosed()
     {
-        return isClosed;
+        return 1 == isClosed;
     }
 
     /**
@@ -215,10 +220,8 @@ public final class Aeron implements AutoCloseable
      */
     public void close()
     {
-        if (closeGuard.compareAndSet(false, true))
+        if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
         {
-            isClosed = true;
-
             if (null != conductorRunner)
             {
                 conductorRunner.close();
@@ -309,7 +312,7 @@ public final class Aeron implements AutoCloseable
      */
     public long nextCorrelationId()
     {
-        if (isClosed)
+        if (1 == isClosed)
         {
             throw new IllegalStateException("Client is closed");
         }
@@ -324,7 +327,7 @@ public final class Aeron implements AutoCloseable
      */
     public CountersReader countersReader()
     {
-        if (isClosed)
+        if (1 == isClosed)
         {
             throw new IllegalStateException("Client is closed");
         }

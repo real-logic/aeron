@@ -153,6 +153,14 @@ elseif(MSVC)
 
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi /MP")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP")
+
+    if(C_WARNINGS_AS_ERRORS)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
+    endif(C_WARNINGS_AS_ERRORS)
+
+    if(CXX_WARNINGS_AS_ERRORS)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+    endif(CXX_WARNINGS_AS_ERRORS)
 endif()
 
 ##########################################################

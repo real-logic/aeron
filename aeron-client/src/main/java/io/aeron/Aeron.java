@@ -31,6 +31,7 @@ import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -88,13 +89,14 @@ public final class Aeron implements AutoCloseable
      */
     public static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
 
-    private final long clientId;
     private volatile boolean isClosed;
-    private final Context ctx;
+    private final long clientId;
     private final ClientConductor conductor;
-    private final AgentRunner conductorRunner;
-    private final AgentInvoker conductorInvoker;
     private final RingBuffer commandBuffer;
+    private final AgentInvoker conductorInvoker;
+    private final AgentRunner conductorRunner;
+    private final Context ctx;
+    private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     Aeron(final Context ctx)
     {
@@ -208,11 +210,12 @@ public final class Aeron implements AutoCloseable
      * Clean up and release all Aeron client resources and shutdown conductor thread if not using
      * {@link Context#useConductorAgentInvoker(boolean)}.
      * <p>
-     * This will close all {@link Publication}s and {@link Subscription}s created from this client.
+     * This will close all currently open {@link Publication}s, {@link Subscription}s, and {@link Counter}s created
+     * from this client.
      */
     public void close()
     {
-        if (!isClosed)
+        if (closeGuard.compareAndSet(false, true))
         {
             isClosed = true;
 

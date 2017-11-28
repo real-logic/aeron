@@ -362,7 +362,7 @@ TEST_F(ManyToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
     {
         m_ringBuffer.read(handler);
     }
-    catch (const std::runtime_error& ignored)
+    catch (const std::runtime_error&)
     {
         exceptionReceived = true;
     }

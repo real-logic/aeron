@@ -48,35 +48,35 @@ TEST (atomicBufferTests, checkBounds)
     });
 
     ASSERT_NO_THROW({
-        ab.putInt32(testBuffer.size() - sizeof(std::int32_t), -1);
+        ab.putInt32(convertSizeToIndex(testBuffer.size() - sizeof(std::int32_t)), -1);
     });
 
     ASSERT_NO_THROW({
-        ab.putInt64(testBuffer.size() - sizeof(std::int64_t), -1);
+        ab.putInt64(convertSizeToIndex(testBuffer.size() - sizeof(std::int64_t)), -1);
     });
 
     ASSERT_NO_THROW({
-        ab.putStringUtf8(testBuffer.size() - testString.length() - sizeof(std::int32_t), testString);
+        ab.putStringUtf8(convertSizeToIndex(testBuffer.size() - testString.length() - sizeof(std::int32_t)), testString);
     });
 
     ASSERT_THROW({
-        ab.putInt32(testBuffer.size(), -1);
+        ab.putInt32(convertSizeToIndex(testBuffer.size()), -1);
     }, OutOfBoundsException);
 
     ASSERT_THROW({
-        ab.putInt64(testBuffer.size(), -1);
+        ab.putInt64(convertSizeToIndex(testBuffer.size()), -1);
     }, OutOfBoundsException);
 
     ASSERT_THROW({
-        ab.putInt32(testBuffer.size() - sizeof(std::int32_t) + 1, -1);
+        ab.putInt32(convertSizeToIndex(testBuffer.size() - sizeof(std::int32_t) + 1), -1);
     }, OutOfBoundsException);
 
     ASSERT_THROW({
-        ab.putInt64(testBuffer.size() - sizeof(std::int64_t) + 1, -1);
+        ab.putInt64(convertSizeToIndex(testBuffer.size() - sizeof(std::int64_t) + 1), -1);
     }, OutOfBoundsException);
 
     ASSERT_THROW({
-        ab.putStringUtf8(testBuffer.size() - testString.length() - sizeof(std::int32_t) + 1, testString);
+        ab.putStringUtf8(convertSizeToIndex(testBuffer.size() - testString.length() - sizeof(std::int32_t) + 1), testString);
     }, OutOfBoundsException);
 }
 #endif

@@ -40,27 +40,27 @@ public:
     {
     }
 
-    AtomicBuffer(std::uint8_t *buffer, util::index_t length) :
-        m_buffer(buffer), m_length(length)
+    AtomicBuffer(std::uint8_t *buffer, size_t length) :
+        m_buffer(buffer), m_length(static_cast<util::index_t>(length))
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length < 0, false))
+        if (AERON_COND_EXPECT(length > std::numeric_limits<util::index_t>::max(), true))
         {
             throw aeron::util::OutOfBoundsException(
-                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %d", this, length),
+                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %lld", this, static_cast<long long>(length)),
                 SOURCEINFO);
         }
 #endif
     }
 
-    AtomicBuffer(std::uint8_t *buffer, util::index_t length, std::uint8_t initialValue) :
-        m_buffer(buffer), m_length(length)
+    AtomicBuffer(std::uint8_t *buffer, size_t length, std::uint8_t initialValue) :
+        m_buffer(buffer), m_length(static_cast<util::index_t>(length))
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length < 0, false))
+        if (AERON_COND_EXPECT(length > std::numeric_limits<util::index_t>::max(), true))
         {
             throw aeron::util::OutOfBoundsException(
-                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %d", this, length),
+                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %lld", this, static_cast<long long>(length)),
                 SOURCEINFO);
         }
 #endif
@@ -93,19 +93,19 @@ public:
     // this class does not own the memory. It simply overlays it.
     virtual ~AtomicBuffer() = default;
 
-    inline void wrap(std::uint8_t* buffer, util::index_t length)
+    inline void wrap(std::uint8_t* buffer, size_t length)
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length < 0, false))
+        if (AERON_COND_EXPECT(length > std::numeric_limits<util::index_t>::max(), true))
         {
             throw aeron::util::OutOfBoundsException(
-                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %d", this, length),
+                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %lld", this, static_cast<long long>(length)),
                 SOURCEINFO);
         }
 #endif
 
         m_buffer = buffer;
-        m_length = length;
+        m_length = static_cast<util::index_t>(length);
     }
 
     inline void wrap(const AtomicBuffer& buffer)
@@ -127,18 +127,18 @@ public:
         return m_length;
     }
 
-    inline void capacity(util::index_t length)
+    inline void capacity(size_t length)
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length < 0, false))
+        if (AERON_COND_EXPECT(length > std::numeric_limits<util::index_t>::max(), true))
         {
             throw aeron::util::OutOfBoundsException(
-                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %d", this, length),
+                aeron::util::strPrintf("Length Out of Bounds[%p]. Length: %lld", this, static_cast<long long>(length)),
                 SOURCEINFO);
         }
 #endif
 
-        m_length = length;
+        m_length = static_cast<util::index_t>(length);
     }
 
     inline std::uint8_t *buffer() const

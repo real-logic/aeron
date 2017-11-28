@@ -26,6 +26,9 @@ endif()
 
 option(BUILD_AERON_DRIVER "Build Aeron driver" OFF)
 
+option(C_WARNINGS_AS_ERRORS "Enable warnings as errors for C" OFF)
+option(CXX_WARNINGS_AS_ERRORS "Enable warnings as errors for C++" OFF)
+
 include(ExternalProject)
 
 project("aeron" VERSION "${VERSION_FROM_FILE}")
@@ -118,6 +121,15 @@ if(UNIX)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -std=c++11 -fexceptions -g")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -std=c11 -g")
     endif()
+
+    if(C_WARNINGS_AS_ERRORS)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+    endif(C_WARNINGS_AS_ERRORS)
+
+    if(CXX_WARNINGS_AS_ERRORS)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+    endif(CXX_WARNINGS_AS_ERRORS)
+
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
@@ -139,8 +151,8 @@ elseif(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX)
 
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi /MP")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP")
 endif()
 
 ##########################################################

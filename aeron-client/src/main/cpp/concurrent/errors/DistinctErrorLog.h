@@ -144,7 +144,7 @@ private:
         if (it == m_observations.end())
         {
             const std::string encodedError = encodeObservation(errorCode, description, message);
-            const util::index_t length = ErrorLogDescriptor::HEADER_LENGTH + encodedError.length();
+            const util::index_t length = ErrorLogDescriptor::HEADER_LENGTH + static_cast<util::index_t>(encodedError.length());
             const util::index_t offset = m_nextOffset;
 
             if ((offset + length) > m_buffer.capacity())

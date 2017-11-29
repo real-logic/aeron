@@ -49,7 +49,8 @@ public class ControlTransportPoller extends UdpTransportPoller
 
     public ControlTransportPoller()
     {
-        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(Configuration.MTU_LENGTH, CACHE_LINE_LENGTH * 2);
+        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(
+            Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH * 2);
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
         nakMessage = new NakFlyweight(unsafeBuffer);
         statusMessage = new StatusMessageFlyweight(unsafeBuffer);

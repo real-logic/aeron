@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.driver.Configuration;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
@@ -37,8 +38,6 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
  */
 public class DataTransportPoller extends UdpTransportPoller
 {
-    private static final int MAX_UDP_PACKET = 1024 * 64;
-
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
     private final DataHeaderFlyweight dataMessage;
@@ -48,7 +47,8 @@ public class DataTransportPoller extends UdpTransportPoller
 
     public DataTransportPoller()
     {
-        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(MAX_UDP_PACKET, CACHE_LINE_LENGTH * 2);
+        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(
+            Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH * 2);
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
         dataMessage = new DataHeaderFlyweight(unsafeBuffer);
         setupMessage = new SetupFlyweight(unsafeBuffer);

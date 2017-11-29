@@ -21,7 +21,6 @@ import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
-import org.agrona.LangUtil;
 import org.agrona.collections.BiInt2ObjectMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -185,6 +184,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public int send(final ByteBuffer buffer)
     {
+        final int bytesToSend = buffer.remaining();
         int bytesSent = 0;
 
         if (null == multiUnicastDestination)
@@ -199,7 +199,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             }
             catch (final IOException ex)
             {
-                LangUtil.rethrowUnchecked(ex);
+                throw new RuntimeException("Failed to send: " + bytesToSend, ex);
             }
         }
         else

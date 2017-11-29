@@ -16,7 +16,6 @@
 package io.aeron.driver.media;
 
 import io.aeron.protocol.StatusMessageFlyweight;
-import org.agrona.LangUtil;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.concurrent.NanoClock;
 
@@ -51,7 +50,8 @@ final class MultiUnicastDestination
         final ArrayList<Destination> destinations = this.destinations;
         final long nowNs = nanoClock.nanoTime();
         final int position = buffer.position();
-        int minBytesSent = buffer.remaining();
+        final int bytesToSend = buffer.remaining();
+        int minBytesSent = bytesToSend;
 
         for (int lastIndex = destinations.size() - 1, i = lastIndex; i >= 0; i--)
         {
@@ -77,7 +77,7 @@ final class MultiUnicastDestination
                 }
                 catch (final IOException ex)
                 {
-                    LangUtil.rethrowUnchecked(ex);
+                    throw new RuntimeException("Failed to send: " + bytesToSend, ex);
                 }
 
                 minBytesSent = Math.min(minBytesSent, bytesSent);

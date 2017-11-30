@@ -363,7 +363,7 @@ public final class ConsensusModule implements AutoCloseable
          */
         public int maxActiveSessions()
         {
-            return ingressStreamId;
+            return maxActiveSessions;
         }
 
         /**

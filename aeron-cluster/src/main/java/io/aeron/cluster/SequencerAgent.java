@@ -39,7 +39,7 @@ class SequencerAgent implements Agent
     private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private long nextSessionId = 1;
-    private final long pendingSessionTimeoutMs = TimeUnit.SECONDS.toMillis(5);
+    private final long sessionTimeoutMs = TimeUnit.SECONDS.toMillis(5);
     private final ConsensusModule.Context ctx;
     private final Aeron aeron;
     private final AgentInvoker aeronClientInvoker;
@@ -52,6 +52,7 @@ class SequencerAgent implements Agent
     private final Counter messageIndex;
     private final Long2ObjectHashMap<ClusterSession> clusterSessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingClusterSessions = new ArrayList<>();
+    private final ArrayList<ClusterSession> rejectedClusterSessions = new ArrayList<>();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
 
@@ -114,6 +115,8 @@ class SequencerAgent implements Agent
         workCount += ingressAdapter.poll();
         workCount += timerService.poll(nowMs);
 
+        processRejectedSessions(rejectedClusterSessions, nowMs);
+
         return workCount;
     }
 
@@ -129,7 +132,14 @@ class SequencerAgent implements Agent
         final ClusterSession session = new ClusterSession(sessionId, publication);
         session.lastActivity(cachedEpochClock.time(), correlationId);
 
-        pendingClusterSessions.add(session);
+        if (pendingClusterSessions.size() + clusterSessionByIdMap.size() < ctx.maxActiveSessions())
+        {
+            pendingClusterSessions.add(session);
+        }
+        else
+        {
+            rejectedClusterSessions.add(session);
+        }
     }
 
     public void onSessionClose(final long clusterSessionId)
@@ -199,20 +209,11 @@ class SequencerAgent implements Agent
     {
         int workCount = 0;
 
-        final boolean maxSessionsReached = clusterSessionByIdMap.size() >= ctx.maxActiveSessions();
-
         for (int lastIndex = pendingSessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final ClusterSession session = pendingSessions.get(i);
 
-            if (maxSessionsReached && sendSessionEvent(session, EventCode.ERROR, "Active session limit exceeded"))
-            {
-                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
-                lastIndex--;
-
-                session.close();
-            }
-            else if (!maxSessionsReached && sendSessionEvent(session, EventCode.OK, ""))
+            if (sendSessionEvent(session, EventCode.OK, ""))
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
                 lastIndex--;
@@ -228,7 +229,7 @@ class SequencerAgent implements Agent
 
                 workCount += 1;
             }
-            else if (nowMs > (session.timeOfLastActivityMs() + pendingSessionTimeoutMs))
+            else if (nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
                 lastIndex--;
@@ -238,6 +239,23 @@ class SequencerAgent implements Agent
         }
 
         return workCount;
+    }
+
+    private void processRejectedSessions(final ArrayList<ClusterSession> rejectedSessions, final long nowMs)
+    {
+        for (int lastIndex = rejectedSessions.size() - 1, i = lastIndex; i >= 0; i--)
+        {
+            final ClusterSession session = rejectedSessions.get(i);
+
+            if (sendSessionEvent(session, EventCode.ERROR, "Active session limit exceeded") ||
+                nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
+            {
+                ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex);
+                lastIndex--;
+
+                session.close();
+            }
+        }
     }
 
     private boolean sendSessionEvent(final ClusterSession session, final EventCode code, final String detail)

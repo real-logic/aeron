@@ -31,6 +31,11 @@ public:
     {
     }
 
+    ~CountersManagerTest()
+    {
+        aeron_counters_manager_close(&m_manager);
+    }
+
     virtual void SetUp()
     {
         m_metadata.fill(0);

@@ -28,6 +28,8 @@ option(BUILD_AERON_DRIVER "Build Aeron driver" OFF)
 
 option(C_WARNINGS_AS_ERRORS "Enable warnings as errors for C" OFF)
 option(CXX_WARNINGS_AS_ERRORS "Enable warnings as errors for C++" OFF)
+option(SANITISE_BUILD "Enable sanitise options" OFF)
+option(COVERAGE_BUILD "Enable code coverage" OFF)
 
 include(ExternalProject)
 
@@ -130,6 +132,17 @@ if(UNIX)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
     endif(CXX_WARNINGS_AS_ERRORS)
 
+    if(SANITISE_BUILD)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=leak -fsanitize=undefined")
+    endif(SANITISE_BUILD)
+
+    if (COVERAGE_BUILD)
+        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -fno-inline --coverage -g")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -fno-inline --coverage -g")
+        SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+    endif(COVERAGE_BUILD)
+
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
@@ -162,6 +175,7 @@ elseif(MSVC)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
     endif(CXX_WARNINGS_AS_ERRORS)
 endif()
+
 
 ##########################################################
 # Project variables, etc.

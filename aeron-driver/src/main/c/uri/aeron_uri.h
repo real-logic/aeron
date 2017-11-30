@@ -113,6 +113,8 @@ int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params);
 
 int aeron_uri_parse(const char *uri, aeron_uri_t *params);
 
+void aeron_uri_close(aeron_uri_t *params);
+
 uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri);
 
 const char *aeron_uri_find_param_value(aeron_uri_params_t *uri_params, const char *key);

@@ -141,7 +141,11 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
         strncpy(new_description, description, description_length + 1);
         new_array[0].description_length = description_length;
         new_array[0].offset = offset;
-        memcpy(&new_array[1], observations, sizeof(aeron_distinct_observation_t) * num_observations);
+
+        if (num_observations != 0)
+        {
+            memcpy(&new_array[1], observations, sizeof(aeron_distinct_observation_t) * num_observations);
+        }
 
         aeron_distinct_error_log_observation_list_store(log, new_list);
 

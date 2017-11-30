@@ -37,6 +37,11 @@ public:
         clock_value = 7;
     }
 
+    ~DistinctErrorLogTest()
+    {
+        aeron_distinct_error_log_close(&m_log);
+    }
+
     virtual void SetUp()
     {
         m_buffer.fill(0);

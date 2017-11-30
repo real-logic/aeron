@@ -62,7 +62,7 @@ public class LogInspector
         final PrintStream out = System.out;
         if (args.length < 1)
         {
-            out.println("Usage: LogInspector <logFileName> [message dump limit]");
+            out.println("Usage: LogInspector <logFileName> [dump limit in bytes per message]");
             return;
         }
 

@@ -24,10 +24,12 @@ import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.SystemUtil.getDurationInNanos;
 
 public final class ConsensusModule implements AutoCloseable
 {
@@ -94,23 +96,44 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Maximum number of cluster sessions that can be active concurrently.
          */
-        public static final String MAX_ACTIVE_SESSIONS_PROP_NAME = "aeron.cluster.max.active.sessions";
+        public static final String MAX_CONCURRENT_SESSIONS_PROP_NAME = "aeron.cluster.max.sessions";
 
         /**
          * Maximum number of cluster sessions that can be active concurrently. Default to 10.
          */
-        public static final int MAX_ACTIVE_SESSIONS_DEFAULT = 10;
+        public static final int MAX_CONCURRENT_SESSIONS_DEFAULT = 10;
 
         /**
-         * The value {@link #MAX_ACTIVE_SESSIONS_DEFAULT} or system property
-         * {@link #MAX_ACTIVE_SESSIONS_PROP_NAME} if set.
-         *
-         * @return {@link #MAX_ACTIVE_SESSIONS_DEFAULT} or system property
-         * {@link #MAX_ACTIVE_SESSIONS_PROP_NAME} if set.
+         * Timeout for a session if no activity is observed.
          */
-        public static int maxActiveSessions()
+        public static final String SESSION_TIMEOUT_PROP_NAME = "aeron.cluster.session.timeout";
+
+        /**
+         * Timeout for a session if no activity is observed. Default to 5 seconds in nanoseconds.
+         */
+        public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+        /**
+         * The value {@link #MAX_CONCURRENT_SESSIONS_DEFAULT} or system property
+         * {@link #MAX_CONCURRENT_SESSIONS_PROP_NAME} if set.
+         *
+         * @return {@link #MAX_CONCURRENT_SESSIONS_DEFAULT} or system property
+         * {@link #MAX_CONCURRENT_SESSIONS_PROP_NAME} if set.
+         */
+        public static int maxConcurrentSessions()
         {
-            return Integer.getInteger(MAX_ACTIVE_SESSIONS_PROP_NAME, MAX_ACTIVE_SESSIONS_DEFAULT);
+            return Integer.getInteger(MAX_CONCURRENT_SESSIONS_PROP_NAME, MAX_CONCURRENT_SESSIONS_DEFAULT);
+        }
+
+        /**
+         * Timeout for a session if no activity is observed.
+         *
+         * @return timeout in nanoseconds to wait for activity
+         * @see #SESSION_TIMEOUT_PROP_NAME
+         */
+        public static long sessionTimeoutNs()
+        {
+            return getDurationInNanos(SESSION_TIMEOUT_PROP_NAME, SESSION_TIMEOUT_DEFAULT_NS);
         }
     }
 
@@ -126,7 +149,8 @@ public final class ConsensusModule implements AutoCloseable
         private String timerChannel = ClusteredServiceContainer.Configuration.timerChannel();
         private int timerStreamId = ClusteredServiceContainer.Configuration.timerStreamId();
 
-        private int maxActiveSessions = Configuration.maxActiveSessions();
+        private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
+        private long sessionTimeoutNs = Configuration.sessionTimeoutNs();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -343,27 +367,51 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the limit for the maximum number of active cluster sessions.
+         * Set the limit for the maximum number of concurrent cluster sessions.
          *
-         * @param maxActiveSessions after which new sessions will be rejected.
+         * @param maxSessions after which new sessions will be rejected.
          * @return this for a fluent API
-         * @see Configuration#MAX_ACTIVE_SESSIONS_PROP_NAME
+         * @see Configuration#MAX_CONCURRENT_SESSIONS_PROP_NAME
          */
-        public Context maxActiveSessions(final int maxActiveSessions)
+        public Context maxConcurrentSessions(final int maxSessions)
         {
-            this.maxActiveSessions = maxActiveSessions;
+            this.maxConcurrentSessions = maxSessions;
             return this;
         }
 
         /**
-         * Get the limit for the maximum number of active cluster sessions.
+         * Get the limit for the maximum number of concurrent cluster sessions.
          *
-         * @return the limit for the maximum number of active cluster sessions.
-         * @see Configuration#MAX_ACTIVE_SESSIONS_PROP_NAME
+         * @return the limit for the maximum number of concurrent cluster sessions.
+         * @see Configuration#MAX_CONCURRENT_SESSIONS_PROP_NAME
          */
-        public int maxActiveSessions()
+        public int maxConcurrentSessions()
         {
-            return maxActiveSessions;
+            return maxConcurrentSessions;
+        }
+
+        /**
+         * Timeout for a session if no activity is observed.
+         *
+         * @param sessionTimeoutNs to wait for activity on a session.
+         * @return this for a fluent API.
+         * @see Configuration#SESSION_TIMEOUT_PROP_NAME
+         */
+        public Context sessionTimeoutNs(final long sessionTimeoutNs)
+        {
+            this.sessionTimeoutNs = sessionTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout for a session if no activity is observed.
+         *
+         * @return the timeout for a session if no activity is observed.
+         * @see Configuration#SESSION_TIMEOUT_PROP_NAME
+         */
+        public long sessionTimeoutNs()
+        {
+            return sessionTimeoutNs;
         }
 
         /**

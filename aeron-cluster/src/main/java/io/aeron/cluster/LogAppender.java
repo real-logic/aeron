@@ -85,7 +85,6 @@ class LogAppender implements AutoCloseable
                     .responseChannel(channel);
 
                 bufferClaim.commit();
-                session.state(ClusterSession.State.OPEN);
 
                 return true;
             }

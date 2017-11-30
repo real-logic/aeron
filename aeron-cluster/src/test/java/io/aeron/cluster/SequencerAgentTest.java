@@ -61,7 +61,7 @@ public class SequencerAgentTest
                 .errorCounter(mock(AtomicCounter.class))
                 .errorHandler(Throwable::printStackTrace)
                 .aeron(aeron)
-                .maxActiveSessions(1);
+                .maxConcurrentSessions(1);
 
             ctx.conclude();
 

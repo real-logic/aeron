@@ -26,9 +26,9 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.Iterator;
 
-import static io.aeron.cluster.ClusterSession.State.CONNECTED;
+import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
@@ -39,7 +39,7 @@ class SequencerAgent implements Agent
     private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private long nextSessionId = 1;
-    private final long sessionTimeoutMs = TimeUnit.SECONDS.toMillis(5);
+    private final long sessionTimeoutMs;
     private final ConsensusModule.Context ctx;
     private final Aeron aeron;
     private final AgentInvoker aeronClientInvoker;
@@ -57,13 +57,13 @@ class SequencerAgent implements Agent
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
 
     // TODO: last message correlation id per session counter
-    // TODO: Timeout inactive sessions and clean up closed sessions that fail to log.
 
     SequencerAgent(final ConsensusModule.Context ctx)
     {
         this.ctx = ctx;
         this.aeron = ctx.aeron();
         this.epochClock = ctx.epochClock();
+        this.sessionTimeoutMs = ctx.sessionTimeoutNs() / 1000;
 
         aeronClientInvoker = ctx.ownsAeronClient() ? aeron.conductorAgentInvoker() : null;
 
@@ -114,6 +114,7 @@ class SequencerAgent implements Agent
         workCount += processPendingSessions(pendingClusterSessions, nowMs);
         workCount += ingressAdapter.poll();
         workCount += timerService.poll(nowMs);
+        workCount += checkSessions(clusterSessionByIdMap, nowMs);
 
         processRejectedSessions(rejectedClusterSessions, nowMs);
 
@@ -132,7 +133,7 @@ class SequencerAgent implements Agent
         final ClusterSession session = new ClusterSession(sessionId, publication);
         session.lastActivity(cachedEpochClock.time(), correlationId);
 
-        if (pendingClusterSessions.size() + clusterSessionByIdMap.size() < ctx.maxActiveSessions())
+        if (pendingClusterSessions.size() + clusterSessionByIdMap.size() < ctx.maxConcurrentSessions())
         {
             pendingClusterSessions.add(session);
         }
@@ -169,12 +170,8 @@ class SequencerAgent implements Agent
         {
             return ControlledFragmentHandler.Action.CONTINUE;
         }
-        else if (session.state() == CONNECTED && !logAppender.appendConnectedSession(session, nowMs))
-        {
-            return ControlledFragmentHandler.Action.ABORT;
-        }
 
-        if (logAppender.appendMessage(buffer, offset, length, nowMs))
+        if (session.state() == OPEN && logAppender.appendMessage(buffer, offset, length, nowMs))
         {
             messageIndex.incrementOrdered();
             session.lastActivity(nowMs, correlationId);
@@ -196,13 +193,13 @@ class SequencerAgent implements Agent
 
     public boolean onExpireTimer(final long correlationId, final long nowMs)
     {
-        final boolean success = logAppender.appendTimerEvent(correlationId, nowMs);
-        if (success)
+        final boolean isAppended = logAppender.appendTimerEvent(correlationId, nowMs);
+        if (isAppended)
         {
             messageIndex.incrementOrdered();
         }
 
-        return success;
+        return isAppended;
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
@@ -224,6 +221,7 @@ class SequencerAgent implements Agent
 
                 if (logAppender.appendConnectedSession(session, nowMs))
                 {
+                    session.state(ClusterSession.State.OPEN);
                     messageIndex.incrementOrdered();
                 }
 
@@ -256,6 +254,63 @@ class SequencerAgent implements Agent
                 session.close();
             }
         }
+    }
+
+    private int checkSessions(final Long2ObjectHashMap<ClusterSession> sessionByIdMap, final long nowMs)
+    {
+        int workCount = 0;
+
+        final Iterator<ClusterSession> iter = sessionByIdMap.values().iterator();
+        while (iter.hasNext())
+        {
+            final ClusterSession session = iter.next();
+
+            if (nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
+            {
+                switch (session.state())
+                {
+                    case OPEN:
+                        sendSessionEvent(session, EventCode.ERROR, "Timeout due to inactivity");
+                        if (logAppender.appendClosedSession(session, CloseReason.TIMEOUT, nowMs))
+                        {
+                            messageIndex.incrementOrdered();
+                            session.close();
+                            iter.remove();
+                            workCount += 1;
+                        }
+                        else
+                        {
+                            session.state(TIMED_OUT);
+                        }
+                        break;
+
+                    case TIMED_OUT:
+                        if (logAppender.appendClosedSession(session, CloseReason.TIMEOUT, nowMs))
+                        {
+                            messageIndex.incrementOrdered();
+                            session.close();
+                            iter.remove();
+                            workCount += 1;
+                        }
+                        break;
+
+                    default:
+                        session.close();
+                        iter.remove();
+                }
+            }
+            else if (session.state() == CONNECTED)
+            {
+                if (logAppender.appendConnectedSession(session, nowMs))
+                {
+                    session.state(ClusterSession.State.OPEN);
+                    messageIndex.incrementOrdered();
+                    workCount += 1;
+                }
+            }
+        }
+
+        return workCount;
     }
 
     private boolean sendSessionEvent(final ClusterSession session, final EventCode code, final String detail)

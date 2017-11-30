@@ -22,7 +22,7 @@ class ClusterSession implements AutoCloseable
 {
     enum State
     {
-        INIT, CONNECTED, OPEN, CLOSED
+        INIT, CONNECTED, OPEN, TIMED_OUT, CLOSED
     }
 
     private long timeOfLastActivityMs;

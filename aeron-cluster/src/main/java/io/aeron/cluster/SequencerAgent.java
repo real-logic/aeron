@@ -28,6 +28,8 @@ import org.agrona.concurrent.*;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.cluster.ClusterSession.State.CONNECTED;
+
 class SequencerAgent implements Agent
 {
     private static final int MAX_SEND_ATTEMPTS = 3;
@@ -42,17 +44,13 @@ class SequencerAgent implements Agent
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private final TimerService timerService;
-    private final ExclusivePublication logPublication;
     private final IngressAdapter ingressAdapter;
     private final BufferClaim bufferClaim = new BufferClaim();
+    private final LogAppender logAppender;
     private final Long2ObjectHashMap<ClusterSession> clusterSessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
-    private final SessionOpenEventEncoder connectEventEncoder = new SessionOpenEventEncoder();
-    private final SessionCloseEventEncoder closeEventEncoder = new SessionCloseEventEncoder();
-    private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
 
     // TODO: message counter for log
     // TODO: last message correlation id per session counter
@@ -70,7 +68,8 @@ class SequencerAgent implements Agent
         final Subscription ingressSubscription = aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId());
         ingressAdapter = new IngressAdapter(this, ingressSubscription, FRAGMENT_POLL_LIMIT);
 
-        logPublication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
+        final Publication logPublication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
+        logAppender = new LogAppender(logPublication);
 
         final Subscription timerSubscription = aeron.addSubscription(ctx.timerChannel(), ctx.timerStreamId());
         timerService = new TimerService(
@@ -87,12 +86,12 @@ class SequencerAgent implements Agent
             }
 
             CloseHelper.close(ingressAdapter);
-            CloseHelper.close(logPublication);
             CloseHelper.close(timerService);
+            CloseHelper.close(logAppender);
         }
     }
 
-    public int doWork() throws Exception
+    public int doWork()
     {
         int workCount = 0;
 
@@ -132,7 +131,7 @@ class SequencerAgent implements Agent
         if (null != session)
         {
             session.close();
-            if (appendClosedSessionToLog(session, CloseReason.USER_ACTION))
+            if (logAppender.appendClosedSession(session, CloseReason.USER_ACTION, cachedEpochClock.time()))
             {
                 clusterSessionByIdMap.remove(clusterSessionId);
             }
@@ -146,32 +145,23 @@ class SequencerAgent implements Agent
         final long clusterSessionId,
         final long correlationId)
     {
+        final long nowMs = cachedEpochClock.time();
         final ClusterSession session = clusterSessionByIdMap.get(clusterSessionId);
         if (null == session)
         {
             return ControlledFragmentHandler.Action.CONTINUE;
         }
-        else if (session.state() == ClusterSession.State.CONNECTED && !appendConnectedSessionToLog(session))
+        else if (session.state() == CONNECTED && !logAppender.appendConnectedSession(session, nowMs))
         {
             return ControlledFragmentHandler.Action.ABORT;
         }
 
-        final long nowMs = cachedEpochClock.time();
-        sessionHeaderEncoder
-            .wrap((UnsafeBuffer)buffer, offset + MessageHeaderEncoder.ENCODED_LENGTH)
-            .timestamp(nowMs);
-
-        int attempts = MAX_SEND_ATTEMPTS;
-        do
+        if (logAppender.appendMessage(buffer, offset, length, nowMs))
         {
-            if (logPublication.offer(buffer, offset, length) > 0)
-            {
-                session.lastActivity(nowMs, correlationId);
+            session.lastActivity(nowMs, correlationId);
 
-                return ControlledFragmentHandler.Action.CONTINUE;
-            }
+            return ControlledFragmentHandler.Action.CONTINUE;
         }
-        while (--attempts > 0);
 
         return ControlledFragmentHandler.Action.ABORT;
     }
@@ -183,6 +173,11 @@ class SequencerAgent implements Agent
         {
             session.lastActivity(cachedEpochClock.time(), correlationId);
         }
+    }
+
+    public boolean onExpireTimer(final long correlationId, final long nowMs)
+    {
+        return logAppender.appendTimerEvent(correlationId, nowMs);
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
@@ -198,7 +193,7 @@ class SequencerAgent implements Agent
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
                 lastIndex--;
 
-                appendConnectedSessionToLog(session);
+                logAppender.appendConnectedSession(session, nowMs);
 
                 workCount += 1;
             }
@@ -212,63 +207,6 @@ class SequencerAgent implements Agent
         }
 
         return workCount;
-    }
-
-    private boolean appendClosedSessionToLog(final ClusterSession session, final CloseReason closeReason)
-    {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseEventEncoder.BLOCK_LENGTH;
-
-        int attempts = MAX_SEND_ATTEMPTS;
-        do
-        {
-            if (logPublication.tryClaim(length, bufferClaim) > 0)
-            {
-                closeEventEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(session.id())
-                    .timestamp(cachedEpochClock.time())
-                    .closeReason(closeReason);
-
-                bufferClaim.commit();
-
-                return true;
-            }
-        }
-        while (--attempts > 0);
-
-        return false;
-    }
-
-    private boolean appendConnectedSessionToLog(final ClusterSession session)
-    {
-        final String channel = session.responsePublication().channel();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
-            SessionOpenEventEncoder.BLOCK_LENGTH +
-            SessionOpenEventEncoder.responseChannelHeaderLength() +
-            channel.length();
-
-        int attempts = MAX_SEND_ATTEMPTS;
-        do
-        {
-            if (logPublication.tryClaim(length, bufferClaim) > 0)
-            {
-                connectEventEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(session.id())
-                    .correlationId(session.lastCorrelationId())
-                    .timestamp(cachedEpochClock.time())
-                    .responseStreamId(session.responsePublication().streamId())
-                    .responseChannel(channel);
-
-                bufferClaim.commit();
-                session.state(ClusterSession.State.OPEN);
-
-                return true;
-            }
-        }
-        while (--attempts > 0);
-
-        return false;
     }
 
     private boolean notifySessionOpened(final ClusterSession session)
@@ -292,32 +230,8 @@ class SequencerAgent implements Agent
 
                 bufferClaim.commit();
                 session.timeOfLastActivityMs(cachedEpochClock.time());
-                session.state(ClusterSession.State.CONNECTED);
+                session.state(CONNECTED);
                 clusterSessionByIdMap.put(session.id(), session);
-
-                return true;
-            }
-        }
-        while (--attempts > 0);
-
-        return false;
-    }
-
-    public boolean onExpireTimer(final long correlationId, final long nowMs)
-    {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + TimerEventEncoder.BLOCK_LENGTH;
-
-        int attempts = MAX_SEND_ATTEMPTS;
-        do
-        {
-            if (logPublication.tryClaim(length, bufferClaim) > 0)
-            {
-                timerEventEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .timestamp(nowMs);
-
-                bufferClaim.commit();
 
                 return true;
             }

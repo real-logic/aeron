@@ -86,6 +86,34 @@ public final class ConsensusModule implements AutoCloseable
         CloseHelper.close(ctx);
     }
 
+    /**
+     * Configuration options for cluster.
+     */
+    public static class Configuration
+    {
+        /**
+         * Maximum number of cluster sessions that can be active concurrently.
+         */
+        public static final String MAX_ACTIVE_SESSIONS_PROP_NAME = "aeron.cluster.max.active.sessions";
+
+        /**
+         * Maximum number of cluster sessions that can be active concurrently. Default to 10.
+         */
+        public static final int MAX_ACTIVE_SESSIONS_DEFAULT = 10;
+
+        /**
+         * The value {@link #MAX_ACTIVE_SESSIONS_DEFAULT} or system property
+         * {@link #MAX_ACTIVE_SESSIONS_PROP_NAME} if set.
+         *
+         * @return {@link #MAX_ACTIVE_SESSIONS_DEFAULT} or system property
+         * {@link #MAX_ACTIVE_SESSIONS_PROP_NAME} if set.
+         */
+        public static int maxActiveSessions()
+        {
+            return Integer.getInteger(MAX_ACTIVE_SESSIONS_PROP_NAME, MAX_ACTIVE_SESSIONS_DEFAULT);
+        }
+    }
+
     public static class Context implements AutoCloseable
     {
         private boolean ownsAeronClient = false;
@@ -97,6 +125,8 @@ public final class ConsensusModule implements AutoCloseable
         private int logStreamId = ClusteredServiceContainer.Configuration.logStreamId();
         private String timerChannel = ClusteredServiceContainer.Configuration.timerChannel();
         private int timerStreamId = ClusteredServiceContainer.Configuration.timerStreamId();
+
+        private int maxActiveSessions = Configuration.maxActiveSessions();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -311,6 +341,30 @@ public final class ConsensusModule implements AutoCloseable
         public int timerStreamId()
         {
             return timerStreamId;
+        }
+
+        /**
+         * Set the limit for the maximum number of active cluster sessions.
+         *
+         * @param maxActiveSessions after which new sessions will be rejected.
+         * @return this for a fluent API
+         * @see Configuration#MAX_ACTIVE_SESSIONS_PROP_NAME
+         */
+        public Context maxActiveSessions(final int maxActiveSessions)
+        {
+            this.maxActiveSessions = maxActiveSessions;
+            return this;
+        }
+
+        /**
+         * Get the limit for the maximum number of active cluster sessions.
+         *
+         * @return the limit for the maximum number of active cluster sessions.
+         * @see Configuration#MAX_ACTIVE_SESSIONS_PROP_NAME
+         */
+        public int maxActiveSessions()
+        {
+            return ingressStreamId;
         }
 
         /**

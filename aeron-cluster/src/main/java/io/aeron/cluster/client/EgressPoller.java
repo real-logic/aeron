@@ -17,10 +17,7 @@ package io.aeron.cluster.client;
 
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.NewLeaderEventDecoder;
-import io.aeron.cluster.codecs.SessionEventDecoder;
-import io.aeron.cluster.codecs.SessionHeaderDecoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
@@ -38,6 +35,8 @@ public class EgressPoller implements ControlledFragmentHandler
     private long correlationId = -1;
     private int templateId = -1;
     private boolean pollComplete = false;
+    private EventCode eventCode;
+    private String detail = "";
 
     public EgressPoller(final Subscription subscription, final int fragmentLimit)
     {
@@ -53,6 +52,16 @@ public class EgressPoller implements ControlledFragmentHandler
     public Subscription subscription()
     {
         return subscription;
+    }
+
+    /**
+     * Get the template id of the last received event.
+     *
+     * @return the template id of the last received event.
+     */
+    public int templateId()
+    {
+        return templateId;
     }
 
     /**
@@ -76,6 +85,26 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
+     * Get the event code returned from the last session event.
+     *
+     * @return the event code returned from the last session event.
+     */
+    public EventCode eventCode()
+    {
+        return eventCode;
+    }
+
+    /**
+     * Get the detail returned in the last session event.
+     *
+     * @return the detail returned in the last session event.
+     */
+    public String detail()
+    {
+        return detail;
+    }
+
+    /**
      * Has the last polling action received a complete event?
      *
      * @return true of the last polling action received a complete event?
@@ -85,21 +114,13 @@ public class EgressPoller implements ControlledFragmentHandler
         return pollComplete;
     }
 
-    /**
-     * Get the template id of the last received event.
-     *
-     * @return the template id of the last received event.
-     */
-    public int templateId()
-    {
-        return templateId;
-    }
-
     public int poll()
     {
         clusterSessionId = -1;
         correlationId = -1;
         templateId = -1;
+        eventCode = null;
+        detail = "";
         pollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
@@ -122,6 +143,8 @@ public class EgressPoller implements ControlledFragmentHandler
 
                 clusterSessionId = sessionEventDecoder.clusterSessionId();
                 correlationId = sessionEventDecoder.correlationId();
+                eventCode = sessionEventDecoder.code();
+                detail = sessionEventDecoder.detail();
                 break;
 
             case NewLeaderEventDecoder.TEMPLATE_ID:

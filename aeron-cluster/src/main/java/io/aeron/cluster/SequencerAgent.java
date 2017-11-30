@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ClusterSession.State.CONNECTED;
-import static io.aeron.cluster.ClusterSession.State.INIT;
 
 class SequencerAgent implements Agent
 {
@@ -55,7 +54,6 @@ class SequencerAgent implements Agent
 
     // TODO: message counter for log
     // TODO: last message correlation id per session counter
-    // TODO: Active session limit
     // TODO: Timeout inactive sessions and clean up closed sessions that fail to log.
 
     SequencerAgent(final ConsensusModule.Context ctx)
@@ -185,11 +183,20 @@ class SequencerAgent implements Agent
     {
         int workCount = 0;
 
+        final boolean maxSessionsReached = clusterSessionByIdMap.size() >= ctx.maxActiveSessions();
+
         for (int lastIndex = pendingSessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final ClusterSession session = pendingSessions.get(i);
 
-            if (session.state() == INIT && sendEvent(session, EventCode.OK, ""))
+            if (maxSessionsReached && sendEvent(session, EventCode.ERROR, "Active session limit exceeded"))
+            {
+                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
+                lastIndex--;
+
+                session.close();
+            }
+            else if (!maxSessionsReached && sendEvent(session, EventCode.OK, ""))
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
                 lastIndex--;
@@ -219,7 +226,8 @@ class SequencerAgent implements Agent
         final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             SessionEventEncoder.BLOCK_LENGTH +
-            SessionEventEncoder.detailHeaderLength();
+            SessionEventEncoder.detailHeaderLength() +
+            detail.length();
 
         int attempts = MAX_SEND_ATTEMPTS;
         do

@@ -18,10 +18,7 @@ package io.aeron.cluster.client;
 import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.cluster.codecs.MessageHeaderEncoder;
-import io.aeron.cluster.codecs.SessionCloseRequestEncoder;
-import io.aeron.cluster.codecs.SessionConnectRequestEncoder;
-import io.aeron.cluster.codecs.SessionKeepAliveRequestEncoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
@@ -315,6 +312,11 @@ public final class AeronCluster implements AutoCloseable
 
             if (poller.correlationId() == correlationId)
             {
+                if (poller.eventCode() == EventCode.ERROR)
+                {
+                    throw new IllegalStateException(poller.detail());
+                }
+
                 return poller.clusterSessionId();
             }
         }

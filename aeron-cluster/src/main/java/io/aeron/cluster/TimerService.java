@@ -41,7 +41,7 @@ public class TimerService implements FragmentHandler, AutoCloseable, DeadlineTim
     private final Subscription subscription;
     private final EpochClock epochClock;
     private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(
-        TimeUnit.MILLISECONDS, 0, 1, 512);
+        TimeUnit.MILLISECONDS, 0, 1, 128);
     private Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
 

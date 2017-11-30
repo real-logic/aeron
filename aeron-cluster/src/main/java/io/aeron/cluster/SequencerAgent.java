@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ClusterSession.State.CONNECTED;
+import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 class SequencerAgent implements Agent
 {
@@ -47,12 +49,12 @@ class SequencerAgent implements Agent
     private final IngressAdapter ingressAdapter;
     private final BufferClaim bufferClaim = new BufferClaim();
     private final LogAppender logAppender;
+    private final Counter messageIndex;
     private final Long2ObjectHashMap<ClusterSession> clusterSessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingClusterSessions = new ArrayList<>();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
 
-    // TODO: message counter for log
     // TODO: last message correlation id per session counter
     // TODO: Timeout inactive sessions and clean up closed sessions that fail to log.
 
@@ -63,6 +65,12 @@ class SequencerAgent implements Agent
         this.epochClock = ctx.epochClock();
 
         aeronClientInvoker = ctx.ownsAeronClient() ? aeron.conductorAgentInvoker() : null;
+
+        final String label = "Log message index";
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SIZE_OF_INT + label.length()]);
+        buffer.putStringAscii(0, label);
+
+        messageIndex = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, null, 0, 0, buffer, 0, buffer.capacity());
 
         final Subscription ingressSubscription = aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId());
         ingressAdapter = new IngressAdapter(this, ingressSubscription, FRAGMENT_POLL_LIMIT);
@@ -132,6 +140,7 @@ class SequencerAgent implements Agent
             session.close();
             if (logAppender.appendClosedSession(session, CloseReason.USER_ACTION, cachedEpochClock.time()))
             {
+                messageIndex.incrementOrdered();
                 clusterSessionByIdMap.remove(clusterSessionId);
             }
         }
@@ -157,6 +166,7 @@ class SequencerAgent implements Agent
 
         if (logAppender.appendMessage(buffer, offset, length, nowMs))
         {
+            messageIndex.incrementOrdered();
             session.lastActivity(nowMs, correlationId);
 
             return ControlledFragmentHandler.Action.CONTINUE;
@@ -176,7 +186,13 @@ class SequencerAgent implements Agent
 
     public boolean onExpireTimer(final long correlationId, final long nowMs)
     {
-        return logAppender.appendTimerEvent(correlationId, nowMs);
+        final boolean success = logAppender.appendTimerEvent(correlationId, nowMs);
+        if (success)
+        {
+            messageIndex.incrementOrdered();
+        }
+
+        return success;
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
@@ -189,14 +205,14 @@ class SequencerAgent implements Agent
         {
             final ClusterSession session = pendingSessions.get(i);
 
-            if (maxSessionsReached && sendEvent(session, EventCode.ERROR, "Active session limit exceeded"))
+            if (maxSessionsReached && sendSessionEvent(session, EventCode.ERROR, "Active session limit exceeded"))
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
                 lastIndex--;
 
                 session.close();
             }
-            else if (!maxSessionsReached && sendEvent(session, EventCode.OK, ""))
+            else if (!maxSessionsReached && sendSessionEvent(session, EventCode.OK, ""))
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
                 lastIndex--;
@@ -205,7 +221,10 @@ class SequencerAgent implements Agent
                 session.state(CONNECTED);
                 clusterSessionByIdMap.put(session.id(), session);
 
-                logAppender.appendConnectedSession(session, nowMs);
+                if (logAppender.appendConnectedSession(session, nowMs))
+                {
+                    messageIndex.incrementOrdered();
+                }
 
                 workCount += 1;
             }
@@ -221,7 +240,7 @@ class SequencerAgent implements Agent
         return workCount;
     }
 
-    private boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
+    private boolean sendSessionEvent(final ClusterSession session, final EventCode code, final String detail)
     {
         final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +

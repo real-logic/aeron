@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ClusterSession.State.CONNECTED;
+import static io.aeron.cluster.ClusterSession.State.INIT;
 
 class SequencerAgent implements Agent
 {
@@ -48,7 +49,7 @@ class SequencerAgent implements Agent
     private final BufferClaim bufferClaim = new BufferClaim();
     private final LogAppender logAppender;
     private final Long2ObjectHashMap<ClusterSession> clusterSessionByIdMap = new Long2ObjectHashMap<>();
-    private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
+    private final ArrayList<ClusterSession> pendingClusterSessions = new ArrayList<>();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
 
@@ -103,7 +104,7 @@ class SequencerAgent implements Agent
             workCount += aeronClientInvoker.invoke();
         }
 
-        workCount += processPendingSessions(pendingSessions, nowMs);
+        workCount += processPendingSessions(pendingClusterSessions, nowMs);
         workCount += ingressAdapter.poll();
         workCount += timerService.poll(nowMs);
 
@@ -122,7 +123,7 @@ class SequencerAgent implements Agent
         final ClusterSession session = new ClusterSession(sessionId, publication);
         session.lastActivity(cachedEpochClock.time(), correlationId);
 
-        pendingSessions.add(session);
+        pendingClusterSessions.add(session);
     }
 
     public void onSessionClose(final long clusterSessionId)
@@ -188,10 +189,14 @@ class SequencerAgent implements Agent
         {
             final ClusterSession session = pendingSessions.get(i);
 
-            if (session.state() == ClusterSession.State.INIT && notifySessionOpened(session))
+            if (session.state() == INIT && sendEvent(session, EventCode.OK, ""))
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
                 lastIndex--;
+
+                session.timeOfLastActivityMs(nowMs);
+                session.state(CONNECTED);
+                clusterSessionByIdMap.put(session.id(), session);
 
                 logAppender.appendConnectedSession(session, nowMs);
 
@@ -209,7 +214,7 @@ class SequencerAgent implements Agent
         return workCount;
     }
 
-    private boolean notifySessionOpened(final ClusterSession session)
+    private boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
     {
         final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
@@ -225,13 +230,10 @@ class SequencerAgent implements Agent
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .correlationId(session.lastCorrelationId())
-                    .code(EventCode.OK)
-                    .detail("");
+                    .code(code)
+                    .detail(detail);
 
                 bufferClaim.commit();
-                session.timeOfLastActivityMs(cachedEpochClock.time());
-                session.state(CONNECTED);
-                clusterSessionByIdMap.put(session.id(), session);
 
                 return true;
             }

@@ -25,6 +25,12 @@ extern "C"
 
 class Int64ToPtrHashMapTest : public testing::Test
 {
+public:
+    ~Int64ToPtrHashMapTest()
+    {
+        aeron_int64_to_ptr_hash_map_delete(&m_map);
+    }
+
 protected:
     static void for_each(void *clientd, int64_t key, void *value)
     {

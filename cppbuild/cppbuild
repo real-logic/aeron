@@ -22,8 +22,24 @@ do
       echo "Enabling building of aeron driver"
       shift
       ;;
+    --sanitise-build)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DSANITISE_BUILD=ON"
+      echo "Enabling sanitise build"
+      shift
+      ;;
+    --coverage-build)
+      if (hash lcov 2>/dev/null && hash genhtml 2>/dev/null); then
+        EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCOVERAGE_BUILD=ON"
+        echo "Enabling coverage build"
+        COVERAGE_BUILD=1
+      else
+        echo "lcov/genhtml not found - you need these installed to run the coverage build"
+        exit
+      fi
+      shift
+      ;;
     -h|--help)
-      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver]"
+      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--sanitise-build] [--coverage-build]"
       exit
       ;;
     *)
@@ -47,10 +63,20 @@ esac
 echo "Will make with \"-j $ncpus\"."
 
 if [ -d "$BUILD_DIR" ] ; then
-    echo "Build directory ($BUILD_DIR) exists, removing."
-    rm -rf $BUILD_DIR
+  echo "Build directory ($BUILD_DIR) exists, removing."
+  rm -rf $BUILD_DIR
 fi
 
 mkdir -p $BUILD_DIR
 
-(cd $BUILD_DIR && cmake -G "Unix Makefiles" $EXTRA_CMAKE_ARGS $SOURCE_DIR && make clean && make -j "$ncpus" all && ctest -C Release)
+if [ "$COVERAGE_BUILD" -eq 1 ] ; then
+  cd $BUILD_DIR
+  cmake -G "Unix Makefiles" $EXTRA_CMAKE_ARGS $SOURCE_DIR && make clean && make -j "$ncpus" all && ctest -C Release -j "$ncpus"
+  rm -rf coverage
+  mkdir -p coverage
+  lcov --directory . --base-directory . --capture -o coverage/cov.info
+  lcov -o coverage/cov.stripped.info --remove coverage/cov.info "/usr/include/*" "*/googletest/*" "*/test/cpp/*" "*/googlemock/*"
+  genhtml coverage/cov.stripped.info --demangle-cpp -o coverage
+else
+  (cd $BUILD_DIR && cmake -G "Unix Makefiles" $EXTRA_CMAKE_ARGS $SOURCE_DIR && make clean && make -j "$ncpus" all && ctest -C Release)
+fi

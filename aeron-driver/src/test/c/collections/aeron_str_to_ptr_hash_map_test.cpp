@@ -25,6 +25,12 @@ extern "C"
 
 class StrToPtrHashMapTest : public testing::Test
 {
+public:
+    ~StrToPtrHashMapTest()
+    {
+        aeron_str_to_ptr_hash_map_delete(&m_map);
+    }
+
 protected:
     static void for_each(void *clientd, const char *key, size_t key_len, void *value)
     {

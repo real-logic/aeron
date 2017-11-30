@@ -20,6 +20,7 @@
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_context.h"
 #include "aeron_uri.h"
+#include "aeron_alloc.h"
 
 typedef enum aeron_uri_parser_state_enum
 {
@@ -90,6 +91,23 @@ int aeron_uri_parse_params(char *uri, aeron_uri_parse_callback_t param_func, voi
     }
 
     return 0;
+}
+
+void aeron_uri_close(aeron_uri_t *params)
+{
+    if (params != NULL)
+    {
+        if (params->type == AERON_URI_UDP)
+        {
+            aeron_free(params->params.udp.additional_params.array);
+            params->params.udp.additional_params.array = NULL;
+        }
+        else if (params->type == AERON_URI_IPC)
+        {
+            aeron_free(params->params.ipc.additional_params.array);
+            params->params.udp.additional_params.array = NULL;
+        }
+    }
 }
 
 int aeron_uri_params_ensure_capacity(aeron_uri_params_t *params)

@@ -344,7 +344,7 @@ public final class Aeron implements AutoCloseable
      * @param keyBuffer   containing the optional key for the counter.
      * @param keyOffset   within the keyBuffer at which the key begins.
      * @param keyLength   of the key in the keyBuffer.
-     * @param labelBuffer containing the mandatory label for the counter.
+     * @param labelBuffer containing the mandatory label for the counter. The label should not be length prefixed.
      * @param labelOffset within the labelBuffer at which the label begins.
      * @param labelLength of the label in the labelBuffer.
      * @return the newly allocated counter.

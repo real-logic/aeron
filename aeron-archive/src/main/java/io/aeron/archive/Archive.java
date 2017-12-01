@@ -298,12 +298,7 @@ public final class Archive implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    final String label = "Archive errors";
-                    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[label.length()]);
-                    buffer.putStringWithoutLengthAscii(0, label);
-
-                    errorCounter = aeron.addCounter(
-                        SYSTEM_COUNTER_TYPE_ID, buffer, 0, 0, buffer, 0, label.length());
+                    errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Archive errors");
                 }
             }
 

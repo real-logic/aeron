@@ -66,11 +66,7 @@ class SequencerAgent implements Agent
 
         aeronClientInvoker = ctx.ownsAeronClient() ? aeron.conductorAgentInvoker() : null;
 
-        final String label = "Log message index";
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[label.length()]);
-        buffer.putStringWithoutLengthAscii(0, label);
-
-        messageIndex = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, null, 0, 0, buffer, 0, label.length());
+        messageIndex = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
 
         final Subscription ingressSubscription = aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId());
         ingressAdapter = new IngressAdapter(this, ingressSubscription, FRAGMENT_POLL_LIMIT);

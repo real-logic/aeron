@@ -546,6 +546,30 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
+    Counter addCounter(final int typeId, final String label)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureOpen();
+
+            if (label.length() > CountersManager.MAX_LABEL_LENGTH)
+            {
+                throw new IllegalArgumentException("label length exceeds MAX_LABEL_LENGTH: " + label.length());
+            }
+
+            final long registrationId = driverProxy.addCounter(typeId, label);
+
+            awaitResponse(registrationId);
+
+            return (Counter)resourceByRegIdMap.get(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
     void releaseCounter(final Counter counter)
     {
         clientLock.lock();

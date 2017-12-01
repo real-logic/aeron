@@ -221,6 +221,24 @@ public class DriverProxy
         return correlationId;
     }
 
+    public long addCounter(final int typeId, final String label)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        counterMessage
+            .typeId(typeId)
+            .keyBuffer(null, 0, 0)
+            .label(label)
+            .correlationId(correlationId);
+
+        if (!toDriverCommandBuffer.write(ADD_COUNTER, buffer, 0, counterMessage.length()))
+        {
+            throw new IllegalStateException("Could not write add counter command");
+        }
+
+        return correlationId;
+    }
+
     public long removeCounter(final long registrationId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();

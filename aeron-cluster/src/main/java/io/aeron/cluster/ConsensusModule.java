@@ -187,12 +187,7 @@ public final class ConsensusModule implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    final String errorsLabel = "Cluster errors";
-                    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[errorsLabel.length()]);
-                    buffer.putStringWithoutLengthAscii(0, errorsLabel);
-
-                    errorCounter = aeron.addCounter(
-                        SYSTEM_COUNTER_TYPE_ID, buffer, 0, 0, buffer, 0, buffer.capacity());
+                    errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Cluster errors");
                 }
             }
 

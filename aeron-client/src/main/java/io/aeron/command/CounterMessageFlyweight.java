@@ -155,6 +155,19 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
+     * Fill the label.
+     *
+     * @param label for the counter
+     * @return flyweight
+     */
+    public CounterMessageFlyweight label(final String label)
+    {
+        buffer.putStringAscii(labelOffset(), label);
+
+        return this;
+    }
+
+    /**
      * Get the length of the current message
      * <p>
      * NB: must be called after the data is written in order to be accurate.

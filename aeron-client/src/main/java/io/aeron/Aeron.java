@@ -362,6 +362,20 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
+     * Allocate a counter on the media driver and return a {@link Counter} for it.
+     * <p>
+     * The counter should be freed by calling {@link Counter#close()}.
+     *
+     * @param typeId for the counter.
+     * @param label  for counter. It should be US-ASCII.
+     * @return the newly allocated counter.
+     */
+    public Counter addCounter(final int typeId, final String label)
+    {
+        return conductor.addCounter(typeId, label);
+    }
+
+    /**
      * This class provides configuration for the {@link Aeron} class via the {@link Aeron#connect(Aeron.Context)}
      * method and its overloads. It gives applications some control over the interactions with the Aeron Media Driver.
      * It can also set up error handling as well as application callbacks for image information from the

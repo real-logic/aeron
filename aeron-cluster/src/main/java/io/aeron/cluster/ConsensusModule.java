@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
-import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 public final class ConsensusModule implements AutoCloseable
@@ -189,8 +188,8 @@ public final class ConsensusModule implements AutoCloseable
                 if (null == errorCounter)
                 {
                     final String errorsLabel = "Cluster errors";
-                    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[SIZE_OF_INT + errorsLabel.length()]);
-                    buffer.putStringAscii(0, errorsLabel);
+                    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[errorsLabel.length()]);
+                    buffer.putStringWithoutLengthAscii(0, errorsLabel);
 
                     errorCounter = aeron.addCounter(
                         SYSTEM_COUNTER_TYPE_ID, buffer, 0, 0, buffer, 0, buffer.capacity());

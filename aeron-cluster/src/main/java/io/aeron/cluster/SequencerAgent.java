@@ -149,9 +149,8 @@ class SequencerAgent implements Agent
         if (null != session)
         {
             session.close();
-            if (logAppender.appendClosedSession(session, CloseReason.USER_ACTION, cachedEpochClock.time()))
+            if (closeSession(session, CloseReason.USER_ACTION, cachedEpochClock.time()))
             {
-                messageIndex.incrementOrdered();
                 clusterSessionByIdMap.remove(clusterSessionId);
             }
         }
@@ -166,7 +165,7 @@ class SequencerAgent implements Agent
     {
         final long nowMs = cachedEpochClock.time();
         final ClusterSession session = clusterSessionByIdMap.get(clusterSessionId);
-        if (null == session)
+        if (null == session || (session.state() == TIMED_OUT || session.state() == CLOSED))
         {
             return ControlledFragmentHandler.Action.CONTINUE;
         }
@@ -193,13 +192,14 @@ class SequencerAgent implements Agent
 
     public boolean onExpireTimer(final long correlationId, final long nowMs)
     {
-        final boolean isAppended = logAppender.appendTimerEvent(correlationId, nowMs);
-        if (isAppended)
+        if (logAppender.appendTimerEvent(correlationId, nowMs))
         {
             messageIndex.incrementOrdered();
+
+            return true;
         }
 
-        return isAppended;
+        return false;
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
@@ -265,16 +265,15 @@ class SequencerAgent implements Agent
         {
             final ClusterSession session = iter.next();
 
+            final ClusterSession.State state = session.state();
             if (nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
-                switch (session.state())
+                switch (state)
                 {
                     case OPEN:
                         sendSessionEvent(session, EventCode.ERROR, "Timeout due to inactivity");
-                        if (logAppender.appendClosedSession(session, CloseReason.TIMEOUT, nowMs))
+                        if (closeSession(session, CloseReason.TIMEOUT, nowMs))
                         {
-                            messageIndex.incrementOrdered();
-                            session.close();
                             iter.remove();
                             workCount += 1;
                         }
@@ -285,21 +284,20 @@ class SequencerAgent implements Agent
                         break;
 
                     case TIMED_OUT:
-                        if (logAppender.appendClosedSession(session, CloseReason.TIMEOUT, nowMs))
+                    case CLOSED:
+                        final CloseReason reason = state == TIMED_OUT ? CloseReason.TIMEOUT : CloseReason.USER_ACTION;
+                        if (closeSession(session, reason, nowMs))
                         {
-                            messageIndex.incrementOrdered();
-                            session.close();
                             iter.remove();
                             workCount += 1;
                         }
                         break;
-
                     default:
                         session.close();
                         iter.remove();
                 }
             }
-            else if (session.state() == CONNECTED)
+            else if (state == CONNECTED)
             {
                 if (logAppender.appendConnectedSession(session, nowMs))
                 {
@@ -311,6 +309,19 @@ class SequencerAgent implements Agent
         }
 
         return workCount;
+    }
+
+    private boolean closeSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)
+    {
+        if (logAppender.appendClosedSession(session, closeReason, nowMs))
+        {
+            messageIndex.incrementOrdered();
+            session.close();
+
+            return true;
+        }
+
+        return false;
     }
 
     private boolean sendSessionEvent(final ClusterSession session, final EventCode code, final String detail)

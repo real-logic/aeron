@@ -348,6 +348,7 @@ public final class Aeron implements AutoCloseable
      * @param labelOffset within the labelBuffer at which the label begins.
      * @param labelLength of the label in the labelBuffer.
      * @return the newly allocated counter.
+     * @see org.agrona.concurrent.status.CountersManager#allocate(int, DirectBuffer, int, int, DirectBuffer, int, int)
      */
     public Counter addCounter(
         final int typeId,
@@ -369,6 +370,7 @@ public final class Aeron implements AutoCloseable
      * @param typeId for the counter.
      * @param label  for counter. It should be US-ASCII.
      * @return the newly allocated counter.
+     * @see org.agrona.concurrent.status.CountersManager#allocate(String, int)
      */
     public Counter addCounter(final int typeId, final String label)
     {

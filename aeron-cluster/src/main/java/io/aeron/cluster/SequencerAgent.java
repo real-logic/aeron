@@ -149,7 +149,7 @@ class SequencerAgent implements Agent
         if (null != session)
         {
             session.close();
-            if (closeSession(session, CloseReason.USER_ACTION, cachedEpochClock.time()))
+            if (appendCloseSession(session, CloseReason.USER_ACTION, cachedEpochClock.time()))
             {
                 clusterSessionByIdMap.remove(clusterSessionId);
             }
@@ -219,11 +219,7 @@ class SequencerAgent implements Agent
                 session.state(CONNECTED);
                 clusterSessionByIdMap.put(session.id(), session);
 
-                if (logAppender.appendConnectedSession(session, nowMs))
-                {
-                    session.state(ClusterSession.State.OPEN);
-                    messageIndex.incrementOrdered();
-                }
+                appendConnectedSession(session, nowMs);
 
                 workCount += 1;
             }
@@ -272,7 +268,7 @@ class SequencerAgent implements Agent
                 {
                     case OPEN:
                         sendSessionEvent(session, EventCode.ERROR, "Timeout due to inactivity");
-                        if (closeSession(session, CloseReason.TIMEOUT, nowMs))
+                        if (appendCloseSession(session, CloseReason.TIMEOUT, nowMs))
                         {
                             iter.remove();
                             workCount += 1;
@@ -286,12 +282,13 @@ class SequencerAgent implements Agent
                     case TIMED_OUT:
                     case CLOSED:
                         final CloseReason reason = state == TIMED_OUT ? CloseReason.TIMEOUT : CloseReason.USER_ACTION;
-                        if (closeSession(session, reason, nowMs))
+                        if (appendCloseSession(session, reason, nowMs))
                         {
                             iter.remove();
                             workCount += 1;
                         }
                         break;
+
                     default:
                         session.close();
                         iter.remove();
@@ -299,10 +296,8 @@ class SequencerAgent implements Agent
             }
             else if (state == CONNECTED)
             {
-                if (logAppender.appendConnectedSession(session, nowMs))
+                if (appendConnectedSession(session, nowMs))
                 {
-                    session.state(ClusterSession.State.OPEN);
-                    messageIndex.incrementOrdered();
                     workCount += 1;
                 }
             }
@@ -311,7 +306,20 @@ class SequencerAgent implements Agent
         return workCount;
     }
 
-    private boolean closeSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)
+    private boolean appendConnectedSession(final ClusterSession session, final long nowMs)
+    {
+        if (logAppender.appendConnectedSession(session, nowMs))
+        {
+            session.state(ClusterSession.State.OPEN);
+            messageIndex.incrementOrdered();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean appendCloseSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)
     {
         if (logAppender.appendClosedSession(session, closeReason, nowMs))
         {

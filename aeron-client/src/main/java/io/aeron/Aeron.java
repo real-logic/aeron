@@ -368,7 +368,7 @@ public final class Aeron implements AutoCloseable
      * The counter should be freed by calling {@link Counter#close()}.
      *
      * @param typeId for the counter.
-     * @param label  for counter. It should be US-ASCII.
+     * @param label  for the counter. It should be US-ASCII.
      * @return the newly allocated counter.
      * @see org.agrona.concurrent.status.CountersManager#allocate(String, int)
      */

@@ -141,7 +141,7 @@ class SequencerAgent implements Agent
         if (null != session)
         {
             session.close();
-            if (appendCloseSession(session, CloseReason.USER_ACTION, cachedEpochClock.time()))
+            if (appendClosedSession(session, CloseReason.USER_ACTION, cachedEpochClock.time()))
             {
                 clusterSessionByIdMap.remove(clusterSessionId);
             }
@@ -260,7 +260,7 @@ class SequencerAgent implements Agent
                 {
                     case OPEN:
                         egressPublisher.sendEvent(session, EventCode.ERROR, "Timeout due to inactivity");
-                        if (appendCloseSession(session, CloseReason.TIMEOUT, nowMs))
+                        if (appendClosedSession(session, CloseReason.TIMEOUT, nowMs))
                         {
                             iter.remove();
                             workCount += 1;
@@ -274,7 +274,7 @@ class SequencerAgent implements Agent
                     case TIMED_OUT:
                     case CLOSED:
                         final CloseReason reason = state == TIMED_OUT ? CloseReason.TIMEOUT : CloseReason.USER_ACTION;
-                        if (appendCloseSession(session, reason, nowMs))
+                        if (appendClosedSession(session, reason, nowMs))
                         {
                             iter.remove();
                             workCount += 1;
@@ -311,7 +311,7 @@ class SequencerAgent implements Agent
         return false;
     }
 
-    private boolean appendCloseSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)
+    private boolean appendClosedSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)
     {
         if (logAppender.appendClosedSession(session, closeReason, nowMs))
         {

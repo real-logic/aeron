@@ -525,7 +525,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final String trimmedLabel = label.length() > MAX_LABEL_LENGTH ? label.substring(0, MAX_LABEL_LENGTH) : label;
 
         tempBuffer.putLong(0, recordingId);
-        tempBuffer.putStringAscii(SIZE_OF_LONG, trimmedLabel);
+        tempBuffer.putStringWithoutLengthAscii(SIZE_OF_LONG, trimmedLabel);
 
         return aeron.addCounter(
             Archive.Configuration.ARCHIVE_RECORDING_POSITION_TYPE_ID,

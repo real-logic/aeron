@@ -22,7 +22,6 @@ import io.aeron.cluster.codecs.EventCode;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -32,8 +31,7 @@ import static org.mockito.Mockito.*;
 
 public class SequencerAgentTest
 {
-    @Ignore
-    @Test(timeout = 1000_000)
+    @Test
     public void shouldLimitActiveSessions()
     {
         final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);

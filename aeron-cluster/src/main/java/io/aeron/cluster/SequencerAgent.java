@@ -28,52 +28,48 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import static io.aeron.cluster.ClusterSession.State.*;
-import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 
 class SequencerAgent implements Agent
 {
-    private static final int TIMER_POLL_LIMIT = 10;
-    private static final int FRAGMENT_POLL_LIMIT = 10;
-
-    private long nextSessionId = 1;
     private final long sessionTimeoutMs;
-    private final ConsensusModule.Context ctx;
-    private final Aeron aeron;
+    private long nextSessionId = 1;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
-    private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
+    private final CachedEpochClock cachedEpochClock;
     private final TimerService timerService;
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
     private final LogAppender logAppender;
     private final Counter messageIndex;
+    private final ClusterSessionSupplier clusterSessionSupplier;
     private final Long2ObjectHashMap<ClusterSession> clusterSessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingClusterSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedClusterSessions = new ArrayList<>();
+    private final ConsensusModule.Context ctx;
 
     // TODO: last message correlation id per session counter
 
-    SequencerAgent(final ConsensusModule.Context ctx)
+    SequencerAgent(
+        final ConsensusModule.Context ctx,
+        final EgressPublisher egressPublisher,
+        final Counter messageIndex,
+        final LogAppender logAppender,
+        final IngressAdapterSupplier ingressAdapterSupplier,
+        final TimerServiceSupplier timerServiceSupplier,
+        final ClusterSessionSupplier clusterSessionSupplier)
     {
         this.ctx = ctx;
-        this.aeron = ctx.aeron();
         this.epochClock = ctx.epochClock();
+        this.cachedEpochClock = ctx.cachedEpochClock();
         this.sessionTimeoutMs = ctx.sessionTimeoutNs() / 1000;
+        this.egressPublisher = egressPublisher;
+        this.messageIndex = messageIndex;
+        this.logAppender = logAppender;
+        this.clusterSessionSupplier = clusterSessionSupplier;
 
-        aeronClientInvoker = ctx.ownsAeronClient() ? aeron.conductorAgentInvoker() : null;
-
-        messageIndex = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
-
-        final Subscription ingressSubscription = aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId());
-        ingressAdapter = new IngressAdapter(this, ingressSubscription, FRAGMENT_POLL_LIMIT);
-
-        egressPublisher = new EgressPublisher();
-        final Publication logPublication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
-        logAppender = new LogAppender(logPublication);
-
-        final Subscription timerSubscription = aeron.addSubscription(ctx.timerChannel(), ctx.timerStreamId());
-        timerService = new TimerService(
-            TIMER_POLL_LIMIT, FRAGMENT_POLL_LIMIT, this, timerSubscription, cachedEpochClock);
+        ingressAdapter = ingressAdapterSupplier.newIngressAdapter(this);
+        timerService = timerServiceSupplier.newTimerService(this);
+        aeronClientInvoker = ctx.ownsAeronClient() ? ctx.aeron().conductorAgentInvoker() : null;
     }
 
     public void onClose()
@@ -87,7 +83,6 @@ class SequencerAgent implements Agent
 
             CloseHelper.close(ingressAdapter);
             CloseHelper.close(timerService);
-            CloseHelper.close(logAppender);
         }
     }
 
@@ -120,9 +115,9 @@ class SequencerAgent implements Agent
 
     public void onSessionConnect(final long correlationId, final int responseStreamId, final String responseChannel)
     {
-        final Publication publication = aeron.addPublication(responseChannel, responseStreamId);
         final long sessionId = nextSessionId++;
-        final ClusterSession session = new ClusterSession(sessionId, publication);
+        final ClusterSession session = clusterSessionSupplier.newClusterSession(
+            sessionId, responseStreamId, responseChannel);
         session.lastActivity(cachedEpochClock.time(), correlationId);
 
         if (pendingClusterSessions.size() + clusterSessionByIdMap.size() < ctx.maxConcurrentSessions())

@@ -16,66 +16,62 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
-import io.aeron.cluster.client.AeronCluster;
-import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
-import org.agrona.CloseHelper;
-import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.SleepingMillisIdleStrategy;
+
+import io.aeron.Counter;
+import io.aeron.cluster.codecs.EventCode;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class SequencerAgentTest
 {
-    private MediaDriver driver;
-
-    @Before
-    public void before()
-    {
-        driver = MediaDriver.launch(
-            new MediaDriver.Context()
-                .threadingMode(ThreadingMode.DEDICATED)
-                .spiesSimulateConnection(true)
-                .errorHandler(Throwable::printStackTrace)
-                .dirDeleteOnStart(true));
-    }
-
-    @After
-    public void after()
-    {
-        CloseHelper.close(driver);
-
-        driver.context().deleteAeronDirectory();
-    }
-
-    @Test(timeout = 10_000, expected = IllegalStateException.class)
+    @Ignore
+    @Test(timeout = 1000_000)
     public void shouldLimitActiveSessions()
     {
-        try (Aeron aeron = Aeron.connect())
-        {
-            final ConsensusModule.Context ctx = new ConsensusModule.Context()
-                .errorCounter(mock(AtomicCounter.class))
-                .errorHandler(Throwable::printStackTrace)
-                .aeron(aeron)
-                .maxConcurrentSessions(1);
+        final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
+        final LogAppender mockLogAppender = mock(LogAppender.class);
+        final IngressAdapter mockIngressAdapter = mock(IngressAdapter.class);
+        final TimerService mockTimerService = mock(TimerService.class);
 
-            ctx.conclude();
+        final ConsensusModule.Context ctx = new ConsensusModule.Context()
+            .errorCounter(mock(AtomicCounter.class))
+            .errorHandler(Throwable::printStackTrace)
+            .aeron(mock(Aeron.class))
+            .epochClock(new SystemEpochClock())
+            .cachedEpochClock(new CachedEpochClock())
+            .maxConcurrentSessions(1);
 
-            final AgentRunner agentRunner = new AgentRunner(
-                new SleepingMillisIdleStrategy(1),
-                Throwable::printStackTrace,
-                null,
-                new SequencerAgent(ctx));
-            AgentRunner.startOnThread(agentRunner);
+        final SequencerAgent agent = new SequencerAgent(
+            ctx,
+            mockEgressPublisher,
+            mock(Counter.class),
+            mockLogAppender,
+            (sequencerAgent) -> mockIngressAdapter,
+            (sequencerAgent) -> mockTimerService,
+            (sessionId, responseStreamId, responseChannel) -> new ClusterSession(sessionId, null));
 
-            AeronCluster.connect(new AeronCluster.Context().aeron(aeron).ownsAeronClient(false));
-            AeronCluster.connect(new AeronCluster.Context().aeron(aeron).ownsAeronClient(false));
+        when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(Boolean.TRUE);
+        when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(Boolean.TRUE);
 
-            agentRunner.close();
-        }
+        agent.onSessionConnect(1L, 2, "responseChannel1");
+        agent.doWork();
+
+        verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), anyLong());
+        verify(mockEgressPublisher).sendEvent(any(ClusterSession.class), eq(EventCode.OK), eq(""));
+
+        agent.onSessionConnect(2L, 3, "responseChannel2");
+        agent.doWork();
+
+        verifyNoMoreInteractions(mockLogAppender);
+        verify(mockEgressPublisher)
+            .sendEvent(any(ClusterSession.class), eq(EventCode.ERROR), eq("Active session limit exceeded"));
     }
 }

@@ -16,6 +16,8 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.Counter;
+import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.CloseHelper;
@@ -30,9 +32,15 @@ import java.util.function.Supplier;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
-public final class ConsensusModule implements AutoCloseable
+public final class ConsensusModule
+    implements AutoCloseable, IngressAdapterSupplier, TimerServiceSupplier, ClusterSessionSupplier
 {
+    private static final int FRAGMENT_POLL_LIMIT = 10;
+    private static final int TIMER_POLL_LIMIT = 10;
+
     private final Context ctx;
+    private final Counter messageIndex;
+    private final LogAppender logAppender;
     private final AgentRunner conductorRunner;
 
     private ConsensusModule(final Context ctx)
@@ -40,7 +48,16 @@ public final class ConsensusModule implements AutoCloseable
         this.ctx = ctx;
         ctx.conclude();
 
-        final SequencerAgent conductor = new SequencerAgent(ctx);
+        final Aeron aeron = ctx.aeron();
+
+        messageIndex = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
+
+        final Publication logPublication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
+        logAppender = new LogAppender(logPublication);
+
+        final SequencerAgent conductor = new SequencerAgent(
+            ctx, new EgressPublisher(), messageIndex, logAppender, this, this, this);
+
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
 
@@ -84,7 +101,33 @@ public final class ConsensusModule implements AutoCloseable
     public void close()
     {
         CloseHelper.close(conductorRunner);
+        CloseHelper.close(messageIndex);
+        CloseHelper.close(logAppender);
         CloseHelper.close(ctx);
+    }
+
+    public IngressAdapter newIngressAdapter(final SequencerAgent sequencerAgent)
+    {
+        return new IngressAdapter(
+            sequencerAgent,
+            ctx.aeron().addSubscription(ctx.ingressChannel(), ctx.ingressStreamId()),
+            FRAGMENT_POLL_LIMIT);
+    }
+
+    public TimerService newTimerService(final SequencerAgent sequencerAgent)
+    {
+        return new TimerService(
+            TIMER_POLL_LIMIT,
+            FRAGMENT_POLL_LIMIT,
+            sequencerAgent,
+            ctx.aeron().addSubscription(ctx.timerChannel(), ctx.timerStreamId()),
+            ctx.cachedEpochClock());
+    }
+
+    public ClusterSession newClusterSession(
+        final long sessionId, final int responseStreamId, final String responseChannel)
+    {
+        return new ClusterSession(sessionId, ctx.aeron().addPublication(responseChannel, responseStreamId));
     }
 
     /**
@@ -154,6 +197,7 @@ public final class ConsensusModule implements AutoCloseable
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
+        private CachedEpochClock cachedEpochClock;
 
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
@@ -171,6 +215,11 @@ public final class ConsensusModule implements AutoCloseable
             if (null == epochClock)
             {
                 epochClock = new SystemEpochClock();
+            }
+
+            if (null == cachedEpochClock)
+            {
+                cachedEpochClock = new CachedEpochClock();
             }
 
             if (null == aeron)
@@ -472,6 +521,28 @@ public final class ConsensusModule implements AutoCloseable
         public EpochClock epochClock()
         {
             return epochClock;
+        }
+
+        /**
+         * Set the {@link CachedEpochClock} to be used for tracking wall clock time.
+         *
+         * @param clock {@link CachedEpochClock} to be used for tracking wall clock time.
+         * @return this for a fluent API.
+         */
+        public Context cachedEpochClock(final CachedEpochClock clock)
+        {
+            this.cachedEpochClock = clock;
+            return this;
+        }
+
+        /**
+         * Get the {@link CachedEpochClock} to used for tracking wall clock time.
+         *
+         * @return the {@link CachedEpochClock} to used for tracking wall clock time.
+         */
+        public CachedEpochClock cachedEpochClock()
+        {
+            return cachedEpochClock;
         }
 
         /**

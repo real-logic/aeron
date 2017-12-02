@@ -16,7 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
-
 import io.aeron.Counter;
 import io.aeron.cluster.codecs.EventCode;
 import org.agrona.concurrent.CachedEpochClock;

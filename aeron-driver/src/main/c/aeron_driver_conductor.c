@@ -2359,8 +2359,6 @@ int aeron_driver_conductor_on_client_close(
 {
     int index;
 
-    aeron_counter_add_ordered(conductor->client_keep_alives_counter, 1);
-
     if ((index = aeron_driver_conductor_find_client(conductor, command->client_id)) >= 0)
     {
         aeron_client_t *client = &conductor->clients.array[index];

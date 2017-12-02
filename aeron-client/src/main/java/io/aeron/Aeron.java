@@ -47,7 +47,7 @@ import static org.agrona.IoUtil.mapExistingFile;
  * <b>Note:</b> If {@link Aeron.Context#errorHandler(ErrorHandler)} is not set and a {@link DriverTimeoutException}
  * occurs then the process will face the wrath of {@link System#exit(int)}. See {@link #DEFAULT_ERROR_HANDLER}.
  */
-public final class Aeron implements AutoCloseable
+public class Aeron implements AutoCloseable
 {
     /**
      * Using an integer because there is no support for boolean. 1 is closed and 0 is not closed.

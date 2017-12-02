@@ -45,7 +45,7 @@ public class RecordingWriterTest
     private long positionLong;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         when(position.getWeak()).then((invocation) -> positionLong);
         when(position.get()).then((invocation) -> positionLong);

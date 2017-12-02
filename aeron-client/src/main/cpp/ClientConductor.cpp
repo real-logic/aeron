@@ -36,6 +36,8 @@ ClientConductor::~ClientConductor()
             delete entry.m_imageList;
             entry.m_imageList = nullptr;
         });
+
+    m_driverProxy.clientClose();
 }
 
 std::int64_t ClientConductor::addPublication(const std::string &channel, std::int32_t streamId)

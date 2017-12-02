@@ -1325,6 +1325,19 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             break;
         }
 
+        case AERON_COMMAND_CLIENT_CLOSE:
+        {
+            aeron_correlated_command_t *command = (aeron_correlated_command_t *)message;
+
+            if (length < sizeof(aeron_correlated_command_t))
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_driver_conductor_on_client_close(conductor, command);
+            break;
+        }
+
         default:
             AERON_FORMAT_BUFFER(error_message, "command=%d unknown", msg_type_id);
             aeron_driver_conductor_error(
@@ -2338,6 +2351,23 @@ int aeron_driver_conductor_on_remove_counter(
         command->correlated.client_id,
         command->registration_id);
     return -1;
+}
+
+int aeron_driver_conductor_on_client_close(
+    aeron_driver_conductor_t *conductor,
+    aeron_correlated_command_t *command)
+{
+    int index;
+
+    aeron_counter_add_ordered(conductor->client_keep_alives_counter, 1);
+
+    if ((index = aeron_driver_conductor_find_client(conductor, command->client_id)) >= 0)
+    {
+        aeron_client_t *client = &conductor->clients.array[index];
+
+        client->time_of_last_keepalive = 0;
+    }
+    return 0;
 }
 
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item)

@@ -49,6 +49,8 @@ struct ControlProtocolEvents
     static const std::int32_t ADD_COUNTER = 0x09;
     /** Remove Counter */
     static const std::int32_t REMOVE_COUNTER = 0x0A;
+    /** Client Close */
+    static const std::int32_t CLIENT_CLOSE = 0x0B;
 
     // Media Driver to Clients
 

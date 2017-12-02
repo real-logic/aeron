@@ -251,6 +251,25 @@ public:
         return correlationId;
     }
 
+    std::int64_t clientClose()
+    {
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer& buffer, util::index_t& length)
+        {
+            CorrelatedMessageFlyweight correlatedMessage(buffer, 0);
+
+            correlatedMessage.clientId(m_clientId);
+            correlatedMessage.correlationId(correlationId);
+
+            length = CORRELATED_MESSAGE_LENGTH;
+
+            return ControlProtocolEvents::CLIENT_CLOSE;
+        });
+
+        return correlationId;
+    }
+
 private:
     typedef std::array<std::uint8_t, 512> driver_proxy_command_buffer_t;
 

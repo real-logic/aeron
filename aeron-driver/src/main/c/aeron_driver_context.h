@@ -30,7 +30,7 @@
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_LOSS_REPORT_FILE "loss-report.dat"
-#define AERON_CNC_VERSION (10)
+#define AERON_CNC_VERSION (11)
 
 #pragma pack(push)
 #pragma pack(4)

@@ -254,4 +254,18 @@ public class DriverProxy
 
         return correlationId;
     }
+
+    public long clientClose()
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        correlatedMessage.correlationId(correlationId);
+
+        if (!toDriverCommandBuffer.write(CLIENT_CLOSE, buffer, 0, CorrelatedMessageFlyweight.LENGTH))
+        {
+            throw new IllegalStateException("Could not send client close command");
+        }
+
+        return correlationId;
+    }
 }

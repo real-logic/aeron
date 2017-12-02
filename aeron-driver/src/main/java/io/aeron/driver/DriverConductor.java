@@ -690,6 +690,17 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         counterLink.close();
     }
 
+    void onClientClose(final long clientId, final long correlationId)
+    {
+        final AeronClient client = findClient(clients, clientId);
+        if (null != client)
+        {
+            client.timeOfLastKeepalive(0);
+
+            clientProxy.operationSucceeded(correlationId);
+        }
+    }
+
     private void heartbeatAndCheckTimers(final long nowNs)
     {
         final long nowMs = epochClock.time();

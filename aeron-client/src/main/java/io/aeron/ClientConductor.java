@@ -116,6 +116,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 final int lingeringResourcesSize = lingeringResources.size();
                 forceCloseResources();
+                driverProxy.clientClose();
 
                 if (lingeringResources.size() > lingeringResourcesSize)
                 {
@@ -797,20 +798,17 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 final Subscription subscription = (Subscription)resource;
                 subscription.internalClose();
-                driverProxy.removeSubscription(subscription.registrationId());
             }
             else if (resource instanceof Publication)
             {
                 final Publication publication = (Publication)resource;
                 publication.internalClose();
                 releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
-                driverProxy.removePublication(publication.registrationId());
             }
             else if (resource instanceof Counter)
             {
                 final Counter counter = (Counter)resource;
                 counter.internalClose();
-                driverProxy.removeCounter(counter.registrationId());
             }
         }
 

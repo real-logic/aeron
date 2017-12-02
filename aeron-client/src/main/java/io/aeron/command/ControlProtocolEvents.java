@@ -72,6 +72,11 @@ public class ControlProtocolEvents
      */
     public static final int REMOVE_COUNTER = 0x0A;
 
+    /**
+     * Close indication from Client.
+     */
+    public static final int CLIENT_CLOSE = 0x0B;
+
     // Media Driver to Clients
 
     /**

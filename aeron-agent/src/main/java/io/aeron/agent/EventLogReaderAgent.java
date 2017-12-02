@@ -15,31 +15,30 @@
  */
 package io.aeron.agent;
 
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
-
-import java.util.function.Consumer;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 
-public class EventLogReaderAgent implements Agent
+/**
+ * Simpler reader of an event log which decodes the event log and sends to {@link System#out}.
+ */
+public class EventLogReaderAgent implements Agent, MessageHandler
 {
-    final Consumer<String> eventConsumer = System.out::println;
-    final MessageHandler onEventFunc =
-        (typeId, buffer, offset, length) -> eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset));
-
-    public int doWork() throws Exception
-    {
-        return EVENT_RING_BUFFER.read(onEventFunc, EVENT_READER_FRAME_LIMIT);
-    }
-
     public String roleName()
     {
-        return null;
+        return "event-log-reader";
     }
 
-    public void onClose()
+    public int doWork()
     {
+        return EVENT_RING_BUFFER.read(this, EVENT_READER_FRAME_LIMIT);
+    }
+
+    public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
+    {
+        System.out.println(EventCode.get(msgTypeId).decode(buffer, index));
     }
 }

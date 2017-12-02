@@ -153,6 +153,7 @@ public class EventDissector
                 break;
 
             case CMD_IN_KEEPALIVE_CLIENT:
+            case CMD_IN_CLIENT_CLOSE:
                 final CorrelatedMessageFlyweight correlatedEvent = CORRELATED_MSG;
                 correlatedEvent.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(correlatedEvent));

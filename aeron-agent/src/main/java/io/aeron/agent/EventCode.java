@@ -18,7 +18,7 @@ package io.aeron.agent;
 import org.agrona.MutableDirectBuffer;
 
 /**
- * Event types and encoding/decoding
+ * Event types and association for encoding/decoding.
  */
 public enum EventCode
 {
@@ -57,9 +57,11 @@ public enum EventCode
     CMD_IN_REMOVE_COUNTER(36, EventDissector::dissectAsCommand),
     CMD_OUT_SUBSCRIPTION_READY(37, EventDissector::dissectAsCommand),
     CMD_OUT_COUNTER_READY(38, EventDissector::dissectAsCommand),
-    CMD_OUT_ON_UNAVAILABLE_COUNTER(39, EventDissector::dissectAsCommand);
+    CMD_OUT_ON_UNAVAILABLE_COUNTER(39, EventDissector::dissectAsCommand),
 
-    private static final EventCode[] EVENT_CODE_BY_ID = new EventCode[40];
+    CMD_IN_CLIENT_CLOSE(40, EventDissector::dissectAsCommand);
+
+    private static final EventCode[] EVENT_CODE_BY_ID = new EventCode[41];
 
     @FunctionalInterface
     private interface DissectFunction

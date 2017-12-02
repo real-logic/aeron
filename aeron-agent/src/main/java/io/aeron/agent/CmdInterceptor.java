@@ -107,6 +107,10 @@ public class CmdInterceptor
             case REMOVE_COUNTER:
                 LOGGER.log(CMD_IN_REMOVE_COUNTER, buffer, index, length);
                 break;
+
+            case CLIENT_CLOSE:
+                LOGGER.log(CMD_IN_CLIENT_CLOSE, buffer, index, length);
+                break;
         }
     }
 }

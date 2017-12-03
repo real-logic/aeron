@@ -24,12 +24,12 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
 /**
  * Archiving media driver which is an aggregate of a {@link MediaDriver} and an {@link Archive}.
  */
-public final class ArchivingMediaDriver implements AutoCloseable
+public class ArchivingMediaDriver implements AutoCloseable
 {
     private final MediaDriver driver;
     private final Archive archive;
 
-    private ArchivingMediaDriver(final MediaDriver driver, final Archive archive)
+    ArchivingMediaDriver(final MediaDriver driver, final Archive archive)
     {
         this.driver = driver;
         this.archive = archive;

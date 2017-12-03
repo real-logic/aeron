@@ -44,7 +44,7 @@ import static org.agrona.SystemUtil.getSizeAsInt;
  * Note: This class is threadsafe but the lock can be elided for single threaded access via {@link Context#lock(Lock)}
  * being set to {@link NoOpLock}.
  */
-public final class AeronArchive implements AutoCloseable
+public class AeronArchive implements AutoCloseable
 {
     private static final int FRAGMENT_LIMIT = 10;
 
@@ -59,7 +59,7 @@ public final class AeronArchive implements AutoCloseable
     private final Lock lock;
     private final NanoClock nanoClock;
 
-    private AeronArchive(final Context ctx)
+    AeronArchive(final Context ctx)
     {
         Subscription subscription = null;
         Publication publication = null;

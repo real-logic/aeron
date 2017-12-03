@@ -38,13 +38,13 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
  * {@link io.aeron.ExclusivePublication}s. It expects to be launched in the same process as a Java
  * {@link io.aeron.driver.MediaDriver}.
  */
-public final class Archive implements AutoCloseable
+public class Archive implements AutoCloseable
 {
     private final Context ctx;
     private final AgentRunner conductorRunner;
     private final AgentInvoker conductorInvoker;
 
-    private Archive(final Context ctx)
+    Archive(final Context ctx)
     {
         this.ctx = ctx;
         ctx.conclude();

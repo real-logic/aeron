@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
-public final class ConsensusModule
+public class ConsensusModule
     implements AutoCloseable, IngressAdapterSupplier, TimerServiceSupplier, ClusterSessionSupplier
 {
     private static final int FRAGMENT_POLL_LIMIT = 10;
@@ -43,7 +43,7 @@ public final class ConsensusModule
     private final LogAppender logAppender;
     private final AgentRunner conductorRunner;
 
-    private ConsensusModule(final Context ctx)
+    ConsensusModule(final Context ctx)
     {
         this.ctx = ctx;
         ctx.conclude();

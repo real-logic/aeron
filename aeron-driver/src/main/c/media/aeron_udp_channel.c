@@ -308,5 +308,9 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
 
 void aeron_udp_channel_delete(aeron_udp_channel_t *channel)
 {
-    aeron_free(channel);
+    if (NULL != channel)
+    {
+        aeron_uri_close(&channel->uri);
+        aeron_free(channel);
+    }
 }

@@ -32,6 +32,9 @@ import static org.mockito.Mockito.*;
 
 public class SequencerAgentTest
 {
+    private static final String RESPONSE_CHANNEL_ONE = "responseChannelOne";
+    private static final String RESPONSE_CHANNEL_TWO = "responseChannelTwo";
+
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogAppender mockLogAppender = mock(LogAppender.class);
 
@@ -56,13 +59,15 @@ public class SequencerAgentTest
 
         final SequencerAgent agent = newSequencerAgent();
 
-        agent.onSessionConnect(1L, 2, "responseChannel1");
+        final long correlationIdOne = 1L;
+        agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE);
         agent.doWork();
 
         verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), anyLong());
         verify(mockEgressPublisher).sendEvent(any(ClusterSession.class), eq(EventCode.OK), eq(""));
 
-        agent.onSessionConnect(2L, 3, "responseChannel2");
+        final long correlationIdTwo = 2L;
+        agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO);
         agent.doWork();
 
         verifyNoMoreInteractions(mockLogAppender);
@@ -81,7 +86,8 @@ public class SequencerAgentTest
 
         final SequencerAgent agent = newSequencerAgent();
 
-        agent.onSessionConnect(1L, 2, "responseChannel1");
+        final long correlationId = 1L;
+        agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE);
         agent.doWork();
 
         verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), eq(startMs));

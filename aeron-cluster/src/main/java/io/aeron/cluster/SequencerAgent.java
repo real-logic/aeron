@@ -32,14 +32,14 @@ import static io.aeron.cluster.ClusterSession.State.*;
 class SequencerAgent implements Agent
 {
     /**
-     * Message detail to be sent when concurrent active session limit is reached.
+     * Message detail to be sent when max concurrent session limit is reached.
      */
-    public static final String SESSION_LIMIT_MSG = "Active session limit exceeded";
+    public static final String SESSION_LIMIT_MSG = "Concurrent session limit";
 
     /**
      * Message detail to be sent when a session timeout occurs.
      */
-    public static final String SESSION_TIMEOUT_MSG = "Timeout due to inactivity";
+    public static final String SESSION_TIMEOUT_MSG = "Session inactive";
 
     private final long sessionTimeoutMs;
     private long nextSessionId = 1;
@@ -52,9 +52,9 @@ class SequencerAgent implements Agent
     private final LogAppender logAppender;
     private final Counter messageIndex;
     private final ClusterSessionSupplier clusterSessionSupplier;
-    private final Long2ObjectHashMap<ClusterSession> clusterSessionByIdMap = new Long2ObjectHashMap<>();
-    private final ArrayList<ClusterSession> pendingClusterSessions = new ArrayList<>();
-    private final ArrayList<ClusterSession> rejectedClusterSessions = new ArrayList<>();
+    private final Long2ObjectHashMap<ClusterSession> sessionByIdMap = new Long2ObjectHashMap<>();
+    private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
+    private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
     private final ConsensusModule.Context ctx;
 
     // TODO: last message correlation id per session counter
@@ -86,7 +86,7 @@ class SequencerAgent implements Agent
     {
         if (!ctx.ownsAeronClient())
         {
-            for (final ClusterSession session : clusterSessionByIdMap.values())
+            for (final ClusterSession session : sessionByIdMap.values())
             {
                 session.close();
             }
@@ -108,12 +108,12 @@ class SequencerAgent implements Agent
             workCount += aeronClientInvoker.invoke();
         }
 
-        workCount += processPendingSessions(pendingClusterSessions, nowMs);
+        workCount += processPendingSessions(pendingSessions, nowMs);
         workCount += ingressAdapter.poll();
         workCount += timerService.poll(nowMs);
-        workCount += checkSessions(clusterSessionByIdMap, nowMs);
+        workCount += checkSessions(sessionByIdMap, nowMs);
 
-        processRejectedSessions(rejectedClusterSessions, nowMs);
+        processRejectedSessions(rejectedSessions, nowMs);
 
         return workCount;
     }
@@ -130,25 +130,25 @@ class SequencerAgent implements Agent
             sessionId, responseStreamId, responseChannel);
         session.lastActivity(cachedEpochClock.time(), correlationId);
 
-        if (pendingClusterSessions.size() + clusterSessionByIdMap.size() < ctx.maxConcurrentSessions())
+        if (pendingSessions.size() + sessionByIdMap.size() < ctx.maxConcurrentSessions())
         {
-            pendingClusterSessions.add(session);
+            pendingSessions.add(session);
         }
         else
         {
-            rejectedClusterSessions.add(session);
+            rejectedSessions.add(session);
         }
     }
 
     public void onSessionClose(final long clusterSessionId)
     {
-        final ClusterSession session = clusterSessionByIdMap.get(clusterSessionId);
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
             session.close();
             if (appendClosedSession(session, CloseReason.USER_ACTION, cachedEpochClock.time()))
             {
-                clusterSessionByIdMap.remove(clusterSessionId);
+                sessionByIdMap.remove(clusterSessionId);
             }
         }
     }
@@ -161,7 +161,7 @@ class SequencerAgent implements Agent
         final long correlationId)
     {
         final long nowMs = cachedEpochClock.time();
-        final ClusterSession session = clusterSessionByIdMap.get(clusterSessionId);
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null == session || (session.state() == TIMED_OUT || session.state() == CLOSED))
         {
             return ControlledFragmentHandler.Action.CONTINUE;
@@ -180,14 +180,14 @@ class SequencerAgent implements Agent
 
     public void onKeepAlive(final long correlationId, final long clusterSessionId)
     {
-        final ClusterSession session = clusterSessionByIdMap.get(clusterSessionId);
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
             session.lastActivity(cachedEpochClock.time(), correlationId);
         }
     }
 
-    public boolean onExpireTimer(final long correlationId, final long nowMs)
+    public boolean onTimerEvent(final long correlationId, final long nowMs)
     {
         if (logAppender.appendTimerEvent(correlationId, nowMs))
         {
@@ -214,7 +214,7 @@ class SequencerAgent implements Agent
 
                 session.timeOfLastActivityMs(nowMs);
                 session.state(CONNECTED);
-                clusterSessionByIdMap.put(session.id(), session);
+                sessionByIdMap.put(session.id(), session);
 
                 appendConnectedSession(session, nowMs);
 

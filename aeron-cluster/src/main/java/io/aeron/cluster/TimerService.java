@@ -79,7 +79,7 @@ public class TimerService implements FragmentHandler, AutoCloseable, DeadlineTim
         final long correlationId = correlationIdByTimerIdMap.remove(timerId);
         timerIdByCorrelationIdMap.remove(correlationId);
 
-        return sequencerAgent.onExpireTimer(correlationId, now);
+        return sequencerAgent.onTimerEvent(correlationId, now);
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -117,7 +117,7 @@ public class TimerService implements FragmentHandler, AutoCloseable, DeadlineTim
     {
         if (epochClock.time() >= deadlineMs)
         {
-            sequencerAgent.onExpireTimer(correlationId, epochClock.time());
+            sequencerAgent.onTimerEvent(correlationId, epochClock.time());
         }
         else
         {

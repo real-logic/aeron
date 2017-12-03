@@ -31,6 +31,16 @@ import static io.aeron.cluster.ClusterSession.State.*;
 
 class SequencerAgent implements Agent
 {
+    /**
+     * Message detail to be sent when concurrent active session limit is reached.
+     */
+    public static final String SESSION_LIMIT_MSG = "Active session limit exceeded";
+
+    /**
+     * Message detail to be sent when a session timeout occurs.
+     */
+    public static final String SESSION_TIMEOUT_MSG = "Timeout due to inactivity";
+
     private final long sessionTimeoutMs;
     private long nextSessionId = 1;
     private final AgentInvoker aeronClientInvoker;
@@ -228,7 +238,7 @@ class SequencerAgent implements Agent
         {
             final ClusterSession session = rejectedSessions.get(i);
 
-            if (egressPublisher.sendEvent(session, EventCode.ERROR, "Active session limit exceeded") ||
+            if (egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_LIMIT_MSG) ||
                 nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
                 ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex);
@@ -254,7 +264,7 @@ class SequencerAgent implements Agent
                 switch (state)
                 {
                     case OPEN:
-                        egressPublisher.sendEvent(session, EventCode.ERROR, "Timeout due to inactivity");
+                        egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_TIMEOUT_MSG);
                         if (appendClosedSession(session, CloseReason.TIMEOUT, nowMs))
                         {
                             iter.remove();

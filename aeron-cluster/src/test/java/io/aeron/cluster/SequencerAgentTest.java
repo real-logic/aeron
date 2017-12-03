@@ -17,10 +17,12 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
+import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -30,33 +32,29 @@ import static org.mockito.Mockito.*;
 
 public class SequencerAgentTest
 {
+    private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
+    private final LogAppender mockLogAppender = mock(LogAppender.class);
+
+    private final ConsensusModule.Context ctx = new ConsensusModule.Context()
+        .errorCounter(mock(AtomicCounter.class))
+        .errorHandler(Throwable::printStackTrace)
+        .aeron(mock(Aeron.class))
+        .epochClock(new SystemEpochClock())
+        .cachedEpochClock(new CachedEpochClock());
+
+    @Before
+    public void before()
+    {
+        when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(Boolean.TRUE);
+        when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(Boolean.TRUE);
+    }
+
     @Test
     public void shouldLimitActiveSessions()
     {
-        final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
-        final LogAppender mockLogAppender = mock(LogAppender.class);
-        final IngressAdapter mockIngressAdapter = mock(IngressAdapter.class);
-        final TimerService mockTimerService = mock(TimerService.class);
+        ctx.maxConcurrentSessions(1);
 
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .errorCounter(mock(AtomicCounter.class))
-            .errorHandler(Throwable::printStackTrace)
-            .aeron(mock(Aeron.class))
-            .epochClock(new SystemEpochClock())
-            .cachedEpochClock(new CachedEpochClock())
-            .maxConcurrentSessions(1);
-
-        final SequencerAgent agent = new SequencerAgent(
-            ctx,
-            mockEgressPublisher,
-            mock(Counter.class),
-            mockLogAppender,
-            (sequencerAgent) -> mockIngressAdapter,
-            (sequencerAgent) -> mockTimerService,
-            (sessionId, responseStreamId, responseChannel) -> new ClusterSession(sessionId, null));
-
-        when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(Boolean.TRUE);
-        when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(Boolean.TRUE);
+        final SequencerAgent agent = newSequencerAgent();
 
         agent.onSessionConnect(1L, 2, "responseChannel1");
         agent.doWork();
@@ -69,6 +67,49 @@ public class SequencerAgentTest
 
         verifyNoMoreInteractions(mockLogAppender);
         verify(mockEgressPublisher)
-            .sendEvent(any(ClusterSession.class), eq(EventCode.ERROR), eq("Active session limit exceeded"));
+            .sendEvent(any(ClusterSession.class), eq(EventCode.ERROR), eq(SequencerAgent.SESSION_LIMIT_MSG));
+    }
+
+    @Test
+    public void shouldCloseInactiveSession()
+    {
+        final CachedEpochClock clock = new CachedEpochClock();
+        final long startMs = 7L;
+        clock.update(startMs);
+
+        ctx.epochClock(clock);
+
+        final SequencerAgent agent = newSequencerAgent();
+
+        agent.onSessionConnect(1L, 2, "responseChannel1");
+        agent.doWork();
+
+        verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), eq(startMs));
+
+        final long timeMs = startMs + (ConsensusModule.Configuration.sessionTimeoutNs() / 1000);
+        clock.update(timeMs);
+        agent.doWork();
+
+        verifyZeroInteractions(mockLogAppender);
+
+        final long timeoutMs = timeMs + 1L;
+        clock.update(timeoutMs);
+        agent.doWork();
+
+        verify(mockLogAppender).appendClosedSession(any(ClusterSession.class), eq(CloseReason.TIMEOUT), eq(timeoutMs));
+        verify(mockEgressPublisher)
+            .sendEvent(any(ClusterSession.class), eq(EventCode.ERROR), eq(SequencerAgent.SESSION_TIMEOUT_MSG));
+    }
+
+    private SequencerAgent newSequencerAgent()
+    {
+        return new SequencerAgent(
+            ctx,
+            mockEgressPublisher,
+            mock(Counter.class),
+            mockLogAppender,
+            (sequencerAgent) -> mock(IngressAdapter.class),
+            (sequencerAgent) -> mock(TimerService.class),
+            (sessionId, responseStreamId, responseChannel) -> new ClusterSession(sessionId, null));
     }
 }

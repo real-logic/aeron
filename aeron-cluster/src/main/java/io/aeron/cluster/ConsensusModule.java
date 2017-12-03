@@ -17,7 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
-import io.aeron.Publication;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.CloseHelper;
@@ -48,12 +48,15 @@ public class ConsensusModule
         this.ctx = ctx;
         ctx.conclude();
 
-        final Aeron aeron = ctx.aeron();
+        /*
+        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
+        {
+            archive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
+        }
+        */
 
-        messageIndex = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
-
-        final Publication logPublication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
-        logAppender = new LogAppender(logPublication);
+        messageIndex = ctx.aeron().addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
+        logAppender = new LogAppender(ctx.aeron().addExclusivePublication(ctx.logChannel(), ctx.logStreamId()));
 
         final SequencerAgent conductor = new SequencerAgent(
             ctx, new EgressPublisher(), messageIndex, logAppender, this, this, this);
@@ -68,9 +71,9 @@ public class ConsensusModule
     }
 
     /**
-     * Launch an ClusterNode using a default configuration.
+     * Launch an {@link ConsensusModule} using a default configuration.
      *
-     * @return a new instance of an ClusterNode.
+     * @return a new instance of an {@link ConsensusModule}.
      */
     public static ConsensusModule launch()
     {
@@ -78,10 +81,10 @@ public class ConsensusModule
     }
 
     /**
-     * Launch an ClusterNode by providing a configuration context.
+     * Launch an {@link ConsensusModule} by providing a configuration context.
      *
      * @param ctx for the configuration parameters.
-     * @return  a new instance of an ClusterNode.
+     * @return  a new instance of an {@link ConsensusModule}.
      */
     public static ConsensusModule launch(final Context ctx)
     {
@@ -204,6 +207,7 @@ public class ConsensusModule
         private CountedErrorHandler countedErrorHandler;
 
         private AgentInvoker mediaDriverAgentInvoker;
+        private AeronArchive.Context archiveContext;
 
         public void conclude()
         {
@@ -262,6 +266,11 @@ public class ConsensusModule
             if (null == idleStrategySupplier)
             {
                 idleStrategySupplier = ClusteredServiceContainer.Configuration.idleStrategySupplier(null);
+            }
+
+            if (null == archiveContext)
+            {
+                archiveContext = new AeronArchive.Context().lock(new NoOpLock());
             }
         }
 
@@ -682,6 +691,28 @@ public class ConsensusModule
         public boolean ownsAeronClient()
         {
             return ownsAeronClient;
+        }
+
+        /**
+         * Set the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         *
+         * @param archiveContext that should be used for communicating with the local Archive.
+         * @return this for a fluent API.
+         */
+        public Context archiveContext(final AeronArchive.Context archiveContext)
+        {
+            this.archiveContext = archiveContext;
+            return this;
+        }
+
+        /**
+         * Get the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         *
+         * @return the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         */
+        public AeronArchive.Context archiveContext()
+        {
+            return archiveContext;
         }
 
         /**

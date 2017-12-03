@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
@@ -106,7 +107,7 @@ public class ArchivingMediaDriver implements AutoCloseable
 
     public void close()
     {
-        archive.close();
-        driver.close();
+        CloseHelper.close(archive);
+        CloseHelper.close(driver);
     }
 }

@@ -16,15 +16,30 @@
 package io.aeron.cluster;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.archive.Archive;
+import io.aeron.driver.status.SystemCounterDescriptor;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 /**
- * Clustered media driver which is an aggregate of a {@link MediaDriver} and an {@link ConsensusModule}.
+ * Clustered media driver which is an aggregate of a {@link MediaDriver}, {@link Archive},
+ * and a {@link ConsensusModule}.
  */
 public class ClusteredMediaDriver implements AutoCloseable
 {
+    private final MediaDriver driver;
+    private final Archive archive;
+    private final ConsensusModule consensusModule;
+
+    ClusteredMediaDriver(final MediaDriver driver, final Archive archive, final ConsensusModule consensusModule)
+    {
+        this.driver = driver;
+        this.archive = archive;
+        this.consensusModule = consensusModule;
+    }
+
     /**
      * Launch the clustered media driver aggregate and await a shutdown signal.
      *
@@ -49,10 +64,74 @@ public class ClusteredMediaDriver implements AutoCloseable
      */
     public static ClusteredMediaDriver launch()
     {
-        return new ClusteredMediaDriver();
+        return launch(new MediaDriver.Context(), new Archive.Context(), new ConsensusModule.Context());
+    }
+
+    /**
+     * Launch a new {@link ClusteredMediaDriver} with provided contexts.
+     *
+     * @param driverCtx          for configuring the {@link MediaDriver}.
+     * @param archiveCtx         for configuring the {@link Archive}.
+     * @param consensusModuleCtx for the configuration of the {@link ConsensusModule}.
+     * @return a new {@link ClusteredMediaDriver} with the provided contexts.
+     */
+    public static ClusteredMediaDriver launch(
+        final MediaDriver.Context driverCtx,
+        final Archive.Context archiveCtx,
+        final ConsensusModule.Context consensusModuleCtx)
+    {
+        final MediaDriver driver = MediaDriver.launch(
+            driverCtx.spiesSimulateConnection(true));
+
+        final Archive archive = Archive.launch(
+            archiveCtx
+                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+                .errorHandler(driverCtx.errorHandler())
+                .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
+
+        final ConsensusModule consensusModule = ConsensusModule.launch(
+            consensusModuleCtx
+                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+                .errorHandler(driverCtx.errorHandler())
+                .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
+
+        return new ClusteredMediaDriver(driver, archive, consensusModule);
+    }
+
+    /**
+     * Get the {@link MediaDriver} used in the aggregate.
+     *
+     * @return the {@link MediaDriver} used in the aggregate.
+     */
+    public MediaDriver mediaDriver()
+    {
+        return driver;
+    }
+
+    /**
+     * Get the {@link Archive} used in the aggregate.
+     *
+     * @return the {@link Archive} used in the aggregate.
+     */
+    public Archive archive()
+    {
+        return archive;
+    }
+
+    /**
+     * Get the {@link ConsensusModule} used in the aggregate.
+     *
+     * @return the {@link ConsensusModule} used in the aggregate.
+     */
+    public ConsensusModule consensusModule()
+    {
+        return consensusModule;
     }
 
     public void close()
     {
+        CloseHelper.close(consensusModule);
+        CloseHelper.close(archive);
+        CloseHelper.close(driver);
     }
 }

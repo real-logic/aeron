@@ -547,6 +547,7 @@ project(':aeron-cluster') {
     dependencies {
         compile project(':aeron-client')
         compile project(':aeron-driver')
+        compile project(':aeron-archive')
         compile files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
     }

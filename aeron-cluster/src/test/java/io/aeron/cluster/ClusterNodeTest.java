@@ -17,13 +17,14 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
+import io.aeron.archive.Archive;
+import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.*;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -43,24 +44,21 @@ public class ClusterNodeTest
 {
     private static final int FRAGMENT_LIMIT = 1;
 
-    private MediaDriver driver;
-    private ConsensusModule consensusModule;
+    private ClusteredMediaDriver clusteredMediaDriver;
     private AeronCluster aeronCluster;
 
     @Before
     public void before()
     {
-        driver = MediaDriver.launch(
+        clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
-                .threadingMode(ThreadingMode.DEDICATED)
+                .threadingMode(ThreadingMode.SHARED)
                 .spiesSimulateConnection(true)
                 .errorHandler(Throwable::printStackTrace)
-                .dirDeleteOnStart(true));
-
-        consensusModule = ConsensusModule.launch(
-            new ConsensusModule.Context()
-                .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
-                .errorHandler(driver.context().errorHandler()));
+                .dirDeleteOnStart(true),
+            new Archive.Context()
+                .threadingMode(ArchiveThreadingMode.SHARED),
+            new ConsensusModule.Context());
 
         aeronCluster = AeronCluster.connect(
             new AeronCluster.Context()
@@ -71,10 +69,10 @@ public class ClusterNodeTest
     public void after()
     {
         CloseHelper.close(aeronCluster);
-        CloseHelper.close(consensusModule);
-        CloseHelper.close(driver);
+        CloseHelper.close(clusteredMediaDriver);
 
-        driver.context().deleteAeronDirectory();
+        clusteredMediaDriver.archive().context().deleteArchiveDirectory();
+        clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
     @Test
@@ -84,7 +82,7 @@ public class ClusterNodeTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldEchoMessageViaService() throws Exception
+    public void shouldEchoMessageViaService()
     {
         final ClusteredServiceContainer container = launchEchoService();
         final Aeron aeron = aeronCluster.context().aeron();
@@ -136,7 +134,7 @@ public class ClusterNodeTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldScheduleEventInService() throws Exception
+    public void shouldScheduleEventInService()
     {
         final ClusteredServiceContainer container = launchScheduledService();
         final Aeron aeron = aeronCluster.context().aeron();

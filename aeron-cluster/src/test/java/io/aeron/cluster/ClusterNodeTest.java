@@ -45,7 +45,6 @@ public class ClusterNodeTest
     private static final int FRAGMENT_LIMIT = 1;
 
     private ClusteredMediaDriver clusteredMediaDriver;
-    private AeronCluster aeronCluster;
 
     @Before
     public void before()
@@ -59,16 +58,11 @@ public class ClusterNodeTest
             new Archive.Context()
                 .threadingMode(ArchiveThreadingMode.SHARED),
             new ConsensusModule.Context());
-
-        aeronCluster = AeronCluster.connect(
-            new AeronCluster.Context()
-                .lock(new NoOpLock()));
     }
 
     @After
     public void after()
     {
-        CloseHelper.close(aeronCluster);
         CloseHelper.close(clusteredMediaDriver);
 
         clusteredMediaDriver.archive().context().deleteArchiveDirectory();
@@ -78,13 +72,17 @@ public class ClusterNodeTest
     @Test
     public void shouldConnectAndSendKeepAlive()
     {
-        assertTrue(aeronCluster.sendKeepAlive());
+        try (AeronCluster aeronCluster = connectToCluster())
+        {
+            assertTrue(aeronCluster.sendKeepAlive());
+        }
     }
 
     @Test(timeout = 10_000)
     public void shouldEchoMessageViaService()
     {
         final ClusteredServiceContainer container = launchEchoService();
+        final AeronCluster aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
 
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
@@ -130,6 +128,7 @@ public class ClusterNodeTest
             }
         }
 
+        aeronCluster.close();
         container.close();
     }
 
@@ -137,6 +136,7 @@ public class ClusterNodeTest
     public void shouldScheduleEventInService()
     {
         final ClusteredServiceContainer container = launchScheduledService();
+        final AeronCluster aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
 
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
@@ -182,6 +182,7 @@ public class ClusterNodeTest
             }
         }
 
+        aeronCluster.close();
         container.close();
     }
 
@@ -257,5 +258,12 @@ public class ClusterNodeTest
                 .clusteredService(echoScheduledService)
                 .errorCounter(mock(AtomicCounter.class))
                 .errorHandler(Throwable::printStackTrace));
+    }
+
+    private AeronCluster connectToCluster()
+    {
+        return AeronCluster.connect(
+            new AeronCluster.Context()
+                .lock(new NoOpLock()));
     }
 }

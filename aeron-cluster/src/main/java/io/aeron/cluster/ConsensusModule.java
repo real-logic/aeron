@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.CloseHelper;
@@ -48,12 +49,10 @@ public class ConsensusModule
         this.ctx = ctx;
         ctx.conclude();
 
-        /*
         try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
         {
             archive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
         }
-        */
 
         messageIndex = ctx.aeron().addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
         logAppender = new LogAppender(ctx.aeron().addExclusivePublication(ctx.logChannel(), ctx.logStreamId()));

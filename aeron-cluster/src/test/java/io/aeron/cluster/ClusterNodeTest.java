@@ -19,7 +19,9 @@ import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
-import io.aeron.cluster.client.*;
+import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.EgressAdapter;
+import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -37,7 +39,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class ClusterNodeTest
@@ -45,6 +48,7 @@ public class ClusterNodeTest
     private static final int FRAGMENT_LIMIT = 1;
 
     private ClusteredMediaDriver clusteredMediaDriver;
+    private ClusteredServiceContainer container;
 
     @Before
     public void before()
@@ -68,6 +72,11 @@ public class ClusterNodeTest
 
         clusteredMediaDriver.archive().context().deleteArchiveDirectory();
         clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
+
+        if (null != container)
+        {
+            container.context().deleteClusterDirectory();
+        }
     }
 
     @Test
@@ -82,7 +91,8 @@ public class ClusterNodeTest
     @Test(timeout = 10_000)
     public void shouldEchoMessageViaService()
     {
-        final ClusteredServiceContainer container = launchEchoService();
+        container = launchEchoService();
+
         final AeronCluster aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
 
@@ -136,7 +146,7 @@ public class ClusterNodeTest
     @Test(timeout = 10_000)
     public void shouldScheduleEventInService()
     {
-        final ClusteredServiceContainer container = launchScheduledService();
+        container = launchScheduledService();
         final AeronCluster aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
 
@@ -213,7 +223,8 @@ public class ClusterNodeTest
             new ClusteredServiceContainer.Context()
                 .clusteredService(echoService)
                 .errorCounter(mock(AtomicCounter.class))
-                .errorHandler(Throwable::printStackTrace));
+                .errorHandler(Throwable::printStackTrace)
+                .deleteDirOnStart(true));
     }
 
     private ClusteredServiceContainer launchScheduledService()
@@ -258,7 +269,8 @@ public class ClusterNodeTest
             new ClusteredServiceContainer.Context()
                 .clusteredService(echoScheduledService)
                 .errorCounter(mock(AtomicCounter.class))
-                .errorHandler(Throwable::printStackTrace));
+                .errorHandler(Throwable::printStackTrace)
+                .deleteDirOnStart(true));
     }
 
     private AeronCluster connectToCluster()

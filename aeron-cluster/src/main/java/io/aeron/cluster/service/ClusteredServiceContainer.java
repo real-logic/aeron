@@ -20,12 +20,16 @@ import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
 
+import java.io.File;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
+
+import static java.lang.System.getProperty;
 
 public final class ClusteredServiceContainer implements AutoCloseable
 {
@@ -130,6 +134,22 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final int TIMER_STREAM_ID_DEFAULT = 4;
 
         /**
+         * Whether to start without any previous log or use any existing log.
+         */
+        public static final String DIR_DELETE_ON_START_PROP_NAME = "aeron.cluster.dir.delete.on.start";
+
+        /**
+         * Whether to start without any previous log or use any existing log.
+         */
+        public static final String DIR_DELETE_ON_START_DEFAULT = "false";
+
+        public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
+
+        public static final String CLUSTER_DIR_DEFAULT = "cluster";
+
+        public static final String RECORDING_IDS_LOG_FILE_NAME = "recording-ids.log";
+
+        /**
          * The value {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
          *
          * @return {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
@@ -186,6 +206,21 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 return io.aeron.driver.Configuration.agentIdleStrategy(name, controllableStatus);
             };
         }
+
+        /**
+         * The value {@link #DIR_DELETE_ON_START_DEFAULT} or system property {@link #DIR_DELETE_ON_START_PROP_NAME} if set.
+         *
+         * @return {@link #DIR_DELETE_ON_START_DEFAULT} or system property {@link #DIR_DELETE_ON_START_PROP_NAME} if set.
+         */
+        public static boolean deleteDirOnStart()
+        {
+            return "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_START_PROP_NAME, DIR_DELETE_ON_START_DEFAULT));
+        }
+
+        public static String clusterDirName()
+        {
+            return System.getProperty(CLUSTER_DIR_PROP_NAME, CLUSTER_DIR_DEFAULT);
+        }
     }
 
     public static class Context implements AutoCloseable
@@ -194,6 +229,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private int logStreamId = Configuration.logStreamId();
         private String timerChannel = Configuration.timerChannel();
         private int timerStreamId = Configuration.timerStreamId();
+        private boolean deleteDirOnStart = Configuration.deleteDirOnStart();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -203,6 +239,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private CountedErrorHandler countedErrorHandler;
         private Aeron aeron;
         private AeronArchive.Context archiveContext;
+        private File clusterDir;
         private boolean ownsAeronClient;
 
         private ClusteredService clusteredService;
@@ -254,6 +291,29 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null == archiveContext)
             {
                 archiveContext = new AeronArchive.Context().lock(new NoOpLock());
+            }
+
+            if (deleteDirOnStart)
+            {
+                if (null != clusterDir)
+                {
+                    IoUtil.delete(clusterDir, true);
+                }
+                else
+                {
+                    IoUtil.delete(new File(Configuration.clusterDirName()), true);
+                }
+            }
+
+            if (null == clusterDir)
+            {
+                clusterDir = new File(Configuration.clusterDirName());
+            }
+
+            if (!clusterDir.exists() && !clusterDir.mkdirs())
+            {
+                throw new IllegalArgumentException(
+                    "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
         }
 
@@ -563,6 +623,36 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public AeronArchive.Context archiveContext()
         {
             return archiveContext;
+        }
+
+        public Context deleteDirOnStart(final boolean deleteDirOnStart)
+        {
+            this.deleteDirOnStart = deleteDirOnStart;
+            return this;
+        }
+
+        public boolean deleteDirOnStart()
+        {
+            return deleteDirOnStart;
+        }
+
+        public Context clusterDir(final File clusterDir)
+        {
+            this.clusterDir = clusterDir;
+            return this;
+        }
+
+        public File clusterDir()
+        {
+            return clusterDir;
+        }
+
+        public void deleteClusterDirectory()
+        {
+            if (null != clusterDir)
+            {
+                IoUtil.delete(clusterDir, false);
+            }
         }
 
         /**

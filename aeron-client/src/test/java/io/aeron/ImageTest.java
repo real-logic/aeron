@@ -430,6 +430,31 @@ public class ImageTest
     }
 
     @Test
+    public void shouldPollNoFragmentsToBoundedControlledFragmentHandlerWithInitialOffsetNotZero()
+    {
+        final long initialPosition =
+            computePosition(INITIAL_TERM_ID, offsetForFrame(1), POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long maxPosition = initialPosition + ALIGNED_FRAME_LENGTH;
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(1));
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(2));
+
+        when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
+            .thenReturn(Action.CONTINUE);
+
+        final int fragmentsRead =
+            image.boundedControlledPoll(mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
+
+        assertThat(fragmentsRead, is(1));
+
+        assertThat(position.get(), is(maxPosition));
+        verify(mockControlledFragmentHandler).onFragment(
+            any(UnsafeBuffer.class), anyInt(), anyInt(), any(Header.class));
+    }
+
+    @Test
     public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionBeforeNextMessage()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);

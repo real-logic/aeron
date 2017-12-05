@@ -399,7 +399,7 @@ public class Image
         int initialOffset = (int)initialPosition & termLengthMask;
         int resultingOffset = initialOffset;
         final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
-        final int endOffset = Math.min(termBuffer.capacity(), (int)(maxPosition - initialPosition));
+        final int endOffset = Math.min(termBuffer.capacity(), (int)(maxPosition - initialPosition + initialOffset));
         header.buffer(termBuffer);
 
         try

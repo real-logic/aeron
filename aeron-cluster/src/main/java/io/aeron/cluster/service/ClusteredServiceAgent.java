@@ -16,17 +16,22 @@
 package io.aeron.cluster.service;
 
 import io.aeron.*;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingEventsAdapter;
+import io.aeron.archive.client.RecordingEventsListener;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
 
-public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
+public class ClusteredServiceAgent implements
+    Agent, ControlledFragmentHandler, Cluster, RecordingEventsListener, AvailableImageHandler, UnavailableImageHandler
 {
     /**
      * Length of the session header that will be precede application protocol message.
@@ -39,6 +44,8 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
     private long timestampMs;
+    private long archivedPosition;
+    private final long recordingId;
     private final boolean shouldCloseResources;
     private final boolean useAeronAgentInvoker;
     private final Aeron aeron;
@@ -46,7 +53,8 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
     private final ClusteredService service;
     private final Subscription logSubscription;
     private final ExclusivePublication timerPublication;
-    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this, INITIAL_BUFFER_LENGTH, true);
+    private final ControlledFragmentAssembler fragmentAssembler =
+        new ControlledFragmentAssembler(this, INITIAL_BUFFER_LENGTH, true);
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
     private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
@@ -59,6 +67,10 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
 
+    private final RecordingEventsAdapter recordingEventsAdapter;
+    private final AeronArchive aeronArchive;
+    private Image logImage;
+
     public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
         aeron = ctx.aeron();
@@ -66,8 +78,52 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
         useAeronAgentInvoker = aeron.context().useConductorAgentInvoker();
         aeronAgentInvoker = aeron.conductorAgentInvoker();
         service = ctx.clusteredService();
-        logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId());
+        logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId(), this, this);
         timerPublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.timerStreamId());
+
+        // TODO: grab context from container context
+        aeronArchive = AeronArchive.connect(new AeronArchive.Context());
+
+        final MutableLong archiveStartPosition = new MutableLong();
+        final MutableLong archiveRecordingId = new MutableLong();
+
+        final int numRecordings = aeronArchive.listRecordingsForUri(
+            0,
+            1,
+            ctx.logChannel(),
+            ctx.logStreamId(),
+            (
+                controlSessionId,
+                correlationId,
+                recordingId,
+                startTimestamp,
+                stopTimestamp,
+                startPosition,
+                stopPosition,
+                initialTermId,
+                segmentFileLength,
+                termBufferLength,
+                mtuLength,
+                sessionId,
+                streamId,
+                strippedChannel,
+                originalChannel,
+                sourceIdentity
+            ) ->
+            {
+                archiveRecordingId.value = recordingId;
+                archiveStartPosition.value = startPosition;
+            });
+
+        recordingId = archiveRecordingId.value;
+        archivedPosition = archiveStartPosition.value;
+
+        final Subscription recordingEventsSubscription =
+            aeron.addSubscription(
+                AeronArchive.Configuration.recordingEventsChannel(),
+                AeronArchive.Configuration.recordingEventsStreamId());
+
+        recordingEventsAdapter = new RecordingEventsAdapter(this, recordingEventsSubscription, FRAGMENT_LIMIT);
     }
 
     public void onStart()
@@ -98,7 +154,12 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
             workCount += aeronAgentInvoker.invoke();
         }
 
-        workCount += logSubscription.poll(fragmentAssembler, FRAGMENT_LIMIT);
+        workCount += recordingEventsAdapter.poll();
+
+        if (null != logImage)
+        {
+            workCount += logImage.boundedControlledPoll(fragmentAssembler, archivedPosition, FRAGMENT_LIMIT);
+        }
 
         return workCount;
     }
@@ -108,7 +169,8 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
         return "clustered-service";
     }
 
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public ControlledFragmentHandler.Action onFragment(
+        final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
@@ -189,6 +251,8 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
                 break;
             }
         }
+
+        return Action.CONTINUE;
     }
 
     public ClientSession getClientSession(final long clusterSessionId)
@@ -250,5 +314,40 @@ public class ClusteredServiceAgent implements Agent, FragmentHandler, Cluster
         while (--attempts > 0);
 
         throw new IllegalStateException("Failed to schedule timer");
+    }
+
+    public void onStart(
+        final long recordingId,
+        final long startPosition,
+        final int sessionId,
+        final int streamId,
+        final String channel,
+        final String sourceIdentity)
+    {
+        //System.out.println("Recording started for id: " + recordingId);
+    }
+
+    public void onProgress(final long recordingId, final long startPosition, final long position)
+    {
+        if (recordingId == this.recordingId)
+        {
+            archivedPosition = position;
+        }
+    }
+
+    public void onStop(final long recordingId, final long startPosition, final long stopPosition)
+    {
+        //System.out.println("onStop");
+    }
+
+    public void onAvailableImage(final Image image)
+    {
+        // TODO: make sessionId specific?
+        logImage = image;
+    }
+
+    public void onUnavailableImage(final Image image)
+    {
+        logImage = null;
     }
 }

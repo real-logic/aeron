@@ -240,6 +240,7 @@ public class Archive implements AutoCloseable
      */
     public static class Context implements AutoCloseable
     {
+        private boolean deleteArchiveOnStart = false;
         private boolean ownsAeronClient = false;
         private String aeronDirectoryName = CommonContext.AERON_DIR_PROP_DEFAULT;
         private Aeron aeron;
@@ -326,6 +327,18 @@ public class Archive implements AutoCloseable
                 idleStrategySupplier = Configuration.idleStrategySupplier(null);
             }
 
+            if (deleteArchiveOnStart)
+            {
+                if (null != archiveDir)
+                {
+                    IoUtil.delete(archiveDir, true);
+                }
+                else
+                {
+                    IoUtil.delete(new File(Configuration.archiveDirName()), true);
+                }
+            }
+
             if (null == archiveDir)
             {
                 archiveDir = new File(Configuration.archiveDirName());
@@ -336,6 +349,28 @@ public class Archive implements AutoCloseable
                 throw new IllegalArgumentException(
                     "Failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
+        }
+
+        /**
+         * Should an existing archive be deleted on start. Useful only for testing.
+         *
+         * @param deleteArchiveOnStart true if an existing archive should be deleted on startup.
+         * @return this for a fluent API.
+         */
+        public Context deleteArchiveOnStart(final boolean deleteArchiveOnStart)
+        {
+            this.deleteArchiveOnStart = deleteArchiveOnStart;
+            return this;
+        }
+
+        /**
+         * Should an existing archive be deleted on start. Useful only for testing.
+         *
+         * @return true if an existing archive should be deleted on start up.
+         */
+        public boolean deleteArchiveOnStart()
+        {
+            return deleteArchiveOnStart;
         }
 
         /**

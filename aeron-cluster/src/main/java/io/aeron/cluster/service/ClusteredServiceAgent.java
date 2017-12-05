@@ -142,6 +142,8 @@ public class ClusteredServiceAgent implements
                 CloseHelper.close(session.responsePublication());
             }
         }
+
+        CloseHelper.close(aeronArchive);
     }
 
     public int doWork() throws Exception

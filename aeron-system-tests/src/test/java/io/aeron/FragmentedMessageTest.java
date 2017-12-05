@@ -37,19 +37,13 @@ import static org.mockito.Mockito.*;
 public class FragmentedMessageTest
 {
     @DataPoint
+    public static final String IPC_CHANNEL = CommonContext.IPC_CHANNEL;
+
+    @DataPoint
     public static final String UNICAST_CHANNEL = "aeron:udp?endpoint=localhost:54325";
 
     @DataPoint
     public static final String MULTICAST_CHANNEL = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
-
-    @DataPoint
-    public static final ThreadingMode SHARED = ThreadingMode.SHARED;
-
-    @DataPoint
-    public static final ThreadingMode SHARED_NETWORK = ThreadingMode.SHARED_NETWORK;
-
-    @DataPoint
-    public static final ThreadingMode DEDICATED = ThreadingMode.DEDICATED;
 
     public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;
@@ -58,15 +52,15 @@ public class FragmentedMessageTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessage(final String channel, final ThreadingMode threadingMode) throws Exception
+    public void shouldReceivePublishedMessage(final String channel)
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-        ctx.threadingMode(threadingMode);
-
-        final FragmentAssembler adapter = new FragmentAssembler(mockFragmentHandler);
+        final FragmentAssembler assembler = new FragmentAssembler(mockFragmentHandler);
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .aeronDirectoryName(CommonContext.generateRandomDirName())
+            .threadingMode(ThreadingMode.SHARED);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect();
+             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(ctx.aeronDirectoryName()));
              Publication publication = aeron.addPublication(channel, STREAM_ID);
              Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
         {
@@ -88,7 +82,7 @@ public class FragmentedMessageTest
             int numFragments = 0;
             do
             {
-                numFragments += subscription.poll(adapter, FRAGMENT_COUNT_LIMIT);
+                numFragments += subscription.poll(assembler, FRAGMENT_COUNT_LIMIT);
             }
             while (numFragments < expectedFragmentsBecauseOfHeader);
 

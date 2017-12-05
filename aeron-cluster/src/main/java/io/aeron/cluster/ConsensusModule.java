@@ -205,7 +205,6 @@ public class ConsensusModule
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
-        private AgentInvoker mediaDriverAgentInvoker;
         private AeronArchive.Context archiveContext;
 
         public void conclude()
@@ -233,7 +232,6 @@ public class ConsensusModule
                     new Aeron.Context()
                         .errorHandler(errorHandler)
                         .epochClock(epochClock)
-                        .driverAgentInvoker(mediaDriverAgentInvoker)
                         .useConductorAgentInvoker(true)
                         .clientLock(new NoOpLock()));
 
@@ -617,28 +615,6 @@ public class ConsensusModule
         public CountedErrorHandler countedErrorHandler()
         {
             return countedErrorHandler;
-        }
-
-        /**
-         * Get the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
-         *
-         * @return the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
-         */
-        AgentInvoker mediaDriverAgentInvoker()
-        {
-            return mediaDriverAgentInvoker;
-        }
-
-        /**
-         * Set the {@link AgentInvoker} that should be used for the Media Driver if running in a lightweight mode.
-         *
-         * @param mediaDriverAgentInvoker that should be used for the Media Driver if running in a lightweight mode.
-         * @return this for a fluent API.
-         */
-        public Context mediaDriverAgentInvoker(final AgentInvoker mediaDriverAgentInvoker)
-        {
-            this.mediaDriverAgentInvoker = mediaDriverAgentInvoker;
-            return this;
         }
 
         /**

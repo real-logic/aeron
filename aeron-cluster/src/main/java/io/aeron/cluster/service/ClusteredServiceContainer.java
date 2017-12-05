@@ -201,7 +201,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
         private Aeron aeron;
-        private boolean ownsAeronClient = true;
+        private boolean ownsAeronClient;
 
         private ClusteredService clusteredService;
 
@@ -245,6 +245,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
                         .epochClock(epochClock)
                         .useConductorAgentInvoker(true)
                         .clientLock(new NoOpLock()));
+
+                ownsAeronClient = true;
             }
         }
 

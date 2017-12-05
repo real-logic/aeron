@@ -68,7 +68,6 @@ public class ClusteredServiceAgent implements
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
 
     private final RecordingEventsAdapter recordingEventsAdapter;
-    private final AeronArchive aeronArchive;
     private Image logImage;
 
     public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
@@ -81,42 +80,42 @@ public class ClusteredServiceAgent implements
         logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId(), this, this);
         timerPublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.timerStreamId());
 
-        // TODO: grab context from container context
-        aeronArchive = AeronArchive.connect(new AeronArchive.Context());
+        try (AeronArchive aeronArchive = AeronArchive.connect(ctx.archiveContext()))
+        {
+            final MutableLong archiveStartPosition = new MutableLong();
+            final MutableLong archiveRecordingId = new MutableLong();
 
-        final MutableLong archiveStartPosition = new MutableLong();
-        final MutableLong archiveRecordingId = new MutableLong();
+            aeronArchive.listRecordingsForUri(
+                0,
+                1,
+                ctx.logChannel(),
+                ctx.logStreamId(),
+                (
+                    controlSessionId,
+                    correlationId,
+                    recordingId,
+                    startTimestamp,
+                    stopTimestamp,
+                    startPosition,
+                    stopPosition,
+                    initialTermId,
+                    segmentFileLength,
+                    termBufferLength,
+                    mtuLength,
+                    sessionId,
+                    streamId,
+                    strippedChannel,
+                    originalChannel,
+                    sourceIdentity
+                ) ->
+                {
+                    archiveRecordingId.value = recordingId;
+                    archiveStartPosition.value = startPosition;
+                });
 
-        final int numRecordings = aeronArchive.listRecordingsForUri(
-            0,
-            1,
-            ctx.logChannel(),
-            ctx.logStreamId(),
-            (
-                controlSessionId,
-                correlationId,
-                recordingId,
-                startTimestamp,
-                stopTimestamp,
-                startPosition,
-                stopPosition,
-                initialTermId,
-                segmentFileLength,
-                termBufferLength,
-                mtuLength,
-                sessionId,
-                streamId,
-                strippedChannel,
-                originalChannel,
-                sourceIdentity
-            ) ->
-            {
-                archiveRecordingId.value = recordingId;
-                archiveStartPosition.value = startPosition;
-            });
-
-        recordingId = archiveRecordingId.value;
-        archivedPosition = archiveStartPosition.value;
+            recordingId = archiveRecordingId.value;
+            archivedPosition = archiveStartPosition.value;
+        }
 
         final Subscription recordingEventsSubscription =
             aeron.addSubscription(

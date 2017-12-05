@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
+import io.aeron.archive.client.AeronArchive;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
@@ -201,6 +202,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
         private Aeron aeron;
+        private AeronArchive.Context archiveContext;
         private boolean ownsAeronClient = true;
 
         private ClusteredService clusteredService;
@@ -245,6 +247,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
                         .epochClock(epochClock)
                         .useConductorAgentInvoker(true)
                         .clientLock(new NoOpLock()));
+            }
+
+            if (null == archiveContext)
+            {
+                archiveContext = new AeronArchive.Context().lock(new NoOpLock());
             }
         }
 
@@ -532,6 +539,28 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public boolean ownsAeronClient()
         {
             return ownsAeronClient;
+        }
+
+        /**
+         * Set the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         *
+         * @param archiveContext that should be used for communicating with the local Archive.
+         * @return this for a fluent API.
+         */
+        public Context archiveContext(final AeronArchive.Context archiveContext)
+        {
+            this.archiveContext = archiveContext;
+            return this;
+        }
+
+        /**
+         * Get the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         *
+         * @return the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         */
+        public AeronArchive.Context archiveContext()
+        {
+            return archiveContext;
         }
 
         /**

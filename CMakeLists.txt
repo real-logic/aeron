@@ -68,8 +68,8 @@ set(GMOCK_LIBS
 
 ExternalProject_Add(
     hdr_histogram
-    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.9.6.zip
-    URL_MD5 39007a9f2770b7cc485c3e90d36145f7
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c.zip
+    URL_MD5 a57ae27cf2f099c657c2bbf7415b38f4
     INSTALL_COMMAND ""
 )
 

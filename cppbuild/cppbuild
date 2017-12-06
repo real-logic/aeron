@@ -3,6 +3,7 @@
 SOURCE_DIR="`pwd`"
 BUILD_DIR="`pwd`/cppbuild/Release"
 EXTRA_CMAKE_ARGS=""
+COVERAGE_BUILD=0
 
 for option in "$@"
 do

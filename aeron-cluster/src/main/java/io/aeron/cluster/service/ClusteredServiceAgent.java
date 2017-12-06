@@ -45,7 +45,7 @@ public class ClusteredServiceAgent implements
 
     private long timestampMs;
     private long archivedPosition;
-    private final long recordingId;
+    private long recordingId;
     private final boolean shouldCloseResources;
     private final boolean useAeronAgentInvoker;
     private final Aeron aeron;
@@ -68,6 +68,8 @@ public class ClusteredServiceAgent implements
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
 
     private final RecordingEventsAdapter recordingEventsAdapter;
+    private final ClusterRecordingEventLog recordingEventLog;
+    private final AeronArchive.Context archiveContext;
     private Image logImage;
 
     public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
@@ -79,42 +81,48 @@ public class ClusteredServiceAgent implements
         service = ctx.clusteredService();
         logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId(), this, this);
         timerPublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.timerStreamId());
+        recordingEventLog = ctx.clusterRecordingEventLog();
+        archiveContext = ctx.archiveContext();
 
-        try (AeronArchive aeronArchive = AeronArchive.connect(ctx.archiveContext()))
+        if (recordingEventLog.numRecords() == 0)
         {
-            final MutableLong archiveStartPosition = new MutableLong();
-            final MutableLong archiveRecordingId = new MutableLong();
+            // grab current recordingId and go
+            try (AeronArchive aeronArchive = AeronArchive.connect(archiveContext))
+            {
+                final MutableLong archiveStartPosition = new MutableLong();
+                final MutableLong archiveRecordingId = new MutableLong();
 
-            aeronArchive.listRecordingsForUri(
-                0,
-                1,
-                ctx.logChannel(),
-                ctx.logStreamId(),
-                (
-                    controlSessionId,
-                    correlationId,
-                    recordingId,
-                    startTimestamp,
-                    stopTimestamp,
-                    startPosition,
-                    stopPosition,
-                    initialTermId,
-                    segmentFileLength,
-                    termBufferLength,
-                    mtuLength,
-                    sessionId,
-                    streamId,
-                    strippedChannel,
-                    originalChannel,
-                    sourceIdentity
-                ) ->
-                {
-                    archiveRecordingId.value = recordingId;
-                    archiveStartPosition.value = startPosition;
-                });
+                aeronArchive.listRecordingsForUri(
+                    0,
+                    1,
+                    ctx.logChannel(),
+                    ctx.logStreamId(),
+                    (
+                        controlSessionId,
+                        correlationId,
+                        recordingId,
+                        startTimestamp,
+                        stopTimestamp,
+                        startPosition,
+                        stopPosition,
+                        initialTermId,
+                        segmentFileLength,
+                        termBufferLength,
+                        mtuLength,
+                        sessionId,
+                        streamId,
+                        strippedChannel,
+                        originalChannel,
+                        sourceIdentity
+                    ) ->
+                    {
+                        archiveRecordingId.value = recordingId;
+                        archiveStartPosition.value = startPosition;
+                    });
 
-            recordingId = archiveRecordingId.value;
-            archivedPosition = archiveStartPosition.value;
+                recordingId = archiveRecordingId.value;
+                archivedPosition = archiveStartPosition.value;
+            }
         }
 
         final Subscription recordingEventsSubscription =
@@ -128,6 +136,7 @@ public class ClusteredServiceAgent implements
     public void onStart()
     {
         service.onStart(this);
+        replayPreviousLogs();
     }
 
     public void onClose()
@@ -141,6 +150,8 @@ public class ClusteredServiceAgent implements
             {
                 CloseHelper.close(session.responsePublication());
             }
+
+            CloseHelper.close(recordingEventLog);
         }
     }
 
@@ -348,5 +359,30 @@ public class ClusteredServiceAgent implements
     public void onUnavailableImage(final Image image)
     {
         logImage = null;
+    }
+
+    private void replayPreviousLogs()
+    {
+        if (recordingEventLog.numRecords() == 0)
+        {
+            // save recordingId as it was set in the constructor
+            recordingEventLog.append(recordingId);
+            return;
+        }
+
+        try (AeronArchive aeronArchive = AeronArchive.connect(archiveContext))
+        {
+            recordingEventLog.forEach((id) -> replayRecording(aeronArchive, id));
+        }
+
+        // TODO: may need to append live recording
+    }
+
+    private void replayRecording(final AeronArchive aeronArchive, final long recordingId)
+    {
+        // TODO: list recordings and get startPosition, etc. And replay.
+
+        // save last id as recordingId
+        this.recordingId = recordingId;
     }
 }

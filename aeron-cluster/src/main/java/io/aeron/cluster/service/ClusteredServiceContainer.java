@@ -147,7 +147,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
         public static final String CLUSTER_DIR_DEFAULT = "cluster";
 
-        public static final String RECORDING_IDS_LOG_FILE_NAME = "recording-ids.log";
+        public static final String RECORDING_IDS_LOG_FILE_NAME = "recording-events.log";
 
         /**
          * The value {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
@@ -243,6 +243,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private boolean ownsAeronClient;
 
         private ClusteredService clusteredService;
+        private ClusterRecordingEventLog clusterRecordingEventLog;
 
         public void conclude()
         {
@@ -314,6 +315,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
             {
                 throw new IllegalArgumentException(
                     "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
+            }
+
+            if (null == clusterRecordingEventLog)
+            {
+                clusterRecordingEventLog = new ClusterRecordingEventLog(clusterDir);
             }
         }
 
@@ -645,6 +651,17 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public File clusterDir()
         {
             return clusterDir;
+        }
+
+        public Context clusterRecordingEventLog(final ClusterRecordingEventLog log)
+        {
+            clusterRecordingEventLog = log;
+            return this;
+        }
+
+        public ClusterRecordingEventLog clusterRecordingEventLog()
+        {
+            return clusterRecordingEventLog;
         }
 
         public void deleteClusterDirectory()

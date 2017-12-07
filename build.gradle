@@ -270,7 +270,7 @@ project(':aeron-driver') {
     }
 
     build.doLast {
-        tasks.distZip.execute()
+        distZip
     }
 }
 
@@ -446,11 +446,6 @@ project(':aeron-agent') {
         }
 
         mustRunAfter 'uploadArchives'
-
-        signing {
-            required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
-            sign configurations.shadow
-        }
     }
 
     task sourcesJar(type: Jar) {
@@ -703,11 +698,6 @@ project(':aeron-all') {
     artifacts {
         archives sourcesJar
         archives javadocJar
-    }
-
-    signing {
-        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.shadow
     }
 }
 

@@ -15,7 +15,7 @@
  */
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '1.2.4' apply false
+    id 'com.github.johnrengelman.shadow' version '2.0.1' apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -99,7 +99,6 @@ subprojects {
     apply plugin: 'maven'
     apply plugin: 'checkstyle'
     apply plugin: 'signing'
-    apply plugin: 'com.github.johnrengelman.shadow'
     apply plugin: 'eclipse'
 
     group = aeronGroup
@@ -167,7 +166,6 @@ subprojects {
     signing {
         required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.archives
-        sign configurations.shadow
     }
 }
 
@@ -324,6 +322,11 @@ project(':aeron-samples') {
         archives sourcesJar
         archives javadocJar
     }
+
+    signing {
+        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
+        sign configurations.shadow
+    }
 }
 
 project(':aeron-system-tests') {
@@ -443,6 +446,11 @@ project(':aeron-agent') {
         }
 
         mustRunAfter 'uploadArchives'
+
+        signing {
+            required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
+            sign configurations.shadow
+        }
     }
 
     task sourcesJar(type: Jar) {
@@ -695,6 +703,11 @@ project(':aeron-all') {
     artifacts {
         archives sourcesJar
         archives javadocJar
+    }
+
+    signing {
+        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
+        sign configurations.shadow
     }
 }
 

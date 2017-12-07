@@ -113,6 +113,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public static final int LOG_STREAM_ID_DEFAULT = 3;
 
+        public static final String LOG_REPLAY_CHANNEL = "aeron:udp?endpoint=localhost:9031";
+        public static final int LOG_REPLAY_STREAM_ID = 4;
+
         /**
          * Channel for timer scheduling messages to the cluster.
          */

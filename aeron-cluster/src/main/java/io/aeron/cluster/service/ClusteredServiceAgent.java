@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.client.RecordingEventsListener;
+import io.aeron.cluster.RecordingInfo;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -29,6 +30,8 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 
 public class ClusteredServiceAgent implements
     Agent, ControlledFragmentHandler, Cluster, RecordingEventsListener, AvailableImageHandler, UnavailableImageHandler
@@ -45,7 +48,7 @@ public class ClusteredServiceAgent implements
 
     private long timestampMs;
     private long archivedPosition;
-    private long recordingId;
+    private long latestRecordingId;
     private final boolean shouldCloseResources;
     private final boolean useAeronAgentInvoker;
     private final Aeron aeron;
@@ -70,7 +73,8 @@ public class ClusteredServiceAgent implements
     private final RecordingEventsAdapter recordingEventsAdapter;
     private final ClusterRecordingEventLog recordingEventLog;
     private final AeronArchive.Context archiveContext;
-    private Image logImage;
+
+    private volatile Image latestLogImage;
 
     public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
@@ -83,47 +87,6 @@ public class ClusteredServiceAgent implements
         timerPublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.timerStreamId());
         recordingEventLog = ctx.clusterRecordingEventLog();
         archiveContext = ctx.archiveContext();
-
-        if (recordingEventLog.numRecords() == 0)
-        {
-            // grab current recordingId and go
-            try (AeronArchive aeronArchive = AeronArchive.connect(archiveContext))
-            {
-                final MutableLong archiveStartPosition = new MutableLong();
-                final MutableLong archiveRecordingId = new MutableLong();
-
-                aeronArchive.listRecordingsForUri(
-                    0,
-                    1,
-                    ctx.logChannel(),
-                    ctx.logStreamId(),
-                    (
-                        controlSessionId,
-                        correlationId,
-                        recordingId,
-                        startTimestamp,
-                        stopTimestamp,
-                        startPosition,
-                        stopPosition,
-                        initialTermId,
-                        segmentFileLength,
-                        termBufferLength,
-                        mtuLength,
-                        sessionId,
-                        streamId,
-                        strippedChannel,
-                        originalChannel,
-                        sourceIdentity
-                    ) ->
-                    {
-                        archiveRecordingId.value = recordingId;
-                        archiveStartPosition.value = startPosition;
-                    });
-
-                recordingId = archiveRecordingId.value;
-                archivedPosition = archiveStartPosition.value;
-            }
-        }
 
         final Subscription recordingEventsSubscription =
             aeron.addSubscription(
@@ -166,9 +129,9 @@ public class ClusteredServiceAgent implements
 
         workCount += recordingEventsAdapter.poll();
 
-        if (null != logImage)
+        if (null != latestLogImage)
         {
-            workCount += logImage.boundedControlledPoll(fragmentAssembler, archivedPosition, FRAGMENT_LIMIT);
+            workCount += latestLogImage.boundedControlledPoll(fragmentAssembler, archivedPosition, FRAGMENT_LIMIT);
         }
 
         return workCount;
@@ -339,7 +302,7 @@ public class ClusteredServiceAgent implements
 
     public void onProgress(final long recordingId, final long startPosition, final long position)
     {
-        if (recordingId == this.recordingId)
+        if (recordingId == this.latestRecordingId)
         {
             archivedPosition = position;
         }
@@ -353,36 +316,98 @@ public class ClusteredServiceAgent implements
     public void onAvailableImage(final Image image)
     {
         // TODO: make sessionId specific?
-        logImage = image;
+        latestLogImage = image;
     }
 
     public void onUnavailableImage(final Image image)
     {
-        logImage = null;
+        latestLogImage = null;
     }
 
     private void replayPreviousLogs()
     {
-        if (recordingEventLog.numRecords() == 0)
-        {
-            // save recordingId as it was set in the constructor
-            recordingEventLog.append(recordingId);
-            return;
-        }
-
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveContext))
         {
-            recordingEventLog.forEach((id) -> replayRecording(aeronArchive, id));
-        }
+            // find latest recording that is the live log
+            final Long2ObjectHashMap<RecordingInfo> recordingsMap =
+                RecordingInfo.mapRecordings(
+                    aeronArchive, 0, 100, logSubscription.channel(), logSubscription.streamId());
 
-        // TODO: may need to append live recording
+            if (recordingsMap.size() == 0)
+            {
+                throw new IllegalStateException("could not find any log recordings");
+            }
+
+            final RecordingInfo latestRecordingInfo = RecordingInfo.findLatestRecording(recordingsMap);
+
+            latestRecordingId = latestRecordingInfo.recordingId;
+            archivedPosition = latestRecordingInfo.startPosition;
+
+            final MutableLong lastReplayedRecordingId = new MutableLong(-1);
+
+            // replay previous log recordings going from startPosition to stopPosition
+            recordingEventLog.forEach(
+                (id) ->
+                {
+                    final RecordingInfo recordingInfo = recordingsMap.get(id);
+                    lastReplayedRecordingId.value = id;
+
+                    replayRecording(aeronArchive, recordingInfo);
+                });
+
+            while (!logSubscription.isConnected() && null == latestLogImage)
+            {
+                // TODO: may need to call agentinvoker for the aeron instance.
+                Thread.yield();
+            }
+
+            archivedPosition = latestLogImage.joinPosition();
+
+            if (lastReplayedRecordingId.value != latestRecordingId)
+            {
+                recordingEventLog.append(latestRecordingId);
+            }
+        }
     }
 
-    private void replayRecording(final AeronArchive aeronArchive, final long recordingId)
+    private void replayRecording(final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
     {
-        // TODO: list recordings and get startPosition, etc. And replay.
+        if (null == recordingInfo)
+        {
+            throw new IllegalStateException("could not find log recording");
+        }
 
-        // save last id as recordingId
-        this.recordingId = recordingId;
+        final long length = recordingInfo.stopPosition - recordingInfo.startPosition;
+
+        try (Subscription replaySubscription =
+                 aeronArchive.replay(
+                     recordingInfo.recordingId,
+                     recordingInfo.startPosition,
+                     length,
+                     ClusteredServiceContainer.Configuration.LOG_REPLAY_CHANNEL,
+                     ClusteredServiceContainer.Configuration.LOG_REPLAY_STREAM_ID))
+        {
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 100, 100, 1000);
+
+            while (!replaySubscription.isConnected())
+            {
+                Thread.yield();
+            }
+
+            final MutableLong handlerPosition = new MutableLong();
+
+            final ControlledFragmentHandler handler =
+                (buffer, offset, msgLength, header) ->
+                {
+                    handlerPosition.value = header.position();
+
+                    return fragmentAssembler.onFragment(buffer, offset, msgLength, header);
+                };
+
+            while (replaySubscription.isConnected() && handlerPosition.value < recordingInfo.stopPosition)
+            {
+                idleStrategy.idle(replaySubscription.controlledPoll(handler, FRAGMENT_LIMIT));
+            }
+        }
     }
 }

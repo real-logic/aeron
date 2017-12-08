@@ -23,7 +23,7 @@ import io.aeron.logbuffer.BufferClaim;
 
 class EgressPublisher
 {
-    private static final int MAX_SEND_ATTEMPTS = 3;
+    private static final int SEND_ATTEMPTS = 3;
 
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
@@ -37,7 +37,7 @@ class EgressPublisher
             SessionEventEncoder.detailHeaderLength() +
             detail.length();
 
-        int attempts = MAX_SEND_ATTEMPTS;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             if (publication.tryClaim(length, bufferClaim) > 0)

@@ -39,7 +39,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  */
 public final class AeronCluster implements AutoCloseable
 {
-    private static final int MAX_SEND_ATTEMPTS = 3;
+    private static final int SEND_ATTEMPTS = 3;
     private static final int FRAGMENT_LIMIT = 1;
 
     private final long sessionId;
@@ -204,7 +204,7 @@ public final class AeronCluster implements AutoCloseable
             idleStrategy.reset();
             final long correlationId = aeron.nextCorrelationId();
             final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveRequestEncoder.BLOCK_LENGTH;
-            int attempts = MAX_SEND_ATTEMPTS;
+            int attempts = SEND_ATTEMPTS;
 
             while (true)
             {
@@ -239,7 +239,7 @@ public final class AeronCluster implements AutoCloseable
     {
         idleStrategy.reset();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseRequestEncoder.BLOCK_LENGTH;
-        int attempts = MAX_SEND_ATTEMPTS;
+        int attempts = SEND_ATTEMPTS;
 
         while (true)
         {

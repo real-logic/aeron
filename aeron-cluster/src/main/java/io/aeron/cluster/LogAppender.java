@@ -24,7 +24,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 class LogAppender implements AutoCloseable
 {
-    private static final int MAX_SEND_ATTEMPTS = 3;
+    private static final int SEND_ATTEMPTS = 3;
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
@@ -50,7 +50,7 @@ class LogAppender implements AutoCloseable
             .wrap((UnsafeBuffer)buffer, offset + MessageHeaderEncoder.ENCODED_LENGTH)
             .timestamp(nowMs);
 
-        int attempts = MAX_SEND_ATTEMPTS;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             if (publication.offer(buffer, offset, length) > 0)
@@ -71,7 +71,7 @@ class LogAppender implements AutoCloseable
             SessionOpenEventEncoder.responseChannelHeaderLength() +
             channel.length();
 
-        int attempts = MAX_SEND_ATTEMPTS;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             if (publication.tryClaim(length, bufferClaim) > 0)
@@ -98,7 +98,7 @@ class LogAppender implements AutoCloseable
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseEventEncoder.BLOCK_LENGTH;
 
-        int attempts = MAX_SEND_ATTEMPTS;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             if (publication.tryClaim(length, bufferClaim) > 0)
@@ -123,7 +123,7 @@ class LogAppender implements AutoCloseable
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TimerEventEncoder.BLOCK_LENGTH;
 
-        int attempts = MAX_SEND_ATTEMPTS;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             if (publication.tryClaim(length, bufferClaim) > 0)

@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static io.aeron.archive.client.ArchiveProxy.DEFAULT_MAX_RETRY_ATTEMPTS;
+import static io.aeron.archive.client.ArchiveProxy.DEFAULT_RETRY_ATTEMPTS;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
 
@@ -79,7 +79,7 @@ public class AeronArchive implements AutoCloseable
 
             publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
             archiveProxy = new ArchiveProxy(
-                publication, idleStrategy, nanoClock, messageTimeoutNs, DEFAULT_MAX_RETRY_ATTEMPTS);
+                publication, idleStrategy, nanoClock, messageTimeoutNs, DEFAULT_RETRY_ATTEMPTS);
 
             final long correlationId = aeron.nextCorrelationId();
             if (!archiveProxy.connect(ctx.controlResponseChannel(), ctx.controlResponseStreamId(), correlationId))

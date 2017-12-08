@@ -42,7 +42,7 @@ public class ClusteredServiceAgent implements
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
 
-    private static final int MAX_SEND_ATTEMPTS = 3;
+    private static final int SEND_ATTEMPTS = 3;
     private static final int FRAGMENT_LIMIT = 10;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
@@ -240,7 +240,7 @@ public class ClusteredServiceAgent implements
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerRequestEncoder.BLOCK_LENGTH;
 
-        int attempts = MAX_SEND_ATTEMPTS;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             if (timerPublication.tryClaim(length, bufferClaim) > 0)
@@ -266,7 +266,7 @@ public class ClusteredServiceAgent implements
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerRequestEncoder.BLOCK_LENGTH;
 
-        int attempts = MAX_SEND_ATTEMPTS;
+        int attempts = SEND_ATTEMPTS;
         do
         {
             if (timerPublication.tryClaim(length, bufferClaim) > 0)

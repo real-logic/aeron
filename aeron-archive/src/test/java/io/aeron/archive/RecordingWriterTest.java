@@ -79,8 +79,7 @@ public class RecordingWriterTest
         final UnsafeBuffer descriptorBuffer =
             new UnsafeBuffer(allocateDirectAligned(Catalog.DEFAULT_RECORD_LENGTH, FRAME_ALIGNMENT));
         final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder().wrap(
-            descriptorBuffer,
-            Catalog.DESCRIPTOR_HEADER_LENGTH);
+            descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH);
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
         wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
 
@@ -100,7 +99,7 @@ public class RecordingWriterTest
             SOURCE);
 
         try (RecordingWriter writer = Mockito.spy(new RecordingWriter(
-            RECORDING_ID, START_POSITION, TERM_BUFFER_LENGTH, ctx, mockArchiveDirFileChannel, position)))
+                RECORDING_ID, TERM_BUFFER_LENGTH, ctx, mockArchiveDirFileChannel, position)))
         {
             when(mockDataFileChannel.transferTo(eq(0L), eq(256L), any(FileChannel.class))).then(
                 (invocation) ->
@@ -110,8 +109,7 @@ public class RecordingWriterTest
                     return 256L;
                 });
 
-            writer.onBlock(
-                mockDataFileChannel, 0, mockTermBuffer, START_POSITION, 256, SESSION_ID, INITIAL_TERM_ID);
+            writer.onBlock(mockDataFileChannel, 0, mockTermBuffer, START_POSITION, 256, SESSION_ID, INITIAL_TERM_ID);
 
             final InOrder inOrder = Mockito.inOrder(writer);
             inOrder.verify(writer).forceData(eq(mockArchiveDirFileChannel), eq(SYNC_LEVEL == 2));

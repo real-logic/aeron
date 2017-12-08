@@ -74,7 +74,7 @@ public class ReplaySessionTest
     private RecordingSummary recordingSummary = new RecordingSummary();
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         when(position.getWeak()).then((invocation) -> positionLong);
         when(position.get()).then((invocation) -> positionLong);
@@ -111,7 +111,7 @@ public class ReplaySessionTest
         recordingSummary.sessionId = SESSION_ID;
 
         try (RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, START_POSITION, TERM_BUFFER_LENGTH, context, null, position))
+            RECORDING_ID, TERM_BUFFER_LENGTH, context, null, position))
         {
             final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 
@@ -387,9 +387,9 @@ public class ReplaySessionTest
         recordingSummary.stopPosition = NULL_POSITION;
 
         when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
+        position.setOrdered(START_POSITION);
 
-        try (RecordingWriter writer = new RecordingWriter(
-            recordingId, START_POSITION, TERM_BUFFER_LENGTH, context, null, position))
+        try (RecordingWriter writer = new RecordingWriter(recordingId, TERM_BUFFER_LENGTH, context, null, position))
         {
             when(epochClock.time()).thenReturn(TIME);
 

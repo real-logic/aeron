@@ -52,15 +52,13 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 {
     private static final int NULL_SEGMENT_POSITION = -1;
 
+    private final long recordingId;
+    private final int segmentFileLength;
     private final boolean forceWrites;
     private final boolean forceMetadata;
-    private final long recordingId;
-
+    private final Counter recordedPosition;
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
-    private final Counter recordedPosition;
-    private final int segmentFileLength;
-    private final long startPosition;
 
     /**
      * Index is in the range 0:segmentFileLength, except before the first block for this image is received indicated
@@ -74,29 +72,24 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
     RecordingWriter(
         final long recordingId,
-        final long startPosition,
         final int termBufferLength,
         final Archive.Context context,
         final FileChannel archiveDirChannel,
         final Counter recordedPosition)
     {
+        this.recordingId = recordingId;
         this.recordedPosition = recordedPosition;
         this.archiveDirChannel = archiveDirChannel;
+
         archiveDir = context.archiveDir();
         segmentFileLength = Math.max(context.segmentFileLength(), termBufferLength);
         forceWrites = context.fileSyncLevel() > 0;
         forceMetadata = context.fileSyncLevel() > 1;
 
-        this.recordingId = recordingId;
-        this.startPosition = startPosition;
-        recordedPosition.setOrdered(startPosition);
-
         final int termsMask = (segmentFileLength / termBufferLength) - 1;
         if (((termsMask + 1) & termsMask) != 0)
         {
-            throw new IllegalArgumentException(
-                "It is assumed the termBufferLength is a power of 2, and that the number of terms" +
-                    "in a file is also a power of 2");
+            throw new IllegalArgumentException("termLength and number of terms per file should be a power of 2");
         }
     }
 
@@ -139,13 +132,18 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         {
             Thread.interrupted();
             close();
-            throw new IllegalStateException("Image file channel has been closed by interrupt, recording aborted.", ex);
+            throw new IllegalStateException("File channel closed by interrupt, recording aborted.", ex);
         }
         catch (final Exception ex)
         {
             close();
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    public long recordingId()
+    {
+        return recordingId;
     }
 
     public void close()
@@ -182,7 +180,8 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
             final ByteBuffer src = buffer.byteBuffer().duplicate();
             src.position(termOffset).limit(termOffset + frameLength);
-            final int written = writeData(src, segmentPosition, recordingFileChannel);
+
+            final int written = recordingFileChannel.write(src, segmentPosition);
             recordingFileChannel.position(segmentPosition + alignedLength);
 
             if (written != frameLength)
@@ -202,32 +201,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             close();
             LangUtil.rethrowUnchecked(ex);
         }
-    }
-
-    long recordingId()
-    {
-        return recordingId;
-    }
-
-    int segmentFileLength()
-    {
-        return segmentFileLength;
-    }
-
-    long startPosition()
-    {
-        return startPosition;
-    }
-
-    long recordedPosition()
-    {
-        return recordedPosition.getWeak();
-    }
-
-    private int writeData(final ByteBuffer buffer, final int position, final FileChannel fileChannel)
-        throws IOException
-    {
-        return fileChannel.write(buffer, position);
     }
 
     // extend for testing

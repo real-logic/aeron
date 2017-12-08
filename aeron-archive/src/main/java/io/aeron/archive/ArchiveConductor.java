@@ -177,7 +177,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 final Subscription subscription = aeron.addSubscription(
                     channel,
                     streamId,
-                    (image) -> startImageRecording(strippedChannel, originalChannel, image),
+                    (image) -> startRecordingSession(strippedChannel, originalChannel, image),
                     null);
 
                 subscriptionMap.put(key, subscription);
@@ -431,7 +431,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         return streamId + ":" + strippedChannel;
     }
 
-    private void startImageRecording(final String strippedChannel, final String originalChannel, final Image image)
+    private void startRecordingSession(final String strippedChannel, final String originalChannel, final Image image)
     {
         if (recordingSessionByIdMap.size() >= 2 * maxConcurrentRecordings)
         {
@@ -465,7 +465,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final RecordingSession session = new RecordingSession(
             recordingId,
             recordingEventsProxy,
-            strippedChannel,
             image,
             position,
             archiveDirChannel,

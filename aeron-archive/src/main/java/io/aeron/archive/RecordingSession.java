@@ -17,13 +17,10 @@ package io.aeron.archive;
 
 import io.aeron.Counter;
 import io.aeron.Image;
-import io.aeron.Subscription;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 
 import java.nio.channels.FileChannel;
-
-import static io.aeron.archive.Catalog.NULL_POSITION;
 
 /**
  * Consumes an {@link Image} and records data to file using an {@link RecordingWriter}.
@@ -40,19 +37,14 @@ class RecordingSession implements Session
     private final long recordingId;
     private final int blockLengthLimit;
     private final RecordingEventsProxy recordingEventsProxy;
-    private final String strippedChannel;
     private final Image image;
     private final Counter position;
-    private final FileChannel archiveDirChannel;
-    private final Archive.Context context;
-
-    private RecordingWriter recordingWriter;
+    private final RecordingWriter recordingWriter;
     private State state = State.INIT;
 
     RecordingSession(
         final long recordingId,
         final RecordingEventsProxy recordingEventsProxy,
-        final String strippedChannel,
         final Image image,
         final Counter position,
         final FileChannel archiveDirChannel,
@@ -60,13 +52,27 @@ class RecordingSession implements Session
     {
         this.recordingId = recordingId;
         this.recordingEventsProxy = recordingEventsProxy;
-        this.strippedChannel = strippedChannel;
         this.image = image;
         this.position = position;
-        this.archiveDirChannel = archiveDirChannel;
-        this.context = context;
 
-        blockLengthLimit = Math.min(image.termBufferLength(), MAX_BLOCK_LENGTH);
+        final int termBufferLength = image.termBufferLength();
+        blockLengthLimit = Math.min(termBufferLength, MAX_BLOCK_LENGTH);
+        final long startPosition = image.joinPosition();
+
+        position.setOrdered(startPosition);
+
+        RecordingWriter recordingWriter = null;
+        try
+        {
+            recordingWriter = new RecordingWriter(recordingId, termBufferLength, context, archiveDirChannel, position);
+        }
+        catch (final Exception ex)
+        {
+            close();
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        this.recordingWriter = recordingWriter;
     }
 
     public long recordingId()
@@ -114,35 +120,14 @@ class RecordingSession implements Session
 
     private int init()
     {
-        final Subscription subscription = image.subscription();
-        final int sessionId = image.sessionId();
-        final int streamId = subscription.streamId();
-        final int termBufferLength = image.termBufferLength();
-        final String sourceIdentity = image.sourceIdentity();
-        final long startPosition = image.joinPosition();
-
-        RecordingWriter recordingWriter = null;
-        try
-        {
-            recordingWriter = new RecordingWriter(
-                recordingId, startPosition, termBufferLength, context, archiveDirChannel, position);
-        }
-        catch (final Exception ex)
-        {
-            state = State.INACTIVE;
-            close();
-            LangUtil.rethrowUnchecked(ex);
-        }
-
         recordingEventsProxy.started(
             recordingId,
-            startPosition,
-            sessionId,
-            streamId,
-            strippedChannel,
-            sourceIdentity);
+            image.joinPosition(),
+            image.sessionId(),
+            image.subscription().streamId(),
+            image.subscription().channel(),
+            image.sourceIdentity());
 
-        this.recordingWriter = recordingWriter;
         state = State.RECORDING;
 
         return 1;
@@ -151,17 +136,8 @@ class RecordingSession implements Session
     public void close()
     {
         state = State.CLOSED;
-        if (recordingWriter != null)
-        {
-            final long startPosition = recordingWriter.startPosition();
-            final long stopPosition = recordingWriter.recordedPosition();
-            CloseHelper.quietClose(recordingWriter);
-            recordingEventsProxy.stopped(recordingId, startPosition, stopPosition);
-        }
-        else
-        {
-            recordingEventsProxy.stopped(recordingId, NULL_POSITION, NULL_POSITION);
-        }
+        recordingEventsProxy.stopped(recordingId, image.joinPosition(), position.getWeak());
+        CloseHelper.quietClose(recordingWriter);
     }
 
     private int record()
@@ -172,10 +148,7 @@ class RecordingSession implements Session
             workCount = image.rawPoll(recordingWriter, blockLengthLimit);
             if (workCount != 0)
             {
-                recordingEventsProxy.progress(
-                    recordingWriter.recordingId(),
-                    recordingWriter.startPosition(),
-                    recordingWriter.recordedPosition());
+                recordingEventsProxy.progress(recordingId, image.joinPosition(), position.getWeak());
             }
 
             if (image.isClosed() || recordingWriter.isClosed())

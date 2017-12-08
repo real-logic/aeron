@@ -462,6 +462,11 @@ project(':aeron-agent') {
         archives sourcesJar
         archives javadocJar
     }
+
+    signing {
+        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
+        sign configurations.shadow
+    }
 }
 
 project(':aeron-archive') {
@@ -698,6 +703,11 @@ project(':aeron-all') {
     artifacts {
         archives sourcesJar
         archives javadocJar
+    }
+
+    signing {
+        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
+        sign configurations.shadow
     }
 }
 

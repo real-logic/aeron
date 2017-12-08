@@ -72,7 +72,7 @@ public class ClusteredServiceAgent implements
 
     private final RecordingEventsAdapter recordingEventsAdapter;
     private final ClusterRecordingEventLog recordingEventLog;
-    private final AeronArchive.Context archiveContext;
+    private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
 
     private volatile Image latestLogImage;
@@ -89,11 +89,10 @@ public class ClusteredServiceAgent implements
         logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId(), this, this);
         timerPublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.timerStreamId());
         recordingEventLog = ctx.clusterRecordingEventLog();
-        archiveContext = ctx.archiveContext();
+        archiveCtx = ctx.archiveContext();
 
         final Subscription recordingEventsSubscription = aeron.addSubscription(
-            AeronArchive.Configuration.recordingEventsChannel(),
-            AeronArchive.Configuration.recordingEventsStreamId());
+            archiveCtx.recordingEventsChannel(), archiveCtx.recordingEventsStreamId());
 
         recordingEventsAdapter = new RecordingEventsAdapter(this, recordingEventsSubscription, FRAGMENT_LIMIT);
     }
@@ -324,7 +323,7 @@ public class ClusteredServiceAgent implements
 
     private void replayPreviousLogs()
     {
-        try (AeronArchive aeronArchive = AeronArchive.connect(archiveContext))
+        try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
             final Long2ObjectHashMap<RecordingInfo> recordingsMap = RecordingInfo.mapRecordings(
                 aeronArchive, 0, 100, logSubscription.channel(), logSubscription.streamId());

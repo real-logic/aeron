@@ -919,6 +919,8 @@ public class AeronArchive implements AutoCloseable
     public static class Context implements AutoCloseable
     {
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
+        private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
+        private int recordingEventsStreamId = AeronArchive.Configuration.recordingEventsStreamId();
         private String controlRequestChannel = Configuration.controlChannel();
         private int controlRequestStreamId = Configuration.controlStreamId();
         private String controlResponseChannel = Configuration.controlResponseChannel();
@@ -979,6 +981,54 @@ public class AeronArchive implements AutoCloseable
         public long messageTimeoutNs()
         {
             return messageTimeoutNs;
+        }
+
+        /**
+         * Get the channel URI on which the recording events publication will publish.
+         *
+         * @return the channel URI on which the recording events publication will publish.
+         */
+        public String recordingEventsChannel()
+        {
+            return recordingEventsChannel;
+        }
+
+        /**
+         * Set the channel URI on which the recording events publication will publish.
+         * <p>
+         * To support dynamic subscribers then this can be set to multicast or MDC (Multi-Destination-Cast) if
+         * multicast cannot be supported for on the available the network infrastructure.
+         *
+         * @param recordingEventsChannel channel URI on which the recording events publication will publish.
+         * @return this for a fluent API.
+         * @see io.aeron.CommonContext#MDC_CONTROL_PARAM_NAME
+         */
+        public Context recordingEventsChannel(final String recordingEventsChannel)
+        {
+            this.recordingEventsChannel = recordingEventsChannel;
+            return this;
+        }
+
+        /**
+         * Get the stream id on which the recording events publication will publish.
+         *
+         * @return the stream id on which the recording events publication will publish.
+         */
+        public int recordingEventsStreamId()
+        {
+            return recordingEventsStreamId;
+        }
+
+        /**
+         * Set the stream id on which the recording events publication will publish.
+         *
+         * @param recordingEventsStreamId stream id on which the recording events publication will publish.
+         * @return this for a fluent API.
+         */
+        public Context recordingEventsStreamId(final int recordingEventsStreamId)
+        {
+            this.recordingEventsStreamId = recordingEventsStreamId;
+            return this;
         }
 
         /**

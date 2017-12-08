@@ -57,9 +57,8 @@ class RecordingSession implements Session
 
         final int termBufferLength = image.termBufferLength();
         blockLengthLimit = Math.min(termBufferLength, MAX_BLOCK_LENGTH);
-        final long startPosition = image.joinPosition();
 
-        position.setOrdered(startPosition);
+        position.setOrdered(image.joinPosition());
 
         RecordingWriter recordingWriter = null;
         try

@@ -34,7 +34,7 @@ import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
 public class ClusteredServiceAgent implements
-    Agent, ControlledFragmentHandler, Cluster, RecordingEventsListener, AvailableImageHandler, UnavailableImageHandler
+    ControlledFragmentHandler, Agent, Cluster, RecordingEventsListener, AvailableImageHandler, UnavailableImageHandler
 {
     /**
      * Length of the session header that will be precede application protocol message.
@@ -88,10 +88,9 @@ public class ClusteredServiceAgent implements
         recordingEventLog = ctx.clusterRecordingEventLog();
         archiveContext = ctx.archiveContext();
 
-        final Subscription recordingEventsSubscription =
-            aeron.addSubscription(
-                AeronArchive.Configuration.recordingEventsChannel(),
-                AeronArchive.Configuration.recordingEventsStreamId());
+        final Subscription recordingEventsSubscription = aeron.addSubscription(
+            AeronArchive.Configuration.recordingEventsChannel(),
+            AeronArchive.Configuration.recordingEventsStreamId());
 
         recordingEventsAdapter = new RecordingEventsAdapter(this, recordingEventsSubscription, FRAGMENT_LIMIT);
     }
@@ -118,7 +117,7 @@ public class ClusteredServiceAgent implements
         }
     }
 
-    public int doWork() throws Exception
+    public int doWork()
     {
         int workCount = 0;
 
@@ -198,7 +197,7 @@ public class ClusteredServiceAgent implements
                     aeron.addExclusivePublication(
                         openEventDecoder.responseChannel(),
                         openEventDecoder.responseStreamId()),
-                        this);
+                    this);
 
                 sessionByIdMap.put(sessionId, session);
                 timestampMs = openEventDecoder.timestamp();
@@ -328,10 +327,8 @@ public class ClusteredServiceAgent implements
     {
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveContext))
         {
-            // find latest recording that is the live log
-            final Long2ObjectHashMap<RecordingInfo> recordingsMap =
-                RecordingInfo.mapRecordings(
-                    aeronArchive, 0, 100, logSubscription.channel(), logSubscription.streamId());
+            final Long2ObjectHashMap<RecordingInfo> recordingsMap = RecordingInfo.mapRecordings(
+                aeronArchive, 0, 100, logSubscription.channel(), logSubscription.streamId());
 
             if (recordingsMap.size() == 0)
             {
@@ -357,7 +354,11 @@ public class ClusteredServiceAgent implements
 
             while (!logSubscription.isConnected() && null == latestLogImage)
             {
-                // TODO: may need to call agentinvoker for the aeron instance.
+                if (useAeronAgentInvoker)
+                {
+                    aeronAgentInvoker.invoke();
+                }
+
                 Thread.yield();
             }
 
@@ -391,6 +392,11 @@ public class ClusteredServiceAgent implements
 
             while (!replaySubscription.isConnected())
             {
+                if (useAeronAgentInvoker)
+                {
+                    aeronAgentInvoker.invoke();
+                }
+
                 Thread.yield();
             }
 
@@ -407,6 +413,11 @@ public class ClusteredServiceAgent implements
             while (replaySubscription.isConnected() && handlerPosition.value < recordingInfo.stopPosition)
             {
                 idleStrategy.idle(replaySubscription.controlledPoll(handler, FRAGMENT_LIMIT));
+
+                if (useAeronAgentInvoker)
+                {
+                    aeronAgentInvoker.invoke();
+                }
             }
         }
     }

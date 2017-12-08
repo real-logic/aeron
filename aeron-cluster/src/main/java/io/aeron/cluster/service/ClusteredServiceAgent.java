@@ -73,11 +73,14 @@ public class ClusteredServiceAgent implements
     private final RecordingEventsAdapter recordingEventsAdapter;
     private final ClusterRecordingEventLog recordingEventLog;
     private final AeronArchive.Context archiveContext;
+    private final ClusteredServiceContainer.Context ctx;
 
     private volatile Image latestLogImage;
 
     public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
+        this.ctx = ctx;
+
         aeron = ctx.aeron();
         shouldCloseResources = ctx.ownsAeronClient();
         useAeronAgentInvoker = aeron.context().useConductorAgentInvoker();
@@ -121,11 +124,7 @@ public class ClusteredServiceAgent implements
     {
         int workCount = 0;
 
-        if (useAeronAgentInvoker)
-        {
-            workCount += aeronAgentInvoker.invoke();
-        }
-
+        workCount += invokeAeronClient();
         workCount += recordingEventsAdapter.poll();
 
         if (null != latestLogImage)
@@ -354,11 +353,7 @@ public class ClusteredServiceAgent implements
 
             while (!logSubscription.isConnected() && null == latestLogImage)
             {
-                if (useAeronAgentInvoker)
-                {
-                    aeronAgentInvoker.invoke();
-                }
-
+                invokeAeronClient();
                 Thread.yield();
             }
 
@@ -380,23 +375,18 @@ public class ClusteredServiceAgent implements
 
         final long length = recordingInfo.stopPosition - recordingInfo.startPosition;
 
-        try (Subscription replaySubscription =
-                 aeronArchive.replay(
-                     recordingInfo.recordingId,
-                     recordingInfo.startPosition,
-                     length,
-                     ClusteredServiceContainer.Configuration.LOG_REPLAY_CHANNEL,
-                     ClusteredServiceContainer.Configuration.LOG_REPLAY_STREAM_ID))
+        try (Subscription replaySubscription = aeronArchive.replay(
+                 recordingInfo.recordingId,
+                 recordingInfo.startPosition,
+                 length,
+                 ctx.logReplayChannel(),
+                 ctx.logReplayStreamId()))
         {
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 100, 100, 1000);
 
             while (!replaySubscription.isConnected())
             {
-                if (useAeronAgentInvoker)
-                {
-                    aeronAgentInvoker.invoke();
-                }
-
+                invokeAeronClient();
                 Thread.yield();
             }
 
@@ -412,13 +402,19 @@ public class ClusteredServiceAgent implements
 
             while (replaySubscription.isConnected() && handlerPosition.value < recordingInfo.stopPosition)
             {
+                invokeAeronClient();
                 idleStrategy.idle(replaySubscription.controlledPoll(handler, FRAGMENT_LIMIT));
-
-                if (useAeronAgentInvoker)
-                {
-                    aeronAgentInvoker.invoke();
-                }
             }
         }
+    }
+
+    private int invokeAeronClient()
+    {
+        if (useAeronAgentInvoker)
+        {
+            return aeronAgentInvoker.invoke();
+        }
+
+        return 0;
     }
 }

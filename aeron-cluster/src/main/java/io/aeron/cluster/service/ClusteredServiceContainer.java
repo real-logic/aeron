@@ -113,8 +113,25 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public static final int LOG_STREAM_ID_DEFAULT = 3;
 
-        public static final String LOG_REPLAY_CHANNEL = "aeron:udp?endpoint=localhost:9031";
-        public static final int LOG_REPLAY_STREAM_ID = 4;
+        /**
+         * Channel to be used for log replay on startup.
+         */
+        public static final String LOG_REPLAY_CHANNEL_PROP_NAME = "aeron.cluster.log.replay.channel";
+
+        /**
+         * Channel to be used for log replay on startup.
+         */
+        public static final String LOG_REPLAY_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+
+        /**
+         * Stream id within a channel for the clustered log replay.
+         */
+        public static final String LOG_REPLAY_STREAM_ID_PROP_NAME = "aeron.cluster.log.replay.stream.id";
+
+        /**
+         * Stream id for the log replay within a channel.
+         */
+        public static final int LOG_REPLAY_STREAM_ID_DEFAULT = 4;
 
         /**
          * Channel for timer scheduling messages to the cluster.
@@ -170,6 +187,28 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static int logStreamId()
         {
             return Integer.getInteger(LOG_STREAM_ID_PROP_NAME, LOG_STREAM_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #LOG_REPLAY_CHANNEL_DEFAULT} or system property {@link #LOG_REPLAY_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #LOG_REPLAY_CHANNEL_DEFAULT} or system property {@link #LOG_REPLAY_CHANNEL_PROP_NAME} if set.
+         */
+        public static String logReplayChannel()
+        {
+            return System.getProperty(LOG_REPLAY_CHANNEL_PROP_NAME, LOG_REPLAY_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #LOG_REPLAY_STREAM_ID_DEFAULT} or system property {@link #LOG_REPLAY_STREAM_ID_PROP_NAME}
+         * if set.
+         *
+         * @return {@link #LOG_REPLAY_STREAM_ID_DEFAULT} or system property {@link #LOG_REPLAY_STREAM_ID_PROP_NAME}
+         * if set.
+         */
+        public static int logReplayStreamId()
+        {
+            return Integer.getInteger(LOG_REPLAY_STREAM_ID_PROP_NAME, LOG_REPLAY_STREAM_ID_DEFAULT);
         }
 
         /**
@@ -230,6 +269,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
     {
         private String logChannel = Configuration.logChannel();
         private int logStreamId = Configuration.logStreamId();
+        private String logReplayChannel = Configuration.logReplayChannel();
+        private int logReplayStreamId = Configuration.logReplayStreamId();
         private String timerChannel = Configuration.timerChannel();
         private int timerStreamId = Configuration.timerStreamId();
         private boolean deleteDirOnStart = Configuration.deleteDirOnStart();
@@ -374,6 +415,53 @@ public final class ClusteredServiceContainer implements AutoCloseable
             return logStreamId;
         }
 
+        /**
+         * Set the channel parameter for the cluster log replay channel.
+         *
+         * @param channel parameter for the cluster log replay channel.
+         * @return this for a fluent API.
+         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_CHANNEL_PROP_NAME
+         */
+        public Context logReplayChannel(final String channel)
+        {
+            logChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for the cluster log replay channel.
+         *
+         * @return the channel parameter for the cluster replay channel.
+         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_CHANNEL_PROP_NAME
+         */
+        public String logReplayChannel()
+        {
+            return logReplayChannel;
+        }
+
+        /**
+         * Set the stream id for the cluster log replay channel.
+         *
+         * @param streamId for the cluster log replay channel.
+         * @return this for a fluent API
+         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_STREAM_ID_PROP_NAME
+         */
+        public Context logReplayStreamId(final int streamId)
+        {
+            logReplayStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for the cluster log replay channel.
+         *
+         * @return the stream id for the cluster log replay channel.
+         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_STREAM_ID_PROP_NAME
+         */
+        public int logReplayStreamId()
+        {
+            return logReplayStreamId;
+        }
 
         /**
          * Set the channel parameter for scheduling timer events channel.

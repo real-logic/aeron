@@ -60,18 +60,7 @@ class RecordingSession implements Session
 
         position.setOrdered(image.joinPosition());
 
-        RecordingWriter recordingWriter = null;
-        try
-        {
-            recordingWriter = new RecordingWriter(recordingId, termBufferLength, context, archiveDirChannel, position);
-        }
-        catch (final Exception ex)
-        {
-            close();
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        this.recordingWriter = recordingWriter;
+        recordingWriter = new RecordingWriter(recordingId, termBufferLength, context, archiveDirChannel, position);
     }
 
     public long recordingId()

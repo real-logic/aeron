@@ -184,6 +184,7 @@ public class RecordingSessionTest
 
         when(image.isClosed()).thenReturn(true);
         session.doWork();
+        session.doWork();
         assertTrue(session.isDone());
         session.close();
     }

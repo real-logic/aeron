@@ -31,7 +31,7 @@ class RecordingSession implements Session
 
     private enum State
     {
-        INIT, RECORDING, INACTIVE, CLOSED
+        INIT, RECORDING, INACTIVE, STOPPED, CLOSED
     }
 
     private final long recordingId;
@@ -68,15 +68,28 @@ class RecordingSession implements Session
         return recordingId;
     }
 
+    public long sessionId()
+    {
+        return recordingId;
+    }
+
     public boolean isDone()
     {
-        return state == State.INACTIVE;
+        return state == State.STOPPED;
     }
 
     public void abort()
     {
         this.state = State.INACTIVE;
-        CloseHelper.quietClose(recordingWriter);
+    }
+
+    public void close()
+    {
+        if (State.CLOSED != state)
+        {
+            state = State.CLOSED;
+            CloseHelper.close(recordingWriter);
+        }
     }
 
     public int doWork()
@@ -86,24 +99,21 @@ class RecordingSession implements Session
         switch (state)
         {
             case INIT:
-                workDone += init();
+                workDone = init();
                 break;
 
             case RECORDING:
-                workDone += record();
+                workDone = record();
                 break;
 
             case INACTIVE:
-                recordingWriter.close();
+                recordingEventsProxy.stopped(recordingId, image.joinPosition(), position.getWeak());
+                state = State.STOPPED;
+                workDone = 1;
                 break;
         }
 
         return workDone;
-    }
-
-    public long sessionId()
-    {
-        return recordingId;
     }
 
     private int init()
@@ -121,20 +131,13 @@ class RecordingSession implements Session
         return 1;
     }
 
-    public void close()
-    {
-        state = State.CLOSED;
-        recordingEventsProxy.stopped(recordingId, image.joinPosition(), position.getWeak());
-        CloseHelper.quietClose(recordingWriter);
-    }
-
     private int record()
     {
         int workCount = 1;
         try
         {
             workCount = image.rawPoll(recordingWriter, blockLengthLimit);
-            if (workCount != 0)
+            if (0 != workCount)
             {
                 recordingEventsProxy.progress(recordingId, image.joinPosition(), position.getWeak());
             }

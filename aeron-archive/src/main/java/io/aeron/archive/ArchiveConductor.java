@@ -93,7 +93,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         aeron.addSubscription(ctx.controlChannel(), ctx.controlStreamId(), this, null);
 
         recordingEventsProxy = new RecordingEventsProxy(
-            ctx.idleStrategy(), aeron.addPublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
+            ctx.idleStrategy(),
+            aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
         catalog = new Catalog(archiveDir, archiveDirChannel, ctx.fileSyncLevel(), epochClock);
     }

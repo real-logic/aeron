@@ -18,6 +18,8 @@ package io.aeron.archive;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.driver.exceptions.ConfigurationException;
+import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -348,6 +350,11 @@ public class Archive implements AutoCloseable
             {
                 throw new IllegalArgumentException(
                     "Failed to create archive dir: " + archiveDir.getAbsolutePath());
+            }
+
+            if (!BitUtil.isPowerOfTwo(segmentFileLength))
+            {
+                throw new ConfigurationException("Segment file length not a power of 2: " + segmentFileLength);
             }
         }
 

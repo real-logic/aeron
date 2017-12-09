@@ -85,12 +85,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         segmentFileLength = Math.max(context.segmentFileLength(), termBufferLength);
         forceWrites = context.fileSyncLevel() > 0;
         forceMetadata = context.fileSyncLevel() > 1;
-
-        final int termsMask = (segmentFileLength / termBufferLength) - 1;
-        if (((termsMask + 1) & termsMask) != 0)
-        {
-            throw new IllegalArgumentException("termLength and number of terms per file should be a power of 2");
-        }
     }
 
     public void onBlock(

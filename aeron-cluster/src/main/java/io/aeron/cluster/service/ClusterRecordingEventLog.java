@@ -118,14 +118,15 @@ public class ClusterRecordingEventLog implements AutoCloseable
 
             final FileChannel newFileChannel = FileChannel.open(newEventFilePath, WRITE, APPEND);
 
-            appendBuffer.putLong(recordingId);
+            appendBuffer.putLong(0, recordingId);
+            appendBuffer.position(0);
             newFileChannel.write(appendBuffer);
-
+            newFileChannel.force(true);
             newFileChannel.close();
 
             Files.move(newEventFilePath, eventFilePath, REPLACE_EXISTING);
 
-            fileChannel = FileChannel.open(eventFilePath, READ, WRITE);
+            fileChannel = FileChannel.open(eventFilePath, READ);
         }
         catch (final Exception ex)
         {

@@ -56,6 +56,7 @@ public class ClusterNodeRestartTest
     @After
     public void after()
     {
+        CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
         clusteredMediaDriver.archive().context().deleteArchiveDirectory();

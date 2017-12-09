@@ -81,17 +81,8 @@ class RecordingFragmentReader implements AutoCloseable
                     "Recording descriptor indicates live recording, but recordedPosition" +
                         " is null. Replay for recording id:" + recordingId);
             }
-            else if (recordingPosition.isClosed())
-            {
-                // could re-read, to handle race of closing stream while constructing reader, but this is an
-                // unexpected race
-                throw new IllegalStateException("Position closed concurrently to replay construction." +
-                    " Replay for recording id:" + recordingId);
-            }
-            else
-            {
-                stopPosition = recordingPosition.get();
-            }
+
+            stopPosition = recordingPosition.get();
         }
 
         this.archiveDir = archiveDir;
@@ -137,8 +128,6 @@ class RecordingFragmentReader implements AutoCloseable
         }
 
         replayPosition = fromPosition;
-
-        // from above restrictions on arguments replay limit is in the range [replayPosition, MAX_LONG]
         replayLimit = fromPosition + replayLength;
     }
 

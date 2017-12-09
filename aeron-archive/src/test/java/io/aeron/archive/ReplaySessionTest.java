@@ -323,36 +323,6 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldAbortReplay()
-    {
-        final long length = 1024L;
-        final long correlationId = 1L;
-
-        final ReplaySession replaySession = replaySession(
-            RECORDING_POSITION,
-            length,
-            correlationId,
-            mockReplayPub,
-            mockControlSession,
-            mockArchiveConductor);
-
-        when(mockReplayPub.isClosed()).thenReturn(false);
-        when(mockReplayPub.isConnected()).thenReturn(true);
-
-        replaySession.doWork();
-
-        verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
-        assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
-
-        replaySession.abort();
-        assertEquals(replaySession.state(), ReplaySession.State.INACTIVE);
-
-        replaySession.doWork();
-        assertTrue(replaySession.isDone());
-        replaySession.close();
-    }
-
-    @Test
     public void shouldGiveUpIfPublishersAreNotConnectedAfterTimeout()
     {
         final long length = 1024L;

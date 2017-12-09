@@ -167,10 +167,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 
     public void abort()
     {
-        if (State.CLOSED != state)
-        {
-            state = State.INACTIVE;
-        }
+        CloseHelper.close(replayPublication);
     }
 
     public boolean isDone()
@@ -219,7 +216,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         try
         {
             final int polled = cursor.controlledPoll(this, REPLAY_FRAGMENT_LIMIT);
-            if (cursor.isDone())
+            if (cursor.isDone() || !replayPublication.isConnected())
             {
                 state = State.INACTIVE;
             }

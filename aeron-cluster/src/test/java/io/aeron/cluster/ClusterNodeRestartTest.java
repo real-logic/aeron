@@ -37,6 +37,9 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class ClusterNodeRestartTest
@@ -46,6 +49,7 @@ public class ClusterNodeRestartTest
 
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
+    private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
 
     @Before
     public void before()
@@ -69,7 +73,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldLaunchServiceSendMessageCloseServiceAndRestartServiceWithReplay()
+    public void shouldRestartServiceWithReplay()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
         final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
@@ -78,19 +82,11 @@ public class ClusterNodeRestartTest
 
         final AeronCluster aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
-
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
         final Publication publication = aeronCluster.ingressPublication();
-
-        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final long msgCorrelationId = aeron.nextCorrelationId();
-        final String msg = "Hello World!";
-        msgBuffer.putStringWithoutLengthAscii(0, msg);
 
-        while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
-        {
-            Thread.yield();
-        }
+        sendCountedMessageIntoCluster(sessionDecorator, publication, msgCorrelationId, 0);
 
         while (serviceMsgCounter.get() == 0)
         {
@@ -110,11 +106,71 @@ public class ClusterNodeRestartTest
         }
     }
 
+    @Test(timeout = 10_000)
+    public void shouldRestartServiceWithReplayAndContinue()
+    {
+        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+        final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
+
+        container = launchService(true, serviceMsgCounter);
+
+        AeronCluster aeronCluster = connectToCluster();
+        Aeron aeron = aeronCluster.context().aeron();
+        SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        Publication publication = aeronCluster.ingressPublication();
+        long msgCorrelationId = aeron.nextCorrelationId();
+
+        sendCountedMessageIntoCluster(sessionDecorator, publication, msgCorrelationId, 0);
+
+        while (serviceMsgCounter.get() == 0)
+        {
+            Thread.yield();
+        }
+
+        aeronCluster.close();
+        container.close();
+        clusteredMediaDriver.close();
+
+        launchClusteredMediaDriver(false);
+        container = launchService(false, restartServiceMsgCounter);
+
+        aeronCluster = connectToCluster();
+        aeron = aeronCluster.context().aeron();
+        sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        publication = aeronCluster.ingressPublication();
+        msgCorrelationId = aeron.nextCorrelationId();
+
+        sendCountedMessageIntoCluster(sessionDecorator, publication, msgCorrelationId, 1);
+
+        while (restartServiceMsgCounter.get() == 1)
+        {
+            Thread.yield();
+        }
+
+        aeronCluster.close();
+    }
+
+    private void sendCountedMessageIntoCluster(
+        final SessionDecorator sessionDecorator,
+        final Publication publication,
+        final long msgCorrelationId,
+        final int value)
+    {
+        msgBuffer.putInt(0, value);
+
+        while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, SIZE_OF_INT) < 0)
+        {
+            Thread.yield();
+        }
+    }
+
     private ClusteredServiceContainer launchService(final boolean initialLaunch, final AtomicLong msgCounter)
     {
         final ClusteredService service =
             new StubClusteredService()
             {
+                private int counterValue = 0;
+
                 public void onSessionMessage(
                     final long clusterSessionId,
                     final long correlationId,
@@ -124,7 +180,9 @@ public class ClusterNodeRestartTest
                     final int length,
                     final Header header)
                 {
+                    assertThat(buffer.getInt(offset), is(counterValue));
                     msgCounter.getAndIncrement();
+                    counterValue++;
                 }
             };
 

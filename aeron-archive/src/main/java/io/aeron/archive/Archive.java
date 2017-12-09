@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
+import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.exceptions.ConfigurationException;
 import org.agrona.BitUtil;
@@ -163,8 +164,6 @@ public class Archive implements AutoCloseable
         public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archive.dir";
         public static final String ARCHIVE_DIR_DEFAULT = "archive";
 
-        static final String CATALOG_FILE_NAME = "archive.catalog";
-        static final String RECORDING_SEGMENT_POSTFIX = ".rec";
         public static final String SEGMENT_FILE_LENGTH_PROP_NAME = "aeron.archive.segment.file.length";
         public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;
 
@@ -185,21 +184,51 @@ public class Archive implements AutoCloseable
         public static final String REPLAY_FRAGMENT_LIMIT_PROP_NAME = "aeron.archive.replay.fragment.limit";
         public static final int REPLAY_FRAGMENT_LIMIT_DEFAULT = 16;
 
+        static final String CATALOG_FILE_NAME = "archive.catalog";
+        static final String RECORDING_SEGMENT_POSTFIX = ".rec";
+
+        /**
+         * Get the directory name to be used for storing the archive.
+         *
+         * @return the directory name to be used for storing the archive.
+         */
         public static String archiveDirName()
         {
             return System.getProperty(ARCHIVE_DIR_PROP_NAME, ARCHIVE_DIR_DEFAULT);
         }
 
+        /**
+         * The length of file to be used for storing recording segments that must be a power of 2.
+         * <p>
+         * If the {@link Image#termBufferLength()} is greater then this will take priority.
+         *
+         * @return length of file to be used for storing recording segments.
+         */
         public static int segmentFileLength()
         {
             return getSizeAsInt(SEGMENT_FILE_LENGTH_PROP_NAME, SEGMENT_FILE_LENGTH_DEFAULT);
         }
 
+        /**
+         * The level at which files should be sync'ed to disk.
+         * <ul>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
+         * </ul>
+         *
+         * @return level at which files should be sync'ed to disk.
+         */
         public static int fileSyncLevel()
         {
             return Integer.getInteger(FILE_SYNC_LEVEL_PROP_NAME, FILE_SYNC_LEVEL_DEFAULT);
         }
 
+        /**
+         * The threading mode to be employed by the archive.
+         *
+         * @return the threading mode to be employed by the archive.
+         */
         public static ArchiveThreadingMode threadingMode()
         {
             return ArchiveThreadingMode.valueOf(System.getProperty(
@@ -221,16 +250,31 @@ public class Archive implements AutoCloseable
             };
         }
 
+        /**
+         * The maximum number of recordings that can operate concurrently after which new requests will be rejected.
+         *
+         * @return the maximum number of recordings that can operate concurrently.
+         */
         public static int maxConcurrentRecordings()
         {
             return Integer.getInteger(MAX_CONCURRENT_RECORDINGS_PROP_NAME, MAX_CONCURRENT_RECORDINGS_DEFAULT);
         }
 
+        /**
+         * The maximum number of replays that can operate concurrently after which new requests will be rejected.
+         *
+         * @return the maximum number of replays that can operate concurrently.
+         */
         public static int maxConcurrentReplays()
         {
             return Integer.getInteger(MAX_CONCURRENT_REPLAYS_PROP_NAME, MAX_CONCURRENT_REPLAYS_DEFAULT);
         }
 
+        /**
+         * Limit for the number of fragments to be replayed per duty cycle on a replay.
+         *
+         * @return the limit for the number of fragments to be replayed per duty cycle on a replay.
+         */
         public static int replayFragmentLimit()
         {
             return Integer.getInteger(REPLAY_FRAGMENT_LIMIT_PROP_NAME, REPLAY_FRAGMENT_LIMIT_DEFAULT);
@@ -549,7 +593,8 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Set the file length to be used for recording data segment files.
+         * Set the file length to be used for recording data segment files. If the {@link Image#termBufferLength()} is
+         * larger than the segment file length then the term length will be used.
          *
          * @param segmentFileLength the file length to be used for recording data segment files.
          * @return this for a fluent API.

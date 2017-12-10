@@ -47,7 +47,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<Counter> recordingPositionByIdMap = new Long2ObjectHashMap<>();
     private final Map<String, Subscription> subscriptionMap = new HashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
@@ -328,7 +327,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             return;
         }
 
+        final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
         final long newId = replaySessionId++;
+
         final ReplaySession replaySession = new ReplaySession(
             position,
             length,
@@ -342,7 +343,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             replayChannel,
             replayStreamId,
             recordingSummary,
-            recordingPositionByIdMap.get(recordingId));
+            null == recordingSession ? null : recordingSession.recordingPosition());
 
         replaySessionByIdMap.put(newId, replaySession);
         replayer.addSession(replaySession);
@@ -412,13 +413,12 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
     void closeRecordingSession(final RecordingSession session)
     {
-        recordingSessionByIdMap.remove(session.sessionId());
+        final long sessionId = session.sessionId();
+
+        recordingSessionByIdMap.remove(sessionId);
+        catalog.recordingStopped(sessionId, session.recordingPosition().get(), epochClock.time());
+
         closeSession(session);
-
-        final Counter position = recordingPositionByIdMap.remove(session.sessionId());
-        catalog.recordingStopped(session.recordingId(), position.get(), epochClock.time());
-
-        position.close();
     }
 
     void closeReplaySession(final ReplaySession session)
@@ -462,6 +462,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             sourceIdentity);
 
         final Counter position = newRecordingPositionCounter(recordingId, sessionId, streamId, strippedChannel);
+        position.setOrdered(startPosition);
 
         final RecordingSession session = new RecordingSession(
             recordingId,
@@ -472,8 +473,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             ctx);
 
         recordingSessionByIdMap.put(recordingId, session);
-        recordingPositionByIdMap.put(recordingId, position);
-
         recorder.addSession(session);
     }
 

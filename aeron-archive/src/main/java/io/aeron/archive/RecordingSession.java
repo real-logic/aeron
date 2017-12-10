@@ -58,14 +58,7 @@ class RecordingSession implements Session
         final int termBufferLength = image.termBufferLength();
         blockLengthLimit = Math.min(termBufferLength, MAX_BLOCK_LENGTH);
 
-        position.setOrdered(image.joinPosition());
-
         recordingWriter = new RecordingWriter(recordingId, termBufferLength, context, archiveDirChannel, position);
-    }
-
-    public long recordingId()
-    {
-        return recordingId;
     }
 
     public long sessionId()
@@ -89,7 +82,13 @@ class RecordingSession implements Session
         {
             state = State.CLOSED;
             CloseHelper.close(recordingWriter);
+            CloseHelper.close(position);
         }
+    }
+
+    public Counter recordingPosition()
+    {
+        return position;
     }
 
     public int doWork()

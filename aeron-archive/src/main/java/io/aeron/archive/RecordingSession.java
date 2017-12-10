@@ -41,9 +41,11 @@ class RecordingSession implements Session
     private final Counter position;
     private final RecordingWriter recordingWriter;
     private State state = State.INIT;
+    private final String originalChannel;
 
     RecordingSession(
         final long recordingId,
+        final String originalChannel,
         final RecordingEventsProxy recordingEventsProxy,
         final Image image,
         final Counter position,
@@ -51,6 +53,7 @@ class RecordingSession implements Session
         final Archive.Context context)
     {
         this.recordingId = recordingId;
+        this.originalChannel = originalChannel;
         this.recordingEventsProxy = recordingEventsProxy;
         this.image = image;
         this.position = position;
@@ -122,7 +125,7 @@ class RecordingSession implements Session
             image.joinPosition(),
             image.sessionId(),
             image.subscription().streamId(),
-            image.subscription().channel(),
+            originalChannel,
             image.sourceIdentity());
 
         state = State.RECORDING;

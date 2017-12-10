@@ -466,6 +466,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         final RecordingSession session = new RecordingSession(
             recordingId,
+            originalChannel,
             recordingEventsProxy,
             image,
             position,

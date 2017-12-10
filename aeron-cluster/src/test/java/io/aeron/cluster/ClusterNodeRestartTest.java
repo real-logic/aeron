@@ -33,6 +33,7 @@ import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,11 +43,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
+@Ignore
 public class ClusterNodeRestartTest
 {
-
-    private static final int FRAGMENT_LIMIT = 1;
-
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();

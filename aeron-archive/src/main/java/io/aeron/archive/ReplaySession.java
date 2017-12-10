@@ -216,7 +216,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         try
         {
             final int polled = cursor.controlledPoll(this, REPLAY_FRAGMENT_LIMIT);
-            if (cursor.isDone() || !replayPublication.isConnected())
+            if (cursor.isDone())
             {
                 state = State.INACTIVE;
             }
@@ -234,17 +234,12 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         final long result = replayPublication.tryClaim(length, bufferClaim);
         if (result > 0)
         {
-            try
-            {
-                bufferClaim
-                    .flags(frameFlags(termBuffer, frameOffset))
-                    .reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
-                    .buffer().putBytes(bufferClaim.offset(), termBuffer, offset, length);
-            }
-            finally
-            {
-                bufferClaim.commit();
-            }
+            bufferClaim
+                .flags(frameFlags(termBuffer, frameOffset))
+                .reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
+                .buffer().putBytes(bufferClaim.offset(), termBuffer, offset, length);
+
+            bufferClaim.commit();
         }
 
         return result;

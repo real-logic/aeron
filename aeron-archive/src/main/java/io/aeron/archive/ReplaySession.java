@@ -213,20 +213,21 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 
     private int replay()
     {
+        int workDone = 0;
         try
         {
-            final int polled = cursor.controlledPoll(this, REPLAY_FRAGMENT_LIMIT);
+            workDone = cursor.controlledPoll(this, REPLAY_FRAGMENT_LIMIT);
             if (cursor.isDone())
             {
                 state = State.INACTIVE;
             }
-
-            return polled;
         }
         catch (final Exception ex)
         {
-            return closeOnError(ex, "cursor read failed");
+            closeOnError(ex, "cursor read failed");
         }
+
+        return workDone;
     }
 
     private long replayFrame(final UnsafeBuffer termBuffer, final int offset, final int length, final int frameOffset)
@@ -251,7 +252,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         {
             if (epochClock.time() > connectDeadlineMs)
             {
-                return closeOnError(null, "no connection established for replay");
+                closeOnError(null, "no connection established for replay");
             }
 
             return 0;
@@ -262,7 +263,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         return 1;
     }
 
-    private int closeOnError(final Throwable ex, final String errorMessage)
+    private void closeOnError(final Throwable ex, final String errorMessage)
     {
         state = State.INACTIVE;
         CloseHelper.quietClose(cursor);
@@ -280,7 +281,5 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         {
             LangUtil.rethrowUnchecked(ex);
         }
-
-        return 0;
     }
 }

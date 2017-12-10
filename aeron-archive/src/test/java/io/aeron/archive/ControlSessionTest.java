@@ -18,7 +18,7 @@ public class ControlSessionTest
     private ControlSession session;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         session = new ControlSession(
             1,
@@ -31,7 +31,7 @@ public class ControlSessionTest
     }
 
     @Test
-    public void shouldSequenceListRecordingsProcessing() throws Exception
+    public void shouldSequenceListRecordingsProcessing()
     {
         when(mockControlPublication.isClosed()).thenReturn(false);
         when(mockControlPublication.isConnected()).thenReturn(true);

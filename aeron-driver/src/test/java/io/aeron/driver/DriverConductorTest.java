@@ -116,7 +116,7 @@ public class DriverConductorTest
         };
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         // System GC required in order to ensure that the direct byte buffers get cleaned and avoid OOM.
         System.gc();
@@ -173,13 +173,13 @@ public class DriverConductorTest
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         driverConductor.onClose();
     }
 
     @Test
-    public void shouldBeAbleToAddSinglePublication() throws Exception
+    public void shouldBeAbleToAddSinglePublication()
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
 
@@ -198,7 +198,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddPublicationForReplay() throws Exception
+    public void shouldBeAbleToAddPublicationForReplay()
     {
         final int mtu = 1024 * 8;
         final int termLength = 128 * 1024;
@@ -237,7 +237,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddIpcPublicationForReplay() throws Exception
+    public void shouldBeAbleToAddIpcPublicationForReplay()
     {
         final int termLength = 128 * 1024;
         final int initialTermId = 7;
@@ -270,7 +270,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddSingleSubscription() throws Exception
+    public void shouldBeAbleToAddSingleSubscription()
     {
         final long id = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
 
@@ -284,7 +284,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveSingleSubscription() throws Exception
+    public void shouldBeAbleToAddAndRemoveSingleSubscription()
     {
         final long id = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
         driverProxy.removeSubscription(id);
@@ -295,7 +295,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddMultipleStreams() throws Exception
+    public void shouldBeAbleToAddMultipleStreams()
     {
         driverProxy.addPublication(CHANNEL_4001, STREAM_ID_1);
         driverProxy.addPublication(CHANNEL_4002, STREAM_ID_2);
@@ -308,7 +308,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveSingleStream() throws Exception
+    public void shouldBeAbleToRemoveSingleStream()
     {
         final long id = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         driverProxy.removePublication(id);
@@ -320,7 +320,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveMultipleStreams() throws Exception
+    public void shouldBeAbleToRemoveMultipleStreams()
     {
         final long id1 = driverProxy.addPublication(CHANNEL_4001, STREAM_ID_1);
         final long id2 = driverProxy.addPublication(CHANNEL_4002, STREAM_ID_2);
@@ -338,7 +338,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldKeepSubscriptionMediaEndpointUponRemovalOfAllButOneSubscriber() throws Exception
+    public void shouldKeepSubscriptionMediaEndpointUponRemovalOfAllButOneSubscriber()
     {
         final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_4000);
 
@@ -363,7 +363,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldOnlyRemoveSubscriptionMediaEndpointUponRemovalOfAllSubscribers() throws Exception
+    public void shouldOnlyRemoveSubscriptionMediaEndpointUponRemovalOfAllSubscribers()
     {
         final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_4000);
 
@@ -394,7 +394,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldErrorOnRemovePublicationOnUnknownRegistrationId() throws Exception
+    public void shouldErrorOnRemovePublicationOnUnknownRegistrationId()
     {
         final long id = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         driverProxy.removePublication(id + 1);
@@ -414,7 +414,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldAddPublicationWithMtu() throws Exception
+    public void shouldAddPublicationWithMtu()
     {
         final int mtuLength = 4096;
         final String mtuParam = "|" + CommonContext.MTU_LENGTH_PARAM_NAME + "=" + mtuLength;
@@ -429,7 +429,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldErrorOnRemoveSubscriptionOnUnknownRegistrationId() throws Exception
+    public void shouldErrorOnRemoveSubscriptionOnUnknownRegistrationId()
     {
         final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
         driverProxy.removeSubscription(id1 + 100);
@@ -447,7 +447,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldErrorOnAddSubscriptionWithInvalidChannel() throws Exception
+    public void shouldErrorOnAddSubscriptionWithInvalidChannel()
     {
         driverProxy.addSubscription(INVALID_URI, STREAM_ID_1);
 
@@ -464,7 +464,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldTimeoutPublication() throws Exception
+    public void shouldTimeoutPublication()
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
 
@@ -482,7 +482,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldNotTimeoutPublicationOnKeepAlive() throws Exception
+    public void shouldNotTimeoutPublicationOnKeepAlive()
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
 
@@ -508,7 +508,7 @@ public class DriverConductorTest
 
     @Ignore
     @Test
-    public void shouldTimeoutPublicationWithNoKeepaliveButNotDrained() throws Exception
+    public void shouldTimeoutPublicationWithNoKeepaliveButNotDrained()
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
 
@@ -561,7 +561,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldTimeoutSubscription() throws Exception
+    public void shouldTimeoutSubscription()
     {
         driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
 
@@ -582,7 +582,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldNotTimeoutSubscriptionOnKeepAlive() throws Exception
+    public void shouldNotTimeoutSubscriptionOnKeepAlive()
     {
         driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
 
@@ -609,7 +609,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldCreateImageOnSubscription() throws Exception
+    public void shouldCreateImageOnSubscription()
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
         final int initialTermId = 1;
@@ -642,7 +642,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldNotCreateImageOnUnknownSubscription() throws Exception
+    public void shouldNotCreateImageOnUnknownSubscription()
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
@@ -666,7 +666,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldSignalInactiveImageWhenImageTimesOut() throws Exception
+    public void shouldSignalInactiveImageWhenImageTimesOut()
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
@@ -699,7 +699,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldAlwaysGiveNetworkPublicationCorrelationIdToClientCallbacks() throws Exception
+    public void shouldAlwaysGiveNetworkPublicationCorrelationIdToClientCallbacks()
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
@@ -748,7 +748,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldNotSendAvailableImageWhileImageNotActiveOnAddSubscription() throws Exception
+    public void shouldNotSendAvailableImageWhileImageNotActiveOnAddSubscription()
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
@@ -801,7 +801,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddSingleIpcPublication() throws Exception
+    public void shouldBeAbleToAddSingleIpcPublication()
     {
         final long id = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
 
@@ -814,7 +814,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddIpcPublicationThenSubscription() throws Exception
+    public void shouldBeAbleToAddIpcPublicationThenSubscription()
     {
         final long idPub = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
@@ -834,7 +834,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddThenRemoveTheAddIpcPublicationWithExistingSubscription() throws Exception
+    public void shouldBeAbleToAddThenRemoveTheAddIpcPublicationWithExistingSubscription()
     {
         final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         final long idPubOne = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -868,7 +868,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddSubscriptionThenIpcPublication() throws Exception
+    public void shouldBeAbleToAddSubscriptionThenIpcPublication()
     {
         final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         final long idPub = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -888,7 +888,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveIpcPublication() throws Exception
+    public void shouldBeAbleToAddAndRemoveIpcPublication()
     {
         final long idAdd = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         driverProxy.removePublication(idAdd);
@@ -900,7 +900,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveSubscriptionToIpcPublication() throws Exception
+    public void shouldBeAbleToAddAndRemoveSubscriptionToIpcPublication()
     {
         final long idAdd = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         driverProxy.removeSubscription(idAdd);
@@ -912,7 +912,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveTwoIpcPublications() throws Exception
+    public void shouldBeAbleToAddAndRemoveTwoIpcPublications()
     {
         final long idAdd1 = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
         final long idAdd2 = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -932,7 +932,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveIpcPublicationAndSubscription() throws Exception
+    public void shouldBeAbleToAddAndRemoveIpcPublicationAndSubscription()
     {
         final long idAdd1 = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
         final long idAdd2 = driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
@@ -952,7 +952,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldTimeoutIpcPublication() throws Exception
+    public void shouldTimeoutIpcPublication()
     {
         driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
 
@@ -968,7 +968,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldNotTimeoutIpcPublicationWithKeepalive() throws Exception
+    public void shouldNotTimeoutIpcPublicationWithKeepalive()
     {
         driverProxy.addPublication(CHANNEL_IPC, STREAM_ID_1);
 
@@ -988,7 +988,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddSingleSpy() throws Exception
+    public void shouldBeAbleToAddSingleSpy()
     {
         final long id = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
 
@@ -1002,7 +1002,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddNetworkPublicationThenSingleSpy() throws Exception
+    public void shouldBeAbleToAddNetworkPublicationThenSingleSpy()
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
@@ -1023,7 +1023,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddSingleSpyThenNetworkPublication() throws Exception
+    public void shouldBeAbleToAddSingleSpyThenNetworkPublication()
     {
         final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
@@ -1044,7 +1044,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldBeAbleToAddNetworkPublicationThenSingleSpyThenRemoveSpy() throws Exception
+    public void shouldBeAbleToAddNetworkPublicationThenSingleSpyThenRemoveSpy()
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
@@ -1060,7 +1060,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldTimeoutSpy() throws Exception
+    public void shouldTimeoutSpy()
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
@@ -1079,7 +1079,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldNotTimeoutSpyWithKeepalive() throws Exception
+    public void shouldNotTimeoutSpyWithKeepalive()
     {
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
@@ -1102,7 +1102,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldTimeoutNetworkPublicationWithSpy() throws Exception
+    public void shouldTimeoutNetworkPublicationWithSpy()
     {
         final long clientId = fromClientCommands.nextCorrelationId();
         final DriverProxy spyDriverProxy = new DriverProxy(fromClientCommands, clientId);
@@ -1131,7 +1131,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldOnlyCloseSendChannelEndpointOnceWithMultiplePublications() throws Exception
+    public void shouldOnlyCloseSendChannelEndpointOnceWithMultiplePublications()
     {
         final long id1 = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         final long id2 = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_2);
@@ -1149,7 +1149,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldOnlyCloseReceiveChannelEndpointOnceWithMultipleSubscriptions() throws Exception
+    public void shouldOnlyCloseReceiveChannelEndpointOnceWithMultipleSubscriptions()
     {
         final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
         final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_2);
@@ -1167,7 +1167,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldErrorWhenConflictingUnreliableSubscriptionAdded() throws Exception
+    public void shouldErrorWhenConflictingUnreliableSubscriptionAdded()
     {
         driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
         driverConductor.doWork();
@@ -1179,7 +1179,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldErrorWhenConflictingDefaultReliableSubscriptionAdded() throws Exception
+    public void shouldErrorWhenConflictingDefaultReliableSubscriptionAdded()
     {
         driverProxy.addSubscription(CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
         driverConductor.doWork();
@@ -1191,7 +1191,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldErrorWhenConflictingReliableSubscriptionAdded() throws Exception
+    public void shouldErrorWhenConflictingReliableSubscriptionAdded()
     {
         driverProxy.addSubscription(CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
         driverConductor.doWork();
@@ -1203,17 +1203,16 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldAddSingleCounter() throws Exception
+    public void shouldAddSingleCounter()
     {
-        final long registrationId =
-            driverProxy.addCounter(
-                COUNTER_TYPE_ID,
-                counterKeyAndLabel,
-                COUNTER_KEY_OFFSET,
-                COUNTER_KEY_LENGTH,
-                counterKeyAndLabel,
-                COUNTER_LABEL_OFFSET,
-                COUNTER_LABEL_LENGTH);
+        final long registrationId = driverProxy.addCounter(
+            COUNTER_TYPE_ID,
+            counterKeyAndLabel,
+            COUNTER_KEY_OFFSET,
+            COUNTER_KEY_LENGTH,
+            counterKeyAndLabel,
+            COUNTER_LABEL_OFFSET,
+            COUNTER_LABEL_LENGTH);
 
         driverConductor.doWork();
 
@@ -1230,17 +1229,16 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldRemoveSingleCounter() throws Exception
+    public void shouldRemoveSingleCounter()
     {
-        final long registrationId =
-            driverProxy.addCounter(
-                COUNTER_TYPE_ID,
-                counterKeyAndLabel,
-                COUNTER_KEY_OFFSET,
-                COUNTER_KEY_LENGTH,
-                counterKeyAndLabel,
-                COUNTER_LABEL_OFFSET,
-                COUNTER_LABEL_LENGTH);
+        final long registrationId = driverProxy.addCounter(
+            COUNTER_TYPE_ID,
+            counterKeyAndLabel,
+            COUNTER_KEY_OFFSET,
+            COUNTER_KEY_LENGTH,
+            counterKeyAndLabel,
+            COUNTER_LABEL_OFFSET,
+            COUNTER_LABEL_LENGTH);
 
         driverConductor.doWork();
 
@@ -1257,17 +1255,16 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldRemoveCounterOnClientTimeout() throws Exception
+    public void shouldRemoveCounterOnClientTimeout()
     {
-        final long registrationId =
-            driverProxy.addCounter(
-                COUNTER_TYPE_ID,
-                counterKeyAndLabel,
-                COUNTER_KEY_OFFSET,
-                COUNTER_KEY_LENGTH,
-                counterKeyAndLabel,
-                COUNTER_LABEL_OFFSET,
-                COUNTER_LABEL_LENGTH);
+        final long registrationId = driverProxy.addCounter(
+            COUNTER_TYPE_ID,
+            counterKeyAndLabel,
+            COUNTER_KEY_OFFSET,
+            COUNTER_KEY_LENGTH,
+            counterKeyAndLabel,
+            COUNTER_LABEL_OFFSET,
+            COUNTER_LABEL_LENGTH);
 
         driverConductor.doWork();
 
@@ -1281,17 +1278,16 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldNotRemoveCounterOnClientKeepalive() throws Exception
+    public void shouldNotRemoveCounterOnClientKeepalive()
     {
-        final long registrationId =
-            driverProxy.addCounter(
-                COUNTER_TYPE_ID,
-                counterKeyAndLabel,
-                COUNTER_KEY_OFFSET,
-                COUNTER_KEY_LENGTH,
-                counterKeyAndLabel,
-                COUNTER_LABEL_OFFSET,
-                COUNTER_LABEL_LENGTH);
+        final long registrationId = driverProxy.addCounter(
+            COUNTER_TYPE_ID,
+            counterKeyAndLabel,
+            COUNTER_KEY_OFFSET,
+            COUNTER_KEY_LENGTH,
+            counterKeyAndLabel,
+            COUNTER_LABEL_OFFSET,
+            COUNTER_LABEL_LENGTH);
 
         driverConductor.doWork();
 
@@ -1310,17 +1306,16 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldInformClientsOfRemovedCounter() throws Exception
+    public void shouldInformClientsOfRemovedCounter()
     {
-        final long registrationId =
-            driverProxy.addCounter(
-                COUNTER_TYPE_ID,
-                counterKeyAndLabel,
-                COUNTER_KEY_OFFSET,
-                COUNTER_KEY_LENGTH,
-                counterKeyAndLabel,
-                COUNTER_LABEL_OFFSET,
-                COUNTER_LABEL_LENGTH);
+        final long registrationId = driverProxy.addCounter(
+            COUNTER_TYPE_ID,
+            counterKeyAndLabel,
+            COUNTER_KEY_OFFSET,
+            COUNTER_KEY_LENGTH,
+            counterKeyAndLabel,
+            COUNTER_LABEL_OFFSET,
+            COUNTER_LABEL_LENGTH);
 
         driverConductor.doWork();
 
@@ -1337,7 +1332,7 @@ public class DriverConductorTest
         verify(spyCountersManager).free(captor.getValue());
     }
 
-    private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer) throws Exception
+    private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)
     {
         while (!condition.getAsBoolean())
         {
@@ -1350,7 +1345,7 @@ public class DriverConductorTest
         }
     }
 
-    private void doWorkUntil(final BooleanSupplier condition) throws Exception
+    private void doWorkUntil(final BooleanSupplier condition)
     {
         doWorkUntil(condition, (j) -> {});
     }

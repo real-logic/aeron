@@ -46,7 +46,7 @@ public class ReplayedBasicSubscriber
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
 
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 

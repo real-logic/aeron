@@ -36,7 +36,7 @@ import static io.aeron.CncFileDescriptor.CNC_VERSION;
  */
 public class ErrorStat
 {
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         final File cncFile = CommonContext.newDefaultCncFile();
         System.out.println("Command `n Control file " + cncFile);

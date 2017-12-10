@@ -82,7 +82,7 @@ public class CounterTest
     }
 
     @Test(timeout = 2000)
-    public void shouldBeAbleToAddCounter() throws Exception
+    public void shouldBeAbleToAddCounter()
     {
         launch();
 

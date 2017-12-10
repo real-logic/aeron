@@ -57,7 +57,7 @@ public class PongTest
     private FragmentHandler pongHandler = mock(FragmentHandler.class);
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         driver = MediaDriver.launch(new MediaDriver.Context().threadingMode(ThreadingMode.SHARED));
         pingClient = Aeron.connect();
@@ -71,7 +71,7 @@ public class PongTest
     }
 
     @After
-    public void closeEverything() throws Exception
+    public void closeEverything()
     {
         pongClient.close();
         pingClient.close();

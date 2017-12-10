@@ -34,7 +34,7 @@ public class ListRecordingsForUriSessionTest
     private final ControlSession controlSession = mock(ControlSession.class);
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         catalog = new Catalog(archiveDir, null, 0, clock);
         matchingRecordingIds[0] = catalog.addNewRecording(

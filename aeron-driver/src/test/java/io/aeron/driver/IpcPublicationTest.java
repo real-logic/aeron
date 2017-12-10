@@ -57,7 +57,7 @@ public class IpcPublicationTest
 
     @SuppressWarnings("unchecked")
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         final RingBuffer fromClientCommands =
             new ManyToOneRingBuffer(new UnsafeBuffer(
@@ -115,7 +115,7 @@ public class IpcPublicationTest
     }
 
     @Test
-    public void shouldIncrementPublisherLimitOnSubscription() throws Exception
+    public void shouldIncrementPublisherLimitOnSubscription()
     {
         driverProxy.addSubscription(CommonContext.IPC_CHANNEL, STREAM_ID);
         driverConductor.doWork();

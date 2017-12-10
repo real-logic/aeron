@@ -27,7 +27,7 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
  */
 public class LowLatencyMediaDriver
 {
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         loadPropertiesFiles(args);
 

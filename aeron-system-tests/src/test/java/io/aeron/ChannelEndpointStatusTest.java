@@ -157,7 +157,7 @@ public class ChannelEndpointStatusTest
     }
 
     @Test(timeout = 2000)
-    public void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions() throws Exception
+    public void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions()
     {
         launch();
 
@@ -176,7 +176,7 @@ public class ChannelEndpointStatusTest
     }
 
     @Test(timeout = 2000)
-    public void shouldCatchErrorOnAddressAlreadyInUseForPublications() throws Exception
+    public void shouldCatchErrorOnAddressAlreadyInUseForPublications()
     {
         launch();
 
@@ -195,7 +195,7 @@ public class ChannelEndpointStatusTest
     }
 
     @Test(timeout = 2000)
-    public void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscripions() throws Exception
+    public void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscriptions()
     {
         launch();
 

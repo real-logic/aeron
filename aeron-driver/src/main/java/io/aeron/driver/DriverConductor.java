@@ -136,7 +136,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         cmd.execute(this);
     }
 
-    public int doWork() throws Exception
+    public int doWork()
     {
         int workCount = 0;
 

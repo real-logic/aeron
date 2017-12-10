@@ -44,7 +44,7 @@ public class Pong
     private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
     private static final IdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
 

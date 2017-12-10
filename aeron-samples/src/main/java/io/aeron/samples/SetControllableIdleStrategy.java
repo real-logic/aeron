@@ -22,7 +22,7 @@ import org.agrona.concurrent.status.StatusIndicator;
 
 public class SetControllableIdleStrategy
 {
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         try (Aeron aeron = Aeron.connect())
         {

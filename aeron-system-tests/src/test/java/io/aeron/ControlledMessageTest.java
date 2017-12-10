@@ -34,7 +34,7 @@ public class ControlledMessageTest
     public static final int PAYLOAD_LENGTH = 10;
 
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessage() throws Exception
+    public void shouldReceivePublishedMessage()
     {
         final MediaDriver.Context ctx = new MediaDriver.Context();
         ctx.threadingMode(ThreadingMode.SHARED);

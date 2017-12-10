@@ -63,7 +63,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         return "receiver";
     }
 
-    public int doWork() throws Exception
+    public int doWork()
     {
         int workCount = commandQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
         final int bytesReceived = dataTransportPoller.pollTransports();

@@ -57,7 +57,7 @@ public class BasicArchiveTest
     private AeronArchive aeronArchive;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
@@ -87,7 +87,7 @@ public class BasicArchiveTest
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         CloseHelper.close(aeronArchive);
         CloseHelper.close(archive);

@@ -55,7 +55,7 @@ public class ExclusivePublicationTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldPublishFromIndependentExclusivePublications(final String channel) throws Exception
+    public void shouldPublishFromIndependentExclusivePublications(final String channel)
     {
         final AtomicInteger imageCounter = new AtomicInteger();
         final AvailableImageHandler availableImageHandler = (image) -> imageCounter.getAndIncrement();

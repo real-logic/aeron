@@ -51,7 +51,7 @@ public class BufferClaimMessageTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessageWithInterleavedAbort(final String channel) throws Exception
+    public void shouldReceivePublishedMessageWithInterleavedAbort(final String channel)
     {
         final BufferClaim bufferClaim = new BufferClaim();
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
@@ -99,7 +99,7 @@ public class BufferClaimMessageTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldTransferReservedValue(final String channel) throws Exception
+    public void shouldTransferReservedValue(final String channel)
     {
         final BufferClaim bufferClaim = new BufferClaim();
         final MediaDriver.Context ctx = new MediaDriver.Context();

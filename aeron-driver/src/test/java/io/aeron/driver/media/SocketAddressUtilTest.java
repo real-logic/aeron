@@ -41,19 +41,19 @@ public class SocketAddressUtilTest
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldRejectOnInvalidPort() throws Exception
+    public void shouldRejectOnInvalidPort()
     {
         SocketAddressUtil.parse("192.168.1.20:aa");
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldRejectOnMissingPort() throws Exception
+    public void shouldRejectOnMissingPort()
     {
         SocketAddressUtil.parse("192.168.1.20");
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldRejectOnEmptyPort() throws Exception
+    public void shouldRejectOnEmptyPort()
     {
         SocketAddressUtil.parse("192.168.1.20:");
     }
@@ -65,7 +65,7 @@ public class SocketAddressUtilTest
     }
 
     @Test
-    public void shouldParseWithScope() throws Exception
+    public void shouldParseWithScope()
     {
         final InetSocketAddress address = SocketAddressUtil.parse("[::1%12~_.-34]:1234");
         assertThat(address.getAddress(), instanceOf(Inet6Address.class));

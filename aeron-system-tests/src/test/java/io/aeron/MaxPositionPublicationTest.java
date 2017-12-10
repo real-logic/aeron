@@ -35,7 +35,7 @@ public class MaxPositionPublicationTest
 
     @Test(timeout = 10000)
     @SuppressWarnings("unused")
-    public void shouldPublishFromIndependentExclusivePublications() throws Exception
+    public void shouldPublishFromIndependentExclusivePublications()
     {
         final int termLength = 64 * 1024;
         final String channelUri = new ChannelUriStringBuilder()

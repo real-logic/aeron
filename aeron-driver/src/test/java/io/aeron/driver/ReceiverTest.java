@@ -235,7 +235,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldInsertDataIntoLogAfterInitialExchange() throws Exception
+    public void shouldInsertDataIntoLogAfterInitialExchange()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
@@ -305,7 +305,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldNotOverwriteDataFrameWithHeartbeat() throws Exception
+    public void shouldNotOverwriteDataFrameWithHeartbeat()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
@@ -378,7 +378,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldOverwriteHeartbeatWithDataFrame() throws Exception
+    public void shouldOverwriteHeartbeatWithDataFrame()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
@@ -451,7 +451,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldHandleNonZeroTermOffsetCorrectly() throws Exception
+    public void shouldHandleNonZeroTermOffsetCorrectly()
     {
         final int initialTermOffset = align(TERM_BUFFER_LENGTH / 16, FrameDescriptor.FRAME_ALIGNMENT);
         final int alignedDataFrameLength =
@@ -529,7 +529,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldRemoveImageFromDispatcherWithNoActivity() throws Exception
+    public void shouldRemoveImageFromDispatcherWithNoActivity()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
@@ -551,7 +551,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldNotRemoveImageFromDispatcherOnRemoveSubscription() throws Exception
+    public void shouldNotRemoveImageFromDispatcherOnRemoveSubscription()
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);

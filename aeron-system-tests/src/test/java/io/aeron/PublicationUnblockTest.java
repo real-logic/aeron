@@ -46,7 +46,7 @@ public class PublicationUnblockTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldUnblockNonCommittedMessage(final String channel) throws Exception
+    public void shouldUnblockNonCommittedMessage(final String channel)
     {
         final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
         final MediaDriver.Context ctx = new MediaDriver.Context()

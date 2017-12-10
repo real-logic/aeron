@@ -43,13 +43,13 @@ public class ChannelUriTest
     }
 
     @Test
-    public void shouldRejectWithOutOfPlaceColon() throws Exception
+    public void shouldRejectWithOutOfPlaceColon()
     {
         assertInvalid("aeron:udp:");
     }
 
     @Test
-    public void shouldParseWithSingleParameter() throws Exception
+    public void shouldParseWithSingleParameter()
     {
         assertParseWithParams("aeron:udp?endpoint=224.10.9.8", "endpoint", "224.10.9.8");
         assertParseWithParams("aeron:udp?add|ress=224.10.9.8", "add|ress", "224.10.9.8");
@@ -57,7 +57,7 @@ public class ChannelUriTest
     }
 
     @Test
-    public void shouldParseWithMultipleParameters() throws Exception
+    public void shouldParseWithMultipleParameters()
     {
         assertParseWithParams(
             "aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16",
@@ -68,7 +68,7 @@ public class ChannelUriTest
     }
 
     @Test
-    public void shouldAllowReturnDefaultIfParamNotSpecified() throws Exception
+    public void shouldAllowReturnDefaultIfParamNotSpecified()
     {
         final ChannelUri uri = ChannelUri.parse("aeron:udp?endpoint=224.10.9.8");
         assertThat(uri.get("interface"), is(nullValue()));

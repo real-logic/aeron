@@ -41,7 +41,6 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 
-import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -102,7 +101,7 @@ public class ArchiveReplayLoadTest
     private FragmentHandler validatingFragmentHandler = this::validateFragment;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         rnd.setSeed(seed);
 
@@ -131,7 +130,7 @@ public class ArchiveReplayLoadTest
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         CloseHelper.close(aeronArchive);
         CloseHelper.close(archive);
@@ -142,7 +141,7 @@ public class ArchiveReplayLoadTest
     }
 
     @Test(timeout = TEST_DURATION_SEC * 2000)
-    public void replay() throws IOException, InterruptedException
+    public void replay() throws InterruptedException
     {
         try (Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
              Subscription recordingEvents = aeron.addSubscription(

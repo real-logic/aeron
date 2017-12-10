@@ -38,7 +38,7 @@ public class MultiplePublishersWithFragmentation
     private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(9000, BitUtil.CACHE_LINE_LENGTH));
 
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         System.out.println(
             "Publishing to " + CHANNEL + " on stream Id " + STREAM_ID_1 + " and stream Id " + STREAM_ID_2);

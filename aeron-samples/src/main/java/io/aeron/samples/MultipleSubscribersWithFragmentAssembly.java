@@ -42,7 +42,7 @@ public class MultipleSubscribersWithFragmentAssembly
 
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         System.out.format("Subscribing to %s on stream ID %d and stream ID %d%n",
             CHANNEL, STREAM_ID_1, STREAM_ID_2);
@@ -116,9 +116,8 @@ public class MultipleSubscribersWithFragmentAssembly
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
-     * @throws Exception if an error occurs
      */
-    public static FragmentHandler reassembledStringMessage1(final int streamId) throws Exception
+    public static FragmentHandler reassembledStringMessage1(final int streamId)
     {
         return
             (buffer, offset, length, header) ->
@@ -145,9 +144,8 @@ public class MultipleSubscribersWithFragmentAssembly
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
-     * @throws Exception if an error occurs
      */
-    public static FragmentHandler reassembledStringMessage2(final int streamId) throws Exception
+    public static FragmentHandler reassembledStringMessage2(final int streamId)
     {
         return
             (buffer, offset, length, header) ->

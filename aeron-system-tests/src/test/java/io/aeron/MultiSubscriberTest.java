@@ -35,7 +35,7 @@ public class MultiSubscriberTest
     public static final int FRAGMENT_COUNT_LIMIT = 10;
 
     @Test(timeout = 10000)
-    public void shouldReceiveMessageOnSeparateSubscriptions() throws Exception
+    public void shouldReceiveMessageOnSeparateSubscriptions()
     {
         final MediaDriver.Context ctx = new MediaDriver.Context();
 

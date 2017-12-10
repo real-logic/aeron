@@ -58,13 +58,13 @@ public class RawLogFactoryTest
     }
 
     @After
-    public void cleanupFiles() throws IOException
+    public void cleanupFiles()
     {
         IoUtil.delete(DATA_DIR, false);
     }
 
     @Test
-    public void shouldCreateCorrectLengthAndZeroedFilesForPublication() throws Exception
+    public void shouldCreateCorrectLengthAndZeroedFilesForPublication()
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final RawLog rawLog = rawLogFactory.newNetworkPublication(
@@ -92,7 +92,7 @@ public class RawLogFactoryTest
     }
 
     @Test
-    public void shouldCreateCorrectLengthAndZeroedFilesForImage() throws Exception
+    public void shouldCreateCorrectLengthAndZeroedFilesForImage()
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int imageTermBufferMaxLength = TERM_BUFFER_LENGTH / 2;
@@ -124,7 +124,7 @@ public class RawLogFactoryTest
     public void shouldExceptionIfRequestedTermBufferLengthGreaterThanMax()
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final int imageTermBufferMaxLength = TERM_MAX_LENGTH * 2;
+        final int imageTermBufferMaxLength = TERM_MAX_LENGTH + 1;
         rawLogFactory.newNetworkedImage(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength);
     }
 }

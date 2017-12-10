@@ -98,7 +98,7 @@ public class SpySimulatedConnectionTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldNotSimulateConnectionWhenNotConfiguredTo(final String channel) throws Exception
+    public void shouldNotSimulateConnectionWhenNotConfiguredTo(final String channel)
     {
         launch();
 
@@ -115,7 +115,7 @@ public class SpySimulatedConnectionTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldSimulateConnectionWithNoNetworkSubscriptions(final String channel) throws Exception
+    public void shouldSimulateConnectionWithNoNetworkSubscriptions(final String channel)
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -166,7 +166,7 @@ public class SpySimulatedConnectionTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldSimulateConnectionWithSlowNetworkSubscription(final String channel) throws Exception
+    public void shouldSimulateConnectionWithSlowNetworkSubscription(final String channel)
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
@@ -227,7 +227,7 @@ public class SpySimulatedConnectionTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldSimulateConnectionWithLeavingNetworkSubscription(final String channel) throws Exception
+    public void shouldSimulateConnectionWithLeavingNetworkSubscription(final String channel)
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;

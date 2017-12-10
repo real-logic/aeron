@@ -105,7 +105,7 @@ public class SenderTest
         };
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         final SendChannelEndpoint mockSendChannelEndpoint = mock(SendChannelEndpoint.class);
         when(mockSendChannelEndpoint.udpChannel()).thenReturn(udpChannel);
@@ -152,13 +152,13 @@ public class SenderTest
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         sender.onClose();
     }
 
     @Test
-    public void shouldSendSetupFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
+    public void shouldSendSetupFrameOnChannelWhenTimeoutWithoutStatusMessage()
     {
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
@@ -181,7 +181,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendMultipleSetupFramesOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
+    public void shouldSendMultipleSetupFramesOnChannelWhenTimeoutWithoutStatusMessage()
     {
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
@@ -195,7 +195,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldNotSendSetupFrameAfterReceivingStatusMessage() throws Exception
+    public void shouldNotSendSetupFrameAfterReceivingStatusMessage()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -219,7 +219,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendSetupFrameAfterReceivingStatusMessageWithSetupBit() throws Exception
+    public void shouldSendSetupFrameAfterReceivingStatusMessageWithSetupBit()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -256,7 +256,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldBeAbleToSendOnChannel() throws Exception
+    public void shouldBeAbleToSendOnChannel()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -289,7 +289,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldBeAbleToSendOnChannelTwice() throws Exception
+    public void shouldBeAbleToSendOnChannelTwice()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);
@@ -335,7 +335,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldNotSendUntilStatusMessageReceived() throws Exception
+    public void shouldNotSendUntilStatusMessageReceived()
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -371,7 +371,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldNotBeAbleToSendAfterUsingUpYourWindow() throws Exception
+    public void shouldNotBeAbleToSendAfterUsingUpYourWindow()
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -408,7 +408,7 @@ public class SenderTest
     }
 
     @Test
-    public void shouldSendLastDataFrameAsHeartbeatWhenIdle() throws Exception
+    public void shouldSendLastDataFrameAsHeartbeatWhenIdle()
     {
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(INITIAL_TERM_ID);

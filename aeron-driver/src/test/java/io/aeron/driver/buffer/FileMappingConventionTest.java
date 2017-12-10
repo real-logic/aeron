@@ -19,14 +19,13 @@ import org.junit.Test;
 import io.aeron.driver.media.UdpChannel;
 
 import java.io.File;
-import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
 
 public class FileMappingConventionTest
 {
     @Test
-    public void uriStringsAreValidFiles() throws IOException
+    public void uriStringsAreValidFiles()
     {
         assertIsValidFile(uriToDir("aeron:udp?endpoint=localhost:40123|interface=localhost:40124"));
         assertIsValidFile(uriToDir("aeron:udp?endpoint=localhost:40124"));
@@ -39,7 +38,7 @@ public class FileMappingConventionTest
         return udpChannel.canonicalForm();
     }
 
-    private void assertIsValidFile(final String channelDir) throws IOException
+    private void assertIsValidFile(final String channelDir)
     {
         final File file = new File(channelDir);
         assertTrue("Can't create file", file.mkdir());

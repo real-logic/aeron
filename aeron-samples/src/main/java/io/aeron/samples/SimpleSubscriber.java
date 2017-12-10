@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class SimpleSubscriber
 {
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         // Maximum number of message fragments to receive during a single 'poll' operation
         final int fragmentLimitCount = 10;

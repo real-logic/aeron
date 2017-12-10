@@ -197,7 +197,7 @@ public class FlowControlStrategiesTest
     }
 
     @Test(timeout = 10000)
-    public void shouldSlowDownWhenBehindWithMinMulticastFlowControlStrategy() throws Exception
+    public void shouldSlowDownWhenBehindWithMinMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
@@ -255,7 +255,7 @@ public class FlowControlStrategiesTest
     }
 
     @Test(timeout = 10000)
-    public void shouldRemoveDeadReceiverWithMinMulticastFlowControlStrategy() throws Exception
+    public void shouldRemoveDeadReceiverWithMinMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
@@ -311,7 +311,7 @@ public class FlowControlStrategiesTest
     }
 
     @Test(timeout = 10000)
-    public void shouldSlowDownToSlowPreferredWithPreferredMulticastFlowControlStrategy() throws Exception
+    public void shouldSlowDownToSlowPreferredWithPreferredMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
@@ -370,7 +370,7 @@ public class FlowControlStrategiesTest
     }
 
     @Test(timeout = 10000)
-    public void shouldKeepUpToFastPreferredWithPreferredMulticastFlowControlStrategy() throws Exception
+    public void shouldKeepUpToFastPreferredWithPreferredMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
@@ -428,7 +428,7 @@ public class FlowControlStrategiesTest
     }
 
     @Test(timeout = 10000)
-    public void shouldRemoveDeadPreferredReceiverWithPreferredMulticastFlowControlStrategy() throws Exception
+    public void shouldRemoveDeadPreferredReceiverWithPreferredMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;

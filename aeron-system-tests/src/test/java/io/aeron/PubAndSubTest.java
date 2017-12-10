@@ -83,7 +83,7 @@ public class PubAndSubTest
     private FragmentHandler fragmentHandler = mock(FragmentHandler.class);
     private RawBlockHandler rawBlockHandler = mock(RawBlockHandler.class);
 
-    private void launch(final String channel) throws Exception
+    private void launch(final String channel)
     {
         context
             .threadingMode(THREADING_MODE)
@@ -98,7 +98,7 @@ public class PubAndSubTest
     }
 
     @After
-    public void closeEverything() throws Exception
+    public void closeEverything()
     {
         CloseHelper.quietClose(subscribingClient);
         CloseHelper.quietClose(publishingClient);
@@ -109,14 +109,14 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldSpinUpAndShutdown(final String channel) throws Exception
+    public void shouldSpinUpAndShutdown(final String channel)
     {
         launch(channel);
     }
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessage(final String channel) throws Exception
+    public void shouldReceivePublishedMessage(final String channel)
     {
         launch(channel);
 
@@ -146,7 +146,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessageViaPollFile(final String channel) throws Exception
+    public void shouldReceivePublishedMessageViaPollFile(final String channel)
     {
         launch(channel);
 
@@ -195,7 +195,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldContinueAfterBufferRollover(final String channel) throws Exception
+    public void shouldContinueAfterBufferRollover(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
@@ -239,7 +239,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel) throws Exception
+    public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int termBufferLengthMinusPaddingHeader = termBufferLength - HEADER_LENGTH;
@@ -334,7 +334,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel) throws Exception
+    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
@@ -397,7 +397,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws Exception
+    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
@@ -466,7 +466,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldContinueAfterBufferRolloverBatched(final String channel) throws Exception
+    public void shouldContinueAfterBufferRolloverBatched(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numBatchesPerTerm = 4;
@@ -536,7 +536,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldContinueAfterBufferRolloverWithPadding(final String channel) throws Exception
+    public void shouldContinueAfterBufferRolloverWithPadding(final String channel)
     {
         /*
          * 65536 bytes in the buffer
@@ -585,7 +585,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel) throws Exception
+    public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
     {
         /*
          * 65536 bytes in the buffer
@@ -639,7 +639,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel) throws Exception
+    public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
     {
         /*
          * The subscriber will flow control before an entire term buffer. So, send until can't send no 'more.
@@ -702,7 +702,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel) throws Exception
+    public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
@@ -792,7 +792,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldFragmentExactMessageLengthsCorrectly(final String channel) throws Exception
+    public void shouldFragmentExactMessageLengthsCorrectly(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numFragmentsPerMessage = 2;

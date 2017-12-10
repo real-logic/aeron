@@ -33,7 +33,7 @@ public class ListRecordingsSessionTest
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         catalog = new Catalog(archiveDir, null, 0, clock);
         recordingIds[0] = catalog.addNewRecording(

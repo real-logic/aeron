@@ -66,7 +66,6 @@ public class ClientConductorTest
     private static final long KEEP_ALIVE_INTERVAL = TimeUnit.MILLISECONDS.toNanos(500);
     private static final long AWAIT_TIMEOUT = 100;
     private static final long INTER_SERVICE_TIMEOUT_MS = 1000;
-    private static final long PUBLICATION_CONNECTION_TIMEOUT_MS = 5000;
 
     private static final int SUBSCRIPTION_POSITION_ID = 2;
     private static final int SUBSCRIPTION_POSITION_REGISTRATION_ID = 4001;
@@ -104,7 +103,7 @@ public class ClientConductorTest
     private boolean suppressPrintError = false;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         final Aeron.Context ctx = new Aeron.Context()
             .clientLock(mockClientLock)
@@ -183,7 +182,7 @@ public class ClientConductorTest
     // --------------------------------
 
     @Test
-    public void addPublicationShouldNotifyMediaDriver() throws Exception
+    public void addPublicationShouldNotifyMediaDriver()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY,
@@ -196,7 +195,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void addPublicationShouldMapLogFile() throws Exception
+    public void addPublicationShouldMapLogFile()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY,
@@ -215,7 +214,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void closingPublicationShouldNotifyMediaDriver() throws Exception
+    public void closingPublicationShouldNotifyMediaDriver()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
@@ -233,7 +232,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void closingPublicationShouldPurgeCache() throws Exception
+    public void closingPublicationShouldPurgeCache()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
@@ -295,7 +294,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void closingPublicationDoesNotRemoveOtherPublications() throws Exception
+    public void closingPublicationDoesNotRemoveOtherPublications()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
@@ -329,7 +328,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void shouldNotMapBuffersForUnknownCorrelationId() throws Exception
+    public void shouldNotMapBuffersForUnknownCorrelationId()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY,
@@ -362,7 +361,7 @@ public class ClientConductorTest
     // ---------------------------------
 
     @Test
-    public void addSubscriptionShouldNotifyMediaDriver() throws Exception
+    public void addSubscriptionShouldNotifyMediaDriver()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_SUBSCRIPTION_READY,
@@ -515,7 +514,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void shouldTimeoutInterServiceIfTooLongBetweenDoWorkCalls() throws Exception
+    public void shouldTimeoutInterServiceIfTooLongBetweenDoWorkCalls()
     {
         suppressPrintError = true;
 

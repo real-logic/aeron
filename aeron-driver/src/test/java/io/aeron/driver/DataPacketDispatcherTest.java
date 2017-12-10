@@ -52,7 +52,7 @@ public class DataPacketDispatcherTest
     private final ReceiveChannelEndpoint mockChannelEndpoint = mock(ReceiveChannelEndpoint.class);
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         when(mockHeader.sessionId()).thenReturn(SESSION_ID);
         when(mockHeader.streamId()).thenReturn(STREAM_ID);

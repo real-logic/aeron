@@ -112,7 +112,7 @@ public class ArchiveTest
     private int requestedInitialTermId;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         rnd.setSeed(seed);
         requestedInitialTermId = rnd.nextInt(1234);
@@ -161,7 +161,7 @@ public class ArchiveTest
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         CloseHelper.close(publishingClient);
         CloseHelper.close(archive);
@@ -172,7 +172,7 @@ public class ArchiveTest
     }
 
     @Test(timeout = 10000)
-    public void recordAndReplayExclusivePublication() throws IOException, InterruptedException
+    public void recordAndReplayExclusivePublication() throws IOException
     {
         try (Publication controlPublication = publishingClient.addPublication(
                 archive.context().controlChannel(), archive.context().controlStreamId());
@@ -211,7 +211,7 @@ public class ArchiveTest
     }
 
     @Test(timeout = 10000)
-    public void replayExclusivePublicationWhileRecording() throws IOException, InterruptedException
+    public void replayExclusivePublicationWhileRecording()
     {
         try (Publication controlPublication = publishingClient.addPublication(
                 archive.context().controlChannel(), archive.context().controlStreamId());
@@ -254,7 +254,7 @@ public class ArchiveTest
     }
 
     @Test(timeout = 10000)
-    public void recordAndReplayRegularPublication() throws IOException, InterruptedException
+    public void recordAndReplayRegularPublication() throws IOException
     {
         try (Publication controlPublication = publishingClient.addPublication(
                 archive.context().controlChannel(), archive.context().controlStreamId());

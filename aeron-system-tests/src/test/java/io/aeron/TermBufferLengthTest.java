@@ -43,7 +43,7 @@ public class TermBufferLengthTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldHaveCorrectTermBufferLength(final String channel) throws Exception
+    public void shouldHaveCorrectTermBufferLength(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .publicationTermBufferLength(TEST_TERM_LENGTH * 2)

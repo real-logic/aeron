@@ -146,7 +146,7 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldReleasePublicationOnClose() throws Exception
+    public void shouldReleasePublicationOnClose()
     {
         publication.close();
 

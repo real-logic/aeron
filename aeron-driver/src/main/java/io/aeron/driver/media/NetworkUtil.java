@@ -198,7 +198,6 @@ public class NetworkUtil
             final InterfaceAddress interfaceAddress,
             final NetworkInterface networkInterface,
             final boolean isLoopback)
-            throws SocketException
         {
             this.interfaceAddress = interfaceAddress;
             this.networkInterface = networkInterface;

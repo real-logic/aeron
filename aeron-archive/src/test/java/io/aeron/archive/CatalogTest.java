@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -53,7 +52,7 @@ public class CatalogTest
     private long recordingThreeId;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
@@ -73,7 +72,7 @@ public class CatalogTest
     }
 
     @Test
-    public void shouldReloadExistingIndex() throws Exception
+    public void shouldReloadExistingIndex()
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
@@ -90,7 +89,6 @@ public class CatalogTest
         final int streamId,
         final String strippedChannel,
         final String sourceIdentity)
-        throws IOException
     {
         assertTrue(catalog.wrapDescriptor(id, unsafeBuffer));
 
@@ -105,7 +103,7 @@ public class CatalogTest
     }
 
     @Test
-    public void shouldAppendToExistingIndex() throws Exception
+    public void shouldAppendToExistingIndex()
     {
         final long newRecordingId;
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
@@ -122,7 +120,7 @@ public class CatalogTest
     }
 
     @Test
-    public void shouldAllowMultipleInstancesForSameStream() throws Exception
+    public void shouldAllowMultipleInstancesForSameStream()
     {
         try (Catalog ignore = new Catalog(archiveDir, null, 0, clock))
         {
@@ -132,7 +130,7 @@ public class CatalogTest
     }
 
     @Test
-    public void shouldFixTimestampForEmptyRecordingAfterFailure() throws Exception
+    public void shouldFixTimestampForEmptyRecordingAfterFailure()
     {
         final long newRecordingId = newRecording();
 

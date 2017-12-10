@@ -332,9 +332,8 @@ public final class UdpChannel
      * Local interface to be used by the channel.
      *
      * @return {@link NetworkInterface} for the local interface used by the channel
-     * @throws SocketException if an error occurs
      */
-    public NetworkInterface localInterface() throws SocketException
+    public NetworkInterface localInterface()
     {
         return localInterface;
     }
@@ -423,7 +422,7 @@ public final class UdpChannel
         return InterfaceSearchAddress.wildcard();
     }
 
-    private static InetSocketAddress getEndpointAddress(final ChannelUri uri) throws UnknownHostException
+    private static InetSocketAddress getEndpointAddress(final ChannelUri uri)
     {
         final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
         if (null != endpointValue)
@@ -445,7 +444,7 @@ public final class UdpChannel
         return Configuration.SOCKET_MULTICAST_TTL;
     }
 
-    private static InetSocketAddress getExplicitControlAddress(final ChannelUri uri) throws UnknownHostException
+    private static InetSocketAddress getExplicitControlAddress(final ChannelUri uri)
     {
         final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
         if (null != controlValue)
@@ -492,7 +491,7 @@ public final class UdpChannel
     }
 
     private static NetworkInterface findInterface(final InterfaceSearchAddress searchAddress)
-        throws SocketException, UnknownHostException
+        throws SocketException
     {
         final NetworkInterface[] filteredInterfaces = filterBySubnet(
             searchAddress.getInetAddress(), searchAddress.getSubnetPrefix());

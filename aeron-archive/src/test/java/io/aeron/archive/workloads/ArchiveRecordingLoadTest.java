@@ -33,7 +33,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 
-import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -86,7 +85,7 @@ public class ArchiveRecordingLoadTest
     private BooleanSupplier recordingEnded;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         rnd.setSeed(seed);
 
@@ -115,7 +114,7 @@ public class ArchiveRecordingLoadTest
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         CloseHelper.quietClose(aeronArchive);
         CloseHelper.quietClose(archive);
@@ -126,7 +125,7 @@ public class ArchiveRecordingLoadTest
     }
 
     @Test
-    public void archive() throws IOException, InterruptedException
+    public void archive() throws InterruptedException
     {
         try (Subscription recordingEvents = aeron.addSubscription(
                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))

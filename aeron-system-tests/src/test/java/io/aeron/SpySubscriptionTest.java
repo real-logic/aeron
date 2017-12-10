@@ -47,7 +47,7 @@ public class SpySubscriptionTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessage(final String channel) throws Exception
+    public void shouldReceivePublishedMessage(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context();
         final Aeron.Context aeronCtx = new Aeron.Context();

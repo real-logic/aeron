@@ -28,10 +28,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentInvoker;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.*;
 
 public class ClusteredServiceAgent implements
     ControlledFragmentHandler, Agent, Cluster, RecordingEventsListener, AvailableImageHandler, UnavailableImageHandler
@@ -299,6 +296,8 @@ public class ClusteredServiceAgent implements
 
     public void onProgress(final long recordingId, final long startPosition, final long position)
     {
+        // TODO: Pick up archive counter and use this instead
+
         if (recordingId == this.latestRecordingId)
         {
             archivedPosition = position;
@@ -325,6 +324,8 @@ public class ClusteredServiceAgent implements
     {
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 100, 100, 1000);
+
             final Long2ObjectHashMap<RecordingInfo> recordingsMap = RecordingInfo.mapRecordings(
                 aeronArchive, 0, 100, logSubscription.channel(), logSubscription.streamId());
 
@@ -340,20 +341,18 @@ public class ClusteredServiceAgent implements
 
             final MutableLong lastReplayedRecordingId = new MutableLong(-1);
 
-            // replay previous log recordings going from startPosition to stopPosition
             recordingEventLog.forEach(
                 (id) ->
                 {
                     final RecordingInfo recordingInfo = recordingsMap.get(id);
                     lastReplayedRecordingId.value = id;
 
-                    replayRecording(aeronArchive, recordingInfo);
+                    replayRecording(idleStrategy, aeronArchive, recordingInfo);
                 });
 
             while (!logSubscription.isConnected() && null == latestLogImage)
             {
-                invokeAeronClient();
-                Thread.yield();
+                idleStrategy.idle(invokeAeronClient());
             }
 
             archivedPosition = latestLogImage.joinPosition();
@@ -365,7 +364,8 @@ public class ClusteredServiceAgent implements
         }
     }
 
-    private void replayRecording(final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
+    private void replayRecording(
+        final IdleStrategy idleStrategy, final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
     {
         if (null == recordingInfo)
         {
@@ -373,36 +373,49 @@ public class ClusteredServiceAgent implements
         }
 
         final long length = recordingInfo.stopPosition - recordingInfo.startPosition;
+        if (length == 0)
+        {
+            return;
+        }
 
         try (Subscription replaySubscription = aeronArchive.replay(
-                 recordingInfo.recordingId,
-                 recordingInfo.startPosition,
-                 length,
-                 ctx.logReplayChannel(),
-                 ctx.logReplayStreamId()))
+             recordingInfo.recordingId,
+             recordingInfo.startPosition,
+             length,
+             ctx.logReplayChannel(),
+             ctx.logReplayStreamId()))
         {
-            final IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 100, 100, 1000);
-
             while (!replaySubscription.isConnected())
             {
-                invokeAeronClient();
-                Thread.yield();
+                idleStrategy.idle(invokeAeronClient());
             }
 
-            final MutableLong handlerPosition = new MutableLong();
+            if (replaySubscription.imageCount() > 1)
+            {
+                throw new IllegalStateException("Only expected one replay");
+            }
 
-            final ControlledFragmentHandler handler =
-                (buffer, offset, msgLength, header) ->
-                {
-                    handlerPosition.value = header.position();
+            final Image replayImage = replaySubscription.imageAtIndex(0);
 
-                    return fragmentAssembler.onFragment(buffer, offset, msgLength, header);
-                };
-
-            while (replaySubscription.isConnected() && handlerPosition.value < recordingInfo.stopPosition)
+            while (replayImage.position() < recordingInfo.stopPosition)
             {
                 invokeAeronClient();
-                idleStrategy.idle(replaySubscription.controlledPoll(handler, FRAGMENT_LIMIT));
+
+                final int workCount = replayImage.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
+                if (workCount == 0)
+                {
+                    if (replayImage.isClosed())
+                    {
+                        throw new IllegalStateException("Unexpected close of replay");
+                    }
+
+                    if (Thread.currentThread().isInterrupted())
+                    {
+                        throw new AgentTerminationException("Unexpected interrupt during replay");
+                    }
+                }
+
+                idleStrategy.idle(workCount);
             }
         }
     }

@@ -67,6 +67,7 @@ public class ClusterNodeTest
     @After
     public void after()
     {
+        CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
         clusteredMediaDriver.archive().context().deleteArchiveDirectory();
@@ -139,7 +140,6 @@ public class ClusterNodeTest
         }
 
         aeronCluster.close();
-        container.close();
     }
 
     @Test(timeout = 10_000)
@@ -193,7 +193,6 @@ public class ClusterNodeTest
         }
 
         aeronCluster.close();
-        container.close();
     }
 
     private ClusteredServiceContainer launchEchoService()

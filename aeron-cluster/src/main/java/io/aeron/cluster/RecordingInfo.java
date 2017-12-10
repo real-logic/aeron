@@ -91,4 +91,16 @@ public class RecordingInfo
 
         return savedInfo;
     }
+
+    public String toString()
+    {
+        return "RecordingInfo{" +
+            "recordingId=" + recordingId +
+            ", startTimestamp=" + startTimestamp +
+            ", stopTimestamp=" + stopTimestamp +
+            ", startPosition=" + startPosition +
+            ", stopPosition=" + stopPosition +
+            ", sessionId=" + sessionId +
+            '}';
+    }
 }

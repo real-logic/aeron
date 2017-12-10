@@ -59,7 +59,7 @@ public class ClusterRecordingEventLog implements AutoCloseable
         }
     }
 
-    public long numRecords()
+    public long recordCount()
     {
         long result = 0;
 

@@ -334,7 +334,10 @@ public class NetworkPublication
 
     public void triggerSendSetupFrame()
     {
-        shouldSendSetupFrame = true;
+        if (!isEndOfStream)
+        {
+            shouldSendSetupFrame = true;
+        }
     }
 
     public void addSubscriber(final ReadablePosition spyPosition)

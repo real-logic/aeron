@@ -17,23 +17,24 @@ package io.aeron.cluster.service;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingEventsAdapter;
-import io.aeron.archive.client.RecordingEventsListener;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.RecordingInfo;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.util.concurrent.TimeUnit;
 
 public class ClusteredServiceAgent implements
-    ControlledFragmentHandler, Agent, Cluster, RecordingEventsListener, AvailableImageHandler, UnavailableImageHandler
+    ControlledFragmentHandler, Agent, Cluster, AvailableImageHandler, UnavailableImageHandler
 {
     /**
      * Length of the session header that will be precede application protocol message.
@@ -46,8 +47,6 @@ public class ClusteredServiceAgent implements
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
     private long timestampMs;
-    private long archivedPosition;
-    private long latestRecordingId;
     private final boolean shouldCloseResources;
     private final boolean useAeronAgentInvoker;
     private final Aeron aeron;
@@ -69,11 +68,11 @@ public class ClusteredServiceAgent implements
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
 
-    private final RecordingEventsAdapter recordingEventsAdapter;
     private final ClusterRecordingEventLog recordingEventLog;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
 
+    private ReadableCounter recPositionCounter;
     private volatile Image latestLogImage;
 
     public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
@@ -89,11 +88,6 @@ public class ClusteredServiceAgent implements
         timerPublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.timerStreamId());
         recordingEventLog = ctx.clusterRecordingEventLog();
         archiveCtx = ctx.archiveContext();
-
-        final Subscription recordingEventsSubscription = aeron.addSubscription(
-            archiveCtx.recordingEventsChannel(), archiveCtx.recordingEventsStreamId());
-
-        recordingEventsAdapter = new RecordingEventsAdapter(this, recordingEventsSubscription, FRAGMENT_LIMIT);
     }
 
     public void onStart()
@@ -123,11 +117,11 @@ public class ClusteredServiceAgent implements
         int workCount = 0;
 
         workCount += invokeAeronClient();
-        workCount += recordingEventsAdapter.poll();
 
         if (null != latestLogImage)
         {
-            workCount += latestLogImage.boundedControlledPoll(fragmentAssembler, archivedPosition, FRAGMENT_LIMIT);
+            workCount +=
+                latestLogImage.boundedControlledPoll(fragmentAssembler, recPositionCounter.get(), FRAGMENT_LIMIT);
         }
 
         return workCount;
@@ -285,32 +279,6 @@ public class ClusteredServiceAgent implements
         throw new IllegalStateException("Failed to schedule timer");
     }
 
-    public void onStart(
-        final long recordingId,
-        final long startPosition,
-        final int sessionId,
-        final int streamId,
-        final String channel,
-        final String sourceIdentity)
-    {
-        //System.out.println("Recording started for id: " + recordingId);
-    }
-
-    public void onProgress(final long recordingId, final long startPosition, final long position)
-    {
-        // TODO: Pick up archive counter and use this instead
-
-        if (recordingId == this.latestRecordingId)
-        {
-            archivedPosition = position;
-        }
-    }
-
-    public void onStop(final long recordingId, final long startPosition, final long stopPosition)
-    {
-        //System.out.println("onStop");
-    }
-
     public void onAvailableImage(final Image image)
     {
         // TODO: make sessionId specific?
@@ -337,9 +305,16 @@ public class ClusteredServiceAgent implements
             }
 
             final RecordingInfo latestRecordingInfo = RecordingInfo.findLatestRecording(recordingsMap);
+            final CountersReader countersReader = aeron.countersReader();
+            final int recPosCounterId =
+                RecordingPos.findActiveRecordingPositionCounterId(countersReader, latestRecordingInfo.recordingId);
 
-            latestRecordingId = latestRecordingInfo.recordingId;
-            archivedPosition = latestRecordingInfo.startPosition;
+            if (recPosCounterId == RecordingPos.NULL_COUNTER_ID)
+            {
+                throw new IllegalStateException("could not find latest recording recPosition counter Id");
+            }
+
+            recPositionCounter = new ReadableCounter(countersReader, recPosCounterId);
 
             final MutableLong lastReplayedRecordingId = new MutableLong(-1);
 
@@ -357,11 +332,9 @@ public class ClusteredServiceAgent implements
                 idleStrategy.idle(invokeAeronClient());
             }
 
-            archivedPosition = latestLogImage.joinPosition();
-
-            if (lastReplayedRecordingId.value != latestRecordingId)
+            if (lastReplayedRecordingId.value != latestRecordingInfo.recordingId)
             {
-                recordingEventLog.append(latestRecordingId);
+                recordingEventLog.append(latestRecordingInfo.recordingId);
             }
         }
     }

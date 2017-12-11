@@ -42,6 +42,11 @@ public class RecordingPos
     public static final long NULL_RECORDING_ID = -1L;
 
     /**
+     * Represents a null counter id when not found.
+     */
+    public static final int NULL_COUNTER_ID = -1;
+
+    /**
      * Human readable name for the counter.
      */
     public static final String NAME = "rec-pos";
@@ -119,5 +124,35 @@ public class RecordingPos
         }
 
         return NULL_RECORDING_ID;
+    }
+
+    /**
+     * Find the active counter id for a stream based on the recording id.
+     *
+     * @param countersReader to search within.
+     * @param recordingId    for the active recording.
+     * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
+     */
+    public static int findActiveRecordingPositionCounterId(
+        final CountersReader countersReader,
+        final long recordingId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            {
+                final int recordOffset = CountersReader.metaDataOffset(i);
+
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
+                    buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId)
+                {
+                    return i;
+                }
+            }
+        }
+
+        return NULL_COUNTER_ID;
     }
 }

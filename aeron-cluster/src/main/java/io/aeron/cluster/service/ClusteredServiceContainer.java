@@ -151,7 +151,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Stream id within a channel for timer scheduling messages to the cluster. Default to stream id of 4.
          */
-        public static final int TIMER_STREAM_ID_DEFAULT = 4;
+        public static final int TIMER_STREAM_ID_DEFAULT = 5;
 
         /**
          * Whether to start without any previous log or use any existing log.

@@ -148,7 +148,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             {
                 return image.insertPacket(termId, header.termOffset(), buffer, length);
             }
-            else if (null == ignoredSessionsMap.get(sessionId, streamId))
+            else if (null == ignoredSessionsMap.get(sessionId, streamId) && !DataHeaderFlyweight.isEndOfStream(buffer))
             {
                 elicitSetupMessageFromSource(channelEndpoint, srcAddress, streamId, sessionId);
             }

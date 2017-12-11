@@ -84,6 +84,29 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
+     * Is the frame at data frame at the beginning of packet a heartbeat message.
+     *
+     * @param packet containing the data frame.
+     * @param length of the data frame.
+     * @return true if a heartbeat otherwise false.
+     */
+    public static boolean isHeartbeat(final UnsafeBuffer packet, final int length)
+    {
+        return length == HEADER_LENGTH && packet.getInt(0) == 0;
+    }
+
+    /**
+     * Does the data frame in the packet have the EOS flag set?
+     *
+     * @param packet containing the data frame.
+     * @return true if the EOS flag is set otherwise false.
+     */
+    public static boolean isEndOfStream(final UnsafeBuffer packet)
+    {
+        return BEGIN_END_AND_EOS_FLAGS == (packet.getByte(FLAGS_FIELD_OFFSET) & 0xFF);
+    }
+
+    /**
      * return session id field
      *
      * @return session id field

@@ -22,7 +22,6 @@ import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
@@ -467,7 +466,7 @@ public class PublicationImage
      */
     int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
-        final boolean isHeartbeat = isHeartbeat(buffer, length);
+        final boolean isHeartbeat = DataHeaderFlyweight.isHeartbeat(buffer, length);
         final long packetPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = isHeartbeat ? packetPosition : packetPosition + length;
         final long windowPosition = nextSmPosition;
@@ -477,7 +476,7 @@ public class PublicationImage
         {
             if (isHeartbeat)
             {
-                if (isEndOfStream(buffer))
+                if (DataHeaderFlyweight.isEndOfStream(buffer))
                 {
                     LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
                 }
@@ -705,17 +704,6 @@ public class PublicationImage
         }
 
         return true;
-    }
-
-    private boolean isHeartbeat(final UnsafeBuffer packet, final int length)
-    {
-        return length == DataHeaderFlyweight.HEADER_LENGTH && packet.getInt(0) == 0;
-    }
-
-    private boolean isEndOfStream(final UnsafeBuffer packet)
-    {
-        return DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS ==
-            (packet.getByte(HeaderFlyweight.FLAGS_FIELD_OFFSET) & 0xFF);
     }
 
     private void hwmCandidate(final long proposedPosition)

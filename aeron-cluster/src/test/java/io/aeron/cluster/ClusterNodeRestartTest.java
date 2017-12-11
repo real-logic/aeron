@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
@@ -48,7 +47,11 @@ public class ClusterNodeRestartTest
 {
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
+
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+    private AeronCluster aeronCluster;
+    private SessionDecorator sessionDecorator;
+    private Publication publication;
 
     @Before
     public void before()
@@ -62,13 +65,9 @@ public class ClusterNodeRestartTest
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
+        container.context().deleteClusterDirectory();
         clusteredMediaDriver.archive().context().deleteArchiveDirectory();
         clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
-
-        if (null != container)
-        {
-            container.context().deleteClusterDirectory();
-        }
     }
 
     @Test(timeout = 10_000)
@@ -79,13 +78,9 @@ public class ClusterNodeRestartTest
 
         container = launchService(true, serviceMsgCounter);
 
-        final AeronCluster aeronCluster = connectToCluster();
-        final Aeron aeron = aeronCluster.context().aeron();
-        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
-        final Publication publication = aeronCluster.ingressPublication();
-        final long msgCorrelationId = aeron.nextCorrelationId();
+        connectClient();
 
-        sendCountedMessageIntoCluster(sessionDecorator, publication, msgCorrelationId, 0);
+        sendCountedMessageIntoCluster(0);
 
         while (serviceMsgCounter.get() == 0)
         {
@@ -113,13 +108,9 @@ public class ClusterNodeRestartTest
 
         container = launchService(true, serviceMsgCounter);
 
-        AeronCluster aeronCluster = connectToCluster();
-        Aeron aeron = aeronCluster.context().aeron();
-        SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
-        Publication publication = aeronCluster.ingressPublication();
-        long msgCorrelationId = aeron.nextCorrelationId();
+        connectClient();
 
-        sendCountedMessageIntoCluster(sessionDecorator, publication, msgCorrelationId, 0);
+        sendCountedMessageIntoCluster(0);
 
         while (serviceMsgCounter.get() == 0)
         {
@@ -133,13 +124,9 @@ public class ClusterNodeRestartTest
         launchClusteredMediaDriver(false);
         container = launchService(false, restartServiceMsgCounter);
 
-        aeronCluster = connectToCluster();
-        aeron = aeronCluster.context().aeron();
-        sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
-        publication = aeronCluster.ingressPublication();
-        msgCorrelationId = aeron.nextCorrelationId();
+        connectClient();
 
-        sendCountedMessageIntoCluster(sessionDecorator, publication, msgCorrelationId, 1);
+        sendCountedMessageIntoCluster(1);
 
         while (restartServiceMsgCounter.get() == 1)
         {
@@ -149,12 +136,10 @@ public class ClusterNodeRestartTest
         aeronCluster.close();
     }
 
-    private void sendCountedMessageIntoCluster(
-        final SessionDecorator sessionDecorator,
-        final Publication publication,
-        final long msgCorrelationId,
-        final int value)
+    private void sendCountedMessageIntoCluster(final int value)
     {
+        final long msgCorrelationId = aeronCluster.context().aeron().nextCorrelationId();
+
         msgBuffer.putInt(0, value);
 
         while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, SIZE_OF_INT) < 0)
@@ -198,6 +183,13 @@ public class ClusterNodeRestartTest
         return AeronCluster.connect(
             new AeronCluster.Context()
                 .lock(new NoOpLock()));
+    }
+
+    private void connectClient()
+    {
+        aeronCluster = connectToCluster();
+        sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        publication = aeronCluster.ingressPublication();
     }
 
     private void launchClusteredMediaDriver(final boolean initialLaunch)

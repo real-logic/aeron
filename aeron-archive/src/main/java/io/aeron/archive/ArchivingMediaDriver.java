@@ -73,8 +73,7 @@ public class ArchivingMediaDriver implements AutoCloseable
      */
     public static ArchivingMediaDriver launch(final MediaDriver.Context driverCtx, final Archive.Context archiveCtx)
     {
-        final MediaDriver driver = MediaDriver.launch(
-            driverCtx.spiesSimulateConnection(true));
+        final MediaDriver driver = MediaDriver.launch(driverCtx);
 
         final Archive archive = Archive.launch(
             archiveCtx

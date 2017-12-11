@@ -20,7 +20,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -53,8 +52,7 @@ public class BasicArchiveTest
         .endpoint("localhost:6666")
         .build();
 
-    private MediaDriver driver;
-    private Archive archive;
+    private ArchivingMediaDriver archivingMediaDriver;
     private Aeron aeron;
     private AeronArchive aeronArchive;
 
@@ -63,23 +61,19 @@ public class BasicArchiveTest
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
 
-        driver = MediaDriver.launch(
+        archivingMediaDriver = ArchivingMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
-                .dirDeleteOnStart(true));
-
-        archive = Archive.launch(
+                .spiesSimulateConnection(false)
+                .dirDeleteOnStart(true),
             new Archive.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .archiveDir(TestUtil.makeTempDir())
                 .fileSyncLevel(0)
-                .threadingMode(ArchiveThreadingMode.SHARED)
-                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-                .errorHandler(driver.context().errorHandler())
-                .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS)));
+                .threadingMode(ArchiveThreadingMode.SHARED));
 
         aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
 
@@ -92,12 +86,11 @@ public class BasicArchiveTest
     public void after()
     {
         CloseHelper.close(aeronArchive);
-        CloseHelper.close(archive);
         CloseHelper.close(aeron);
-        CloseHelper.close(driver);
+        CloseHelper.close(archivingMediaDriver);
 
-        archive.context().deleteArchiveDirectory();
-        driver.context().deleteAeronDirectory();
+        archivingMediaDriver.archive().context().deleteArchiveDirectory();
+        archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
     @Test(timeout = 10000)

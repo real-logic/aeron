@@ -85,8 +85,10 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
 
         archivingMediaDriver = ArchivingMediaDriver.launch(
             new MediaDriver.Context()
+                .spiesSimulateConnection(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
+                .deleteArchiveOnStart(true)
                 .archiveDir(archiveDir));
 
         aeron = Aeron.connect();

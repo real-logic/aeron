@@ -22,7 +22,7 @@ import org.agrona.concurrent.Agent;
 import java.util.ArrayList;
 
 /**
- * This is a common workflow to {@link Session} handling in the archive. Hooks are provided for specialization as
+ * This is a common workflow to {@link Session} handling in the archive. Hooks are provided for specialisation as
  * protected methods.
  *
  * @param <T> session type
@@ -106,10 +106,6 @@ class SessionWorker<T extends Session> implements Agent
     {
     }
 
-    protected void postSessionAdd(final T session)
-    {
-    }
-
     boolean isClosed()
     {
         return isClosed;
@@ -118,6 +114,5 @@ class SessionWorker<T extends Session> implements Agent
     protected void addSession(final T session)
     {
         sessions.add(session);
-        postSessionAdd(session);
     }
 }

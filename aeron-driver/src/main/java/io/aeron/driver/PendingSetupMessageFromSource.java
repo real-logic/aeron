@@ -19,17 +19,17 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 
 import java.net.InetSocketAddress;
 
-public class PendingSetupMessageFromSource
+class PendingSetupMessageFromSource
 {
     private final int sessionId;
     private final int streamId;
-    private final ReceiveChannelEndpoint channelEndpoint;
     private final boolean periodic;
+    private final ReceiveChannelEndpoint channelEndpoint;
     private final InetSocketAddress controlAddress;
 
     private long timeOfStatusMessageNs;
 
-    public PendingSetupMessageFromSource(
+    PendingSetupMessageFromSource(
         final int sessionId,
         final int streamId,
         final ReceiveChannelEndpoint channelEndpoint,

@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
@@ -29,6 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -105,10 +107,17 @@ public class BasicArchiveTest
         final int messageCount = 10;
         final long length;
 
-        try (Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+        final long correlationId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+        final long recordingIdFromCounter;
+
+        try (Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
              Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             offer(publication, messageCount, messagePrefix);
+
+            recordingIdFromCounter = RecordingPos.findActiveRecordingId(
+                aeron.countersReader(), aeronArchive.controlSessionId(), correlationId, publication.sessionId());
+
             consume(subscription, messageCount, messagePrefix);
 
             length = publication.position();
@@ -117,6 +126,8 @@ public class BasicArchiveTest
         aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
 
         final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, length);
+        assertEquals(recordingIdFromCounter, recordingId);
+
         final long fromPosition = 0L;
 
         try (Subscription subscription = aeronArchive.replay(

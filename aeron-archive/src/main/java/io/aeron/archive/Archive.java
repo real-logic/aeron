@@ -159,8 +159,6 @@ public class Archive implements AutoCloseable
      */
     public static class Configuration
     {
-        public static final int ARCHIVE_RECORDING_POSITION_TYPE_ID = 100;
-
         public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archive.dir";
         public static final String ARCHIVE_DIR_DEFAULT = "archive";
 
@@ -173,7 +171,6 @@ public class Archive implements AutoCloseable
         public static final String THREADING_MODE_PROP_NAME = "aeron.archive.threading.mode";
         public static final String ARCHIVER_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
-
 
         public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";
         public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 128;

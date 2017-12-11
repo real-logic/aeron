@@ -20,6 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.archive.status.RecordingPos;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
@@ -36,8 +37,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archive.Catalog.NULL_POSITION;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
+import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 abstract class ArchiveConductor extends SessionWorker<Session> implements AvailableImageHandler
 {
@@ -51,7 +51,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final RecordingSummary recordingSummary = new RecordingSummary();
-    private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[SIZE_OF_LONG + MAX_LABEL_LENGTH]);
+    private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
 
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -174,10 +174,13 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 final String channel = originalChannel.contains("udp") && sourceLocation == SourceLocation.LOCAL ?
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
+                final long controlSessionId = controlSession.sessionId();
+
                 final Subscription subscription = aeron.addSubscription(
                     channel,
                     streamId,
-                    (image) -> startRecordingSession(strippedChannel, originalChannel, image),
+                    (image) -> startRecordingSession(
+                        controlSessionId, correlationId, strippedChannel, originalChannel, image),
                     null);
 
                 subscriptionMap.put(key, subscription);
@@ -432,7 +435,12 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         return streamId + ":" + strippedChannel;
     }
 
-    private void startRecordingSession(final String strippedChannel, final String originalChannel, final Image image)
+    private void startRecordingSession(
+        final long controlSessionId,
+        final long correlationId,
+        final String strippedChannel,
+        final String originalChannel,
+        final Image image)
     {
         if (recordingSessionByIdMap.size() >= 2 * maxConcurrentRecordings)
         {
@@ -461,7 +469,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             originalChannel,
             sourceIdentity);
 
-        final Counter position = newRecordingPositionCounter(recordingId, sessionId, streamId, strippedChannel);
+        final Counter position = RecordingPos.allocate(
+            aeron, tempBuffer, recordingId, controlSessionId, correlationId, sessionId, streamId, strippedChannel);
         position.setOrdered(startPosition);
 
         final RecordingSession session = new RecordingSession(
@@ -513,27 +522,5 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
 
         return null;
-    }
-
-    private Counter newRecordingPositionCounter(
-        final long recordingId,
-        final int sessionId,
-        final int streamId,
-        final String strippedChannel)
-    {
-        final String label = "rec-pos: " + recordingId + " " + sessionId + " " + streamId + " " + strippedChannel;
-        final String trimmedLabel = label.length() > MAX_LABEL_LENGTH ? label.substring(0, MAX_LABEL_LENGTH) : label;
-
-        tempBuffer.putLong(0, recordingId);
-        tempBuffer.putStringWithoutLengthAscii(SIZE_OF_LONG, trimmedLabel);
-
-        return aeron.addCounter(
-            Archive.Configuration.ARCHIVE_RECORDING_POSITION_TYPE_ID,
-            tempBuffer,
-            0,
-            SIZE_OF_LONG,
-            tempBuffer,
-            SIZE_OF_LONG,
-            trimmedLabel.length());
     }
 }

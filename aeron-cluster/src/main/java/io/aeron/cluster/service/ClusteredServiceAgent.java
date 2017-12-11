@@ -31,8 +31,6 @@ import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
-import java.util.concurrent.TimeUnit;
-
 public class ClusteredServiceAgent implements
     ControlledFragmentHandler, Agent, Cluster, AvailableImageHandler, UnavailableImageHandler
 {
@@ -372,9 +370,6 @@ public class ClusteredServiceAgent implements
 
             final Image replayImage = replaySubscription.imageAtIndex(0);
 
-            final long startNs = System.nanoTime();
-            boolean notReported = true;
-
             while (replayImage.position() < recordingInfo.stopPosition)
             {
                 invokeAeronClient();
@@ -394,13 +389,6 @@ public class ClusteredServiceAgent implements
                 }
 
                 idleStrategy.idle(workCount);
-
-                if ((System.nanoTime() - startNs) > TimeUnit.SECONDS.toNanos(5) && notReported)
-                {
-                    System.out.println(
-                        "replay potentially stuck " + recordingInfo + " position=" + replayImage.position());
-                    notReported = false;
-                }
             }
         }
     }

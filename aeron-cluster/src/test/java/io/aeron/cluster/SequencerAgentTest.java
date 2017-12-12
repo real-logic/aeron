@@ -116,6 +116,7 @@ public class SequencerAgentTest
             mockLogAppender,
             (sequencerAgent) -> mock(IngressAdapter.class),
             (sequencerAgent) -> mock(TimerService.class),
-            (sessionId, responseStreamId, responseChannel) -> new ClusterSession(sessionId, null));
+            (sessionId, responseStreamId, responseChannel) -> new ClusterSession(sessionId, null),
+            (sequencerAgent) -> mock(ConsensusModuleAdapter.class));
     }
 }

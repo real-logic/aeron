@@ -34,7 +34,11 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 public class ConsensusModule
-    implements AutoCloseable, IngressAdapterSupplier, TimerServiceSupplier, ClusterSessionSupplier
+    implements AutoCloseable,
+               IngressAdapterSupplier,
+               TimerServiceSupplier,
+               ClusterSessionSupplier,
+               ConsensusModuleAdapterSupplier
 {
     private static final int FRAGMENT_POLL_LIMIT = 10;
     private static final int TIMER_POLL_LIMIT = 10;
@@ -57,8 +61,9 @@ public class ConsensusModule
         messageIndex = ctx.aeron().addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
         logAppender = new LogAppender(ctx.aeron().addExclusivePublication(ctx.logChannel(), ctx.logStreamId()));
 
+
         final SequencerAgent conductor = new SequencerAgent(
-            ctx, new EgressPublisher(), messageIndex, logAppender, this, this, this);
+            ctx, new EgressPublisher(), messageIndex, logAppender, this, this, this, this);
 
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
@@ -118,18 +123,21 @@ public class ConsensusModule
 
     public TimerService newTimerService(final SequencerAgent sequencerAgent)
     {
-        return new TimerService(
-            TIMER_POLL_LIMIT,
-            FRAGMENT_POLL_LIMIT,
-            sequencerAgent,
-            ctx.aeron().addSubscription(ctx.timerChannel(), ctx.timerStreamId()),
-            ctx.cachedEpochClock());
+        return new TimerService(TIMER_POLL_LIMIT, sequencerAgent);
     }
 
     public ClusterSession newClusterSession(
         final long sessionId, final int responseStreamId, final String responseChannel)
     {
         return new ClusterSession(sessionId, ctx.aeron().addPublication(responseChannel, responseStreamId));
+    }
+
+    public ConsensusModuleAdapter newConsensusModuleAdapter(final SequencerAgent sequencerAgent)
+    {
+        return new ConsensusModuleAdapter(
+            FRAGMENT_POLL_LIMIT,
+            ctx.aeron().addSubscription(ctx.consensusModuleChannel(), ctx.consensusModuleStreamId()),
+            sequencerAgent);
     }
 
     /**
@@ -190,8 +198,8 @@ public class ConsensusModule
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private String logChannel = ClusteredServiceContainer.Configuration.logChannel();
         private int logStreamId = ClusteredServiceContainer.Configuration.logStreamId();
-        private String timerChannel = ClusteredServiceContainer.Configuration.timerChannel();
-        private int timerStreamId = ClusteredServiceContainer.Configuration.timerStreamId();
+        private String consensusModuleChannel = ClusteredServiceContainer.Configuration.consensusModuleChannel();
+        private int consensusModuleStreamId = ClusteredServiceContainer.Configuration.consensusModuleStreamId();
 
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
         private long sessionTimeoutNs = Configuration.sessionTimeoutNs();
@@ -368,51 +376,51 @@ public class ConsensusModule
         }
 
         /**
-         * Set the channel parameter for scheduling timer events channel.
+         * Set the channel parameter for sending messages to the Consensus Module.
          *
-         * @param channel parameter for the scheduling timer events channel.
+         * @param channel parameter for sending messages to the Consensus Module.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#TIMER_CHANNEL_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_CHANNEL_PROP_NAME
          */
-        public Context timerChannel(final String channel)
+        public Context consensusModuleChannel(final String channel)
         {
-            timerChannel = channel;
+            consensusModuleChannel = channel;
             return this;
         }
 
         /**
-         * Get the channel parameter for the scheduling timer events channel.
+         * Get the channel parameter for sending messages to the Consensus Module.
          *
-         * @return the channel parameter for the scheduling timer events channel.
-         * @see ClusteredServiceContainer.Configuration#TIMER_CHANNEL_PROP_NAME
+         * @return the channel parameter for sending messages to the Consensus Module.
+         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_CHANNEL_PROP_NAME
          */
-        public String timerChannel()
+        public String consensusModuleChannel()
         {
-            return timerChannel;
+            return consensusModuleChannel;
         }
 
         /**
-         * Set the stream id for the scheduling timer events channel.
+         * Set the stream id for sending messages to the Consensus Module.
          *
-         * @param streamId for the scheduling timer events channel.
+         * @param streamId for sending messages to the Consensus Module.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#TIMER_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
          */
-        public Context timerStreamId(final int streamId)
+        public Context consensusModuleStreamId(final int streamId)
         {
-            timerStreamId = streamId;
+            consensusModuleStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for the scheduling timer events channel.
+         * Get the stream id for sending messages to the Consensus Module.
          *
          * @return the stream id for the scheduling timer events channel.
-         * @see ClusteredServiceContainer.Configuration#TIMER_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
          */
-        public int timerStreamId()
+        public int consensusModuleStreamId()
         {
-            return timerStreamId;
+            return consensusModuleStreamId;
         }
 
         /**

@@ -51,7 +51,7 @@ public class ClusteredServiceAgent implements
     private final AgentInvoker aeronAgentInvoker;
     private final ClusteredService service;
     private final Subscription logSubscription;
-    private final ExclusivePublication timerPublication;
+    private final ExclusivePublication consensusModulePublication;
     private final ControlledFragmentAssembler fragmentAssembler =
         new ControlledFragmentAssembler(this, INITIAL_BUFFER_LENGTH, true);
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -83,7 +83,7 @@ public class ClusteredServiceAgent implements
         aeronAgentInvoker = aeron.conductorAgentInvoker();
         service = ctx.clusteredService();
         logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId(), this, this);
-        timerPublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.timerStreamId());
+        consensusModulePublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.consensusModuleStreamId());
         recordingEventLog = ctx.clusterRecordingEventLog();
         archiveCtx = ctx.archiveContext();
     }
@@ -99,7 +99,7 @@ public class ClusteredServiceAgent implements
         if (shouldCloseResources)
         {
             CloseHelper.close(logSubscription);
-            CloseHelper.close(timerPublication);
+            CloseHelper.close(consensusModulePublication);
 
             for (final ClientSession session : sessionByIdMap.values())
             {
@@ -233,7 +233,7 @@ public class ClusteredServiceAgent implements
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (timerPublication.tryClaim(length, bufferClaim) > 0)
+            if (consensusModulePublication.tryClaim(length, bufferClaim) > 0)
             {
                 scheduleTimerRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -259,7 +259,7 @@ public class ClusteredServiceAgent implements
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (timerPublication.tryClaim(length, bufferClaim) > 0)
+            if (consensusModulePublication.tryClaim(length, bufferClaim) > 0)
             {
                 cancelTimerRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)

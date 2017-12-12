@@ -134,24 +134,24 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final int LOG_REPLAY_STREAM_ID_DEFAULT = 4;
 
         /**
-         * Channel for timer scheduling messages to the cluster.
+         * Channel for sending messages to the Consensus Module.
          */
-        public static final String TIMER_CHANNEL_PROP_NAME = "aeron.cluster.timer.channel";
+        public static final String CONSENSUS_MODULE_CHANNEL_PROP_NAME = "aeron.consensus.module.channel";
 
         /**
-         * Channel for timer scheduling messages to the cluster. This should be IPC.
+         * Channel for for sending messages to the Consensus Module. This should be IPC.
          */
-        public static final String TIMER_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+        public static final String CONSENSUS_MODULE_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
 
         /**
-         * Stream id within a channel for timer scheduling messages to the cluster.
+         * Stream id within a channel for sending messages to the Consensus Module.
          */
-        public static final String TIMER_STREAM_ID_PROP_NAME = "aeron.cluster.timer.stream.id";
+        public static final String CONSENSUS_MODULE_STREAM_ID_PROP_NAME = "aeron.consensus.module.stream.id";
 
         /**
-         * Stream id within a channel for timer scheduling messages to the cluster. Default to stream id of 4.
+         * Stream id within a channel for sending messages to the Consensus Module. Default to stream id of 5.
          */
-        public static final int TIMER_STREAM_ID_DEFAULT = 5;
+        public static final int CONSENSUS_MODULE_STREAM_ID_DEFAULT = 5;
 
         /**
          * Whether to start without any previous log or use any existing log.
@@ -212,23 +212,27 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The value {@link #TIMER_CHANNEL_DEFAULT} or system property {@link #TIMER_CHANNEL_PROP_NAME} if set.
+         * The value {@link #CONSENSUS_MODULE_CHANNEL_DEFAULT} or system property
+         * {@link #CONSENSUS_MODULE_CHANNEL_PROP_NAME} if set.
          *
-         * @return {@link #TIMER_CHANNEL_DEFAULT} or system property {@link #TIMER_CHANNEL_PROP_NAME} if set.
+         * @return {@link #CONSENSUS_MODULE_CHANNEL_DEFAULT} or system property
+         * {@link #CONSENSUS_MODULE_CHANNEL_PROP_NAME} if set.
          */
-        public static String timerChannel()
+        public static String consensusModuleChannel()
         {
-            return System.getProperty(TIMER_CHANNEL_PROP_NAME, TIMER_CHANNEL_DEFAULT);
+            return System.getProperty(CONSENSUS_MODULE_CHANNEL_PROP_NAME, CONSENSUS_MODULE_CHANNEL_DEFAULT);
         }
 
         /**
-         * The value {@link #TIMER_STREAM_ID_DEFAULT} or system property {@link #TIMER_STREAM_ID_PROP_NAME} if set.
+         * The value {@link #CONSENSUS_MODULE_STREAM_ID_DEFAULT} or system property
+         * {@link #CONSENSUS_MODULE_STREAM_ID_PROP_NAME} if set.
          *
-         * @return {@link #TIMER_STREAM_ID_DEFAULT} or system property {@link #TIMER_STREAM_ID_PROP_NAME} if set.
+         * @return {@link #CONSENSUS_MODULE_STREAM_ID_DEFAULT} or system property
+         * {@link #CONSENSUS_MODULE_STREAM_ID_PROP_NAME} if set.
          */
-        public static int timerStreamId()
+        public static int consensusModuleStreamId()
         {
-            return Integer.getInteger(TIMER_STREAM_ID_PROP_NAME, TIMER_STREAM_ID_DEFAULT);
+            return Integer.getInteger(CONSENSUS_MODULE_STREAM_ID_PROP_NAME, CONSENSUS_MODULE_STREAM_ID_DEFAULT);
         }
 
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
@@ -271,8 +275,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private int logStreamId = Configuration.logStreamId();
         private String logReplayChannel = Configuration.logReplayChannel();
         private int logReplayStreamId = Configuration.logReplayStreamId();
-        private String timerChannel = Configuration.timerChannel();
-        private int timerStreamId = Configuration.timerStreamId();
+        private String consensusModuleChannel = Configuration.consensusModuleChannel();
+        private int consensusModuleStreamId = Configuration.consensusModuleStreamId();
         private boolean deleteDirOnStart = Configuration.deleteDirOnStart();
 
         private ThreadFactory threadFactory;
@@ -464,51 +468,51 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for scheduling timer events channel.
+         * Set the channel parameter for sending messages to the Consensus Module.
          *
-         * @param channel parameter for the scheduling timer events channel.
+         * @param channel parameter for sending messages to the Consensus Module.
          * @return this for a fluent API.
-         * @see Configuration#TIMER_CHANNEL_PROP_NAME
+         * @see Configuration#CONSENSUS_MODULE_CHANNEL_PROP_NAME
          */
         public Context timerChannel(final String channel)
         {
-            timerChannel = channel;
+            consensusModuleChannel = channel;
             return this;
         }
 
         /**
-         * Get the channel parameter for the scheduling timer events channel.
+         * Get the channel parameter for sending messages to the Consensus Module.
          *
-         * @return the channel parameter for the scheduling timer events channel.
-         * @see Configuration#TIMER_CHANNEL_PROP_NAME
+         * @return the channel parameter for sending messages to the Consensus Module.
+         * @see Configuration#CONSENSUS_MODULE_CHANNEL_PROP_NAME
          */
         public String timerChannel()
         {
-            return timerChannel;
+            return consensusModuleChannel;
         }
 
         /**
-         * Set the stream id for the scheduling timer events channel.
+         * Set the stream id for sending messages to the Consensus Module.
          *
-         * @param streamId for the scheduling timer events channel.
+         * @param streamId for sending messages to the Consensus Module.
          * @return this for a fluent API
-         * @see Configuration#TIMER_STREAM_ID_PROP_NAME
+         * @see Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
          */
-        public Context timerStreamId(final int streamId)
+        public Context consensusModuleStreamId(final int streamId)
         {
-            timerStreamId = streamId;
+            consensusModuleStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for the scheduling timer events channel.
+         * Get the stream id for sending messages to the Consensus Module..
          *
-         * @return the stream id for the scheduling timer events channel.
-         * @see Configuration#TIMER_STREAM_ID_PROP_NAME
+         * @return the stream id for sending messages to the Consensus Module..
+         * @see Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
          */
-        public int timerStreamId()
+        public int consensusModuleStreamId()
         {
-            return timerStreamId;
+            return consensusModuleStreamId;
         }
 
         /**

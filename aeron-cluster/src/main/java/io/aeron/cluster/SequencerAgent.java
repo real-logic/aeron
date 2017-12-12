@@ -47,6 +47,7 @@ class SequencerAgent implements Agent
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock;
     private final TimerService timerService;
+    private final ConsensusModuleAdapter consensusModuleAdapter;
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
     private final LogAppender logAppender;
@@ -66,7 +67,8 @@ class SequencerAgent implements Agent
         final LogAppender logAppender,
         final IngressAdapterSupplier ingressAdapterSupplier,
         final TimerServiceSupplier timerServiceSupplier,
-        final ClusterSessionSupplier clusterSessionSupplier)
+        final ClusterSessionSupplier clusterSessionSupplier,
+        final ConsensusModuleAdapterSupplier consensusModuleAdapterSupplier)
     {
         this.ctx = ctx;
         this.epochClock = ctx.epochClock();
@@ -79,6 +81,7 @@ class SequencerAgent implements Agent
 
         ingressAdapter = ingressAdapterSupplier.newIngressAdapter(this);
         timerService = timerServiceSupplier.newTimerService(this);
+        consensusModuleAdapter = consensusModuleAdapterSupplier.newConsensusModuleAdapter(this);
         aeronClientInvoker = ctx.ownsAeronClient() ? ctx.aeron().conductorAgentInvoker() : null;
     }
 
@@ -92,7 +95,7 @@ class SequencerAgent implements Agent
             }
 
             CloseHelper.close(ingressAdapter);
-            CloseHelper.close(timerService);
+            CloseHelper.close(consensusModuleAdapter);
         }
     }
 
@@ -109,8 +112,9 @@ class SequencerAgent implements Agent
         }
 
         workCount += processPendingSessions(pendingSessions, nowMs);
-        workCount += ingressAdapter.poll();
+        workCount += consensusModuleAdapter.poll();
         workCount += timerService.poll(nowMs);
+        workCount += ingressAdapter.poll();
         workCount += checkSessions(sessionByIdMap, nowMs);
 
         processRejectedSessions(rejectedSessions, nowMs);
@@ -197,6 +201,24 @@ class SequencerAgent implements Agent
         }
 
         return false;
+    }
+
+    public void onScheduleTimer(final long correlationId, final long deadlineMs)
+    {
+        if (epochClock.time() >= deadlineMs)
+        {
+            if (onTimerEvent(correlationId, epochClock.time()))
+            {
+                return;
+            }
+        }
+
+        timerService.scheduleTimer(correlationId, deadlineMs);
+    }
+
+    public void onCancelTimer(final long correlationId)
+    {
+        timerService.cancelTimer(correlationId);
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)

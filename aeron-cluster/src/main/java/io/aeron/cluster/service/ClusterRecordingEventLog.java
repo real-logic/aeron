@@ -39,7 +39,7 @@ public class ClusterRecordingEventLog implements AutoCloseable
 
     private final File eventFile;
     private final File newEventFile;
-    private final ByteBuffer appendBuffer = ByteBuffer.allocate(RECORD_LENGTH);
+    private final ByteBuffer buffer = ByteBuffer.allocate(RECORD_LENGTH);
 
     private FileChannel fileChannel;
 
@@ -118,9 +118,9 @@ public class ClusterRecordingEventLog implements AutoCloseable
 
             final FileChannel newFileChannel = FileChannel.open(newEventFilePath, WRITE, APPEND);
 
-            appendBuffer.putLong(0, recordingId);
-            appendBuffer.position(0);
-            newFileChannel.write(appendBuffer);
+            buffer.putLong(0, recordingId);
+            buffer.position(0);
+            newFileChannel.write(buffer);
             newFileChannel.force(true);
             newFileChannel.close();
 

@@ -71,7 +71,7 @@ public class ClusteredServiceAgent implements
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
 
-    private ReadableCounter recPositionCounter;
+    private ReadableCounter recordingPositionCounter;
     private volatile Image latestLogImage;
 
     public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
@@ -122,7 +122,7 @@ public class ClusteredServiceAgent implements
         if (null != latestLogImage)
         {
             workCount +=
-                latestLogImage.boundedControlledPoll(fragmentAssembler, recPositionCounter.get(), FRAGMENT_LIMIT);
+                latestLogImage.boundedControlledPoll(fragmentAssembler, recordingPositionCounter.get(), FRAGMENT_LIMIT);
         }
 
         return workCount;
@@ -298,6 +298,7 @@ public class ClusteredServiceAgent implements
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 100, 100, 1000);
+            final CountersReader countersReader = aeron.countersReader();
 
             final Long2ObjectHashMap<RecordingInfo> recordingsMap = RecordingInfo.mapRecordings(
                 aeronArchive, 0, 100, logSubscription.channel(), logSubscription.streamId());
@@ -308,16 +309,15 @@ public class ClusteredServiceAgent implements
             }
 
             final RecordingInfo latestRecordingInfo = RecordingInfo.findLatestRecording(recordingsMap);
-            final CountersReader countersReader = aeron.countersReader();
-            final int recPosCounterId =
+            final int recordingPositionCounterId =
                 RecordingPos.findActiveRecordingPositionCounterId(countersReader, latestRecordingInfo.recordingId);
 
-            if (recPosCounterId == RecordingPos.NULL_COUNTER_ID)
+            if (recordingPositionCounterId == RecordingPos.NULL_COUNTER_ID)
             {
-                throw new IllegalStateException("could not find latest recording recPosition counter Id");
+                throw new IllegalStateException("could not find latest recording position counter Id");
             }
 
-            recPositionCounter = new ReadableCounter(countersReader, recPosCounterId);
+            recordingPositionCounter = new ReadableCounter(countersReader, recordingPositionCounterId);
 
             final MutableLong lastReplayedRecordingId = new MutableLong(-1);
 

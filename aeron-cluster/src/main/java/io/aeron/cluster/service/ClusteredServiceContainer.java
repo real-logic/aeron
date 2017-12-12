@@ -173,11 +173,20 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public static final String DIR_DELETE_ON_START_DEFAULT = "false";
 
+        /**
+         * Directory to use for the cluster container.
+         */
         public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
 
+        /**
+         * Directory to use for the cluster container.
+         */
         public static final String CLUSTER_DIR_DEFAULT = "cluster";
 
-        public static final String RECORDING_IDS_LOG_FILE_NAME = "recording-events.log";
+        /**
+         * Filename for the recording events log
+         */
+        public static final String RECORDING_EVENTS_LOG_FILE_NAME = "recording-events.log";
 
         /**
          * The value {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
@@ -283,6 +292,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
             return "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_START_PROP_NAME, DIR_DELETE_ON_START_DEFAULT));
         }
 
+        /**
+         * The value {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
+         */
         public static String clusterDirName()
         {
             return System.getProperty(CLUSTER_DIR_PROP_NAME, CLUSTER_DIR_DEFAULT);
@@ -388,7 +402,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == clusterRecordingEventLog)
             {
-                clusterRecordingEventLog = new ClusterRecordingEventLog(clusterDir);
+                clusterRecordingEventLog = new ClusterRecordingEventLog(clusterDir, serviceId);
             }
         }
 
@@ -716,11 +730,22 @@ public final class ClusteredServiceContainer implements AutoCloseable
             return this;
         }
 
+        /**
+         * The service this container holds.
+         *
+         * @return service this container holds.
+         */
         public ClusteredService clusteredService()
         {
             return clusteredService;
         }
 
+        /**
+         * Set the service this container is to hold.
+         *
+         * @param clusteredService this container is to hold.
+         * @return this for fluent API.
+         */
         public Context clusteredService(final ClusteredService clusteredService)
         {
             this.clusteredService = clusteredService;
@@ -771,39 +796,79 @@ public final class ClusteredServiceContainer implements AutoCloseable
             return archiveContext;
         }
 
+        /**
+         * Should the container attempt to immediately delete {@link #clusterDir()} on startup.
+         *
+         * @param deleteDirOnStart Attempt deletion.
+         * @return this for a fluent API.
+         * @see Configuration#DIR_DELETE_ON_START_PROP_NAME
+         */
         public Context deleteDirOnStart(final boolean deleteDirOnStart)
         {
             this.deleteDirOnStart = deleteDirOnStart;
             return this;
         }
 
+        /**
+         * Will the driver attempt to immediately delete {@link #clusterDir()} on startup.
+         *
+         * @return true when directory will be deleted, otherwise false.
+         * @see Configuration#DIR_DELETE_ON_START_PROP_NAME
+         */
         public boolean deleteDirOnStart()
         {
             return deleteDirOnStart;
         }
 
+        /**
+         * Set the directory to use for the cluster container.
+         *
+         * @param clusterDir to use.
+         * @return this for a fluenat API.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         */
         public Context clusterDir(final File clusterDir)
         {
             this.clusterDir = clusterDir;
             return this;
         }
 
+        /**
+         * The directory used for the cluster container.
+         *
+         * @return directory for the cluster container.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         */
         public File clusterDir()
         {
             return clusterDir;
         }
 
+        /**
+         * Set the cluster recording event log to use.
+         *
+         * @param log to use.
+         * @return this for a fluent API.
+         */
         public Context clusterRecordingEventLog(final ClusterRecordingEventLog log)
         {
             clusterRecordingEventLog = log;
             return this;
         }
 
+        /**
+         * The cluster recording event log.
+         *
+         * @return cluster recording event log.
+         */
         public ClusterRecordingEventLog clusterRecordingEventLog()
         {
             return clusterRecordingEventLog;
         }
 
+        /**
+         * Delete the cluster container directory.
+         */
         public void deleteClusterDirectory()
         {
             if (null != clusterDir)

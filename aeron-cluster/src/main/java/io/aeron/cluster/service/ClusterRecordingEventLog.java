@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.LongConsumer;
 
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.RECORDING_EVENTS_LOG_FILE_NAME;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.*;
@@ -43,11 +44,10 @@ public class ClusterRecordingEventLog implements AutoCloseable
 
     private FileChannel fileChannel;
 
-    public ClusterRecordingEventLog(final File clusterDir)
+    public ClusterRecordingEventLog(final File clusterDir, final long serviceId)
     {
-        eventFile = new File(clusterDir, ClusteredServiceContainer.Configuration.RECORDING_IDS_LOG_FILE_NAME);
-        newEventFile = new File(
-            clusterDir, ClusteredServiceContainer.Configuration.RECORDING_IDS_LOG_FILE_NAME + ".tmp");
+        eventFile = recordingEventsLogLocation(clusterDir, serviceId, false);
+        newEventFile = recordingEventsLogLocation(clusterDir, serviceId, true);
 
         try
         {
@@ -132,6 +132,15 @@ public class ClusterRecordingEventLog implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    public static File recordingEventsLogLocation(
+        final File clusterDirectory, final long serviceId, final boolean isTmp)
+    {
+        final String suffix = isTmp ? ".tmp" : "";
+
+        return new File(
+            clusterDirectory, Long.toString(serviceId) + "-" + RECORDING_EVENTS_LOG_FILE_NAME + suffix);
     }
 
     public void close()

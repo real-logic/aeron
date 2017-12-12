@@ -44,6 +44,7 @@ public class ClusteredServiceAgent implements
     private static final int FRAGMENT_LIMIT = 10;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
+    private final long serviceId;
     private long timestampMs;
     private final boolean shouldCloseResources;
     private final boolean useAeronAgentInvoker;
@@ -77,6 +78,7 @@ public class ClusteredServiceAgent implements
     {
         this.ctx = ctx;
 
+        serviceId = ctx.serviceId();
         aeron = ctx.aeron();
         shouldCloseResources = ctx.ownsAeronClient();
         useAeronAgentInvoker = aeron.context().useConductorAgentInvoker();
@@ -92,6 +94,7 @@ public class ClusteredServiceAgent implements
     {
         service.onStart(this);
         replayPreviousLogs();
+        notifyReady();
     }
 
     public void onClose()
@@ -237,6 +240,7 @@ public class ClusteredServiceAgent implements
             {
                 scheduleTimerRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .serviceId(serviceId)
                     .correlationId(correlationId)
                     .deadline(deadlineMs);
 
@@ -263,6 +267,7 @@ public class ClusteredServiceAgent implements
             {
                 cancelTimerRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .serviceId(serviceId)
                     .correlationId(correlationId);
 
                 bufferClaim.commit();
@@ -401,5 +406,31 @@ public class ClusteredServiceAgent implements
         }
 
         return 0;
+    }
+
+    private void notifyReady()
+    {
+        final ServiceReadyEncoder encoder = new ServiceReadyEncoder();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceReadyEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            if (consensusModulePublication.tryClaim(length, bufferClaim) > 0)
+            {
+                encoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .serviceId(serviceId);
+
+                bufferClaim.commit();
+
+                return;
+            }
+
+            Thread.yield();
+        }
+        while (--attempts > 0);
+
+        throw new IllegalStateException("Failed to notify ready");
     }
 }

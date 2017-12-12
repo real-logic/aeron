@@ -16,9 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Subscription;
-import io.aeron.cluster.codecs.CancelTimerRequestDecoder;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.ScheduleTimerRequestDecoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
@@ -31,6 +29,7 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
     final SequencerAgent sequencerAgent;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final ServiceReadyDecoder serviceReadyDecoder = new ServiceReadyDecoder();
     private final ScheduleTimerRequestDecoder scheduleTimerRequestDecoder = new ScheduleTimerRequestDecoder();
     private final CancelTimerRequestDecoder cancelTimerRequestDecoder = new CancelTimerRequestDecoder();
 
@@ -59,6 +58,16 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
+            case ServiceReadyDecoder.TEMPLATE_ID:
+                serviceReadyDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onServiceReady(serviceReadyDecoder.serviceId());
+                break;
+
             case ScheduleTimerRequestDecoder.TEMPLATE_ID:
                 scheduleTimerRequestDecoder.wrap(
                     buffer,
@@ -80,6 +89,9 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
 
                 sequencerAgent.onCancelTimer(scheduleTimerRequestDecoder.correlationId());
                 break;
+
+            default:
+                throw new IllegalArgumentException("Unknown template id: " + templateId);
         }
     }
 }

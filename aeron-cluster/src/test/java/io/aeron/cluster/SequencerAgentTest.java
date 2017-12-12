@@ -60,6 +60,7 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
 
         final long correlationIdOne = 1L;
+        agent.onServiceReady(0L);
         agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE);
         agent.doWork();
 
@@ -87,6 +88,8 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
 
         final long correlationId = 1L;
+        agent.onServiceReady(0L);
+
         agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE);
         agent.doWork();
 

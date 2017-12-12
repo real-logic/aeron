@@ -83,6 +83,8 @@ public class ClusterNodeTest
     @Test
     public void shouldConnectAndSendKeepAlive()
     {
+        container = launchEchoService();
+
         try (AeronCluster aeronCluster = connectToCluster())
         {
             assertTrue(aeronCluster.sendKeepAlive());

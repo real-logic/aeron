@@ -94,6 +94,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
     public static class Configuration
     {
         /**
+         * Identity for a clustered service.
+         */
+        public static final String SERVICE_ID_PROP_NAME = "aeron.cluster.service.id";
+
+        /**
+         * Identity for a clustered service. Default to 0.
+         */
+        public static final long SERVICE_ID_DEFAULT = 0;
+
+        /**
          * Channel for the clustered log.
          */
         public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
@@ -168,6 +178,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String CLUSTER_DIR_DEFAULT = "cluster";
 
         public static final String RECORDING_IDS_LOG_FILE_NAME = "recording-events.log";
+
+        /**
+         * The value {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
+         *
+         * @return {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
+         */
+        public static long serviceId()
+        {
+            return Long.getLong(SERVICE_ID_PROP_NAME, SERVICE_ID_DEFAULT);
+        }
 
         /**
          * The value {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
@@ -271,6 +291,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
     public static class Context implements AutoCloseable
     {
+        private long serviceId = Configuration.serviceId();
         private String logChannel = Configuration.logChannel();
         private int logStreamId = Configuration.logStreamId();
         private String logReplayChannel = Configuration.logReplayChannel();
@@ -369,6 +390,30 @@ public final class ClusteredServiceContainer implements AutoCloseable
             {
                 clusterRecordingEventLog = new ClusterRecordingEventLog(clusterDir);
             }
+        }
+
+        /**
+         * Set the id for this clustered service.
+         *
+         * @param serviceId for this clustered service.
+         * @return this for a fluent API
+         * @see ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
+         */
+        public Context serviceId(final long serviceId)
+        {
+            this.serviceId = serviceId;
+            return this;
+        }
+
+        /**
+         * Get the id for this clustered service.
+         *
+         * @return the id for this clustered service.
+         * @see ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
+         */
+        public long serviceId()
+        {
+            return serviceId;
         }
 
         /**

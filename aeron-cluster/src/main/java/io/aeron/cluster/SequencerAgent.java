@@ -31,6 +31,11 @@ import static io.aeron.cluster.ClusterSession.State.*;
 
 class SequencerAgent implements Agent
 {
+    enum State
+    {
+        INIT, ACTIVE
+    }
+
     /**
      * Message detail to be sent when max concurrent session limit is reached.
      */
@@ -57,6 +62,7 @@ class SequencerAgent implements Agent
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
     private final ConsensusModule.Context ctx;
+    private State state = State.INIT;
 
     // TODO: last message correlation id per session counter
 
@@ -111,11 +117,15 @@ class SequencerAgent implements Agent
             workCount += aeronClientInvoker.invoke();
         }
 
-        workCount += processPendingSessions(pendingSessions, nowMs);
         workCount += consensusModuleAdapter.poll();
-        workCount += timerService.poll(nowMs);
-        workCount += ingressAdapter.poll();
-        workCount += checkSessions(sessionByIdMap, nowMs);
+
+        if (State.ACTIVE == state)
+        {
+            workCount += processPendingSessions(pendingSessions, nowMs);
+            workCount += timerService.poll(nowMs);
+            workCount += ingressAdapter.poll();
+            workCount += checkSessions(sessionByIdMap, nowMs);
+        }
 
         processRejectedSessions(rejectedSessions, nowMs);
 
@@ -125,6 +135,11 @@ class SequencerAgent implements Agent
     public String roleName()
     {
         return "sequencer";
+    }
+
+    public void onServiceReady(final long serviceId)
+    {
+        state = State.ACTIVE;
     }
 
     public void onSessionConnect(final long correlationId, final int responseStreamId, final String responseChannel)
@@ -205,14 +220,6 @@ class SequencerAgent implements Agent
 
     public void onScheduleTimer(final long correlationId, final long deadlineMs)
     {
-        if (epochClock.time() >= deadlineMs)
-        {
-            if (onTimerEvent(correlationId, epochClock.time()))
-            {
-                return;
-            }
-        }
-
         timerService.scheduleTimer(correlationId, deadlineMs);
     }
 

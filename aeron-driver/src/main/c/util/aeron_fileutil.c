@@ -51,7 +51,7 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
 int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
 {
 #if HAVE_FALLOCATE
-    if (fallocate(fd, (filll_with_zeroes ? FALLOC_FL_ZERO_RANGE : 0), 0, length) < 0)
+    if (fallocate(fd, (fill_with_zeroes ? FALLOC_FL_ZERO_RANGE : 0), 0, length) < 0)
     {
         int errcode = errno;
 

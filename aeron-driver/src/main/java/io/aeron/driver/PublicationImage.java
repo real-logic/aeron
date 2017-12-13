@@ -61,13 +61,13 @@ class PublicationImagePadding2 extends PublicationImageConductorFields
     protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
-class PublicationImageHotFields extends PublicationImagePadding2
+class PublicationImageReceiverFields extends PublicationImagePadding2
 {
     protected boolean isEndOfStream = false;
     protected long lastPacketTimestampNs;
 }
 
-class PublicationImagePadding3 extends PublicationImageHotFields
+class PublicationImagePadding3 extends PublicationImageReceiverFields
 {
     @SuppressWarnings("unused")
     protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
@@ -82,7 +82,7 @@ public class PublicationImage
 {
     enum State
     {
-        INIT, ACTIVE, INACTIVE, LINGER
+        INIT, ACTIVE, INACTIVE, LINGER, DONE
     }
 
     private long timeOfLastStateChangeNs;
@@ -112,7 +112,6 @@ public class PublicationImage
     private final boolean isReliable;
 
     private boolean noLongerActive;
-    private boolean reachedEndOfLife;
     private volatile State state = State.INIT;
 
     private final NanoClock nanoClock;
@@ -475,21 +474,12 @@ public class PublicationImage
         if (!isFlowControlUnderRun(windowPosition, packetPosition) &&
             !isFlowControlOverRun(windowPosition, proposedPosition))
         {
-            final boolean newHwm = hwmPosition.proposeMaxOrdered(proposedPosition);
-
             if (isHeartbeat)
             {
-                final boolean endOfStream = DataHeaderFlyweight.isEndOfStream(buffer);
-
-                if (endOfStream && !isEndOfStream)
+                if (!isEndOfStream && DataHeaderFlyweight.isEndOfStream(buffer))
                 {
                     isEndOfStream = true;
                     LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
-                }
-
-                if (!endOfStream || newHwm)
-                {
-                    lastPacketTimestampNs = nanoClock.nanoTime();
                 }
 
                 heartbeatsReceived.incrementOrdered();
@@ -498,8 +488,10 @@ public class PublicationImage
             {
                 final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
                 TermRebuilder.insert(termBuffer, termOffset, buffer, length);
-                lastPacketTimestampNs = nanoClock.nanoTime();
             }
+
+            lastPacketTimestampNs = nanoClock.nanoTime();
+            hwmPosition.proposeMaxOrdered(proposedPosition);
         }
 
         return length;
@@ -677,7 +669,7 @@ public class PublicationImage
             case LINGER:
                 if (timeNs > (timeOfLastStateChangeNs + imageLivenessTimeoutNs))
                 {
-                    reachedEndOfLife = true;
+                    state = State.DONE;
                     conductor.cleanupImage(this);
                 }
                 break;
@@ -686,7 +678,7 @@ public class PublicationImage
 
     public boolean hasReachedEndOfLife()
     {
-        return reachedEndOfLife;
+        return State.DONE == state;
     }
 
     public void timeOfLastStateChange(final long time)

@@ -36,7 +36,22 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 public class ClusterRecordingEventLog implements AutoCloseable
 {
-    private static final int RECORD_LENGTH = SIZE_OF_LONG;
+    public static final long RECORDING_TYPE_LOG = 0;
+    public static final long RECORDING_TYPE_SNAPSHOT = 1;
+
+    private static final int RECORDING_ID_OFFSET = 0;
+    private static final int RECORD_TYPE_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
+    private static final int POSITION_OFFSET = RECORD_TYPE_OFFSET + SIZE_OF_LONG;
+    private static final int ABSOLUTE_POSITION_OFFSET = POSITION_OFFSET + SIZE_OF_LONG;
+    private static final int MESSAGE_INDEX_OFFSET = ABSOLUTE_POSITION_OFFSET + SIZE_OF_LONG;
+
+    private static final int RECORD_LENGTH = MESSAGE_INDEX_OFFSET + SIZE_OF_LONG;
+
+    @FunctionalInterface
+    public interface RecordingEventHandler
+    {
+        void onRecord(long type, long recordingId, long position, long absolutePosition, long messageIndex);
+    }
 
     private final File eventFile;
     private final File newEventFile;
@@ -105,7 +120,75 @@ public class ClusterRecordingEventLog implements AutoCloseable
         return numIds;
     }
 
-    public void append(final long recordingId)
+    public int forEachFromLastSnapshot(final RecordingEventHandler handler)
+    {
+        MappedByteBuffer mappedByteBuffer = null;
+        int numIds = 0;
+
+        try
+        {
+            final long length = fileChannel.size();
+
+            mappedByteBuffer = fileChannel.map(READ_WRITE, 0, length);
+            final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
+
+            final int snapshotOffset = findOffsetOfLatestSnapshot(buffer);
+
+            for (int i = snapshotOffset; i < (int)length; i += RECORD_LENGTH)
+            {
+                handler.onRecord(
+                    buffer.getLong(i + RECORD_TYPE_OFFSET),
+                    buffer.getLong(i + RECORDING_ID_OFFSET),
+                    buffer.getLong(i + POSITION_OFFSET),
+                    buffer.getLong(i + ABSOLUTE_POSITION_OFFSET),
+                    buffer.getLong(i + MESSAGE_INDEX_OFFSET));
+                numIds++;
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+        finally
+        {
+            IoUtil.unmap(mappedByteBuffer);
+        }
+
+        return numIds;
+    }
+
+    public void appendLog(
+        final long recordingId, final long position, final long absolutePosition, final long messageIndex)
+    {
+        append(RECORDING_TYPE_LOG, recordingId, position, absolutePosition, messageIndex);
+    }
+
+    public void appendSnapshot(
+        final long recordingId, final long position, final long absolutePosition, final long messageIndex)
+    {
+        append(RECORDING_TYPE_SNAPSHOT, recordingId, position, absolutePosition, messageIndex);
+    }
+
+    public static File recordingEventsLogLocation(
+        final File clusterDirectory, final long serviceId, final boolean isTmp)
+    {
+        final String suffix = isTmp ? ".tmp" : "";
+
+        return new File(
+            clusterDirectory, Long.toString(serviceId) + "-" + RECORDING_EVENTS_LOG_FILE_NAME + suffix);
+    }
+
+    public void close()
+    {
+        CloseHelper.quietClose(fileChannel);
+    }
+
+    private void append(
+        final long type,
+        final long recordingId,
+        final long position,
+        final long absolutePosition,
+        final long messageIndex)
     {
         try
         {
@@ -118,7 +201,11 @@ public class ClusterRecordingEventLog implements AutoCloseable
 
             final FileChannel newFileChannel = FileChannel.open(newEventFilePath, WRITE, APPEND);
 
-            buffer.putLong(0, recordingId);
+            buffer.putLong(RECORDING_ID_OFFSET, recordingId);
+            buffer.putLong(RECORD_TYPE_OFFSET, type);
+            buffer.putLong(POSITION_OFFSET, position);
+            buffer.putLong(ABSOLUTE_POSITION_OFFSET, absolutePosition);
+            buffer.putLong(MESSAGE_INDEX_OFFSET, messageIndex);
             buffer.position(0);
             newFileChannel.write(buffer);
             newFileChannel.force(true);
@@ -134,17 +221,16 @@ public class ClusterRecordingEventLog implements AutoCloseable
         }
     }
 
-    public static File recordingEventsLogLocation(
-        final File clusterDirectory, final long serviceId, final boolean isTmp)
+    private static int findOffsetOfLatestSnapshot(final UnsafeBuffer unsafeBuffer)
     {
-        final String suffix = isTmp ? ".tmp" : "";
+        for (int i = unsafeBuffer.capacity() - RECORD_LENGTH; i >= 0; i -= RECORD_LENGTH)
+        {
+            if (unsafeBuffer.getLong(i + RECORD_TYPE_OFFSET) == RECORDING_TYPE_SNAPSHOT)
+            {
+                return i;
+            }
+        }
 
-        return new File(
-            clusterDirectory, Long.toString(serviceId) + "-" + RECORDING_EVENTS_LOG_FILE_NAME + suffix);
-    }
-
-    public void close()
-    {
-        CloseHelper.quietClose(fileChannel);
+        return 0;
     }
 }

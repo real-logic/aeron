@@ -320,13 +320,20 @@ public class ClusteredServiceAgent implements
 
             final MutableLong lastReplayedRecordingId = new MutableLong(-1);
 
-            recordingEventLog.forEach(
-                (id) ->
+            recordingEventLog.forEachFromLastSnapshot(
+                (type, id, position, absolutePosition, messageIndex) ->
                 {
                     final RecordingInfo recordingInfo = recordingsMap.get(id);
                     lastReplayedRecordingId.value = id;
 
-                    replayRecording(idleStrategy, aeronArchive, recordingInfo);
+                    if (ClusterRecordingEventLog.RECORDING_TYPE_SNAPSHOT == type)
+                    {
+                        // replay snapshot
+                    }
+                    else if (ClusterRecordingEventLog.RECORDING_TYPE_LOG == type)
+                    {
+                        replayRecording(idleStrategy, aeronArchive, recordingInfo);
+                    }
                 });
 
             while (!logSubscription.isConnected() && null == latestLogImage)
@@ -336,7 +343,7 @@ public class ClusteredServiceAgent implements
 
             if (lastReplayedRecordingId.value != latestRecordingInfo.recordingId)
             {
-                recordingEventLog.append(latestRecordingInfo.recordingId);
+                recordingEventLog.appendLog(latestRecordingInfo.recordingId, latestLogImage.position(), -1, -1);
             }
         }
     }

@@ -27,7 +27,7 @@
 #include "util/aeron_fileutil.h"
 #include "aeron_error.h"
 
-#define BLOCK_SIZE (4 * 1024)
+#define AERON_BLOCK_SIZE (4 * 1024)
 
 inline static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
 {
@@ -48,6 +48,34 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
     return result;
 }
 
+int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
+{
+#if HAVE_FALLOCATE
+    if (fallocate(fd, (filll_with_zeroes ? FALLOC_FL_ZERO_RANGE : 0), 0, length) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        return -1;
+    }
+#else
+    uint8_t null_buffer[] = { 0, 0 };
+
+    if ((lseek(fd, length, SEEK_SET) < 0) || (write(fd, null_buffer, 1) <= 0))
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        return -1;
+    }
+    if (fill_with_zeroes)
+    {
+        // TODO: finish
+    }
+#endif
+    return 0;
+}
+
 int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool fill_with_zeroes)
 {
     int fd, result = -1;
@@ -62,7 +90,7 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
                 {
                     if (lseek(fd, (off_t)0, SEEK_SET) >= 0)
                     {
-                        char block[BLOCK_SIZE];
+                        char block[AERON_BLOCK_SIZE];
 
                         memset(block, 0, sizeof(block));
                         const size_t blocks = mapped_file->length / sizeof(block);

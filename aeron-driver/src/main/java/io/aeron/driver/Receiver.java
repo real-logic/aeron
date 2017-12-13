@@ -74,7 +74,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         for (int lastIndex = publicationImages.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final PublicationImage image = publicationImages.get(i);
-            if (image.checkForActivity(nowNs))
+            if (image.hasActivityAndNotEndOfStream(nowNs))
             {
                 workCount += image.sendPendingStatusMessage();
                 workCount += image.processPendingLoss();

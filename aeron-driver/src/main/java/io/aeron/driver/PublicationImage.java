@@ -63,6 +63,7 @@ class PublicationImagePadding2 extends PublicationImageConductorFields
 
 class PublicationImageHotFields extends PublicationImagePadding2
 {
+    protected boolean isEndOfStream = false;
     protected long lastPacketTimestampNs;
 }
 
@@ -480,8 +481,9 @@ public class PublicationImage
             {
                 final boolean endOfStream = DataHeaderFlyweight.isEndOfStream(buffer);
 
-                if (endOfStream)
+                if (endOfStream && !isEndOfStream)
                 {
+                    isEndOfStream = true;
                     LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
                 }
 
@@ -504,16 +506,17 @@ public class PublicationImage
     }
 
     /**
-     * To be called from the {@link Receiver} to see if a image should be garbage collected.
+     * To be called from the {@link Receiver} to see if a image should be retained.
      *
-     * @param nowNs current time to check against.
-     * @return true if still active otherwise false.
+     * @param nowNs current time to check against for activity.
+     * @return true if the image should be retained otherwise false.
      */
-    boolean checkForActivity(final long nowNs)
+    boolean hasActivityAndNotEndOfStream(final long nowNs)
     {
         boolean isActive = true;
 
-        if (nowNs > (lastPacketTimestampNs + imageLivenessTimeoutNs))
+        if (nowNs > (lastPacketTimestampNs + imageLivenessTimeoutNs) ||
+            (isEndOfStream && rebuildPosition.getVolatile() >= hwmPosition.get()))
         {
             isActive = false;
         }
@@ -664,7 +667,8 @@ public class PublicationImage
             case INACTIVE:
                 if (isDrained() || timeNs > (timeOfLastStateChangeNs + imageLivenessTimeoutNs))
                 {
-                    state(State.LINGER);
+                    state = State.LINGER;
+                    timeOfLastStateChangeNs = timeNs;
                     conductor.transitionToLinger(this);
                 }
                 noLongerActive = true;

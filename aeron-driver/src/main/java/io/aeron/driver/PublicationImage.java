@@ -474,11 +474,20 @@ public class PublicationImage
         if (!isFlowControlUnderRun(windowPosition, packetPosition) &&
             !isFlowControlOverRun(windowPosition, proposedPosition))
         {
+            final boolean newHwm = hwmPosition.proposeMaxOrdered(proposedPosition);
+
             if (isHeartbeat)
             {
-                if (DataHeaderFlyweight.isEndOfStream(buffer))
+                final boolean endOfStream = DataHeaderFlyweight.isEndOfStream(buffer);
+
+                if (endOfStream)
                 {
                     LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
+                }
+
+                if (!endOfStream || newHwm)
+                {
+                    lastPacketTimestampNs = nanoClock.nanoTime();
                 }
 
                 heartbeatsReceived.incrementOrdered();
@@ -487,9 +496,8 @@ public class PublicationImage
             {
                 final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
                 TermRebuilder.insert(termBuffer, termOffset, buffer, length);
+                lastPacketTimestampNs = nanoClock.nanoTime();
             }
-
-            hwmCandidate(proposedPosition);
         }
 
         return length;
@@ -704,12 +712,6 @@ public class PublicationImage
         }
 
         return true;
-    }
-
-    private void hwmCandidate(final long proposedPosition)
-    {
-        lastPacketTimestampNs = nanoClock.nanoTime();
-        hwmPosition.proposeMaxOrdered(proposedPosition);
     }
 
     private boolean isFlowControlUnderRun(final long windowPosition, final long packetPosition)

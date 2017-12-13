@@ -320,9 +320,10 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
-        private Aeron aeron;
         private AeronArchive.Context archiveContext;
         private File clusterDir;
+        private String aeronDirectoryName = CommonContext.AERON_DIR_PROP_DEFAULT;
+        private Aeron aeron;
         private boolean ownsAeronClient;
 
         private ClusteredService clusteredService;
@@ -364,17 +365,18 @@ public final class ClusteredServiceContainer implements AutoCloseable
             {
                 aeron = Aeron.connect(
                     new Aeron.Context()
+                        .aeronDirectoryName(aeronDirectoryName)
                         .errorHandler(countedErrorHandler)
-                        .epochClock(epochClock)
-                        .useConductorAgentInvoker(true)
-                        .clientLock(new NoOpLock()));
+                        .epochClock(epochClock));
 
                 ownsAeronClient = true;
             }
 
             if (null == archiveContext)
             {
-                archiveContext = new AeronArchive.Context().lock(new NoOpLock());
+                archiveContext = new AeronArchive.Context()
+                    .aeron(aeron)
+                    .lock(new NoOpLock());
             }
 
             if (deleteDirOnStart)
@@ -707,6 +709,28 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
+         * Set the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @param aeronDirectoryName the top level Aeron directory.
+         * @return this for a fluent API.
+         */
+        public Context aeronDirectoryName(final String aeronDirectoryName)
+        {
+            this.aeronDirectoryName = aeronDirectoryName;
+            return this;
+        }
+
+        /**
+         * Get the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @return The top level Aeron directory.
+         */
+        public String aeronDirectoryName()
+        {
+            return aeronDirectoryName;
+        }
+
+        /**
          * An {@link Aeron} client for the container.
          *
          * @return {@link Aeron} client for the container
@@ -731,28 +755,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The service this container holds.
-         *
-         * @return service this container holds.
-         */
-        public ClusteredService clusteredService()
-        {
-            return clusteredService;
-        }
-
-        /**
-         * Set the service this container is to hold.
-         *
-         * @param clusteredService this container is to hold.
-         * @return this for fluent API.
-         */
-        public Context clusteredService(final ClusteredService clusteredService)
-        {
-            this.clusteredService = clusteredService;
-            return this;
-        }
-
-        /**
          * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
          *
          * @param ownsAeronClient does this context own the {@link #aeron()} client.
@@ -772,6 +774,28 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public boolean ownsAeronClient()
         {
             return ownsAeronClient;
+        }
+
+        /**
+         * The service this container holds.
+         *
+         * @return service this container holds.
+         */
+        public ClusteredService clusteredService()
+        {
+            return clusteredService;
+        }
+
+        /**
+         * Set the service this container is to hold.
+         *
+         * @param clusteredService this container is to hold.
+         * @return this for fluent API.
+         */
+        public Context clusteredService(final ClusteredService clusteredService)
+        {
+            this.clusteredService = clusteredService;
+            return this;
         }
 
         /**

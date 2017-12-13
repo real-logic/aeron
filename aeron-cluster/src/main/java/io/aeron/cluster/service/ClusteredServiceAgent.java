@@ -47,9 +47,7 @@ public class ClusteredServiceAgent implements
     private final long serviceId;
     private long timestampMs;
     private final boolean shouldCloseResources;
-    private final boolean useAeronAgentInvoker;
     private final Aeron aeron;
-    private final AgentInvoker aeronAgentInvoker;
     private final ClusteredService service;
     private final Subscription logSubscription;
     private final ExclusivePublication consensusModulePublication;
@@ -81,8 +79,6 @@ public class ClusteredServiceAgent implements
         serviceId = ctx.serviceId();
         aeron = ctx.aeron();
         shouldCloseResources = ctx.ownsAeronClient();
-        useAeronAgentInvoker = aeron.context().useConductorAgentInvoker();
-        aeronAgentInvoker = aeron.conductorAgentInvoker();
         service = ctx.clusteredService();
         logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId(), this, this);
         consensusModulePublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.consensusModuleStreamId());
@@ -117,12 +113,10 @@ public class ClusteredServiceAgent implements
     {
         int workCount = 0;
 
-        workCount += invokeAeronClient();
-
         if (null != latestLogImage)
         {
-            workCount +=
-                latestLogImage.boundedControlledPoll(fragmentAssembler, recordingPositionCounter.get(), FRAGMENT_LIMIT);
+            workCount += latestLogImage.boundedControlledPoll(
+                fragmentAssembler, recordingPositionCounter.get(), FRAGMENT_LIMIT);
         }
 
         return workCount;
@@ -217,6 +211,11 @@ public class ClusteredServiceAgent implements
         }
 
         return Action.CONTINUE;
+    }
+
+    public Aeron aeron()
+    {
+        return aeron;
     }
 
     public ClientSession getClientSession(final long clusterSessionId)
@@ -332,7 +331,7 @@ public class ClusteredServiceAgent implements
 
             while (!logSubscription.isConnected() && null == latestLogImage)
             {
-                idleStrategy.idle(invokeAeronClient());
+                idleStrategy.idle();
             }
 
             if (lastReplayedRecordingId.value != latestRecordingInfo.recordingId)
@@ -365,7 +364,7 @@ public class ClusteredServiceAgent implements
         {
             while (!replaySubscription.isConnected())
             {
-                idleStrategy.idle(invokeAeronClient());
+                idleStrategy.idle();
             }
 
             if (replaySubscription.imageCount() > 1)
@@ -377,8 +376,6 @@ public class ClusteredServiceAgent implements
 
             while (replayImage.position() < recordingInfo.stopPosition)
             {
-                invokeAeronClient();
-
                 final int workCount = replayImage.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
                 if (workCount == 0)
                 {
@@ -396,16 +393,6 @@ public class ClusteredServiceAgent implements
                 idleStrategy.idle(workCount);
             }
         }
-    }
-
-    private int invokeAeronClient()
-    {
-        if (useAeronAgentInvoker)
-        {
-            return aeronAgentInvoker.invoke();
-        }
-
-        return 0;
     }
 
     private void notifyReady()

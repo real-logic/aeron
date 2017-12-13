@@ -932,6 +932,7 @@ public class AeronArchive implements AutoCloseable
         private int controlMtuLength = Configuration.controlMtuLength();
         private IdleStrategy idleStrategy;
         private Lock lock;
+        private String aeronDirectoryName = CommonContext.AERON_DIR_PROP_DEFAULT;
         private Aeron aeron;
         private boolean ownsAeronClient = false;
 
@@ -942,7 +943,9 @@ public class AeronArchive implements AutoCloseable
         {
             if (null == aeron)
             {
-                aeron = Aeron.connect();
+                aeron = Aeron.connect(new Aeron.Context()
+                    .aeronDirectoryName(aeronDirectoryName));
+
                 ownsAeronClient = true;
             }
 
@@ -1198,6 +1201,28 @@ public class AeronArchive implements AutoCloseable
         public IdleStrategy idleStrategy()
         {
             return idleStrategy;
+        }
+
+        /**
+         * Set the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @param aeronDirectoryName the top level Aeron directory.
+         * @return this for a fluent API.
+         */
+        public Context aeronDirectoryName(final String aeronDirectoryName)
+        {
+            this.aeronDirectoryName = aeronDirectoryName;
+            return this;
+        }
+
+        /**
+         * Get the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @return The top level Aeron directory.
+         */
+        public String aeronDirectoryName()
+        {
+            return aeronDirectoryName;
         }
 
         /**

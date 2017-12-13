@@ -15,11 +15,20 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.Aeron;
+
 /**
  * Interface for a {@link ClusteredService} to interact with cluster hosting it.
  */
 public interface Cluster
 {
+    /**
+     * Get the {@link Aeron} client used by the cluster.
+     *
+     * @return the {@link Aeron} client used by the cluster.
+     */
+    Aeron aeron();
+
     /**
      * Get the {@link ClientSession} for a given cluster session id.
      *

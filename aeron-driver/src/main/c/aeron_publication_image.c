@@ -575,7 +575,6 @@ extern bool aeron_publication_image_is_flow_control_under_run(
     aeron_publication_image_t *image, int64_t window_position, int64_t packet_position);
 extern bool aeron_publication_image_is_flow_control_over_run(
     aeron_publication_image_t *image, int64_t window_position, int64_t proposed_position);
-extern void aeron_publication_image_hwm_candidate(aeron_publication_image_t *image, int64_t proposed_position);
 extern void aeron_publication_image_schedule_status_message(
     aeron_publication_image_t *image, int64_t now_ns, int64_t sm_position, int32_t window_length);
 extern bool aeron_publication_image_is_drained(aeron_publication_image_t *image);

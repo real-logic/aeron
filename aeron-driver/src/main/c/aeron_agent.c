@@ -154,6 +154,7 @@ int aeron_agent_init(
     const char *role_name,
     void *state,
     aeron_agent_on_start_func_t on_start,
+    void *on_start_state,
     aeron_agent_do_work_func_t do_work,
     aeron_agent_on_close_func_t on_close,
     aeron_idle_strategy_func_t idle_strategy_func,
@@ -169,6 +170,7 @@ int aeron_agent_init(
 
     runner->agent_state = state;
     runner->on_start = on_start;
+    runner->on_start_state = on_start_state;
     runner->do_work = do_work;
     runner->on_close = on_close;
     if (aeron_alloc((void **)&runner->role_name, role_name_length + 1) < 0)
@@ -194,7 +196,7 @@ static void *agent_main(void *arg)
 
     if (NULL != runner->on_start)
     {
-        runner->on_start(runner->role_name);
+        runner->on_start(runner->on_start_state, runner->role_name);
     }
 
     while (aeron_agent_is_running(runner))

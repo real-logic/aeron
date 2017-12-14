@@ -192,6 +192,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     }
 
     _context->agent_on_start_func = NULL;
+    _context->agent_on_start_state = NULL;
 
     if ((_context->unicast_flow_control_supplier_func =
         aeron_flow_control_strategy_supplier_load("aeron_unicast_flow_control_strategy_supplier")) == NULL)

@@ -33,7 +33,7 @@ typedef HANDLE aeron_thread_t;
 
 typedef int (*aeron_agent_do_work_func_t)(void *);
 typedef void (*aeron_agent_on_close_func_t)(void *);
-typedef void (*aeron_agent_on_start_func_t)(const char *role_name);
+typedef void (*aeron_agent_on_start_func_t)(void *, const char *role_name);
 
 #define AERON_AGENT_STATE_UNUSED 0
 #define AERON_AGENT_STATE_INITED 1
@@ -54,6 +54,7 @@ typedef struct aeron_agent_runner_stct
     const char *role_name;
     void *agent_state;
     void *idle_strategy_state;
+    void *on_start_state;
     aeron_agent_on_start_func_t on_start;
     aeron_agent_do_work_func_t do_work;
     aeron_agent_on_close_func_t on_close;
@@ -75,6 +76,7 @@ int aeron_agent_init(
     const char *role_name,
     void *state,
     aeron_agent_on_start_func_t on_start,
+    void *on_start_state,
     aeron_agent_do_work_func_t do_work,
     aeron_agent_on_close_func_t on_close,
     aeron_idle_strategy_func_t idle_strategy_func,

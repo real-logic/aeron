@@ -136,9 +136,7 @@ public:
     {
         validateCounterId(id);
 
-        const CounterMetaDataDefn& metadata = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(metadataOffset(id));
-
-        return std::string((const char *)metadata.label, static_cast<size_t>(metadata.labelLength));
+        return m_metadataBuffer.getStringUtf8(metadataOffset(id) + LABEL_LENGTH_OFFSET);
     }
 
     inline static util::index_t counterOffset(std::int32_t counterId)

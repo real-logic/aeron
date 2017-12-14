@@ -504,7 +504,7 @@ void ClientConductor::onSubscriptionReady(
     }
 }
 
-void ClientConductor::onCounterReady(
+void ClientConductor::onAvailableCounter(
     std::int64_t registrationId,
     std::int32_t counterId)
 {
@@ -524,10 +524,20 @@ void ClientConductor::onCounterReady(
         state.m_counterId = counterId;
         state.m_counterCache =
             std::make_shared<Counter>(
-                *this, m_counterValuesBuffer, state.m_registrationId, counterId);
+                this, m_counterValuesBuffer, state.m_registrationId, counterId);
         state.m_counter = std::weak_ptr<Counter>(state.m_counterCache);
-        return;
     }
+
+    m_onAvailableCounterHandler(m_countersReader, registrationId, counterId);
+}
+
+void ClientConductor::onUnavailableCounter(
+    std::int64_t registrationId,
+    std::int32_t counterId)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    m_onUnavailableCounterHandler(m_countersReader, registrationId, counterId);
 }
 
 void ClientConductor::onOperationSuccess(std::int64_t correlationId)
@@ -598,7 +608,6 @@ void ClientConductor::onErrorResponse(
         (*counterIt).m_errorMessage = errorMessage;
         return;
     }
-
 }
 
 void ClientConductor::onAvailableImage(

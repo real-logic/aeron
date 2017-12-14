@@ -40,6 +40,7 @@ using namespace std::placeholders;
 #define MANY_TO_ONE_RING_BUFFER_LENGTH (CAPACITY + RingBufferDescriptor::TRAILER_LENGTH)
 #define BROADCAST_BUFFER_LENGTH (CAPACITY + BroadcastBufferDescriptor::TRAILER_LENGTH)
 #define COUNTER_VALUES_BUFFER_LENGTH (1024 * 1024)
+#define COUNTER_METADATA_BUFFER_LENGTH (1024 * 1024)
 
 static const long DRIVER_TIMEOUT_MS = 10 * 1000;
 static const long RESOURCE_LINGER_TIMEOUT_MS = 5 * 1000;
@@ -49,6 +50,7 @@ static const long INTER_SERVICE_TIMEOUT_MS = INTER_SERVICE_TIMEOUT_NS / 1000000L
 typedef std::array<std::uint8_t, MANY_TO_ONE_RING_BUFFER_LENGTH> many_to_one_ring_buffer_t;
 typedef std::array<std::uint8_t, BROADCAST_BUFFER_LENGTH> broadcast_buffer_t;
 typedef std::array<std::uint8_t, COUNTER_VALUES_BUFFER_LENGTH> counter_values_buffer_t;
+typedef std::array<std::uint8_t, COUNTER_METADATA_BUFFER_LENGTH> counter_metadata_buffer_t;
 
 class MockClientConductorHandlers
 {
@@ -60,6 +62,8 @@ public:
     MOCK_METHOD3(onNewSub, void(const std::string&, std::int32_t, std::int64_t));
     MOCK_METHOD1(onNewImage, void(Image&));
     MOCK_METHOD1(onInactive, void(Image&));
+    MOCK_METHOD3(onAvailableCounter, void(CountersReader&, std::int64_t, std::int32_t));
+    MOCK_METHOD3(onUnavailableCounter, void(CountersReader&, std::int64_t, std::int32_t));
 };
 
 class ClientConductorFixture
@@ -68,6 +72,7 @@ public:
     ClientConductorFixture() :
         m_toDriverBuffer(m_toDriver, 0),
         m_toClientsBuffer(m_toClients, 0),
+        m_counterMetadataBuffer(m_counterMetadata, 0),
         m_counterValuesBuffer(m_counterValues, 0),
         m_manyToOneRingBuffer(m_toDriverBuffer),
         m_broadcastReceiver(m_toClientsBuffer),
@@ -78,16 +83,21 @@ public:
             [&]() { return m_currentTime; },
             m_driverProxy,
             m_copyBroadcastReceiver,
+            m_counterMetadataBuffer,
             m_counterValuesBuffer,
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewPub, &m_handlers, _1, _2, _3, _4),
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewSub, &m_handlers, _1, _2, _3),
             [&](const std::exception& exception) { m_errorHandler(exception); },
+            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onAvailableCounter, &m_handlers, _1, _2, _3),
+            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onUnavailableCounter, &m_handlers, _1, _2, _3),
             DRIVER_TIMEOUT_MS,
             RESOURCE_LINGER_TIMEOUT_MS,
             INTER_SERVICE_TIMEOUT_NS),
         m_errorHandler(defaultErrorHandler),
         m_onAvailableImageHandler(std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewImage, &m_handlers, _1)),
-        m_onUnavailableImageHandler(std::bind(&testing::NiceMock<MockClientConductorHandlers>::onInactive, &m_handlers, _1))
+        m_onUnavailableImageHandler(std::bind(&testing::NiceMock<MockClientConductorHandlers>::onInactive, &m_handlers, _1)),
+        m_onAvailableCounterHandler(std::bind(&testing::NiceMock<MockClientConductorHandlers>::onAvailableCounter, &m_handlers, _1, _2, _3)),
+        m_onUnavailableCounterHandler(std::bind(&testing::NiceMock<MockClientConductorHandlers>::onUnavailableCounter, &m_handlers, _1, _2, _3))
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
@@ -110,9 +120,11 @@ protected:
     AERON_DECL_ALIGNED(many_to_one_ring_buffer_t m_toDriver, 16);
     AERON_DECL_ALIGNED(broadcast_buffer_t m_toClients, 16);
     AERON_DECL_ALIGNED(counter_values_buffer_t m_counterValues, 16);
+    AERON_DECL_ALIGNED(counter_metadata_buffer_t m_counterMetadata, 16);
 
     AtomicBuffer m_toDriverBuffer;
     AtomicBuffer m_toClientsBuffer;
+    AtomicBuffer m_counterMetadataBuffer;
     AtomicBuffer m_counterValuesBuffer;
 
     ManyToOneRingBuffer m_manyToOneRingBuffer;
@@ -130,6 +142,8 @@ protected:
 
     on_available_image_t m_onAvailableImageHandler;
     on_unavailable_image_t m_onUnavailableImageHandler;
+    on_available_counter_t m_onAvailableCounterHandler;
+    on_unavailable_counter_t m_onUnavailableCounterHandler;
 };
 
 #endif //AERON_CLIENTCONDUCTORFIXTURE_H

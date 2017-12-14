@@ -70,6 +70,8 @@ struct ControlProtocolEvents
     static const std::int32_t ON_SUBSCRIPTION_READY = 0x0F07;
     /** New counter notification */
     static const std::int32_t ON_COUNTER_READY = 0x0F08;
+    /** inform clients of removal of counter */
+    static const std::int32_t ON_UNAVAILABLE_COUNTER = 0x0F09;
 };
 
 }}

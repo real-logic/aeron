@@ -29,7 +29,7 @@ class AtomicCounter
 {
 public:
 
-    AtomicCounter(AtomicBuffer& buffer, std::int32_t counterId, std::shared_ptr<CountersManager> countersManager) :
+    AtomicCounter(const AtomicBuffer& buffer, std::int32_t counterId, std::shared_ptr<CountersManager> countersManager) :
         m_buffer(buffer),
         m_counterId(counterId),
         m_countersManager(countersManager),
@@ -38,7 +38,7 @@ public:
         m_buffer.putInt64(m_offset, 0);
     }
 
-    AtomicCounter(AtomicBuffer& buffer, std::int32_t counterId) :
+    AtomicCounter(const AtomicBuffer& buffer, std::int32_t counterId) :
         m_buffer(buffer),
         m_counterId(counterId),
         m_countersManager(nullptr),
@@ -64,7 +64,7 @@ public:
         m_buffer.getAndAddInt64(m_offset, 1);
     }
 
-    inline void orderedIncrement()
+    inline void incrementOrdered()
     {
         m_buffer.addInt64Ordered(m_offset, 1);
     }
@@ -74,19 +74,50 @@ public:
         m_buffer.putInt64Atomic(m_offset, value);
     }
 
-    inline void setOrdered(long value)
+    inline void setOrdered(std::int64_t value)
     {
         m_buffer.putInt64Ordered(m_offset, value);
     }
 
-    inline void addOrdered(long increment)
+    inline void setWeak(std::int64_t value)
     {
-        m_buffer.addInt64Ordered(m_offset, increment);
+        m_buffer.putInt64(m_offset, value);
+    }
+
+    inline std::int64_t getAndAdd(std::int64_t value)
+    {
+        return m_buffer.getAndAddInt64(m_offset, value);
+    }
+
+    inline std::int64_t getAndAddOrdered(std::int64_t increment)
+    {
+        std::int64_t currentValue = m_buffer.getInt64(m_offset);
+
+        m_buffer.putInt64Ordered(m_offset, currentValue + increment);
+        return currentValue;
+    }
+
+    inline std::int64_t getAndSet(std::int64_t value)
+    {
+        std::int64_t currentValue = m_buffer.getInt64(m_offset);
+
+        m_buffer.putInt64Atomic(m_offset, value);
+        return currentValue;
+    }
+
+    inline bool compareAndSet(std::int64_t expectedValue, std::int64_t updateValue)
+    {
+        return m_buffer.compareAndSetInt64(m_offset, expectedValue, updateValue);
     }
 
     inline std::int64_t get() const
     {
         return m_buffer.getInt64Volatile(m_offset);
+    }
+
+    inline std::int64_t getWeak() const
+    {
+        return m_buffer.getInt64(m_offset);
     }
 
 private:

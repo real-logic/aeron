@@ -85,7 +85,7 @@ public:
     {
     }
 
-    void forEach(const on_counters_metadata_t& onCountersMetadata)
+    void forEach(const on_counters_metadata_t& onCountersMetadata) const
     {
         std::int32_t id = 0;
 
@@ -111,7 +111,7 @@ public:
         }
     }
 
-    inline std::int64_t getCounterValue(std::int32_t id)
+    inline std::int64_t getCounterValue(std::int32_t id) const
     {
         return m_valuesBuffer.getInt64Volatile(id * COUNTER_LENGTH);
     }
@@ -126,7 +126,7 @@ public:
         return counterId * METADATA_LENGTH;
     }
 
-    inline AtomicBuffer valuesBuffer()
+    inline AtomicBuffer valuesBuffer() const
     {
         return m_valuesBuffer;
     }

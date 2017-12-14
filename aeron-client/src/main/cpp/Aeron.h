@@ -284,6 +284,7 @@ private:
 
     AtomicBuffer m_toDriverAtomicBuffer;
     AtomicBuffer m_toClientsAtomicBuffer;
+    AtomicBuffer m_countersMetadataBuffer;
     AtomicBuffer m_countersValueBuffer;
 
     ManyToOneRingBuffer m_toDriverRingBuffer;

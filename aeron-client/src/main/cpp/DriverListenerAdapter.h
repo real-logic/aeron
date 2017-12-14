@@ -62,8 +62,8 @@ public:
                             publicationReady.logFileName(),
                             publicationReady.correlationId(),
                             publicationReady.registrationId());
+                        break;
                     }
-                    break;
 
                     case ControlProtocolEvents::ON_EXCLUSIVE_PUBLICATION_READY:
                     {
@@ -77,8 +77,8 @@ public:
                             publicationReady.logFileName(),
                             publicationReady.correlationId(),
                             publicationReady.registrationId());
+                        break;
                     }
-                    break;
 
                     case ControlProtocolEvents::ON_SUBSCRIPTION_READY:
                     {
@@ -87,8 +87,8 @@ public:
                         m_driverListener.onSubscriptionReady(
                             subscriptionReady.correlationId(),
                             subscriptionReady.channelStatusIndicatorId());
+                        break;
                     }
-                    break;
 
                     case ControlProtocolEvents::ON_AVAILABLE_IMAGE:
                     {
@@ -102,16 +102,16 @@ public:
                             imageReady.subscriberPositionId(),
                             imageReady.subscriberRegistrationId(),
                             imageReady.correlationId());
+                        break;
                     }
-                    break;
 
                     case ControlProtocolEvents::ON_OPERATION_SUCCESS:
                     {
                         const OperationSucceededFlyweight operationSucceeded(buffer, offset);
 
                         m_driverListener.onOperationSuccess(operationSucceeded.correlationId());
+                        break;
                     }
-                    break;
 
                     case ControlProtocolEvents::ON_UNAVAILABLE_IMAGE:
                     {
@@ -121,8 +121,8 @@ public:
                             imageMessage.streamId(),
                             imageMessage.correlationId(),
                             imageMessage.subscriptionRegistrationId());
+                        break;
                     }
-                    break;
 
                     case ControlProtocolEvents::ON_ERROR:
                     {
@@ -132,16 +132,24 @@ public:
                             errorResponse.offendingCommandCorrelationId(),
                             errorResponse.errorCode(),
                             errorResponse.errorMessage());
+                        break;
                     }
-                    break;
 
                     case ControlProtocolEvents::ON_COUNTER_READY:
                     {
                         const CounterUpdateFlyweight response(buffer, offset);
 
-                        m_driverListener.onCounterReady(response.correlationId(), response.counterId());
+                        m_driverListener.onAvailableCounter(response.correlationId(), response.counterId());
+                        break;
                     }
-                    break;
+
+                    case ControlProtocolEvents::ON_UNAVAILABLE_COUNTER:
+                    {
+                        const CounterUpdateFlyweight response(buffer, offset);
+
+                        m_driverListener.onUnavailableCounter(response.correlationId(), response.counterId());
+                        break;
+                    }
 
                     default:
                         break;

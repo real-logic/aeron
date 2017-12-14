@@ -21,7 +21,10 @@ namespace aeron
 {
 
 Counter::Counter(
-    ClientConductor& clientConductor, AtomicBuffer& buffer, std::int64_t registrationId, std::int32_t counterId) :
+    ClientConductor* clientConductor,
+    AtomicBuffer& buffer,
+    std::int64_t registrationId,
+    std::int32_t counterId) :
     AtomicCounter(buffer, counterId),
     m_clientConductor(clientConductor),
     m_registrationId(registrationId)
@@ -30,7 +33,10 @@ Counter::Counter(
 
 Counter::~Counter()
 {
-    m_clientConductor.releaseCounter(m_registrationId);
+    if (nullptr != m_clientConductor)
+    {
+        m_clientConductor->releaseCounter(m_registrationId);
+    }
 }
 
 }

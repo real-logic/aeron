@@ -888,7 +888,7 @@ TEST_F(ClientConductorTest, shouldReturnNullForUnknownCounter)
     EXPECT_TRUE(counter == nullptr);
 }
 
-TEST_F(ClientConductorTest, shouldReturnNullForCounterWithoutCounterReady)
+TEST_F(ClientConductorTest, shouldReturnNullForCounterWithoutOnAvailableCounter)
 {
     std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
 
@@ -917,11 +917,14 @@ TEST_F(ClientConductorTest, shouldSendAddCounterToDriver)
     EXPECT_EQ(count, 1);
 }
 
-TEST_F(ClientConductorTest, shouldReturnCounterAfterOnCounterReady)
+TEST_F(ClientConductorTest, shouldReturnCounterAfterOnAvailableCounter)
 {
     std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
 
-    m_conductor.onCounterReady(id, COUNTER_ID);
+    EXPECT_CALL(m_handlers, onAvailableCounter(testing::_, id, COUNTER_ID))
+        .Times(1);
+
+    m_conductor.onAvailableCounter(id, COUNTER_ID);
 
     std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
 
@@ -941,7 +944,7 @@ TEST_F(ClientConductorTest, shouldReleaseCounterAfterGoingOutOfScope)
         {
         });
 
-    m_conductor.onCounterReady(id, COUNTER_ID);
+    m_conductor.onAvailableCounter(id, COUNTER_ID);
 
     {
         std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
@@ -972,11 +975,11 @@ TEST_F(ClientConductorTest, shouldReturnDifferentIdsForDuplicateAddCounter)
     EXPECT_NE(id1, id2);
 }
 
-TEST_F(ClientConductorTest, shouldReturnSameFindCounterAfterOnCounterReady)
+TEST_F(ClientConductorTest, shouldReturnSameFindCounterAfterOnAvailableCounter)
 {
     std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
 
-    m_conductor.onCounterReady(id, COUNTER_ID);
+    m_conductor.onAvailableCounter(id, COUNTER_ID);
 
     std::shared_ptr<Counter> counter1 = m_conductor.findCounter(id);
     std::shared_ptr<Counter> counter2 = m_conductor.findCounter(id);
@@ -986,13 +989,18 @@ TEST_F(ClientConductorTest, shouldReturnSameFindCounterAfterOnCounterReady)
     ASSERT_TRUE(counter1 == counter2);
 }
 
-TEST_F(ClientConductorTest, shouldReturnDifferentCounterAfterOnCounterReady)
+TEST_F(ClientConductorTest, shouldReturnDifferentCounterAfterOnAvailableCounter)
 {
     std::int64_t id1 = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
     std::int64_t id2 = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
 
-    m_conductor.onCounterReady(id1, COUNTER_ID);
-    m_conductor.onCounterReady(id2, COUNTER_ID);
+    EXPECT_CALL(m_handlers, onAvailableCounter(testing::_, id1, COUNTER_ID))
+        .Times(1);
+    EXPECT_CALL(m_handlers, onAvailableCounter(testing::_, id2, COUNTER_ID))
+        .Times(1);
+
+    m_conductor.onAvailableCounter(id1, COUNTER_ID);
+    m_conductor.onAvailableCounter(id2, COUNTER_ID);
 
     std::shared_ptr<Counter> counter1 = m_conductor.findCounter(id1);
     std::shared_ptr<Counter> counter2 = m_conductor.findCounter(id2);
@@ -1002,18 +1010,22 @@ TEST_F(ClientConductorTest, shouldReturnDifferentCounterAfterOnCounterReady)
     ASSERT_TRUE(counter1 != counter2);
 }
 
-TEST_F(ClientConductorTest, shouldIgnoreOnCounterReadyForUnknownCorrelationId)
+TEST_F(ClientConductorTest, shouldNotFindCounterOnAvailableCounterForUnknownCorrelationId)
 {
     std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
 
-    m_conductor.onCounterReady(id + 1, COUNTER_ID);
+    // but should see callback for it
+    EXPECT_CALL(m_handlers, onAvailableCounter(testing::_, id + 1, COUNTER_ID))
+        .Times(1);
+
+    m_conductor.onAvailableCounter(id + 1, COUNTER_ID);
 
     std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
 
     ASSERT_TRUE(counter == nullptr);
 }
 
-TEST_F(ClientConductorTest, shouldTimeoutAddCounterWithoutOnCounterReady)
+TEST_F(ClientConductorTest, shouldTimeoutAddCounterWithoutOnAvailableCounter)
 {
     std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
 
@@ -1035,4 +1047,14 @@ TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAdd
         {
             std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
         }, util::RegistrationException);
+}
+
+TEST_F(ClientConductorTest, shouldCallOnUnavailableCounter)
+{
+    std::int64_t id = 101;
+
+    EXPECT_CALL(m_handlers, onUnavailableCounter(testing::_, id, COUNTER_ID))
+        .Times(1);
+
+    m_conductor.onUnavailableCounter(id, COUNTER_ID);
 }

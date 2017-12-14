@@ -101,7 +101,12 @@ int32_t aeron_randomised_int32()
         }
     }
 
-    read(aeron_dev_random_fd, &result, sizeof(result));
+    if (sizeof(result) != read(aeron_dev_random_fd, &result, sizeof(result)))
+    {
+        fprintf(stderr, "Failed to read from aeron_dev_random (%d): %s\n", errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
 #endif
     return result;
 }
@@ -517,12 +522,12 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_driver_init: %s", strerror(EINVAL));
-        return -1;
+        goto error;
     }
 
     if (aeron_alloc((void **)&_driver, sizeof(aeron_driver_t)) < 0)
     {
-        return -1;
+        goto error;
     }
 
     _driver->context = context;
@@ -537,44 +542,44 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     if (aeron_logbuffer_check_term_length(_driver->context->term_buffer_length) < 0 ||
         aeron_logbuffer_check_term_length(_driver->context->ipc_term_buffer_length) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_validate_page_size(_driver) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_context_validate_mtu_length(_driver->context->mtu_length) < 0 ||
         aeron_driver_context_validate_mtu_length(_driver->context->ipc_mtu_length) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_validate_sufficient_socket_buffer_lengths(_driver) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_ensure_dir_is_recreated(_driver) < 0)
     {
         aeron_set_err(EINVAL, "could not recreate aeron dir %s", _driver->context->aeron_dir);
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_create_cnc_file(_driver) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_create_loss_report_file(_driver) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_conductor_init(&_driver->conductor, context) < 0)
     {
-        return -1;
+        goto error;
     }
 
     _driver->context->conductor_proxy = &_driver->conductor.conductor_proxy;
@@ -582,7 +587,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     if (aeron_driver_sender_init(
         &_driver->sender, context, &_driver->conductor.system_counters, &_driver->conductor.error_log) < 0)
     {
-        return -1;
+        goto error;
     }
 
     _driver->context->sender_proxy = &_driver->sender.sender_proxy;
@@ -590,7 +595,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     if (aeron_driver_receiver_init(
         &_driver->receiver, context, &_driver->conductor.system_counters, &_driver->conductor.error_log) < 0)
     {
-        return -1;
+        goto error;
     }
 
     _driver->context->receiver_proxy = &_driver->receiver.receiver_proxy;
@@ -611,7 +616,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 _driver->context->shared_idle_strategy_func,
                 _driver->context->shared_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
             break;
 
@@ -626,7 +631,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 _driver->context->conductor_idle_strategy_func,
                 _driver->context->conductor_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
 
             if (aeron_agent_init(
@@ -639,7 +644,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 _driver->context->shared_network_idle_strategy_func,
                 _driver->context->shared_network_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
             break;
 
@@ -655,7 +660,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 _driver->context->conductor_idle_strategy_func,
                 _driver->context->conductor_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
 
             if (aeron_agent_init(
@@ -668,7 +673,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 _driver->context->sender_idle_strategy_func,
                 _driver->context->sender_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
 
             if (aeron_agent_init(
@@ -681,13 +686,22 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 _driver->context->receiver_idle_strategy_func,
                 _driver->context->receiver_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
             break;
     }
 
     *driver = _driver;
     return 0;
+
+    error:
+
+    if (NULL != _driver)
+    {
+        aeron_free(_driver);
+    }
+
+    return -1;
 }
 
 int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)

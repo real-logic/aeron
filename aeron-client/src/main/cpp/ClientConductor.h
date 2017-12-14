@@ -178,6 +178,11 @@ public:
     void addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
     void removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
 
+    inline CountersReader& countersReader()
+    {
+        return m_countersReader;
+    }
+
 protected:
     void onCheckManagedResources(long long now);
 

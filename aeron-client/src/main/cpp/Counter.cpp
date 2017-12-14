@@ -39,4 +39,14 @@ Counter::~Counter()
     }
 }
 
+std::int32_t Counter::state() const
+{
+    return m_clientConductor->countersReader().getCounterState(id());
+}
+
+std::string Counter::label() const
+{
+    return m_clientConductor->countersReader().getCounterLabel(id());
+}
+
 }

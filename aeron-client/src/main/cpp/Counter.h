@@ -56,6 +56,9 @@ public:
         return m_registrationId;
     }
 
+    std::int32_t state() const;
+    std::string label() const;
+
     inline bool isClosed() const
     {
         return std::atomic_load_explicit(&m_isClosed, std::memory_order_acquire);

@@ -28,12 +28,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import static io.aeron.cluster.ClusterSession.State.*;
+import static io.aeron.cluster.control.ClusterControl.Action.NEUTRAL;
+import static io.aeron.cluster.control.ClusterControl.Action.RESUME;
+import static io.aeron.cluster.control.ClusterControl.Action.SUSPEND;
 
 class SequencerAgent implements Agent
 {
     enum State
     {
-        INIT, ACTIVE
+        INIT, ACTIVE, SUSPENDED
     }
 
     /**
@@ -57,6 +60,7 @@ class SequencerAgent implements Agent
     private final EgressPublisher egressPublisher;
     private final LogAppender logAppender;
     private final Counter messageIndex;
+    private final Counter controlToggle;
     private final ClusterSessionSupplier clusterSessionSupplier;
     private final Long2ObjectHashMap<ClusterSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
@@ -81,6 +85,7 @@ class SequencerAgent implements Agent
         this.sessionTimeoutMs = ctx.sessionTimeoutNs() / 1000;
         this.egressPublisher = egressPublisher;
         this.messageIndex = ctx.messageIndex();
+        this.controlToggle = ctx.controlToggle();
         this.logAppender = logAppender;
         this.clusterSessionSupplier = clusterSessionSupplier;
 
@@ -116,6 +121,7 @@ class SequencerAgent implements Agent
             workCount += aeronClientInvoker.invoke();
         }
 
+        workCount += checkControlToggle();
         workCount += consensusModuleAdapter.poll();
 
         if (State.ACTIVE == state)
@@ -225,6 +231,32 @@ class SequencerAgent implements Agent
     public void onCancelTimer(final long correlationId)
     {
         timerService.cancelTimer(correlationId);
+    }
+
+    State state()
+    {
+        return state;
+    }
+
+    private int checkControlToggle()
+    {
+        final long toggleValue = controlToggle.get();
+
+        if (SUSPEND.code() == toggleValue)
+        {
+            state = State.SUSPENDED;
+            NEUTRAL.toggle(controlToggle);
+            return 1;
+        }
+
+        if (RESUME.code() == toggleValue)
+        {
+            state = State.ACTIVE;
+            NEUTRAL.toggle(controlToggle);
+            return 1;
+        }
+
+        return 0;
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)

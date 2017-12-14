@@ -25,6 +25,11 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.Before;
 import org.junit.Test;
 
+import static io.aeron.cluster.control.ClusterControl.Action.NEUTRAL;
+import static io.aeron.cluster.control.ClusterControl.Action.RESUME;
+import static io.aeron.cluster.control.ClusterControl.Action.SUSPEND;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,6 +47,7 @@ public class SequencerAgentTest
         .errorCounter(mock(AtomicCounter.class))
         .errorHandler(Throwable::printStackTrace)
         .messageIndex(mock(Counter.class))
+        .controlToggle(mock(Counter.class))
         .aeron(mock(Aeron.class))
         .epochClock(new SystemEpochClock())
         .cachedEpochClock(new CachedEpochClock());
@@ -109,6 +115,33 @@ public class SequencerAgentTest
         verify(mockLogAppender).appendClosedSession(any(ClusterSession.class), eq(CloseReason.TIMEOUT), eq(timeoutMs));
         verify(mockEgressPublisher)
             .sendEvent(any(ClusterSession.class), eq(EventCode.ERROR), eq(SequencerAgent.SESSION_TIMEOUT_MSG));
+    }
+
+    @Test
+    public void shouldTransitionStates()
+    {
+        final Counter mockControlToggle = mock(Counter.class);
+        ctx.controlToggle(mockControlToggle);
+
+        when(mockControlToggle.get()).thenReturn(NEUTRAL.code());
+
+        final SequencerAgent agent = newSequencerAgent();
+        assertThat(agent.state(), is(SequencerAgent.State.INIT));
+
+        agent.onServiceReady(1L);
+        assertThat(agent.state(), is(SequencerAgent.State.ACTIVE));
+
+        when(mockControlToggle.get()).thenReturn(SUSPEND.code());
+        agent.doWork();
+
+        assertThat(agent.state(), is(SequencerAgent.State.SUSPENDED));
+        verify(mockControlToggle).set(NEUTRAL.code());
+
+        when(mockControlToggle.get()).thenReturn(RESUME.code());
+        agent.doWork();
+
+        assertThat(agent.state(), is(SequencerAgent.State.ACTIVE));
+        verify(mockControlToggle, times(2)).set(NEUTRAL.code());
     }
 
     private SequencerAgent newSequencerAgent()

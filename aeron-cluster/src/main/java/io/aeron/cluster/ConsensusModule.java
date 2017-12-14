@@ -20,6 +20,7 @@ import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.control.ClusterControl;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -30,6 +31,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static io.aeron.cluster.control.ClusterControl.CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
@@ -210,6 +212,7 @@ public class ConsensusModule implements
         private CountedErrorHandler countedErrorHandler;
 
         private Counter messageIndex;
+        private Counter controlToggle;
 
         private AeronArchive.Context archiveContext;
 
@@ -264,6 +267,11 @@ public class ConsensusModule implements
             if (null == messageIndex)
             {
                 messageIndex = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
+            }
+
+            if (null == controlToggle)
+            {
+                controlToggle = aeron.addCounter(CONTROL_TOGGLE_TYPE_ID, "Control toggle");
             }
 
             if (null == threadFactory)
@@ -651,6 +659,30 @@ public class ConsensusModule implements
         }
 
         /**
+         * Get the counter for the control toggle for triggering actions on the cluster node.
+         *
+         * @return the counter for triggering cluster node actions.
+         * @see ClusterControl
+         */
+        public Counter controlToggle()
+        {
+            return controlToggle;
+        }
+
+        /**
+         * Set the counter for the control toggle for triggering actions on the cluster node.
+         *
+         * @param controlToggle the counter for triggering cluster node actions.
+         * @return this for a fluent API.
+         * @see ClusterControl
+         */
+        public Context controlToggle(final Counter controlToggle)
+        {
+            this.controlToggle = controlToggle;
+            return this;
+        }
+
+        /**
          * {@link Aeron} client for communicating with the local Media Driver.
          * <p>
          * This client will be closed when the {@link ConsensusModule#close()} or {@link #close()} methods are called
@@ -737,6 +769,7 @@ public class ConsensusModule implements
             else
             {
                 CloseHelper.close(messageIndex);
+                CloseHelper.close(controlToggle);
             }
         }
     }

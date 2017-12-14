@@ -41,6 +41,7 @@ public class SequencerAgentTest
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .errorCounter(mock(AtomicCounter.class))
         .errorHandler(Throwable::printStackTrace)
+        .messageIndex(mock(Counter.class))
         .aeron(mock(Aeron.class))
         .epochClock(new SystemEpochClock())
         .cachedEpochClock(new CachedEpochClock());
@@ -115,7 +116,6 @@ public class SequencerAgentTest
         return new SequencerAgent(
             ctx,
             mockEgressPublisher,
-            mock(Counter.class),
             mockLogAppender,
             (sequencerAgent) -> mock(IngressAdapter.class),
             (sequencerAgent) -> mock(TimerService.class),

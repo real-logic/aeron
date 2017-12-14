@@ -33,18 +33,17 @@ import java.util.function.Supplier;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
-public class ConsensusModule
-    implements AutoCloseable,
-               IngressAdapterSupplier,
-               TimerServiceSupplier,
-               ClusterSessionSupplier,
-               ConsensusModuleAdapterSupplier
+public class ConsensusModule implements
+    AutoCloseable,
+    IngressAdapterSupplier,
+    TimerServiceSupplier,
+    ClusterSessionSupplier,
+    ConsensusModuleAdapterSupplier
 {
     private static final int FRAGMENT_POLL_LIMIT = 10;
     private static final int TIMER_POLL_LIMIT = 10;
 
     private final Context ctx;
-    private final Counter messageIndex;
     private final LogAppender logAppender;
     private final AgentRunner conductorRunner;
 
@@ -58,12 +57,10 @@ public class ConsensusModule
             archive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
         }
 
-        messageIndex = ctx.aeron().addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
         logAppender = new LogAppender(ctx.aeron().addExclusivePublication(ctx.logChannel(), ctx.logStreamId()));
 
-
         final SequencerAgent conductor = new SequencerAgent(
-            ctx, new EgressPublisher(), messageIndex, logAppender, this, this, this, this);
+            ctx, new EgressPublisher(), logAppender, this, this, this, this);
 
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
@@ -108,7 +105,6 @@ public class ConsensusModule
     public void close()
     {
         CloseHelper.close(conductorRunner);
-        CloseHelper.close(messageIndex);
         CloseHelper.close(logAppender);
         CloseHelper.close(ctx);
     }
@@ -213,6 +209,8 @@ public class ConsensusModule
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
+        private Counter messageIndex;
+
         private AeronArchive.Context archiveContext;
 
         public void conclude()
@@ -261,6 +259,11 @@ public class ConsensusModule
                 {
                     aeron.context().errorHandler(countedErrorHandler);
                 }
+            }
+
+            if (null == messageIndex)
+            {
+                messageIndex = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
             }
 
             if (null == threadFactory)
@@ -626,6 +629,28 @@ public class ConsensusModule
         }
 
         /**
+         * Get the counter for the message index of the log.
+         *
+         * @return the counter for the message index of the log.
+         */
+        public Counter messageIndex()
+        {
+            return messageIndex;
+        }
+
+        /**
+         * Set the counter for the message index of the log.
+         *
+         * @param messageIndex the counter for the message index of the log.
+         * @return this for a fluent API.
+         */
+        public Context messageIndex(final Counter messageIndex)
+        {
+            this.messageIndex = messageIndex;
+            return this;
+        }
+
+        /**
          * {@link Aeron} client for communicating with the local Media Driver.
          * <p>
          * This client will be closed when the {@link ConsensusModule#close()} or {@link #close()} methods are called
@@ -708,6 +733,10 @@ public class ConsensusModule
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
+            }
+            else
+            {
+                CloseHelper.close(messageIndex);
             }
         }
     }

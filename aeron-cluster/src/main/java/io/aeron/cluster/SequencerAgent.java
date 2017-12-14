@@ -69,7 +69,6 @@ class SequencerAgent implements Agent
     SequencerAgent(
         final ConsensusModule.Context ctx,
         final EgressPublisher egressPublisher,
-        final Counter messageIndex,
         final LogAppender logAppender,
         final IngressAdapterSupplier ingressAdapterSupplier,
         final TimerServiceSupplier timerServiceSupplier,
@@ -81,7 +80,7 @@ class SequencerAgent implements Agent
         this.cachedEpochClock = ctx.cachedEpochClock();
         this.sessionTimeoutMs = ctx.sessionTimeoutNs() / 1000;
         this.egressPublisher = egressPublisher;
-        this.messageIndex = messageIndex;
+        this.messageIndex = ctx.messageIndex();
         this.logAppender = logAppender;
         this.clusterSessionSupplier = clusterSessionSupplier;
 

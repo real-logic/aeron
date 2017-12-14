@@ -20,6 +20,7 @@ include(CheckTypeSize)
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+    add_definitions(-D_DEFAULT_SOURCE)
 endif()
 
 check_include_file("bsd/stdlib.h" BSDSTDLIB_H_EXISTS)

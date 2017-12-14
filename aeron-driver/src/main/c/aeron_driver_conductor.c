@@ -527,7 +527,7 @@ void aeron_publication_image_entry_on_time_event(
 bool aeron_publication_image_entry_has_reached_end_of_life(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
 {
-    return entry->image->conductor_fields.has_reached_end_of_life;
+    return (AERON_PUBLICATION_IMAGE_STATUS_DONE == entry->image->conductor_fields.status);
 }
 
 void aeron_publication_image_entry_delete(

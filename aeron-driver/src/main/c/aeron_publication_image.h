@@ -28,6 +28,7 @@ typedef enum aeron_publication_image_status_enum
     AERON_PUBLICATION_IMAGE_STATUS_INACTIVE,
     AERON_PUBLICATION_IMAGE_STATUS_ACTIVE,
     AERON_PUBLICATION_IMAGE_STATUS_LINGER,
+    AERON_PUBLICATION_IMAGE_STATUS_DONE
 }
 aeron_publication_image_status_t;
 
@@ -40,7 +41,6 @@ typedef struct aeron_publication_image_stct
         int64_t clean_position;
         int64_t time_of_last_status_change_ns;
         int64_t liveness_timeout_ns;
-        bool has_reached_end_of_life;
         bool is_reliable;
         aeron_publication_image_status_t status;
     }
@@ -95,6 +95,8 @@ typedef struct aeron_publication_image_stct
     int32_t loss_term_id;
     int32_t loss_term_offset;
     size_t loss_length;
+
+    bool is_end_of_stream;
 
     int64_t *heartbeats_received_counter;
     int64_t *flow_control_under_runs_counter;
@@ -184,12 +186,6 @@ inline bool aeron_publication_image_is_flow_control_over_run(
     }
 
     return is_flow_control_over_run;
-}
-
-inline void aeron_publication_image_hwm_candidate(aeron_publication_image_t *image, int64_t proposed_position)
-{
-    AERON_PUT_ORDERED(image->last_packet_timestamp_ns, image->nano_clock());
-    aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
 }
 
 inline void aeron_publication_image_schedule_status_message(

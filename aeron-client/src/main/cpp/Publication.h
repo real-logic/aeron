@@ -352,7 +352,10 @@ public:
             if (AERON_COND_EXPECT(length + it->capacity() < 0, false))
             {
                 throw aeron::util::IllegalStateException(
-                    aeron::util::strPrintf("length overflow: %d + %d -> %d", length, it->capacity(), length + it->capacity()),
+                    aeron::util::strPrintf("length overflow: %d + %d -> %d",
+                        length,
+                        it->capacity(),
+                        length + it->capacity()),
                     SOURCEINFO);
             }
 

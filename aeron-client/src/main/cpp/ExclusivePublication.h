@@ -271,13 +271,26 @@ public:
                 if (length <= m_maxPayloadLength)
                 {
                     result = termAppender->appendUnfragmentedMessage(
-                        m_termId, m_termOffset, m_headerWriter, buffer, offset, length, reservedValueSupplier);
+                        m_termId,
+                        m_termOffset,
+                        m_headerWriter,
+                        buffer,
+                        offset,
+                        length,
+                        reservedValueSupplier);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
                     result = termAppender->appendFragmentedMessage(
-                        m_termId, m_termOffset, m_headerWriter, buffer, offset, length, m_maxPayloadLength, reservedValueSupplier);
+                        m_termId,
+                        m_termOffset,
+                        m_headerWriter,
+                        buffer,
+                        offset,
+                        length,
+                        m_maxPayloadLength,
+                        reservedValueSupplier);
                 }
 
                 newPosition = ExclusivePublication::newPosition(result);
@@ -314,6 +327,113 @@ public:
     inline std::int64_t offer(concurrent::AtomicBuffer& buffer)
     {
         return offer(buffer, 0, buffer.capacity());
+    }
+
+    /**
+     * Non-blocking publish of buffers containing a message.
+     *
+     * @param startBuffer containing part of the message.
+     * @param lastBuffer after the message.
+     * @param reservedValueSupplier for the frame.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     */
+    template <class BufferIterator> std::int64_t offer(
+        BufferIterator startBuffer,
+        BufferIterator lastBuffer,
+        const on_reserved_value_supplier_t& reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+    {
+        util::index_t length = 0;
+        for (BufferIterator it = startBuffer; it != lastBuffer; ++it)
+        {
+            if (AERON_COND_EXPECT(length + it->capacity() < 0, false))
+            {
+                throw aeron::util::IllegalStateException(
+                    aeron::util::strPrintf("length overflow: %d + %d -> %d",
+                        length,
+                        it->capacity(),
+                        length + it->capacity()),
+                    SOURCEINFO);
+            }
+
+            length += it->capacity();
+        }
+
+        std::int64_t newPosition = PUBLICATION_CLOSED;
+
+        if (!isClosed())
+        {
+            const std::int64_t limit = m_publicationLimit.getVolatile();
+            ExclusiveTermAppender *termAppender = m_appenders[m_activePartitionIndex].get();
+            const std::int64_t position = m_termBeginPosition + m_termOffset;
+
+            if (position < limit)
+            {
+                std::int32_t result;
+                if (length <= m_maxPayloadLength)
+                {
+                    result = termAppender->appendUnfragmentedMessage(
+                        m_termId,
+                        m_termOffset,
+                        m_headerWriter,
+                        startBuffer,
+                        length,
+                        reservedValueSupplier);
+                }
+                else
+                {
+                    checkForMaxMessageLength(length);
+                    result = termAppender->appendFragmentedMessage(
+                        m_termId,
+                        m_termOffset,
+                        m_headerWriter,
+                        startBuffer,
+                        length,
+                        m_maxPayloadLength,
+                        reservedValueSupplier);
+                }
+
+                newPosition = ExclusivePublication::newPosition(result);
+            }
+            else
+            {
+                newPosition = ExclusivePublication::backPressureStatus(position, length);
+            }
+        }
+
+        return newPosition;
+    }
+
+    /**
+     * Non-blocking publish of array of buffers containing a message.
+     *
+     * @param buffers containing parts of the message.
+     * @param length of the array of buffers.
+     * @param reservedValueSupplier for the frame.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     */
+    std::int64_t offer(
+        const concurrent::AtomicBuffer buffers[],
+        size_t length,
+        const on_reserved_value_supplier_t& reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+    {
+        return offer(buffers, buffers + length, reservedValueSupplier);
+    }
+
+    /**
+     * Non-blocking publish of array of buffers containing a message.
+     *
+     * @param buffers containing parts of the message.
+     * @param reservedValueSupplier for the frame.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     */
+    template <size_t N> std::int64_t offer(
+        const std::array<concurrent::AtomicBuffer, N>& buffers,
+        const on_reserved_value_supplier_t& reservedValueSupplier = DEFAULT_RESERVED_VALUE_SUPPLIER)
+    {
+        return offer(buffers.begin(), buffers.end(), reservedValueSupplier);
     }
 
     /**
@@ -361,7 +481,8 @@ public:
 
             if (AERON_COND_EXPECT((position < limit), true))
             {
-                const std::int32_t result = termAppender->claim(m_termId, m_termOffset, m_headerWriter, length, bufferClaim);
+                const std::int32_t result =
+                    termAppender->claim(m_termId, m_termOffset, m_headerWriter, length, bufferClaim);
                 newPosition = ExclusivePublication::newPosition(result);
             }
             else
@@ -442,7 +563,8 @@ private:
         m_activePartitionIndex = nextIndex;
         m_termOffset = 0;
         m_termId = nextTermId;
-        m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(nextTermId, m_positionBitsToShift, m_initialTermId);
+        m_termBeginPosition =
+            LogBufferDescriptor::computeTermBeginPosition(nextTermId, m_positionBitsToShift, m_initialTermId);
 
         const std::int32_t termCount = nextTermId - m_initialTermId;
 

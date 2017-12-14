@@ -81,7 +81,7 @@ public:
         return resultingOffset;
     }
 
-    inline int32_t appendUnfragmentedMessage(
+    inline std::int32_t appendUnfragmentedMessage(
         std::int32_t termId,
         std::int32_t termOffset,
         const HeaderWriter& header,
@@ -106,6 +106,48 @@ public:
         {
             header.write(m_termBuffer, termOffset, frameLength, termId);
             m_termBuffer.putBytes(termOffset + DataFrameHeader::LENGTH, srcBuffer, srcOffset, length);
+
+            const std::int64_t reservedValue = reservedValueSupplier(m_termBuffer, termOffset, frameLength);
+            m_termBuffer.putInt64(termOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+
+            FrameDescriptor::frameLengthOrdered(m_termBuffer, termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    template <class BufferIterator> inline std::int32_t appendUnfragmentedMessage(
+        std::int32_t termId,
+        std::int32_t termOffset,
+        const HeaderWriter& header,
+        BufferIterator bufferIt,
+        util::index_t length,
+        const on_reserved_value_supplier_t& reservedValueSupplier)
+    {
+        const util::index_t frameLength = length + DataFrameHeader::LENGTH;
+        const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+
+        const std::int32_t termLength = m_termBuffer.capacity();
+
+        std::int32_t resultingOffset = termOffset + alignedLength;
+        putRawTailOrdered(termId, resultingOffset);
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(m_termBuffer, termId, termOffset, header, termLength);
+        }
+        else
+        {
+            header.write(m_termBuffer, termOffset, frameLength, termId);
+
+            std::int32_t offset = termOffset + DataFrameHeader::LENGTH;
+            for (
+                std::int32_t endingOffset = offset + length;
+                offset < endingOffset;
+                offset += bufferIt->capacity(), ++bufferIt)
+            {
+                m_termBuffer.putBytes(offset, *bufferIt, 0, bufferIt->capacity());
+            }
 
             const std::int64_t reservedValue = reservedValueSupplier(m_termBuffer, termOffset, frameLength);
             m_termBuffer.putInt64(termOffset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
@@ -160,6 +202,89 @@ public:
                     srcBuffer,
                     srcOffset + (length - remaining),
                     bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= FrameDescriptor::END_FRAG;
+                }
+
+                FrameDescriptor::frameFlags(m_termBuffer, offset, flags);
+
+                const std::int64_t reservedValue = reservedValueSupplier(m_termBuffer, offset, frameLength);
+                m_termBuffer.putInt64(offset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+
+                FrameDescriptor::frameLengthOrdered(m_termBuffer, offset, frameLength);
+
+                flags = 0;
+                offset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return resultingOffset;
+    }
+
+    template <class BufferIterator> std::int32_t appendFragmentedMessage(
+        std::int32_t termId,
+        std::int32_t termOffset,
+        const HeaderWriter& header,
+        BufferIterator bufferIt,
+        util::index_t length,
+        util::index_t maxPayloadLength,
+        const on_reserved_value_supplier_t& reservedValueSupplier)
+    {
+        const int numMaxPayloads = length / maxPayloadLength;
+        const util::index_t remainingPayload = length % maxPayloadLength;
+        const util::index_t lastFrameLength = (remainingPayload > 0) ?
+            util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
+        const util::index_t requiredLength =
+            (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;
+
+        const std::int32_t termLength = m_termBuffer.capacity();
+
+        std::int32_t resultingOffset = termOffset + requiredLength;
+        putRawTailOrdered(termId, resultingOffset);
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(m_termBuffer, termId, termOffset, header, termLength);
+        }
+        else
+        {
+            std::uint8_t flags = FrameDescriptor::BEGIN_FRAG;
+            util::index_t remaining = length;
+            std::int32_t offset = static_cast<std::int32_t>(termOffset);
+            util::index_t currentBufferOffset = 0;
+
+            do
+            {
+                const util::index_t bytesToWrite = std::min(remaining, maxPayloadLength);
+                const util::index_t frameLength = bytesToWrite + DataFrameHeader::LENGTH;
+                const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+
+                header.write(m_termBuffer, offset, frameLength, termId);
+
+                util::index_t bytesWritten = 0;
+                util::index_t payloadOffset = offset + DataFrameHeader::LENGTH;
+                do
+                {
+                    const util::index_t currentBufferRemaining = bufferIt->capacity() - currentBufferOffset;
+                    const util::index_t numBytes = std::min(bytesToWrite - bytesWritten, currentBufferRemaining);
+
+                    m_termBuffer.putBytes(payloadOffset, *bufferIt, currentBufferOffset, numBytes);
+
+                    bytesWritten += numBytes;
+                    payloadOffset += numBytes;
+                    currentBufferOffset += numBytes;
+
+                    if (currentBufferRemaining <= numBytes)
+                    {
+                        ++bufferIt;
+                        currentBufferOffset = 0;
+                    }
+                }
+                while (bytesWritten < bytesToWrite);
 
                 if (remaining <= maxPayloadLength)
                 {

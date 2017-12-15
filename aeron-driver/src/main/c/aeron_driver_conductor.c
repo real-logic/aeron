@@ -1093,12 +1093,16 @@ void aeron_driver_conductor_on_available_image(
     response->subscriber_registration_id = subscriber_registyration_id;
     ptr += sizeof(aeron_image_buffers_ready_t);
 
-    *((int32_t *)ptr) = (int32_t)log_file_name_length;
+    int32_t length_field;
+
+    length_field= (int32_t)log_file_name_length;
+    memcpy(ptr, &length_field, sizeof(length_field));
     ptr += sizeof(int32_t);
     memcpy(ptr, log_file_name, log_file_name_length);
     ptr += log_file_name_length;
 
-    *((int32_t *)ptr) = (int32_t)source_identity_length;
+    length_field = (int32_t)source_identity_length;
+    memcpy(ptr, &length_field, sizeof(length_field));
     ptr += sizeof(int32_t);
     memcpy(ptr, source_identity, source_identity_length);
     /* ptr += source_identity_length; */

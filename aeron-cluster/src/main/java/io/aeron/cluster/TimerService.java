@@ -40,7 +40,7 @@ public class TimerService implements DeadlineTimerWheel.TimerHandler
         return timerWheel.poll(nowMs, this, timerLimit);
     }
 
-    public boolean onExpiry(final TimeUnit timeUnit, final long now, final long timerId)
+    public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId)
     {
         final long correlationId = correlationIdByTimerIdMap.remove(timerId);
         timerIdByCorrelationIdMap.remove(correlationId);

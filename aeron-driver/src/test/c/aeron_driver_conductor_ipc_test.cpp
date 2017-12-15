@@ -606,6 +606,27 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcSubscription)
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 0u);
 }
 
+TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutMultipleIpcSubscriptions)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t sub_id1 = nextCorrelationId();
+    int64_t sub_id2 = nextCorrelationId();
+    int64_t sub_id3 = nextCorrelationId();
+
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id2, STREAM_ID_2, false), 0);
+    ASSERT_EQ(addIpcSubscription(client_id, sub_id3, STREAM_ID_3, false), 0);
+    doWork();
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 3u);
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 3u);
+
+    doWorkUntilTimeNs(
+        m_context.m_context->publication_linger_timeout_ns +
+            (m_context.m_context->client_liveness_timeout_ns * 2));
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 0u);
+}
+
 TEST_F(DriverConductorIpcTest, shouldBeAbleToNotTimeoutIpcSubscriptionOnKeepalive)
 {
     int64_t client_id = nextCorrelationId();

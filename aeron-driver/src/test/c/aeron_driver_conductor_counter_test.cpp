@@ -145,6 +145,22 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
     EXPECT_FALSE(findCounter(counter_id, counter_func));
 }
 
+TEST_F(DriverConductorCounterTest, shouldRemoveMultipleCountersOnClientTimeout)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t reg_id1 = nextCorrelationId();
+    int64_t reg_id2 = nextCorrelationId();
+
+    ASSERT_EQ(addCounter(client_id, reg_id1, COUNTER_TYPE_ID, (const uint8_t *)&reg_id1, sizeof(int64_t), m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id2, COUNTER_TYPE_ID, (const uint8_t *)&reg_id2, sizeof(int64_t), m_label), 0);
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
+
+    doWorkUntilTimeNs((m_context.m_context->client_liveness_timeout_ns * 2));
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
+}
+
 TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
 {
     int64_t client_id = nextCorrelationId();

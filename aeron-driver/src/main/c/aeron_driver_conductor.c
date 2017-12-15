@@ -263,7 +263,7 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
         aeron_counters_manager_free(&conductor->counters_manager, link->counter_id);
     }
 
-    for (size_t i = 0, size = conductor->ipc_subscriptions.length, last_index = size - 1; i < size; i++)
+    for (int last_index = (int)conductor->ipc_subscriptions.length - 1, i = last_index; i >= 0; i--)
     {
         aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
 
@@ -274,10 +274,11 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->ipc_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);
             conductor->ipc_subscriptions.length--;
+            last_index--;
         }
     }
 
-    for (size_t i = 0, size = conductor->network_subscriptions.length, last_index = size - 1; i < size; i++)
+    for (int last_index = (int)conductor->network_subscriptions.length - 1, i = last_index; i >= 0; i--)
     {
         aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
 
@@ -302,10 +303,11 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->network_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);
             conductor->network_subscriptions.length--;
+            last_index--;
         }
     }
 
-    for (size_t i = 0, size = conductor->spy_subscriptions.length, last_index = size - 1; i < size; i++)
+    for (int last_index = (int)conductor->spy_subscriptions.length - 1, i = last_index; i >= 0; i--)
     {
         aeron_subscription_link_t *link = &conductor->spy_subscriptions.array[i];
 
@@ -318,6 +320,7 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->spy_subscriptions.array, sizeof(aeron_subscription_link_t), i, last_index);
             conductor->spy_subscriptions.length--;
+            last_index--;
         }
     }
 

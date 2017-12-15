@@ -103,7 +103,7 @@ public:
             {
                 const struct CounterMetaDataDefn& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(i);
 
-                const std::string label = m_metadataBuffer.getStringUtf8(i + LABEL_LENGTH_OFFSET);
+                const std::string label = m_metadataBuffer.getString(i + LABEL_LENGTH_OFFSET);
                 const AtomicBuffer keyBuffer(m_metadataBuffer.buffer() + i + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));
 
                 onCountersMetadata(id, record.typeId, keyBuffer, label);
@@ -136,7 +136,7 @@ public:
     {
         validateCounterId(id);
 
-        return m_metadataBuffer.getStringUtf8(metadataOffset(id) + LABEL_LENGTH_OFFSET);
+        return m_metadataBuffer.getString(metadataOffset(id) + LABEL_LENGTH_OFFSET);
     }
 
     inline static util::index_t counterOffset(std::int32_t counterId)

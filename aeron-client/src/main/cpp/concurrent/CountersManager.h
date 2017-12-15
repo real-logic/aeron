@@ -65,7 +65,7 @@ public:
         AtomicBuffer keyBuffer(m_metadataBuffer.buffer() + recordOffset + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));
         keyFunc(keyBuffer);
 
-        m_metadataBuffer.putStringUtf8(recordOffset + LABEL_LENGTH_OFFSET, label);
+        m_metadataBuffer.putString(recordOffset + LABEL_LENGTH_OFFSET, label);
         m_metadataBuffer.putInt32Ordered(recordOffset, RECORD_ALLOCATED);
 
         return counterId;
@@ -101,7 +101,7 @@ public:
                 recordOffset + KEY_OFFSET, key, std::min(maxLength, static_cast<util::index_t>(keyLength)));
         }
 
-        m_metadataBuffer.putStringUtf8(recordOffset + LABEL_LENGTH_OFFSET, label);
+        m_metadataBuffer.putString(recordOffset + LABEL_LENGTH_OFFSET, label);
         m_metadataBuffer.putInt32Ordered(recordOffset, RECORD_ALLOCATED);
 
         return counterId;

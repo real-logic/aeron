@@ -36,27 +36,27 @@ protected:
 
     inline std::string stringGet(util::index_t offset) const
     {
-        return m_buffer.getStringUtf8(m_baseOffset + offset);
+        return m_buffer.getString(m_baseOffset + offset);
     }
 
     inline util::index_t stringGetLength(util::index_t offset) const
     {
-        return m_buffer.getStringUtf8Length(m_baseOffset + offset);
+        return m_buffer.getStringLength(m_baseOffset + offset);
     }
 
     inline util::index_t stringPut(util::index_t offset, const std::string& s)
     {
-        return m_buffer.putStringUtf8(m_baseOffset + offset, s);
+        return m_buffer.putString(m_baseOffset + offset, s);
     }
 
     inline util::index_t stringPutWithoutLength(util::index_t offset, const std::string& s)
     {
-        return m_buffer.putStringUtf8WithoutLength(m_baseOffset + offset, s);
+        return m_buffer.putStringWithoutLength(m_baseOffset + offset, s);
     }
 
     inline std::string stringGetWithoutLength(util::index_t offset, std::int32_t size) const
     {
-        return m_buffer.getStringUtf8WithoutLength(m_baseOffset + offset, size);
+        return m_buffer.getStringWithoutLength(m_baseOffset + offset, size);
     }
 
     inline std::int32_t getInt32(util::index_t offset) const

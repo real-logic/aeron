@@ -334,23 +334,23 @@ public:
         ::memset(m_buffer + offset, value, length);
     }
 
-    inline std::string getStringUtf8(util::index_t offset) const
+    inline std::string getString(util::index_t offset) const
     {
         std::int32_t length;
 
         boundsCheck(offset, sizeof(length));
         ::memcpy(reinterpret_cast<char *>(&length), m_buffer + offset, sizeof(length));
 
-        return getStringUtf8WithoutLength(offset + sizeof(std::int32_t), (size_t)length);
+        return getStringWithoutLength(offset + sizeof(std::int32_t), (size_t) length);
     }
 
-    inline std::string getStringUtf8WithoutLength(util::index_t offset, size_t length) const
+    inline std::string getStringWithoutLength(util::index_t offset, size_t length) const
     {
         boundsCheck(offset, length);
         return std::string(m_buffer + offset, m_buffer + offset + length);
     }
 
-    inline std::int32_t getStringUtf8Length(util::index_t offset) const
+    inline std::int32_t getStringLength(util::index_t offset) const
     {
         std::int32_t length;
 
@@ -360,7 +360,7 @@ public:
         return length;
     }
 
-    std::int32_t putStringUtf8(util::index_t offset, const std::string& value)
+    std::int32_t putString(util::index_t offset, const std::string &value)
     {
         std::int32_t length = static_cast<std::int32_t>(value.length());
 
@@ -372,7 +372,7 @@ public:
         return static_cast<std::int32_t>(sizeof(std::int32_t)) + length;
     }
 
-    std::int32_t COND_MOCK_VIRTUAL putStringUtf8WithoutLength(util::index_t offset, const std::string& value)
+    std::int32_t COND_MOCK_VIRTUAL putStringWithoutLength(util::index_t offset, const std::string &value)
     {
         boundsCheck(offset, value.length());
         ::memcpy(m_buffer + offset, value.c_str(), value.length());

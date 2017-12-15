@@ -85,7 +85,7 @@ TEST (commandTests, testImageMessageFlyweight)
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), 1);
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 8), 2);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 3);
-        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 20), channelData);
+        ASSERT_EQ(ab.getString(BASEOFFSET + 20), channelData);
 
         ASSERT_EQ(cmd.correlationId(), 1);
         ASSERT_EQ(cmd.streamId(), 3);
@@ -118,7 +118,7 @@ TEST (commandTests, testPublicationReadyFlyweight)
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), 10);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 28), 11);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 32), static_cast<int>(logFileNameData.length()));
-        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 32), logFileNameData);
+        ASSERT_EQ(ab.getString(BASEOFFSET + 32), logFileNameData);
 
         ASSERT_EQ(cmd.correlationId(), -1);
         ASSERT_EQ(cmd.registrationId(), 1);
@@ -160,12 +160,12 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), 1);
 
         const index_t startOfLogFileName = BASEOFFSET + 28;
-        ASSERT_EQ(ab.getInt32(startOfLogFileName), static_cast<int>(logFileNameData.length()));
-        ASSERT_EQ(ab.getStringUtf8(startOfLogFileName), logFileNameData);
+        ASSERT_EQ(ab.getStringLength(startOfLogFileName), static_cast<int>(logFileNameData.length()));
+        ASSERT_EQ(ab.getString(startOfLogFileName), logFileNameData);
 
         const index_t startOfSourceIdentity = startOfLogFileName + 4 + (index_t)logFileNameData.length();
-        ASSERT_EQ(ab.getInt32(startOfSourceIdentity), static_cast<int>(sourceInfoData.length()));
-        ASSERT_EQ(ab.getStringUtf8(startOfSourceIdentity), sourceInfoData);
+        ASSERT_EQ(ab.getStringLength(startOfSourceIdentity), static_cast<int>(sourceInfoData.length()));
+        ASSERT_EQ(ab.getString(startOfSourceIdentity), sourceInfoData);
 
         ASSERT_EQ(cmd.correlationId(), -1);
         ASSERT_EQ(cmd.sessionId(), 0x02020202);

@@ -152,7 +152,7 @@ private:
                 return m_observations.end();
             }
 
-            m_buffer.putStringUtf8WithoutLength(offset + ErrorLogDescriptor::ENCODED_ERROR_OFFSET, encodedError);
+            m_buffer.putStringWithoutLength(offset + ErrorLogDescriptor::ENCODED_ERROR_OFFSET, encodedError);
             m_buffer.putInt64(offset + ErrorLogDescriptor::FIRST_OBERSATION_TIMESTAMP_OFFSET, timestamp);
 
             m_nextOffset = util::BitUtil::align(offset + length, ErrorLogDescriptor::RECORD_ALIGNMENT);

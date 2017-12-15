@@ -48,7 +48,9 @@ public:
     MOCK_CONST_METHOD1(getInt64, std::int64_t(util::index_t offset));
     MOCK_METHOD2(putInt64Ordered, void(util::index_t, std::int64_t v));
     MOCK_CONST_METHOD1(getInt64Volatile, std::int64_t(util::index_t));
-    MOCK_METHOD2(putStringUtf8WithoutLength, std::int32_t(util::index_t, const std::string&));
+
+    MOCK_METHOD2(putStringWithoutLength, std::int32_t(util::index_t,
+        const std::string&));
 
     void useAsSpy()
     {
@@ -60,8 +62,8 @@ public:
             .WillByDefault(testing::Invoke(&m_realBuffer, &AtomicBuffer::getAndAddInt32));
         ON_CALL(*this, putInt64Ordered(testing::_, testing::_))
             .WillByDefault(testing::Invoke(&m_realBuffer, &AtomicBuffer::putInt64Ordered));
-        ON_CALL(*this, putStringUtf8WithoutLength(testing::_, testing::_))
-            .WillByDefault(testing::Invoke(&m_realBuffer, &AtomicBuffer::putStringUtf8WithoutLength));
+        ON_CALL(*this, putStringWithoutLength(testing::_, testing::_))
+            .WillByDefault(testing::Invoke(&m_realBuffer, &AtomicBuffer::putStringWithoutLength));
     }
 
 private:

@@ -67,7 +67,7 @@ inline static int read(
                 entry.observationCount,
                 entry.firstObservationTimestamp,
                 lastObservationTimestamp,
-                buffer.getStringUtf8WithoutLength(
+                buffer.getStringWithoutLength(
                     offset + ErrorLogDescriptor::ENCODED_ERROR_OFFSET,
                     length - ErrorLogDescriptor::HEADER_LENGTH));
         }

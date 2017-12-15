@@ -334,11 +334,13 @@ public:
         ::memset(m_buffer + offset, value, length);
     }
 
-    // Note: I am assuming that std::string is utf8 encoded
-    // TODO: add std::wstring support
     inline std::string getStringUtf8(util::index_t offset) const
     {
-        std::int32_t length = getInt32(offset);
+        std::int32_t length;
+
+        boundsCheck(offset, sizeof(length));
+        ::memcpy(reinterpret_cast<char *>(&length), m_buffer + offset, sizeof(length));
+
         return getStringUtf8WithoutLength(offset + sizeof(std::int32_t), (size_t)length);
     }
 
@@ -350,17 +352,22 @@ public:
 
     inline std::int32_t getStringUtf8Length(util::index_t offset) const
     {
-        return getInt32(offset);
+        std::int32_t length;
+
+        boundsCheck(offset, sizeof(length));
+        ::memcpy(reinterpret_cast<char *>(&length), m_buffer + offset, sizeof(length));
+
+        return length;
     }
 
     std::int32_t putStringUtf8(util::index_t offset, const std::string& value)
     {
         std::int32_t length = static_cast<std::int32_t>(value.length());
 
-        boundsCheck(offset, value.length() + sizeof(std::int32_t));
+        boundsCheck(offset, value.length() + sizeof(length));
 
-        putInt32(offset, length);
-        ::memcpy(m_buffer + offset + sizeof(std::int32_t), value.c_str(), value.length());
+        ::memcpy(m_buffer + offset, reinterpret_cast<const char *>(&length), sizeof(length));
+        ::memcpy(m_buffer + offset + sizeof(length), value.c_str(), value.length());
 
         return static_cast<std::int32_t>(sizeof(std::int32_t)) + length;
     }

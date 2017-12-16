@@ -37,7 +37,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class CounterUpdateFlyweight
 {
-
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int COUNTER_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
 

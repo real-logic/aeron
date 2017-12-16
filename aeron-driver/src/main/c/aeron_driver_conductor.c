@@ -2293,11 +2293,15 @@ int aeron_driver_conductor_on_add_counter(
     }
 
     const uint8_t *cursor = (const uint8_t *)command + sizeof(aeron_counter_command_t);
-    int32_t key_length = *((int32_t *)cursor);
+    int32_t key_length;
+
+    memcpy(&key_length, cursor, sizeof(key_length));
     const uint8_t *key = cursor + sizeof(int32_t);
 
     cursor = key + key_length;
-    int32_t label_length = *((int32_t *)cursor);
+    int32_t label_length;
+
+    memcpy(&label_length, cursor, sizeof(label_length));
     const char *label = (const char *)cursor + sizeof(int32_t);
 
     const int32_t counter_id = aeron_counters_manager_allocate(

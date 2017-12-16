@@ -74,9 +74,14 @@ protected:
         return m_buffer.buffer() + m_baseOffset + offset;
     }
 
-    inline void putBytes(util::index_t offset, const uint8_t *buffer, util::index_t length)
+    inline void putBytes(util::index_t offset, const uint8_t *src, util::index_t length)
     {
-        m_buffer.putBytes(m_baseOffset + offset, buffer, length);
+        m_buffer.putBytes(m_baseOffset + offset, src, length);
+    }
+
+    inline void getBytes(util::index_t offset, uint8_t *dest, util::index_t length) const
+    {
+        m_buffer.getBytes(offset, dest, length);
     }
 
     template <typename struct_t2>

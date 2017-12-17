@@ -29,9 +29,6 @@ import java.nio.charset.StandardCharsets;
 
 import static io.aeron.CncFileDescriptor.*;
 import static io.aeron.CncFileDescriptor.createCountersValuesBuffer;
-import static io.aeron.cluster.control.ClusterControl.Action.NEUTRAL;
-import static io.aeron.cluster.control.ClusterControl.Action.RESUME;
-import static io.aeron.cluster.control.ClusterControl.Action.SUSPEND;
 import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
 import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 
@@ -48,36 +45,22 @@ public class ClusterControl
         /**
          * Neutral state ready to accept a new action.
          */
-        NEUTRAL(0)
-        {
-            public boolean toggle(final AtomicCounter controlToggle)
-            {
-                controlToggle.set(NEUTRAL.code());
-                return true;
-            }
-        },
+        NEUTRAL(0L),
 
         /**
          * Suspend processing of ingress and timers.
          */
-        SUSPEND(1)
-        {
-            public boolean toggle(final AtomicCounter controlToggle)
-            {
-                return suspend(controlToggle);
-            }
-        },
+        SUSPEND(1L),
 
         /**
          * Resume processing of ingress and timers.
          */
-        RESUME(2)
-        {
-            public boolean toggle(final AtomicCounter controlToggle)
-            {
-                return resume(controlToggle);
-            }
-        };
+        RESUME(2L),
+
+        /**
+         * Take a snapshot of cluster state.
+         */
+        SNAPSHOT(3L);
 
         private final long code;
 
@@ -86,7 +69,18 @@ public class ClusterControl
             this.code = code;
         }
 
-        public abstract boolean toggle(AtomicCounter controlToggle);
+        /**
+         * Toggle the control counter to trigger the requested {@link Action}.
+         * <p>
+         * This action is thread safe and will only succeed if the toggle is in the {@link Action#NEUTRAL} state.
+         *
+         * @param controlToggle to change to the trigger state.
+         * @return true if the counter toggles or false if it is in a state other than {@link Action#NEUTRAL}.
+         */
+        public boolean toggle(final AtomicCounter controlToggle)
+        {
+            return controlToggle.compareAndSet(NEUTRAL.code(), code());
+        }
 
         /**
          * Code to be used as the indicator in the control toggle counter.
@@ -171,28 +165,6 @@ public class ClusterControl
         }
 
         return null;
-    }
-
-    /**
-     * Set the control toggle into a suspend state for the cluster to react to.
-     *
-     * @param controlToggle to be be set to suspend.
-     * @return true if successfully set or false the toggle was not in a neutral state.
-     */
-    public static boolean suspend(final AtomicCounter controlToggle)
-    {
-        return controlToggle.compareAndSet(NEUTRAL.code(), SUSPEND.code());
-    }
-
-    /**
-     * Set the control toggle into a resume state for the cluster to react to.
-     *
-     * @param controlToggle to be be set to resume.
-     * @return true if successfully set or false the toggle was not in a neutral state.
-     */
-    public static boolean resume(final AtomicCounter controlToggle)
-    {
-        return controlToggle.compareAndSet(NEUTRAL.code(), RESUME.code());
     }
 
     public static void main(final String[] args)

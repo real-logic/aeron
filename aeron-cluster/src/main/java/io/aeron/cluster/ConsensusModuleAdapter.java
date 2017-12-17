@@ -29,9 +29,10 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
     final SequencerAgent sequencerAgent;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ServiceReadyDecoder serviceReadyDecoder = new ServiceReadyDecoder();
     private final ScheduleTimerRequestDecoder scheduleTimerRequestDecoder = new ScheduleTimerRequestDecoder();
     private final CancelTimerRequestDecoder cancelTimerRequestDecoder = new CancelTimerRequestDecoder();
+    private final ServiceReadyDecoder serviceReadyDecoder = new ServiceReadyDecoder();
+    private final SnapshotTakenDecoder snapshotTakenDecoder = new SnapshotTakenDecoder();
 
     public ConsensusModuleAdapter(
         final int fragmentLimit, final Subscription subscription, final SequencerAgent sequencerAgent)
@@ -58,16 +59,6 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
-            case ServiceReadyDecoder.TEMPLATE_ID:
-                serviceReadyDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                sequencerAgent.onServiceReady(serviceReadyDecoder.serviceId());
-                break;
-
             case ScheduleTimerRequestDecoder.TEMPLATE_ID:
                 scheduleTimerRequestDecoder.wrap(
                     buffer,
@@ -88,6 +79,26 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 sequencerAgent.onCancelTimer(scheduleTimerRequestDecoder.correlationId());
+                break;
+
+            case ServiceReadyDecoder.TEMPLATE_ID:
+                serviceReadyDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onServiceReady(serviceReadyDecoder.serviceId());
+                break;
+
+            case SnapshotTakenDecoder.TEMPLATE_ID:
+                snapshotTakenDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onSnapshotTaken(snapshotTakenDecoder.serviceId());
                 break;
 
             default:

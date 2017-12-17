@@ -124,24 +124,24 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final int LOG_STREAM_ID_DEFAULT = 3;
 
         /**
-         * Channel to be used for log replay on startup.
+         * Channel to be used for log and snapshot replay on startup.
          */
-        public static final String LOG_REPLAY_CHANNEL_PROP_NAME = "aeron.cluster.log.replay.channel";
+        public static final String REPLAY_CHANNEL_PROP_NAME = "aeron.cluster.replay.channel";
 
         /**
-         * Channel to be used for log replay on startup.
+         * Channel to be used for log and snapshot replay on startup.
          */
-        public static final String LOG_REPLAY_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+        public static final String REPLAY_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
 
         /**
-         * Stream id within a channel for the clustered log replay.
+         * Stream id within a channel for the clustered log and snapshot replay.
          */
-        public static final String LOG_REPLAY_STREAM_ID_PROP_NAME = "aeron.cluster.log.replay.stream.id";
+        public static final String REPLAY_STREAM_ID_PROP_NAME = "aeron.cluster.replay.stream.id";
 
         /**
-         * Stream id for the log replay within a channel.
+         * Stream id for the log and snapshot replay within a channel.
          */
-        public static final int LOG_REPLAY_STREAM_ID_DEFAULT = 4;
+        public static final int REPLAY_STREAM_ID_DEFAULT = 4;
 
         /**
          * Channel for sending messages to the Consensus Module.
@@ -162,6 +162,26 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Stream id within a channel for sending messages to the Consensus Module. Default to stream id of 5.
          */
         public static final int CONSENSUS_MODULE_STREAM_ID_DEFAULT = 5;
+
+        /**
+         * Channel to be used for archiving snapshots.
+         */
+        public static final String SNAPSHOT_CHANNEL_PROP_NAME = "aeron.cluster.snapshot.channel";
+
+        /**
+         * Channel to be used for archiving snapshots.
+         */
+        public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+
+        /**
+         * Stream id within a channel for archiving snapshots.
+         */
+        public static final String SNAPSHOT_STREAM_ID_PROP_NAME = "aeron.cluster.snapshot.stream.id";
+
+        /**
+         * Stream id for the archived snapshots within a channel.
+         */
+        public static final int SNAPSHOT_STREAM_ID_DEFAULT = 6;
 
         /**
          * Whether to start without any previous log or use any existing log.
@@ -219,25 +239,25 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The value {@link #LOG_REPLAY_CHANNEL_DEFAULT} or system property {@link #LOG_REPLAY_CHANNEL_PROP_NAME} if set.
+         * The value {@link #REPLAY_CHANNEL_DEFAULT} or system property {@link #REPLAY_CHANNEL_PROP_NAME} if set.
          *
-         * @return {@link #LOG_REPLAY_CHANNEL_DEFAULT} or system property {@link #LOG_REPLAY_CHANNEL_PROP_NAME} if set.
+         * @return {@link #REPLAY_CHANNEL_DEFAULT} or system property {@link #REPLAY_CHANNEL_PROP_NAME} if set.
          */
-        public static String logReplayChannel()
+        public static String replayChannel()
         {
-            return System.getProperty(LOG_REPLAY_CHANNEL_PROP_NAME, LOG_REPLAY_CHANNEL_DEFAULT);
+            return System.getProperty(REPLAY_CHANNEL_PROP_NAME, REPLAY_CHANNEL_DEFAULT);
         }
 
         /**
-         * The value {@link #LOG_REPLAY_STREAM_ID_DEFAULT} or system property {@link #LOG_REPLAY_STREAM_ID_PROP_NAME}
+         * The value {@link #REPLAY_STREAM_ID_DEFAULT} or system property {@link #REPLAY_STREAM_ID_PROP_NAME}
          * if set.
          *
-         * @return {@link #LOG_REPLAY_STREAM_ID_DEFAULT} or system property {@link #LOG_REPLAY_STREAM_ID_PROP_NAME}
+         * @return {@link #REPLAY_STREAM_ID_DEFAULT} or system property {@link #REPLAY_STREAM_ID_PROP_NAME}
          * if set.
          */
-        public static int logReplayStreamId()
+        public static int replayStreamId()
         {
-            return Integer.getInteger(LOG_REPLAY_STREAM_ID_PROP_NAME, LOG_REPLAY_STREAM_ID_DEFAULT);
+            return Integer.getInteger(REPLAY_STREAM_ID_PROP_NAME, REPLAY_STREAM_ID_DEFAULT);
         }
 
         /**
@@ -262,6 +282,27 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static int consensusModuleStreamId()
         {
             return Integer.getInteger(CONSENSUS_MODULE_STREAM_ID_PROP_NAME, CONSENSUS_MODULE_STREAM_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property {@link #SNAPSHOT_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property {@link #SNAPSHOT_CHANNEL_PROP_NAME} if set.
+         */
+        public static String snapshotChannel()
+        {
+            return System.getProperty(SNAPSHOT_CHANNEL_PROP_NAME, SNAPSHOT_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #SNAPSHOT_STREAM_ID_DEFAULT} or system property {@link #SNAPSHOT_STREAM_ID_PROP_NAME}
+         * if set.
+         *
+         * @return {@link #SNAPSHOT_STREAM_ID_DEFAULT} or system property {@link #SNAPSHOT_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int snapshotStreamId()
+        {
+            return Integer.getInteger(SNAPSHOT_STREAM_ID_PROP_NAME, SNAPSHOT_STREAM_ID_DEFAULT);
         }
 
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
@@ -308,10 +349,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private long serviceId = Configuration.serviceId();
         private String logChannel = Configuration.logChannel();
         private int logStreamId = Configuration.logStreamId();
-        private String logReplayChannel = Configuration.logReplayChannel();
-        private int logReplayStreamId = Configuration.logReplayStreamId();
+        private String replayChannel = Configuration.replayChannel();
+        private int replayStreamId = Configuration.replayStreamId();
         private String consensusModuleChannel = Configuration.consensusModuleChannel();
         private int consensusModuleStreamId = Configuration.consensusModuleStreamId();
+        private String snapshotChannel = Configuration.snapshotChannel();
+        private int snapshotStreamId = Configuration.snapshotStreamId();
         private boolean deleteDirOnStart = Configuration.deleteDirOnStart();
 
         private ThreadFactory threadFactory;
@@ -481,51 +524,51 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for the cluster log replay channel.
+         * Set the channel parameter for the cluster log and snapshot replay channel.
          *
          * @param channel parameter for the cluster log replay channel.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_CHANNEL_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
          */
-        public Context logReplayChannel(final String channel)
+        public Context replayChannel(final String channel)
         {
-            logChannel = channel;
+            replayChannel = channel;
             return this;
         }
 
         /**
-         * Get the channel parameter for the cluster log replay channel.
+         * Get the channel parameter for the cluster log and snapshot replay channel.
          *
          * @return the channel parameter for the cluster replay channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_CHANNEL_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
          */
-        public String logReplayChannel()
+        public String replayChannel()
         {
-            return logReplayChannel;
+            return replayChannel;
         }
 
         /**
-         * Set the stream id for the cluster log replay channel.
+         * Set the stream id for the cluster log and snapshot replay channel.
          *
          * @param streamId for the cluster log replay channel.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
-        public Context logReplayStreamId(final int streamId)
+        public Context replayStreamId(final int streamId)
         {
-            logReplayStreamId = streamId;
+            replayStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for the cluster log replay channel.
+         * Get the stream id for the cluster log and snapshot replay channel.
          *
          * @return the stream id for the cluster log replay channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
-        public int logReplayStreamId()
+        public int replayStreamId()
         {
-            return logReplayStreamId;
+            return replayStreamId;
         }
 
         /**
@@ -535,7 +578,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return this for a fluent API.
          * @see Configuration#CONSENSUS_MODULE_CHANNEL_PROP_NAME
          */
-        public Context timerChannel(final String channel)
+        public Context consensusModuleChannel(final String channel)
         {
             consensusModuleChannel = channel;
             return this;
@@ -547,7 +590,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the channel parameter for sending messages to the Consensus Module.
          * @see Configuration#CONSENSUS_MODULE_CHANNEL_PROP_NAME
          */
-        public String timerChannel()
+        public String consensusModuleChannel()
         {
             return consensusModuleChannel;
         }
@@ -566,14 +609,62 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Get the stream id for sending messages to the Consensus Module..
+         * Get the stream id for sending messages to the Consensus Module.
          *
-         * @return the stream id for sending messages to the Consensus Module..
+         * @return the stream id for sending messages to the Consensus Module.
          * @see Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
          */
         public int consensusModuleStreamId()
         {
             return consensusModuleStreamId;
+        }
+
+        /**
+         * Set the channel parameter for snapshot recordings.
+         *
+         * @param channel parameter for snapshot recordings
+         * @return this for a fluent API.
+         * @see Configuration#SNAPSHOT_CHANNEL_PROP_NAME
+         */
+        public Context snapshotChannel(final String channel)
+        {
+            snapshotChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for snapshot recordings.
+         *
+         * @return the channel parameter for snapshot recordings.
+         * @see Configuration#SNAPSHOT_CHANNEL_PROP_NAME
+         */
+        public String snapshotChannel()
+        {
+            return snapshotChannel;
+        }
+
+        /**
+         * Set the stream id for snapshot recordings.
+         *
+         * @param streamId for snapshot recordings.
+         * @return this for a fluent API
+         * @see Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
+         */
+        public Context snapshotStreamId(final int streamId)
+        {
+            snapshotStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for snapshot recordings.
+         *
+         * @return the stream id for snapshot recordings.
+         * @see Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
+         */
+        public int snapshotStreamId()
+        {
+            return snapshotStreamId;
         }
 
         /**

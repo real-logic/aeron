@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.RecordingInfo;
 import io.aeron.cluster.codecs.*;
@@ -81,7 +82,8 @@ public class ClusteredServiceAgent implements
         shouldCloseResources = ctx.ownsAeronClient();
         service = ctx.clusteredService();
         logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId(), this, this);
-        consensusModulePublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.consensusModuleStreamId());
+        consensusModulePublication = aeron.addExclusivePublication(
+            ctx.consensusModuleChannel(), ctx.consensusModuleStreamId());
         recordingEventLog = ctx.clusterRecordingEventLog();
         archiveCtx = ctx.archiveContext();
     }
@@ -208,6 +210,12 @@ public class ClusteredServiceAgent implements
                 }
                 break;
             }
+
+            case SnapshotRequestDecoder.TEMPLATE_ID:
+            {
+                takeSnapshot();
+                break;
+            }
         }
 
         return Action.CONTINUE;
@@ -328,11 +336,11 @@ public class ClusteredServiceAgent implements
 
                     if (ClusterRecordingEventLog.RECORDING_TYPE_SNAPSHOT == type)
                     {
-                        // replay snapshot
+                        loadSnapshot(idleStrategy, aeronArchive, recordingInfo);
                     }
                     else if (ClusterRecordingEventLog.RECORDING_TYPE_LOG == type)
                     {
-                        replayRecording(idleStrategy, aeronArchive, recordingInfo);
+                        replayRecordedLog(idleStrategy, aeronArchive, recordingInfo);
                     }
                 });
 
@@ -348,7 +356,7 @@ public class ClusteredServiceAgent implements
         }
     }
 
-    private void replayRecording(
+    private void replayRecordedLog(
         final IdleStrategy idleStrategy, final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
     {
         if (null == recordingInfo)
@@ -366,15 +374,15 @@ public class ClusteredServiceAgent implements
              recordingInfo.recordingId,
              recordingInfo.startPosition,
              length,
-             ctx.logReplayChannel(),
-             ctx.logReplayStreamId()))
+             ctx.replayChannel(),
+             ctx.replayStreamId()))
         {
             while (!replaySubscription.isConnected())
             {
                 idleStrategy.idle();
             }
 
-            if (replaySubscription.imageCount() > 1)
+            if (replaySubscription.imageCount() != 1)
             {
                 throw new IllegalStateException("Only expected one replay");
             }
@@ -426,5 +434,90 @@ public class ClusteredServiceAgent implements
         while (--attempts > 0);
 
         throw new IllegalStateException("Failed to notify ready");
+    }
+
+    private void notifySnapshotTaken()
+    {
+        final SnapshotTakenEncoder encoder = new SnapshotTakenEncoder();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceReadyEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            if (consensusModulePublication.tryClaim(length, bufferClaim) > 0)
+            {
+                encoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .serviceId(serviceId);
+
+                bufferClaim.commit();
+
+                return;
+            }
+
+            Thread.yield();
+        }
+        while (--attempts > 0);
+
+        throw new IllegalStateException("Failed to notify snapshot taken");
+    }
+
+    private void takeSnapshot()
+    {
+        final long recordingId;
+
+        try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
+        {
+            final long correlationId = aeronArchive.startRecording(
+                ctx.snapshotChannel(), ctx.snapshotStreamId(), SourceLocation.LOCAL);
+
+            try (Publication publication = aeron.addExclusivePublication(
+                ctx.snapshotChannel(), ctx.snapshotStreamId()))
+            {
+                while (!publication.isConnected())
+                {
+                    Thread.yield();
+                }
+
+                recordingId = RecordingPos.findActiveRecordingId(
+                    aeron.countersReader(), aeronArchive.controlSessionId(), correlationId, publication.sessionId());
+
+                service.onTakeSnapshot(publication);
+            }
+
+            aeronArchive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
+        }
+
+        recordingEventLog.appendLog(recordingId, latestLogImage.position(), latestLogImage.position(), 0L);
+        notifySnapshotTaken();
+    }
+
+    private void loadSnapshot(
+        final IdleStrategy idleStrategy, final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
+    {
+        if (null == recordingInfo)
+        {
+            throw new IllegalStateException("could not find snapshot recording");
+        }
+
+        try (Subscription replaySubscription = aeronArchive.replay(
+            recordingInfo.recordingId,
+            recordingInfo.startPosition,
+            recordingInfo.stopPosition - recordingInfo.startPosition,
+            ctx.replayChannel(),
+            ctx.replayStreamId()))
+        {
+            while (!replaySubscription.isConnected())
+            {
+                idleStrategy.idle();
+            }
+
+            if (replaySubscription.imageCount() != 1)
+            {
+                throw new IllegalStateException("Only expected one replay");
+            }
+
+            service.onLoadSnapshot(replaySubscription.imageAtIndex(0));
+        }
     }
 }

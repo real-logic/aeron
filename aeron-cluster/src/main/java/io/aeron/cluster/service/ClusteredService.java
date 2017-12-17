@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
@@ -75,4 +77,18 @@ public interface ClusteredService
      * @param timestampMs   at which the timer expired.
      */
     void onTimerEvent(long correlationId, long timestampMs);
+
+    /**
+     * The service should take a snapshot and store its state to the provided archive {@link Publication}.
+     *
+     * @param snapshotPublication to which the state should be recorded.
+     */
+    void onTakeSnapshot(Publication snapshotPublication);
+
+    /**
+     * The service should load its state from a stored snapshot in the provided archived {@link Image}.
+     *
+     * @param snapshotImage to which the service should store its state.
+     */
+    void onLoadSnapshot(Image snapshotImage);
 }

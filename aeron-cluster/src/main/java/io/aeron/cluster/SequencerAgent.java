@@ -28,9 +28,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import static io.aeron.cluster.ClusterSession.State.*;
-import static io.aeron.cluster.control.ClusterControl.Action.NEUTRAL;
-import static io.aeron.cluster.control.ClusterControl.Action.RESUME;
-import static io.aeron.cluster.control.ClusterControl.Action.SUSPEND;
+import static io.aeron.cluster.control.ClusterControl.Action.*;
 
 class SequencerAgent implements Agent
 {
@@ -147,6 +145,10 @@ class SequencerAgent implements Agent
         state = State.ACTIVE;
     }
 
+    public void onSnapshotTaken(final long serviceId)
+    {
+    }
+
     public void onSessionConnect(final long correlationId, final int responseStreamId, final String responseChannel)
     {
         final long sessionId = nextSessionId++;
@@ -240,23 +242,37 @@ class SequencerAgent implements Agent
 
     private int checkControlToggle()
     {
-        final long toggleValue = controlToggle.get();
+        final long toggleCode = controlToggle.get();
 
-        if (SUSPEND.code() == toggleValue)
+        if (NEUTRAL.code() == toggleCode)
+        {
+            return 0;
+        }
+
+        if (SNAPSHOT.code() == toggleCode)
+        {
+            if (logAppender.appendSnapshotRequest())
+            {
+                controlToggle.set(NEUTRAL.code());
+                return 1;
+            }
+        }
+
+        if (SUSPEND.code() == toggleCode)
         {
             state = State.SUSPENDED;
-            NEUTRAL.toggle(controlToggle);
+            controlToggle.set(NEUTRAL.code());
             return 1;
         }
 
-        if (RESUME.code() == toggleValue)
+        if (RESUME.code() == toggleCode)
         {
             state = State.ACTIVE;
-            NEUTRAL.toggle(controlToggle);
+            controlToggle.set(NEUTRAL.code());
             return 1;
         }
 
-        return 0;
+        throw new IllegalStateException("Unknown toggle action code: " + toggleCode);
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)

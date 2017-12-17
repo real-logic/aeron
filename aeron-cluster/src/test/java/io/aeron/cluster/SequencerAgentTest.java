@@ -25,9 +25,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.aeron.cluster.control.ClusterControl.Action.NEUTRAL;
-import static io.aeron.cluster.control.ClusterControl.Action.RESUME;
-import static io.aeron.cluster.control.ClusterControl.Action.SUSPEND;
+import static io.aeron.cluster.control.ClusterControl.Action.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -142,6 +140,21 @@ public class SequencerAgentTest
 
         assertThat(agent.state(), is(SequencerAgent.State.ACTIVE));
         verify(mockControlToggle, times(2)).set(NEUTRAL.code());
+    }
+
+    @Test
+    public void shouldAppendSnapshotRequest()
+    {
+        final Counter mockControlToggle = mock(Counter.class);
+        ctx.controlToggle(mockControlToggle);
+        final SequencerAgent agent = newSequencerAgent();
+
+        when(mockControlToggle.get()).thenReturn(SNAPSHOT.code());
+        when(mockLogAppender.appendSnapshotRequest()).thenReturn(Boolean.TRUE);
+
+        agent.doWork();
+
+        verify(mockLogAppender).appendSnapshotRequest();
     }
 
     private SequencerAgent newSequencerAgent()

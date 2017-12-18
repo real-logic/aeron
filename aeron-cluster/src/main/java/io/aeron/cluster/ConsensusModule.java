@@ -144,6 +144,16 @@ public class ConsensusModule implements
     public static class Configuration
     {
         /**
+         * The number of services in this cluster instance.
+         */
+        public static final String SERVICE_COUNT_PROP_NAME = "aeron.cluster.service.count";
+
+        /**
+         * The number of services in this cluster instance. Default to 1.
+         */
+        public static final int SERVICE_COUNT_DEFAULT = 1;
+
+        /**
          * Maximum number of cluster sessions that can be active concurrently.
          */
         public static final String MAX_CONCURRENT_SESSIONS_PROP_NAME = "aeron.cluster.max.sessions";
@@ -162,6 +172,18 @@ public class ConsensusModule implements
          * Timeout for a session if no activity is observed. Default to 5 seconds in nanoseconds.
          */
         public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+        /**
+         * The value {@link #SERVICE_COUNT_DEFAULT} or system property
+         * {@link #SERVICE_COUNT_PROP_NAME} if set.
+         *
+         * @return {@link #SERVICE_COUNT_DEFAULT} or system property
+         * {@link #SERVICE_COUNT_PROP_NAME} if set.
+         */
+        public static int serviceCount()
+        {
+            return Integer.getInteger(SERVICE_COUNT_PROP_NAME, SERVICE_COUNT_DEFAULT);
+        }
 
         /**
          * The value {@link #MAX_CONCURRENT_SESSIONS_DEFAULT} or system property
@@ -199,6 +221,7 @@ public class ConsensusModule implements
         private String consensusModuleChannel = ClusteredServiceContainer.Configuration.consensusModuleChannel();
         private int consensusModuleStreamId = ClusteredServiceContainer.Configuration.consensusModuleStreamId();
 
+        private int serviceCount = Configuration.serviceCount();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
         private long sessionTimeoutNs = Configuration.sessionTimeoutNs();
 
@@ -432,6 +455,30 @@ public class ConsensusModule implements
         public int consensusModuleStreamId()
         {
             return consensusModuleStreamId;
+        }
+
+        /**
+         * Set the number of clustered services in this cluster instance.
+         *
+         * @param serviceCount the number of clustered services in this cluster instance.
+         * @return this for a fluent API
+         * @see Configuration#SERVICE_COUNT_PROP_NAME
+         */
+        public Context serviceCount(final int serviceCount)
+        {
+            this.serviceCount = serviceCount;
+            return this;
+        }
+
+        /**
+         * Get the number of clustered services in this cluster instance.
+         *
+         * @return the number of clustered services in this cluster instance.
+         * @see Configuration#SERVICE_COUNT_PROP_NAME
+         */
+        public int serviceCount()
+        {
+            return serviceCount;
         }
 
         /**

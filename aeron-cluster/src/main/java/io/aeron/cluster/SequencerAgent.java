@@ -49,6 +49,7 @@ class SequencerAgent implements Agent
 
     private final long sessionTimeoutMs;
     private long nextSessionId = 1;
+    private int servicesReadyCount = 0;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock;
@@ -142,6 +143,12 @@ class SequencerAgent implements Agent
 
     public void onServiceReady(final long serviceId)
     {
+        if (servicesReadyCount >= ctx.serviceCount())
+        {
+            throw new IllegalStateException("Service count exceeded: " + servicesReadyCount);
+        }
+
+        ++servicesReadyCount;
         state = State.ACTIVE;
     }
 

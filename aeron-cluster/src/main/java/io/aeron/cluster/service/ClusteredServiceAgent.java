@@ -36,7 +36,7 @@ public class ClusteredServiceAgent implements
     ControlledFragmentHandler, Agent, Cluster, AvailableImageHandler, UnavailableImageHandler
 {
     /**
-     * Length of the session header that will be precede application protocol message.
+     * Length of the session header that will precede application protocol message.
      */
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
@@ -46,6 +46,8 @@ public class ClusteredServiceAgent implements
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
     private final long serviceId;
+    private long recordingStartPosition = 0;
+    private long messageIndex;
     private long timestampMs;
     private final boolean shouldCloseResources;
     private final Aeron aeron;
@@ -66,7 +68,7 @@ public class ClusteredServiceAgent implements
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
 
-    private final ClusterRecordingEventLog recordingEventLog;
+    private final RecordingIndex recordingIndex;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
 
@@ -84,7 +86,7 @@ public class ClusteredServiceAgent implements
         logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId(), this, this);
         consensusModulePublication = aeron.addExclusivePublication(
             ctx.consensusModuleChannel(), ctx.consensusModuleStreamId());
-        recordingEventLog = ctx.clusterRecordingEventLog();
+        recordingIndex = ctx.recordingIndex();
         archiveCtx = ctx.archiveContext();
     }
 
@@ -107,7 +109,7 @@ public class ClusteredServiceAgent implements
                 CloseHelper.close(session.responsePublication());
             }
 
-            CloseHelper.close(recordingEventLog);
+            CloseHelper.close(recordingIndex);
         }
     }
 
@@ -218,6 +220,8 @@ public class ClusteredServiceAgent implements
             }
         }
 
+        ++messageIndex;
+
         return Action.CONTINUE;
     }
 
@@ -234,6 +238,16 @@ public class ClusteredServiceAgent implements
     public long timeMs()
     {
         return timestampMs;
+    }
+
+    public long logPosition()
+    {
+        return recordingStartPosition + (null == latestLogImage ? 0L : latestLogImage.position());
+    }
+
+    public long messageIndex()
+    {
+        return messageIndex;
     }
 
     public void scheduleTimer(final long correlationId, final long deadlineMs)
@@ -292,6 +306,7 @@ public class ClusteredServiceAgent implements
     public void onAvailableImage(final Image image)
     {
         // TODO: make sessionId specific?
+        // TODO: Need to append a new recording.
         latestLogImage = image;
     }
 
@@ -328,17 +343,20 @@ public class ClusteredServiceAgent implements
 
             final MutableLong lastReplayedRecordingId = new MutableLong(-1);
 
-            recordingEventLog.forEachFromLastSnapshot(
-                (type, id, position, absolutePosition, messageIndex) ->
+            recordingIndex.forEachFromLastSnapshot(
+                (type, id, logPosition, messageIndex) ->
                 {
                     final RecordingInfo recordingInfo = recordingsMap.get(id);
                     lastReplayedRecordingId.value = id;
 
-                    if (ClusterRecordingEventLog.RECORDING_TYPE_SNAPSHOT == type)
+                    recordingStartPosition = logPosition;
+                    this.messageIndex = messageIndex;
+
+                    if (RecordingIndex.RECORDING_TYPE_SNAPSHOT == type)
                     {
                         loadSnapshot(idleStrategy, aeronArchive, recordingInfo);
                     }
-                    else if (ClusterRecordingEventLog.RECORDING_TYPE_LOG == type)
+                    else if (RecordingIndex.RECORDING_TYPE_LOG == type)
                     {
                         replayRecordedLog(idleStrategy, aeronArchive, recordingInfo);
                     }
@@ -351,7 +369,7 @@ public class ClusteredServiceAgent implements
 
             if (lastReplayedRecordingId.value != latestRecordingInfo.recordingId)
             {
-                recordingEventLog.appendLog(latestRecordingInfo.recordingId, latestLogImage.position(), -1, -1);
+                recordingIndex.appendLog(latestRecordingInfo.recordingId, recordingStartPosition, messageIndex);
             }
         }
     }
@@ -388,6 +406,7 @@ public class ClusteredServiceAgent implements
             }
 
             final Image replayImage = replaySubscription.imageAtIndex(0);
+            latestLogImage = replayImage;
 
             while (replayImage.position() < recordingInfo.stopPosition)
             {
@@ -488,7 +507,7 @@ public class ClusteredServiceAgent implements
             aeronArchive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
         }
 
-        recordingEventLog.appendLog(recordingId, latestLogImage.position(), latestLogImage.position(), 0L);
+        recordingIndex.appendLog(recordingId, 0L, 0L);
         notifySnapshotTaken();
     }
 

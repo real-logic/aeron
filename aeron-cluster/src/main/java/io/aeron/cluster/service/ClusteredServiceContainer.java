@@ -204,9 +204,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String CLUSTER_DIR_DEFAULT = "cluster";
 
         /**
-         * Filename for the recording events log
+         * Filename for the recording index for the log and snapshots.
          */
-        public static final String RECORDING_EVENTS_LOG_FILE_NAME = "recording-events.log";
+        public static final String RECORDING_INDEX_FILE_NAME = "recording-index.log";
 
         /**
          * The value {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
@@ -370,7 +370,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private boolean ownsAeronClient;
 
         private ClusteredService clusteredService;
-        private ClusterRecordingEventLog clusterRecordingEventLog;
+        private RecordingIndex recordingIndex;
 
         public void conclude()
         {
@@ -445,9 +445,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
-            if (null == clusterRecordingEventLog)
+            if (null == recordingIndex)
             {
-                clusterRecordingEventLog = new ClusterRecordingEventLog(clusterDir, serviceId);
+                recordingIndex = new RecordingIndex(clusterDir, serviceId);
             }
         }
 
@@ -960,25 +960,25 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the cluster recording event log to use.
+         * Set the {@link RecordingIndex} for the cluster service.
          *
-         * @param log to use.
+         * @param recordingIndex to use.
          * @return this for a fluent API.
          */
-        public Context clusterRecordingEventLog(final ClusterRecordingEventLog log)
+        public Context recordingIndex(final RecordingIndex recordingIndex)
         {
-            clusterRecordingEventLog = log;
+            this.recordingIndex = recordingIndex;
             return this;
         }
 
         /**
-         * The cluster recording event log.
+         * The {@link RecordingIndex} for the cluster service.
          *
-         * @return cluster recording event log.
+         * @return {@link RecordingIndex} for the cluster service.
          */
-        public ClusterRecordingEventLog clusterRecordingEventLog()
+        public RecordingIndex recordingIndex()
         {
-            return clusterRecordingEventLog;
+            return recordingIndex;
         }
 
         /**

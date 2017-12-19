@@ -32,7 +32,6 @@ import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;

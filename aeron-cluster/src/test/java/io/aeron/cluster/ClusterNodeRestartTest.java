@@ -99,7 +99,6 @@ public class ClusterNodeRestartTest
         }
     }
 
-    @Ignore
     @Test(timeout = 10_000)
     public void shouldRestartServiceWithReplayAndContinue()
     {

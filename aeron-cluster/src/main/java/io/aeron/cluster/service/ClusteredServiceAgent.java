@@ -406,7 +406,6 @@ public class ClusteredServiceAgent implements
             }
 
             final Image replayImage = replaySubscription.imageAtIndex(0);
-            latestLogImage = replayImage;
 
             while (replayImage.position() < recordingInfo.stopPosition)
             {

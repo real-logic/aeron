@@ -507,7 +507,7 @@ public class ClusteredServiceAgent implements
             aeronArchive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
         }
 
-        recordingIndex.appendLog(recordingId, 0L, 0L);
+        recordingIndex.appendLog(recordingId, logPosition(), messageIndex);
         notifySnapshotTaken();
     }
 

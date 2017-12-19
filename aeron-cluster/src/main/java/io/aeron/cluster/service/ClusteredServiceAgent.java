@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.RecordingInfo;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -28,12 +27,10 @@ import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
-public class ClusteredServiceAgent implements
-    ControlledFragmentHandler, Agent, Cluster, AvailableImageHandler, UnavailableImageHandler
+public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, Cluster
 {
     /**
      * Length of the session header that will precede application protocol message.
@@ -54,8 +51,8 @@ public class ClusteredServiceAgent implements
     private final ClusteredService service;
     private final Subscription logSubscription;
     private final ExclusivePublication consensusModulePublication;
-    private final ControlledFragmentAssembler fragmentAssembler =
-        new ControlledFragmentAssembler(this, INITIAL_BUFFER_LENGTH, true);
+    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(
+        this, INITIAL_BUFFER_LENGTH, true);
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
     private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
@@ -67,34 +64,42 @@ public class ClusteredServiceAgent implements
     private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
+    private final IdleStrategy idleStrategy;
 
     private final RecordingIndex recordingIndex;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
 
-    private ReadableCounter recordingPositionCounter;
-    private volatile Image latestLogImage;
+    private ReadableCounter recordingPosition;
+    private Image logImage;
 
     public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
         this.ctx = ctx;
 
+        archiveCtx = ctx.archiveContext();
         serviceId = ctx.serviceId();
         aeron = ctx.aeron();
         shouldCloseResources = ctx.ownsAeronClient();
         service = ctx.clusteredService();
-        logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId(), this, this);
+        logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId());
         consensusModulePublication = aeron.addExclusivePublication(
             ctx.consensusModuleChannel(), ctx.consensusModuleStreamId());
         recordingIndex = ctx.recordingIndex();
-        archiveCtx = ctx.archiveContext();
+        idleStrategy = ctx.idleStrategy();
     }
 
     public void onStart()
     {
-        service.onStart(this);
-        replayPreviousLogs();
+        final long recordingId = findRecordingPositionCounter();
+
+        replayLogs();
+        recordingIndex.appendLog(recordingId, recordingStartPosition, messageIndex);
+
+        logImage = logSubscription.imageAtIndex(0);
+
         notifyReady();
+        service.onStart(this);
     }
 
     public void onClose()
@@ -117,10 +122,13 @@ public class ClusteredServiceAgent implements
     {
         int workCount = 0;
 
-        if (null != latestLogImage)
+        if (null != logImage)
         {
-            workCount += latestLogImage.boundedControlledPoll(
-                fragmentAssembler, recordingPositionCounter.get(), FRAGMENT_LIMIT);
+            workCount += logImage.boundedControlledPoll(fragmentAssembler, recordingPosition.get(), FRAGMENT_LIMIT);
+            if (0 == workCount && logImage.isClosed())
+            {
+                throw new IllegalStateException("Image closed unexpectedly");
+            }
         }
 
         return workCount;
@@ -242,7 +250,7 @@ public class ClusteredServiceAgent implements
 
     public long logPosition()
     {
-        return recordingStartPosition + (null == latestLogImage ? 0L : latestLogImage.position());
+        return recordingStartPosition + (null == logImage ? 0L : logImage.position());
     }
 
     public long messageIndex()
@@ -254,6 +262,7 @@ public class ClusteredServiceAgent implements
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerRequestEncoder.BLOCK_LENGTH;
 
+        idleStrategy.reset();
         int attempts = SEND_ATTEMPTS;
         do
         {
@@ -270,7 +279,7 @@ public class ClusteredServiceAgent implements
                 return;
             }
 
-            Thread.yield();
+            idleStrategy.idle();
         }
         while (--attempts > 0);
 
@@ -281,6 +290,7 @@ public class ClusteredServiceAgent implements
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerRequestEncoder.BLOCK_LENGTH;
 
+        idleStrategy.reset();
         int attempts = SEND_ATTEMPTS;
         do
         {
@@ -296,105 +306,75 @@ public class ClusteredServiceAgent implements
                 return;
             }
 
-            Thread.yield();
+            idleStrategy.idle();
         }
         while (--attempts > 0);
 
         throw new IllegalStateException("Failed to schedule timer");
     }
 
-    public void onAvailableImage(final Image image)
+    private long findRecordingPositionCounter()
     {
-        // TODO: make sessionId specific?
-        // TODO: Need to append a new recording.
-        latestLogImage = image;
+        idleStrategy.reset();
+        while (!logSubscription.isConnected())
+        {
+            idleStrategy.idle();
+        }
+
+        final int sessionId = logSubscription.imageAtIndex(0).sessionId();
+        final CountersReader countersReader = aeron.countersReader();
+
+        if (0 == RecordingPos.countActiveRecordings(countersReader, sessionId))
+        {
+            throw new IllegalStateException("No active recording found for sessionId: " + sessionId);
+        }
+
+        final long recordingId = RecordingPos.findActiveRecordingId(countersReader, sessionId);
+        final int recordingCounterId = RecordingPos.findActiveRecordingCounterId(countersReader, recordingId);
+
+        recordingPosition = new ReadableCounter(countersReader, recordingCounterId);
+
+        return recordingId;
     }
 
-    public void onUnavailableImage(final Image image)
-    {
-        latestLogImage = null;
-    }
-
-    private void replayPreviousLogs()
+    private void replayLogs()
     {
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
-            final IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 100, 100, 1000);
-            final CountersReader countersReader = aeron.countersReader();
-
-            final Long2ObjectHashMap<RecordingInfo> recordingsMap = RecordingInfo.mapRecordings(
-                aeronArchive, 0, 100, logSubscription.channel(), logSubscription.streamId());
-
-            if (recordingsMap.size() == 0)
-            {
-                throw new IllegalStateException("could not find any log recordings");
-            }
-
-            final RecordingInfo latestRecordingInfo = RecordingInfo.findLatestRecording(recordingsMap);
-            final int recordingPositionCounterId =
-                RecordingPos.findActiveRecordingPositionCounterId(countersReader, latestRecordingInfo.recordingId);
-
-            if (recordingPositionCounterId == RecordingPos.NULL_COUNTER_ID)
-            {
-                throw new IllegalStateException("could not find latest recording position counter Id");
-            }
-
-            recordingPositionCounter = new ReadableCounter(countersReader, recordingPositionCounterId);
-
-            final MutableLong lastReplayedRecordingId = new MutableLong(-1);
-
             recordingIndex.forEachFromLastSnapshot(
-                (type, id, logPosition, messageIndex) ->
+                (type, recordingId, logPosition, messageIndex) ->
                 {
-                    final RecordingInfo recordingInfo = recordingsMap.get(id);
-                    lastReplayedRecordingId.value = id;
+                    final RecordingInfo recordingInfo = new RecordingInfo();
+                    if (0 == aeronArchive.listRecording(recordingId, recordingInfo))
+                    {
+                        throw new IllegalStateException("Could not find recordingId: " + recordingId);
+                    }
 
                     recordingStartPosition = logPosition;
                     this.messageIndex = messageIndex;
 
                     if (RecordingIndex.RECORDING_TYPE_SNAPSHOT == type)
                     {
-                        loadSnapshot(idleStrategy, aeronArchive, recordingInfo);
+                        loadSnapshot(aeronArchive, recordingInfo);
                     }
                     else if (RecordingIndex.RECORDING_TYPE_LOG == type)
                     {
-                        replayRecordedLog(idleStrategy, aeronArchive, recordingInfo);
+                        replayRecordedLog(aeronArchive, recordingInfo);
                     }
                 });
-
-            while (!logSubscription.isConnected() && null == latestLogImage)
-            {
-                idleStrategy.idle();
-            }
-
-            if (lastReplayedRecordingId.value != latestRecordingInfo.recordingId)
-            {
-                recordingIndex.appendLog(latestRecordingInfo.recordingId, recordingStartPosition, messageIndex);
-            }
         }
     }
 
-    private void replayRecordedLog(
-        final IdleStrategy idleStrategy, final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
+    private void replayRecordedLog(final AeronArchive archive, final RecordingInfo recordingInfo)
     {
-        if (null == recordingInfo)
+        try (Subscription replaySubscription = archive.replay(
+            recordingInfo.recordingId,
+            recordingInfo.startPosition,
+            recordingInfo.stopPosition - recordingInfo.startPosition,
+            ctx.replayChannel(),
+            ctx.replayStreamId()))
         {
-            throw new IllegalStateException("could not find log recording");
-        }
-
-        final long length = recordingInfo.stopPosition - recordingInfo.startPosition;
-        if (length == 0)
-        {
-            return;
-        }
-
-        try (Subscription replaySubscription = aeronArchive.replay(
-             recordingInfo.recordingId,
-             recordingInfo.startPosition,
-             length,
-             ctx.replayChannel(),
-             ctx.replayStreamId()))
-        {
+            idleStrategy.reset();
             while (!replaySubscription.isConnected())
             {
                 idleStrategy.idle();
@@ -406,6 +386,7 @@ public class ClusteredServiceAgent implements
             }
 
             final Image replayImage = replaySubscription.imageAtIndex(0);
+            logImage = replayImage;
 
             while (replayImage.position() < recordingInfo.stopPosition)
             {
@@ -433,6 +414,7 @@ public class ClusteredServiceAgent implements
         final ServiceReadyEncoder encoder = new ServiceReadyEncoder();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceReadyEncoder.BLOCK_LENGTH;
 
+        idleStrategy.reset();
         int attempts = SEND_ATTEMPTS;
         do
         {
@@ -447,7 +429,7 @@ public class ClusteredServiceAgent implements
                 return;
             }
 
-            Thread.yield();
+            idleStrategy.idle();
         }
         while (--attempts > 0);
 
@@ -459,6 +441,7 @@ public class ClusteredServiceAgent implements
         final SnapshotTakenEncoder encoder = new SnapshotTakenEncoder();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceReadyEncoder.BLOCK_LENGTH;
 
+        idleStrategy.reset();
         int attempts = SEND_ATTEMPTS;
         do
         {
@@ -473,7 +456,7 @@ public class ClusteredServiceAgent implements
                 return;
             }
 
-            Thread.yield();
+            idleStrategy.idle();
         }
         while (--attempts > 0);
 
@@ -489,12 +472,12 @@ public class ClusteredServiceAgent implements
             final long correlationId = aeronArchive.startRecording(
                 ctx.snapshotChannel(), ctx.snapshotStreamId(), SourceLocation.LOCAL);
 
-            try (Publication publication = aeron.addExclusivePublication(
-                ctx.snapshotChannel(), ctx.snapshotStreamId()))
+            try (Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
             {
+                idleStrategy.reset();
                 while (!publication.isConnected())
                 {
-                    Thread.yield();
+                    idleStrategy.idle();
                 }
 
                 recordingId = RecordingPos.findActiveRecordingId(
@@ -502,22 +485,18 @@ public class ClusteredServiceAgent implements
 
                 service.onTakeSnapshot(publication);
             }
-
-            aeronArchive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
+            finally
+            {
+                aeronArchive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
+            }
         }
 
         recordingIndex.appendLog(recordingId, logPosition(), messageIndex);
         notifySnapshotTaken();
     }
 
-    private void loadSnapshot(
-        final IdleStrategy idleStrategy, final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
+    private void loadSnapshot(final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
     {
-        if (null == recordingInfo)
-        {
-            throw new IllegalStateException("could not find snapshot recording");
-        }
-
         try (Subscription replaySubscription = aeronArchive.replay(
             recordingInfo.recordingId,
             recordingInfo.startPosition,
@@ -525,6 +504,7 @@ public class ClusteredServiceAgent implements
             ctx.replayChannel(),
             ctx.replayStreamId()))
         {
+            idleStrategy.reset();
             while (!replaySubscription.isConnected())
             {
                 idleStrategy.idle();

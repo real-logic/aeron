@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.cluster.service;
 
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
 import org.agrona.collections.Long2ObjectHashMap;
 
-public class RecordingInfo
+class RecordingInfo implements RecordingDescriptorConsumer
 {
     public long recordingId;
     public long startTimestamp;
@@ -75,12 +76,12 @@ public class RecordingInfo
         return map;
     }
 
-    public static RecordingInfo findLatestRecording(final Long2ObjectHashMap<RecordingInfo> recordingsMap)
+    public static RecordingInfo findLatestRecording(final Long2ObjectHashMap<RecordingInfo> recordingInfoByIdMap)
     {
         RecordingInfo savedInfo = null;
         long startTimestamp = 0;
 
-        for (final RecordingInfo recordingInfo : recordingsMap.values())
+        for (final RecordingInfo recordingInfo : recordingInfoByIdMap.values())
         {
             if (recordingInfo.startTimestamp >= startTimestamp)
             {
@@ -90,6 +91,32 @@ public class RecordingInfo
         }
 
         return savedInfo;
+    }
+
+    public void onRecordingDescriptor(
+        final long controlSessionId,
+        final long correlationId,
+        final long recordingId,
+        final long startTimestamp,
+        final long stopTimestamp,
+        final long startPosition,
+        final long stopPosition,
+        final int initialTermId,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int mtuLength,
+        final int sessionId,
+        final int streamId,
+        final String strippedChannel,
+        final String originalChannel,
+        final String sourceIdentity)
+    {
+        this.recordingId = recordingId;
+        this.startTimestamp = startTimestamp;
+        this.stopTimestamp = stopTimestamp;
+        this.startPosition = startPosition;
+        this.stopPosition = stopPosition;
+        this.sessionId = sessionId;
     }
 
     public String toString()

@@ -127,15 +127,73 @@ public class RecordingPos
     }
 
     /**
+     * Find the active recording id for a stream based on the recording request. If more than one exists then the
+     * first found will be returned.
+     *
+     * @param countersReader to search within.
+     * @param sessionId      for the active stream from a publication.
+     * @return the recordingId if found otherwise {@link #NULL_RECORDING_ID}.
+     * @see io.aeron.archive.client.AeronArchive#startRecording(String, int, SourceLocation)
+     */
+    public static long findActiveRecordingId(final CountersReader countersReader, final int sessionId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            {
+                final int recordOffset = CountersReader.metaDataOffset(i);
+
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
+                    buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
+                {
+                    return buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET);
+                }
+            }
+        }
+
+        return NULL_RECORDING_ID;
+    }
+
+    /**
+     * Count the active recordings for a given session id.
+     *
+     * @param countersReader to search within.
+     * @param sessionId      for the active stream from a publication.
+     * @return the recordingId if found otherwise {@link #NULL_RECORDING_ID}.
+     * @see io.aeron.archive.client.AeronArchive#startRecording(String, int, SourceLocation)
+     */
+    public static int countActiveRecordings(final CountersReader countersReader, final int sessionId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        int count = 0;
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            {
+                final int recordOffset = CountersReader.metaDataOffset(i);
+
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
+                    buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    /**
      * Find the active counter id for a stream based on the recording id.
      *
      * @param countersReader to search within.
      * @param recordingId    for the active recording.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static int findActiveRecordingPositionCounterId(
-        final CountersReader countersReader,
-        final long recordingId)
+    public static int findActiveRecordingCounterId(final CountersReader countersReader, final long recordingId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 

@@ -54,5 +54,7 @@ interface ControlRequestListener
         int streamId,
         String channel);
 
+    void onListRecording(long controlSessionId, long correlationId, long recordingId);
+
     void onStopReplay(long controlSessionId, long correlationId, long replaySessionId);
 }

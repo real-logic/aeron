@@ -32,6 +32,7 @@ class ControlRequestAdapter implements FragmentHandler
     private final ListRecordingsRequestDecoder listRecordingsRequestDecoder = new ListRecordingsRequestDecoder();
     private final ListRecordingsForUriRequestDecoder listRecordingsForUriRequestDecoder =
         new ListRecordingsForUriRequestDecoder();
+    private final ListRecordingRequestDecoder listRecordingRequestDecoder = new ListRecordingRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -156,6 +157,19 @@ class ControlRequestAdapter implements FragmentHandler
                     listRecordingsForUriRequestDecoder.recordCount(),
                     listRecordingsForUriRequestDecoder.streamId(),
                     listRecordingsForUriRequestDecoder.channel());
+                break;
+
+            case ListRecordingRequestDecoder.TEMPLATE_ID:
+                listRecordingRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onListRecording(
+                    listRecordingRequestDecoder.controlSessionId(),
+                    listRecordingRequestDecoder.correlationId(),
+                    listRecordingRequestDecoder.recordingId());
                 break;
 
             default:

@@ -16,14 +16,13 @@
 package io.aeron.archive;
 
 import io.aeron.Publication;
-import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.ControlResponseEncoder;
-import io.aeron.archive.codecs.MessageHeaderEncoder;
-import io.aeron.archive.codecs.RecordingDescriptorEncoder;
+import io.aeron.archive.codecs.*;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.Strings;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import java.nio.ByteOrder;
 
 class ControlResponseProxy
 {
@@ -42,7 +41,8 @@ class ControlResponseProxy
         final Publication controlPublication)
     {
         final int offset = Catalog.DESCRIPTOR_HEADER_LENGTH - HEADER_LENGTH;
-        final int length = descriptorBuffer.getInt(0) + HEADER_LENGTH;
+        final int length = descriptorBuffer.getInt(
+            RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), ByteOrder.LITTLE_ENDIAN) + HEADER_LENGTH;
 
         recordingDescriptorEncoder
             .wrapAndApplyHeader(descriptorBuffer, offset, messageHeaderEncoder)

@@ -51,7 +51,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
                 break;
             }
 
-            if (isDescriptorValid(descriptorBuffer))
+            if (Catalog.isValidDescriptor(descriptorBuffer))
             {
                 final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
                 if (bytesSent == 0)

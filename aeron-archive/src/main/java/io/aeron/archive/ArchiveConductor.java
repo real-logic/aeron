@@ -271,6 +271,18 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             recordingDescriptorDecoder);
     }
 
+    public void listRecording(final long correlationId, final ControlSession controlSession, final long recordingId)
+    {
+        if (catalog.wrapAndValidateDescriptor(recordingId, descriptorBuffer))
+        {
+            controlSession.sendDescriptor(correlationId, descriptorBuffer, controlResponseProxy);
+        }
+        else
+        {
+            controlSession.sendRecordingUnknown(correlationId, recordingId, controlResponseProxy);
+        }
+    }
+
     void startReplay(
         final long correlationId,
         final ControlSession controlSession,

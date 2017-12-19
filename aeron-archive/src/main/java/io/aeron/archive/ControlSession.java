@@ -166,6 +166,11 @@ class ControlSession implements Session
         }
     }
 
+    public void onListRecording(final long correlationId, final long recordingId)
+    {
+        conductor.listRecording(correlationId, this, recordingId);
+    }
+
     public void onStartReplay(
         final long correlationId,
         final long recordingId,

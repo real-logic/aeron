@@ -565,6 +565,35 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    /**
+     * List all recording descriptors from a recording id with a limit of record count.
+     * <p>
+     * If the recording id is greater than the largest known id then nothing is returned.
+     *
+     * @param recordingId at which to begin the listing.
+     * @param consumer    to which the descriptors are dispatched.
+     * @return the number of descriptors found and consumed.
+     */
+    public int listRecording(final long recordingId, final RecordingDescriptorConsumer consumer)
+    {
+        lock.lock();
+        try
+        {
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.listRecording(recordingId, correlationId, controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send list recording request");
+            }
+
+            return pollForDescriptors(correlationId, 1, consumer);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     private long pollForConnected(final long expectedCorrelationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;

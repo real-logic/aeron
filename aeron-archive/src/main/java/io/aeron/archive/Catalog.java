@@ -244,10 +244,30 @@ class Catalog implements AutoCloseable
         }
 
         buffer.wrap(indexMappedBBuffer, recordingDescriptorOffset(recordingId), recordLength);
-        descriptorHeaderDecoder.wrap(
-            buffer, 0, DESCRIPTOR_HEADER_LENGTH, RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
 
-        return descriptorHeaderDecoder.length() > 0;
+        return descriptorLength(buffer) > 0;
+    }
+
+    boolean wrapAndValidateDescriptor(final long recordingId, final UnsafeBuffer buffer)
+    {
+        if (recordingId < 0 || recordingId >= maxRecordingId)
+        {
+            return false;
+        }
+
+        buffer.wrap(indexMappedBBuffer, recordingDescriptorOffset(recordingId), recordLength);
+
+        return descriptorLength(buffer) > 0 && isValidDescriptor(buffer);
+    }
+
+    static int descriptorLength(final UnsafeBuffer descriptorBuffer)
+    {
+        return descriptorBuffer.getInt(RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), LITTLE_ENDIAN);
+    }
+
+    static boolean isValidDescriptor(final UnsafeBuffer descriptorBuffer)
+    {
+        return descriptorBuffer.getByte(RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
     boolean hasRecording(final long recordingId)
@@ -256,12 +276,6 @@ class Catalog implements AutoCloseable
             fieldAccessBuffer.getInt(
                 recordingDescriptorOffset(recordingId) +
                     RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), LITTLE_ENDIAN) > 0;
-    }
-
-    UnsafeBuffer wrapDescriptor(final long recordingId)
-    {
-        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
-        return wrapDescriptor(recordingId, unsafeBuffer) ? unsafeBuffer : null;
     }
 
     void forEach(final CatalogEntryProcessor consumer)

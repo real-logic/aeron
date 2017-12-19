@@ -52,6 +52,7 @@ public class ArchiveProxy
     private final ListRecordingsRequestEncoder listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
     private final ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder =
         new ListRecordingsForUriRequestEncoder();
+    private final ListRecordingRequestEncoder listRecordingRequestEncoder = new ListRecordingRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -302,6 +303,25 @@ public class ArchiveProxy
             .channel(channel);
 
         return offer(listRecordingsForUriRequestEncoder.encodedLength());
+    }
+
+    /**
+     * List a recording descriptor for a given recording id.
+     *
+     * @param recordingId      at which to begin listing.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean listRecording(final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        listRecordingRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(listRecordingRequestEncoder.encodedLength());
     }
 
     private boolean offer(final int length)

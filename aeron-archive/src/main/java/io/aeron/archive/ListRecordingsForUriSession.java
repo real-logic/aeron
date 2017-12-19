@@ -73,7 +73,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 
             if (decoder.streamId() == streamId &&
                 decoder.strippedChannel().equals(channel) &&
-                isDescriptorValid(descriptorBuffer))
+                Catalog.isValidDescriptor(descriptorBuffer))
             {
                 final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
                 if (bytesSent == 0)

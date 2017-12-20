@@ -3,6 +3,7 @@ package io.aeron.archive;
 import io.aeron.Counter;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -79,7 +80,7 @@ public class RecordingWriterTest
         final UnsafeBuffer descriptorBuffer =
             new UnsafeBuffer(allocateDirectAligned(Catalog.DEFAULT_RECORD_LENGTH, FRAME_ALIGNMENT));
         final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder().wrap(
-            descriptorBuffer, Catalog.DESCRIPTOR_HEADER_LENGTH);
+            descriptorBuffer, RecordingDescriptorHeaderEncoder.BLOCK_LENGTH);
         final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
         wrapDescriptorDecoder(descriptorDecoder, descriptorBuffer);
 

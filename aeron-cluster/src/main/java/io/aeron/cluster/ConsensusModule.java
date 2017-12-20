@@ -36,11 +36,11 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 public class ConsensusModule implements
-    AutoCloseable,
-    IngressAdapterSupplier,
-    TimerServiceSupplier,
-    ClusterSessionSupplier,
-    ConsensusModuleAdapterSupplier
+                             AutoCloseable,
+                             IngressAdapterSupplier,
+                             TimerServiceSupplier,
+                             ClusterSessionSupplier,
+                             ConsensusModuleAdapterSupplier
 {
     private static final int FRAGMENT_POLL_LIMIT = 10;
     private static final int TIMER_POLL_LIMIT = 10;
@@ -87,7 +87,7 @@ public class ConsensusModule implements
      * Launch an {@link ConsensusModule} by providing a configuration context.
      *
      * @param ctx for the configuration parameters.
-     * @return  a new instance of an {@link ConsensusModule}.
+     * @return a new instance of an {@link ConsensusModule}.
      */
     public static ConsensusModule launch(final Context ctx)
     {
@@ -236,6 +236,7 @@ public class ConsensusModule implements
 
         private Counter messageIndex;
         private Counter controlToggle;
+        private ShutdownSignalBarrier shutdownSignalBarrier;
 
         private AeronArchive.Context archiveContext;
 
@@ -310,6 +311,11 @@ public class ConsensusModule implements
             if (null == archiveContext)
             {
                 archiveContext = new AeronArchive.Context().lock(new NoOpLock());
+            }
+
+            if (null == shutdownSignalBarrier)
+            {
+                shutdownSignalBarrier = new ShutdownSignalBarrier();
             }
         }
 
@@ -800,6 +806,28 @@ public class ConsensusModule implements
         public AeronArchive.Context archiveContext()
         {
             return archiveContext;
+        }
+
+        /**
+         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         *
+         * @param barrier that can be used to shutdown a consensus module.
+         * @return this for a fluent API.
+         */
+        public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
+        {
+            shutdownSignalBarrier = barrier;
+            return this;
+        }
+
+        /**
+         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         *
+         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         */
+        public ShutdownSignalBarrier shutdownSignalBarrier()
+        {
+            return shutdownSignalBarrier;
         }
 
         /**

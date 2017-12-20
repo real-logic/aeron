@@ -19,7 +19,6 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.archive.Archive;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
@@ -49,9 +48,9 @@ public class ClusteredMediaDriver implements AutoCloseable
     {
         loadPropertiesFiles(args);
 
-        try (ClusteredMediaDriver ignore = launch())
+        try (ClusteredMediaDriver driver = launch())
         {
-            new ShutdownSignalBarrier().await();
+            driver.consensusModule().context().shutdownSignalBarrier().await();
 
             System.out.println("Shutdown ClusteredMediaDriver...");
         }

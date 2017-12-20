@@ -31,11 +31,29 @@ import java.util.function.Supplier;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static java.lang.System.getProperty;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 public final class ClusteredServiceContainer implements AutoCloseable
 {
     private final Context ctx;
     private final AgentRunner serviceAgentRunner;
+
+    /**
+     * Launch the clustered service container and await a shutdown signal.
+     *
+     * @param args command line argument which is a list for properties files as URLs or filenames.
+     */
+    public static void main(final String[] args)
+    {
+        loadPropertiesFiles(args);
+
+        try (ClusteredServiceContainer container = launch())
+        {
+            container.context().shutdownSignalBarrier().await();
+
+            System.out.println("Shutdown ClusteredMediaDriver...");
+        }
+    }
 
     private ClusteredServiceContainer(final Context ctx)
     {
@@ -372,6 +390,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
         private ClusteredService clusteredService;
         private RecordingIndex recordingIndex;
+        private ShutdownSignalBarrier shutdownSignalBarrier;
 
         public void conclude()
         {
@@ -458,6 +477,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null == recordingIndex)
             {
                 recordingIndex = new RecordingIndex(clusterDir, serviceId);
+            }
+
+            if (null == shutdownSignalBarrier)
+            {
+                shutdownSignalBarrier = new ShutdownSignalBarrier();
             }
         }
 
@@ -989,6 +1013,28 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public RecordingIndex recordingIndex()
         {
             return recordingIndex;
+        }
+
+        /**
+         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         *
+         * @param barrier that can be used to shutdown a clustered service.
+         * @return this for a fluent API.
+         */
+        public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
+        {
+            shutdownSignalBarrier = barrier;
+            return this;
+        }
+
+        /**
+         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         *
+         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         */
+        public ShutdownSignalBarrier shutdownSignalBarrier()
+        {
+            return shutdownSignalBarrier;
         }
 
         /**

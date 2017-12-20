@@ -29,6 +29,7 @@ import java.io.File;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
+import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static java.lang.System.getProperty;
 
 public final class ClusteredServiceContainer implements AutoCloseable
@@ -394,16 +395,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 throw new IllegalStateException("Error handler must be supplied");
             }
 
-            if (null == errorCounter)
-            {
-                throw new IllegalStateException("Error counter must be supplied");
-            }
-
-            if (null == countedErrorHandler)
-            {
-                countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
-            }
-
             if (null == aeron)
             {
                 aeron = Aeron.connect(
@@ -412,7 +403,26 @@ public final class ClusteredServiceContainer implements AutoCloseable
                         .errorHandler(countedErrorHandler)
                         .epochClock(epochClock));
 
+                if (null == errorCounter)
+                {
+                    errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Cluster errors - service " + serviceId);
+                }
+
                 ownsAeronClient = true;
+            }
+
+            if (null == errorCounter)
+            {
+                throw new IllegalStateException("Error counter must be supplied");
+            }
+
+            if (null == countedErrorHandler)
+            {
+                countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
+                if (ownsAeronClient)
+                {
+                    aeron.context().errorHandler(countedErrorHandler);
+                }
             }
 
             if (null == archiveContext)

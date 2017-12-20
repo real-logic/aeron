@@ -29,7 +29,6 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.NoOpLock;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class ClusterNodeRestartTest
 {
@@ -171,7 +169,6 @@ public class ClusterNodeRestartTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .errorCounter(mock(AtomicCounter.class))
                 .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(initialLaunch));
     }

@@ -20,6 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.*;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -29,6 +30,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
+
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.CommonContext.SPY_PREFIX;
@@ -44,12 +47,14 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private static final int SEND_ATTEMPTS = 3;
     private static final int FRAGMENT_LIMIT = 10;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
+    private static final long TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
     private final long serviceId;
     private long leadershipTermStartPosition = 0;
     private long messageIndex;
     private long timestampMs;
     private final boolean shouldCloseResources;
+    private final EpochClock epochClock;
     private final Aeron aeron;
     private final ClusteredService service;
     private final Subscription logSubscription;
@@ -83,6 +88,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         archiveCtx = ctx.archiveContext();
         serviceId = ctx.serviceId();
+        epochClock = ctx.epochClock();
         aeron = ctx.aeron();
         shouldCloseResources = ctx.ownsAeronClient();
         service = ctx.clusteredService();
@@ -331,9 +337,16 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     private long findRecordingPositionCounter()
     {
+        final long deadlineNs = epochClock.time() + TIMEOUT_NS;
+
         idleStrategy.reset();
         while (!logSubscription.isConnected())
         {
+            if (epochClock.time() > deadlineNs)
+            {
+                throw new TimeoutException("Failed to connect to cluster log");
+            }
+
             checkInterruptedStatus();
             idleStrategy.idle();
         }
@@ -341,10 +354,18 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         final int sessionId = logSubscription.imageAtIndex(0).sessionId();
         final CountersReader countersReader = aeron.countersReader();
 
-        final int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(countersReader, sessionId);
-        if (RecordingPos.NULL_COUNTER_ID == recordingCounterId)
+        int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(countersReader, sessionId);
+        while (RecordingPos.NULL_COUNTER_ID == recordingCounterId)
         {
-            throw new IllegalStateException("Did not find recording for sessionId: " + sessionId);
+            if (epochClock.time() > deadlineNs)
+            {
+                throw new TimeoutException("Failed to find active recording position");
+            }
+
+            checkInterruptedStatus();
+            idleStrategy.idle();
+
+            recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(countersReader, sessionId);
         }
 
         final long recordingId = RecordingPos.getActiveRecordingId(countersReader, recordingCounterId);
@@ -471,8 +492,16 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 }
 
                 final CountersReader countersReader = aeron.countersReader();
-                final int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(
+                int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(
                     countersReader, publication.sessionId());
+                while (RecordingPos.NULL_COUNTER_ID == recordingCounterId)
+                {
+                    checkInterruptedStatus();
+                    idleStrategy.idle();
+
+                    recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(
+                        countersReader, publication.sessionId());
+                }
 
                 recordingId = RecordingPos.getActiveRecordingId(countersReader, recordingCounterId);
 

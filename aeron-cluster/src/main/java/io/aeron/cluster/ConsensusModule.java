@@ -36,11 +36,11 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 public class ConsensusModule implements
-                             AutoCloseable,
-                             IngressAdapterSupplier,
-                             TimerServiceSupplier,
-                             ClusterSessionSupplier,
-                             ConsensusModuleAdapterSupplier
+    AutoCloseable,
+    IngressAdapterSupplier,
+    TimerServiceSupplier,
+    ClusterSessionSupplier,
+    ConsensusModuleAdapterSupplier
 {
     private static final int FRAGMENT_POLL_LIMIT = 10;
     private static final int TIMER_POLL_LIMIT = 10;

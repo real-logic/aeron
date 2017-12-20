@@ -427,7 +427,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             }
 
             final Image replayImage = replaySubscription.imageAtIndex(0);
-            logImage = replayImage;
 
             while (replayImage.position() < recordingInfo.stopPosition)
             {

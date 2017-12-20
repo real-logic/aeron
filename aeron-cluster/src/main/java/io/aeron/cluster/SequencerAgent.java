@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.cluster.codecs.*;
+import io.aeron.cluster.control.ClusterControl;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -260,7 +261,7 @@ class SequencerAgent implements Agent
         {
             if (logAppender.appendSnapshotRequest(nowMs))
             {
-                controlToggle.set(NEUTRAL.code());
+                ClusterControl.Action.reset(controlToggle);
                 return 1;
             }
         }
@@ -268,14 +269,14 @@ class SequencerAgent implements Agent
         if (SUSPEND.code() == toggleCode)
         {
             state = State.SUSPENDED;
-            controlToggle.set(NEUTRAL.code());
+            ClusterControl.Action.reset(controlToggle);
             return 1;
         }
 
         if (RESUME.code() == toggleCode)
         {
             state = State.ACTIVE;
-            controlToggle.set(NEUTRAL.code());
+            ClusterControl.Action.reset(controlToggle);
             return 1;
         }
 

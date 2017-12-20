@@ -33,7 +33,7 @@ import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
 import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 
 /**
- * Toggle control actions for a cluster node such as {@link Action#SUSPEND} or {@link Action#RESUME}.
+ * Toggle control {@link Action}s for a cluster node such as {@link Action#SUSPEND} or {@link Action#RESUME}.
  */
 public class ClusterControl
 {
@@ -60,7 +60,17 @@ public class ClusterControl
         /**
          * Take a snapshot of cluster state.
          */
-        SNAPSHOT(3L);
+        SNAPSHOT(3L),
+
+        /**
+         * Shut down the cluster in an orderly fashion by taking a snapshot first.
+         */
+        SHUTDOWN(4L),
+
+        /**
+         * Abort processing and shutdown the cluster without taking a snapshot.
+         */
+        ABORT(5L);
 
         private final long code;
 
@@ -80,6 +90,16 @@ public class ClusterControl
         public boolean toggle(final AtomicCounter controlToggle)
         {
             return controlToggle.compareAndSet(NEUTRAL.code(), code());
+        }
+
+        /**
+         * Reset the toggle to the {@link #NEUTRAL} state.
+         *
+         * @param controlToggle to be reset.
+         */
+        public static void reset(final AtomicCounter controlToggle)
+        {
+            controlToggle.set(NEUTRAL.code());
         }
 
         /**

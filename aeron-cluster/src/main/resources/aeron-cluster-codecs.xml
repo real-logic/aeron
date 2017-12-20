@@ -142,7 +142,19 @@
 
     <sbe:message name="SnapshotRequest"
                  id="23"
-                 description="Request a snapshot to be coordinated across consensus modules and services.">
+                 description="Request a snapshot to be coordinated across consensus modules and services">
+        <field name="timestamp"            id="1" type="time_t"/>
+    </sbe:message>
+
+    <sbe:message name="ShutdownRequest"
+                 id="24"
+                 description="Request an orderly shutdown and snapshot for the cluster">
+        <field name="timestamp"            id="1" type="time_t"/>
+    </sbe:message>
+
+    <sbe:message name="AbortRequest"
+                 id="25"
+                 description="Request a cluster abort so it is shutdown without a snapshot">
         <field name="timestamp"            id="1" type="time_t"/>
     </sbe:message>
 

@@ -46,7 +46,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
     private final long serviceId;
-    private long termStartPosition = 0;
+    private long leadershipTermStartPosition = 0;
     private long messageIndex;
     private long timestampMs;
     private final boolean shouldCloseResources;
@@ -102,7 +102,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         final long recordingId = findRecordingPositionCounter();
 
         replayLogs();
-        recordingIndex.appendLog(recordingId, termStartPosition, messageIndex);
+        recordingIndex.appendLog(recordingId, leadershipTermStartPosition, messageIndex);
 
         logImage = logSubscription.imageAtIndex(0);
 
@@ -231,7 +231,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
             case SnapshotRequestDecoder.TEMPLATE_ID:
             {
-                takeSnapshot(termStartPosition + header.position());
+                takeSnapshot(leadershipTermStartPosition + header.position());
                 break;
             }
         }
@@ -256,9 +256,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         return timestampMs;
     }
 
-    public long termStartPosition()
+    public long leadershipTermStartPosition()
     {
-        return termStartPosition;
+        return leadershipTermStartPosition;
     }
 
     public long messageIndex()
@@ -359,7 +359,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                         throw new IllegalStateException("Could not find recordingId: " + recordingId);
                     }
 
-                    termStartPosition = logPosition;
+                    leadershipTermStartPosition = logPosition;
                     this.messageIndex = messageIndex;
 
                     if (RecordingIndex.RECORDING_TYPE_SNAPSHOT == type)
@@ -416,7 +416,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 idleStrategy.idle(workCount);
             }
 
-            termStartPosition += length;
+            leadershipTermStartPosition += length;
         }
     }
 

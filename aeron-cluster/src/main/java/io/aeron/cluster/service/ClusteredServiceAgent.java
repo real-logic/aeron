@@ -30,6 +30,9 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
+import static io.aeron.CommonContext.IPC_CHANNEL;
+import static io.aeron.CommonContext.SPY_PREFIX;
+
 public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, Cluster
 {
     /**
@@ -82,11 +85,16 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         aeron = ctx.aeron();
         shouldCloseResources = ctx.ownsAeronClient();
         service = ctx.clusteredService();
-        logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId());
-        consensusModulePublication = aeron.addExclusivePublication(
-            ctx.consensusModuleChannel(), ctx.consensusModuleStreamId());
         recordingIndex = ctx.recordingIndex();
         idleStrategy = ctx.idleStrategy();
+
+        String logChannel = ctx.logChannel();
+        logChannel = logChannel.contains(IPC_CHANNEL) ? logChannel : SPY_PREFIX + logChannel;
+
+        logSubscription = aeron.addSubscription(logChannel, ctx.logStreamId());
+
+        consensusModulePublication = aeron.addExclusivePublication(
+            ctx.consensusModuleChannel(), ctx.consensusModuleStreamId());
     }
 
     public void onStart()

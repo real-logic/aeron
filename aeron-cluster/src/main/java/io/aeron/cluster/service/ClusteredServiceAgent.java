@@ -326,6 +326,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         idleStrategy.reset();
         while (!logSubscription.isConnected())
         {
+            checkInterruptedStatus();
             idleStrategy.idle();
         }
 
@@ -387,6 +388,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             idleStrategy.reset();
             while (!replaySubscription.isConnected())
             {
+                checkInterruptedStatus();
                 idleStrategy.idle();
             }
 
@@ -408,10 +410,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                         throw new IllegalStateException("Unexpected close of replay");
                     }
 
-                    if (Thread.currentThread().isInterrupted())
-                    {
-                        throw new AgentTerminationException("Unexpected interrupt during replay");
-                    }
+                    checkInterruptedStatus();
                 }
 
                 idleStrategy.idle(workCount);
@@ -419,6 +418,72 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
             termStartPosition += length;
         }
+    }
+
+    private void loadSnapshot(final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
+    {
+        try (Subscription replaySubscription = aeronArchive.replay(
+            recordingInfo.recordingId,
+            recordingInfo.startPosition,
+            recordingInfo.stopPosition - recordingInfo.startPosition,
+            ctx.replayChannel(),
+            ctx.replayStreamId()))
+        {
+            idleStrategy.reset();
+            while (!replaySubscription.isConnected())
+            {
+                checkInterruptedStatus();
+                idleStrategy.idle();
+            }
+
+            if (replaySubscription.imageCount() != 1)
+            {
+                throw new IllegalStateException("Only expected one replay");
+            }
+
+            service.onLoadSnapshot(replaySubscription.imageAtIndex(0));
+        }
+    }
+
+    private void takeSnapshot(final long position)
+    {
+        final long recordingId;
+
+        try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
+        {
+            aeronArchive.startRecording(ctx.snapshotChannel(), ctx.snapshotStreamId(), SourceLocation.LOCAL);
+
+            try (Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
+            {
+                idleStrategy.reset();
+                while (!publication.isConnected())
+                {
+                    checkInterruptedStatus();
+                    idleStrategy.idle();
+                }
+
+                final CountersReader countersReader = aeron.countersReader();
+                final int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(
+                    countersReader, publication.sessionId());
+
+                recordingId = RecordingPos.getActiveRecordingId(countersReader, recordingCounterId);
+
+                service.onTakeSnapshot(publication);
+
+                while (countersReader.getCounterValue(recordingCounterId) < publication.position())
+                {
+                    checkInterruptedStatus();
+                    Thread.yield();
+                }
+            }
+            finally
+            {
+                aeronArchive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
+            }
+        }
+
+        recordingIndex.appendLog(recordingId, position, messageIndex);
+        notifySnapshotTaken();
     }
 
     private void notifyReady()
@@ -475,66 +540,11 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         throw new IllegalStateException("Failed to notify snapshot taken");
     }
 
-    private void takeSnapshot(final long position)
+    private void checkInterruptedStatus()
     {
-        final long recordingId;
-
-        try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
+        if (Thread.currentThread().isInterrupted())
         {
-            aeronArchive.startRecording(ctx.snapshotChannel(), ctx.snapshotStreamId(), SourceLocation.LOCAL);
-
-            try (Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
-            {
-                idleStrategy.reset();
-                while (!publication.isConnected())
-                {
-                    idleStrategy.idle();
-                }
-
-                final CountersReader countersReader = aeron.countersReader();
-                final int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(
-                    countersReader, publication.sessionId());
-
-                recordingId = RecordingPos.getActiveRecordingId(countersReader, recordingCounterId);
-
-                service.onTakeSnapshot(publication);
-
-                while (countersReader.getCounterValue(recordingCounterId) < publication.position())
-                {
-                    Thread.yield();
-                }
-            }
-            finally
-            {
-                aeronArchive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
-            }
-        }
-
-        recordingIndex.appendLog(recordingId, position, messageIndex);
-        notifySnapshotTaken();
-    }
-
-    private void loadSnapshot(final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
-    {
-        try (Subscription replaySubscription = aeronArchive.replay(
-            recordingInfo.recordingId,
-            recordingInfo.startPosition,
-            recordingInfo.stopPosition - recordingInfo.startPosition,
-            ctx.replayChannel(),
-            ctx.replayStreamId()))
-        {
-            idleStrategy.reset();
-            while (!replaySubscription.isConnected())
-            {
-                idleStrategy.idle();
-            }
-
-            if (replaySubscription.imageCount() != 1)
-            {
-                throw new IllegalStateException("Only expected one replay");
-            }
-
-            service.onLoadSnapshot(replaySubscription.imageAtIndex(0));
+            throw new AgentTerminationException("Unexpected interrupt during replay");
         }
     }
 }

@@ -939,7 +939,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Set the directory to use for the cluster container.
          *
          * @param clusterDir to use.
-         * @return this for a fluenat API.
+         * @return this for a fluent API.
          * @see Configuration#CLUSTER_DIR_PROP_NAME
          */
         public Context clusterDir(final File clusterDir)

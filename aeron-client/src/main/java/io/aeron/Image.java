@@ -113,7 +113,8 @@ public class Image
     }
 
     /**
-     * The sessionId for the steam of messages.
+     * The sessionId for the steam of messages. Sessions are unique within a {@link Subscription} and unique across
+     * all {@link Publication}s from a {@link #sourceIdentity()}.
      *
      * @return the sessionId for the steam of messages.
      */

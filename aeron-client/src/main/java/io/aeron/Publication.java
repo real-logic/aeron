@@ -166,7 +166,8 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
-     * Session under which messages are published. Identifies this Publication instance.
+     * Session under which messages are published. Identifies this Publication instance. Sessions are unique across
+     * all active publications on a driver instance.
      *
      * @return the session id for this publication.
      */

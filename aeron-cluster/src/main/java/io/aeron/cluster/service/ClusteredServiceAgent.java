@@ -324,13 +324,13 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         final int sessionId = logSubscription.imageAtIndex(0).sessionId();
         final CountersReader countersReader = aeron.countersReader();
 
-        if (0 == RecordingPos.countActiveRecordings(countersReader, sessionId))
+        final int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(countersReader, sessionId);
+        if (RecordingPos.NULL_COUNTER_ID == recordingCounterId)
         {
-            throw new IllegalStateException("No active recording found for sessionId: " + sessionId);
+            throw new IllegalStateException("Did not find recording for sessionId: " + sessionId);
         }
 
-        final long recordingId = RecordingPos.findActiveRecordingId(countersReader, sessionId);
-        final int recordingCounterId = RecordingPos.findActiveRecordingCounterId(countersReader, recordingId);
+        final long recordingId = RecordingPos.getActiveRecordingId(countersReader, recordingCounterId);
 
         recordingPosition = new ReadableCounter(countersReader, recordingCounterId);
 
@@ -469,8 +469,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
-            final long correlationId = aeronArchive.startRecording(
-                ctx.snapshotChannel(), ctx.snapshotStreamId(), SourceLocation.LOCAL);
+            aeronArchive.startRecording(ctx.snapshotChannel(), ctx.snapshotStreamId(), SourceLocation.LOCAL);
 
             try (Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
             {
@@ -480,10 +479,18 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     idleStrategy.idle();
                 }
 
-                recordingId = RecordingPos.findActiveRecordingId(
-                    aeron.countersReader(), aeronArchive.controlSessionId(), correlationId, publication.sessionId());
+                final CountersReader countersReader = aeron.countersReader();
+                final int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(
+                    countersReader, publication.sessionId());
+
+                recordingId = RecordingPos.getActiveRecordingId(countersReader, recordingCounterId);
 
                 service.onTakeSnapshot(publication);
+
+                while (countersReader.getCounterValue(recordingCounterId) < publication.position())
+                {
+                    Thread.yield();
+                }
             }
             finally
             {

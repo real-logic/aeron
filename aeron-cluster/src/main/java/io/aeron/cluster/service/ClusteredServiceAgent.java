@@ -46,7 +46,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
     private final long serviceId;
-    private long recordingStartPosition = 0;
+    private long termStartPosition = 0;
     private long messageIndex;
     private long timestampMs;
     private final boolean shouldCloseResources;
@@ -102,7 +102,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         final long recordingId = findRecordingPositionCounter();
 
         replayLogs();
-        recordingIndex.appendLog(recordingId, recordingStartPosition, messageIndex);
+        recordingIndex.appendLog(recordingId, termStartPosition, messageIndex);
 
         logImage = logSubscription.imageAtIndex(0);
 
@@ -231,7 +231,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
             case SnapshotRequestDecoder.TEMPLATE_ID:
             {
-                takeSnapshot();
+                takeSnapshot(termStartPosition + header.position());
                 break;
             }
         }
@@ -256,9 +256,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         return timestampMs;
     }
 
-    public long logPosition()
+    public long termStartPosition()
     {
-        return recordingStartPosition + (null == logImage ? 0L : logImage.position());
+        return termStartPosition;
     }
 
     public long messageIndex()
@@ -358,7 +358,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                         throw new IllegalStateException("Could not find recordingId: " + recordingId);
                     }
 
-                    recordingStartPosition = logPosition;
+                    termStartPosition = logPosition;
                     this.messageIndex = messageIndex;
 
                     if (RecordingIndex.RECORDING_TYPE_SNAPSHOT == type)
@@ -375,10 +375,12 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     private void replayRecordedLog(final AeronArchive archive, final RecordingInfo recordingInfo)
     {
+        final long length = recordingInfo.stopPosition - recordingInfo.startPosition;
+
         try (Subscription replaySubscription = archive.replay(
             recordingInfo.recordingId,
             recordingInfo.startPosition,
-            recordingInfo.stopPosition - recordingInfo.startPosition,
+            length,
             ctx.replayChannel(),
             ctx.replayStreamId()))
         {
@@ -414,6 +416,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
                 idleStrategy.idle(workCount);
             }
+
+            termStartPosition += length;
         }
     }
 
@@ -471,7 +475,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         throw new IllegalStateException("Failed to notify snapshot taken");
     }
 
-    private void takeSnapshot()
+    private void takeSnapshot(final long position)
     {
         final long recordingId;
 
@@ -506,7 +510,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             }
         }
 
-        recordingIndex.appendLog(recordingId, logPosition(), messageIndex);
+        recordingIndex.appendLog(recordingId, position, messageIndex);
         notifySnapshotTaken();
     }
 

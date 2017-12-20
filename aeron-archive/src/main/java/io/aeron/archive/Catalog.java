@@ -42,15 +42,38 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  * The format is simple, allocating a fixed 1KB record for each record descriptor. This allows offset
  * based look up of a descriptor in the file.
  * <p>
+ * @see RecordingDescriptorHeaderDecoder
+ * @see RecordingDescriptorDecoder
  * Catalog file format:
  * <pre>
- *  # |---------------- 32b --------------|
- *  0 |desc-length 4b|------24b-unused----|
- *  1 |RecordingDescriptor (length < 1024)|
- *  2 |...continues...                    |
- * 128|------------- repeat --------------|
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                      Descriptor Length                        |
+ *  +---------------+-----------------------------------------------+
+ *  |     valid     |                  Reserved                     |
+ *  +---------------+-----------------------------------------------+
+ *  |                          Reserved                             |
+ *  +---------------------------------------------------------------+
+ *  |                          Reserved                             |
+ *  +---------------------------------------------------------------+
+ *  |                          Reserved                             |
+ *  +---------------------------------------------------------------+
+ *  |                          Reserved                             |
+ *  +---------------------------------------------------------------+
+ *  |                          Reserved                             |
+ *  +---------------------------------------------------------------+
+ *  |                          Reserved                             |
+ *  +---------------------------------------------------------------+
+ *  |                Recording Descriptor (< 1024)                  |
+ *  |                                                              ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ *  |                          Repeats...                           |
+ *  |                                                              ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
  * </pre>
- * <p>
  */
 class Catalog implements AutoCloseable
 {

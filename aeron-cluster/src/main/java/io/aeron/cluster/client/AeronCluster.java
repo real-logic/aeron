@@ -297,7 +297,17 @@ public final class AeronCluster implements AutoCloseable
         }
 
         final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
+
         idleStrategy.reset();
+        while (!poller.subscription().isConnected())
+        {
+            if (nanoClock.nanoTime() > deadlineNs)
+            {
+                throw new TimeoutException("Failed to establish response connection");
+            }
+
+            idleStrategy.idle();
+        }
 
         while (true)
         {

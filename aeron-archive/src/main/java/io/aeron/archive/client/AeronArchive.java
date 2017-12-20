@@ -600,6 +600,16 @@ public class AeronArchive implements AutoCloseable
         final ControlResponsePoller poller = controlResponsePoller;
         idleStrategy.reset();
 
+        while (!poller.subscription().isConnected())
+        {
+            if (nanoClock.nanoTime() > deadlineNs)
+            {
+                throw new TimeoutException("Failed to establish response connection");
+            }
+
+            idleStrategy.idle();
+        }
+
         while (true)
         {
             while (true)

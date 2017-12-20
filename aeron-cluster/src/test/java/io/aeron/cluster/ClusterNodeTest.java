@@ -149,6 +149,7 @@ public class ClusterNodeTest
     public void shouldScheduleEventInService()
     {
         container = launchScheduledService();
+
         final AeronCluster aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
 

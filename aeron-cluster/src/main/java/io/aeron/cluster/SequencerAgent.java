@@ -120,7 +120,7 @@ class SequencerAgent implements Agent
             workCount += aeronClientInvoker.invoke();
         }
 
-        workCount += checkControlToggle();
+        workCount += checkControlToggle(nowMs);
         workCount += consensusModuleAdapter.poll();
 
         if (State.ACTIVE == state)
@@ -247,7 +247,7 @@ class SequencerAgent implements Agent
         return state;
     }
 
-    private int checkControlToggle()
+    private int checkControlToggle(final long nowMs)
     {
         final long toggleCode = controlToggle.get();
 
@@ -258,7 +258,7 @@ class SequencerAgent implements Agent
 
         if (SNAPSHOT.code() == toggleCode)
         {
-            if (logAppender.appendSnapshotRequest())
+            if (logAppender.appendSnapshotRequest(nowMs))
             {
                 controlToggle.set(NEUTRAL.code());
                 return 1;

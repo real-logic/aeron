@@ -150,11 +150,11 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
 
         when(mockControlToggle.get()).thenReturn(SNAPSHOT.code());
-        when(mockLogAppender.appendSnapshotRequest()).thenReturn(Boolean.TRUE);
+        when(mockLogAppender.appendSnapshotRequest(anyLong())).thenReturn(Boolean.TRUE);
 
         agent.doWork();
 
-        verify(mockLogAppender).appendSnapshotRequest();
+        verify(mockLogAppender).appendSnapshotRequest(anyLong());
     }
 
     private SequencerAgent newSequencerAgent()

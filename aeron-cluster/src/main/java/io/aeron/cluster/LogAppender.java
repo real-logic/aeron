@@ -144,7 +144,7 @@ class LogAppender implements AutoCloseable
         return false;
     }
 
-    public boolean appendSnapshotRequest()
+    public boolean appendSnapshotRequest(final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SnapshotRequestEncoder.BLOCK_LENGTH;
 
@@ -154,7 +154,8 @@ class LogAppender implements AutoCloseable
             if (publication.tryClaim(length, bufferClaim) > 0)
             {
                 snapshotRequestEncoder.wrapAndApplyHeader(
-                    bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder);
+                    bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .timestamp(nowMs);
 
                 bufferClaim.commit();
 

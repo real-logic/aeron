@@ -61,6 +61,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
+    private final SnapshotRequestDecoder snapshotRequestDecoder = new SnapshotRequestDecoder();
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ScheduleTimerRequestEncoder scheduleTimerRequestEncoder = new ScheduleTimerRequestEncoder();
@@ -231,6 +232,13 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
             case SnapshotRequestDecoder.TEMPLATE_ID:
             {
+                snapshotRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                timestampMs = snapshotRequestDecoder.timestamp();
                 takeSnapshot(leadershipTermStartPosition + header.position());
                 break;
             }

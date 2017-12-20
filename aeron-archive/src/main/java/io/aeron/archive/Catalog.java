@@ -69,10 +69,10 @@ class Catalog implements AutoCloseable
     static final int PAGE_SIZE = 4096;
     static final int NULL_RECORD_ID = -1;
 
+    static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     static final int DEFAULT_RECORD_LENGTH = 1024;
     static final byte VALID = 1;
     static final byte INVALID = 0;
-    static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
     private final RecordingDescriptorHeaderDecoder descriptorHeaderDecoder = new RecordingDescriptorHeaderDecoder();
     private final RecordingDescriptorHeaderEncoder descriptorHeaderEncoder = new RecordingDescriptorHeaderEncoder();
@@ -85,7 +85,6 @@ class Catalog implements AutoCloseable
     private final UnsafeBuffer fieldAccessBuffer;
 
     private final int recordLength;
-
     private final int maxDescriptorStringsCombinedLength;
     private final int maxRecordingId;
     private final File archiveDir;

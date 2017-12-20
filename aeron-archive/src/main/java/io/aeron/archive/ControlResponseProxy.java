@@ -23,14 +23,11 @@ import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.nio.ByteOrder;
-
 import static io.aeron.archive.codecs.RecordingDescriptorEncoder.recordingIdEncodingOffset;
 
 class ControlResponseProxy
 {
     private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
-    private static final int LENGTH_ENCODING_OFFSET = RecordingDescriptorHeaderDecoder.lengthEncodingOffset();
     private static final int DESCRIPTOR_CONTENT_OFFSET = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH +
         recordingIdEncodingOffset();
 
@@ -47,7 +44,7 @@ class ControlResponseProxy
         final UnsafeBuffer descriptorBuffer,
         final Publication controlPublication)
     {
-        final int length = descriptorBuffer.getInt(LENGTH_ENCODING_OFFSET, ByteOrder.LITTLE_ENDIAN) + HEADER_LENGTH;
+        final int length = Catalog.descriptorLength(descriptorBuffer);
 
         for (int i = 0; i < 3; i++)
         {

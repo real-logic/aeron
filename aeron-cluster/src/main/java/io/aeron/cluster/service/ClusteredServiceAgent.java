@@ -491,21 +491,13 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     idleStrategy.idle();
                 }
 
-                final CountersReader countersReader = aeron.countersReader();
-                int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(
-                    countersReader, publication.sessionId());
-                while (RecordingPos.NULL_COUNTER_ID == recordingCounterId)
-                {
-                    checkInterruptedStatus();
-                    idleStrategy.idle();
+                service.onTakeSnapshot(publication);
 
-                    recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(
-                        countersReader, publication.sessionId());
-                }
+                final CountersReader countersReader = aeron.countersReader();
+                final int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(
+                    countersReader, publication.sessionId());
 
                 recordingId = RecordingPos.getActiveRecordingId(countersReader, recordingCounterId);
-
-                service.onTakeSnapshot(publication);
 
                 while (countersReader.getCounterValue(recordingCounterId) < publication.position())
                 {

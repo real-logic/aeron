@@ -259,16 +259,6 @@ class Catalog implements AutoCloseable
         return descriptorLength(buffer) > 0 && isValidDescriptor(buffer);
     }
 
-    static int descriptorLength(final UnsafeBuffer descriptorBuffer)
-    {
-        return descriptorBuffer.getInt(RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), LITTLE_ENDIAN);
-    }
-
-    static boolean isValidDescriptor(final UnsafeBuffer descriptorBuffer)
-    {
-        return descriptorBuffer.getByte(RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
-    }
-
     boolean hasRecording(final long recordingId)
     {
         return recordingId >= 0 && recordingId < nextRecordingId &&
@@ -389,7 +379,17 @@ class Catalog implements AutoCloseable
         return summary;
     }
 
-    private int recordingDescriptorOffset(final long recordingId)
+    static int descriptorLength(final UnsafeBuffer descriptorBuffer)
+    {
+        return descriptorBuffer.getInt(RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), LITTLE_ENDIAN);
+    }
+
+    static boolean isValidDescriptor(final UnsafeBuffer descriptorBuffer)
+    {
+        return descriptorBuffer.getByte(RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
+    }
+
+    int recordingDescriptorOffset(final long recordingId)
     {
         return (int)(recordingId * recordLength) + recordLength;
     }

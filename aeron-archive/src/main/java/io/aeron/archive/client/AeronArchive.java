@@ -990,7 +990,7 @@ public class AeronArchive implements AutoCloseable
 
             if (null == idleStrategy)
             {
-                idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1);
+                idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1_000_000);
             }
 
             if (null == lock)

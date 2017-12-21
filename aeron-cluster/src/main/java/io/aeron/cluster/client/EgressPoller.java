@@ -188,12 +188,11 @@ public class EgressPoller implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                final byte[] challengeData = new byte[challengeDecoder.challengeDataLength()];
+                challengeData = new byte[challengeDecoder.challengeDataLength()];
                 challengeDecoder.getChallengeData(challengeData, 0, challengeDecoder.challengeDataLength());
 
-                clusterSessionId = sessionHeaderDecoder.clusterSessionId();
-                correlationId = sessionHeaderDecoder.correlationId();
-                // TODO: set challengeData
+                clusterSessionId = challengeDecoder.clusterSessionId();
+                correlationId = challengeDecoder.correlationId();
                 break;
 
             default:

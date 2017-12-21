@@ -25,6 +25,7 @@ import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -376,15 +377,21 @@ class SequencerAgent implements Agent
 
             if (session.state() == INIT || session.state() == CONNECTED)
             {
-                session.state(CONNECTED);
-                sessionProxy.clusterSession(session);
-                authenticator.onProcessConnectedSession(sessionProxy, nowMs);
+                if (session.responsePublication().isConnected())
+                {
+                    session.state(CONNECTED);
+                    sessionProxy.clusterSession(session);
+                    authenticator.onProcessConnectedSession(sessionProxy, nowMs);
+                }
             }
 
             if (session.state() == CHALLENGED)
             {
-                sessionProxy.clusterSession(session);
-                authenticator.onProcessChallengedSession(sessionProxy, nowMs);
+                if (session.responsePublication().isConnected())
+                {
+                    sessionProxy.clusterSession(session);
+                    authenticator.onProcessChallengedSession(sessionProxy, nowMs);
+                }
             }
 
             if (session.state() == AUTHENTICATED)
@@ -424,13 +431,15 @@ class SequencerAgent implements Agent
         {
             final ClusterSession session = rejectedSessions.get(i);
             String detail = SESSION_LIMIT_MSG;
+            EventCode eventCode = EventCode.ERROR;
 
             if (session.state() == REJECTED)
             {
                 detail = SESSION_REJECTED_MSG;
+                eventCode = EventCode.AUTHENTICATION_REJECTED;
             }
 
-            if (egressPublisher.sendEvent(session, EventCode.ERROR, detail) ||
+            if (egressPublisher.sendEvent(session, eventCode, detail) ||
                 nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
                 ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex);

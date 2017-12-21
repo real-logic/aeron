@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
+import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.codecs.ServiceAction;
@@ -42,6 +43,7 @@ public class SequencerAgentTest
 
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogAppender mockLogAppender = mock(LogAppender.class);
+    private final Publication mockResponsePublication = mock(Publication.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .errorCounter(mock(AtomicCounter.class))
@@ -58,6 +60,7 @@ public class SequencerAgentTest
     {
         when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(Boolean.TRUE);
         when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(Boolean.TRUE);
+        when(mockResponsePublication.isConnected()).thenReturn(true);
     }
 
     @Test
@@ -171,7 +174,7 @@ public class SequencerAgentTest
             mockLogAppender,
             (sequencerAgent) -> mock(IngressAdapter.class),
             (sequencerAgent) -> mock(TimerService.class),
-            (sessionId, responseStreamId, responseChannel) -> new ClusterSession(sessionId, null),
+            (sessionId, responseStreamId, responseChannel) -> new ClusterSession(sessionId, mockResponsePublication),
             (sequencerAgent) -> mock(ConsensusModuleAdapter.class));
     }
 }

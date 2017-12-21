@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import io.aeron.cluster.AuthenticationException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
@@ -310,6 +311,10 @@ public final class AeronCluster implements AutoCloseable
                 else if (poller.eventCode() == EventCode.ERROR)
                 {
                     throw new IllegalStateException(poller.detail());
+                }
+                else if (poller.eventCode() == EventCode.AUTHENTICATION_REJECTED)
+                {
+                    throw new AuthenticationException(poller.detail());
                 }
                 else
                 {

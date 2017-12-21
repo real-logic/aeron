@@ -563,7 +563,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     {
         if (Thread.currentThread().isInterrupted())
         {
-            throw new AgentTerminationException("Unexpected interrupt during replay");
+            throw new AgentTerminationException("Unexpected interrupt during operation");
         }
     }
 }

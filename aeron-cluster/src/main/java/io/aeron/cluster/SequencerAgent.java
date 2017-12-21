@@ -71,6 +71,7 @@ class SequencerAgent implements Agent
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
     private final ConsensusModule.Context ctx;
+    private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
     private State state = State.INIT;
 
@@ -99,6 +100,7 @@ class SequencerAgent implements Agent
         ingressAdapter = ingressAdapterSupplier.newIngressAdapter(this);
         timerService = timerServiceSupplier.newTimerService(this);
         consensusModuleAdapter = consensusModuleAdapterSupplier.newConsensusModuleAdapter(this);
+        authenticator = ctx.authenticatorSupplier().newAuthenticator(this.ctx);
         aeronClientInvoker = ctx.ownsAeronClient() ? ctx.aeron().conductorAgentInvoker() : null;
     }
 
@@ -205,7 +207,7 @@ class SequencerAgent implements Agent
             sessionId, responseStreamId, responseChannel);
         session.lastActivity(nowMs, correlationId);
 
-        ctx.authenticator().onConnectRequest(sessionId, credentialData, nowMs);
+        authenticator.onConnectRequest(sessionId, credentialData, nowMs);
 
         if (pendingSessions.size() + sessionByIdMap.size() < ctx.maxConcurrentSessions())
         {
@@ -276,7 +278,7 @@ class SequencerAgent implements Agent
 
                 session.lastActivity(nowMs, correlationId);
 
-                ctx.authenticator().onChallengeResponse(clusterSessionId, credentialData, nowMs);
+                authenticator.onChallengeResponse(clusterSessionId, credentialData, nowMs);
                 break;
             }
         }
@@ -366,7 +368,6 @@ class SequencerAgent implements Agent
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
     {
-        final Authenticator authenticator = ctx.authenticator();
         int workCount = 0;
 
         for (int lastIndex = pendingSessions.size() - 1, i = lastIndex; i >= 0; i--)
@@ -378,9 +379,9 @@ class SequencerAgent implements Agent
                 session.state(CONNECTED);
                 sessionProxy.clusterSession(session);
                 authenticator.onProcessConnectedSession(sessionProxy, nowMs);
-
             }
-            else if (session.state() == CHALLENGED)
+
+            if (session.state() == CHALLENGED)
             {
                 sessionProxy.clusterSession(session);
                 authenticator.onProcessChallengedSession(sessionProxy, nowMs);

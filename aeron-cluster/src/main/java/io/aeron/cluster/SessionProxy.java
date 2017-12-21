@@ -21,7 +21,7 @@ import static io.aeron.cluster.ClusterSession.State.*;
 
 public class SessionProxy
 {
-    private EgressPublisher egressPublisher;
+    private final EgressPublisher egressPublisher;
     private ClusterSession clusterSession;
 
     public SessionProxy(final EgressPublisher egressPublisher)

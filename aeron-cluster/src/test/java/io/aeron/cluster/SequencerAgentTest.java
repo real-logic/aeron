@@ -51,7 +51,7 @@ public class SequencerAgentTest
         .aeron(mock(Aeron.class))
         .epochClock(new SystemEpochClock())
         .cachedEpochClock(new CachedEpochClock())
-        .authenticator(new Authenticator());
+        .authenticatorSupplier(new DefaultAuthenticatorSupplier());
 
     @Before
     public void before()

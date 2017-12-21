@@ -23,6 +23,49 @@ import io.aeron.Aeron;
 public interface Cluster
 {
     /**
+     * State of the node participating in a cluster.
+     */
+    enum State
+    {
+        /**
+         * Initialising.
+         */
+        INIT,
+
+        /**
+         * Replaying existing snapshots and logs to recover state.
+         */
+        REPLAY,
+
+        /**
+         * The cluster node is the active leader and responding to client sessions.
+         */
+        LEADER,
+
+        /**
+         * The cluster node is an active follower and accumulates state but does not respond to client sessions.
+         */
+        FOLLOWER,
+
+        /**
+         * The cluster node is currently taking a snapshot.
+         */
+        SNAPSHOT,
+
+        /**
+         * The cluster node has been closed.
+         */
+        CLOSED
+    }
+
+    /**
+     * Get the current state of the node in the cluster.
+     *
+     * @return the current state of the node in the cluster.
+     */
+    State state();
+
+    /**
      * Get the {@link Aeron} client used by the cluster.
      *
      * @return the {@link Aeron} client used by the cluster.

@@ -73,7 +73,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
     private final ServiceActionAckEncoder serviceActionAckEncoder = new ServiceActionAckEncoder();
 
-
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final IdleStrategy idleStrategy;
 
@@ -83,6 +82,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     private ReadableCounter recordingPosition;
     private Image logImage;
+    private State state = State.INIT;
 
     public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
@@ -108,19 +108,23 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     public void onStart()
     {
-        final long recordingId = findRecordingPositionCounter();
+        service.onStart(this);
 
         replayLogs();
+
+        final long recordingId = findRecordingPositionCounter();
         recordingIndex.appendLog(recordingId, leadershipTermStartPosition, messageIndex);
 
         logImage = logSubscription.imageAtIndex(0);
+        state = State.LEADER;
 
         acknowledge(ServiceAction.READY);
-        service.onStart(this);
     }
 
     public void onClose()
     {
+        state = State.CLOSED;
+
         if (shouldCloseResources)
         {
             CloseHelper.close(logSubscription);
@@ -257,6 +261,11 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         return Action.CONTINUE;
     }
 
+    public State state()
+    {
+        return state;
+    }
+
     public Aeron aeron()
     {
         return aeron;
@@ -379,6 +388,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     private void replayLogs()
     {
+        state = State.REPLAY;
+
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
             recordingIndex.forEachFromLastSnapshot(
@@ -477,6 +488,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     private void takeSnapshot(final long position)
     {
+        state = State.SNAPSHOT;
         final long recordingId;
 
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
@@ -510,6 +522,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             {
                 aeronArchive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
             }
+        }
+        finally
+        {
+            state = State.LEADER;
         }
 
         recordingIndex.appendLog(recordingId, position, messageIndex);

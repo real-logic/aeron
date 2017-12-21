@@ -73,7 +73,8 @@ public class ClientSession
      * @param buffer        containing message.
      * @param offset        offset in the buffer at which the encoded message begins.
      * @param length        in bytes of the encoded message.
-     * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
+     * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.State#LEADER}
+     * otherwise 1.
      */
     public long offer(
         final long correlationId,
@@ -81,6 +82,11 @@ public class ClientSession
         final int offset,
         final int length)
     {
+        if (cluster.state() != Cluster.State.LEADER)
+        {
+            return 1;
+        }
+
         sessionHeaderEncoder.correlationId(correlationId);
         sessionHeaderEncoder.timestamp(cluster.timeMs());
         messageBuffer.reset(buffer, offset, length);
@@ -96,7 +102,8 @@ public class ClientSession
      * @param offset                offset in the buffer at which the encoded message begins.
      * @param length                in bytes of the encoded message.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
+     * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.State#LEADER}
+     * otherwise 1.
      */
     public long offer(
         final long correlationId,
@@ -105,6 +112,11 @@ public class ClientSession
         final int length,
         final ReservedValueSupplier reservedValueSupplier)
     {
+        if (cluster.state() != Cluster.State.LEADER)
+        {
+            return 1;
+        }
+
         sessionHeaderEncoder.correlationId(correlationId);
         sessionHeaderEncoder.timestamp(cluster.timeMs());
         messageBuffer.reset(buffer, offset, length);

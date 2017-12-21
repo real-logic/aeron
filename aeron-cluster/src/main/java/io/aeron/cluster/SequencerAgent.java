@@ -149,19 +149,29 @@ class SequencerAgent implements Agent
         return "sequencer";
     }
 
-    public void onServiceReady(final long serviceId)
+    public void onActionAck(final long serviceId, final ServiceAction action)
     {
-        if (servicesReadyCount >= ctx.serviceCount())
+        switch (action)
         {
-            throw new IllegalStateException("Service count exceeded: " + servicesReadyCount);
+            case READY:
+                if (servicesReadyCount >= ctx.serviceCount())
+                {
+                    throw new IllegalStateException("Service count exceeded: " + servicesReadyCount);
+                }
+
+                ++servicesReadyCount;
+                state = State.ACTIVE;
+                break;
+
+            case SNAPSHOT:
+                break;
+
+            case SHUTDOWN:
+                break;
+
+            case ABORT:
+                break;
         }
-
-        ++servicesReadyCount;
-        state = State.ACTIVE;
-    }
-
-    public void onSnapshotTaken(final long serviceId)
-    {
     }
 
     public void onSessionConnect(
@@ -291,7 +301,7 @@ class SequencerAgent implements Agent
 
         if (SNAPSHOT.code() == toggleCode)
         {
-            if (logAppender.appendSnapshotRequest(nowMs))
+            if (logAppender.appendActionRequest(ServiceAction.SNAPSHOT, nowMs))
             {
                 ClusterControl.Action.reset(controlToggle);
                 return 1;

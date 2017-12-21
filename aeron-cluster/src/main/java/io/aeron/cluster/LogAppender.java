@@ -31,7 +31,7 @@ class LogAppender implements AutoCloseable
     private final SessionOpenEventEncoder connectEventEncoder = new SessionOpenEventEncoder();
     private final SessionCloseEventEncoder closeEventEncoder = new SessionCloseEventEncoder();
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
-    private final SnapshotRequestEncoder snapshotRequestEncoder = new SnapshotRequestEncoder();
+    private final ServiceActionRequestEncoder actionRequestEncoder = new ServiceActionRequestEncoder();
     private final BufferClaim bufferClaim = new BufferClaim();
     private final Publication publication;
 
@@ -144,18 +144,19 @@ class LogAppender implements AutoCloseable
         return false;
     }
 
-    public boolean appendSnapshotRequest(final long nowMs)
+    public boolean appendActionRequest(final ServiceAction action, final long nowMs)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SnapshotRequestEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionRequestEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
         {
             if (publication.tryClaim(length, bufferClaim) > 0)
             {
-                snapshotRequestEncoder.wrapAndApplyHeader(
+                actionRequestEncoder.wrapAndApplyHeader(
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .timestamp(nowMs);
+                    .timestamp(nowMs)
+                    .action(action);
 
                 bufferClaim.commit();
 

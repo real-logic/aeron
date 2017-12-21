@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
+import io.aeron.cluster.codecs.ServiceAction;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -66,7 +67,7 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
 
         final long correlationIdOne = 1L;
-        agent.onServiceReady(0L);
+        agent.onActionAck(0L, ServiceAction.READY);
         agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
         agent.doWork();
 
@@ -94,7 +95,7 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
 
         final long correlationId = 1L;
-        agent.onServiceReady(0L);
+        agent.onActionAck(0L, ServiceAction.READY);
 
         agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
         agent.doWork();
@@ -127,7 +128,7 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
         assertThat(agent.state(), is(SequencerAgent.State.INIT));
 
-        agent.onServiceReady(1L);
+        agent.onActionAck(0L, ServiceAction.READY);
         assertThat(agent.state(), is(SequencerAgent.State.ACTIVE));
 
         when(mockControlToggle.get()).thenReturn(SUSPEND.code());
@@ -151,11 +152,11 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
 
         when(mockControlToggle.get()).thenReturn(SNAPSHOT.code());
-        when(mockLogAppender.appendSnapshotRequest(anyLong())).thenReturn(Boolean.TRUE);
+        when(mockLogAppender.appendActionRequest(eq(ServiceAction.SNAPSHOT), anyLong())).thenReturn(Boolean.TRUE);
 
         agent.doWork();
 
-        verify(mockLogAppender).appendSnapshotRequest(anyLong());
+        verify(mockLogAppender).appendActionRequest(eq(ServiceAction.SNAPSHOT), anyLong());
     }
 
     private SequencerAgent newSequencerAgent()

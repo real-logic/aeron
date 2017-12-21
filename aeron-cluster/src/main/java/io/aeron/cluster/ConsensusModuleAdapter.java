@@ -31,8 +31,7 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ScheduleTimerRequestDecoder scheduleTimerRequestDecoder = new ScheduleTimerRequestDecoder();
     private final CancelTimerRequestDecoder cancelTimerRequestDecoder = new CancelTimerRequestDecoder();
-    private final ServiceReadyDecoder serviceReadyDecoder = new ServiceReadyDecoder();
-    private final SnapshotTakenDecoder snapshotTakenDecoder = new SnapshotTakenDecoder();
+    private final ServiceActionAckDecoder serviceActionAckDecoder = new ServiceActionAckDecoder();
 
     public ConsensusModuleAdapter(
         final int fragmentLimit, final Subscription subscription, final SequencerAgent sequencerAgent)
@@ -81,24 +80,16 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                 sequencerAgent.onCancelTimer(scheduleTimerRequestDecoder.correlationId());
                 break;
 
-            case ServiceReadyDecoder.TEMPLATE_ID:
-                serviceReadyDecoder.wrap(
+            case ServiceActionAckDecoder.TEMPLATE_ID:
+                serviceActionAckDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onServiceReady(serviceReadyDecoder.serviceId());
-                break;
-
-            case SnapshotTakenDecoder.TEMPLATE_ID:
-                snapshotTakenDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                sequencerAgent.onSnapshotTaken(snapshotTakenDecoder.serviceId());
+                sequencerAgent.onActionAck(
+                    serviceActionAckDecoder.serviceId(),
+                    serviceActionAckDecoder.action());
                 break;
 
             default:

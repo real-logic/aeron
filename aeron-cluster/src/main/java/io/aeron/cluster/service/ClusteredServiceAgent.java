@@ -66,11 +66,13 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
-    private final SnapshotRequestDecoder snapshotRequestDecoder = new SnapshotRequestDecoder();
+    private final ServiceActionRequestDecoder actionRequestDecoder = new ServiceActionRequestDecoder();
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ScheduleTimerRequestEncoder scheduleTimerRequestEncoder = new ScheduleTimerRequestEncoder();
     private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
+    private final ServiceActionAckEncoder serviceActionAckEncoder = new ServiceActionAckEncoder();
+
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final IdleStrategy idleStrategy;
@@ -113,7 +115,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         logImage = logSubscription.imageAtIndex(0);
 
-        notifyReady();
+        acknowledgeAction(ServiceAction.READY);
         service.onStart(this);
     }
 
@@ -236,15 +238,15 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 break;
             }
 
-            case SnapshotRequestDecoder.TEMPLATE_ID:
+            case ServiceActionRequestDecoder.TEMPLATE_ID:
             {
-                snapshotRequestDecoder.wrap(
+                actionRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                timestampMs = snapshotRequestDecoder.timestamp();
+                timestampMs = actionRequestDecoder.timestamp();
                 takeSnapshot(leadershipTermStartPosition + header.position());
                 break;
             }
@@ -511,13 +513,12 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
 
         recordingIndex.appendLog(recordingId, position, messageIndex);
-        notifySnapshotTaken();
+        acknowledgeAction(ServiceAction.SNAPSHOT);
     }
 
-    private void notifyReady()
+    private void acknowledgeAction(final ServiceAction action)
     {
-        final ServiceReadyEncoder encoder = new ServiceReadyEncoder();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceReadyEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionAckEncoder.BLOCK_LENGTH;
 
         idleStrategy.reset();
         int attempts = SEND_ATTEMPTS;
@@ -525,9 +526,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         {
             if (consensusModulePublication.tryClaim(length, bufferClaim) > 0)
             {
-                encoder
+                serviceActionAckEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .serviceId(serviceId);
+                    .serviceId(serviceId)
+                    .action(action);
 
                 bufferClaim.commit();
 
@@ -539,33 +541,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         while (--attempts > 0);
 
         throw new IllegalStateException("Failed to notify ready");
-    }
-
-    private void notifySnapshotTaken()
-    {
-        final SnapshotTakenEncoder encoder = new SnapshotTakenEncoder();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceReadyEncoder.BLOCK_LENGTH;
-
-        idleStrategy.reset();
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            if (consensusModulePublication.tryClaim(length, bufferClaim) > 0)
-            {
-                encoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .serviceId(serviceId);
-
-                bufferClaim.commit();
-
-                return;
-            }
-
-            idleStrategy.idle();
-        }
-        while (--attempts > 0);
-
-        throw new IllegalStateException("Failed to notify snapshot taken");
     }
 
     private void checkInterruptedStatus()

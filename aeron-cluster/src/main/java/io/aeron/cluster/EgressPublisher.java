@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Publication;
+import io.aeron.cluster.codecs.ChallengeEncoder;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SessionEventEncoder;
@@ -28,6 +29,7 @@ class EgressPublisher
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
+    private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
 
     public boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
     {
@@ -48,6 +50,36 @@ class EgressPublisher
                     .correlationId(session.lastCorrelationId())
                     .code(code)
                     .detail(detail);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean sendChallenge(
+        final ClusterSession session, final long correlationId, final long sessionId, final byte[] challengeData)
+    {
+        final Publication publication = session.responsePublication();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            ChallengeEncoder.BLOCK_LENGTH +
+            ChallengeEncoder.challengeDataHeaderLength() +
+            challengeData.length;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            if (publication.tryClaim(length, bufferClaim) > 0)
+            {
+                challengeEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .clusterSessionId(session.id())
+                    .correlationId(session.lastCorrelationId())
+                    .putChallengeData(challengeData, 0, challengeData.length);
 
                 bufferClaim.commit();
 

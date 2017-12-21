@@ -48,6 +48,11 @@ class SequencerAgent implements Agent
      */
     public static final String SESSION_TIMEOUT_MSG = "Session inactive";
 
+    /**
+     * Message detail to be sent when a session is rejected due to authentication.
+     */
+    public static final String SESSION_REJECTED_MSG = "Session failed authentication";
+
     private final long sessionTimeoutMs;
     private long nextSessionId = 1;
     private int servicesReadyCount = 0;
@@ -66,6 +71,7 @@ class SequencerAgent implements Agent
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
     private final ConsensusModule.Context ctx;
+    private final SessionProxy sessionProxy;
     private State state = State.INIT;
 
     // TODO: last message correlation id per session counter
@@ -88,6 +94,7 @@ class SequencerAgent implements Agent
         this.controlToggle = ctx.controlToggle();
         this.logAppender = logAppender;
         this.clusterSessionSupplier = clusterSessionSupplier;
+        this.sessionProxy = new SessionProxy(egressPublisher);
 
         ingressAdapter = ingressAdapterSupplier.newIngressAdapter(this);
         timerService = timerServiceSupplier.newTimerService(this);
@@ -157,12 +164,19 @@ class SequencerAgent implements Agent
     {
     }
 
-    public void onSessionConnect(final long correlationId, final int responseStreamId, final String responseChannel)
+    public void onSessionConnect(
+        final long correlationId,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] credentialData)
     {
+        final long nowMs = cachedEpochClock.time();
         final long sessionId = nextSessionId++;
         final ClusterSession session = clusterSessionSupplier.newClusterSession(
             sessionId, responseStreamId, responseChannel);
-        session.lastActivity(cachedEpochClock.time(), correlationId);
+        session.lastActivity(nowMs, correlationId);
+
+        ctx.authenticator().onConnectRequest(sessionId, credentialData, nowMs);
 
         if (pendingSessions.size() + sessionByIdMap.size() < ctx.maxConcurrentSessions())
         {
@@ -218,6 +232,24 @@ class SequencerAgent implements Agent
         if (null != session)
         {
             session.lastActivity(cachedEpochClock.time(), correlationId);
+        }
+    }
+
+    public void onChallengeResponse(final long correlationId, final long clusterSessionId, final byte[] credentialData)
+    {
+        for (int lastIndex = pendingSessions.size() - 1, i = lastIndex; i >= 0; i--)
+        {
+            final ClusterSession session = pendingSessions.get(i);
+
+            if (session.id() == clusterSessionId && session.state() == CHALLENGED)
+            {
+                final long nowMs = cachedEpochClock.time();
+
+                session.lastActivity(nowMs, correlationId);
+
+                ctx.authenticator().onChallengeResponse(clusterSessionId, credentialData, nowMs);
+                break;
+            }
         }
     }
 
@@ -285,24 +317,44 @@ class SequencerAgent implements Agent
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
     {
+        final Authenticator authenticator = ctx.authenticator();
         int workCount = 0;
 
         for (int lastIndex = pendingSessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final ClusterSession session = pendingSessions.get(i);
 
-            if (egressPublisher.sendEvent(session, EventCode.OK, ""))
+            if (session.state() == INIT || session.state() == CONNECTED)
+            {
+                session.state(CONNECTED);
+                sessionProxy.clusterSession(session);
+                authenticator.onProcessConnectedSession(sessionProxy, nowMs);
+
+            }
+            else if (session.state() == CHALLENGED)
+            {
+                sessionProxy.clusterSession(session);
+                authenticator.onProcessChallengedSession(sessionProxy, nowMs);
+            }
+
+            if (session.state() == AUTHENTICATED)
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
                 lastIndex--;
 
                 session.timeOfLastActivityMs(nowMs);
-                session.state(CONNECTED);
                 sessionByIdMap.put(session.id(), session);
 
                 appendConnectedSession(session, nowMs);
 
                 workCount += 1;
+            }
+            else if (session.state() == REJECTED)
+            {
+                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
+                lastIndex--;
+
+                rejectedSessions.add(session);
             }
             else if (nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
@@ -321,8 +373,14 @@ class SequencerAgent implements Agent
         for (int lastIndex = rejectedSessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final ClusterSession session = rejectedSessions.get(i);
+            String detail = SESSION_LIMIT_MSG;
 
-            if (egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_LIMIT_MSG) ||
+            if (session.state() == REJECTED)
+            {
+                detail = SESSION_REJECTED_MSG;
+            }
+
+            if (egressPublisher.sendEvent(session, EventCode.ERROR, detail) ||
                 nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
                 ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex);

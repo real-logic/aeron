@@ -265,11 +265,14 @@ public final class AeronCluster implements AutoCloseable
     private long connectToCluster()
     {
         final long correlationId = aeron.nextCorrelationId();
+        final byte[] credentialData = ctx.credentialProvider().connectRequestCredentialData();
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             SessionConnectRequestEncoder.BLOCK_LENGTH +
             SessionConnectRequestEncoder.responseChannelHeaderLength() +
-            ctx.egressChannel().length();
+            ctx.egressChannel().length() +
+            SessionConnectRequestEncoder.credentialDataHeaderLength() +
+            credentialData.length;
 
         final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
         idleStrategy.reset();
@@ -282,7 +285,8 @@ public final class AeronCluster implements AutoCloseable
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId)
                     .responseStreamId(ctx.egressStreamId())
-                    .responseChannel(ctx.egressChannel());
+                    .responseChannel(ctx.egressChannel())
+                    .putCredentialData(credentialData, 0, credentialData.length);
 
                 bufferClaim.commit();
 
@@ -462,6 +466,7 @@ public final class AeronCluster implements AutoCloseable
         private Lock lock;
         private String aeronDirectoryName = CommonContext.AERON_DIR_PROP_DEFAULT;
         private Aeron aeron;
+        private CredentialProvider credentialProvider;
         private boolean ownsAeronClient = true;
         private boolean isIngressExclusive = true;
 
@@ -481,6 +486,11 @@ public final class AeronCluster implements AutoCloseable
             if (null == lock)
             {
                 lock = new ReentrantLock();
+            }
+
+            if (null == credentialProvider)
+            {
+                credentialProvider = new CredentialProvider();
             }
         }
 
@@ -744,6 +754,17 @@ public final class AeronCluster implements AutoCloseable
         public boolean isIngressExclusive()
         {
             return isIngressExclusive;
+        }
+
+        public CredentialProvider credentialProvider()
+        {
+            return credentialProvider;
+        }
+
+        public Context credentialProvider(final CredentialProvider credentialProvider)
+        {
+            this.credentialProvider = credentialProvider;
+            return this;
         }
 
         /**

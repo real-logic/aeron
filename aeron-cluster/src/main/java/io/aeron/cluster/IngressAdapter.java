@@ -25,16 +25,21 @@ import org.agrona.DirectBuffer;
 
 public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
+    private static final int INITIAL_CREDENTIAL_BUFFER_LENGTH = 1024;
+
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionConnectRequestDecoder connectRequestDecoder = new SessionConnectRequestDecoder();
     private final SessionCloseRequestDecoder closeRequestDecoder = new SessionCloseRequestDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final SessionKeepAliveRequestDecoder keepAliveRequestDecoder = new SessionKeepAliveRequestDecoder();
+    private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
 
     private final ControlledFragmentHandler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final SequencerAgent sequencerAgent;
     private final Subscription subscription;
     private final int fragmentLimit;
+
+    private byte[] credentialsBuffer = new byte[INITIAL_CREDENTIAL_BUFFER_LENGTH];
 
     public IngressAdapter(
         final SequencerAgent sequencerAgent, final Subscription subscription, final int fragmentLimit)
@@ -59,6 +64,8 @@ public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
+        final byte[] credentialData;
+
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
@@ -69,10 +76,16 @@ public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                final String responseChannel = connectRequestDecoder.responseChannel();
+
+                credentialData = new byte[connectRequestDecoder.credentialDataLength()];
+                connectRequestDecoder.getCredentialData(credentialData, 0, credentialData.length);
+
                 sequencerAgent.onSessionConnect(
                     connectRequestDecoder.correlationId(),
                     connectRequestDecoder.responseStreamId(),
-                    connectRequestDecoder.responseChannel());
+                    responseChannel,
+                    credentialData);
                 break;
 
             case SessionHeaderDecoder.TEMPLATE_ID:
@@ -109,6 +122,22 @@ public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                 sequencerAgent.onKeepAlive(
                     keepAliveRequestDecoder.correlationId(),
                     keepAliveRequestDecoder.clusterSessionId());
+                break;
+
+            case ChallengeResponseDecoder.TEMPLATE_ID:
+                challengeResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                credentialData = new byte[challengeResponseDecoder.credentialDataLength()];
+                challengeResponseDecoder.getCredentialData(credentialData, 0, credentialData.length);
+
+                sequencerAgent.onChallengeResponse(
+                    challengeResponseDecoder.correlationId(),
+                    challengeResponseDecoder.clusterSessionId(),
+                    credentialData);
                 break;
 
             default:

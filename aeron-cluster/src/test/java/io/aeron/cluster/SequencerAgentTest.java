@@ -48,7 +48,8 @@ public class SequencerAgentTest
         .controlToggle(mock(Counter.class))
         .aeron(mock(Aeron.class))
         .epochClock(new SystemEpochClock())
-        .cachedEpochClock(new CachedEpochClock());
+        .cachedEpochClock(new CachedEpochClock())
+        .authenticator(new Authenticator());
 
     @Before
     public void before()
@@ -66,14 +67,14 @@ public class SequencerAgentTest
 
         final long correlationIdOne = 1L;
         agent.onServiceReady(0L);
-        agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE);
+        agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
         agent.doWork();
 
         verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), anyLong());
         verify(mockEgressPublisher).sendEvent(any(ClusterSession.class), eq(EventCode.OK), eq(""));
 
         final long correlationIdTwo = 2L;
-        agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO);
+        agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO, new byte[0]);
         agent.doWork();
 
         verifyNoMoreInteractions(mockLogAppender);
@@ -95,7 +96,7 @@ public class SequencerAgentTest
         final long correlationId = 1L;
         agent.onServiceReady(0L);
 
-        agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE);
+        agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
         agent.doWork();
 
         verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), eq(startMs));

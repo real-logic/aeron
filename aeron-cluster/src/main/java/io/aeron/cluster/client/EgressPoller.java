@@ -29,6 +29,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
+    private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
     private long clusterSessionId = -1;
@@ -166,6 +167,21 @@ public class EgressPoller implements ControlledFragmentHandler
 
                 clusterSessionId = sessionHeaderDecoder.clusterSessionId();
                 correlationId = sessionHeaderDecoder.correlationId();
+                break;
+
+            case ChallengeDecoder.TEMPLATE_ID:
+                challengeDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final byte[] challengeData = new byte[challengeDecoder.challengeDataLength()];
+                challengeDecoder.getChallengeData(challengeData, 0, challengeDecoder.challengeDataLength());
+
+                clusterSessionId = sessionHeaderDecoder.clusterSessionId();
+                correlationId = sessionHeaderDecoder.correlationId();
+                // TODO: set challengeData
                 break;
 
             default:

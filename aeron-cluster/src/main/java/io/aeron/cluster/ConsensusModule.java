@@ -127,7 +127,8 @@ public class ConsensusModule implements
     public ClusterSession newClusterSession(
         final long sessionId, final int responseStreamId, final String responseChannel)
     {
-        return new ClusterSession(sessionId, ctx.aeron().addPublication(responseChannel, responseStreamId));
+        return new ClusterSession(
+            sessionId, ctx.aeron().addPublication(responseChannel, responseStreamId));
     }
 
     public ConsensusModuleAdapter newConsensusModuleAdapter(final SequencerAgent sequencerAgent)
@@ -239,6 +240,7 @@ public class ConsensusModule implements
         private ShutdownSignalBarrier shutdownSignalBarrier;
 
         private AeronArchive.Context archiveContext;
+        private Authenticator authenticator;
 
         public void conclude()
         {
@@ -316,6 +318,11 @@ public class ConsensusModule implements
             if (null == shutdownSignalBarrier)
             {
                 shutdownSignalBarrier = new ShutdownSignalBarrier();
+            }
+
+            if (null == authenticator)
+            {
+                authenticator = new Authenticator();
             }
         }
 
@@ -806,6 +813,17 @@ public class ConsensusModule implements
         public AeronArchive.Context archiveContext()
         {
             return archiveContext;
+        }
+
+        public Authenticator authenticator()
+        {
+            return authenticator;
+        }
+
+        public Context authenticator(final Authenticator authenticator)
+        {
+            this.authenticator = new Authenticator();
+            return this;
         }
 
         /**

@@ -115,7 +115,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         logImage = logSubscription.imageAtIndex(0);
 
-        acknowledgeAction(ServiceAction.READY);
+        acknowledge(ServiceAction.READY);
         service.onStart(this);
     }
 
@@ -513,10 +513,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
 
         recordingIndex.appendLog(recordingId, position, messageIndex);
-        acknowledgeAction(ServiceAction.SNAPSHOT);
+        acknowledge(ServiceAction.SNAPSHOT);
     }
 
-    private void acknowledgeAction(final ServiceAction action)
+    private void acknowledge(final ServiceAction action)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionAckEncoder.BLOCK_LENGTH;
 
@@ -540,7 +540,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to notify ready");
+        throw new IllegalStateException("Failed to send ACK");
     }
 
     private void checkInterruptedStatus()

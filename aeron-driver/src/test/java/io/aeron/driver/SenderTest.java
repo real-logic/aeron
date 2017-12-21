@@ -89,7 +89,7 @@ public class SenderTest
     private final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue =
         new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
 
-    private final HeaderWriter headerWriter = new HeaderWriter(HEADER);
+    private final HeaderWriter headerWriter = HeaderWriter.newInstance(HEADER);
 
     private Answer<Integer> saveByteBufferAnswer =
         (invocation) ->

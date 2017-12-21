@@ -120,7 +120,7 @@ public abstract class Publication implements AutoCloseable
         this.channelStatusId = channelStatusId;
         this.logBuffers = logBuffers;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termBufferLength);
-        this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
+        this.headerWriter = HeaderWriter.newInstance(defaultFrameHeader(logMetaDataBuffer));
     }
 
     /**

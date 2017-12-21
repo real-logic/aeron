@@ -525,7 +525,8 @@ public class DriverConductorTest
         LogBufferDescriptor.rawTail(rawLog.metaData(), index, LogBufferDescriptor.packTail(termId, 0));
         final TermAppender appender = new TermAppender(rawLog.termBuffers()[index], rawLog.metaData(), index);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
-        final HeaderWriter headerWriter = new HeaderWriter(createDefaultHeader(SESSION_ID, STREAM_ID_1, termId));
+        final HeaderWriter headerWriter = HeaderWriter.newInstance(
+            createDefaultHeader(SESSION_ID, STREAM_ID_1, termId));
 
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(termId);

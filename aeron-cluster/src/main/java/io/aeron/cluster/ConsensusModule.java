@@ -24,6 +24,7 @@ import io.aeron.cluster.control.ClusterControl;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -62,7 +63,13 @@ public class ConsensusModule implements
         logAppender = new LogAppender(ctx.aeron().addExclusivePublication(ctx.logChannel(), ctx.logStreamId()));
 
         final SequencerAgent conductor = new SequencerAgent(
-            ctx, new EgressPublisher(), logAppender, this, this, this, this);
+            ctx,
+            new EgressPublisher(),
+            logAppender,
+            this,
+            this,
+            this,
+            this);
 
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
@@ -174,6 +181,9 @@ public class ConsensusModule implements
          */
         public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
+        public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.Authenticator.supplier";
+        public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.cluster.DefaultAuthenticatorSupplier";
+
         /**
          * The value {@link #SERVICE_COUNT_DEFAULT} or system property
          * {@link #SERVICE_COUNT_PROP_NAME} if set.
@@ -208,6 +218,25 @@ public class ConsensusModule implements
         {
             return getDurationInNanos(SESSION_TIMEOUT_PROP_NAME, SESSION_TIMEOUT_DEFAULT_NS);
         }
+
+        public static AuthenticatorSupplier authenticatorSupplier()
+        {
+            final String supplierClassName =
+                System.getProperty(AUTHENTICATOR_SUPPLIER_PROP_NAME, AUTHENTICATOR_SUPPLIER_DEFAULT);
+            AuthenticatorSupplier supplier = null;
+
+            try
+            {
+                supplier = (AuthenticatorSupplier)Class.forName(supplierClassName).newInstance();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+
+            return supplier;
+        }
+
     }
 
     public static class Context implements AutoCloseable
@@ -240,7 +269,7 @@ public class ConsensusModule implements
         private ShutdownSignalBarrier shutdownSignalBarrier;
 
         private AeronArchive.Context archiveContext;
-        private Authenticator authenticator;
+        private AuthenticatorSupplier authenticatorSupplier;
 
         public void conclude()
         {
@@ -320,9 +349,9 @@ public class ConsensusModule implements
                 shutdownSignalBarrier = new ShutdownSignalBarrier();
             }
 
-            if (null == authenticator)
+            if (null == authenticatorSupplier)
             {
-                authenticator = new Authenticator();
+                authenticatorSupplier = Configuration.authenticatorSupplier();
             }
         }
 
@@ -815,14 +844,14 @@ public class ConsensusModule implements
             return archiveContext;
         }
 
-        public Authenticator authenticator()
+        public AuthenticatorSupplier authenticatorSupplier()
         {
-            return authenticator;
+            return authenticatorSupplier;
         }
 
-        public Context authenticator(final Authenticator authenticator)
+        public Context authenticatorSupplier(final AuthenticatorSupplier authenticatorSupplier)
         {
-            this.authenticator = new Authenticator();
+            this.authenticatorSupplier = authenticatorSupplier;
             return this;
         }
 

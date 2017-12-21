@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2017 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,8 @@
  */
 package io.aeron.cluster;
 
-public interface Authenticator
+@FunctionalInterface
+public interface AuthenticatorSupplier
 {
-    void onConnectRequest(long sessionId, byte[] credentialData, long nowMs);
-
-    void onChallengeResponse(long sessionId, byte[] credentialData, long nowMs);
-
-    void onProcessConnectedSession(SessionProxy sessionProxy, long nowMs);
-
-    void onProcessChallengedSession(SessionProxy sessionProxy, long nowMs);
+    Authenticator newAuthenticator(ConsensusModule.Context context);
 }

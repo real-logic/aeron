@@ -143,13 +143,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     {
         int workCount = 0;
 
-        if (null != logImage)
+        workCount += logImage.boundedControlledPoll(fragmentAssembler, recordingPosition.get(), FRAGMENT_LIMIT);
+        if (0 == workCount && logImage.isClosed())
         {
-            workCount += logImage.boundedControlledPoll(fragmentAssembler, recordingPosition.get(), FRAGMENT_LIMIT);
-            if (0 == workCount && logImage.isClosed())
-            {
-                throw new IllegalStateException("Image closed unexpectedly");
-            }
+            throw new IllegalStateException("Image closed unexpectedly");
         }
 
         return workCount;

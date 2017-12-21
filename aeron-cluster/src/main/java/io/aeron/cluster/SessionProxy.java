@@ -19,6 +19,9 @@ import io.aeron.cluster.codecs.EventCode;
 
 import static io.aeron.cluster.ClusterSession.State.*;
 
+/**
+ * Proxy for a session for authenication purposes. Used to inform system of client authentication status.
+ */
 public class SessionProxy
 {
     private final EgressPublisher egressPublisher;
@@ -37,31 +40,53 @@ public class SessionProxy
         }
     }
 
+    /**
+     * The session Id of the potential session assigned by the consensus module.
+     *
+     * @return session id for the potential session
+     */
     public final long sessionId()
     {
         return clusterSession.id();
     }
 
-    // send challenge
-    public final void challenge(final byte[] challengeData)
+    /**
+     * Inform the system that the session requires a challenge and to send the provided data in the challenge.
+     *
+     * @param challengeData to send in the challenge to the client.
+     * @return true if challenge was sent or false if challenge could not be sent.
+     */
+    public final boolean challenge(final byte[] challengeData)
     {
         if (egressPublisher.sendChallenge(
             clusterSession, clusterSession.lastCorrelationId(), clusterSession.id(), challengeData))
         {
             clusterSession.state(CHALLENGED);
+            return true;
         }
+
+        return false;
     }
 
-    // authenticate session
-    public final void authenticate()
+    /**
+     * Inform the system that the session is met authentication requirements and can continue.
+     *
+     * @return true if success event was sent or false if success event could not be sent.
+     */
+    public final boolean authenticate()
     {
         if (egressPublisher.sendEvent(clusterSession, EventCode.OK, ""))
         {
             clusterSession.state(AUTHENTICATED);
+            return true;
         }
+
+        return false;
     }
 
-    // reject session
+    /**
+     * Inform the system that the session has NOT met authentication requirements and should be rejected.
+     */
     public final void reject()
     {
         clusterSession.state(REJECTED);

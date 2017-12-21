@@ -106,6 +106,11 @@ public class EgressPoller implements ControlledFragmentHandler
         return detail;
     }
 
+    /**
+     * Get the challenge data in the last challenge.
+     *
+     * @return the challenge data in the last challenge or null if last message was not a challenge.
+     */
     public byte[] challengeData()
     {
         return challengeData;
@@ -121,6 +126,11 @@ public class EgressPoller implements ControlledFragmentHandler
         return pollComplete;
     }
 
+    /**
+     * Was last message a challenge or not.
+     *
+     * @return true if last message was a challenge or false if not.
+     */
     public boolean challenged()
     {
         return (ChallengeDecoder.TEMPLATE_ID == templateId);

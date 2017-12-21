@@ -816,11 +816,22 @@ public final class AeronCluster implements AutoCloseable
             return isIngressExclusive;
         }
 
+        /**
+         * Get the {@link CredentialProvider} to be used for authentication with the cluster.
+         *
+         * @return the {@link CredentialProvider} to be used for authentication with the cluster.
+         */
         public CredentialProvider credentialProvider()
         {
             return credentialProvider;
         }
 
+        /**
+         * Set the {@link CredentialProvider} to be used for authentication with the cluster.
+         *
+         * @param credentialProvider to be used for authentication with the cluster.
+         * @return this for fluent API.
+         */
         public Context credentialProvider(final CredentialProvider credentialProvider)
         {
             this.credentialProvider = credentialProvider;

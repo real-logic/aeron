@@ -56,6 +56,7 @@
           - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
           - If successful, a NewLeaderSessionEvent will be sent in the return path Image.
           - If a change of leader occurs mid session then another NewLeaderSessionEvent will occur on a new Image.
+          -
 
         2. Session Message - Service messages which make up application protocol.
           - Messages are sent to a clustered service with a SessionHeader followed by application protocol payload.
@@ -66,6 +67,32 @@
         3. Session Close
           - A cluster session can be closed with a CloseSessionRequest
           - If the session is not explicitly closed then it will timeout if the connection becomes unavailable.
+
+        Cluster Authentication Protocol
+        ===============================
+
+        Connect protocol can occur in multiple valid sequences
+
+        1. Authenticated via Session Connect
+        -> session-connect, ...
+                  \
+        <-          *session-event (OK), ...
+
+        2. Authenticated via Challenge Response
+        -> session-connect,   challenge-response, ...
+                  \            /              \
+        <-          challenge,                  session-event (OK), ...
+
+        3. Rejected via Session Connect
+        -> session-connect
+                  \
+        <-          *session-event (AUTHENTICATION_REJECTED)
+
+        4. Rejected via Challenge Response
+        -> session-connect,   challenge-response
+                  \            /              \
+        <-          challenge,                  session-event (AUTHENTICATION_REJECTED)
+
     -->
 
     <sbe:message name="SessionEvent"

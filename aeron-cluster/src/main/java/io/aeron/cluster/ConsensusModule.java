@@ -181,7 +181,15 @@ public class ConsensusModule implements
          */
         public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
+        /**
+         * Name of class to use as a supplier of {@link Authenticator} for the cluster.
+         */
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.Authenticator.supplier";
+
+        /**
+         * Name of the class to use as a supplier of {@link Authenticator} for the cluster. Default is
+         * a non-authenticating option.
+         */
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.cluster.DefaultAuthenticatorSupplier";
 
         /**
@@ -219,6 +227,13 @@ public class ConsensusModule implements
             return getDurationInNanos(SESSION_TIMEOUT_PROP_NAME, SESSION_TIMEOUT_DEFAULT_NS);
         }
 
+        /**
+         * The value {@link #AUTHENTICATOR_SUPPLIER_DEFAULT} or system property
+         * {@link #AUTHENTICATOR_SUPPLIER_PROP_NAME} if set.
+         *
+         * @return {@link #AUTHENTICATOR_SUPPLIER_DEFAULT} or system property
+         * {@link #AUTHENTICATOR_SUPPLIER_PROP_NAME} if set.
+         */
         public static AuthenticatorSupplier authenticatorSupplier()
         {
             final String supplierClassName =
@@ -236,7 +251,6 @@ public class ConsensusModule implements
 
             return supplier;
         }
-
     }
 
     public static class Context implements AutoCloseable
@@ -844,11 +858,22 @@ public class ConsensusModule implements
             return archiveContext;
         }
 
+        /**
+         * Get the {@link AuthenticatorSupplier} that should be used for the consensus module.
+         *
+         * @return the {@link AuthenticatorSupplier} to be used for the consensus module.
+         */
         public AuthenticatorSupplier authenticatorSupplier()
         {
             return authenticatorSupplier;
         }
 
+        /**
+         * Set the {@link AuthenticatorSupplier} that will be used for the consensus module.
+         *
+         * @param authenticatorSupplier {@link AuthenticatorSupplier} to use for the consensus module.
+         * @return this for a fluent API.
+         */
         public Context authenticatorSupplier(final AuthenticatorSupplier authenticatorSupplier)
         {
             this.authenticatorSupplier = authenticatorSupplier;

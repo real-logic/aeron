@@ -15,13 +15,47 @@
  */
 package io.aeron.cluster;
 
+/**
+ * Interface for Authenticator to handle authentication of clients to a cluster.
+ */
 public interface Authenticator
 {
+    /**
+     * Called upon reception of a Connect Request.
+     *
+     * @param sessionId      of the unauthenticated client assigned by the consensus module.
+     * @param credentialData from the Connect Request. Will not be null, but may be 0 length.
+     * @param nowMs          current time in milliseconds.
+     */
     void onConnectRequest(long sessionId, byte[] credentialData, long nowMs);
 
+    /**
+     * Called upon recpetion of a Challenge Response from an unauthenticated client.
+     *
+     * @param sessionId      of the unauthenticated client assigned by the consensus module.
+     * @param credentialData from the Challenge Response. Will not be null, but may be 0 length.
+     * @param nowMs          current time in milliseconds.
+     */
     void onChallengeResponse(long sessionId, byte[] credentialData, long nowMs);
 
+    /**
+     * Called when a connected client should be able to accept a response from the authenticator.
+     *
+     * @param sessionProxy to use to inform client of status.
+     * @param nowMs        current time in milliseconds.
+     * @see SessionProxy
+     */
     void onProcessConnectedSession(SessionProxy sessionProxy, long nowMs);
 
+    /**
+     * Called when a previously challenged client should be able to accept a response from the authenticator.
+     *
+     * When this is called, there is no assumption that a Challenge Response has been received. And this method
+     * may be called multiple times. In addition, it is up to the concrete class to provide any timeout management.
+     *
+     * @param sessionProxy to use to inform client of status.
+     * @param nowMs        current time in milliseconds.
+     * @see SessionProxy
+     */
     void onProcessChallengedSession(SessionProxy sessionProxy, long nowMs);
 }

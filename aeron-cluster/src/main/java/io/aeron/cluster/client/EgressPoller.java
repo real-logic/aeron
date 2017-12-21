@@ -38,6 +38,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private boolean pollComplete = false;
     private EventCode eventCode;
     private String detail = "";
+    private byte[] challengeData;
 
     public EgressPoller(final Subscription subscription, final int fragmentLimit)
     {
@@ -105,6 +106,11 @@ public class EgressPoller implements ControlledFragmentHandler
         return detail;
     }
 
+    public byte[] challengeData()
+    {
+        return challengeData;
+    }
+
     /**
      * Has the last polling action received a complete event?
      *
@@ -115,6 +121,11 @@ public class EgressPoller implements ControlledFragmentHandler
         return pollComplete;
     }
 
+    public boolean challenged()
+    {
+        return (ChallengeDecoder.TEMPLATE_ID == templateId);
+    }
+
     public int poll()
     {
         clusterSessionId = -1;
@@ -122,6 +133,7 @@ public class EgressPoller implements ControlledFragmentHandler
         templateId = -1;
         eventCode = null;
         detail = "";
+        challengeData = null;
         pollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);

@@ -264,41 +264,13 @@ public final class AeronCluster implements AutoCloseable
 
     private long connectToCluster()
     {
-        final long correlationId = aeron.nextCorrelationId();
-        final byte[] credentialData = ctx.credentialProvider().connectRequestCredentialData();
+        final CredentialProvider credentialProvider = ctx.credentialProvider();
 
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
-            SessionConnectRequestEncoder.BLOCK_LENGTH +
-            SessionConnectRequestEncoder.responseChannelHeaderLength() +
-            ctx.egressChannel().length() +
-            SessionConnectRequestEncoder.credentialDataHeaderLength() +
-            credentialData.length;
+        final byte[] credentialData = credentialProvider.connectRequestCredentialData();
 
         final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
-        idleStrategy.reset();
 
-        while (true)
-        {
-            if (publication.tryClaim(length, bufferClaim) > 0)
-            {
-                new SessionConnectRequestEncoder()
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .responseStreamId(ctx.egressStreamId())
-                    .responseChannel(ctx.egressChannel())
-                    .putCredentialData(credentialData, 0, credentialData.length);
-
-                bufferClaim.commit();
-
-                break;
-            }
-            else if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("Failed to connect to cluster");
-            }
-
-            idleStrategy.idle();
-        }
+        long correlationId = sendConnectRequest(credentialData, deadlineNs);
 
         final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
 
@@ -327,14 +299,97 @@ public final class AeronCluster implements AutoCloseable
 
             if (poller.correlationId() == correlationId)
             {
-                if (poller.eventCode() == EventCode.ERROR)
+                if (poller.challenged())
+                {
+                    final byte[] challengeResponseCredentialData =
+                        credentialProvider.onChallenge(poller.challengeData());
+
+                    correlationId =
+                        sendChallengeResponse(poller.clusterSessionId(), challengeResponseCredentialData, deadlineNs);
+                }
+                else if (poller.eventCode() == EventCode.ERROR)
                 {
                     throw new IllegalStateException(poller.detail());
                 }
-
-                return poller.clusterSessionId();
+                else
+                {
+                    return poller.clusterSessionId();
+                }
             }
         }
+    }
+
+    private long sendConnectRequest(final byte[] credentialData, final long deadlineNs)
+    {
+        final long correlationId = aeron.nextCorrelationId();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            SessionConnectRequestEncoder.BLOCK_LENGTH +
+            SessionConnectRequestEncoder.responseChannelHeaderLength() +
+            ctx.egressChannel().length() +
+            SessionConnectRequestEncoder.credentialDataHeaderLength() +
+            credentialData.length;
+
+        idleStrategy.reset();
+
+        while (true)
+        {
+            if (publication.tryClaim(length, bufferClaim) > 0)
+            {
+                new SessionConnectRequestEncoder()
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .responseStreamId(ctx.egressStreamId())
+                    .responseChannel(ctx.egressChannel())
+                    .putCredentialData(credentialData, 0, credentialData.length);
+
+                bufferClaim.commit();
+
+                break;
+            }
+            else if (nanoClock.nanoTime() > deadlineNs)
+            {
+                throw new TimeoutException("Failed to connect to cluster");
+            }
+
+            idleStrategy.idle();
+        }
+
+        return correlationId;
+    }
+
+    private long sendChallengeResponse(final long sessionId, final byte[] credentialData, final long deadlineNs)
+    {
+        final long correlationId = aeron.nextCorrelationId();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            ChallengeResponseEncoder.BLOCK_LENGTH +
+            ChallengeResponseEncoder.credentialDataHeaderLength() +
+            credentialData.length;
+
+        idleStrategy.reset();
+
+        while (true)
+        {
+            if (publication.tryClaim(length, bufferClaim) > 0)
+            {
+                new ChallengeResponseEncoder()
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .clusterSessionId(sessionId)
+                    .putCredentialData(credentialData, 0, credentialData.length);
+
+                bufferClaim.commit();
+
+                break;
+            }
+            else if (nanoClock.nanoTime() > deadlineNs)
+            {
+                throw new TimeoutException("Failed to connect to cluster");
+            }
+
+            idleStrategy.idle();
+        }
+
+        return correlationId;
     }
 
     /**

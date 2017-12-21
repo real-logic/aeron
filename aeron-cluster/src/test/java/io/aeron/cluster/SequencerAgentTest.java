@@ -20,6 +20,7 @@ import io.aeron.Counter;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.codecs.ServiceAction;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -120,10 +121,10 @@ public class SequencerAgentTest
     @Test
     public void shouldTransitionStates()
     {
+        final MutableLong counterValue = new MutableLong(NEUTRAL.code());
         final Counter mockControlToggle = mock(Counter.class);
+        when(mockControlToggle.get()).thenReturn(counterValue.value);
         ctx.controlToggle(mockControlToggle);
-
-        when(mockControlToggle.get()).thenReturn(NEUTRAL.code());
 
         final SequencerAgent agent = newSequencerAgent();
         assertThat(agent.state(), is(SequencerAgent.State.INIT));
@@ -147,11 +148,14 @@ public class SequencerAgentTest
     @Test
     public void shouldAppendSnapshotRequest()
     {
+        final MutableLong counterValue = new MutableLong(SNAPSHOT.code());
         final Counter mockControlToggle = mock(Counter.class);
+        when(mockControlToggle.get()).thenReturn(counterValue.value);
+
         ctx.controlToggle(mockControlToggle);
         final SequencerAgent agent = newSequencerAgent();
+        agent.onActionAck(0L, ServiceAction.READY);
 
-        when(mockControlToggle.get()).thenReturn(SNAPSHOT.code());
         when(mockLogAppender.appendActionRequest(eq(ServiceAction.SNAPSHOT), anyLong())).thenReturn(Boolean.TRUE);
 
         agent.doWork();

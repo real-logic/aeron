@@ -248,7 +248,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     messageHeaderDecoder.version());
 
                 timestampMs = actionRequestDecoder.timestamp();
-                takeSnapshot(leadershipTermStartPosition + header.position());
+                executeAction(actionRequestDecoder.action(), header.position());
                 break;
             }
         }
@@ -526,7 +526,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
 
         recordingIndex.appendLog(recordingId, position, messageIndex);
-        acknowledge(ServiceAction.SNAPSHOT);
     }
 
     private void acknowledge(final ServiceAction action)
@@ -554,6 +553,35 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         while (--attempts > 0);
 
         throw new IllegalStateException("Failed to send ACK");
+    }
+
+    private void executeAction(final ServiceAction action, final long position)
+    {
+        if (State.REPLAY == state)
+        {
+            return;
+        }
+
+        switch (action)
+        {
+            case SNAPSHOT:
+                takeSnapshot(leadershipTermStartPosition + position);
+                acknowledge(ServiceAction.SNAPSHOT);
+                break;
+
+            case SHUTDOWN:
+                takeSnapshot(leadershipTermStartPosition + position);
+                acknowledge(ServiceAction.SHUTDOWN);
+                state = State.CLOSED;
+                ctx.shutdownSignalBarrier().signal();
+                break;
+
+            case ABORT:
+                acknowledge(ServiceAction.ABORT);
+                state = State.CLOSED;
+                ctx.shutdownSignalBarrier().signal();
+                break;
+        }
     }
 
     private void checkInterruptedStatus()

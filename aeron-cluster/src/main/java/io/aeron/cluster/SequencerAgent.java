@@ -35,7 +35,7 @@ class SequencerAgent implements Agent
 {
     enum State
     {
-        INIT, ACTIVE, SUSPENDED
+        INIT, ACTIVE, SUSPENDED, SNAPSHOT, SHUTDOWN, ABORT, CLOSED
     }
 
     /**
@@ -154,6 +154,11 @@ class SequencerAgent implements Agent
         switch (action)
         {
             case READY:
+                if (State.INIT != state)
+                {
+                    throw new IllegalStateException("Unexpected state: " + state);
+                }
+
                 if (servicesReadyCount >= ctx.serviceCount())
                 {
                     throw new IllegalStateException("Service count exceeded: " + servicesReadyCount);
@@ -164,12 +169,26 @@ class SequencerAgent implements Agent
                 break;
 
             case SNAPSHOT:
+                if (State.SNAPSHOT == state)
+                {
+                    state = State.ACTIVE;
+                }
                 break;
 
             case SHUTDOWN:
+                if (State.SHUTDOWN == state)
+                {
+                    state = State.CLOSED;
+                    ctx.shutdownSignalBarrier().signal();
+                }
                 break;
 
             case ABORT:
+                if (State.ABORT == state)
+                {
+                    state = State.CLOSED;
+                    ctx.shutdownSignalBarrier().signal();
+                }
                 break;
         }
     }
@@ -299,23 +318,43 @@ class SequencerAgent implements Agent
             return 0;
         }
 
-        if (SNAPSHOT.code() == toggleCode)
+        if (State.ABORT != state && ABORT.code() == toggleCode)
+        {
+            if (logAppender.appendActionRequest(ServiceAction.ABORT, nowMs))
+            {
+                state = State.ABORT;
+                return 1;
+            }
+        }
+
+        if (State.ACTIVE == state && SNAPSHOT.code() == toggleCode)
         {
             if (logAppender.appendActionRequest(ServiceAction.SNAPSHOT, nowMs))
             {
+                state = State.SNAPSHOT;
                 ClusterControl.Action.reset(controlToggle);
                 return 1;
             }
         }
 
-        if (SUSPEND.code() == toggleCode)
+        if (State.ACTIVE == state && SHUTDOWN.code() == toggleCode)
+        {
+            if (logAppender.appendActionRequest(ServiceAction.SHUTDOWN, nowMs))
+            {
+                state = State.SHUTDOWN;
+                ClusterControl.Action.reset(controlToggle);
+                return 1;
+            }
+        }
+
+        if (State.ACTIVE == state && SUSPEND.code() == toggleCode)
         {
             state = State.SUSPENDED;
             ClusterControl.Action.reset(controlToggle);
             return 1;
         }
 
-        if (RESUME.code() == toggleCode)
+        if (State.SUSPENDED == state && RESUME.code() == toggleCode)
         {
             state = State.ACTIVE;
             ClusterControl.Action.reset(controlToggle);

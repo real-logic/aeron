@@ -84,11 +84,6 @@ class ClusterSession implements AutoCloseable
         return lastCorrelationId;
     }
 
-    void lastCorrelationId(final long correlationId)
-    {
-        lastCorrelationId = correlationId;
-    }
-
     public String toString()
     {
         return "ClusterSession{" +

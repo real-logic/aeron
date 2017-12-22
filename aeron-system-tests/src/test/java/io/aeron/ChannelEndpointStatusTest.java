@@ -126,7 +126,7 @@ public class ChannelEndpointStatusTest
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 
-    @Test(timeout = 2000)
+    @Test(timeout = 5000)
     public void shouldBeAbleToQueryChannelStatusForSubscription() throws Exception
     {
         launch();
@@ -141,7 +141,7 @@ public class ChannelEndpointStatusTest
         assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
-    @Test(timeout = 2000)
+    @Test(timeout = 5000)
     public void shouldBeAbleToQueryChannelStatusForPublication() throws Exception
     {
         launch();
@@ -156,7 +156,7 @@ public class ChannelEndpointStatusTest
         assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
-    @Test(timeout = 2000)
+    @Test(timeout = 5000)
     public void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions()
     {
         launch();
@@ -164,7 +164,7 @@ public class ChannelEndpointStatusTest
         subscriptionA = clientA.addSubscription(URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(URI, STREAM_ID);
 
-        verify(errorHandlerClientB, timeout(1000)).onError(captorB.capture());
+        verify(errorHandlerClientB, timeout(3000)).onError(captorB.capture());
 
         assertThat(captorB.getValue(), instanceOf(ChannelEndpointException.class));
 
@@ -175,7 +175,7 @@ public class ChannelEndpointStatusTest
         assertThat(subscriptionB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
     }
 
-    @Test(timeout = 2000)
+    @Test(timeout = 5000)
     public void shouldCatchErrorOnAddressAlreadyInUseForPublications()
     {
         launch();
@@ -183,7 +183,7 @@ public class ChannelEndpointStatusTest
         publicationA = clientA.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
         publicationB = clientB.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
 
-        verify(errorHandlerClientB, timeout(1000)).onError(captorB.capture());
+        verify(errorHandlerClientB, timeout(3000)).onError(captorB.capture());
 
         assertThat(captorB.getValue(), instanceOf(ChannelEndpointException.class));
 
@@ -194,7 +194,7 @@ public class ChannelEndpointStatusTest
         assertThat(publicationB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
     }
 
-    @Test(timeout = 2000)
+    @Test(timeout = 5000)
     public void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscriptions()
     {
         launch();
@@ -203,7 +203,7 @@ public class ChannelEndpointStatusTest
         subscriptionB = clientB.addSubscription(URI_NO_CONFLICT, STREAM_ID);
         subscriptionC = clientC.addSubscription(URI, STREAM_ID);
 
-        verify(errorHandlerClientC, timeout(1000)).onError(captorC.capture());
-        verify(errorHandlerClientB, after(500).never()).onError(any());
+        verify(errorHandlerClientC, timeout(3000)).onError(captorC.capture());
+        verify(errorHandlerClientB, after(1000).never()).onError(any());
     }
 }

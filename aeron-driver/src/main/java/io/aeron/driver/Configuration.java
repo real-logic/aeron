@@ -805,20 +805,6 @@ public class Configuration
     }
 
     /**
-     * Validate that the initial window length is greater than MTU.
-     *
-     * @param initialWindowLength to be validated.
-     * @param mtuLength           against which to validate.
-     */
-    public static void validateInitialWindowLength(final int initialWindowLength, final int mtuLength)
-    {
-        if (mtuLength > initialWindowLength)
-        {
-            throw new IllegalStateException("Initial window length must be >= to MTU length: " + mtuLength);
-        }
-    }
-
-    /**
      * Get the {@link IdleStrategy} that should be applied to {@link org.agrona.concurrent.Agent}s.
      *
      * @param strategyName       of the class to be created.
@@ -1006,13 +992,27 @@ public class Configuration
     }
 
     /**
+     * Validate that the initial window length is greater than MTU.
+     *
+     * @param initialWindowLength to be validated.
+     * @param mtuLength           against which to validate.
+     */
+    static void validateInitialWindowLength(final int initialWindowLength, final int mtuLength)
+    {
+        if (mtuLength > initialWindowLength)
+        {
+            throw new IllegalStateException("Initial window length must be >= to MTU length: " + mtuLength);
+        }
+    }
+
+    /**
      * Validate the the MTU is an appropriate length. MTU lengths must be a multiple of
      * {@link FrameDescriptor#FRAME_ALIGNMENT}.
      *
      * @param mtuLength to be validated.
      * @throws ConfigurationException if the MTU length is not valid.
      */
-    public static void validateMtuLength(final int mtuLength)
+    static void validateMtuLength(final int mtuLength)
     {
         if (mtuLength < DataHeaderFlyweight.HEADER_LENGTH || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
         {
@@ -1091,7 +1091,7 @@ public class Configuration
      * @param pageSize to be checked.
      * @throws ConfigurationException if the size is not as expected.
      */
-    public static void validatePageSize(final int pageSize)
+    static void validatePageSize(final int pageSize)
     {
         if (pageSize < PAGE_MIN_SIZE)
         {

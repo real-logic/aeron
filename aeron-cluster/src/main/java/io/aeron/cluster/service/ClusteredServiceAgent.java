@@ -28,6 +28,7 @@ import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -38,6 +39,11 @@ import static io.aeron.CommonContext.SPY_PREFIX;
 
 public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, Cluster
 {
+    /**
+     * Type of snapshot for this agent.
+     */
+    public static final long SNAPSHOT_TYPE_ID = 1;
+
     /**
      * Length of the session header that will precede application protocol message.
      */
@@ -72,6 +78,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final ScheduleTimerRequestEncoder scheduleTimerRequestEncoder = new ScheduleTimerRequestEncoder();
     private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
     private final ServiceActionAckEncoder serviceActionAckEncoder = new ServiceActionAckEncoder();
+    private final ClientSessionEncoder clientSessionEncoder = new ClientSessionEncoder();
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final IdleStrategy idleStrategy;
@@ -110,15 +117,15 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     {
         service.onStart(this);
 
-        replayLogs();
+        recoverState();
 
         final long recordingId = findRecordingPositionCounter();
         recordingIndex.appendLog(recordingId, leadershipTermStartPosition, messageIndex);
 
         logImage = logSubscription.imageAtIndex(0);
-        state = State.LEADER;
+        state = State.LEADING;
 
-        acknowledge(ServiceAction.READY);
+        sendAcknowledgment(ServiceAction.READY);
     }
 
     public void onClose()
@@ -383,9 +390,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         return recordingId;
     }
 
-    private void replayLogs()
+    private void recoverState()
     {
-        state = State.REPLAY;
+        state = State.RECOVERING;
 
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
@@ -479,13 +486,16 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 throw new IllegalStateException("Only expected one replay");
             }
 
-            service.onLoadSnapshot(replaySubscription.imageAtIndex(0));
+
+            final Image snapshotImage = replaySubscription.imageAtIndex(0);
+            loadState(snapshotImage);
+            service.onLoadSnapshot(snapshotImage);
         }
     }
 
-    private void takeSnapshot(final long position)
+    private void onTakeSnapshot(final long position)
     {
-        state = State.SNAPSHOT;
+        state = State.SNAPSHOTTING;
         final long recordingId;
 
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
@@ -501,6 +511,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     idleStrategy.idle();
                 }
 
+                snapshotState(publication);
                 service.onTakeSnapshot(publication);
 
                 final CountersReader countersReader = aeron.countersReader();
@@ -522,13 +533,164 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
         finally
         {
-            state = State.LEADER;
+            state = State.LEADING;
         }
 
         recordingIndex.appendLog(recordingId, position, messageIndex);
     }
 
-    private void acknowledge(final ServiceAction action)
+    private void snapshotState(final Publication publication)
+    {
+        markSnapshot(publication, SnapshotMark.BEGIN);
+
+        for (final ClientSession clientSession : sessionByIdMap.values())
+        {
+            final String responseChannel = clientSession.responsePublication().channel();
+            final int responseStreamId = clientSession.responsePublication().streamId();
+            final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClientSessionEncoder.BLOCK_LENGTH +
+                ClientSessionEncoder.responseChannelHeaderLength() + responseChannel.length();
+
+            idleStrategy.reset();
+            while (true)
+            {
+                final long result = publication.tryClaim(length, bufferClaim);
+                if (result > 0)
+                {
+                    clientSessionEncoder
+                        .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                        .clusterSessionId(clientSession.id())
+                        .responseStreamId(responseStreamId)
+                        .responseChannel(responseChannel);
+
+                    bufferClaim.commit();
+                    break;
+                }
+
+                checkResult(result);
+                checkInterruptedStatus();
+                idleStrategy.idle();
+            }
+        }
+
+        markSnapshot(publication, SnapshotMark.END);
+    }
+
+    private void loadState(final Image image)
+    {
+        final MutableBoolean inSnapshot = new MutableBoolean(false);
+        final MutableBoolean isDone = new MutableBoolean(false);
+        final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
+        final ClientSessionDecoder clientSessionDecoder = new ClientSessionDecoder();
+
+        while (true)
+        {
+            final int fragmentsRead = image.controlledPoll(
+                (buffer, offset, length, header) ->
+                {
+                    messageHeaderDecoder.wrap(buffer, offset);
+
+                    final int templateId = messageHeaderDecoder.templateId();
+                    switch (templateId)
+                    {
+                        case SnapshotMarkerDecoder.TEMPLATE_ID:
+                            snapshotMarkerDecoder.wrap(
+                                buffer,
+                                offset,
+                                messageHeaderDecoder.blockLength(),
+                                messageHeaderDecoder.version());
+
+                            final long typeId = snapshotMarkerDecoder.typeId();
+                            if (typeId != SNAPSHOT_TYPE_ID)
+                            {
+                                throw new IllegalStateException("Unexpected snapshot type: " + typeId);
+                            }
+
+                            final SnapshotMark mark = snapshotMarkerDecoder.mark();
+                            if (!inSnapshot.get() && mark == SnapshotMark.BEGIN)
+                            {
+                                inSnapshot.set(true);
+                                return Action.BREAK;
+                            }
+                            else if (inSnapshot.get() && mark == SnapshotMark.END)
+                            {
+                                isDone.set(true);
+                            }
+                            else
+                            {
+                                throw new IllegalStateException("inSnapshot=" + inSnapshot + " mark=" + mark);
+                            }
+                            break;
+
+                        case ClientSessionDecoder.TEMPLATE_ID:
+                            clientSessionDecoder.wrap(
+                                buffer,
+                                offset,
+                                messageHeaderDecoder.blockLength(),
+                                messageHeaderDecoder.version());
+
+                            final long sessionId = clientSessionDecoder.clusterSessionId();
+                            sessionByIdMap.put(
+                                sessionId,
+                                new ClientSession(
+                                    sessionId,
+                                    aeron.addExclusivePublication(
+                                        clientSessionDecoder.responseChannel(),
+                                        clientSessionDecoder.responseStreamId()),
+                                    ClusteredServiceAgent.this));
+                            break;
+
+                        default:
+                            throw new IllegalStateException("Unknown template id: " + templateId);
+                    }
+
+                    return Action.CONTINUE;
+                },
+                FRAGMENT_LIMIT
+            );
+
+            if (isDone.get())
+            {
+                break;
+            }
+
+            if (0 == fragmentsRead)
+            {
+                checkInterruptedStatus();
+                idleStrategy.idle();
+            }
+            else
+            {
+                idleStrategy.reset();
+            }
+        }
+    }
+
+    private void markSnapshot(final Publication publication, final SnapshotMark snapshotMark)
+    {
+        idleStrategy.reset();
+        while (true)
+        {
+            final int length = MessageHeaderEncoder.ENCODED_LENGTH + SnapshotMarkerEncoder.BLOCK_LENGTH;
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                new SnapshotMarkerEncoder()
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .typeId(SNAPSHOT_TYPE_ID)
+                    .index(0)
+                    .mark(snapshotMark);
+
+                bufferClaim.commit();
+                break;
+            }
+
+            checkResult(result);
+            checkInterruptedStatus();
+            idleStrategy.idle();
+        }
+    }
+
+    private void sendAcknowledgment(final ServiceAction action)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionAckEncoder.BLOCK_LENGTH;
 
@@ -557,7 +719,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     private void executeAction(final ServiceAction action, final long position)
     {
-        if (State.REPLAY == state)
+        if (State.RECOVERING == state)
         {
             return;
         }
@@ -565,19 +727,19 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         switch (action)
         {
             case SNAPSHOT:
-                takeSnapshot(leadershipTermStartPosition + position);
-                acknowledge(ServiceAction.SNAPSHOT);
+                onTakeSnapshot(leadershipTermStartPosition + position);
+                sendAcknowledgment(ServiceAction.SNAPSHOT);
                 break;
 
             case SHUTDOWN:
-                takeSnapshot(leadershipTermStartPosition + position);
-                acknowledge(ServiceAction.SHUTDOWN);
+                onTakeSnapshot(leadershipTermStartPosition + position);
+                sendAcknowledgment(ServiceAction.SHUTDOWN);
                 state = State.CLOSED;
                 ctx.shutdownSignalBarrier().signal();
                 break;
 
             case ABORT:
-                acknowledge(ServiceAction.ABORT);
+                sendAcknowledgment(ServiceAction.ABORT);
                 state = State.CLOSED;
                 ctx.shutdownSignalBarrier().signal();
                 break;
@@ -589,6 +751,16 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         if (Thread.currentThread().isInterrupted())
         {
             throw new AgentTerminationException("Unexpected interrupt during operation");
+        }
+    }
+
+    private static void checkResult(final long result)
+    {
+        if (result == Publication.NOT_CONNECTED ||
+            result == Publication.CLOSED ||
+            result == Publication.MAX_POSITION_EXCEEDED)
+        {
+            throw new IllegalStateException("Unexpected publication state: " + result);
         }
     }
 }

@@ -33,24 +33,24 @@ public interface Cluster
         INIT,
 
         /**
-         * Replaying existing snapshots and logs to recover state.
+         * Recover state by loading latest snapshot and subsequent logs.
          */
-        REPLAY,
+        RECOVERING,
 
         /**
          * The cluster node is the active leader and responding to client sessions.
          */
-        LEADER,
+        LEADING,
 
         /**
          * The cluster node is an active follower and accumulates state but does not respond to client sessions.
          */
-        FOLLOWER,
+        FOLLOWING,
 
         /**
          * The cluster node is currently taking a snapshot.
          */
-        SNAPSHOT,
+        SNAPSHOTTING,
 
         /**
          * The cluster node has been closed.

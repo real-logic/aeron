@@ -31,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static io.aeron.archive.client.ArchiveProxy.DEFAULT_RETRY_ATTEMPTS;
+import static io.aeron.driver.Configuration.*;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
 
@@ -990,7 +991,8 @@ public class AeronArchive implements AutoCloseable
 
             if (null == idleStrategy)
             {
-                idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1_000_000);
+                idleStrategy = new BackoffIdleStrategy(
+                    IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
             }
 
             if (null == lock)

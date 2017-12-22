@@ -455,10 +455,10 @@ public class Configuration
 
     private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
-    static final long AGENT_IDLE_MAX_SPINS = 100;
-    static final long AGENT_IDLE_MAX_YIELDS = 100;
-    static final long AGENT_IDLE_MIN_PARK_NS = 1;
-    static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+    static final long IDLE_MAX_SPINS = 100;
+    static final long IDLE_MAX_YIELDS = 100;
+    static final long IDLE_MIN_PARK_NS = 1;
+    static final long IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(1000);
 
     private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
 
@@ -833,7 +833,7 @@ public class Configuration
         {
             case DEFAULT_IDLE_STRATEGY:
                 idleStrategy = new BackoffIdleStrategy(
-                    AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
+                    IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
                 break;
 
             case CONTROLLABLE_IDLE_STRATEGY:

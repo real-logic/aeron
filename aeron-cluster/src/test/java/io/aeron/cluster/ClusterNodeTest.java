@@ -61,7 +61,8 @@ public class ClusterNodeTest
             new Archive.Context()
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
-            new ConsensusModule.Context());
+            new ConsensusModule.Context()
+                .deleteDirOnStart(true));
     }
 
     @After
@@ -70,12 +71,13 @@ public class ClusterNodeTest
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
+        clusteredMediaDriver.consensusModule().context().deleteDirectory();
         clusteredMediaDriver.archive().context().deleteArchiveDirectory();
         clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
 
         if (null != container)
         {
-            container.context().deleteClusterDirectory();
+            container.context().deleteDirectory();
         }
     }
 

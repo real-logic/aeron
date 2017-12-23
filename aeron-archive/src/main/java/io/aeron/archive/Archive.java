@@ -160,7 +160,7 @@ public class Archive implements AutoCloseable
     public static class Configuration
     {
         public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archive.dir";
-        public static final String ARCHIVE_DIR_DEFAULT = "archive";
+        public static final String ARCHIVE_DIR_DEFAULT = "aeron-archive";
 
         public static final String SEGMENT_FILE_LENGTH_PROP_NAME = "aeron.archive.segment.file.length";
         public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;

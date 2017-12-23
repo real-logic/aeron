@@ -61,7 +61,8 @@ public class ClusterNodeRestartTest
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
-        container.context().deleteClusterDirectory();
+        container.context().deleteDirectory();
+        clusteredMediaDriver.consensusModule().context().deleteDirectory();
         clusteredMediaDriver.archive().context().deleteArchiveDirectory();
         clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }

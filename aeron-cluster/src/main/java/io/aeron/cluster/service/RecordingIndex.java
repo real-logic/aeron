@@ -28,7 +28,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.RECORDING_INDEX_FILE_NAME;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.*;
@@ -41,6 +40,11 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class RecordingIndex implements AutoCloseable
 {
+    /**
+     * Filename for the recording index for the history of log terms and snapshots.
+     */
+    public static final String RECORDING_INDEX_FILE_NAME = "recording-index.log";
+
     /**
      * The index entry is for a recording of messages to the consensus log.
      */
@@ -95,10 +99,10 @@ public class RecordingIndex implements AutoCloseable
     private final ByteBuffer buffer = ByteBuffer.allocate(RECORD_LENGTH);
     private FileChannel fileChannel;
 
-    public RecordingIndex(final File dir, final long serviceId)
+    public RecordingIndex(final File dir)
     {
-        recordingIndexFile = indexLocation(dir, serviceId, false);
-        newRecordingIndexFile = indexLocation(dir, serviceId, true);
+        recordingIndexFile = indexLocation(dir, false);
+        newRecordingIndexFile = indexLocation(dir, true);
 
         try
         {
@@ -197,11 +201,11 @@ public class RecordingIndex implements AutoCloseable
         append(RECORDING_TYPE_SNAPSHOT, recordingId, logPosition, messageIndex);
     }
 
-    private static File indexLocation(final File dir, final long serviceId, final boolean isTmp)
+    private static File indexLocation(final File dir, final boolean isTmp)
     {
         final String suffix = isTmp ? ".tmp" : "";
 
-        return new File(dir, Long.toString(serviceId) + "-" + RECORDING_INDEX_FILE_NAME + suffix);
+        return new File(dir, RECORDING_INDEX_FILE_NAME + suffix);
     }
 
     private void append(

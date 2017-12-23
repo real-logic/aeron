@@ -22,12 +22,12 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.control.ClusterControl;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
-import org.agrona.LangUtil;
+import io.aeron.cluster.service.RecordingIndex;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 
+import java.io.File;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -193,6 +193,16 @@ public class ConsensusModule implements
         public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;
 
         /**
+         * Directory to use for the aeron cluster.
+         */
+        public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
+
+        /**
+         * Directory to use for the aeron cluster.
+         */
+        public static final String CLUSTER_DIR_DEFAULT = "aeron-cluster";
+
+        /**
          * The number of services in this cluster instance.
          */
         public static final String SERVICE_COUNT_PROP_NAME = "aeron.cluster.service.count";
@@ -232,6 +242,16 @@ public class ConsensusModule implements
          * a non-authenticating option.
          */
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.cluster.DefaultAuthenticatorSupplier";
+
+        /**
+         * The value {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
+         */
+        public static String clusterDirName()
+        {
+            return System.getProperty(CLUSTER_DIR_PROP_NAME, CLUSTER_DIR_DEFAULT);
+        }
 
         /**
          * The value {@link #SERVICE_COUNT_DEFAULT} or system property
@@ -299,6 +319,10 @@ public class ConsensusModule implements
         private boolean ownsAeronClient = false;
         private Aeron aeron;
 
+        private boolean deleteDirOnStart = false;
+        private File clusterDir;
+        private RecordingIndex recordingIndex;
+
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private String logChannel = ClusteredServiceContainer.Configuration.logChannel();
@@ -327,8 +351,37 @@ public class ConsensusModule implements
         private AeronArchive.Context archiveContext;
         private AuthenticatorSupplier authenticatorSupplier;
 
+        @SuppressWarnings("MethodLength")
         public void conclude()
         {
+            if (deleteDirOnStart)
+            {
+                if (null != clusterDir)
+                {
+                    IoUtil.delete(clusterDir, true);
+                }
+                else
+                {
+                    IoUtil.delete(new File(Configuration.clusterDirName()), true);
+                }
+            }
+
+            if (null == clusterDir)
+            {
+                clusterDir = new File(Configuration.clusterDirName());
+            }
+
+            if (!clusterDir.exists() && !clusterDir.mkdirs())
+            {
+                throw new IllegalStateException(
+                    "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
+            }
+
+            if (null == recordingIndex)
+            {
+                recordingIndex = new RecordingIndex(clusterDir);
+            }
+
             if (null == errorHandler)
             {
                 throw new IllegalStateException("Error handler must be supplied");
@@ -414,6 +467,74 @@ public class ConsensusModule implements
             {
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
+        }
+
+        /**
+         * Should the consensus module attempt to immediately delete {@link #clusterDir()} on startup.
+         *
+         * @param deleteDirOnStart Attempt deletion.
+         * @return this for a fluent API.
+         */
+        public Context deleteDirOnStart(final boolean deleteDirOnStart)
+        {
+            this.deleteDirOnStart = deleteDirOnStart;
+            return this;
+        }
+
+        /**
+         * Will the consensus module attempt to immediately delete {@link #clusterDir()} on startup.
+         *
+         * @return true when directory will be deleted, otherwise false.
+         */
+        public boolean deleteDirOnStart()
+        {
+            return deleteDirOnStart;
+        }
+
+        /**
+         * Set the directory to use for the clustered service container.
+         *
+         * @param clusterDir to use.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public Context clusterDir(final File clusterDir)
+        {
+            this.clusterDir = clusterDir;
+            return this;
+        }
+
+        /**
+         * The directory used for the clustered service container.
+         *
+         * @return directory for the cluster container.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public File clusterDir()
+        {
+            return clusterDir;
+        }
+
+        /**
+         * Set the {@link RecordingIndex} for the log terms and snapshots.
+         *
+         * @param recordingIndex to use.
+         * @return this for a fluent API.
+         */
+        public Context recordingIndex(final RecordingIndex recordingIndex)
+        {
+            this.recordingIndex = recordingIndex;
+            return this;
+        }
+
+        /**
+         * The {@link RecordingIndex} for the log terms and snapshots.
+         *
+         * @return {@link RecordingIndex} for the  log terms and snapshots.
+         */
+        public RecordingIndex recordingIndex()
+        {
+            return recordingIndex;
         }
 
         /**
@@ -971,6 +1092,17 @@ public class ConsensusModule implements
         public ShutdownSignalBarrier shutdownSignalBarrier()
         {
             return shutdownSignalBarrier;
+        }
+
+        /**
+         * Delete the cluster directory.
+         */
+        public void deleteDirectory()
+        {
+            if (null != clusterDir)
+            {
+                IoUtil.delete(clusterDir, false);
+            }
         }
 
         /**

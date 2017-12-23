@@ -30,7 +30,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
-import static java.lang.System.getProperty;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 public final class ClusteredServiceContainer implements AutoCloseable
@@ -203,16 +202,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final int SNAPSHOT_STREAM_ID_DEFAULT = 6;
 
         /**
-         * Whether to start without any previous log or use any existing log.
-         */
-        public static final String DIR_DELETE_ON_START_PROP_NAME = "aeron.cluster.dir.delete.on.start";
-
-        /**
-         * Whether to start without any previous log or use any existing log.
-         */
-        public static final String DIR_DELETE_ON_START_DEFAULT = "false";
-
-        /**
          * Directory to use for the clustered service.
          */
         public static final String CLUSTERED_SERVICE_DIR_PROP_NAME = "aeron.clustered.service.dir";
@@ -220,12 +209,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Directory to use for the cluster container.
          */
-        public static final String CLUSTERED_SERVICE_DIR_DEFAULT = "cluster-service";
-
-        /**
-         * Filename for the recording index for the history of log terms and snapshots.
-         */
-        public static final String RECORDING_INDEX_FILE_NAME = "recording-index.log";
+        public static final String CLUSTERED_SERVICE_DIR_DEFAULT = "clustered-service";
 
         /**
          * The value {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
@@ -343,16 +327,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The value {@link #DIR_DELETE_ON_START_DEFAULT} or system property {@link #DIR_DELETE_ON_START_PROP_NAME} if set.
-         *
-         * @return {@link #DIR_DELETE_ON_START_DEFAULT} or system property {@link #DIR_DELETE_ON_START_PROP_NAME} if set.
-         */
-        public static boolean deleteDirOnStart()
-        {
-            return "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_START_PROP_NAME, DIR_DELETE_ON_START_DEFAULT));
-        }
-
-        /**
          * The value {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
          *
          * @return {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
@@ -374,7 +348,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private int consensusModuleStreamId = Configuration.consensusModuleStreamId();
         private String snapshotChannel = Configuration.snapshotChannel();
         private int snapshotStreamId = Configuration.snapshotStreamId();
-        private boolean deleteDirOnStart = Configuration.deleteDirOnStart();
+        private boolean deleteDirOnStart = false;
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -470,13 +444,13 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (!clusteredServiceDir.exists() && !clusteredServiceDir.mkdirs())
             {
-                throw new IllegalArgumentException(
+                throw new IllegalStateException(
                     "Failed to create clustered service dir: " + clusteredServiceDir.getAbsolutePath());
             }
 
             if (null == recordingIndex)
             {
-                recordingIndex = new RecordingIndex(clusteredServiceDir, serviceId);
+                recordingIndex = new RecordingIndex(clusteredServiceDir);
             }
 
             if (null == shutdownSignalBarrier)
@@ -950,7 +924,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @param deleteDirOnStart Attempt deletion.
          * @return this for a fluent API.
-         * @see Configuration#DIR_DELETE_ON_START_PROP_NAME
          */
         public Context deleteDirOnStart(final boolean deleteDirOnStart)
         {
@@ -959,10 +932,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Will the driver attempt to immediately delete {@link #clusteredServiceDir()} on startup.
+         * Will the container attempt to immediately delete {@link #clusteredServiceDir()} on startup.
          *
          * @return true when directory will be deleted, otherwise false.
-         * @see Configuration#DIR_DELETE_ON_START_PROP_NAME
          */
         public boolean deleteDirOnStart()
         {
@@ -972,13 +944,13 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Set the directory to use for the clustered service container.
          *
-         * @param clusterDir to use.
+         * @param dir to use.
          * @return this for a fluent API.
          * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
          */
-        public Context clusteredServiceDir(final File clusterDir)
+        public Context clusteredServiceDir(final File dir)
         {
-            this.clusteredServiceDir = clusterDir;
+            this.clusteredServiceDir = dir;
             return this;
         }
 
@@ -994,7 +966,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the {@link RecordingIndex} for the cluster service.
+         * Set the {@link RecordingIndex} for the  log terms and snapshots.
          *
          * @param recordingIndex to use.
          * @return this for a fluent API.
@@ -1006,9 +978,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The {@link RecordingIndex} for the cluster service.
+         * The {@link RecordingIndex} for the  log terms and snapshots.
          *
-         * @return {@link RecordingIndex} for the cluster service.
+         * @return {@link RecordingIndex} for the  log terms and snapshots.
          */
         public RecordingIndex recordingIndex()
         {
@@ -1040,7 +1012,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Delete the cluster container directory.
          */
-        public void deleteClusterDirectory()
+        public void deleteDirectory()
         {
             if (null != clusteredServiceDir)
             {

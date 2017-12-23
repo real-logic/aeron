@@ -25,7 +25,6 @@ import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -67,7 +66,7 @@ class SequencerAgent implements Agent
     private final LogAppender logAppender;
     private final Counter messageIndex;
     private final Counter controlToggle;
-    private final ClusterSessionSupplier clusterSessionSupplier;
+    private final ClusterSessionSupplier sessionSupplier;
     private final Long2ObjectHashMap<ClusterSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
@@ -95,7 +94,7 @@ class SequencerAgent implements Agent
         this.messageIndex = ctx.messageIndex();
         this.controlToggle = ctx.controlToggle();
         this.logAppender = logAppender;
-        this.clusterSessionSupplier = clusterSessionSupplier;
+        this.sessionSupplier = clusterSessionSupplier;
         this.sessionProxy = new SessionProxy(egressPublisher);
 
         ingressAdapter = ingressAdapterSupplier.newIngressAdapter(this);
@@ -204,8 +203,7 @@ class SequencerAgent implements Agent
     {
         final long nowMs = cachedEpochClock.time();
         final long sessionId = nextSessionId++;
-        final ClusterSession session = clusterSessionSupplier.newClusterSession(
-            sessionId, responseStreamId, responseChannel);
+        final ClusterSession session = sessionSupplier.newClusterSession(sessionId, responseStreamId, responseChannel);
         session.lastActivity(nowMs, correlationId);
 
         authenticator.onConnectRequest(sessionId, credentialData, nowMs);

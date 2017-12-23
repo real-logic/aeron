@@ -84,8 +84,8 @@ public class SequencerAgentTest
         agent.doWork();
 
         verifyNoMoreInteractions(mockLogAppender);
-        verify(mockEgressPublisher)
-            .sendEvent(any(ClusterSession.class), eq(EventCode.ERROR), eq(SequencerAgent.SESSION_LIMIT_MSG));
+        verify(mockEgressPublisher).sendEvent(
+            any(ClusterSession.class), eq(EventCode.ERROR), eq(ConsensusModule.Configuration.SESSION_LIMIT_MSG));
     }
 
     @Test
@@ -118,8 +118,8 @@ public class SequencerAgentTest
         agent.doWork();
 
         verify(mockLogAppender).appendClosedSession(any(ClusterSession.class), eq(CloseReason.TIMEOUT), eq(timeoutMs));
-        verify(mockEgressPublisher)
-            .sendEvent(any(ClusterSession.class), eq(EventCode.ERROR), eq(SequencerAgent.SESSION_TIMEOUT_MSG));
+        verify(mockEgressPublisher).sendEvent(
+            any(ClusterSession.class), eq(EventCode.ERROR), eq(ConsensusModule.Configuration.SESSION_TIMEOUT_MSG));
     }
 
     @Test

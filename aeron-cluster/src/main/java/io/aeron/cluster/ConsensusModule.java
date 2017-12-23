@@ -173,6 +173,21 @@ public class ConsensusModule implements
     public static class Configuration
     {
         /**
+         * Message detail to be sent when max concurrent session limit is reached.
+         */
+        public static final String SESSION_LIMIT_MSG = "Concurrent session limit";
+
+        /**
+         * Message detail to be sent when a session timeout occurs.
+         */
+        public static final String SESSION_TIMEOUT_MSG = "Session inactive";
+
+        /**
+         * Message detail to be sent when a session is rejected due to authentication.
+         */
+        public static final String SESSION_REJECTED_MSG = "Session failed authentication";
+
+        /**
          * Counter type id for the consensus module state.
          */
         public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;

@@ -29,26 +29,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import static io.aeron.cluster.ClusterSession.State.*;
+import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.control.ClusterControl.Action.*;
 
 class SequencerAgent implements Agent
 {
-
-    /**
-     * Message detail to be sent when max concurrent session limit is reached.
-     */
-    public static final String SESSION_LIMIT_MSG = "Concurrent session limit";
-
-    /**
-     * Message detail to be sent when a session timeout occurs.
-     */
-    public static final String SESSION_TIMEOUT_MSG = "Session inactive";
-
-    /**
-     * Message detail to be sent when a session is rejected due to authentication.
-     */
-    public static final String SESSION_REJECTED_MSG = "Session failed authentication";
-
     private final long sessionTimeoutMs;
     private long nextSessionId = 1;
     private int servicesReadyCount = 0;
@@ -427,12 +412,12 @@ class SequencerAgent implements Agent
         for (int lastIndex = rejectedSessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final ClusterSession session = rejectedSessions.get(i);
-            String detail = SESSION_LIMIT_MSG;
+            String detail = ConsensusModule.Configuration.SESSION_LIMIT_MSG;
             EventCode eventCode = EventCode.ERROR;
 
             if (session.state() == REJECTED)
             {
-                detail = SESSION_REJECTED_MSG;
+                detail = ConsensusModule.Configuration.SESSION_REJECTED_MSG;
                 eventCode = EventCode.AUTHENTICATION_REJECTED;
             }
 

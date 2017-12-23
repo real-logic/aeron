@@ -24,8 +24,7 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -58,21 +57,15 @@ public class ChannelEndpointStatusTest
     private Aeron clientC;
     private MediaDriver driverA;
     private MediaDriver driverB;
-    private Publication publicationA;
-    private Publication publicationB;
-    private Subscription subscriptionA;
-    private Subscription subscriptionB;
-    private Subscription subscriptionC;
 
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
 
     private ErrorHandler errorHandlerClientA = mock(ErrorHandler.class);
     private ErrorHandler errorHandlerClientB = mock(ErrorHandler.class);
     private ErrorHandler errorHandlerClientC = mock(ErrorHandler.class);
-    private ArgumentCaptor<Throwable> captorB = ArgumentCaptor.forClass(Throwable.class);
-    private ArgumentCaptor<Throwable> captorC = ArgumentCaptor.forClass(Throwable.class);
 
-    private void launch()
+    @Before
+    public void before()
     {
         final String baseDirA = ROOT_DIR + "A";
         final String baseDirB = ROOT_DIR + "B";
@@ -91,6 +84,7 @@ public class ChannelEndpointStatusTest
 
         driverA = MediaDriver.launch(driverAContext);
         driverB = MediaDriver.launch(driverBContext);
+
         clientA = Aeron.connect(
             new Aeron.Context()
                 .aeronDirectoryName(driverAContext.aeronDirectoryName())
@@ -110,12 +104,6 @@ public class ChannelEndpointStatusTest
     @After
     public void closeEverything()
     {
-        CloseHelper.quietClose(publicationA);
-        CloseHelper.quietClose(publicationB);
-        CloseHelper.quietClose(subscriptionA);
-        CloseHelper.quietClose(subscriptionB);
-        CloseHelper.quietClose(subscriptionC);
-
         CloseHelper.quietClose(clientC);
         CloseHelper.quietClose(clientB);
         CloseHelper.quietClose(clientA);
@@ -123,87 +111,90 @@ public class ChannelEndpointStatusTest
         driverB.close();
         driverA.close();
 
-        IoUtil.delete(new File(ROOT_DIR), true);
+        IoUtil.delete(new File(ROOT_DIR), false);
     }
 
     @Test(timeout = 5000)
     public void shouldBeAbleToQueryChannelStatusForSubscription() throws Exception
     {
-        launch();
+        final Subscription subscription = clientA.addSubscription(URI, STREAM_ID);
 
-        subscriptionA = clientA.addSubscription(URI, STREAM_ID);
-
-        while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+        while (subscription.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
             Thread.sleep(1);
         }
 
-        assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
+        assertThat(subscription.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
     @Test(timeout = 5000)
     public void shouldBeAbleToQueryChannelStatusForPublication() throws Exception
     {
-        launch();
+        final Publication publication = clientA.addPublication(URI, STREAM_ID);
 
-        publicationA = clientA.addPublication(URI, STREAM_ID);
-
-        while (publicationA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+        while (publication.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
             Thread.sleep(1);
         }
 
-        assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
+        assertThat(publication.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
-    @Test(timeout = 5000)
+    @Test
     public void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions()
     {
-        launch();
+        final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
+        final Subscription subscriptionB = clientB.addSubscription(URI, STREAM_ID);
 
-        subscriptionA = clientA.addSubscription(URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(URI, STREAM_ID);
+        final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
+        verify(errorHandlerClientB, timeout(5000)).onError(captor.capture());
 
-        verify(errorHandlerClientB, timeout(3000)).onError(captorB.capture());
+        assertThat(captor.getValue(), instanceOf(ChannelEndpointException.class));
 
-        assertThat(captorB.getValue(), instanceOf(ChannelEndpointException.class));
-
-        final ChannelEndpointException channelEndpointException = (ChannelEndpointException)captorB.getValue();
+        final ChannelEndpointException channelEndpointException = (ChannelEndpointException)captor.getValue();
         final long status = clientB.countersReader().getCounterValue(channelEndpointException.statusIndicatorId());
 
         assertThat(status, is(ChannelEndpointStatus.ERRORED));
         assertThat(subscriptionB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
+        assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
-    @Test(timeout = 5000)
+    @Test
     public void shouldCatchErrorOnAddressAlreadyInUseForPublications()
     {
-        launch();
+        final Publication publicationA = clientA.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
+        final Publication publicationB = clientB.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
 
-        publicationA = clientA.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
-        publicationB = clientB.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
+        final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
+        verify(errorHandlerClientB, timeout(5000)).onError(captor.capture());
 
-        verify(errorHandlerClientB, timeout(3000)).onError(captorB.capture());
+        assertThat(captor.getValue(), instanceOf(ChannelEndpointException.class));
 
-        assertThat(captorB.getValue(), instanceOf(ChannelEndpointException.class));
-
-        final ChannelEndpointException channelEndpointException = (ChannelEndpointException)captorB.getValue();
+        final ChannelEndpointException channelEndpointException = (ChannelEndpointException)captor.getValue();
         final long status = clientB.countersReader().getCounterValue(channelEndpointException.statusIndicatorId());
 
         assertThat(status, is(ChannelEndpointStatus.ERRORED));
         assertThat(publicationB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
+        assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
-    @Test(timeout = 5000)
+    @Test
     public void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscriptions()
+        throws InterruptedException
     {
-        launch();
+        final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
+        final Subscription subscriptionB = clientB.addSubscription(URI_NO_CONFLICT, STREAM_ID);
+        final Subscription subscriptionC = clientC.addSubscription(URI, STREAM_ID);
 
-        subscriptionA = clientA.addSubscription(URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(URI_NO_CONFLICT, STREAM_ID);
-        subscriptionC = clientC.addSubscription(URI, STREAM_ID);
+        verify(errorHandlerClientC, timeout(5000)).onError(any(ChannelEndpointException.class));
+        assertThat(subscriptionC.channelStatus(), is(ChannelEndpointStatus.ERRORED));
 
-        verify(errorHandlerClientC, timeout(3000)).onError(captorC.capture());
-        verify(errorHandlerClientB, after(1000).never()).onError(any());
+        while (subscriptionB.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+        {
+            Thread.sleep(1);
+        }
+
+        assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
+        assertThat(subscriptionB.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 }

@@ -32,6 +32,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static io.aeron.cluster.ConsensusModule.Configuration.CONSENSUS_MODULE_STATE_TYPE_ID;
 import static io.aeron.cluster.control.ClusterControl.CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
@@ -43,6 +44,26 @@ public class ConsensusModule implements
     ClusterSessionSupplier,
     ConsensusModuleAdapterSupplier
 {
+    /**
+     * Possible states for the consensus module. These will be reflected in the {@link Context#moduleState()} counter.
+     */
+    public enum State
+    {
+        INIT(0), ACTIVE(1), SUSPENDED(2), SNAPSHOT(3), SHUTDOWN(4), ABORT(5), CLOSED(6);
+
+        private final long code;
+
+        State(final long code)
+        {
+            this.code = code;
+        }
+
+        public final long code()
+        {
+            return code;
+        }
+    }
+
     private static final int FRAGMENT_POLL_LIMIT = 10;
     private static final int TIMER_POLL_LIMIT = 10;
 
@@ -151,6 +172,11 @@ public class ConsensusModule implements
      */
     public static class Configuration
     {
+        /**
+         * Counter type id for the consensus module state.
+         */
+        public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;
+
         /**
          * The number of services in this cluster instance.
          */
@@ -279,6 +305,7 @@ public class ConsensusModule implements
         private CountedErrorHandler countedErrorHandler;
 
         private Counter messageIndex;
+        private Counter moduleState;
         private Counter controlToggle;
         private ShutdownSignalBarrier shutdownSignalBarrier;
 
@@ -336,6 +363,11 @@ public class ConsensusModule implements
             if (null == messageIndex)
             {
                 messageIndex = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
+            }
+
+            if (null == moduleState)
+            {
+                moduleState = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus Module state");
             }
 
             if (null == controlToggle)
@@ -762,6 +794,30 @@ public class ConsensusModule implements
         }
 
         /**
+         * Get the counter for the current state of the consensus module.
+         *
+         * @return the counter for the current state of the consensus module.
+         * @see State
+         */
+        public Counter moduleState()
+        {
+            return moduleState;
+        }
+
+        /**
+         * Set the counter for the current state of the consensus module.
+         *
+         * @param moduleState the counter for the current state of the consensus module.t
+         * @return this for a fluent API.
+         * @see State
+         */
+        public Context moduleState(final Counter moduleState)
+        {
+            this.moduleState = moduleState;
+            return this;
+        }
+
+        /**
          * Get the counter for the control toggle for triggering actions on the cluster node.
          *
          * @return the counter for triggering cluster node actions.
@@ -916,6 +972,7 @@ public class ConsensusModule implements
             else
             {
                 CloseHelper.close(messageIndex);
+                CloseHelper.close(moduleState);
                 CloseHelper.close(controlToggle);
             }
         }

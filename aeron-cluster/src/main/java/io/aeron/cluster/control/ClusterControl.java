@@ -87,7 +87,7 @@ public class ClusterControl
          * @param controlToggle to change to the trigger state.
          * @return true if the counter toggles or false if it is in a state other than {@link Action#NEUTRAL}.
          */
-        public boolean toggle(final AtomicCounter controlToggle)
+        public final boolean toggle(final AtomicCounter controlToggle)
         {
             return controlToggle.compareAndSet(NEUTRAL.code(), code());
         }
@@ -107,7 +107,7 @@ public class ClusterControl
          *
          * @return code to be used as the indicator in the control toggle counter.
          */
-        public long code()
+        public final long code()
         {
             return code;
         }
@@ -116,7 +116,7 @@ public class ClusterControl
     /**
      * Counter type id for the control toggle.
      */
-    public static final int CONTROL_TOGGLE_TYPE_ID = 200;
+    public static final int CONTROL_TOGGLE_TYPE_ID = 201;
 
     /**
      * Map a {@link CountersReader} over the default location CnC file.

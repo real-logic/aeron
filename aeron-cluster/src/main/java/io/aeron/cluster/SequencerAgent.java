@@ -33,10 +33,6 @@ import static io.aeron.cluster.control.ClusterControl.Action.*;
 
 class SequencerAgent implements Agent
 {
-    enum State
-    {
-        INIT, ACTIVE, SUSPENDED, SNAPSHOT, SHUTDOWN, ABORT, CLOSED
-    }
 
     /**
      * Message detail to be sent when max concurrent session limit is reached.
@@ -65,6 +61,7 @@ class SequencerAgent implements Agent
     private final EgressPublisher egressPublisher;
     private final LogAppender logAppender;
     private final Counter messageIndex;
+    private final Counter moduleState;
     private final Counter controlToggle;
     private final ClusterSessionSupplier sessionSupplier;
     private final Long2ObjectHashMap<ClusterSession> sessionByIdMap = new Long2ObjectHashMap<>();
@@ -73,7 +70,7 @@ class SequencerAgent implements Agent
     private final ConsensusModule.Context ctx;
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
-    private State state = State.INIT;
+    private ConsensusModule.State state = ConsensusModule.State.INIT;
 
     // TODO: last message correlation id per session counter
 
@@ -92,6 +89,7 @@ class SequencerAgent implements Agent
         this.sessionTimeoutMs = ctx.sessionTimeoutNs() / 1000;
         this.egressPublisher = egressPublisher;
         this.messageIndex = ctx.messageIndex();
+        this.moduleState = ctx.moduleState();
         this.controlToggle = ctx.controlToggle();
         this.logAppender = logAppender;
         this.sessionSupplier = clusterSessionSupplier;
@@ -133,7 +131,7 @@ class SequencerAgent implements Agent
         workCount += checkControlToggle(nowMs);
         workCount += consensusModuleAdapter.poll();
 
-        if (State.ACTIVE == state)
+        if (ConsensusModule.State.ACTIVE == state)
         {
             workCount += processPendingSessions(pendingSessions, nowMs);
             workCount += timerService.poll(nowMs);
@@ -156,7 +154,7 @@ class SequencerAgent implements Agent
         switch (action)
         {
             case READY:
-                if (State.INIT != state)
+                if (ConsensusModule.State.INIT != state)
                 {
                     throw new IllegalStateException("Unexpected state: " + state);
                 }
@@ -167,28 +165,28 @@ class SequencerAgent implements Agent
                 }
 
                 ++servicesReadyCount;
-                state = State.ACTIVE;
+                state(ConsensusModule.State.ACTIVE);
                 break;
 
             case SNAPSHOT:
-                if (State.SNAPSHOT == state)
+                if (ConsensusModule.State.SNAPSHOT == state)
                 {
-                    state = State.ACTIVE;
+                    state(ConsensusModule.State.ACTIVE);
                 }
                 break;
 
             case SHUTDOWN:
-                if (State.SHUTDOWN == state)
+                if (ConsensusModule.State.SHUTDOWN == state)
                 {
-                    state = State.CLOSED;
+                    state(ConsensusModule.State.CLOSED);
                     ctx.shutdownSignalBarrier().signal();
                 }
                 break;
 
             case ABORT:
-                if (State.ABORT == state)
+                if (ConsensusModule.State.ABORT == state)
                 {
-                    state = State.CLOSED;
+                    state(ConsensusModule.State.CLOSED);
                     ctx.shutdownSignalBarrier().signal();
                 }
                 break;
@@ -305,9 +303,10 @@ class SequencerAgent implements Agent
         timerService.cancelTimer(correlationId);
     }
 
-    State state()
+    private void state(final ConsensusModule.State state)
     {
-        return state;
+        this.state = state;
+        moduleState.set(state.code());
     }
 
     private int checkControlToggle(final long nowMs)
@@ -319,45 +318,45 @@ class SequencerAgent implements Agent
             return 0;
         }
 
-        if (State.ABORT != state && ABORT.code() == toggleCode)
+        if (ConsensusModule.State.ABORT != state && ABORT.code() == toggleCode)
         {
             if (logAppender.appendActionRequest(ServiceAction.ABORT, nowMs))
             {
-                state = State.ABORT;
+                state(ConsensusModule.State.ABORT);
                 return 1;
             }
         }
 
-        if (State.ACTIVE == state && SNAPSHOT.code() == toggleCode)
+        if (ConsensusModule.State.ACTIVE == state && SNAPSHOT.code() == toggleCode)
         {
             if (logAppender.appendActionRequest(ServiceAction.SNAPSHOT, nowMs))
             {
-                state = State.SNAPSHOT;
+                state(ConsensusModule.State.SNAPSHOT);
                 ClusterControl.Action.reset(controlToggle);
                 return 1;
             }
         }
 
-        if (State.ACTIVE == state && SHUTDOWN.code() == toggleCode)
+        if (ConsensusModule.State.ACTIVE == state && SHUTDOWN.code() == toggleCode)
         {
             if (logAppender.appendActionRequest(ServiceAction.SHUTDOWN, nowMs))
             {
-                state = State.SHUTDOWN;
+                state(ConsensusModule.State.SHUTDOWN);
                 ClusterControl.Action.reset(controlToggle);
                 return 1;
             }
         }
 
-        if (State.ACTIVE == state && SUSPEND.code() == toggleCode)
+        if (ConsensusModule.State.ACTIVE == state && SUSPEND.code() == toggleCode)
         {
-            state = State.SUSPENDED;
+            state(ConsensusModule.State.SUSPENDED);
             ClusterControl.Action.reset(controlToggle);
             return 1;
         }
 
-        if (State.SUSPENDED == state && RESUME.code() == toggleCode)
+        if (ConsensusModule.State.SUSPENDED == state && RESUME.code() == toggleCode)
         {
-            state = State.ACTIVE;
+            state(ConsensusModule.State.ACTIVE);
             ClusterControl.Action.reset(controlToggle);
             return 1;
         }

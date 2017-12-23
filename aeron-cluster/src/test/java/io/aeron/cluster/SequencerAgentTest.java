@@ -49,6 +49,7 @@ public class SequencerAgentTest
         .errorCounter(mock(AtomicCounter.class))
         .errorHandler(Throwable::printStackTrace)
         .messageIndex(mock(Counter.class))
+        .moduleState(mock(Counter.class))
         .controlToggle(mock(Counter.class))
         .aeron(mock(Aeron.class))
         .epochClock(new SystemEpochClock())
@@ -122,30 +123,51 @@ public class SequencerAgentTest
     }
 
     @Test
-    public void shouldTransitionStates()
+    public void shouldSuspendThenResume()
     {
-        final MutableLong counterValue = new MutableLong(NEUTRAL.code());
+        final MutableLong stateValue = new MutableLong();
+        final Counter mockState = mock(Counter.class);
+        when(mockState.get()).thenAnswer((invocation) -> stateValue.value);
+        doAnswer(
+            (invocation) ->
+            {
+                stateValue.value = invocation.getArgument(0);
+                return null;
+            })
+            .when(mockState).set(anyLong());
+
+        ctx.moduleState(mockState);
+
+        final MutableLong controlValue = new MutableLong(NEUTRAL.code());
         final Counter mockControlToggle = mock(Counter.class);
-        when(mockControlToggle.get()).thenReturn(counterValue.value);
+        when(mockControlToggle.get()).thenAnswer((invocation) -> controlValue.value);
+        doAnswer(
+            (invocation) ->
+            {
+                controlValue.value = invocation.getArgument(0);
+                return null;
+            })
+            .when(mockControlToggle).set(anyLong());
+
         ctx.controlToggle(mockControlToggle);
 
         final SequencerAgent agent = newSequencerAgent();
-        assertThat(agent.state(), is(SequencerAgent.State.INIT));
+        assertThat(stateValue.get(), is(ConsensusModule.State.INIT.code()));
 
         agent.onActionAck(0L, ServiceAction.READY);
-        assertThat(agent.state(), is(SequencerAgent.State.ACTIVE));
+        assertThat(stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
 
-        when(mockControlToggle.get()).thenReturn(SUSPEND.code());
+        controlValue.value = SUSPEND.code();
         agent.doWork();
 
-        assertThat(agent.state(), is(SequencerAgent.State.SUSPENDED));
-        verify(mockControlToggle).set(NEUTRAL.code());
+        assertThat(stateValue.get(), is(ConsensusModule.State.SUSPENDED.code()));
+        assertThat(controlValue.get(), is(NEUTRAL.code()));
 
-        when(mockControlToggle.get()).thenReturn(RESUME.code());
+        controlValue.value = RESUME.code();
         agent.doWork();
 
-        assertThat(agent.state(), is(SequencerAgent.State.ACTIVE));
-        verify(mockControlToggle, times(2)).set(NEUTRAL.code());
+        assertThat(stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
+        assertThat(controlValue.get(), is(NEUTRAL.code()));
     }
 
     @Test

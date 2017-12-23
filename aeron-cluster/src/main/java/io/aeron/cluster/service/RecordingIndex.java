@@ -35,20 +35,45 @@ import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * An index of recording that make up the history of a log. Recordings are in chronological order.
+ * An index of recordings that make up the history of a Raft log. Recordings are in chronological order.
  * <p>
- * The index is made up of log terms with optional snapshots to roll up state across one or more terms.
+ * The index is made up of log terms with optional snapshots to roll up state as of a log position and message index.
  */
 public class RecordingIndex implements AutoCloseable
 {
+    /**
+     * The index entry is for a recording of messages to the consensus log.
+     */
     public static final int RECORDING_TYPE_LOG = 0;
+
+    /**
+     * The index entry is for a recording of a snapshot of state taken as of a position in the log.
+     */
     public static final int RECORDING_TYPE_SNAPSHOT = 1;
 
-    private static final int RECORDING_ID_OFFSET = 0;
-    private static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
-    private static final int MESSAGE_INDEX_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
-    private static final int RECORD_TYPE_OFFSET = MESSAGE_INDEX_OFFSET + SIZE_OF_LONG;
+    /**
+     * The offset at which the recording id for the entry is stored.
+     */
+    public static final int RECORDING_ID_OFFSET = 0;
 
+    /**
+     * The offset at which the absolute log position for the entry is stored.
+     */
+    public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
+
+    /**
+     * The offset at which the message index for the entry is stored.
+     */
+    public static final int MESSAGE_INDEX_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
+
+    /**
+     * The offset at which the type of the record entry is stored.
+     */
+    public static final int RECORD_TYPE_OFFSET = MESSAGE_INDEX_OFFSET + SIZE_OF_LONG;
+
+    /**
+     * The length of each entry.
+     */
     private static final int RECORD_LENGTH = BitUtil.align(RECORD_TYPE_OFFSET + SIZE_OF_LONG, SIZE_OF_LONG);
 
     @FunctionalInterface
@@ -83,6 +108,11 @@ public class RecordingIndex implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    public void close()
+    {
+        CloseHelper.close(fileChannel);
     }
 
     /**
@@ -144,7 +174,7 @@ public class RecordingIndex implements AutoCloseable
     }
 
     /**
-     * Append an index entry for a raft term.
+     * Append an index entry for a Raft term.
      *
      * @param recordingId  in the archive for the term.
      * @param logPosition  reached at the beginning of the term.
@@ -167,16 +197,11 @@ public class RecordingIndex implements AutoCloseable
         append(RECORDING_TYPE_SNAPSHOT, recordingId, logPosition, messageIndex);
     }
 
-    public static File indexLocation(final File dir, final long serviceId, final boolean isTmp)
+    private static File indexLocation(final File dir, final long serviceId, final boolean isTmp)
     {
         final String suffix = isTmp ? ".tmp" : "";
 
         return new File(dir, Long.toString(serviceId) + "-" + RECORDING_INDEX_FILE_NAME + suffix);
-    }
-
-    public void close()
-    {
-        CloseHelper.quietClose(fileChannel);
     }
 
     private void append(
@@ -213,11 +238,11 @@ public class RecordingIndex implements AutoCloseable
         }
     }
 
-    private static int findOffsetOfLatestSnapshot(final UnsafeBuffer unsafeBuffer)
+    private static int findOffsetOfLatestSnapshot(final UnsafeBuffer buffer)
     {
-        for (int i = unsafeBuffer.capacity() - RECORD_LENGTH; i >= 0; i -= RECORD_LENGTH)
+        for (int i = buffer.capacity() - RECORD_LENGTH; i >= 0; i -= RECORD_LENGTH)
         {
-            if (unsafeBuffer.getLong(i + RECORD_TYPE_OFFSET) == RECORDING_TYPE_SNAPSHOT)
+            if (buffer.getLong(i + RECORD_TYPE_OFFSET) == RECORDING_TYPE_SNAPSHOT)
             {
                 return i;
             }

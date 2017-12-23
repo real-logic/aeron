@@ -213,17 +213,17 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String DIR_DELETE_ON_START_DEFAULT = "false";
 
         /**
-         * Directory to use for the cluster container.
+         * Directory to use for the clustered service.
          */
-        public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
+        public static final String CLUSTERED_SERVICE_DIR_PROP_NAME = "aeron.clustered.service.dir";
 
         /**
          * Directory to use for the cluster container.
          */
-        public static final String CLUSTER_DIR_DEFAULT = "cluster";
+        public static final String CLUSTERED_SERVICE_DIR_DEFAULT = "cluster-service";
 
         /**
-         * Filename for the recording index for the log and snapshots.
+         * Filename for the recording index for the history of log terms and snapshots.
          */
         public static final String RECORDING_INDEX_FILE_NAME = "recording-index.log";
 
@@ -353,13 +353,13 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The value {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
+         * The value {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
          *
-         * @return {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
+         * @return {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
          */
-        public static String clusterDirName()
+        public static String clusteredServiceDirName()
         {
-            return System.getProperty(CLUSTER_DIR_PROP_NAME, CLUSTER_DIR_DEFAULT);
+            return System.getProperty(CLUSTERED_SERVICE_DIR_PROP_NAME, CLUSTERED_SERVICE_DIR_DEFAULT);
         }
     }
 
@@ -383,7 +383,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
         private AeronArchive.Context archiveContext;
-        private File clusterDir;
+        private File clusteredServiceDir;
         private String aeronDirectoryName = CommonContext.AERON_DIR_PROP_DEFAULT;
         private Aeron aeron;
         private boolean ownsAeronClient;
@@ -453,30 +453,30 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (deleteDirOnStart)
             {
-                if (null != clusterDir)
+                if (null != clusteredServiceDir)
                 {
-                    IoUtil.delete(clusterDir, true);
+                    IoUtil.delete(clusteredServiceDir, true);
                 }
                 else
                 {
-                    IoUtil.delete(new File(Configuration.clusterDirName()), true);
+                    IoUtil.delete(new File(Configuration.clusteredServiceDirName()), true);
                 }
             }
 
-            if (null == clusterDir)
+            if (null == clusteredServiceDir)
             {
-                clusterDir = new File(Configuration.clusterDirName());
+                clusteredServiceDir = new File(Configuration.clusteredServiceDirName());
             }
 
-            if (!clusterDir.exists() && !clusterDir.mkdirs())
+            if (!clusteredServiceDir.exists() && !clusteredServiceDir.mkdirs())
             {
                 throw new IllegalArgumentException(
-                    "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
+                    "Failed to create clustered service dir: " + clusteredServiceDir.getAbsolutePath());
             }
 
             if (null == recordingIndex)
             {
-                recordingIndex = new RecordingIndex(clusterDir, serviceId);
+                recordingIndex = new RecordingIndex(clusteredServiceDir, serviceId);
             }
 
             if (null == shutdownSignalBarrier)
@@ -946,7 +946,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Should the container attempt to immediately delete {@link #clusterDir()} on startup.
+         * Should the container attempt to immediately delete {@link #clusteredServiceDir()} on startup.
          *
          * @param deleteDirOnStart Attempt deletion.
          * @return this for a fluent API.
@@ -959,7 +959,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Will the driver attempt to immediately delete {@link #clusterDir()} on startup.
+         * Will the driver attempt to immediately delete {@link #clusteredServiceDir()} on startup.
          *
          * @return true when directory will be deleted, otherwise false.
          * @see Configuration#DIR_DELETE_ON_START_PROP_NAME
@@ -970,27 +970,27 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the directory to use for the cluster container.
+         * Set the directory to use for the clustered service container.
          *
          * @param clusterDir to use.
          * @return this for a fluent API.
-         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
          */
-        public Context clusterDir(final File clusterDir)
+        public Context clusteredServiceDir(final File clusterDir)
         {
-            this.clusterDir = clusterDir;
+            this.clusteredServiceDir = clusterDir;
             return this;
         }
 
         /**
-         * The directory used for the cluster container.
+         * The directory used for the clustered service container.
          *
          * @return directory for the cluster container.
-         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
          */
-        public File clusterDir()
+        public File clusteredServiceDir()
         {
-            return clusterDir;
+            return clusteredServiceDir;
         }
 
         /**
@@ -1042,9 +1042,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public void deleteClusterDirectory()
         {
-            if (null != clusterDir)
+            if (null != clusteredServiceDir)
             {
-                IoUtil.delete(clusterDir, false);
+                IoUtil.delete(clusteredServiceDir, false);
             }
         }
 

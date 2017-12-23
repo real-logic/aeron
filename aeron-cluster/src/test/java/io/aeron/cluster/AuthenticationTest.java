@@ -66,6 +66,7 @@ public class AuthenticationTest
         CloseHelper.close(clusteredMediaDriver);
 
         container.context().deleteDirectory();
+        clusteredMediaDriver.consensusModule().context().deleteDirectory();
         clusteredMediaDriver.archive().context().deleteArchiveDirectory();
         clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }

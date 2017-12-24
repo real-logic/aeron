@@ -35,6 +35,7 @@ class SequencerAgent implements Agent
 {
     private final long sessionTimeoutMs;
     private long nextSessionId = 1;
+    private long leadershipTermStartPosition = 0;
     private int servicesReadyCount = 0;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
@@ -131,8 +132,19 @@ class SequencerAgent implements Agent
         return "sequencer";
     }
 
-    public void onActionAck(final long serviceId, final ServiceAction action)
+    public void onActionAck(
+        final long serviceId, final long logPosition, final long messageIndex, final ServiceAction action)
     {
+        final long currentLogPosition = leadershipTermStartPosition + logAppender.position();
+        final long currentMessageIndex = this.messageIndex.getWeak();
+        if (logPosition != currentLogPosition || messageIndex != currentMessageIndex)
+        {
+            throw new IllegalStateException("Invalid log state:" +
+                " serviceId=" + serviceId +
+                ", logPosition=" + logPosition + " current log position is " + currentLogPosition +
+                ", messageIndex=" + messageIndex + " current message index is " + currentMessageIndex);
+        }
+
         switch (action)
         {
             case READY:
@@ -320,34 +332,78 @@ class SequencerAgent implements Agent
                 break;
 
             case SNAPSHOT:
-                if (ConsensusModule.State.ACTIVE == state &&
-                    logAppender.appendActionRequest(ServiceAction.SNAPSHOT, nowMs))
+                if (ConsensusModule.State.ACTIVE == state && appendSnapshot(nowMs))
                 {
-                    state(ConsensusModule.State.SNAPSHOT);
                     workCount = 1;
                 }
                 break;
 
             case SHUTDOWN:
-                if (ConsensusModule.State.ACTIVE == state &&
-                    logAppender.appendActionRequest(ServiceAction.SHUTDOWN, nowMs))
+                if (ConsensusModule.State.ACTIVE == state && appendShutdown(nowMs))
                 {
-                    state(ConsensusModule.State.SHUTDOWN);
                     workCount = 1;
                 }
                 break;
 
             case ABORT:
-                if (ConsensusModule.State.ACTIVE == state &&
-                    logAppender.appendActionRequest(ServiceAction.ABORT, nowMs))
+                if (ConsensusModule.State.ACTIVE == state && appendAbort(nowMs))
                 {
-                    state(ConsensusModule.State.ABORT);
                     workCount = 1;
                 }
                 break;
         }
 
         return workCount;
+    }
+
+    private boolean appendSnapshot(final long nowMs)
+    {
+        final long position = resultingServiceActionPosition();
+
+        if (logAppender.appendActionRequest(ServiceAction.SNAPSHOT, messageIndex.getWeak(), position, nowMs))
+        {
+            messageIndex.incrementOrdered();
+            state(ConsensusModule.State.SNAPSHOT);
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean appendShutdown(final long nowMs)
+    {
+        final long position = resultingServiceActionPosition();
+
+        if (logAppender.appendActionRequest(ServiceAction.SHUTDOWN, messageIndex.getWeak(), position, nowMs))
+        {
+            messageIndex.incrementOrdered();
+            state(ConsensusModule.State.SHUTDOWN);
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean appendAbort(final long nowMs)
+    {
+        final long position = resultingServiceActionPosition();
+
+        if (logAppender.appendActionRequest(ServiceAction.ABORT, messageIndex.getWeak(), position, nowMs))
+        {
+            messageIndex.incrementOrdered();
+            state(ConsensusModule.State.ABORT);
+            return true;
+        }
+
+        return false;
+    }
+
+    private long resultingServiceActionPosition()
+    {
+        return leadershipTermStartPosition +
+            logAppender.position() +
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            ServiceActionRequestEncoder.BLOCK_LENGTH;
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)

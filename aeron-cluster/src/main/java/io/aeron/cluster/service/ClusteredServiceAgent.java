@@ -125,7 +125,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         logImage = logSubscription.imageAtIndex(0);
         state = State.LEADING;
 
-        sendAcknowledgment(ServiceAction.READY);
+        sendAcknowledgment(ServiceAction.READY, leadershipTermStartPosition);
     }
 
     public void onClose()
@@ -255,7 +255,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     messageHeaderDecoder.version());
 
                 timestampMs = actionRequestDecoder.timestamp();
-                executeAction(actionRequestDecoder.action(), header.position());
+                final long resultingPosition = leadershipTermStartPosition + header.position();
+                executeAction(actionRequestDecoder.action(), resultingPosition);
                 break;
             }
         }
@@ -283,16 +284,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     public long timeMs()
     {
         return timestampMs;
-    }
-
-    public long leadershipTermStartPosition()
-    {
-        return leadershipTermStartPosition;
-    }
-
-    public long messageIndex()
-    {
-        return messageIndex;
     }
 
     public void scheduleTimer(final long correlationId, final long deadlineMs)
@@ -690,7 +681,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
     }
 
-    private void sendAcknowledgment(final ServiceAction action)
+    private void sendAcknowledgment(final ServiceAction action, final long logPosition)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionAckEncoder.BLOCK_LENGTH;
 
@@ -703,6 +694,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 serviceActionAckEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .serviceId(serviceId)
+                    .logPosition(logPosition)
+                    .messageIndex(messageIndex)
                     .action(action);
 
                 bufferClaim.commit();
@@ -727,19 +720,19 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         switch (action)
         {
             case SNAPSHOT:
-                onTakeSnapshot(leadershipTermStartPosition + position);
-                sendAcknowledgment(ServiceAction.SNAPSHOT);
+                onTakeSnapshot(position);
+                sendAcknowledgment(ServiceAction.SNAPSHOT, position);
                 break;
 
             case SHUTDOWN:
-                onTakeSnapshot(leadershipTermStartPosition + position);
-                sendAcknowledgment(ServiceAction.SHUTDOWN);
+                onTakeSnapshot(position);
+                sendAcknowledgment(ServiceAction.SHUTDOWN, position);
                 state = State.CLOSED;
                 ctx.shutdownSignalBarrier().signal();
                 break;
 
             case ABORT:
-                sendAcknowledgment(ServiceAction.ABORT);
+                sendAcknowledgment(ServiceAction.ABORT, position);
                 state = State.CLOSED;
                 ctx.shutdownSignalBarrier().signal();
                 break;

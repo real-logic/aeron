@@ -45,6 +45,11 @@ class LogAppender implements AutoCloseable
         CloseHelper.close(publication);
     }
 
+    public long position()
+    {
+        return publication.position();
+    }
+
     public boolean appendMessage(final DirectBuffer buffer, final int offset, final int length, final long nowMs)
     {
         sessionHeaderEncoder
@@ -144,7 +149,8 @@ class LogAppender implements AutoCloseable
         return false;
     }
 
-    public boolean appendActionRequest(final ServiceAction action, final long nowMs)
+    public boolean appendActionRequest(
+        final ServiceAction action, final long nowMs, final long logPosition, final long messageIndex)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionRequestEncoder.BLOCK_LENGTH;
 
@@ -155,6 +161,8 @@ class LogAppender implements AutoCloseable
             {
                 actionRequestEncoder.wrapAndApplyHeader(
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .logPosition(logPosition)
+                    .messageIndex(messageIndex)
                     .timestamp(nowMs)
                     .action(action);
 

@@ -72,7 +72,7 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
 
         final long correlationIdOne = 1L;
-        agent.onActionAck(0L, ServiceAction.READY);
+        agent.onActionAck(0, 0, 0, ServiceAction.READY);
         agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
         agent.doWork();
 
@@ -83,7 +83,6 @@ public class SequencerAgentTest
         agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO, new byte[0]);
         agent.doWork();
 
-        verifyNoMoreInteractions(mockLogAppender);
         verify(mockEgressPublisher).sendEvent(
             any(ClusterSession.class), eq(EventCode.ERROR), eq(ConsensusModule.Configuration.SESSION_LIMIT_MSG));
     }
@@ -100,7 +99,7 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
 
         final long correlationId = 1L;
-        agent.onActionAck(0L, ServiceAction.READY);
+        agent.onActionAck(0, 0, 0, ServiceAction.READY);
 
         agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
         agent.doWork();
@@ -110,8 +109,6 @@ public class SequencerAgentTest
         final long timeMs = startMs + (ConsensusModule.Configuration.sessionTimeoutNs() / 1000);
         clock.update(timeMs);
         agent.doWork();
-
-        verifyZeroInteractions(mockLogAppender);
 
         final long timeoutMs = timeMs + 1L;
         clock.update(timeoutMs);
@@ -154,7 +151,7 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
         assertThat((int)stateValue.get(), is(ConsensusModule.State.INIT.code()));
 
-        agent.onActionAck(0L, ServiceAction.READY);
+        agent.onActionAck(0, 0, 0, ServiceAction.READY);
         assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
 
         controlValue.value = SUSPEND.code();
@@ -179,13 +176,14 @@ public class SequencerAgentTest
 
         ctx.controlToggle(mockControlToggle);
         final SequencerAgent agent = newSequencerAgent();
-        agent.onActionAck(0L, ServiceAction.READY);
+        agent.onActionAck(0, 0, 0, ServiceAction.READY);
 
-        when(mockLogAppender.appendActionRequest(eq(ServiceAction.SNAPSHOT), anyLong())).thenReturn(Boolean.TRUE);
+        when(mockLogAppender.appendActionRequest(eq(ServiceAction.SNAPSHOT), anyLong(), anyLong(), anyLong()))
+            .thenReturn(Boolean.TRUE);
 
         agent.doWork();
 
-        verify(mockLogAppender).appendActionRequest(eq(ServiceAction.SNAPSHOT), anyLong());
+        verify(mockLogAppender).appendActionRequest(eq(ServiceAction.SNAPSHOT), anyLong(), anyLong(), anyLong());
     }
 
     private SequencerAgent newSequencerAgent()

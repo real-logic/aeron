@@ -213,8 +213,10 @@
     <sbe:message name="ServiceActionRequest"
                  id="23"
                  description="Request an action to be taken by the service">
-        <field name="timestamp"            id="1" type="time_t"/>
-        <field name="action"               id="2" type="ServiceAction"/>
+        <field name="logPosition"          id="1" type="int64"/>
+        <field name="messageIndex"         id="2" type="int64"/>
+        <field name="timestamp"            id="3" type="time_t"/>
+        <field name="action"               id="4" type="ServiceAction"/>
     </sbe:message>
 
     <!-- Messages from a clustered service to the Consensus Module -->
@@ -238,7 +240,9 @@
                  id="32"
                  description="Acknowledge the service action request">
         <field name="serviceId"            id="1" type="int64"/>
-        <field name="action"               id="2" type="ServiceAction"/>
+        <field name="logPosition"          id="2" type="int64"/>
+        <field name="messageIndex"         id="3" type="int64"/>
+        <field name="action"               id="4" type="ServiceAction"/>
     </sbe:message>
 
     <!-- Cluster Consensus Protocol -->
@@ -250,8 +254,10 @@
                  id="100"
                  description="Mark the beginning of a snapshot">
         <field name="typeId"               id="1" type="int64"/>
-        <field name="index"                id="2" type="int32"/>
-        <field name="mark"                 id="3" type="SnapshotMark"/>
+        <field name="messageIndex"         id="2" type="int64"/>
+        <field name="logPosition"          id="3" type="int64"/>
+        <field name="index"                id="4" type="int32"/>
+        <field name="mark"                 id="5" type="SnapshotMark"/>
     </sbe:message>
 
     <sbe:message name="ClientSession"

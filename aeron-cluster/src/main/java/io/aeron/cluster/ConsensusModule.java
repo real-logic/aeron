@@ -51,14 +51,14 @@ public class ConsensusModule implements
     {
         INIT(0), ACTIVE(1), SUSPENDED(2), SNAPSHOT(3), SHUTDOWN(4), ABORT(5), CLOSED(6);
 
-        private final long code;
+        private final int code;
 
-        State(final long code)
+        State(final int code)
         {
             this.code = code;
         }
 
-        public final long code()
+        public final int code()
         {
             return code;
         }

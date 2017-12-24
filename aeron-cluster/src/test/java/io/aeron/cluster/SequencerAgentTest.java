@@ -28,7 +28,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.aeron.cluster.control.ClusterControl.Action.*;
+import static io.aeron.cluster.control.ClusterControl.ToggleState.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -152,22 +152,22 @@ public class SequencerAgentTest
         ctx.controlToggle(mockControlToggle);
 
         final SequencerAgent agent = newSequencerAgent();
-        assertThat(stateValue.get(), is(ConsensusModule.State.INIT.code()));
+        assertThat((int)stateValue.get(), is(ConsensusModule.State.INIT.code()));
 
         agent.onActionAck(0L, ServiceAction.READY);
-        assertThat(stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
+        assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
 
         controlValue.value = SUSPEND.code();
         agent.doWork();
 
-        assertThat(stateValue.get(), is(ConsensusModule.State.SUSPENDED.code()));
-        assertThat(controlValue.get(), is(NEUTRAL.code()));
+        assertThat((int)stateValue.get(), is(ConsensusModule.State.SUSPENDED.code()));
+        assertThat((int)controlValue.get(), is(NEUTRAL.code()));
 
         controlValue.value = RESUME.code();
         agent.doWork();
 
-        assertThat(stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
-        assertThat(controlValue.get(), is(NEUTRAL.code()));
+        assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
+        assertThat((int)controlValue.get(), is(NEUTRAL.code()));
     }
 
     @Test

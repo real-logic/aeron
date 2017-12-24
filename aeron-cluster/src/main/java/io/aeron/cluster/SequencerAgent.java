@@ -30,7 +30,7 @@ import java.util.Iterator;
 
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
-import static io.aeron.cluster.control.ClusterControl.Action.*;
+import static io.aeron.cluster.control.ClusterControl.ToggleState.*;
 
 class SequencerAgent implements Agent
 {
@@ -296,57 +296,60 @@ class SequencerAgent implements Agent
 
     private int checkControlToggle(final long nowMs)
     {
-        final long toggleCode = controlToggle.get();
+        int workCount = 0;
+        final ClusterControl.ToggleState toggleState = ClusterControl.ToggleState.get(controlToggle);
 
-        if (NEUTRAL.code() == toggleCode)
+        switch (toggleState)
         {
-            return 0;
+            case SUSPEND:
+                if (ConsensusModule.State.ACTIVE == state)
+                {
+                    state(ConsensusModule.State.SUSPENDED);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    workCount = 1;
+                }
+                break;
+
+            case RESUME:
+                if (ConsensusModule.State.SUSPENDED == state)
+                {
+                    state(ConsensusModule.State.ACTIVE);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    workCount = 1;
+                }
+                break;
+
+            case ABORT:
+                if (ConsensusModule.State.ACTIVE == state &&
+                    logAppender.appendActionRequest(ServiceAction.ABORT, nowMs))
+                {
+                    state(ConsensusModule.State.ABORT);
+                    workCount = 1;
+                }
+                break;
+
+            case SNAPSHOT:
+                if (ConsensusModule.State.ACTIVE == state &&
+                    logAppender.appendActionRequest(ServiceAction.SNAPSHOT, nowMs))
+                {
+                    state(ConsensusModule.State.SNAPSHOT);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    workCount = 1;
+                }
+                break;
+
+            case SHUTDOWN:
+                if (ConsensusModule.State.ACTIVE == state &&
+                    logAppender.appendActionRequest(ServiceAction.SHUTDOWN, nowMs))
+                {
+                    state(ConsensusModule.State.SHUTDOWN);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    workCount = 1;
+                }
+                break;
         }
 
-        if (ConsensusModule.State.ABORT != state && ABORT.code() == toggleCode)
-        {
-            if (logAppender.appendActionRequest(ServiceAction.ABORT, nowMs))
-            {
-                state(ConsensusModule.State.ABORT);
-                return 1;
-            }
-        }
-
-        if (ConsensusModule.State.ACTIVE == state && SNAPSHOT.code() == toggleCode)
-        {
-            if (logAppender.appendActionRequest(ServiceAction.SNAPSHOT, nowMs))
-            {
-                state(ConsensusModule.State.SNAPSHOT);
-                ClusterControl.Action.reset(controlToggle);
-                return 1;
-            }
-        }
-
-        if (ConsensusModule.State.ACTIVE == state && SHUTDOWN.code() == toggleCode)
-        {
-            if (logAppender.appendActionRequest(ServiceAction.SHUTDOWN, nowMs))
-            {
-                state(ConsensusModule.State.SHUTDOWN);
-                ClusterControl.Action.reset(controlToggle);
-                return 1;
-            }
-        }
-
-        if (ConsensusModule.State.ACTIVE == state && SUSPEND.code() == toggleCode)
-        {
-            state(ConsensusModule.State.SUSPENDED);
-            ClusterControl.Action.reset(controlToggle);
-            return 1;
-        }
-
-        if (ConsensusModule.State.SUSPENDED == state && RESUME.code() == toggleCode)
-        {
-            state(ConsensusModule.State.ACTIVE);
-            ClusterControl.Action.reset(controlToggle);
-            return 1;
-        }
-
-        throw new IllegalStateException("Unknown toggle action code: " + toggleCode);
+        return workCount;
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)

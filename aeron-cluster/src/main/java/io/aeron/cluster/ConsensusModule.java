@@ -53,6 +53,17 @@ public class ConsensusModule implements
 
         private final int code;
 
+        static final State[] STATES;
+        static
+        {
+            final State[] states = values();
+            STATES = new State[states.length];
+            for (final State state : states)
+            {
+                STATES[state.code()] = state;
+            }
+        }
+
         State(final int code)
         {
             this.code = code;
@@ -61,6 +72,25 @@ public class ConsensusModule implements
         public final int code()
         {
             return code;
+        }
+
+        /**
+         * Get the {@link State} encoded in an {@link AtomicCounter}.
+         *
+         * @param counter to get the current state for.
+         * @return the state for the {@link ConsensusModule}.
+         * @throws IllegalStateException if the counter is not one of the valid values.
+         */
+        public static State get(final AtomicCounter counter)
+        {
+            final long value = counter.get();
+
+            if (value < 0 || value > (STATES.length - 1))
+            {
+                throw new IllegalStateException("Invalid state counter value: " + value);
+            }
+
+            return STATES[(int)value];
         }
     }
 

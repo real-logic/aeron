@@ -56,8 +56,6 @@ class SequencerAgent implements Agent
     private final SessionProxy sessionProxy;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
 
-    // TODO: last message correlation id per session counter
-
     SequencerAgent(
         final ConsensusModule.Context ctx,
         final EgressPublisher egressPublisher,

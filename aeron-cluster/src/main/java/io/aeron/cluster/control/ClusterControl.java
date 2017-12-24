@@ -130,7 +130,7 @@ public class ClusterControl
          *
          * @param controlToggle to get the current state for.
          * @return the state for the current control toggle.
-         * @throws IllegalStateException if the counter is no one of the valid values.
+         * @throws IllegalStateException if the counter is not one of the valid values.
          */
         public static ToggleState get(final AtomicCounter controlToggle)
         {

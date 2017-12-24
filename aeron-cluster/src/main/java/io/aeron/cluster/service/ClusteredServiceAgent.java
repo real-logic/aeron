@@ -222,8 +222,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                         openEventDecoder.responseStreamId()),
                     this);
 
-                sessionByIdMap.put(sessionId, session);
                 timestampMs = openEventDecoder.timestamp();
+                sessionByIdMap.put(sessionId, session);
                 service.onSessionOpen(session, timestampMs);
                 break;
             }
@@ -696,6 +696,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     .serviceId(serviceId)
                     .logPosition(logPosition)
                     .messageIndex(messageIndex)
+                    .timestamp(timestampMs)
                     .action(action);
 
                 bufferClaim.commit();

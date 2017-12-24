@@ -30,7 +30,6 @@ import java.util.Iterator;
 
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
-import static io.aeron.cluster.control.ClusterControl.ToggleState.*;
 
 class SequencerAgent implements Agent
 {
@@ -151,14 +150,14 @@ class SequencerAgent implements Agent
 
                 ++servicesReadyCount;
                 state(ConsensusModule.State.ACTIVE);
-                break;
+                return;
 
             case SNAPSHOT:
                 if (ConsensusModule.State.SNAPSHOT == state)
                 {
                     state(ConsensusModule.State.ACTIVE);
                 }
-                break;
+                return;
 
             case SHUTDOWN:
                 if (ConsensusModule.State.SHUTDOWN == state)
@@ -166,7 +165,7 @@ class SequencerAgent implements Agent
                     state(ConsensusModule.State.CLOSED);
                     ctx.shutdownSignalBarrier().signal();
                 }
-                break;
+                return;
 
             case ABORT:
                 if (ConsensusModule.State.ABORT == state)
@@ -174,8 +173,10 @@ class SequencerAgent implements Agent
                     state(ConsensusModule.State.CLOSED);
                     ctx.shutdownSignalBarrier().signal();
                 }
-                break;
+                return;
         }
+
+        throw new IllegalStateException("Service action ack=" + action + " state=" + state);
     }
 
     public void onSessionConnect(

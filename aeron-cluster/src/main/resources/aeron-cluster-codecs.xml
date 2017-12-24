@@ -182,7 +182,7 @@
         <data  name="credentialData"       id="3" type="varDataEncoding"/>
     </sbe:message>
 
-    <!-- Events to be delivered to a clustered service from the Consensus Module  -->
+    <!-- Events from the Consensus Module to the clustered services which get appended to the log  -->
 
     <sbe:message name="TimerEvent"
                  id="20"

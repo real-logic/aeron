@@ -38,7 +38,9 @@ import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 public class ClusterControl
 {
     /**
-     * Action request to the cluster.
+     * Toggle states for controlling the cluster node once it has entered the active state after initialising.
+     * The toggle can only we switched into a new state from {@link #NEUTRAL} and will be reset by the
+     * {@link io.aeron.cluster.ConsensusModule} once the triggered action is complete.
      */
     public enum ToggleState
     {

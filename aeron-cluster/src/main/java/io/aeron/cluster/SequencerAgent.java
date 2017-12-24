@@ -156,6 +156,7 @@ class SequencerAgent implements Agent
                 if (ConsensusModule.State.SNAPSHOT == state)
                 {
                     state(ConsensusModule.State.ACTIVE);
+                    ClusterControl.ToggleState.reset(controlToggle);
                 }
                 return;
 
@@ -320,21 +321,11 @@ class SequencerAgent implements Agent
                 }
                 break;
 
-            case ABORT:
-                if (ConsensusModule.State.ACTIVE == state &&
-                    logAppender.appendActionRequest(ServiceAction.ABORT, nowMs))
-                {
-                    state(ConsensusModule.State.ABORT);
-                    workCount = 1;
-                }
-                break;
-
             case SNAPSHOT:
                 if (ConsensusModule.State.ACTIVE == state &&
                     logAppender.appendActionRequest(ServiceAction.SNAPSHOT, nowMs))
                 {
                     state(ConsensusModule.State.SNAPSHOT);
-                    ClusterControl.ToggleState.reset(controlToggle);
                     workCount = 1;
                 }
                 break;
@@ -344,7 +335,15 @@ class SequencerAgent implements Agent
                     logAppender.appendActionRequest(ServiceAction.SHUTDOWN, nowMs))
                 {
                     state(ConsensusModule.State.SHUTDOWN);
-                    ClusterControl.ToggleState.reset(controlToggle);
+                    workCount = 1;
+                }
+                break;
+
+            case ABORT:
+                if (ConsensusModule.State.ACTIVE == state &&
+                    logAppender.appendActionRequest(ServiceAction.ABORT, nowMs))
+                {
+                    state(ConsensusModule.State.ABORT);
                     workCount = 1;
                 }
                 break;

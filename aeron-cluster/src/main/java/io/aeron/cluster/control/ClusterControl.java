@@ -76,14 +76,14 @@ public class ClusterControl
 
         private final int code;
 
-        static final ToggleState[] TOGGLE_STATES;
+        private static final ToggleState[] STATES;
         static
         {
             final ToggleState[] toggleStates = values();
-            TOGGLE_STATES = new ToggleState[toggleStates.length];
+            STATES = new ToggleState[toggleStates.length];
             for (final ToggleState toggleState : toggleStates)
             {
-                TOGGLE_STATES[toggleState.code()] = toggleState;
+                STATES[toggleState.code()] = toggleState;
             }
         }
 
@@ -136,12 +136,12 @@ public class ClusterControl
         {
             final long toggleValue = controlToggle.get();
 
-            if (toggleValue < 0 || toggleValue > (TOGGLE_STATES.length - 1))
+            if (toggleValue < 0 || toggleValue > (STATES.length - 1))
             {
                 throw new IllegalStateException("Invalid toggle value: " + toggleValue);
             }
 
-            return TOGGLE_STATES[(int)toggleValue];
+            return STATES[(int)toggleValue];
         }
     }
 

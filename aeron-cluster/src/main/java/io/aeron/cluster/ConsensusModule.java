@@ -327,10 +327,10 @@ public class ConsensusModule implements
          */
         public static AuthenticatorSupplier authenticatorSupplier()
         {
-            final String supplierClassName =
-                System.getProperty(AUTHENTICATOR_SUPPLIER_PROP_NAME, AUTHENTICATOR_SUPPLIER_DEFAULT);
-            AuthenticatorSupplier supplier = null;
+            final String supplierClassName = System.getProperty(
+                AUTHENTICATOR_SUPPLIER_PROP_NAME, AUTHENTICATOR_SUPPLIER_DEFAULT);
 
+            AuthenticatorSupplier supplier = null;
             try
             {
                 supplier = (AuthenticatorSupplier)Class.forName(supplierClassName).newInstance();

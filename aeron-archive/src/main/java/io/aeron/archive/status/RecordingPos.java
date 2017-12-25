@@ -68,16 +68,22 @@ public class RecordingPos
         final int streamId,
         final String strippedChannel)
     {
-        final String label = NAME + ": " + recordingId + " " + sessionId + " " + streamId + " " + strippedChannel;
-        final String trimmedLabel = label.length() > MAX_LABEL_LENGTH ? label.substring(0, MAX_LABEL_LENGTH) : label;
-
         tempBuffer.putLong(RECORDING_ID_OFFSET, recordingId);
         tempBuffer.putLong(CONTROL_SESSION_ID_OFFSET, controlSessionId);
         tempBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);
         tempBuffer.putInt(SESSION_ID_OFFSET, sessionId);
         tempBuffer.putInt(STREAM_ID_OFFSET, streamId);
 
-        tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH, trimmedLabel);
+        int length = 0;
+        length += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH, NAME + ": ");
+        length += tempBuffer.putLongAscii(KEY_LENGTH + length, recordingId);
+        length += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + length, " ");
+        length += tempBuffer.putIntAscii(KEY_LENGTH + length, sessionId);
+        length += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + length, " ");
+        length += tempBuffer.putIntAscii(KEY_LENGTH + length, streamId);
+        length += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + length, " ");
+        length += tempBuffer.putStringWithoutLengthAscii(
+            KEY_LENGTH + length, strippedChannel, 0, MAX_LABEL_LENGTH - length);
 
         return aeron.addCounter(
             RECORDING_POSITION_TYPE_ID,
@@ -86,7 +92,7 @@ public class RecordingPos
             KEY_LENGTH,
             tempBuffer,
             KEY_LENGTH,
-            trimmedLabel.length());
+            length);
     }
 
     /**

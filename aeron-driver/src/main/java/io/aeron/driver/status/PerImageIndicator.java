@@ -49,20 +49,9 @@ public class PerImageIndicator
         final int streamId,
         final String channel)
     {
-        final String label = name + ": " + registrationId + ' ' + sessionId + ' ' + streamId + ' ' + channel;
+        final int counterId = StreamPositionCounter.allocateCounterId(
+            name, PER_IMAGE_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
 
-        return countersManager.newCounter(
-            label,
-            PER_IMAGE_TYPE_ID,
-            (buffer) ->
-            {
-                buffer.putLong(REGISTRATION_ID_OFFSET, registrationId);
-                buffer.putInt(SESSION_ID_OFFSET, sessionId);
-                buffer.putInt(STREAM_ID_OFFSET, streamId);
-
-                final String truncatedChannel =
-                    channel.length() > MAX_CHANNEL_LENGTH ? channel.substring(0, MAX_CHANNEL_LENGTH) : channel;
-                buffer.putStringAscii(CHANNEL_OFFSET, truncatedChannel);
-            });
+        return new AtomicCounter(countersManager.valuesBuffer(), counterId, countersManager);
     }
 }

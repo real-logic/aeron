@@ -56,6 +56,7 @@ class SequencerAgent implements Agent
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
+    private Counter consensusPosition;
 
     SequencerAgent(
         final ConsensusModule.Context ctx,
@@ -97,6 +98,11 @@ class SequencerAgent implements Agent
             CloseHelper.close(ingressAdapter);
             CloseHelper.close(consensusModuleAdapter);
         }
+    }
+
+    public void onStart()
+    {
+
     }
 
     public int doWork()

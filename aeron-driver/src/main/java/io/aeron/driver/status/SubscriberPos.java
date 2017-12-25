@@ -50,6 +50,6 @@ public class SubscriberPos
             sessionId,
             streamId,
             channel,
-            joinPosition == 0 ? "@0" : ("@" + joinPosition));
+            joinPosition);
     }
 }

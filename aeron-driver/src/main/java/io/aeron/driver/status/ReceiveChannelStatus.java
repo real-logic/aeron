@@ -19,6 +19,8 @@ import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
+import static io.aeron.driver.status.StatusUtil.TEMP_BUFFER;
+
 /**
  * The status of a receive channel endpoint represented as a counter value.
  */
@@ -34,11 +36,9 @@ public class ReceiveChannelStatus
      */
     public static final String NAME = "rcv-channel";
 
-    public static AtomicCounter allocate(
-        final CountersManager countersManager,
-        final String channel)
+    public static AtomicCounter allocate(final CountersManager countersManager, final String channel)
     {
         return ChannelEndpointStatus.allocate(
-            NAME, RECEIVE_CHANNEL_STATUS_TYPE_ID, countersManager, channel);
+            TEMP_BUFFER, NAME, RECEIVE_CHANNEL_STATUS_TYPE_ID, countersManager, channel);
     }
 }

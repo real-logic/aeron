@@ -101,6 +101,7 @@ public class CubicCongestionControl implements CongestionControl
         windowUpdateTimeout = rttInNs;
 
         rttIndicator = PerImageIndicator.allocate(
+            context.tempBuffer(),
             "rcv-cc-cubic-rtt",
             countersManager,
             registrationId,
@@ -109,6 +110,7 @@ public class CubicCongestionControl implements CongestionControl
             udpChannel.originalUriString());
 
         windowIndicator = PerImageIndicator.allocate(
+            context.tempBuffer(),
             "rcv-cc-cubic-wnd",
             countersManager,
             registrationId,

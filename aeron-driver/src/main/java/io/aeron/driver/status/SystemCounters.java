@@ -57,6 +57,9 @@ public class SystemCounters implements AutoCloseable
      */
     public void close()
     {
-        counterByDescriptorMap.values().forEach(AtomicCounter::close);
+        for (final AtomicCounter counter : counterByDescriptorMap.values())
+        {
+            counter.close();
+        }
     }
 }

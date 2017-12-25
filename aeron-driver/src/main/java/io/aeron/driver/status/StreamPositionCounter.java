@@ -15,12 +15,12 @@
  */
 package io.aeron.driver.status;
 
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
-import static io.aeron.driver.status.StatusUtil.TEMP_BUFFER;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
@@ -67,6 +67,7 @@ public class StreamPositionCounter
     /**
      * Allocate a counter for tracking a position on a stream of messages.
      *
+     * @param tempBuffer      to be used for labels and key.
      * @param name            of the counter for the label.
      * @param typeId          of the counter for classification.
      * @param countersManager from which to allocated the underlying storage.
@@ -77,6 +78,7 @@ public class StreamPositionCounter
      * @return a new {@link UnsafeBufferPosition} for tracking the stream.
      */
     public static UnsafeBufferPosition allocate(
+        final MutableDirectBuffer tempBuffer,
         final String name,
         final int typeId,
         final CountersManager countersManager,
@@ -87,11 +89,12 @@ public class StreamPositionCounter
     {
         return new UnsafeBufferPosition(
             (UnsafeBuffer)countersManager.valuesBuffer(),
-            allocateCounterId(name, typeId, countersManager, registrationId, sessionId, streamId, channel),
+            allocateCounterId(tempBuffer, name, typeId, countersManager, registrationId, sessionId, streamId, channel),
             countersManager);
     }
 
     public static int allocateCounterId(
+        final MutableDirectBuffer tempBuffer,
         final String name,
         final int typeId,
         final CountersManager countersManager,
@@ -100,33 +103,33 @@ public class StreamPositionCounter
         final int streamId,
         final String channel)
     {
-        TEMP_BUFFER.putLong(REGISTRATION_ID_OFFSET, registrationId);
-        TEMP_BUFFER.putInt(SESSION_ID_OFFSET, sessionId);
-        TEMP_BUFFER.putInt(STREAM_ID_OFFSET, streamId);
+        tempBuffer.putLong(REGISTRATION_ID_OFFSET, registrationId);
+        tempBuffer.putInt(SESSION_ID_OFFSET, sessionId);
+        tempBuffer.putInt(STREAM_ID_OFFSET, streamId);
 
-        final int channelLength = TEMP_BUFFER.putStringWithoutLengthAscii(
+        final int channelLength = tempBuffer.putStringWithoutLengthAscii(
             CHANNEL_OFFSET + SIZE_OF_INT, channel, 0, MAX_CHANNEL_LENGTH);
-        TEMP_BUFFER.putInt(CHANNEL_OFFSET, channelLength);
+        tempBuffer.putInt(CHANNEL_OFFSET, channelLength);
         final int keyLength = CHANNEL_OFFSET + SIZE_OF_INT + channelLength;
 
         int labelLength = 0;
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, name);
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, ": ");
-        labelLength += TEMP_BUFFER.putLongAscii(keyLength + labelLength, registrationId);
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += TEMP_BUFFER.putIntAscii(keyLength + labelLength, sessionId);
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += TEMP_BUFFER.putIntAscii(keyLength + labelLength, streamId);
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, name);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, ": ");
+        labelLength += tempBuffer.putLongAscii(keyLength + labelLength, registrationId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, sessionId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, streamId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
+        labelLength += tempBuffer.putStringWithoutLengthAscii(
             keyLength + labelLength, channel, 0, MAX_LABEL_LENGTH - labelLength);
 
         return countersManager.allocate(
             typeId,
-            TEMP_BUFFER,
+            tempBuffer,
             0,
             keyLength,
-            TEMP_BUFFER,
+            tempBuffer,
             keyLength,
             labelLength
         );
@@ -135,6 +138,7 @@ public class StreamPositionCounter
     /**
      * Allocate a counter for tracking a position on a stream of messages.
      *
+     * @param tempBuffer      to be used for labels and key.
      * @param name            of the counter for the label.
      * @param typeId          of the counter for classification.
      * @param countersManager from which to allocated the underlying storage.
@@ -146,6 +150,7 @@ public class StreamPositionCounter
      * @return a new {@link UnsafeBufferPosition} for tracking the stream.
      */
     public static UnsafeBufferPosition allocate(
+        final MutableDirectBuffer tempBuffer,
         final String name,
         final int typeId,
         final CountersManager countersManager,
@@ -155,39 +160,39 @@ public class StreamPositionCounter
         final String channel,
         final long joinPosition)
     {
-        TEMP_BUFFER.putLong(REGISTRATION_ID_OFFSET, registrationId);
-        TEMP_BUFFER.putInt(SESSION_ID_OFFSET, sessionId);
-        TEMP_BUFFER.putInt(STREAM_ID_OFFSET, streamId);
+        tempBuffer.putLong(REGISTRATION_ID_OFFSET, registrationId);
+        tempBuffer.putInt(SESSION_ID_OFFSET, sessionId);
+        tempBuffer.putInt(STREAM_ID_OFFSET, streamId);
 
-        final int channelLength = TEMP_BUFFER.putStringWithoutLengthAscii(
+        final int channelLength = tempBuffer.putStringWithoutLengthAscii(
             CHANNEL_OFFSET + SIZE_OF_INT, channel, 0, MAX_CHANNEL_LENGTH);
-        TEMP_BUFFER.putInt(CHANNEL_OFFSET, channelLength);
+        tempBuffer.putInt(CHANNEL_OFFSET, channelLength);
         final int keyLength = CHANNEL_OFFSET + SIZE_OF_INT + channelLength;
 
         int labelLength = 0;
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, name);
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, ": ");
-        labelLength += TEMP_BUFFER.putLongAscii(keyLength + labelLength, registrationId);
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += TEMP_BUFFER.putIntAscii(keyLength + labelLength, sessionId);
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += TEMP_BUFFER.putIntAscii(keyLength + labelLength, streamId);
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, name);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, ": ");
+        labelLength += tempBuffer.putLongAscii(keyLength + labelLength, registrationId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, sessionId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, streamId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
+        labelLength += tempBuffer.putStringWithoutLengthAscii(
             keyLength + labelLength, channel, 0, MAX_LABEL_LENGTH - labelLength);
 
         if (labelLength < (MAX_LABEL_LENGTH - 20))
         {
-            labelLength += TEMP_BUFFER.putStringWithoutLengthAscii(keyLength + labelLength, " @");
-            labelLength += TEMP_BUFFER.putLongAscii(keyLength + labelLength, joinPosition);
+            labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " @");
+            labelLength += tempBuffer.putLongAscii(keyLength + labelLength, joinPosition);
         }
 
         final int counterId = countersManager.allocate(
             typeId,
-            TEMP_BUFFER,
+            tempBuffer,
             0,
             keyLength,
-            TEMP_BUFFER,
+            tempBuffer,
             keyLength,
             labelLength
         );

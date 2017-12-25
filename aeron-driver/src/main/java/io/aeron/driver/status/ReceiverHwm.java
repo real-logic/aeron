@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
@@ -35,6 +36,7 @@ public class ReceiverHwm
     public static final String NAME = "rcv-hwm";
 
     public static UnsafeBufferPosition allocate(
+        final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,
         final long registrationId,
         final int sessionId,
@@ -42,6 +44,6 @@ public class ReceiverHwm
         final String channel)
     {
         return StreamPositionCounter.allocate(
-            NAME, RECEIVER_HWM_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+            tempBuffer, NAME, RECEIVER_HWM_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

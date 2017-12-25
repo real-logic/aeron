@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
@@ -34,6 +35,7 @@ public class SenderPos
     public static final String NAME = "snd-pos";
 
     public static UnsafeBufferPosition allocate(
+        final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,
         final long registrationId,
         final int sessionId,
@@ -41,6 +43,6 @@ public class SenderPos
         final String channel)
     {
         return StreamPositionCounter.allocate(
-            NAME, SENDER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+            tempBuffer, NAME, SENDER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

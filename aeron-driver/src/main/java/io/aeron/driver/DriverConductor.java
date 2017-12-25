@@ -27,8 +27,7 @@ import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
 import io.aeron.status.ChannelEndpointStatus;
-import org.agrona.BitUtil;
-import org.agrona.DirectBuffer;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.*;
@@ -85,6 +84,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     private final CountersManager countersManager;
     private final AtomicCounter clientKeepAlives;
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
+    private final MutableDirectBuffer tempBuffer;
 
     public DriverConductor(final Context ctx)
     {
@@ -102,6 +102,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         nanoClock = ctx.nanoClock();
         toDriverCommands = ctx.toDriverCommands();
         clientProxy = ctx.clientProxy();
+        tempBuffer = ctx.tempBuffer();
 
         countersManager = context.countersManager();
         clientKeepAlives = context.systemCounters().get(CLIENT_KEEP_ALIVES);
@@ -221,8 +222,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                 rawLog,
                 udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
                 positionArray(subscriberPositions),
-                ReceiverHwm.allocate(countersManager, registrationId, sessionId, streamId, channel),
-                ReceiverPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
+                ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
+                ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
                 nanoClock,
                 epochClock,
                 context.systemCounters(),
@@ -751,6 +752,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             if (subscription.matches(channelEndpoint, streamId))
             {
                 final Position position = SubscriberPos.allocate(
+                    tempBuffer,
                     countersManager,
                     subscription.registrationId(),
                     sessionId,
@@ -798,9 +800,9 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         final int sessionId = nextSessionId++;
         final UnsafeBufferPosition senderPosition = SenderPos.allocate(
-            countersManager, registrationId, sessionId, streamId, channel);
+            tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
         final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
-            countersManager, registrationId, sessionId, streamId, channel);
+            tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
 
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
         if (params.isReplay)
@@ -827,7 +829,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             channelEndpoint,
             nanoClock,
             newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
-            PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
+            PublisherLimit.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
             senderPosition,
             senderLimit,
             sessionId,
@@ -962,7 +964,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         {
             channelEndpoint = context.sendChannelEndpointSupplier().newInstance(
                 udpChannel,
-                SendChannelStatus.allocate(countersManager, udpChannel.originalUriString()),
+                SendChannelStatus.allocate(tempBuffer, countersManager, udpChannel.originalUriString()),
                 context);
 
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
@@ -1005,7 +1007,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                 final long rebuildPosition = image.rebuildPosition();
                 final int sessionId = image.sessionId();
                 final Position position = SubscriberPos.allocate(
-                    countersManager, registrationId, sessionId, streamId, channel, rebuildPosition);
+                    tempBuffer, countersManager, registrationId, sessionId, streamId, channel, rebuildPosition);
 
                 position.setOrdered(rebuildPosition);
 
@@ -1061,7 +1063,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final String channel = subscription.channel();
 
         final Position position = SubscriberPos.allocate(
-            countersManager, registrationId, sessionId, streamId, channel, joinPosition);
+            tempBuffer, countersManager, registrationId, sessionId, streamId, channel, joinPosition);
 
         position.setOrdered(joinPosition);
         publication.addSubscriber(position);
@@ -1083,9 +1085,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final long subscriberRegistrationId = subscription.registrationId();
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();
+        final String channel = subscription.channel();
 
         final Position position = SubscriberPos.allocate(
-            countersManager, subscriberRegistrationId, sessionId, streamId, subscription.channel(), joinPosition);
+            tempBuffer, countersManager, subscriberRegistrationId, sessionId, streamId, channel, joinPosition);
 
         position.setOrdered(joinPosition);
         publication.addSubscriber(position);
@@ -1109,7 +1112,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             channelEndpoint = context.receiveChannelEndpointSupplier().newInstance(
                 udpChannel,
                 new DataPacketDispatcher(context.driverConductorProxy(), receiverProxy.receiver()),
-                ReceiveChannelStatus.allocate(countersManager, udpChannel.originalUriString()),
+                ReceiveChannelStatus.allocate(tempBuffer, countersManager, udpChannel.originalUriString()),
                 context);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
@@ -1172,7 +1175,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             registrationId,
             sessionId,
             streamId,
-            PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
+            PublisherLimit.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
             rawLog,
             publicationUnblockTimeoutNs,
             nanoClock.nanoTime(),

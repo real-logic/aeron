@@ -17,21 +17,16 @@ package io.aeron.driver.status;
 
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.StatusIndicator;
 import org.agrona.concurrent.status.StatusIndicatorReader;
 import org.agrona.concurrent.status.UnsafeBufferStatusIndicator;
-
-import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 /**
  * Functions for working with status counters.
  */
 public class StatusUtil
 {
-    public static final UnsafeBuffer TEMP_BUFFER = new UnsafeBuffer(new byte[METADATA_LENGTH]);
-
     /**
      * Return the controllable idle strategy {@link StatusIndicator}.
      *

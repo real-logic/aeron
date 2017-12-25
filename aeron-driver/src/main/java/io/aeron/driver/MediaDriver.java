@@ -47,6 +47,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
+import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 /**
  * Main class for JVM-based media driver
@@ -417,6 +418,7 @@ public final class MediaDriver implements AutoCloseable
         private SendChannelEndpointSupplier sendChannelEndpointSupplier;
         private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
         private ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals;
+        private MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
         private FlowControlSupplier unicastFlowControlSupplier;
         private FlowControlSupplier multicastFlowControlSupplier;
         private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
@@ -1344,6 +1346,28 @@ public final class MediaDriver implements AutoCloseable
         public Context receiveChannelEndpointThreadLocals(final ReceiveChannelEndpointThreadLocals threadLocals)
         {
             receiveChannelEndpointThreadLocals = threadLocals;
+            return this;
+        }
+
+        /**
+         * The temporary buffer than can be used to build up counter labels to avoid allocation.
+         *
+         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
+         */
+        public MutableDirectBuffer tempBuffer()
+        {
+            return tempBuffer;
+        }
+
+        /**
+         * Set the temporary buffer than can be used to build up counter labels to avoid allocation.
+         *
+         * @param tempBuffer to be used to avoid allocation.
+         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
+         */
+        public Context tempBuffer(final MutableDirectBuffer tempBuffer)
+        {
+            this.tempBuffer = tempBuffer;
             return this;
         }
 

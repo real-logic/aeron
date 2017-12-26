@@ -87,7 +87,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
 
-    private ReadableCounter recordingPosition;
+    private ReadableCounter consensusPosition;
     private Image logImage;
     private State state = State.INIT;
 
@@ -119,7 +119,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         recoverState();
 
-        final long recordingId = findRecordingPositionCounter();
+        final long recordingId = findConsensusPosition();
         recordingIndex.appendLog(recordingId, leadershipTermStartPosition, messageIndex);
 
         logImage = logSubscription.imageAtIndex(0);
@@ -148,7 +148,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     {
         int workCount = 0;
 
-        workCount += logImage.boundedControlledPoll(fragmentAssembler, recordingPosition.get(), FRAGMENT_LIMIT);
+        workCount += logImage.boundedControlledPoll(fragmentAssembler, consensusPosition.get(), FRAGMENT_LIMIT);
         if (0 == workCount && logImage.isClosed())
         {
             throw new IllegalStateException("Image closed unexpectedly");
@@ -339,7 +339,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         throw new IllegalStateException("Failed to schedule timer");
     }
 
-    private long findRecordingPositionCounter()
+    private long findConsensusPosition()
     {
         final long deadlineNs = epochClock.time() + TIMEOUT_NS;
 
@@ -358,23 +358,23 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         final int sessionId = logSubscription.imageAtIndex(0).sessionId();
         final CountersReader countersReader = aeron.countersReader();
 
-        int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(countersReader, sessionId);
-        while (RecordingPos.NULL_COUNTER_ID == recordingCounterId)
+        int counterId = ConsensusPos.findActiveCounterIdBySession(countersReader, sessionId);
+        while (ConsensusPos.NULL_COUNTER_ID == counterId)
         {
             if (epochClock.time() > deadlineNs)
             {
-                throw new TimeoutException("Failed to find active recording position");
+                throw new TimeoutException("Failed to find active consensus position");
             }
 
             checkInterruptedStatus();
             idleStrategy.idle();
 
-            recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(countersReader, sessionId);
+            counterId = ConsensusPos.findActiveCounterIdBySession(countersReader, sessionId);
         }
 
-        final long recordingId = RecordingPos.getActiveRecordingId(countersReader, recordingCounterId);
+        final long recordingId = ConsensusPos.getRecordingId(countersReader, counterId);
 
-        recordingPosition = new ReadableCounter(countersReader, recordingCounterId);
+        consensusPosition = new ReadableCounter(countersReader, counterId);
 
         return recordingId;
     }
@@ -504,10 +504,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 service.onTakeSnapshot(publication);
 
                 final CountersReader countersReader = aeron.countersReader();
-                final int recordingCounterId = RecordingPos.findActiveRecordingCounterIdBySession(
+                final int recordingCounterId = RecordingPos.findActiveCounterIdBySession(
                     countersReader, publication.sessionId());
 
-                recordingId = RecordingPos.getActiveRecordingId(countersReader, recordingCounterId);
+                recordingId = RecordingPos.getRecordingId(countersReader, recordingCounterId);
 
                 while (countersReader.getCounterValue(recordingCounterId) < publication.position())
                 {

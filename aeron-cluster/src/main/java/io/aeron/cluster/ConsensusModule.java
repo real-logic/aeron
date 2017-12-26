@@ -15,14 +15,12 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.Counter;
+import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.control.ClusterControl;
-import io.aeron.cluster.service.ClusteredServiceContainer;
-import io.aeron.cluster.service.RecordingIndex;
+import io.aeron.cluster.service.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -33,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.aeron.cluster.ConsensusModule.Configuration.CONSENSUS_MODULE_STATE_TYPE_ID;
-import static io.aeron.cluster.control.ClusterControl.CONTROL_TOGGLE_TYPE_ID;
+import static io.aeron.cluster.ConsensusModule.Configuration.CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
@@ -99,6 +97,7 @@ public class ConsensusModule implements
 
     private final Context ctx;
     private final LogAppender logAppender;
+    private final ConsensusTracker consensusTracker;
     private final AgentRunner conductorRunner;
 
     ConsensusModule(final Context ctx)
@@ -111,12 +110,16 @@ public class ConsensusModule implements
             archive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
         }
 
-        logAppender = new LogAppender(ctx.aeron().addExclusivePublication(ctx.logChannel(), ctx.logStreamId()));
+        final Aeron aeron = ctx.aeron();
+        final ExclusivePublication publication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
+        logAppender = new LogAppender(publication);
+        consensusTracker = new ConsensusTracker(aeron, 0L, 0L, publication.sessionId(), ctx.idleStrategy());
 
         final SequencerAgent conductor = new SequencerAgent(
             ctx,
             new EgressPublisher(),
             logAppender,
+            consensusTracker,
             this,
             this,
             this,
@@ -166,6 +169,7 @@ public class ConsensusModule implements
     {
         CloseHelper.close(conductorRunner);
         CloseHelper.close(logAppender);
+        CloseHelper.close(consensusTracker);
         CloseHelper.close(ctx);
     }
 
@@ -221,6 +225,16 @@ public class ConsensusModule implements
          * Counter type id for the consensus module state.
          */
         public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;
+
+        /**
+         * Counter type id for the control toggle.
+         */
+        public static final int CONTROL_TOGGLE_TYPE_ID = ClusterControl.CONTROL_TOGGLE_TYPE_ID;
+
+        /**
+         * Type id of a consensus position counter.
+         */
+        public static final int CONSENSUS_POSITION_TYPE_ID = ConsensusPos.CONSENSUS_POSITION_TYPE_ID;
 
         /**
          * Directory to use for the aeron cluster.

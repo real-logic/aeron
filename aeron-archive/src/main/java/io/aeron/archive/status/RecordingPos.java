@@ -17,7 +17,6 @@ package io.aeron.archive.status;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
-import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -28,6 +27,26 @@ import static org.agrona.concurrent.status.CountersReader.*;
 
 /**
  * The position a recording has reached when being archived.
+ * <p>
+ * Key has the following layout:
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                        Recording ID                           |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                     Control Session ID                        |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                       Correlation ID                          |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                         Session ID                            |
+ *  +---------------------------------------------------------------+
+ *  |                         Stream ID                             |
+ *  +---------------------------------------------------------------+
+ * </pre>
  */
 public class RecordingPos
 {
@@ -74,16 +93,16 @@ public class RecordingPos
         tempBuffer.putInt(SESSION_ID_OFFSET, sessionId);
         tempBuffer.putInt(STREAM_ID_OFFSET, streamId);
 
-        int length = 0;
-        length += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH, NAME + ": ");
-        length += tempBuffer.putLongAscii(KEY_LENGTH + length, recordingId);
-        length += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + length, " ");
-        length += tempBuffer.putIntAscii(KEY_LENGTH + length, sessionId);
-        length += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + length, " ");
-        length += tempBuffer.putIntAscii(KEY_LENGTH + length, streamId);
-        length += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + length, " ");
-        length += tempBuffer.putStringWithoutLengthAscii(
-            KEY_LENGTH + length, strippedChannel, 0, MAX_LABEL_LENGTH - length);
+        int labelLength = 0;
+        labelLength += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH, NAME + ": ");
+        labelLength += tempBuffer.putLongAscii(KEY_LENGTH + labelLength, recordingId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(KEY_LENGTH + labelLength, sessionId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(KEY_LENGTH + labelLength, streamId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelLength, " ");
+        labelLength += tempBuffer.putStringWithoutLengthAscii(
+            KEY_LENGTH + labelLength, strippedChannel, 0, MAX_LABEL_LENGTH - labelLength);
 
         return aeron.addCounter(
             RECORDING_POSITION_TYPE_ID,
@@ -92,44 +111,7 @@ public class RecordingPos
             KEY_LENGTH,
             tempBuffer,
             KEY_LENGTH,
-            length);
-    }
-
-    /**
-     * Find the active recording id for a stream based on the recording request.
-     *
-     * @param countersReader   to search within.
-     * @param controlSessionId to which the recording belongs.
-     * @param correlationId    returned from the start recording request.
-     * @param sessionId        for the active stream from a publication.
-     * @return the recordingId if found otherwise {@link #NULL_RECORDING_ID}.
-     * @see io.aeron.archive.client.AeronArchive#startRecording(String, int, SourceLocation)
-     */
-    public static long findActiveRecordingId(
-        final CountersReader countersReader,
-        final long controlSessionId,
-        final long correlationId,
-        final int sessionId)
-    {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
-
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
-        {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
-            {
-                final int recordOffset = CountersReader.metaDataOffset(i);
-
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
-                    buffer.getLong(recordOffset + KEY_OFFSET + CONTROL_SESSION_ID_OFFSET) == controlSessionId &&
-                    buffer.getLong(recordOffset + KEY_OFFSET + CORRELATION_ID_OFFSET) == correlationId &&
-                    buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
-                {
-                    return buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET);
-                }
-            }
-        }
-
-        return NULL_RECORDING_ID;
+            labelLength);
     }
 
     /**
@@ -139,7 +121,7 @@ public class RecordingPos
      * @param recordingId    for the active recording.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static int findActiveRecordingCounterId(final CountersReader countersReader, final long recordingId)
+    public static int findActiveCounterIdByRecording(final CountersReader countersReader, final long recordingId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 
@@ -167,7 +149,7 @@ public class RecordingPos
      * @param sessionId      for the active recording.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static int findActiveRecordingCounterIdBySession(final CountersReader countersReader, final int sessionId)
+    public static int findActiveCounterIdBySession(final CountersReader countersReader, final int sessionId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 
@@ -189,13 +171,13 @@ public class RecordingPos
     }
 
     /**
-     * Get the active recording id for a given counter id.
+     * Get the recording id for a given counter id.
      *
      * @param countersReader to search within.
      * @param counterId      for the active recording.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static long getActiveRecordingId(final CountersReader countersReader, final int counterId)
+    public static long getRecordingId(final CountersReader countersReader, final int counterId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 

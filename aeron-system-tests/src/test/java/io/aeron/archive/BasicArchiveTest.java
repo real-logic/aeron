@@ -100,7 +100,7 @@ public class BasicArchiveTest
         final int messageCount = 10;
         final long length;
 
-        final long correlationId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+        aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
         final long recordingIdFromCounter;
 
         try (Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
@@ -108,8 +108,9 @@ public class BasicArchiveTest
         {
             offer(publication, messageCount, messagePrefix);
 
-            recordingIdFromCounter = RecordingPos.findActiveRecordingId(
-                aeron.countersReader(), aeronArchive.controlSessionId(), correlationId, publication.sessionId());
+            recordingIdFromCounter = RecordingPos.getRecordingId(
+                aeron.countersReader(),
+                RecordingPos.findActiveCounterIdBySession(aeron.countersReader(), publication.sessionId()));
 
             consume(subscription, messageCount, messagePrefix);
 

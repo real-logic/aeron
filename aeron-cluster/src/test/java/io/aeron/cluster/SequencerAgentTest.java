@@ -22,8 +22,7 @@ import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.codecs.ServiceAction;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.CachedEpochClock;
-import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.Before;
 import org.junit.Test;
@@ -192,6 +191,7 @@ public class SequencerAgentTest
             ctx,
             mockEgressPublisher,
             mockLogAppender,
+            mock(ConsensusTracker.class),
             (sequencerAgent) -> mock(IngressAdapter.class),
             (sequencerAgent) -> mock(TimerService.class),
             (sessionId, responseStreamId, responseChannel) -> new ClusterSession(sessionId, mockResponsePublication),

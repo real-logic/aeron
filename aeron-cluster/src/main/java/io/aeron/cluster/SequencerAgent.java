@@ -45,6 +45,7 @@ class SequencerAgent implements Agent
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
     private final LogAppender logAppender;
+    private final ConsensusTracker consensusTracker;
     private final Counter messageIndex;
     private final Counter moduleState;
     private final Counter controlToggle;
@@ -56,12 +57,12 @@ class SequencerAgent implements Agent
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
-    private Counter consensusPosition;
 
     SequencerAgent(
         final ConsensusModule.Context ctx,
         final EgressPublisher egressPublisher,
         final LogAppender logAppender,
+        final ConsensusTracker consensusTracker,
         final IngressAdapterSupplier ingressAdapterSupplier,
         final TimerServiceSupplier timerServiceSupplier,
         final ClusterSessionSupplier clusterSessionSupplier,
@@ -76,6 +77,7 @@ class SequencerAgent implements Agent
         this.moduleState = ctx.moduleState();
         this.controlToggle = ctx.controlToggle();
         this.logAppender = logAppender;
+        this.consensusTracker = consensusTracker;
         this.sessionSupplier = clusterSessionSupplier;
         this.sessionProxy = new SessionProxy(egressPublisher);
 
@@ -100,11 +102,6 @@ class SequencerAgent implements Agent
         }
     }
 
-    public void onStart()
-    {
-
-    }
-
     public int doWork()
     {
         int workCount = 0;
@@ -116,6 +113,8 @@ class SequencerAgent implements Agent
         {
             workCount += aeronClientInvoker.invoke();
         }
+
+        consensusTracker.updatePosition();
 
         workCount += checkControlToggle(nowMs);
         workCount += consensusModuleAdapter.poll();

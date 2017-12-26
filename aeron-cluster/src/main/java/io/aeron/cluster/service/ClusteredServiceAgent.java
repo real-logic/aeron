@@ -141,8 +141,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             {
                 CloseHelper.close(session.responsePublication());
             }
-
-            CloseHelper.close(recordingIndex);
         }
     }
 

@@ -1031,6 +1031,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
             {
                 aeron.close();
             }
+
+            CloseHelper.close(recordingIndex);
         }
     }
 }

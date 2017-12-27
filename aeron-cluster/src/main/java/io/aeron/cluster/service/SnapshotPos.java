@@ -18,7 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -83,7 +83,7 @@ public class SnapshotPos
      */
     public static Counter allocate(
         final Aeron aeron,
-        final UnsafeBuffer tempBuffer,
+        final MutableDirectBuffer tempBuffer,
         final long logPosition,
         final long messageIndex,
         final long timestamp)

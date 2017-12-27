@@ -120,7 +120,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         recoverState();
 
         final long recordingId = findConsensusPosition();
-        recordingIndex.appendLog(recordingId, leadershipTermStartPosition, messageIndex);
+        recordingIndex.appendLog(recordingId, leadershipTermStartPosition, messageIndex, timestampMs);
 
         logImage = logSubscription.imageAtIndex(0);
         state = State.LEADING;
@@ -386,7 +386,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
             recordingIndex.forEachFromLastSnapshot(
-                (type, recordingId, logPosition, messageIndex) ->
+                (recordingId, logPosition, messageIndex, timestamp, type) ->
                 {
                     final RecordingInfo recordingInfo = new RecordingInfo();
                     if (0 == aeronArchive.listRecording(recordingId, recordingInfo))
@@ -397,11 +397,11 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     leadershipTermStartPosition = logPosition;
                     this.messageIndex = messageIndex;
 
-                    if (RecordingIndex.RECORDING_TYPE_SNAPSHOT == type)
+                    if (RecordingIndex.ENTRY_TYPE_SNAPSHOT == type)
                     {
                         loadSnapshot(aeronArchive, recordingInfo);
                     }
-                    else if (RecordingIndex.RECORDING_TYPE_LOG == type)
+                    else if (RecordingIndex.ENTRY_TYPE_LOG == type)
                     {
                         replayRecordedLog(aeronArchive, recordingInfo);
                     }
@@ -525,7 +525,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             state = State.LEADING;
         }
 
-        recordingIndex.appendLog(recordingId, position, messageIndex);
+        recordingIndex.appendLog(recordingId, position, messageIndex, timestampMs);
     }
 
     private void snapshotState(final Publication publication)

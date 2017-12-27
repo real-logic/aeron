@@ -21,11 +21,9 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.service.ConsensusPos;
 import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
-
-import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 public class ConsensusTracker implements AutoCloseable
 {
@@ -34,6 +32,7 @@ public class ConsensusTracker implements AutoCloseable
 
     public ConsensusTracker(
         final Aeron aeron,
+        final MutableDirectBuffer tempBuffer,
         final long logPosition,
         final long messageIndex,
         final int sessionId,
@@ -54,8 +53,6 @@ public class ConsensusTracker implements AutoCloseable
         recordingPosition = new ReadableCounter(countersReader, recordingCounterId);
 
         final long recordingId = RecordingPos.getRecordingId(countersReader, recordingCounterId);
-        final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
-
         consensusPosition = ConsensusPos.allocate(aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId);
     }
 
@@ -67,7 +64,7 @@ public class ConsensusTracker implements AutoCloseable
     public void updatePosition()
     {
         final long position = recordingPosition.get();
-        if (consensusPosition.getWeak() < position)
+        if (position > consensusPosition.getWeak())
         {
             consensusPosition.setOrdered(position);
         }

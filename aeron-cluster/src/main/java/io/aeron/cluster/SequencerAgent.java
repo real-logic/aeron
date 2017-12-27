@@ -18,6 +18,8 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.control.ClusterControl;
+import io.aeron.cluster.service.RecordingIndex;
+import io.aeron.cluster.service.SnapshotPos;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -100,6 +102,26 @@ class SequencerAgent implements Agent
             CloseHelper.close(ingressAdapter);
             CloseHelper.close(consensusModuleAdapter);
         }
+    }
+
+    public void onStart()
+    {
+        final RecordingIndex.Entry snapshot = ctx.recordingIndex().getLatestSnapshot();
+        if (null != snapshot)
+        {
+            // TODO: load snapshot
+            messageIndex.setOrdered(snapshot.messageIndex);
+
+            try (Counter snapshotCounter = SnapshotPos.allocate(
+                ctx.aeron(), ctx.tempBuffer(), snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp))
+            {
+                // TODO: wait for services
+            }
+        }
+
+        // TODO: replay logs.
+
+        // TODO: wait on services
     }
 
     public int doWork()

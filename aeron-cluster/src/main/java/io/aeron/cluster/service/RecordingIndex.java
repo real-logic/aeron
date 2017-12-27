@@ -31,15 +31,74 @@ import java.nio.file.Path;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.*;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * An index of recordings that make up the history of a Raft log. Recordings are in chronological order.
  * <p>
- * The index is made up of log terms with optional snapshots to roll up state as of a log position and message index.
+ * The index is made up of log terms or snapshots to roll up state as of a log position and message index.
+ * <p>
+ * Record layout as follows:
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                        Recording ID                           |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |         Log Position at beginning of term or snapshot         |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |        Message Index at beginning of term or snapshot         |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |   Timestamp at beginning of term of when snapshot was taken   |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                  Entry Type (Log or Snapshot)                 |
+ *  +---------------------------------------------------------------+
+ * </pre>
  */
 public class RecordingIndex implements AutoCloseable
 {
+    /**
+     * A copy of the entry in the index.
+     */
+    public static class Entry
+    {
+        public final long recordingId;
+        public final long logPosition;
+        public final long messageIndex;
+        public final long timestamp;
+        public final int entryType;
+
+        public Entry(
+            final long recordingId,
+            final long logPosition,
+            final long messageIndex,
+            final long timestamp,
+            final int entryType)
+        {
+            this.recordingId = recordingId;
+            this.logPosition = logPosition;
+            this.messageIndex = messageIndex;
+            this.timestamp = timestamp;
+            this.entryType = entryType;
+        }
+
+        public String toString()
+        {
+            return "Entry{" +
+                "recordingId=" + recordingId +
+                ", logPosition=" + logPosition +
+                ", messageIndex=" + messageIndex +
+                ", timestamp=" + timestamp +
+                ", entryType=" + entryType +
+                '}';
+        }
+    }
+
     /**
      * Filename for the recording index for the history of log terms and snapshots.
      */
@@ -48,12 +107,12 @@ public class RecordingIndex implements AutoCloseable
     /**
      * The index entry is for a recording of messages to the consensus log.
      */
-    public static final int RECORDING_TYPE_LOG = 0;
+    public static final int ENTRY_TYPE_LOG = 0;
 
     /**
      * The index entry is for a recording of a snapshot of state taken as of a position in the log.
      */
-    public static final int RECORDING_TYPE_SNAPSHOT = 1;
+    public static final int ENTRY_TYPE_SNAPSHOT = 1;
 
     /**
      * The offset at which the recording id for the entry is stored.
@@ -71,32 +130,38 @@ public class RecordingIndex implements AutoCloseable
     public static final int MESSAGE_INDEX_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
 
     /**
-     * The offset at which the type of the record entry is stored.
+     * The offset at which the message index for the entry is stored.
      */
-    public static final int RECORD_TYPE_OFFSET = MESSAGE_INDEX_OFFSET + SIZE_OF_LONG;
+    public static final int TIMESTAMP_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
+
+    /**
+     * The offset at which the type of the entry is stored.
+     */
+    public static final int ENTRY_TYPE_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
 
     /**
      * The length of each entry.
      */
-    private static final int RECORD_LENGTH = BitUtil.align(RECORD_TYPE_OFFSET + SIZE_OF_LONG, SIZE_OF_LONG);
+    private static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_LONG, CACHE_LINE_LENGTH);
 
     @FunctionalInterface
-    public interface RecordingConsumer
+    public interface EntryConsumer
     {
         /**
-         * Accept a recording record from the index.
+         * Accept a recording entry from the index.
          *
-         * @param recordingType of the record.
-         * @param recordingId   in the archive for the recording.
-         * @param logPosition   reached for the aggregate log by the start of this recording.
-         * @param messageIndex  reached for the aggregate log by the start of this recording.
+         * @param recordingId  in the archive for the recording.
+         * @param logPosition  reached for the log by the start of this recording.
+         * @param messageIndex reached for the log by the start of this recording.
+         * @param timestamp    at which the term began or snapshot was taken.
+         * @param entryType    of the record.
          */
-        void accept(int recordingType, long recordingId, long logPosition, long messageIndex);
+        void accept(long recordingId, long logPosition, long messageIndex, long timestamp, int entryType);
     }
 
     private final File recordingIndexFile;
     private final File newRecordingIndexFile;
-    private final ByteBuffer buffer = ByteBuffer.allocate(RECORD_LENGTH);
+    private final ByteBuffer buffer = ByteBuffer.allocateDirect(ENTRY_LENGTH);
     private FileChannel fileChannel;
 
     public RecordingIndex(final File dir)
@@ -130,7 +195,7 @@ public class RecordingIndex implements AutoCloseable
 
         try
         {
-            count = fileChannel.size() / RECORD_LENGTH;
+            count = fileChannel.size() / ENTRY_LENGTH;
         }
         catch (final Exception ex)
         {
@@ -140,7 +205,83 @@ public class RecordingIndex implements AutoCloseable
         return count;
     }
 
-    public int forEachFromLastSnapshot(final RecordingConsumer consumer)
+    public Entry getLatestSnapshot()
+    {
+        MappedByteBuffer mappedByteBuffer = null;
+
+        try
+        {
+            final long length = fileChannel.size();
+
+            mappedByteBuffer = fileChannel.map(READ_ONLY, 0, length);
+            final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
+
+            for (int i = buffer.capacity() - ENTRY_LENGTH; i >= 0; i -= ENTRY_LENGTH)
+            {
+                final int entryType = buffer.getInt(i + ENTRY_TYPE_OFFSET);
+                if (entryType == ENTRY_TYPE_SNAPSHOT)
+                {
+                    return new Entry(
+                        buffer.getLong(i + RECORDING_ID_OFFSET),
+                        buffer.getLong(i + LOG_POSITION_OFFSET),
+                        buffer.getLong(i + MESSAGE_INDEX_OFFSET),
+                        buffer.getLong(i + TIMESTAMP_OFFSET),
+                        entryType);
+                }
+            }
+
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+        finally
+        {
+            IoUtil.unmap(mappedByteBuffer);
+        }
+
+        return null;
+    }
+
+    public Entry getSnapshotByPosition(final long position)
+    {
+        MappedByteBuffer mappedByteBuffer = null;
+
+        try
+        {
+            final long length = fileChannel.size();
+
+            mappedByteBuffer = fileChannel.map(READ_ONLY, 0, length);
+            final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
+
+            for (int i = buffer.capacity() - ENTRY_LENGTH; i >= 0; i -= ENTRY_LENGTH)
+            {
+                final int entryType = buffer.getInt(i + ENTRY_TYPE_OFFSET);
+                if (entryType == ENTRY_TYPE_SNAPSHOT && buffer.getLong(i + LOG_POSITION_OFFSET) == position)
+                {
+                    return new Entry(
+                        buffer.getLong(i + RECORDING_ID_OFFSET),
+                        position,
+                        buffer.getLong(i + MESSAGE_INDEX_OFFSET),
+                        buffer.getLong(i + TIMESTAMP_OFFSET),
+                        entryType);
+                }
+            }
+
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+        finally
+        {
+            IoUtil.unmap(mappedByteBuffer);
+        }
+
+        return null;
+    }
+
+    public int forEachFromLastSnapshot(final EntryConsumer consumer)
     {
         MappedByteBuffer mappedByteBuffer = null;
         int count = 0;
@@ -154,13 +295,14 @@ public class RecordingIndex implements AutoCloseable
 
             final int snapshotOffset = findOffsetOfLatestSnapshot(buffer);
 
-            for (int i = snapshotOffset; i < (int)length; i += RECORD_LENGTH)
+            for (int i = snapshotOffset; i < (int)length; i += ENTRY_LENGTH)
             {
                 consumer.accept(
-                    buffer.getInt(i + RECORD_TYPE_OFFSET),
                     buffer.getLong(i + RECORDING_ID_OFFSET),
                     buffer.getLong(i + LOG_POSITION_OFFSET),
-                    buffer.getLong(i + MESSAGE_INDEX_OFFSET));
+                    buffer.getLong(i + MESSAGE_INDEX_OFFSET),
+                    buffer.getLong(i + TIMESTAMP_OFFSET),
+                    buffer.getInt(i + ENTRY_TYPE_OFFSET));
 
                 count++;
             }
@@ -183,10 +325,12 @@ public class RecordingIndex implements AutoCloseable
      * @param recordingId  in the archive for the term.
      * @param logPosition  reached at the beginning of the term.
      * @param messageIndex reached at the beginning of the term.
+     * @param timestamp    at the beginning of the term.
      */
-    public void appendLog(final long recordingId, final long logPosition, final long messageIndex)
+    public void appendLog(
+        final long recordingId, final long logPosition, final long messageIndex, final long timestamp)
     {
-        append(RECORDING_TYPE_LOG, recordingId, logPosition, messageIndex);
+        append(ENTRY_TYPE_LOG, recordingId, logPosition, messageIndex, timestamp);
     }
 
     /**
@@ -195,10 +339,12 @@ public class RecordingIndex implements AutoCloseable
      * @param recordingId  in the archive for the snapshot.
      * @param logPosition  reached for the snapshot.
      * @param messageIndex reached for the snapshot.
+     * @param timestamp    at which the snapshot was taken.
      */
-    public void appendSnapshot(final long recordingId, final long logPosition, final long messageIndex)
+    public void appendSnapshot(
+        final long recordingId, final long logPosition, final long messageIndex, final long timestamp)
     {
-        append(RECORDING_TYPE_SNAPSHOT, recordingId, logPosition, messageIndex);
+        append(ENTRY_TYPE_SNAPSHOT, recordingId, logPosition, messageIndex, timestamp);
     }
 
     private static File indexLocation(final File dir, final boolean isTmp)
@@ -209,7 +355,11 @@ public class RecordingIndex implements AutoCloseable
     }
 
     private void append(
-        final int recordingType, final long recordingId, final long logPosition, final long messageIndex)
+        final int entryType,
+        final long recordingId,
+        final long logPosition,
+        final long messageIndex,
+        final long timestamp)
     {
         try
         {
@@ -220,17 +370,18 @@ public class RecordingIndex implements AutoCloseable
 
             Files.copy(indexFilePath, newIndexFilePath);
 
-            final FileChannel newFileChannel = FileChannel.open(newIndexFilePath, WRITE, APPEND);
+            try (FileChannel newFileChannel = FileChannel.open(newIndexFilePath, WRITE, APPEND))
+            {
+                buffer.putLong(RECORDING_ID_OFFSET, recordingId);
+                buffer.putLong(LOG_POSITION_OFFSET, logPosition);
+                buffer.putLong(MESSAGE_INDEX_OFFSET, messageIndex);
+                buffer.putLong(TIMESTAMP_OFFSET, timestamp);
+                buffer.putInt(ENTRY_TYPE_OFFSET, entryType);
 
-            buffer.putLong(RECORDING_ID_OFFSET, recordingId);
-            buffer.putLong(LOG_POSITION_OFFSET, logPosition);
-            buffer.putLong(MESSAGE_INDEX_OFFSET, messageIndex);
-            buffer.putInt(RECORD_TYPE_OFFSET, recordingType);
-
-            buffer.clear();
-            newFileChannel.write(buffer);
-            newFileChannel.force(true);
-            newFileChannel.close();
+                buffer.clear();
+                newFileChannel.write(buffer);
+                newFileChannel.force(true);
+            }
 
             Files.move(newIndexFilePath, indexFilePath, REPLACE_EXISTING);
 
@@ -244,9 +395,9 @@ public class RecordingIndex implements AutoCloseable
 
     private static int findOffsetOfLatestSnapshot(final UnsafeBuffer buffer)
     {
-        for (int i = buffer.capacity() - RECORD_LENGTH; i >= 0; i -= RECORD_LENGTH)
+        for (int i = buffer.capacity() - ENTRY_LENGTH; i >= 0; i -= ENTRY_LENGTH)
         {
-            if (buffer.getLong(i + RECORD_TYPE_OFFSET) == RECORDING_TYPE_SNAPSHOT)
+            if (buffer.getInt(i + ENTRY_TYPE_OFFSET) == ENTRY_TYPE_SNAPSHOT)
             {
                 return i;
             }

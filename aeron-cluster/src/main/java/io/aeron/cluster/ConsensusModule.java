@@ -34,6 +34,7 @@ import static io.aeron.cluster.ConsensusModule.Configuration.CONSENSUS_MODULE_ST
 import static io.aeron.cluster.ConsensusModule.Configuration.CONTROL_TOGGLE_TYPE_ID;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
+import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 public class ConsensusModule implements
     AutoCloseable,
@@ -90,6 +91,7 @@ public class ConsensusModule implements
         private final int code;
 
         static final State[] STATES;
+
         static
         {
             final State[] states = values();
@@ -151,7 +153,8 @@ public class ConsensusModule implements
         final Aeron aeron = ctx.aeron();
         final ExclusivePublication publication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
         logAppender = new LogAppender(publication);
-        consensusTracker = new ConsensusTracker(aeron, 0L, 0L, publication.sessionId(), ctx.idleStrategy());
+        consensusTracker = new ConsensusTracker(
+            aeron, ctx.tempBuffer(), 0L, 0L, publication.sessionId(), ctx.idleStrategy());
 
         final SequencerAgent conductor = new SequencerAgent(
             ctx,
@@ -420,6 +423,7 @@ public class ConsensusModule implements
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
         private CachedEpochClock cachedEpochClock;
+        private MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
 
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
@@ -921,6 +925,28 @@ public class ConsensusModule implements
         public CachedEpochClock cachedEpochClock()
         {
             return cachedEpochClock;
+        }
+
+        /**
+         * The temporary buffer than can be used to build up counter labels to avoid allocation.
+         *
+         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
+         */
+        public MutableDirectBuffer tempBuffer()
+        {
+            return tempBuffer;
+        }
+
+        /**
+         * Set the temporary buffer than can be used to build up counter labels to avoid allocation.
+         *
+         * @param tempBuffer to be used to avoid allocation.
+         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
+         */
+        public Context tempBuffer(final MutableDirectBuffer tempBuffer)
+        {
+            this.tempBuffer = tempBuffer;
+            return this;
         }
 
         /**

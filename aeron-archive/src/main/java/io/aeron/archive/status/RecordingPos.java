@@ -143,6 +143,36 @@ public class RecordingPos
     }
 
     /**
+     * Count the number of counters for a given session. It is possible for different recording to exist on the
+     * same session if there are images under subscriptions with different channel and stream id.
+     *
+     * @param countersReader to search within.
+     * @param sessionId      to search for.
+     * @return the count of recordings matching a session id.
+     */
+    public static int countBySession(final CountersReader countersReader, final int sessionId)
+    {
+        int count = 0;
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            {
+                final int recordOffset = CountersReader.metaDataOffset(i);
+
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
+                    buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
+                {
+                    ++count;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    /**
      * Find the active counter id for a stream based on the session id.
      *
      * @param countersReader to search within.

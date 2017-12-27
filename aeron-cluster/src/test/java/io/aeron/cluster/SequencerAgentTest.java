@@ -71,7 +71,7 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
 
         final long correlationIdOne = 1L;
-        agent.onActionAck(0, 0, 0, ServiceAction.READY);
+        agent.onActionAck(0, 0, 0, ServiceAction.INIT);
         agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
         agent.doWork();
 
@@ -98,7 +98,7 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
 
         final long correlationId = 1L;
-        agent.onActionAck(0, 0, 0, ServiceAction.READY);
+        agent.onActionAck(0, 0, 0, ServiceAction.INIT);
 
         agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
         agent.doWork();
@@ -150,7 +150,7 @@ public class SequencerAgentTest
         final SequencerAgent agent = newSequencerAgent();
         assertThat((int)stateValue.get(), is(ConsensusModule.State.INIT.code()));
 
-        agent.onActionAck(0, 0, 0, ServiceAction.READY);
+        agent.onActionAck(0, 0, 0, ServiceAction.INIT);
         assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
 
         controlValue.value = SUSPEND.code();
@@ -175,7 +175,7 @@ public class SequencerAgentTest
 
         ctx.controlToggle(mockControlToggle);
         final SequencerAgent agent = newSequencerAgent();
-        agent.onActionAck(0, 0, 0, ServiceAction.READY);
+        agent.onActionAck(0, 0, 0, ServiceAction.INIT);
 
         when(mockLogAppender.appendActionRequest(eq(ServiceAction.SNAPSHOT), anyLong(), anyLong(), anyLong()))
             .thenReturn(Boolean.TRUE);

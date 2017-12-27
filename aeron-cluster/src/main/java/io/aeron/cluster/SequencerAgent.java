@@ -36,7 +36,7 @@ class SequencerAgent implements Agent
     private final long sessionTimeoutMs;
     private long nextSessionId = 1;
     private long leadershipTermStartPosition = 0;
-    private int servicesReadyCount = 0;
+    private int serviceAckCount = 0;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock;
@@ -152,20 +152,23 @@ class SequencerAgent implements Agent
 
         switch (action)
         {
-            case READY:
+            case INIT:
                 if (ConsensusModule.State.INIT != state)
                 {
                     throw new IllegalStateException("Unexpected state: " + state);
                 }
 
-                if (servicesReadyCount >= ctx.serviceCount())
+                if (serviceAckCount >= ctx.serviceCount())
                 {
-                    throw new IllegalStateException("Service count exceeded: " + servicesReadyCount);
+                    throw new IllegalStateException("Service count exceeded: " + serviceAckCount);
                 }
 
-                ++servicesReadyCount;
+                ++serviceAckCount;
                 state(ConsensusModule.State.ACTIVE);
                 return;
+
+            case REPLAY:
+                break;
 
             case SNAPSHOT:
                 if (ConsensusModule.State.SNAPSHOT == state)

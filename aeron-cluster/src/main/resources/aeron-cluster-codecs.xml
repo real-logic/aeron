@@ -35,10 +35,11 @@
             <validValue name="TIMEOUT">1</validValue>
         </enum>
         <enum name="ServiceAction" encodingType="int32" description="Action to be taken by a clustered service">
-            <validValue name="READY">0</validValue>
-            <validValue name="SNAPSHOT">1</validValue>
-            <validValue name="SHUTDOWN">2</validValue>
-            <validValue name="ABORT">3</validValue>
+            <validValue name="INIT">0</validValue>
+            <validValue name="REPLAY">1</validValue>
+            <validValue name="SNAPSHOT">2</validValue>
+            <validValue name="SHUTDOWN">3</validValue>
+            <validValue name="ABORT">4</validValue>
         </enum>
         <enum name="SessionState" encodingType="int32" description="State of the client session">
             <validValue name="INIT">0</validValue>

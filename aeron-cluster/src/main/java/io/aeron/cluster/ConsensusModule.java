@@ -47,7 +47,45 @@ public class ConsensusModule implements
      */
     public enum State
     {
-        INIT(0), ACTIVE(1), SUSPENDED(2), SNAPSHOT(3), SHUTDOWN(4), ABORT(5), CLOSED(6);
+        /**
+         * Starting up and reloading latest snapshot.
+         */
+        INIT(0),
+
+        /**
+         * Replaying any logs since the beginning or last snapshot.
+         */
+        REPLAY(1),
+
+        /**
+         * Active state with ingress and expired timers appended to the log.
+         */
+        ACTIVE(2),
+
+        /**
+         * Suspended processing of ingress and expired timers.
+         */
+        SUSPENDED(3),
+
+        /**
+         * In the process of taking a snapshot.
+         */
+        SNAPSHOT(4),
+
+        /**
+         * In the process of doing an orderly shutdown taking a snapshot first.
+         */
+        SHUTDOWN(5),
+
+        /**
+         * Aborting processing and shutting down as soon as services ack without taking a snapshot.
+         */
+        ABORT(6),
+
+        /**
+         * Terminal state.
+         */
+        CLOSED(7);
 
         private final int code;
 

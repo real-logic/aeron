@@ -125,7 +125,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         logImage = logSubscription.imageAtIndex(0);
         state = State.LEADING;
 
-        sendAcknowledgment(ServiceAction.READY, leadershipTermStartPosition);
+        sendAcknowledgment(ServiceAction.INIT, leadershipTermStartPosition);
     }
 
     public void onClose()

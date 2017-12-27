@@ -73,7 +73,6 @@ public class ConsensusTracker implements AutoCloseable
         }
     }
 
-
     private void checkInterruptedStatus()
     {
         if (Thread.currentThread().isInterrupted())

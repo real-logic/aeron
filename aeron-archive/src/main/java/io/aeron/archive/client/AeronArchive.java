@@ -155,6 +155,16 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Get the {@link Context} used to connect this archive client.
+     *
+     * @return the {@link Context} used to connect this archive client.
+     */
+    public Context context()
+    {
+        return context;
+    }
+
+    /**
      * The control session id allocated for this connection to the archive.
      *
      * @return control session id allocated for this connection to the archive.

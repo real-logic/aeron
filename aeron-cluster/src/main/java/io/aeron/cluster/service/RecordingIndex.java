@@ -53,7 +53,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  |        Message Index at beginning of term or snapshot         |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |   Timestamp at beginning of term of when snapshot was taken   |
+ *  |   Timestamp at beginning of term or when snapshot was taken   |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                  Entry Type (Log or Snapshot)                 |

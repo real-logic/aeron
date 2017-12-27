@@ -17,9 +17,12 @@ package io.aeron.samples.archive;
 
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.samples.SampleConfiguration;
+import io.aeron.status.ReadableCounter;
 import org.agrona.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.util.concurrent.TimeUnit;
 
@@ -98,6 +101,19 @@ public class RecordedBasicPublisher
                     }
 
                     Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                }
+
+                // Wait for the recording to complete before the recording is stopped.
+
+                final CountersReader countersReader = archive.context().aeron().countersReader();
+                final int counterId = RecordingPos.findActiveCounterIdBySession(
+                    countersReader, publication.sessionId());
+                final ReadableCounter recordedPosition = new ReadableCounter(countersReader, counterId);
+
+                final long publicationPosition = publication.position();
+                while (recordedPosition.get() < publicationPosition)
+                {
+                    Thread.yield();
                 }
 
                 System.out.println("Done sending.");

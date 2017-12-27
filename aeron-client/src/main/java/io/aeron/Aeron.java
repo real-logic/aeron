@@ -90,12 +90,7 @@ public class Aeron implements AutoCloseable
      */
     public static final long KEEPALIVE_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(500);
 
-    /**
-     * Default interval that if exceeded between duty cycles the conductor will consider itself a zombie and suicide.
-     */
-    public static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
-
-    private volatile int isClosed;
+    @SuppressWarnings("unused") private volatile int isClosed;
     private final long clientId;
     private final ClientConductor conductor;
     private final RingBuffer commandBuffer;
@@ -470,14 +465,7 @@ public class Aeron implements AutoCloseable
                 countersValuesBuffer(CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
             }
 
-            if (0 == interServiceTimeout)
-            {
-                interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
-            }
-            else
-            {
-                interServiceTimeout = INTER_SERVICE_TIMEOUT_NS;
-            }
+            interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
 
             if (null == logBuffersFactory)
             {
@@ -653,7 +641,7 @@ public class Aeron implements AutoCloseable
          * @param toClientBuffer Injected CopyBroadcastReceiver
          * @return this Aeron.Context for method chaining.
          */
-        public Context toClientBuffer(final CopyBroadcastReceiver toClientBuffer)
+        Context toClientBuffer(final CopyBroadcastReceiver toClientBuffer)
         {
             this.toClientBuffer = toClientBuffer;
             return this;
@@ -675,7 +663,7 @@ public class Aeron implements AutoCloseable
          * @param toDriverBuffer Injected RingBuffer.
          * @return this Aeron.Context for method chaining.
          */
-        public Context toDriverBuffer(final RingBuffer toDriverBuffer)
+        Context toDriverBuffer(final RingBuffer toDriverBuffer)
         {
             this.toDriverBuffer = toDriverBuffer;
             return this;
@@ -697,7 +685,7 @@ public class Aeron implements AutoCloseable
          * @param driverProxy for communicating with the media driver.
          * @return this Aeron.Context for method chaining.
          */
-        public Context driverProxy(final DriverProxy driverProxy)
+        Context driverProxy(final DriverProxy driverProxy)
         {
             this.driverProxy = driverProxy;
             return this;
@@ -719,7 +707,7 @@ public class Aeron implements AutoCloseable
          * @param logBuffersFactory Injected LogBuffersFactory
          * @return this Aeron.Context for method chaining.
          */
-        public Context logBuffersFactory(final LogBuffersFactory logBuffersFactory)
+        Context logBuffersFactory(final LogBuffersFactory logBuffersFactory)
         {
             this.logBuffersFactory = logBuffersFactory;
             return this;
@@ -896,7 +884,7 @@ public class Aeron implements AutoCloseable
          * @param interServiceTimeout the timeout (ns) between service calls the to {@link ClientConductor} duty cycle.
          * @return this Aeron.Context for method chaining.
          */
-        public Context interServiceTimeout(final long interServiceTimeout)
+        Context interServiceTimeout(final long interServiceTimeout)
         {
             this.interServiceTimeout = interServiceTimeout;
             return this;

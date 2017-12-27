@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.codecs.ServiceAction;
 import io.aeron.cluster.control.ClusterControl;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
@@ -51,44 +52,45 @@ public class ConsensusModule implements
         /**
          * Starting up and reloading latest snapshot.
          */
-        INIT(0),
+        INIT(0, ServiceAction.INIT),
 
         /**
          * Replaying any logs since the beginning or last snapshot.
          */
-        REPLAY(1),
+        REPLAY(1, ServiceAction.REPLAY),
 
         /**
          * Active state with ingress and expired timers appended to the log.
          */
-        ACTIVE(2),
+        ACTIVE(2, null),
 
         /**
          * Suspended processing of ingress and expired timers.
          */
-        SUSPENDED(3),
+        SUSPENDED(3, null),
 
         /**
          * In the process of taking a snapshot.
          */
-        SNAPSHOT(4),
+        SNAPSHOT(4, ServiceAction.SNAPSHOT),
 
         /**
          * In the process of doing an orderly shutdown taking a snapshot first.
          */
-        SHUTDOWN(5),
+        SHUTDOWN(5, ServiceAction.SHUTDOWN),
 
         /**
          * Aborting processing and shutting down as soon as services ack without taking a snapshot.
          */
-        ABORT(6),
+        ABORT(6, ServiceAction.ABORT),
 
         /**
          * Terminal state.
          */
-        CLOSED(7);
+        CLOSED(7, null);
 
         private final int code;
+        private final ServiceAction validServiceAction;
 
         static final State[] STATES;
 
@@ -102,14 +104,26 @@ public class ConsensusModule implements
             }
         }
 
-        State(final int code)
+        State(final int code, final ServiceAction serviceAction)
         {
             this.code = code;
+            this.validServiceAction = serviceAction;
         }
 
         public final int code()
         {
             return code;
+        }
+
+        /**
+         * Is the {@link ServiceAction} valid for the current state?
+         *
+         * @param action to check if valid.
+         * @return true if the action is valid for the current state otherwise false.
+         */
+        public final boolean isValid(final ServiceAction action)
+        {
+            return action == validServiceAction;
         }
 
         /**

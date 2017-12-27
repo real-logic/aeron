@@ -172,52 +172,45 @@ class SequencerAgent implements Agent
                 ", messageIndex=" + messageIndex + " current message index is " + currentMessageIndex);
         }
 
-        switch (action)
+        if (!state.isValid(action))
         {
-            case INIT:
-                if (ConsensusModule.State.INIT != state)
-                {
-                    throw new IllegalStateException("Unexpected state: " + state);
-                }
-
-                if (serviceAckCount >= ctx.serviceCount())
-                {
-                    throw new IllegalStateException("Service count exceeded: " + serviceAckCount);
-                }
-
-                ++serviceAckCount;
-                state(ConsensusModule.State.ACTIVE);
-                return;
-
-            case REPLAY:
-                break;
-
-            case SNAPSHOT:
-                if (ConsensusModule.State.SNAPSHOT == state)
-                {
-                    state(ConsensusModule.State.ACTIVE);
-                    ClusterControl.ToggleState.reset(controlToggle);
-                }
-                return;
-
-            case SHUTDOWN:
-                if (ConsensusModule.State.SHUTDOWN == state)
-                {
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.shutdownSignalBarrier().signal();
-                }
-                return;
-
-            case ABORT:
-                if (ConsensusModule.State.ABORT == state)
-                {
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.shutdownSignalBarrier().signal();
-                }
-                return;
+            throw new IllegalStateException("Invalid action ack for state " + state + " action " + action);
         }
 
-        throw new IllegalStateException("Service action ack=" + action + " state=" + state);
+        if (++serviceAckCount == ctx.serviceCount())
+        {
+            switch (action)
+            {
+                case INIT:
+                    state(ConsensusModule.State.ACTIVE);
+                    break;
+
+                case REPLAY:
+                    break;
+
+                case SNAPSHOT:
+                    state(ConsensusModule.State.ACTIVE);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    break;
+
+                case SHUTDOWN:
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.shutdownSignalBarrier().signal();
+                    break;
+
+                case ABORT:
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.shutdownSignalBarrier().signal();
+                    break;
+
+                default:
+                    throw new IllegalStateException("Service action ack=" + action + " state=" + state);
+            }
+        }
+        else if (serviceAckCount > ctx.serviceCount())
+        {
+            throw new IllegalStateException("Service count exceeded: " + serviceAckCount);
+        }
     }
 
     public void onSessionConnect(
@@ -364,6 +357,7 @@ class SequencerAgent implements Agent
             case SNAPSHOT:
                 if (ConsensusModule.State.ACTIVE == state && appendSnapshot(nowMs))
                 {
+                    serviceAckCount = 0;
                     workCount = 1;
                 }
                 break;
@@ -371,6 +365,7 @@ class SequencerAgent implements Agent
             case SHUTDOWN:
                 if (ConsensusModule.State.ACTIVE == state && appendShutdown(nowMs))
                 {
+                    serviceAckCount = 0;
                     workCount = 1;
                 }
                 break;
@@ -378,6 +373,7 @@ class SequencerAgent implements Agent
             case ABORT:
                 if (ConsensusModule.State.ACTIVE == state && appendAbort(nowMs))
                 {
+                    serviceAckCount = 0;
                     workCount = 1;
                 }
                 break;

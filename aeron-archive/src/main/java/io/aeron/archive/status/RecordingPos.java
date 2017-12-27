@@ -175,7 +175,7 @@ public class RecordingPos
      *
      * @param countersReader to search within.
      * @param counterId      for the active recording.
-     * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
+     * @return the counter id if found otherwise {@link #NULL_RECORDING_ID}.
      */
     public static long getRecordingId(final CountersReader countersReader, final int counterId)
     {

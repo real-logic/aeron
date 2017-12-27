@@ -555,8 +555,8 @@ class SequencerAgent implements Agent
     {
         if (logAppender.appendConnectedSession(session, nowMs))
         {
-            session.state(ClusterSession.State.OPEN);
             messageIndex.incrementOrdered();
+            session.state(ClusterSession.State.OPEN);
 
             return true;
         }

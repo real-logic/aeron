@@ -27,6 +27,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 public class ConsensusTracker implements AutoCloseable
 {
+    private final long recordingId;
     private final ReadableCounter recordingPosition;
     private final Counter consensusPosition;
 
@@ -52,7 +53,7 @@ public class ConsensusTracker implements AutoCloseable
 
         recordingPosition = new ReadableCounter(countersReader, recordingCounterId);
 
-        final long recordingId = RecordingPos.getRecordingId(countersReader, recordingCounterId);
+        recordingId = RecordingPos.getRecordingId(countersReader, recordingCounterId);
         consensusPosition = ConsensusPos.allocate(aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId);
     }
 
@@ -68,6 +69,11 @@ public class ConsensusTracker implements AutoCloseable
         {
             consensusPosition.setOrdered(position);
         }
+    }
+
+    public long recordingId()
+    {
+        return recordingId;
     }
 
     private void checkInterruptedStatus()

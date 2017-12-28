@@ -117,34 +117,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     {
         service.onStart(this);
 
-        final CountersReader countersReader = aeron.countersReader();
-
-        int snapshotCounterId = SnapshotPos.findActiveCounterId(countersReader);
-        while (SnapshotPos.NULL_COUNTER_ID == snapshotCounterId)
-        {
-            checkInterruptedStatus();
-            idleStrategy.idle();
-
-            snapshotCounterId = SnapshotPos.findActiveCounterId(countersReader);
-        }
-
-        final long logPosition = SnapshotPos.getLogPosition(countersReader, snapshotCounterId);
-        if (logPosition > 0)
-        {
-            final RecordingIndex.Entry snapshotEntry = recordingIndex.getSnapshotByPosition(logPosition);
-            if (null == snapshotEntry)
-            {
-                throw new IllegalStateException("No snapshot available for position: " + logPosition);
-            }
-
-            snapshotEntry.confirmMatch(
-                logPosition,
-                SnapshotPos.getMessageIndex(countersReader, snapshotCounterId),
-                SnapshotPos.getTimestamp(countersReader, snapshotCounterId));
-
-            loadSnapshot(snapshotEntry);
-        }
-
+        checkForSnapshot();
         sendAcknowledgment(ServiceAction.INIT, leadershipTermBeginPosition);
 
         final long recordingId = findConsensusPosition();
@@ -367,6 +340,44 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         throw new IllegalStateException("Failed to schedule timer");
     }
 
+    private void checkForSnapshot()
+    {
+        final CountersReader countersReader = aeron.countersReader();
+        final int snapshotCounterId = findSnapshotCounterId(countersReader);
+        final long logPosition = SnapshotPos.getLogPosition(countersReader, snapshotCounterId);
+
+        if (logPosition > 0)
+        {
+            final RecordingIndex.Entry snapshotEntry = recordingIndex.getSnapshotByPosition(logPosition);
+            if (null == snapshotEntry)
+            {
+                throw new IllegalStateException("No snapshot available for position: " + logPosition);
+            }
+
+            leadershipTermBeginPosition = logPosition;
+            messageIndex = SnapshotPos.getMessageIndex(countersReader, snapshotCounterId);
+            timestampMs = SnapshotPos.getTimestamp(countersReader, snapshotCounterId);
+
+            snapshotEntry.confirmMatch(logPosition, messageIndex, timestampMs);
+            loadSnapshot(snapshotEntry.recordingId);
+        }
+    }
+
+    private int findSnapshotCounterId(final CountersReader countersReader)
+    {
+        int snapshotCounterId = SnapshotPos.findActiveCounterId(countersReader);
+
+        while (SnapshotPos.NULL_COUNTER_ID == snapshotCounterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+
+            snapshotCounterId = SnapshotPos.findActiveCounterId(countersReader);
+        }
+
+        return snapshotCounterId;
+    }
+
     private long findConsensusPosition()
     {
         final long deadlineNs = epochClock.time() + TIMEOUT_NS;
@@ -478,19 +489,15 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
     }
 
-    private void loadSnapshot(final RecordingIndex.Entry snapshotEntry)
+    private void loadSnapshot(final long recordingId)
     {
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
             final RecordingInfo recordingInfo = new RecordingInfo();
-            if (0 == aeronArchive.listRecording(snapshotEntry.recordingId, recordingInfo))
+            if (0 == aeronArchive.listRecording(recordingId, recordingInfo))
             {
-                throw new IllegalStateException("Could not find recordingId: " + snapshotEntry.recordingId);
+                throw new IllegalStateException("Could not find recordingId: " + recordingId);
             }
-
-            leadershipTermBeginPosition = snapshotEntry.logPosition;
-            this.messageIndex = snapshotEntry.messageIndex;
-            this.timestampMs = snapshotEntry.timestamp;
 
             try (Subscription replaySubscription = aeronArchive.replay(
                 recordingInfo.recordingId,
@@ -561,7 +568,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             state = State.LEADING;
         }
 
-        recordingIndex.appendLog(recordingId, position, messageIndex, timestampMs);
+        recordingIndex.appendSnapshot(recordingId, position, messageIndex, timestampMs);
     }
 
     private void snapshotState(final Publication publication)

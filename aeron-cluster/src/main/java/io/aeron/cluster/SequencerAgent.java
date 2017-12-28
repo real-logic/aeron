@@ -114,8 +114,11 @@ class SequencerAgent implements Agent
         final IdleStrategy idleStrategy = ctx.idleStrategy();
         waitForState(ConsensusModule.State.ACTIVE, idleStrategy);
 
+        final long timestamp = epochClock.time();
+        cachedEpochClock.update(timestamp);
+
         ctx.recordingIndex().appendLog(
-            consensusTracker.recordingId(), leadershipTermBeginPosition, messageIndex.getWeak(), epochClock.time());
+            consensusTracker.recordingId(), leadershipTermBeginPosition, messageIndex.getWeak(), timestamp);
     }
 
     public int doWork()

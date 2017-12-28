@@ -251,7 +251,6 @@ public class ConsensusModule implements
     public ConsensusModuleAdapter newConsensusModuleAdapter(final SequencerAgent sequencerAgent)
     {
         return new ConsensusModuleAdapter(
-            FRAGMENT_POLL_LIMIT,
             ctx.aeron().addSubscription(ctx.consensusModuleChannel(), ctx.consensusModuleStreamId()),
             sequencerAgent);
     }

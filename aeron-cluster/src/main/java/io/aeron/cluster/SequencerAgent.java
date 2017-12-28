@@ -109,30 +109,9 @@ class SequencerAgent implements Agent
 
     public void onStart()
     {
+        checkForSnapshot();
+
         final IdleStrategy idleStrategy = ctx.idleStrategy();
-        final RecordingIndex.Entry snapshot = ctx.recordingIndex().getLatestSnapshot();
-        if (null != snapshot)
-        {
-            cachedEpochClock.update(snapshot.timestamp);
-            leadershipTermBeginPosition = snapshot.logPosition;
-            messageIndex.setOrdered(snapshot.messageIndex);
-
-            try (Counter ignore = SnapshotPos.allocate(
-                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp))
-            {
-                loadSnapshot(snapshot.recordingId);
-                waitForState(ConsensusModule.State.REPLAY, idleStrategy);
-            }
-        }
-        else
-        {
-            final Counter counter = SnapshotPos.allocate(aeron, tempBuffer, 0, 0, 0);
-            waitForState(ConsensusModule.State.REPLAY, idleStrategy);
-            counter.close();
-        }
-
-        // TODO: replay logs.
-
         waitForState(ConsensusModule.State.ACTIVE, idleStrategy);
     }
 
@@ -335,6 +314,31 @@ class SequencerAgent implements Agent
         timerService.cancelTimer(correlationId);
     }
 
+    private void checkForSnapshot()
+    {
+        final RecordingIndex.Entry snapshot = ctx.recordingIndex().getLatestSnapshot();
+
+        if (null != snapshot)
+        {
+            cachedEpochClock.update(snapshot.timestamp);
+            leadershipTermBeginPosition = snapshot.logPosition;
+            messageIndex.setOrdered(snapshot.messageIndex);
+
+            try (Counter ignore = SnapshotPos.allocate(
+                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp))
+            {
+                loadSnapshot(snapshot.recordingId);
+                waitForState(ConsensusModule.State.REPLAY, ctx.idleStrategy());
+            }
+        }
+        else
+        {
+            final Counter counter = SnapshotPos.allocate(aeron, tempBuffer, 0, 0, 0);
+            waitForState(ConsensusModule.State.REPLAY, ctx.idleStrategy());
+            counter.close();
+        }
+    }
+
     private void checkInterruptedStatus()
     {
         if (Thread.currentThread().isInterrupted())
@@ -402,6 +406,7 @@ class SequencerAgent implements Agent
             case SNAPSHOT:
                 if (ConsensusModule.State.ACTIVE == state && appendSnapshot(nowMs))
                 {
+                    state(ConsensusModule.State.SNAPSHOT);
                     serviceAckCount = 0;
                     workCount = 1;
                 }
@@ -410,6 +415,7 @@ class SequencerAgent implements Agent
             case SHUTDOWN:
                 if (ConsensusModule.State.ACTIVE == state && appendShutdown(nowMs))
                 {
+                    state(ConsensusModule.State.SHUTDOWN);
                     serviceAckCount = 0;
                     workCount = 1;
                 }
@@ -418,6 +424,7 @@ class SequencerAgent implements Agent
             case ABORT:
                 if (ConsensusModule.State.ACTIVE == state && appendAbort(nowMs))
                 {
+                    state(ConsensusModule.State.ABORT);
                     serviceAckCount = 0;
                     workCount = 1;
                 }
@@ -434,7 +441,6 @@ class SequencerAgent implements Agent
         if (logAppender.appendActionRequest(ServiceAction.SNAPSHOT, messageIndex.getWeak(), position, nowMs))
         {
             messageIndex.incrementOrdered();
-            state(ConsensusModule.State.SNAPSHOT);
             return true;
         }
 
@@ -448,7 +454,6 @@ class SequencerAgent implements Agent
         if (logAppender.appendActionRequest(ServiceAction.SHUTDOWN, messageIndex.getWeak(), position, nowMs))
         {
             messageIndex.incrementOrdered();
-            state(ConsensusModule.State.SHUTDOWN);
             return true;
         }
 
@@ -462,7 +467,6 @@ class SequencerAgent implements Agent
         if (logAppender.appendActionRequest(ServiceAction.ABORT, messageIndex.getWeak(), position, nowMs))
         {
             messageIndex.incrementOrdered();
-            state(ConsensusModule.State.ABORT);
             return true;
         }
 

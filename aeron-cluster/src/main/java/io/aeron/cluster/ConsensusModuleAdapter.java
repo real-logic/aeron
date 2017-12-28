@@ -24,7 +24,6 @@ import org.agrona.DirectBuffer;
 
 public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
 {
-    private final int fragmentLimit;
     final Subscription subscription;
     final SequencerAgent sequencerAgent;
 
@@ -33,10 +32,8 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
     private final CancelTimerRequestDecoder cancelTimerRequestDecoder = new CancelTimerRequestDecoder();
     private final ServiceActionAckDecoder serviceActionAckDecoder = new ServiceActionAckDecoder();
 
-    public ConsensusModuleAdapter(
-        final int fragmentLimit, final Subscription subscription, final SequencerAgent sequencerAgent)
+    public ConsensusModuleAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
     {
-        this.fragmentLimit = fragmentLimit;
         this.subscription = subscription;
         this.sequencerAgent = sequencerAgent;
     }
@@ -48,7 +45,7 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
 
     public int poll()
     {
-        return subscription.poll(this, fragmentLimit);
+        return subscription.poll(this, 1);
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

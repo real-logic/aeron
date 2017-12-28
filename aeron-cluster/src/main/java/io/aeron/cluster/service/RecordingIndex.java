@@ -65,7 +65,7 @@ public class RecordingIndex implements AutoCloseable
     /**
      * A copy of the entry in the index.
      */
-    public static class Entry
+    public static final class Entry
     {
         public final long recordingId;
         public final long logPosition;
@@ -96,6 +96,27 @@ public class RecordingIndex implements AutoCloseable
                 ", timestamp=" + timestamp +
                 ", entryType=" + entryType +
                 '}';
+        }
+
+        public void confirmMatch(final long logPosition, final long messageIndex, final long timestamp)
+        {
+            if (logPosition != this.logPosition)
+            {
+                throw new IllegalStateException(
+                    "Log position does not match: this=" + this.logPosition + " that=" + logPosition);
+            }
+
+            if (messageIndex != this.messageIndex)
+            {
+                throw new IllegalStateException(
+                    "Message index does not match: this=" + this.messageIndex + " that=" + messageIndex);
+            }
+
+            if (timestamp != this.timestamp)
+            {
+                throw new IllegalStateException(
+                    "Timestamp does not match: this=" + this.timestamp + " that=" + timestamp);
+            }
         }
     }
 

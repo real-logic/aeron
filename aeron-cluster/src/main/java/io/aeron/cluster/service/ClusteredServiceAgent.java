@@ -56,7 +56,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private static final long TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
 
     private final long serviceId;
-    private long leadershipTermStartPosition = 0;
+    private long leadershipTermBeginPosition = 0;
     private long messageIndex;
     private long timestampMs;
     private final boolean shouldCloseResources;
@@ -117,15 +117,43 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     {
         service.onStart(this);
 
-        recoverState();
+        final CountersReader countersReader = aeron.countersReader();
+
+        int snapshotCounterId = SnapshotPos.findActiveCounterId(countersReader);
+        while (SnapshotPos.NULL_COUNTER_ID == snapshotCounterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+
+            snapshotCounterId = SnapshotPos.findActiveCounterId(countersReader);
+        }
+
+        final long logPosition = SnapshotPos.getLogPosition(countersReader, snapshotCounterId);
+        if (logPosition > 0)
+        {
+            final RecordingIndex.Entry snapshotEntry = recordingIndex.getSnapshotByPosition(logPosition);
+            if (null == snapshotEntry)
+            {
+                throw new IllegalStateException("No snapshot available for position: " + logPosition);
+            }
+
+            snapshotEntry.confirmMatch(
+                logPosition,
+                SnapshotPos.getMessageIndex(countersReader, snapshotCounterId),
+                SnapshotPos.getTimestamp(countersReader, snapshotCounterId));
+
+            loadSnapshot(snapshotEntry);
+        }
+
+        sendAcknowledgment(ServiceAction.INIT, leadershipTermBeginPosition);
 
         final long recordingId = findConsensusPosition();
-        recordingIndex.appendLog(recordingId, leadershipTermStartPosition, messageIndex, timestampMs);
+        recordingIndex.appendLog(recordingId, leadershipTermBeginPosition, messageIndex, timestampMs);
 
         logImage = logSubscription.imageAtIndex(0);
         state = State.LEADING;
 
-        sendAcknowledgment(ServiceAction.INIT, leadershipTermStartPosition);
+        sendAcknowledgment(ServiceAction.REPLAY, leadershipTermBeginPosition);
     }
 
     public void onClose()
@@ -253,7 +281,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     messageHeaderDecoder.version());
 
                 timestampMs = actionRequestDecoder.timestamp();
-                final long resultingPosition = leadershipTermStartPosition + header.position();
+                final long resultingPosition = leadershipTermBeginPosition + header.position();
                 executeAction(actionRequestDecoder.action(), resultingPosition);
                 break;
             }
@@ -394,14 +422,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                         throw new IllegalStateException("Could not find recordingId: " + recordingId);
                     }
 
-                    leadershipTermStartPosition = logPosition;
+                    leadershipTermBeginPosition = logPosition;
                     this.messageIndex = messageIndex;
 
-                    if (RecordingIndex.ENTRY_TYPE_SNAPSHOT == type)
-                    {
-                        loadSnapshot(aeronArchive, recordingInfo);
-                    }
-                    else if (RecordingIndex.ENTRY_TYPE_LOG == type)
+                    if (RecordingIndex.ENTRY_TYPE_LOG == type)
                     {
                         replayRecordedLog(aeronArchive, recordingInfo);
                     }
@@ -450,35 +474,47 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 idleStrategy.idle(workCount);
             }
 
-            leadershipTermStartPosition += length;
+            leadershipTermBeginPosition += length;
         }
     }
 
-    private void loadSnapshot(final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
+    private void loadSnapshot(final RecordingIndex.Entry snapshotEntry)
     {
-        try (Subscription replaySubscription = aeronArchive.replay(
-            recordingInfo.recordingId,
-            recordingInfo.startPosition,
-            recordingInfo.stopPosition - recordingInfo.startPosition,
-            ctx.replayChannel(),
-            ctx.replayStreamId()))
+        try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
-            idleStrategy.reset();
-            while (!replaySubscription.isConnected())
+            final RecordingInfo recordingInfo = new RecordingInfo();
+            if (0 == aeronArchive.listRecording(snapshotEntry.recordingId, recordingInfo))
             {
-                checkInterruptedStatus();
-                idleStrategy.idle();
+                throw new IllegalStateException("Could not find recordingId: " + snapshotEntry.recordingId);
             }
 
-            if (replaySubscription.imageCount() != 1)
+            leadershipTermBeginPosition = snapshotEntry.logPosition;
+            this.messageIndex = snapshotEntry.messageIndex;
+            this.timestampMs = snapshotEntry.timestamp;
+
+            try (Subscription replaySubscription = aeronArchive.replay(
+                recordingInfo.recordingId,
+                recordingInfo.startPosition,
+                recordingInfo.stopPosition - recordingInfo.startPosition,
+                ctx.replayChannel(),
+                ctx.replayStreamId()))
             {
-                throw new IllegalStateException("Only expected one replay");
+                idleStrategy.reset();
+                while (!replaySubscription.isConnected())
+                {
+                    checkInterruptedStatus();
+                    idleStrategy.idle();
+                }
+
+                if (replaySubscription.imageCount() != 1)
+                {
+                    throw new IllegalStateException("Only expected one replay");
+                }
+
+                final Image snapshotImage = replaySubscription.imageAtIndex(0);
+                loadState(snapshotImage);
+                service.onLoadSnapshot(snapshotImage);
             }
-
-
-            final Image snapshotImage = replaySubscription.imageAtIndex(0);
-            loadState(snapshotImage);
-            service.onLoadSnapshot(snapshotImage);
         }
     }
 

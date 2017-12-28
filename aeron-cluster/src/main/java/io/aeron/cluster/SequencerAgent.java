@@ -21,8 +21,7 @@ import io.aeron.cluster.control.ClusterControl;
 import io.aeron.cluster.service.RecordingIndex;
 import io.aeron.cluster.service.SnapshotPos;
 import io.aeron.logbuffer.ControlledFragmentHandler;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
+import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
@@ -37,8 +36,9 @@ class SequencerAgent implements Agent
 {
     private final long sessionTimeoutMs;
     private long nextSessionId = 1;
-    private long leadershipTermStartPosition = 0;
+    private long leadershipTermBeginPosition = 0;
     private int serviceAckCount = 0;
+    private final Aeron aeron;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock;
@@ -58,6 +58,7 @@ class SequencerAgent implements Agent
     private final ConsensusModule.Context ctx;
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
+    private final MutableDirectBuffer tempBuffer;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
 
     SequencerAgent(
@@ -71,6 +72,7 @@ class SequencerAgent implements Agent
         final ConsensusModuleAdapterSupplier consensusModuleAdapterSupplier)
     {
         this.ctx = ctx;
+        this.aeron = ctx.aeron();
         this.epochClock = ctx.epochClock();
         this.cachedEpochClock = ctx.cachedEpochClock();
         this.sessionTimeoutMs = ctx.sessionTimeoutNs() / 1000;
@@ -82,6 +84,7 @@ class SequencerAgent implements Agent
         this.consensusTracker = consensusTracker;
         this.sessionSupplier = clusterSessionSupplier;
         this.sessionProxy = new SessionProxy(egressPublisher);
+        this.tempBuffer = ctx.tempBuffer();
 
         ingressAdapter = ingressAdapterSupplier.newIngressAdapter(this);
         timerService = timerServiceSupplier.newTimerService(this);
@@ -106,22 +109,31 @@ class SequencerAgent implements Agent
 
     public void onStart()
     {
+        final IdleStrategy idleStrategy = ctx.idleStrategy();
         final RecordingIndex.Entry snapshot = ctx.recordingIndex().getLatestSnapshot();
         if (null != snapshot)
         {
-            // TODO: load snapshot
+            cachedEpochClock.update(snapshot.timestamp);
+            leadershipTermBeginPosition = snapshot.logPosition;
             messageIndex.setOrdered(snapshot.messageIndex);
 
-            try (Counter snapshotCounter = SnapshotPos.allocate(
-                ctx.aeron(), ctx.tempBuffer(), snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp))
+            try (Counter ignore = SnapshotPos.allocate(
+                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp))
             {
-                // TODO: wait for services
+                loadSnapshot(snapshot.recordingId);
+                waitForState(ConsensusModule.State.REPLAY, idleStrategy);
             }
+        }
+        else
+        {
+            final Counter counter = SnapshotPos.allocate(aeron, tempBuffer, 0, 0, 0);
+            waitForState(ConsensusModule.State.REPLAY, idleStrategy);
+            counter.close();
         }
 
         // TODO: replay logs.
 
-        // TODO: wait on services
+        waitForState(ConsensusModule.State.ACTIVE, idleStrategy);
     }
 
     public int doWork()
@@ -162,7 +174,7 @@ class SequencerAgent implements Agent
     public void onActionAck(
         final long serviceId, final long logPosition, final long messageIndex, final ServiceAction action)
     {
-        final long currentLogPosition = leadershipTermStartPosition + logAppender.position();
+        final long currentLogPosition = leadershipTermBeginPosition + logAppender.position();
         final long currentMessageIndex = this.messageIndex.getWeak();
         if (logPosition != currentLogPosition || messageIndex != currentMessageIndex)
         {
@@ -182,10 +194,13 @@ class SequencerAgent implements Agent
             switch (action)
             {
                 case INIT:
-                    state(ConsensusModule.State.ACTIVE);
+                    state(ConsensusModule.State.REPLAY);
+                    serviceAckCount = 0;
                     break;
 
                 case REPLAY:
+                    state(ConsensusModule.State.ACTIVE);
+                    serviceAckCount = 0;
                     break;
 
                 case SNAPSHOT:
@@ -202,9 +217,6 @@ class SequencerAgent implements Agent
                     state(ConsensusModule.State.CLOSED);
                     ctx.shutdownSignalBarrier().signal();
                     break;
-
-                default:
-                    throw new IllegalStateException("Service action ack=" + action + " state=" + state);
             }
         }
         else if (serviceAckCount > ctx.serviceCount())
@@ -323,6 +335,39 @@ class SequencerAgent implements Agent
         timerService.cancelTimer(correlationId);
     }
 
+    private void checkInterruptedStatus()
+    {
+        if (Thread.currentThread().isInterrupted())
+        {
+            throw new RuntimeException("Unexpected interrupt");
+        }
+    }
+
+    private void waitForState(final ConsensusModule.State expectedState, final IdleStrategy idleStrategy)
+    {
+        while (true)
+        {
+            final int fragmentsRead = consensusModuleAdapter.poll();
+            if (expectedState == state)
+            {
+                break;
+            }
+
+            checkInterruptedStatus();
+            idleStrategy.idle(fragmentsRead);
+
+            if (null != aeronClientInvoker)
+            {
+                aeronClientInvoker.invoke();
+            }
+        }
+    }
+
+    private void loadSnapshot(final long recordingId)
+    {
+
+    }
+
     private void state(final ConsensusModule.State state)
     {
         this.state = state;
@@ -426,7 +471,7 @@ class SequencerAgent implements Agent
 
     private long resultingServiceActionPosition()
     {
-        return leadershipTermStartPosition +
+        return leadershipTermBeginPosition +
             logAppender.position() +
             MessageHeaderEncoder.ENCODED_LENGTH +
             ServiceActionRequestEncoder.BLOCK_LENGTH;

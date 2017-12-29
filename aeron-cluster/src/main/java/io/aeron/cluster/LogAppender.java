@@ -45,6 +45,11 @@ class LogAppender implements AutoCloseable
         CloseHelper.close(publication);
     }
 
+    public int sessionId()
+    {
+        return publication.sessionId();
+    }
+
     public long position()
     {
         return publication.position();

@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.control.ClusterControl;
 import io.aeron.cluster.service.RecordingIndex;
@@ -46,8 +47,8 @@ class SequencerAgent implements Agent
     private final ConsensusModuleAdapter consensusModuleAdapter;
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
+    private final AeronArchive aeronArchive;
     private final LogAppender logAppender;
-    private final ConsensusTracker consensusTracker;
     private final Counter messageIndex;
     private final Counter moduleState;
     private final Counter controlToggle;
@@ -59,13 +60,14 @@ class SequencerAgent implements Agent
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
     private final MutableDirectBuffer tempBuffer;
+    private ConsensusTracker consensusTracker;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
 
     SequencerAgent(
         final ConsensusModule.Context ctx,
         final EgressPublisher egressPublisher,
+        final AeronArchive aeronArchive,
         final LogAppender logAppender,
-        final ConsensusTracker consensusTracker,
         final IngressAdapterSupplier ingressAdapterSupplier,
         final TimerServiceSupplier timerServiceSupplier,
         final ClusterSessionSupplier clusterSessionSupplier,
@@ -80,6 +82,7 @@ class SequencerAgent implements Agent
         this.messageIndex = ctx.messageIndex();
         this.moduleState = ctx.moduleState();
         this.controlToggle = ctx.controlToggle();
+        this.aeronArchive = aeronArchive;
         this.logAppender = logAppender;
         this.consensusTracker = consensusTracker;
         this.sessionSupplier = clusterSessionSupplier;
@@ -109,14 +112,21 @@ class SequencerAgent implements Agent
 
     public void onStart()
     {
-        recoverFromSnapshot();
-        recoverFromLog();
+        final RecordingIndex recordingIndex = ctx.recordingIndex();
+
+        recoverFromSnapshot(recordingIndex);
+        recoverFromLog(recordingIndex);
 
         final long timestamp = epochClock.time();
         cachedEpochClock.update(timestamp);
 
-        ctx.recordingIndex().appendTerm(
-            consensusTracker.recordingId(), leadershipTermBeginPosition, messageIndex.getWeak(), timestamp);
+        final long messageIndex = this.messageIndex.getWeak();
+        final long position = leadershipTermBeginPosition;
+
+        consensusTracker = new ConsensusTracker(
+            aeron, ctx.tempBuffer(), position, messageIndex, logAppender.sessionId(), ctx.idleStrategy());
+
+        recordingIndex.appendTerm(consensusTracker.recordingId(), position, messageIndex, timestamp);
     }
 
     public int doWork()
@@ -131,7 +141,10 @@ class SequencerAgent implements Agent
             workCount += aeronClientInvoker.invoke();
         }
 
-        consensusTracker.updatePosition();
+        if (null != consensusTracker)
+        {
+            consensusTracker.updatePosition();
+        }
 
         workCount += checkControlToggle(nowMs);
         workCount += consensusModuleAdapter.poll();
@@ -318,9 +331,9 @@ class SequencerAgent implements Agent
         timerService.cancelTimer(correlationId);
     }
 
-    private void recoverFromSnapshot()
+    private void recoverFromSnapshot(final RecordingIndex recordingIndex)
     {
-        final RecordingIndex.Entry snapshot = ctx.recordingIndex().getLatestSnapshot();
+        final RecordingIndex.Entry snapshot = recordingIndex.getLatestSnapshot();
 
         if (null != snapshot)
         {
@@ -343,7 +356,7 @@ class SequencerAgent implements Agent
         }
     }
 
-    private void recoverFromLog()
+    private void recoverFromLog(final RecordingIndex recordingIndex)
     {
         final IdleStrategy idleStrategy = ctx.idleStrategy();
         waitForStateChange(ConsensusModule.State.ACTIVE, idleStrategy);

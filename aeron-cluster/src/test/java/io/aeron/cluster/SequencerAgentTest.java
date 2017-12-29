@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.Publication;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.codecs.ServiceAction;
@@ -194,8 +195,8 @@ public class SequencerAgentTest
         return new SequencerAgent(
             ctx,
             mockEgressPublisher,
+            mock(AeronArchive.class),
             mockLogAppender,
-            mock(ConsensusTracker.class),
             (sequencerAgent) -> mock(IngressAdapter.class),
             (sequencerAgent) -> mock(TimerService.class),
             (sessionId, responseStreamId, responseChannel) -> new ClusterSession(sessionId, mockResponsePublication),

@@ -150,8 +150,8 @@ public class ConsensusModule implements
     private static final int TIMER_POLL_LIMIT = 10;
 
     private final Context ctx;
+    private final AeronArchive aeronArchive;
     private final LogAppender logAppender;
-    private final ConsensusTracker consensusTracker;
     private final AgentRunner conductorRunner;
 
     ConsensusModule(final Context ctx)
@@ -159,22 +159,18 @@ public class ConsensusModule implements
         this.ctx = ctx;
         ctx.conclude();
 
-        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
-        {
-            archive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
-        }
+        aeronArchive = AeronArchive.connect(ctx.archiveContext());
+        aeronArchive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
 
         final Aeron aeron = ctx.aeron();
         final ExclusivePublication publication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
         logAppender = new LogAppender(publication);
-        consensusTracker = new ConsensusTracker(
-            aeron, ctx.tempBuffer(), 0L, 0L, publication.sessionId(), ctx.idleStrategy());
 
         final SequencerAgent conductor = new SequencerAgent(
             ctx,
             new EgressPublisher(),
+            aeronArchive,
             logAppender,
-            consensusTracker,
             this,
             this,
             this,
@@ -224,7 +220,7 @@ public class ConsensusModule implements
     {
         CloseHelper.close(conductorRunner);
         CloseHelper.close(logAppender);
-        CloseHelper.close(consensusTracker);
+        CloseHelper.close(aeronArchive);
         CloseHelper.close(ctx);
     }
 
@@ -425,6 +421,8 @@ public class ConsensusModule implements
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private String logChannel = ClusteredServiceContainer.Configuration.logChannel();
         private int logStreamId = ClusteredServiceContainer.Configuration.logStreamId();
+        private String replayLogChannel = ClusteredServiceContainer.Configuration.replayLogChannel();
+        private int replayLogStreamId = ClusteredServiceContainer.Configuration.replayLogStreamId();
         private String consensusModuleChannel = ClusteredServiceContainer.Configuration.consensusModuleChannel();
         private int consensusModuleStreamId = ClusteredServiceContainer.Configuration.consensusModuleStreamId();
 
@@ -554,7 +552,8 @@ public class ConsensusModule implements
 
             if (null == archiveContext)
             {
-                archiveContext = new AeronArchive.Context().lock(new NoOpLock());
+                archiveContext = new AeronArchive.Context()
+                    .lock(new NoOpLock());
             }
 
             if (null == shutdownSignalBarrier)
@@ -730,6 +729,54 @@ public class ConsensusModule implements
         public int logStreamId()
         {
             return logStreamId;
+        }
+
+        /**
+         * Set the channel parameter for the cluster log and snapshot replay channel.
+         *
+         * @param channel parameter for the cluster log replay channel.
+         * @return this for a fluent API.
+         * @see ClusteredServiceContainer.Configuration#REPLAY_LOG_CHANNEL_PROP_NAME
+         */
+        public Context replayLogChannel(final String channel)
+        {
+            replayLogChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for the cluster log and snapshot replay channel.
+         *
+         * @return the channel parameter for the cluster replay channel.
+         * @see ClusteredServiceContainer.Configuration#REPLAY_LOG_CHANNEL_PROP_NAME
+         */
+        public String replayLogChannel()
+        {
+            return replayLogChannel;
+        }
+
+        /**
+         * Set the stream id for the cluster log and snapshot replay channel.
+         *
+         * @param streamId for the cluster log replay channel.
+         * @return this for a fluent API
+         * @see ClusteredServiceContainer.Configuration#REPLAY_LOG_STREAM_ID_PROP_NAME
+         */
+        public Context replayLogStreamId(final int streamId)
+        {
+            replayLogStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for the cluster log and snapshot replay channel.
+         *
+         * @return the stream id for the cluster log replay channel.
+         * @see ClusteredServiceContainer.Configuration#REPLAY_LOG_STREAM_ID_PROP_NAME
+         */
+        public int replayLogStreamId()
+        {
+            return replayLogStreamId;
         }
 
         /**

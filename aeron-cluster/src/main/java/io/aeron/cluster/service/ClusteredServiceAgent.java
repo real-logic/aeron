@@ -114,12 +114,13 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         checkForSnapshot();
         sendAcknowledgment(ServiceAction.INIT, leadershipTermBeginPosition);
 
+        checkForReplay();
+        sendAcknowledgment(ServiceAction.REPLAY, leadershipTermBeginPosition);
+
         consensusPosition = findConsensusPosition(logSubscription);
 
         logImage = logSubscription.imageAtIndex(0);
         state = State.LEADING;
-
-        sendAcknowledgment(ServiceAction.REPLAY, leadershipTermBeginPosition);
     }
 
     public void onClose()
@@ -356,6 +357,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
     }
 
+    private void checkForReplay()
+    {
+    }
+
     private int findSnapshotCounterId(final CountersReader countersReader)
     {
         int snapshotCounterId = SnapshotPos.findActiveCounterId(countersReader);
@@ -409,8 +414,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 recordingInfo.recordingId,
                 recordingInfo.startPosition,
                 recordingInfo.stopPosition - recordingInfo.startPosition,
-                ctx.replayChannel(),
-                ctx.replayStreamId()))
+                ctx.replayLogChannel(),
+                ctx.replayLogStreamId()))
             {
                 idleStrategy.reset();
                 while (!replaySubscription.isConnected())

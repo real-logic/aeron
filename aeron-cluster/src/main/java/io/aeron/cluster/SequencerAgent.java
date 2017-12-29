@@ -117,7 +117,7 @@ class SequencerAgent implements Agent
         final long timestamp = epochClock.time();
         cachedEpochClock.update(timestamp);
 
-        ctx.recordingIndex().appendLog(
+        ctx.recordingIndex().appendTerm(
             consensusTracker.recordingId(), leadershipTermBeginPosition, messageIndex.getWeak(), timestamp);
     }
 

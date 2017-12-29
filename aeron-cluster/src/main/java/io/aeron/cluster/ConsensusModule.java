@@ -1243,8 +1243,6 @@ public class ConsensusModule implements
                 CloseHelper.close(moduleState);
                 CloseHelper.close(controlToggle);
             }
-
-            CloseHelper.close(recordingIndex);
         }
     }
 }

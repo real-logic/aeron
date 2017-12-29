@@ -17,27 +17,28 @@ package io.aeron.cluster.service;
 
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
-import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * An index of recordings that make up the history of a Raft log. Recordings are in chronological order.
+ * An index of recordings that make up the history of a Raft log. Entries are in chronological order.
  * <p>
- * The index is made up of log terms or snapshots to roll up state as of a log position and message index.
+ * The index is made up of entries of log terms or snapshots to roll up state as of a log position and message index.
+ * <p>
+ * The latest state is made up of a the latest snapshot followed by any term logs which follow. It is possible that
+ * the a snapshot is taken mid term and therefore the latest state is the snapshot plus the log of messages which
+ * begin before the snapshot but continues after it.
  * <p>
  * Record layout as follows:
  * <pre>
@@ -58,9 +59,14 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  *  |                  Entry Type (Log or Snapshot)                 |
  *  +---------------------------------------------------------------+
+ *  |                                                               |
+ *  |                                                              ...
+ * ...                 Repeats to the end of the log                |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  * </pre>
  */
-public class RecordingIndex implements AutoCloseable
+public class RecordingIndex
 {
     /**
      * A copy of the entry in the index.
@@ -126,9 +132,9 @@ public class RecordingIndex implements AutoCloseable
     public static final String RECORDING_INDEX_FILE_NAME = "recording-index.log";
 
     /**
-     * The index entry is for a recording of messages to the consensus log.
+     * The index entry is for a recording of messages within a term to the consensus log.
      */
-    public static final int ENTRY_TYPE_LOG = 0;
+    public static final int ENTRY_TYPE_TERM = 0;
 
     /**
      * The index entry is for a recording of a snapshot of state taken as of a position in the log.
@@ -153,7 +159,7 @@ public class RecordingIndex implements AutoCloseable
     /**
      * The offset at which the message index for the entry is stored.
      */
-    public static final int TIMESTAMP_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
+    public static final int TIMESTAMP_OFFSET = MESSAGE_INDEX_OFFSET + SIZE_OF_LONG;
 
     /**
      * The offset at which the type of the entry is stored.
@@ -165,179 +171,126 @@ public class RecordingIndex implements AutoCloseable
      */
     private static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_LONG, CACHE_LINE_LENGTH);
 
-    @FunctionalInterface
-    public interface EntryConsumer
+    private final File parentDir;
+    private final File indexFile;
+    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
+    private final ArrayList<Entry> entries = new ArrayList<>();
+
+    /**
+     * Create an index that appends to an existing index or creates a new one.
+     *
+     * @param parentDir in which the index will be created.
+     */
+    public RecordingIndex(final File parentDir)
     {
-        /**
-         * Accept a recording entry from the index.
-         *
-         * @param recordingId  in the archive for the recording.
-         * @param logPosition  reached for the log by the start of this recording.
-         * @param messageIndex reached for the log by the start of this recording.
-         * @param timestamp    at which the term began or snapshot was taken.
-         * @param entryType    of the record.
-         */
-        void accept(long recordingId, long logPosition, long messageIndex, long timestamp, int entryType);
-    }
+        this.parentDir = parentDir;
+        this.indexFile = new File(parentDir, RECORDING_INDEX_FILE_NAME);
 
-    private final File recordingIndexFile;
-    private final File newRecordingIndexFile;
-    private final ByteBuffer buffer = ByteBuffer.allocateDirect(ENTRY_LENGTH);
-    private FileChannel fileChannel;
-
-    public RecordingIndex(final File dir)
-    {
-        recordingIndexFile = indexLocation(dir, false);
-        newRecordingIndexFile = indexLocation(dir, true);
-
-        try
-        {
-            fileChannel = FileChannel.open(recordingIndexFile.toPath(), CREATE, READ, WRITE);
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-    }
-
-    public void close()
-    {
-        CloseHelper.close(fileChannel);
+        reload();
     }
 
     /**
-     * Count of entries in the index.
+     * List of currently loaded entries.
      *
-     * @return count of entries in the index.
+     * @return the list of currently loaded entries.
      */
-    public long entryCount()
+    public List<Entry> entries()
     {
-        long count = 0;
+        return entries;
+    }
 
+    /**
+     * Reload the index from disk.
+     */
+    public void reload()
+    {
+        entries.clear();
+
+        FileChannel fileChannel = null;
         try
         {
-            count = fileChannel.size() / ENTRY_LENGTH;
+            final boolean newFile = !indexFile.exists();
+            fileChannel = FileChannel.open(indexFile.toPath(), CREATE, READ, WRITE, SYNC);
+
+            if (newFile)
+            {
+                syncDirectory();
+                return;
+            }
+
+            byteBuffer.clear();
+            while (true)
+            {
+                final int bytes = fileChannel.read(byteBuffer);
+                if (byteBuffer.remaining() == 0)
+                {
+                    byteBuffer.flip();
+                    captureEntriesFromBuffer(byteBuffer, buffer, entries);
+                    byteBuffer.clear();
+                }
+
+                if (-1 == bytes)
+                {
+                    if (byteBuffer.position() > 0)
+                    {
+                        byteBuffer.flip();
+                        captureEntriesFromBuffer(byteBuffer, buffer, entries);
+                        byteBuffer.clear();
+                    }
+
+                    break;
+                }
+            }
+
         }
-        catch (final Exception ex)
+        catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
-
-        return count;
+        finally
+        {
+            CloseHelper.close(fileChannel);
+        }
     }
 
+    /**
+     * Get the latest snapshot {@link Entry} in the index.
+     *
+     * @return the latest snapshot {@link Entry} in the index or null if no snapshot exists.
+     */
     public Entry getLatestSnapshot()
     {
-        MappedByteBuffer mappedByteBuffer = null;
-
-        try
+        for (int i = entries.size() - 1; i >= 0; i--)
         {
-            final long length = fileChannel.size();
-
-            mappedByteBuffer = fileChannel.map(READ_ONLY, 0, length);
-            final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
-
-            for (int i = buffer.capacity() - ENTRY_LENGTH; i >= 0; i -= ENTRY_LENGTH)
+            final Entry entry = entries.get(i);
+            if (ENTRY_TYPE_SNAPSHOT == entry.entryType)
             {
-                final int entryType = buffer.getInt(i + ENTRY_TYPE_OFFSET);
-                if (entryType == ENTRY_TYPE_SNAPSHOT)
-                {
-                    return new Entry(
-                        buffer.getLong(i + RECORDING_ID_OFFSET),
-                        buffer.getLong(i + LOG_POSITION_OFFSET),
-                        buffer.getLong(i + MESSAGE_INDEX_OFFSET),
-                        buffer.getLong(i + TIMESTAMP_OFFSET),
-                        entryType);
-                }
+                return entry;
             }
-
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-        finally
-        {
-            IoUtil.unmap(mappedByteBuffer);
         }
 
         return null;
     }
 
+    /**
+     * Get the latest snapshot for a given position.
+     *
+     * @param position to match the snapshot.
+     * @return the latest snapshot for a given position or null if no match found.
+     */
     public Entry getSnapshotByPosition(final long position)
     {
-        MappedByteBuffer mappedByteBuffer = null;
-
-        try
+        for (int i = entries.size() - 1; i >= 0; i--)
         {
-            final long length = fileChannel.size();
-
-            mappedByteBuffer = fileChannel.map(READ_ONLY, 0, length);
-            final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
-
-            for (int i = buffer.capacity() - ENTRY_LENGTH; i >= 0; i -= ENTRY_LENGTH)
+            final Entry entry = entries.get(i);
+            if (position == entry.logPosition)
             {
-                final int entryType = buffer.getInt(i + ENTRY_TYPE_OFFSET);
-                if (entryType == ENTRY_TYPE_SNAPSHOT && buffer.getLong(i + LOG_POSITION_OFFSET) == position)
-                {
-                    return new Entry(
-                        buffer.getLong(i + RECORDING_ID_OFFSET),
-                        position,
-                        buffer.getLong(i + MESSAGE_INDEX_OFFSET),
-                        buffer.getLong(i + TIMESTAMP_OFFSET),
-                        entryType);
-                }
+                return entry;
             }
-
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-        finally
-        {
-            IoUtil.unmap(mappedByteBuffer);
         }
 
         return null;
-    }
-
-    public int forEachFromLastSnapshot(final EntryConsumer consumer)
-    {
-        MappedByteBuffer mappedByteBuffer = null;
-        int count = 0;
-
-        try
-        {
-            final long length = fileChannel.size();
-
-            mappedByteBuffer = fileChannel.map(READ_ONLY, 0, length);
-            final UnsafeBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
-
-            final int snapshotOffset = findOffsetOfLatestSnapshot(buffer);
-
-            for (int i = snapshotOffset; i < (int)length; i += ENTRY_LENGTH)
-            {
-                consumer.accept(
-                    buffer.getLong(i + RECORDING_ID_OFFSET),
-                    buffer.getLong(i + LOG_POSITION_OFFSET),
-                    buffer.getLong(i + MESSAGE_INDEX_OFFSET),
-                    buffer.getLong(i + TIMESTAMP_OFFSET),
-                    buffer.getInt(i + ENTRY_TYPE_OFFSET));
-
-                count++;
-            }
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-        finally
-        {
-            IoUtil.unmap(mappedByteBuffer);
-        }
-
-        return count;
     }
 
     /**
@@ -348,10 +301,10 @@ public class RecordingIndex implements AutoCloseable
      * @param messageIndex reached at the beginning of the term.
      * @param timestamp    at the beginning of the term.
      */
-    public void appendLog(
+    public void appendTerm(
         final long recordingId, final long logPosition, final long messageIndex, final long timestamp)
     {
-        append(ENTRY_TYPE_LOG, recordingId, logPosition, messageIndex, timestamp);
+        append(ENTRY_TYPE_TERM, recordingId, logPosition, messageIndex, timestamp);
     }
 
     /**
@@ -368,13 +321,6 @@ public class RecordingIndex implements AutoCloseable
         append(ENTRY_TYPE_SNAPSHOT, recordingId, logPosition, messageIndex, timestamp);
     }
 
-    private static File indexLocation(final File dir, final boolean isTmp)
-    {
-        final String suffix = isTmp ? ".tmp" : "";
-
-        return new File(dir, RECORDING_INDEX_FILE_NAME + suffix);
-    }
-
     private void append(
         final int entryType,
         final long recordingId,
@@ -382,48 +328,54 @@ public class RecordingIndex implements AutoCloseable
         final long messageIndex,
         final long timestamp)
     {
-        try
+        buffer.putLong(RECORDING_ID_OFFSET, recordingId);
+        buffer.putLong(LOG_POSITION_OFFSET, logPosition);
+        buffer.putLong(MESSAGE_INDEX_OFFSET, messageIndex);
+        buffer.putLong(TIMESTAMP_OFFSET, timestamp);
+        buffer.putInt(ENTRY_TYPE_OFFSET, entryType);
+
+        byteBuffer.limit(ENTRY_LENGTH).position(0);
+
+        try (FileChannel fileChannel = FileChannel.open(indexFile.toPath(), WRITE, APPEND, SYNC))
         {
-            final Path indexFilePath = recordingIndexFile.toPath();
-            final Path newIndexFilePath = newRecordingIndexFile.toPath();
-
-            fileChannel.close();
-
-            Files.copy(indexFilePath, newIndexFilePath);
-
-            try (FileChannel newFileChannel = FileChannel.open(newIndexFilePath, WRITE, APPEND))
-            {
-                buffer.putLong(RECORDING_ID_OFFSET, recordingId);
-                buffer.putLong(LOG_POSITION_OFFSET, logPosition);
-                buffer.putLong(MESSAGE_INDEX_OFFSET, messageIndex);
-                buffer.putLong(TIMESTAMP_OFFSET, timestamp);
-                buffer.putInt(ENTRY_TYPE_OFFSET, entryType);
-
-                buffer.clear();
-                newFileChannel.write(buffer);
-                newFileChannel.force(true);
-            }
-
-            Files.move(newIndexFilePath, indexFilePath, REPLACE_EXISTING);
-
-            fileChannel = FileChannel.open(indexFilePath, READ);
+            fileChannel.write(byteBuffer);
         }
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
+
+        entries.add(new Entry(recordingId, logPosition, messageIndex, timestamp, entryType));
     }
 
-    private static int findOffsetOfLatestSnapshot(final UnsafeBuffer buffer)
+    private static void captureEntriesFromBuffer(
+        final ByteBuffer byteBuffer, final UnsafeBuffer buffer, final ArrayList<Entry> entries)
     {
-        for (int i = buffer.capacity() - ENTRY_LENGTH; i >= 0; i -= ENTRY_LENGTH)
+        for (int i = 0, length = byteBuffer.limit(); i < length; i += ENTRY_LENGTH)
         {
-            if (buffer.getInt(i + ENTRY_TYPE_OFFSET) == ENTRY_TYPE_SNAPSHOT)
-            {
-                return i;
-            }
+            entries.add(new Entry(
+                buffer.getLong(i + RECORDING_ID_OFFSET),
+                buffer.getLong(i + LOG_POSITION_OFFSET),
+                buffer.getLong(i + MESSAGE_INDEX_OFFSET),
+                buffer.getLong(i + TIMESTAMP_OFFSET),
+                buffer.getInt(i + ENTRY_TYPE_OFFSET)));
         }
+    }
 
-        return 0;
+    private void syncDirectory()
+    {
+        FileChannel fileChannel = null;
+        try
+        {
+            fileChannel = FileChannel.open(parentDir.toPath());
+            fileChannel.force(true);
+        }
+        catch (final IOException ignore)
+        {
+        }
+        finally
+        {
+            CloseHelper.close(fileChannel);
+        }
     }
 }

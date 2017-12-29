@@ -109,10 +109,8 @@ class SequencerAgent implements Agent
 
     public void onStart()
     {
-        checkForSnapshot();
-
-        final IdleStrategy idleStrategy = ctx.idleStrategy();
-        waitForState(ConsensusModule.State.ACTIVE, idleStrategy);
+        recoverFromSnapshot();
+        recoverFromLog();
 
         final long timestamp = epochClock.time();
         cachedEpochClock.update(timestamp);
@@ -320,7 +318,7 @@ class SequencerAgent implements Agent
         timerService.cancelTimer(correlationId);
     }
 
-    private void checkForSnapshot()
+    private void recoverFromSnapshot()
     {
         final RecordingIndex.Entry snapshot = ctx.recordingIndex().getLatestSnapshot();
 
@@ -334,15 +332,21 @@ class SequencerAgent implements Agent
                 aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp))
             {
                 loadSnapshot(snapshot.recordingId);
-                waitForState(ConsensusModule.State.REPLAY, ctx.idleStrategy());
+                waitForStateChange(ConsensusModule.State.REPLAY, ctx.idleStrategy());
             }
         }
         else
         {
             final Counter counter = SnapshotPos.allocate(aeron, tempBuffer, 0, 0, 0);
-            waitForState(ConsensusModule.State.REPLAY, ctx.idleStrategy());
+            waitForStateChange(ConsensusModule.State.REPLAY, ctx.idleStrategy());
             counter.close();
         }
+    }
+
+    private void recoverFromLog()
+    {
+        final IdleStrategy idleStrategy = ctx.idleStrategy();
+        waitForStateChange(ConsensusModule.State.ACTIVE, idleStrategy);
     }
 
     private void checkInterruptedStatus()
@@ -353,7 +357,7 @@ class SequencerAgent implements Agent
         }
     }
 
-    private void waitForState(final ConsensusModule.State expectedState, final IdleStrategy idleStrategy)
+    private void waitForStateChange(final ConsensusModule.State expectedState, final IdleStrategy idleStrategy)
     {
         while (true)
         {
@@ -375,7 +379,6 @@ class SequencerAgent implements Agent
 
     private void loadSnapshot(final long recordingId)
     {
-
     }
 
     private void state(final ConsensusModule.State state)

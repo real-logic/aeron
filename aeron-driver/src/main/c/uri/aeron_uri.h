@@ -86,7 +86,7 @@ aeron_ipc_channel_params_t;
 
 typedef enum aeron_uri_type_enum
 {
-    AERON_URI_UDP, AERON_URI_IPC
+    AERON_URI_UDP, AERON_URI_IPC, AERON_URI_UNKNOWN
 }
 aeron_uri_type_t;
 

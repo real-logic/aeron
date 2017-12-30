@@ -338,7 +338,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     {
         final CountersReader countersReader = aeron.countersReader();
         final int snapshotCounterId = findSnapshotCounterId(countersReader);
-        final long logPosition = SnapshotPos.getLogPosition(countersReader, snapshotCounterId);
+        final long logPosition = RecoveryState.getLogPosition(countersReader, snapshotCounterId);
 
         if (logPosition > 0)
         {
@@ -349,8 +349,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             }
 
             leadershipTermBeginPosition = logPosition;
-            messageIndex = SnapshotPos.getMessageIndex(countersReader, snapshotCounterId);
-            timestampMs = SnapshotPos.getTimestamp(countersReader, snapshotCounterId);
+            messageIndex = RecoveryState.getMessageIndex(countersReader, snapshotCounterId);
+            timestampMs = RecoveryState.getTimestamp(countersReader, snapshotCounterId);
 
             snapshotEntry.confirmMatch(logPosition, messageIndex, timestampMs);
             loadSnapshot(snapshotEntry.recordingId);
@@ -363,14 +363,14 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     private int findSnapshotCounterId(final CountersReader countersReader)
     {
-        int snapshotCounterId = SnapshotPos.findActiveCounterId(countersReader);
+        int snapshotCounterId = RecoveryState.findActiveCounterId(countersReader);
 
-        while (SnapshotPos.NULL_COUNTER_ID == snapshotCounterId)
+        while (RecoveryState.NULL_COUNTER_ID == snapshotCounterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
 
-            snapshotCounterId = SnapshotPos.findActiveCounterId(countersReader);
+            snapshotCounterId = RecoveryState.findActiveCounterId(countersReader);
         }
 
         return snapshotCounterId;

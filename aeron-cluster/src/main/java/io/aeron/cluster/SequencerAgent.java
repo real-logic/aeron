@@ -20,7 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.control.ClusterControl;
 import io.aeron.cluster.service.RecordingIndex;
-import io.aeron.cluster.service.SnapshotPos;
+import io.aeron.cluster.service.RecoveryState;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
@@ -341,8 +341,8 @@ class SequencerAgent implements Agent
             leadershipTermBeginPosition = snapshot.logPosition;
             messageIndex.setOrdered(snapshot.messageIndex);
 
-            try (Counter ignore = SnapshotPos.allocate(
-                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp))
+            try (Counter ignore = RecoveryState.allocate(
+                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp, 0))
             {
                 loadSnapshot(snapshot.recordingId);
                 waitForStateChange(ConsensusModule.State.REPLAY, ctx.idleStrategy());
@@ -350,7 +350,7 @@ class SequencerAgent implements Agent
         }
         else
         {
-            final Counter counter = SnapshotPos.allocate(aeron, tempBuffer, 0, 0, 0);
+            final Counter counter = RecoveryState.allocate(aeron, tempBuffer, 0, 0, 0, 0);
             waitForStateChange(ConsensusModule.State.REPLAY, ctx.idleStrategy());
             counter.close();
         }

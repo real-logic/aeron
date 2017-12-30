@@ -25,25 +25,28 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.*;
 
 /**
- * Counter representing the snapshot a service should load on start.
+ * Counter representing the Recovery state for the cluster.
  * <p>
  * Key layout as follows:
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |              Log Position at beginning of term                |
+ *  |            Log Position at beginning for snapshot             |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |              Message Index at beginning of term               |
+ *  |           Message Index at beginning for snapshot             |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |              Timestamp when snapshot was taken                |
+ *  |              Timestamp at beginning of recovery               |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                    Count of replay terms                      |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class SnapshotPos
+public class RecoveryState
 {
     /**
      * Type id of a snapshot counter.
@@ -69,16 +72,18 @@ public class SnapshotPos
     public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
     public static final int MESSAGE_INDEX_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
     public static final int TIMESTAMP_OFFSET = MESSAGE_INDEX_OFFSET + SIZE_OF_LONG;
-    public static final int KEY_LENGTH = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+    public static final int REPLAY_TERM_COUNT_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+    public static final int KEY_LENGTH = REPLAY_TERM_COUNT_OFFSET + SIZE_OF_LONG;
 
     /**
      * Allocate a counter to represent the snapshot services should load on start.
      *
-     * @param aeron        to allocate the counter.
-     * @param tempBuffer   to use for building the key and label without allocation.
-     * @param logPosition  at which the snapshot was taken.
-     * @param messageIndex at which the snapshot was taken.
-     * @param timestamp    the snapshot was taken.
+     * @param aeron           to allocate the counter.
+     * @param tempBuffer      to use for building the key and label without allocation.
+     * @param logPosition     at which the snapshot was taken.
+     * @param messageIndex    at which the snapshot was taken.
+     * @param timestamp       the snapshot was taken.
+     * @param replayTermCount for the count of terms to be replayed during recovery after snapshot.
      * @return the {@link Counter} for the consensus position.
      */
     public static Counter allocate(
@@ -86,17 +91,21 @@ public class SnapshotPos
         final MutableDirectBuffer tempBuffer,
         final long logPosition,
         final long messageIndex,
-        final long timestamp)
+        final long timestamp,
+        final long replayTermCount)
     {
         tempBuffer.putLong(LOG_POSITION_OFFSET, logPosition);
         tempBuffer.putLong(MESSAGE_INDEX_OFFSET, messageIndex);
         tempBuffer.putLong(TIMESTAMP_OFFSET, timestamp);
+        tempBuffer.putLong(REPLAY_TERM_COUNT_OFFSET, replayTermCount);
 
         int labelOffset = 0;
         labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, NAME);
         labelOffset += tempBuffer.putLongAscii(KEY_LENGTH + labelOffset, logPosition);
         labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, " ");
         labelOffset += tempBuffer.putLongAscii(KEY_LENGTH + labelOffset, messageIndex);
+        labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, " ");
+        labelOffset += tempBuffer.putLongAscii(KEY_LENGTH + labelOffset, replayTermCount);
 
         return aeron.addCounter(
             SNAPSHOT_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, KEY_LENGTH, labelOffset);
@@ -218,6 +227,30 @@ public class SnapshotPos
             if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SNAPSHOT_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + TIMESTAMP_OFFSET);
+            }
+        }
+
+        return NULL_VALUE;
+    }
+
+    /**
+     * Get the count of terms that will be replayed during recovery.
+     *
+     * @param countersReader to search within.
+     * @param counterId      for the active consensus position.
+     * @return the count of replay terms if found otherwise {@link #NULL_VALUE}.
+     */
+    public static long getReplayCount(final CountersReader countersReader, final int counterId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        {
+            final int recordOffset = CountersReader.metaDataOffset(counterId);
+
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SNAPSHOT_TYPE_ID)
+            {
+                return buffer.getLong(recordOffset + KEY_OFFSET + REPLAY_TERM_COUNT_OFFSET);
             }
         }
 

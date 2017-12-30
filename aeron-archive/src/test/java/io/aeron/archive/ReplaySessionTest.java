@@ -31,8 +31,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import static io.aeron.archive.Catalog.NULL_POSITION;
 import static io.aeron.archive.TestUtil.makeTempDir;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
@@ -141,7 +141,7 @@ public class ReplaySessionTest
             mockCatalog,
             recordingSummary,
             archiveDir,
-            RecordingFragmentReader.NULL_POSITION,
+            NULL_POSITION,
             RecordingFragmentReader.NULL_LENGTH,
             null))
         {

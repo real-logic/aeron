@@ -34,6 +34,7 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -98,7 +99,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
     {
         try
         {
-            if (Catalog.NULL_POSITION == segmentPosition)
+            if (NULL_POSITION == segmentPosition)
             {
                 onFirstWrite(termOffset);
             }
@@ -162,7 +163,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         try
         {
-            if (Catalog.NULL_POSITION == segmentPosition)
+            if (NULL_POSITION == segmentPosition)
             {
                 onFirstWrite(termOffset);
             }

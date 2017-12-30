@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
-import static io.aeron.archive.Catalog.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 

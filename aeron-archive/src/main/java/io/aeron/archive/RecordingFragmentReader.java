@@ -29,13 +29,13 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
 class RecordingFragmentReader implements AutoCloseable
 {
-    static final long NULL_POSITION = -1;
     static final long NULL_LENGTH = -1;
 
     private final File archiveDir;

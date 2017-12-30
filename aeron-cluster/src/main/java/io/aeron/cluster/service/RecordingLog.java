@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.archive.client.AeronArchive;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
@@ -27,14 +28,15 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * An index of recordings that make up the history of a Raft log. Entries are in chronological order.
+ * An log of recordings that make up the history of a Raft log. Entries are in chronological order.
  * <p>
- * The index is made up of entries of log terms or snapshots to roll up state as of a log position and message index.
+ * The log is made up of entries of log terms or snapshots to roll up state as of a log position and message index.
  * <p>
  * The latest state is made up of a the latest snapshot followed by any term logs which follow. It is possible that
  * the a snapshot is taken mid term and therefore the latest state is the snapshot plus the log of messages which
@@ -66,10 +68,10 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class RecordingIndex
+public class RecordingLog
 {
     /**
-     * A copy of the entry in the index.
+     * A copy of the entry in the log.
      */
     public static final class Entry
     {
@@ -123,6 +125,32 @@ public class RecordingIndex
                 throw new IllegalStateException(
                     "Timestamp does not match: this=" + this.timestamp + " that=" + timestamp);
             }
+        }
+    }
+
+    /**
+     * Steps in a recovery plan.
+     */
+    public static class ReplayStep
+    {
+        public final long recordingStartPosition;
+        public final long recordingStopPosition;
+        public final Entry entry;
+
+        public ReplayStep(final long recordingStartPosition, final long recordingStopPosition, final Entry entry)
+        {
+            this.recordingStartPosition = recordingStartPosition;
+            this.recordingStopPosition = recordingStopPosition;
+            this.entry = entry;
+        }
+
+        public String toString()
+        {
+            return "ReplayStep{" +
+                ", recordingStartPosition=" + recordingStartPosition +
+                ", recordingStopPosition=" + recordingStopPosition +
+                ", entry=" + entry +
+                '}';
         }
     }
 
@@ -182,7 +210,7 @@ public class RecordingIndex
      *
      * @param parentDir in which the index will be created.
      */
-    public RecordingIndex(final File parentDir)
+    public RecordingLog(final File parentDir)
     {
         this.parentDir = parentDir;
         this.indexFile = new File(parentDir, RECORDING_INDEX_FILE_NAME);
@@ -271,6 +299,79 @@ public class RecordingIndex
         }
 
         return null;
+    }
+
+    /**
+     * Create a recovery plan for the cluster that when the steps are replayed will bring the cluster back to the
+     * latest stable state.
+     *
+     * @param archive to lookup recording descriptors.
+     * @return a new recovery plan for the cluster.
+     */
+    public List<ReplayStep> createRecoveryPlan(final AeronArchive archive)
+    {
+        final ArrayList<ReplayStep> steps = new ArrayList<>();
+
+        planRecovery(steps, entries, archive);
+
+        return steps;
+    }
+
+    static void planRecovery(
+        final ArrayList<ReplayStep> steps, final ArrayList<Entry> entries, final AeronArchive archive)
+    {
+        if (entries.isEmpty())
+        {
+            return;
+        }
+
+        int snapshotIndex = -1;
+        for (int i = entries.size() - 1; i >= 0; i--)
+        {
+            final Entry entry = entries.get(i);
+            if (ENTRY_TYPE_SNAPSHOT == entry.entryType)
+            {
+                snapshotIndex = i;
+            }
+        }
+
+        final RecordingInfo recordingInfo = new RecordingInfo();
+
+        if (-1 != snapshotIndex)
+        {
+            final Entry snapshot = entries.get(snapshotIndex);
+            getRecordingInfo(archive, recordingInfo, snapshot);
+
+            steps.add(new ReplayStep(recordingInfo.startPosition, recordingInfo.stopPosition, snapshot));
+
+            if (snapshotIndex - 1 >= 0)
+            {
+                for (int i = snapshotIndex - 1; i >= 0; i--)
+                {
+                    final Entry entry = entries.get(i);
+                    if (ENTRY_TYPE_TERM == entry.entryType)
+                    {
+                        getRecordingInfo(archive, recordingInfo, snapshot);
+
+                        if (recordingInfo.stopPosition == NULL_POSITION ||
+                            (entry.logPosition + recordingInfo.stopPosition) > snapshot.logPosition)
+                        {
+                            final long replayRecordingFromPosition = snapshot.logPosition - entry.logPosition;
+                            steps.add(new ReplayStep(replayRecordingFromPosition, recordingInfo.stopPosition, entry));
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        for (int i = snapshotIndex + 1, length = entries.size(); i < length; i++)
+        {
+            final Entry entry = entries.get(i);
+            getRecordingInfo(archive, recordingInfo, entry);
+
+            steps.add(new ReplayStep(recordingInfo.startPosition, recordingInfo.stopPosition, entry));
+        }
     }
 
     /**
@@ -370,6 +471,15 @@ public class RecordingIndex
         }
         catch (final IOException ignore)
         {
+        }
+    }
+
+    private static void getRecordingInfo(
+        final AeronArchive archive, final RecordingInfo recordingInfo, final Entry entry)
+    {
+        if (archive.listRecording(entry.recordingId, recordingInfo) == 0)
+        {
+            throw new IllegalStateException("Unknown recording id: " + entry.recordingId);
         }
     }
 }

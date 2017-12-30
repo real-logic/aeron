@@ -415,7 +415,7 @@ public class ConsensusModule implements
 
         private boolean deleteDirOnStart = false;
         private File clusterDir;
-        private RecordingIndex recordingIndex;
+        private RecordingLog recordingLog;
 
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
@@ -474,9 +474,9 @@ public class ConsensusModule implements
                     "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
-            if (null == recordingIndex)
+            if (null == recordingLog)
             {
-                recordingIndex = new RecordingIndex(clusterDir);
+                recordingLog = new RecordingLog(clusterDir);
             }
 
             if (null == errorHandler)
@@ -614,25 +614,25 @@ public class ConsensusModule implements
         }
 
         /**
-         * Set the {@link RecordingIndex} for the log terms and snapshots.
+         * Set the {@link RecordingLog} for the log terms and snapshots.
          *
-         * @param recordingIndex to use.
+         * @param recordingLog to use.
          * @return this for a fluent API.
          */
-        public Context recordingIndex(final RecordingIndex recordingIndex)
+        public Context recordingLog(final RecordingLog recordingLog)
         {
-            this.recordingIndex = recordingIndex;
+            this.recordingLog = recordingLog;
             return this;
         }
 
         /**
-         * The {@link RecordingIndex} for the log terms and snapshots.
+         * The {@link RecordingLog} for the log terms and snapshots.
          *
-         * @return {@link RecordingIndex} for the  log terms and snapshots.
+         * @return {@link RecordingLog} for the  log terms and snapshots.
          */
-        public RecordingIndex recordingIndex()
+        public RecordingLog recordingLog()
         {
-            return recordingIndex;
+            return recordingLog;
         }
 
         /**

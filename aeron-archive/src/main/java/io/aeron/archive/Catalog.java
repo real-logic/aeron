@@ -29,6 +29,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -87,8 +89,6 @@ class Catalog implements AutoCloseable
             RecordingDescriptorDecoder descriptorDecoder);
     }
 
-    static final long NULL_TIME = -1L;
-    static final long NULL_POSITION = -1;
     static final int PAGE_SIZE = 4096;
     static final int NULL_RECORD_ID = -1;
 
@@ -340,7 +340,7 @@ class Catalog implements AutoCloseable
         recordingDescriptorEncoder
             .recordingId(recordingId)
             .startTimestamp(startTimestamp)
-            .stopTimestamp(NULL_TIME)
+            .stopTimestamp(NULL_TIMESTAMP)
             .startPosition(startPosition)
             .stopPosition(NULL_POSITION)
             .initialTermId(initialTermId)
@@ -441,7 +441,7 @@ class Catalog implements AutoCloseable
         final RecordingDescriptorDecoder decoder)
     {
         final long recordingId = decoder.recordingId();
-        if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIME)
+        if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIMESTAMP)
         {
             int segmentIndex = 0;
             File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex));

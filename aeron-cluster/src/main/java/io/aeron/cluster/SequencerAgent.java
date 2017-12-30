@@ -19,7 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.control.ClusterControl;
-import io.aeron.cluster.service.RecordingIndex;
+import io.aeron.cluster.service.RecordingLog;
 import io.aeron.cluster.service.RecoveryState;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import org.agrona.*;
@@ -29,9 +29,11 @@ import org.agrona.concurrent.*;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
+import static io.aeron.cluster.service.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 
 class SequencerAgent implements Agent
 {
@@ -84,7 +86,6 @@ class SequencerAgent implements Agent
         this.controlToggle = ctx.controlToggle();
         this.aeronArchive = aeronArchive;
         this.logAppender = logAppender;
-        this.consensusTracker = consensusTracker;
         this.sessionSupplier = clusterSessionSupplier;
         this.sessionProxy = new SessionProxy(egressPublisher);
         this.tempBuffer = ctx.tempBuffer();
@@ -112,10 +113,14 @@ class SequencerAgent implements Agent
 
     public void onStart()
     {
-        final RecordingIndex recordingIndex = ctx.recordingIndex();
+        final RecordingLog recordingLog = ctx.recordingLog();
+        final List<RecordingLog.ReplayStep> recoverySteps = recordingLog.createRecoveryPlan(aeronArchive);
 
-        recoverFromSnapshot(recordingIndex);
-        recoverFromLog(recordingIndex);
+        try (Counter ignore = createRecoveryStateCounter(recoverySteps))
+        {
+            recoverFromSnapshot(recoverySteps);
+            recoverFromLog(recoverySteps);
+        }
 
         final long timestamp = epochClock.time();
         cachedEpochClock.update(timestamp);
@@ -126,7 +131,7 @@ class SequencerAgent implements Agent
         consensusTracker = new ConsensusTracker(
             aeron, ctx.tempBuffer(), position, messageIndex, logAppender.sessionId(), ctx.idleStrategy());
 
-        recordingIndex.appendTerm(consensusTracker.recordingId(), position, messageIndex, timestamp);
+        recordingLog.appendTerm(consensusTracker.recordingId(), position, messageIndex, timestamp);
     }
 
     public int doWork()
@@ -331,35 +336,38 @@ class SequencerAgent implements Agent
         timerService.cancelTimer(correlationId);
     }
 
-    private void recoverFromSnapshot(final RecordingIndex recordingIndex)
+    private void recoverFromSnapshot(final List<RecordingLog.ReplayStep> recoverySteps)
     {
-        final RecordingIndex.Entry snapshot = recordingIndex.getLatestSnapshot();
+        final IdleStrategy idleStrategy = ctx.idleStrategy();
+        waitForStateChange(ConsensusModule.State.REPLAY, idleStrategy);
+    }
 
-        if (null != snapshot)
+    private void recoverFromLog(final List<RecordingLog.ReplayStep> recoverySteps)
+    {
+        final IdleStrategy idleStrategy = ctx.idleStrategy();
+        waitForStateChange(ConsensusModule.State.ACTIVE, idleStrategy);
+    }
+
+    private Counter createRecoveryStateCounter(final List<RecordingLog.ReplayStep> recoverySteps)
+    {
+        if (recoverySteps.isEmpty())
         {
+            return RecoveryState.allocate(aeron, tempBuffer, 0, 0, 0, 0);
+        }
+
+        if (recoverySteps.get(0).entry.entryType == ENTRY_TYPE_SNAPSHOT)
+        {
+            final RecordingLog.Entry snapshot = recoverySteps.get(0).entry;
+            final int replayTermCount = recoverySteps.size() - 1;
             cachedEpochClock.update(snapshot.timestamp);
             leadershipTermBeginPosition = snapshot.logPosition;
             messageIndex.setOrdered(snapshot.messageIndex);
 
-            try (Counter ignore = RecoveryState.allocate(
-                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp, 0))
-            {
-                loadSnapshot(snapshot.recordingId);
-                waitForStateChange(ConsensusModule.State.REPLAY, ctx.idleStrategy());
-            }
+            return RecoveryState.allocate(
+                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp, replayTermCount);
         }
-        else
-        {
-            final Counter counter = RecoveryState.allocate(aeron, tempBuffer, 0, 0, 0, 0);
-            waitForStateChange(ConsensusModule.State.REPLAY, ctx.idleStrategy());
-            counter.close();
-        }
-    }
 
-    private void recoverFromLog(final RecordingIndex recordingIndex)
-    {
-        final IdleStrategy idleStrategy = ctx.idleStrategy();
-        waitForStateChange(ConsensusModule.State.ACTIVE, idleStrategy);
+        return RecoveryState.allocate(aeron, tempBuffer, 0, 0, 0, recoverySteps.size());
     }
 
     private void checkInterruptedStatus()

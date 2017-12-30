@@ -78,7 +78,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final IdleStrategy idleStrategy;
 
-    private final RecordingIndex recordingIndex;
+    private final RecordingLog recordingLog;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
 
@@ -95,7 +95,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         aeron = ctx.aeron();
         shouldCloseResources = ctx.ownsAeronClient();
         service = ctx.clusteredService();
-        recordingIndex = ctx.recordingIndex();
+        recordingLog = ctx.recordingLog();
         idleStrategy = ctx.idleStrategy();
 
         String logChannel = ctx.logChannel();
@@ -342,7 +342,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         if (logPosition > 0)
         {
-            final RecordingIndex.Entry snapshotEntry = recordingIndex.getSnapshotByPosition(logPosition);
+            final RecordingLog.Entry snapshotEntry = recordingLog.getSnapshotByPosition(logPosition);
             if (null == snapshotEntry)
             {
                 throw new IllegalStateException("No snapshot available for position: " + logPosition);
@@ -479,7 +479,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             state = State.LEADING;
         }
 
-        recordingIndex.appendSnapshot(recordingId, position, messageIndex, timestampMs);
+        recordingLog.appendSnapshot(recordingId, position, messageIndex, timestampMs);
     }
 
     private void snapshotState(final Publication publication)

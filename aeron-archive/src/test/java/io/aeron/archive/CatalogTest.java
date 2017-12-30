@@ -30,6 +30,8 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.*;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.*;
@@ -137,7 +139,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
         {
             catalog.forEntry(
-                (he, hd, e, decoder) -> assertThat(decoder.stopTimestamp(), is(NULL_TIME)), newRecordingId);
+                (he, hd, e, decoder) -> assertThat(decoder.stopTimestamp(), is(NULL_TIMESTAMP)), newRecordingId);
         }
 
         when(clock.time()).thenReturn(42L);
@@ -177,7 +179,7 @@ public class CatalogTest
             catalog.forEntry(
                 (he, hd, e, decoder) ->
                 {
-                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
+                    assertThat(decoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(decoder.stopPosition(), is(NULL_POSITION));
                 },
                 newRecordingId);
@@ -222,7 +224,7 @@ public class CatalogTest
             catalog.forEntry(
                 (he, hd, e, decoder) ->
                 {
-                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
+                    assertThat(decoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(decoder.stopPosition(), is(NULL_POSITION));
                 },
                 newRecordingId);
@@ -292,7 +294,7 @@ public class CatalogTest
             catalog.forEntry(
                 (he, hd, e, decoder) ->
                 {
-                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
+                    assertThat(decoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     e.stopPosition(NULL_POSITION);
                 },
                 newRecordingId);

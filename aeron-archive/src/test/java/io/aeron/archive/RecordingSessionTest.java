@@ -33,6 +33,7 @@ import java.io.File;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.file.StandardOpenOption.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -161,7 +162,7 @@ public class RecordingSessionTest
             mockCatalog,
             recordingSummary,
             tempDirForTest,
-            RecordingFragmentReader.NULL_POSITION,
+            NULL_POSITION,
             RecordingFragmentReader.NULL_LENGTH,
             null))
         {

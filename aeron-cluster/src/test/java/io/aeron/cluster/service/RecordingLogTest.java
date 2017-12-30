@@ -21,41 +21,41 @@ import org.junit.Test;
 
 import java.io.File;
 
-import static io.aeron.cluster.service.RecordingIndex.ENTRY_TYPE_SNAPSHOT;
+import static io.aeron.cluster.service.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
-public class RecordingIndexTest
+public class RecordingLogTest
 {
     private static final File TEMP_DIR = new File(IoUtil.tmpDirName());
 
     @After
     public void after()
     {
-        IoUtil.delete(new File(TEMP_DIR, RecordingIndex.RECORDING_INDEX_FILE_NAME), false);
+        IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_INDEX_FILE_NAME), false);
     }
 
     @Test
     public void shouldCreateNewIndex()
     {
-        final RecordingIndex recordingIndex = new RecordingIndex(TEMP_DIR);
+        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
 
-        assertThat(recordingIndex.entries().size(), is(0));
+        assertThat(recordingLog.entries().size(), is(0));
     }
 
     @Test
     public void shouldAppendAndThenReloadLatestSnapshot()
     {
-        final RecordingIndex recordingIndex = new RecordingIndex(TEMP_DIR);
+        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
 
-        final RecordingIndex.Entry entry = new RecordingIndex.Entry(1, 2, 3, 4, ENTRY_TYPE_SNAPSHOT);
+        final RecordingLog.Entry entry = new RecordingLog.Entry(1, 2, 3, 4, ENTRY_TYPE_SNAPSHOT);
 
-        recordingIndex.appendSnapshot(entry.recordingId, entry.logPosition, entry.messageIndex, entry.timestamp);
+        recordingLog.appendSnapshot(entry.recordingId, entry.logPosition, entry.messageIndex, entry.timestamp);
 
-        final RecordingIndex recordingIndexTwo = new RecordingIndex(TEMP_DIR);
-        assertThat(recordingIndexTwo.entries().size(), is(1));
+        final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
+        assertThat(recordingLogTwo.entries().size(), is(1));
 
-        final RecordingIndex.Entry snapshot = recordingIndexTwo.getLatestSnapshot();
+        final RecordingLog.Entry snapshot = recordingLogTwo.getLatestSnapshot();
         assertEquals(entry.toString(), snapshot.toString());
     }
 }

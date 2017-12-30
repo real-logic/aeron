@@ -47,6 +47,16 @@ import static org.agrona.SystemUtil.getSizeAsInt;
  */
 public class AeronArchive implements AutoCloseable
 {
+    /**
+     * Represents a timestamp that has not been set. Used when the stop time is not known.
+     */
+    public static final long NULL_TIMESTAMP = -1L;
+
+    /**
+     * Represents a position that has not been set. used when the stop position is not known.
+     */
+    public static final long NULL_POSITION = -1L;
+
     private static final int FRAGMENT_LIMIT = 10;
 
     private final long controlSessionId;

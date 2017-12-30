@@ -363,7 +363,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private boolean ownsAeronClient;
 
         private ClusteredService clusteredService;
-        private RecordingIndex recordingIndex;
+        private RecordingLog recordingLog;
         private ShutdownSignalBarrier shutdownSignalBarrier;
 
         public void conclude()
@@ -448,9 +448,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     "Failed to create clustered service dir: " + clusteredServiceDir.getAbsolutePath());
             }
 
-            if (null == recordingIndex)
+            if (null == recordingLog)
             {
-                recordingIndex = new RecordingIndex(clusteredServiceDir);
+                recordingLog = new RecordingLog(clusteredServiceDir);
             }
 
             if (null == shutdownSignalBarrier)
@@ -966,25 +966,25 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the {@link RecordingIndex} for the  log terms and snapshots.
+         * Set the {@link RecordingLog} for the  log terms and snapshots.
          *
-         * @param recordingIndex to use.
+         * @param recordingLog to use.
          * @return this for a fluent API.
          */
-        public Context recordingIndex(final RecordingIndex recordingIndex)
+        public Context recordingLog(final RecordingLog recordingLog)
         {
-            this.recordingIndex = recordingIndex;
+            this.recordingLog = recordingLog;
             return this;
         }
 
         /**
-         * The {@link RecordingIndex} for the  log terms and snapshots.
+         * The {@link RecordingLog} for the  log terms and snapshots.
          *
-         * @return {@link RecordingIndex} for the  log terms and snapshots.
+         * @return {@link RecordingLog} for the  log terms and snapshots.
          */
-        public RecordingIndex recordingIndex()
+        public RecordingLog recordingLog()
         {
-            return recordingIndex;
+            return recordingLog;
         }
 
         /**

@@ -339,6 +339,18 @@ class SequencerAgent implements Agent
     private void recoverFromSnapshot(final List<RecordingLog.ReplayStep> recoverySteps)
     {
         final IdleStrategy idleStrategy = ctx.idleStrategy();
+
+        if (!recoverySteps.isEmpty() && recoverySteps.get(0).entry.entryType == ENTRY_TYPE_SNAPSHOT)
+        {
+            final RecordingLog.Entry snapshot = recoverySteps.get(0).entry;
+
+            cachedEpochClock.update(snapshot.timestamp);
+            leadershipTermBeginPosition = snapshot.logPosition;
+            messageIndex.setOrdered(snapshot.messageIndex);
+
+            loadSnapshot(snapshot.recordingId);
+        }
+
         waitForStateChange(ConsensusModule.State.REPLAY, idleStrategy);
     }
 
@@ -354,10 +366,6 @@ class SequencerAgent implements Agent
         {
             final RecordingLog.Entry snapshot = recoverySteps.get(0).entry;
             final int replayTermCount = recoverySteps.size() - 1;
-
-            cachedEpochClock.update(snapshot.timestamp);
-            leadershipTermBeginPosition = snapshot.logPosition;
-            messageIndex.setOrdered(snapshot.messageIndex);
 
             return RecoveryState.allocate(
                 aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp, replayTermCount);

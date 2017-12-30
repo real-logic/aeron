@@ -116,7 +116,7 @@ class SequencerAgent implements Agent
         final RecordingLog recordingLog = ctx.recordingLog();
         final List<RecordingLog.ReplayStep> recoverySteps = recordingLog.createRecoveryPlan(aeronArchive);
 
-        try (Counter ignore = createRecoveryStateCounter(recoverySteps))
+        try (Counter ignore = addRecoveryStateCounter(recoverySteps))
         {
             recoverFromSnapshot(recoverySteps);
             recoverFromLog(recoverySteps);
@@ -348,17 +348,13 @@ class SequencerAgent implements Agent
         waitForStateChange(ConsensusModule.State.ACTIVE, idleStrategy);
     }
 
-    private Counter createRecoveryStateCounter(final List<RecordingLog.ReplayStep> recoverySteps)
+    private Counter addRecoveryStateCounter(final List<RecordingLog.ReplayStep> recoverySteps)
     {
-        if (recoverySteps.isEmpty())
-        {
-            return RecoveryState.allocate(aeron, tempBuffer, 0, 0, 0, 0);
-        }
-
-        if (recoverySteps.get(0).entry.entryType == ENTRY_TYPE_SNAPSHOT)
+        if (!recoverySteps.isEmpty() && recoverySteps.get(0).entry.entryType == ENTRY_TYPE_SNAPSHOT)
         {
             final RecordingLog.Entry snapshot = recoverySteps.get(0).entry;
             final int replayTermCount = recoverySteps.size() - 1;
+
             cachedEpochClock.update(snapshot.timestamp);
             leadershipTermBeginPosition = snapshot.logPosition;
             messageIndex.setOrdered(snapshot.messageIndex);

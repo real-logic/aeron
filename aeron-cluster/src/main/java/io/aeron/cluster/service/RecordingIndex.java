@@ -215,7 +215,7 @@ public class RecordingIndex
 
             if (newFile)
             {
-                syncDirectory();
+                syncDirectory(parentDir);
                 return;
             }
 
@@ -362,20 +362,14 @@ public class RecordingIndex
         }
     }
 
-    private void syncDirectory()
+    private static void syncDirectory(final File dir)
     {
-        FileChannel fileChannel = null;
-        try
+        try (FileChannel fileChannel = FileChannel.open(dir.toPath()))
         {
-            fileChannel = FileChannel.open(parentDir.toPath());
             fileChannel.force(true);
         }
         catch (final IOException ignore)
         {
-        }
-        finally
-        {
-            CloseHelper.close(fileChannel);
         }
     }
 }

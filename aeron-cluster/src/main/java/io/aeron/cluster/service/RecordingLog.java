@@ -79,20 +79,20 @@ public class RecordingLog
         public final long logPosition;
         public final long messageIndex;
         public final long timestamp;
-        public final int entryType;
+        public final int type;
 
         public Entry(
             final long recordingId,
             final long logPosition,
             final long messageIndex,
             final long timestamp,
-            final int entryType)
+            final int type)
         {
             this.recordingId = recordingId;
             this.logPosition = logPosition;
             this.messageIndex = messageIndex;
             this.timestamp = timestamp;
-            this.entryType = entryType;
+            this.type = type;
         }
 
         public String toString()
@@ -102,7 +102,7 @@ public class RecordingLog
                 ", logPosition=" + logPosition +
                 ", messageIndex=" + messageIndex +
                 ", timestamp=" + timestamp +
-                ", entryType=" + entryType +
+                ", type=" + type +
                 '}';
         }
 
@@ -151,6 +151,21 @@ public class RecordingLog
                 ", recordingStopPosition=" + recordingStopPosition +
                 ", entry=" + entry +
                 '}';
+        }
+    }
+
+    /**
+     * The snapshot and steps to recover the state of a cluster.
+     */
+    public static class RecoveryPlan
+    {
+        public final ReplayStep snapshotStep;
+        public final ArrayList<ReplayStep> termSteps;
+
+        public RecoveryPlan(final ReplayStep snapshotStep, final ArrayList<ReplayStep> termSteps)
+        {
+            this.snapshotStep = snapshotStep;
+            this.termSteps = termSteps;
         }
     }
 
@@ -292,7 +307,7 @@ public class RecordingLog
         for (int i = entries.size() - 1; i >= 0; i--)
         {
             final Entry entry = entries.get(i);
-            if (ENTRY_TYPE_SNAPSHOT == entry.entryType)
+            if (ENTRY_TYPE_SNAPSHOT == entry.type)
             {
                 return entry;
             }
@@ -306,72 +321,77 @@ public class RecordingLog
      * latest stable state.
      *
      * @param archive to lookup recording descriptors.
-     * @return a new recovery plan for the cluster.
+     * @return a new {@link RecoveryPlan} for the cluster.
      */
-    public List<ReplayStep> createRecoveryPlan(final AeronArchive archive)
+    public RecoveryPlan createRecoveryPlan(final AeronArchive archive)
     {
         final ArrayList<ReplayStep> steps = new ArrayList<>();
 
-        planRecovery(steps, entries, archive);
-
-        return steps;
+        return new RecoveryPlan(planRecovery(steps, entries, archive), steps);
     }
 
-    static void planRecovery(
+    static ReplayStep planRecovery(
         final ArrayList<ReplayStep> steps, final ArrayList<Entry> entries, final AeronArchive archive)
     {
         if (entries.isEmpty())
         {
-            return;
+            return null;
         }
 
         int snapshotIndex = -1;
         for (int i = entries.size() - 1; i >= 0; i--)
         {
             final Entry entry = entries.get(i);
-            if (ENTRY_TYPE_SNAPSHOT == entry.entryType)
+            if (ENTRY_TYPE_SNAPSHOT == entry.type)
             {
                 snapshotIndex = i;
             }
         }
 
-        final RecordingInfo recordingInfo = new RecordingInfo();
+        final ReplayStep snapshotStep;
+        final RecordingExtent recordingExtent = new RecordingExtent();
 
         if (-1 != snapshotIndex)
         {
             final Entry snapshot = entries.get(snapshotIndex);
-            getRecordingInfo(archive, recordingInfo, snapshot);
+            getRecordingExtent(archive, recordingExtent, snapshot);
 
-            steps.add(new ReplayStep(recordingInfo.startPosition, recordingInfo.stopPosition, snapshot));
+            snapshotStep = new ReplayStep(recordingExtent.startPosition, recordingExtent.stopPosition, snapshot);
 
             if (snapshotIndex - 1 >= 0)
             {
                 for (int i = snapshotIndex - 1; i >= 0; i--)
                 {
                     final Entry entry = entries.get(i);
-                    if (ENTRY_TYPE_TERM == entry.entryType)
+                    if (ENTRY_TYPE_TERM == entry.type)
                     {
-                        getRecordingInfo(archive, recordingInfo, snapshot);
+                        getRecordingExtent(archive, recordingExtent, snapshot);
 
-                        if (recordingInfo.stopPosition == NULL_POSITION ||
-                            (entry.logPosition + recordingInfo.stopPosition) > snapshot.logPosition)
+                        if (recordingExtent.stopPosition == NULL_POSITION ||
+                            (entry.logPosition + recordingExtent.stopPosition) > snapshot.logPosition)
                         {
                             final long replayRecordingFromPosition = snapshot.logPosition - entry.logPosition;
-                            steps.add(new ReplayStep(replayRecordingFromPosition, recordingInfo.stopPosition, entry));
+                            steps.add(new ReplayStep(replayRecordingFromPosition, recordingExtent.stopPosition, entry));
                         }
                         break;
                     }
                 }
             }
         }
+        else
+        {
+            snapshotStep = null;
+        }
 
         for (int i = snapshotIndex + 1, length = entries.size(); i < length; i++)
         {
             final Entry entry = entries.get(i);
-            getRecordingInfo(archive, recordingInfo, entry);
+            getRecordingExtent(archive, recordingExtent, entry);
 
-            steps.add(new ReplayStep(recordingInfo.startPosition, recordingInfo.stopPosition, entry));
+            steps.add(new ReplayStep(recordingExtent.startPosition, recordingExtent.stopPosition, entry));
         }
+
+        return snapshotStep;
     }
 
     /**
@@ -474,10 +494,10 @@ public class RecordingLog
         }
     }
 
-    private static void getRecordingInfo(
-        final AeronArchive archive, final RecordingInfo recordingInfo, final Entry entry)
+    private static void getRecordingExtent(
+        final AeronArchive archive, final RecordingExtent recordingExtent, final Entry entry)
     {
-        if (archive.listRecording(entry.recordingId, recordingInfo) == 0)
+        if (archive.listRecording(entry.recordingId, recordingExtent) == 0)
         {
             throw new IllegalStateException("Unknown recording id: " + entry.recordingId);
         }

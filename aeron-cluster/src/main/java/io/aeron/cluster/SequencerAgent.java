@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.control.ClusterControl;
+import io.aeron.cluster.service.ConsensusPos;
 import io.aeron.cluster.service.RecordingLog;
 import io.aeron.cluster.service.RecoveryState;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -31,9 +32,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
-import static io.aeron.cluster.service.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 
 class SequencerAgent implements Agent
 {
@@ -113,13 +114,24 @@ class SequencerAgent implements Agent
 
     public void onStart()
     {
-        final RecordingLog recordingLog = ctx.recordingLog();
-        final List<RecordingLog.ReplayStep> recoverySteps = recordingLog.createRecoveryPlan(aeronArchive);
+        final IdleStrategy idleStrategy = ctx.idleStrategy();
+        final RecordingLog.RecoveryPlan recoveryPlan = ctx.recordingLog().createRecoveryPlan(aeronArchive);
 
-        try (Counter ignore = addRecoveryStateCounter(recoverySteps))
+        try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
-            recoverFromSnapshot(recoverySteps);
-            recoverFromLog(recoverySteps);
+            if (null != recoveryPlan.snapshotStep)
+            {
+                recoverFromSnapshot(recoveryPlan.snapshotStep, idleStrategy);
+            }
+
+            waitForStateChange(ConsensusModule.State.REPLAY, idleStrategy);
+
+            if (recoveryPlan.termSteps.size() > 0)
+            {
+                recoverFromLog(recoveryPlan.termSteps, idleStrategy);
+            }
+
+            waitForStateChange(ConsensusModule.State.ACTIVE, idleStrategy);
         }
 
         final long timestamp = epochClock.time();
@@ -131,7 +143,7 @@ class SequencerAgent implements Agent
         consensusTracker = new ConsensusTracker(
             aeron, ctx.tempBuffer(), position, messageIndex, logAppender.sessionId(), ctx.idleStrategy());
 
-        recordingLog.appendTerm(consensusTracker.recordingId(), position, messageIndex, timestamp);
+        ctx.recordingLog().appendTerm(consensusTracker.recordingId(), position, messageIndex, timestamp);
     }
 
     public int doWork()
@@ -336,45 +348,78 @@ class SequencerAgent implements Agent
         timerService.cancelTimer(correlationId);
     }
 
-    private void recoverFromSnapshot(final List<RecordingLog.ReplayStep> recoverySteps)
+    private void recoverFromSnapshot(final RecordingLog.ReplayStep snapshotStep, final IdleStrategy idleStrategy)
     {
-        final IdleStrategy idleStrategy = ctx.idleStrategy();
+        final RecordingLog.Entry snapshot = snapshotStep.entry;
 
-        if (!recoverySteps.isEmpty() && recoverySteps.get(0).entry.entryType == ENTRY_TYPE_SNAPSHOT)
+        cachedEpochClock.update(snapshot.timestamp);
+        leadershipTermBeginPosition = snapshot.logPosition;
+        messageIndex.setOrdered(snapshot.messageIndex);
+
+        loadSnapshot(snapshot.recordingId, idleStrategy);
+    }
+
+    private void recoverFromLog(final List<RecordingLog.ReplayStep> steps, final IdleStrategy idleStrategy)
+    {
+        final String channel = ctx.replayLogChannel();
+        final int streamId = ctx.replayLogStreamId();
+
+        try (Subscription subscription = aeron.addSubscription(channel, streamId))
         {
-            final RecordingLog.Entry snapshot = recoverySteps.get(0).entry;
+            for (int i = 0, size = steps.size(); i < size; i++)
+            {
+                final RecordingLog.ReplayStep step = steps.get(0);
+                final RecordingLog.Entry entry = step.entry;
+                final long recordingId = entry.recordingId;
+                final long startPosition = step.recordingStartPosition;
+                final long stopPosition = step.recordingStopPosition;
+                final long length = NULL_POSITION == stopPosition ? Long.MAX_VALUE : stopPosition - startPosition;
+                final long messageIndex = entry.messageIndex;
+                final long logPosition = entry.logPosition;
 
-            cachedEpochClock.update(snapshot.timestamp);
-            leadershipTermBeginPosition = snapshot.logPosition;
-            messageIndex.setOrdered(snapshot.messageIndex);
+                leadershipTermBeginPosition = logPosition;
 
-            loadSnapshot(snapshot.recordingId);
+                if (0 == startPosition)
+                {
+                    this.messageIndex.setOrdered(messageIndex);
+                }
+
+                final int sessionId = (int)aeronArchive.startReplay(
+                    recordingId, startPosition, length, channel, streamId);
+
+                idleStrategy.reset();
+                Image image;
+                while ((image = subscription.imageBySessionId(sessionId)) == null)
+                {
+                    idle(idleStrategy);
+                }
+
+                try (Counter ignore = ConsensusPos.allocate(
+                    aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId))
+                {
+                    replayTerm(image, idleStrategy);
+                }
+            }
         }
-
-        waitForStateChange(ConsensusModule.State.REPLAY, idleStrategy);
     }
 
-    private void recoverFromLog(final List<RecordingLog.ReplayStep> recoverySteps)
+    private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
     {
-        final IdleStrategy idleStrategy = ctx.idleStrategy();
-        waitForStateChange(ConsensusModule.State.ACTIVE, idleStrategy);
-    }
+        final long termStepCount = plan.termSteps.size();
+        final RecordingLog.ReplayStep snapshotStep = plan.snapshotStep;
 
-    private Counter addRecoveryStateCounter(final List<RecordingLog.ReplayStep> recoverySteps)
-    {
-        if (!recoverySteps.isEmpty() && recoverySteps.get(0).entry.entryType == ENTRY_TYPE_SNAPSHOT)
+        if (null != snapshotStep)
         {
-            final RecordingLog.Entry snapshot = recoverySteps.get(0).entry;
-            final int replayTermCount = recoverySteps.size() - 1;
+            final RecordingLog.Entry snapshot = snapshotStep.entry;
 
             return RecoveryState.allocate(
-                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp, replayTermCount);
+                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp, termStepCount);
         }
 
-        return RecoveryState.allocate(aeron, tempBuffer, 0, 0, 0, recoverySteps.size());
+        return RecoveryState.allocate(aeron, tempBuffer, 0, 0, 0, termStepCount);
     }
 
-    private void checkInterruptedStatus()
+    private static void checkInterruptedStatus()
     {
         if (Thread.currentThread().isInterrupted())
         {
@@ -392,17 +437,37 @@ class SequencerAgent implements Agent
                 break;
             }
 
-            checkInterruptedStatus();
-            idleStrategy.idle(fragmentsRead);
-
-            if (null != aeronClientInvoker)
-            {
-                aeronClientInvoker.invoke();
-            }
+            idle(idleStrategy, fragmentsRead);
         }
     }
 
-    private void loadSnapshot(final long recordingId)
+    private void idle(final IdleStrategy idleStrategy, final int workCount)
+    {
+        checkInterruptedStatus();
+        idleStrategy.idle(workCount);
+
+        if (null != aeronClientInvoker)
+        {
+            aeronClientInvoker.invoke();
+        }
+    }
+
+    private void idle(final IdleStrategy idleStrategy)
+    {
+        checkInterruptedStatus();
+        idleStrategy.idle();
+
+        if (null != aeronClientInvoker)
+        {
+            aeronClientInvoker.invoke();
+        }
+    }
+
+    private void loadSnapshot(final long recordingId, final IdleStrategy idleStrategy)
+    {
+    }
+
+    private void replayTerm(final Image image, final IdleStrategy idleStrategy)
     {
     }
 

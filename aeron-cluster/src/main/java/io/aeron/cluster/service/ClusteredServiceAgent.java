@@ -404,16 +404,16 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     {
         try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
         {
-            final RecordingInfo recordingInfo = new RecordingInfo();
-            if (0 == aeronArchive.listRecording(recordingId, recordingInfo))
+            final RecordingExtent recordingExtent = new RecordingExtent();
+            if (0 == aeronArchive.listRecording(recordingId, recordingExtent))
             {
                 throw new IllegalStateException("Could not find recordingId: " + recordingId);
             }
 
             try (Subscription replaySubscription = aeronArchive.replay(
-                recordingInfo.recordingId,
-                recordingInfo.startPosition,
-                recordingInfo.stopPosition - recordingInfo.startPosition,
+                recordingExtent.recordingId,
+                recordingExtent.startPosition,
+                recordingExtent.stopPosition - recordingExtent.startPosition,
                 ctx.replayLogChannel(),
                 ctx.replayLogStreamId()))
             {

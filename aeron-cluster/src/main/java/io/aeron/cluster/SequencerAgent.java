@@ -779,6 +779,8 @@ class SequencerAgent implements Agent
     {
         cachedEpochClock.update(timestamp);
         messageIndex.incrementOrdered();
+
+        sessionByIdMap.get(clusterSessionId).lastActivity(timestamp, correlationId);
     }
 
     void onReplayTimerEvent(final long correlationId, final long timestamp)

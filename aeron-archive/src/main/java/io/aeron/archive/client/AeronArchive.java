@@ -360,7 +360,7 @@ public class AeronArchive implements AutoCloseable
      * @param replayChannel  to which the replay should be sent.
      * @param replayStreamId to which the replay should be sent.
      * @return the id of the replay session which will be the same as the {@link Image#sessionId()} of the received
-     * replay for correlation for the matching channel and stream id.
+     * replay for correlation with the matching channel and stream id.
      */
     public long startReplay(
         final long recordingId,

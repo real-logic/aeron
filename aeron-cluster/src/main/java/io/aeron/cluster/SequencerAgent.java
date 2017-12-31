@@ -22,6 +22,7 @@ import io.aeron.cluster.service.ConsensusPos;
 import io.aeron.cluster.service.RecordingLog;
 import io.aeron.cluster.service.RecoveryState;
 import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.Header;
 import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -393,10 +394,10 @@ class SequencerAgent implements Agent
                     idle(idleStrategy);
                 }
 
-                try (Counter ignore = ConsensusPos.allocate(
+                try (Counter counter = ConsensusPos.allocate(
                     aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId))
                 {
-                    replayTerm(image, idleStrategy);
+                    replayTerm(image, idleStrategy, counter);
                 }
             }
         }
@@ -466,8 +467,33 @@ class SequencerAgent implements Agent
     {
     }
 
-    private void replayTerm(final Image image, final IdleStrategy idleStrategy)
+    private void replayTerm(final Image image, final IdleStrategy idleStrategy, final Counter consensusPos)
     {
+        final LogAdapter logAdapter = new LogAdapter(image, 10, this);
+
+        while (true)
+        {
+            final int fragments = logAdapter.poll();
+            if (fragments == 0)
+            {
+                if (image.isClosed())
+                {
+                    if (!image.isEndOfStream())
+                    {
+                        throw new IllegalStateException("Unexpected close");
+                    }
+
+                    break;
+                }
+            }
+            else
+            {
+                consensusPos.setOrdered(image.position());
+            }
+
+
+            idle(idleStrategy, fragments);
+        }
     }
 
     private void state(final ConsensusModule.State state)
@@ -740,5 +766,59 @@ class SequencerAgent implements Agent
         }
 
         return false;
+    }
+
+    void onReplaySessionMessage(
+        final long correlationId,
+        final long clusterSessionId,
+        final long timestamp,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
+    {
+        cachedEpochClock.update(timestamp);
+        messageIndex.incrementOrdered();
+    }
+
+    void onReplayTimerEvent(final long correlationId, final long timestamp)
+    {
+        cachedEpochClock.update(timestamp);
+        messageIndex.incrementOrdered();
+        timerService.cancelTimer(correlationId);
+    }
+
+    void onReplaySessionOpen(
+        final long correlationId,
+        final long clusterSessionId,
+        final long timestamp,
+        final int responseStreamId,
+        final String responseChannel)
+    {
+        cachedEpochClock.update(timestamp);
+        messageIndex.incrementOrdered();
+
+        final ClusterSession session = sessionSupplier.newClusterSession(
+            clusterSessionId, responseStreamId, responseChannel);
+        session.lastActivity(timestamp, correlationId);
+
+        sessionByIdMap.put(clusterSessionId, session);
+    }
+
+    void onReplaySessionClose(
+        final long correlationId,
+        final long clusterSessionId,
+        final long timestamp,
+        final CloseReason closeReason)
+    {
+        cachedEpochClock.update(timestamp);
+        messageIndex.incrementOrdered();
+        sessionByIdMap.remove(clusterSessionId);
+    }
+
+    void onReplayServiceAction(final long timestamp, final ServiceAction action)
+    {
+        cachedEpochClock.update(timestamp);
+        messageIndex.incrementOrdered();
     }
 }

@@ -117,6 +117,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         checkForReplay();
         sendAcknowledgment(ServiceAction.REPLAY, leadershipTermBeginPosition);
 
+        fragmentAssembler.clear();
         consensusPosition = findConsensusPosition(logSubscription);
 
         logImage = logSubscription.imageAtIndex(0);

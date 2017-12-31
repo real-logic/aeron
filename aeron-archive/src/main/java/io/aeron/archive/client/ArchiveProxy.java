@@ -198,7 +198,7 @@ public class ArchiveProxy
      *
      * @param recordingId      to be replayed.
      * @param position         from which the replay should be started.
-     * @param length           of the stream to be replayed.
+     * @param length           of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live stream.
      * @param replayChannel    to which the replay should be sent.
      * @param replayStreamId   to which the replay should be sent.
      * @param correlationId    for this request.

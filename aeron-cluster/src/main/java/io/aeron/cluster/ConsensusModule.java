@@ -20,7 +20,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.ServiceAction;
-import io.aeron.cluster.control.ClusterControl;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;

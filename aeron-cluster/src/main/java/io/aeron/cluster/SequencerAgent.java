@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.*;
-import io.aeron.cluster.control.ClusterControl;
 import io.aeron.cluster.service.ConsensusPos;
 import io.aeron.cluster.service.RecordingLog;
 import io.aeron.cluster.service.RecoveryState;

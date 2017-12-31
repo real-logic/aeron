@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster.control;
+package io.aeron.cluster;
 
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;

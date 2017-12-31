@@ -28,7 +28,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.aeron.cluster.control.ClusterControl.ToggleState.*;
+import static io.aeron.cluster.ClusterControl.ToggleState.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;

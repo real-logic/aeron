@@ -53,7 +53,6 @@ public class ReplaySessionTest
     private static final long RECORDING_POSITION = INITIAL_TERM_OFFSET;
     private static final int MTU_LENGTH = 4096;
     private static final long TIME = 0;
-    private static final int REPLAY_SESSION_ID = 0;
     private static final int FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
     private static final int STREAM_ID = 1;
@@ -263,7 +262,6 @@ public class ReplaySessionTest
             mockControlSession,
             archiveDir,
             proxy,
-            REPLAY_SESSION_ID,
             correlationId,
             epochClock,
             REPLAY_CHANNEL,
@@ -507,7 +505,6 @@ public class ReplaySessionTest
             control,
             archiveDir,
             proxy,
-            REPLAY_SESSION_ID,
             correlationId,
             epochClock,
             REPLAY_CHANNEL,

@@ -62,7 +62,6 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     private static final int REPLAY_FRAGMENT_LIMIT = Archive.Configuration.replayFragmentLimit();
 
     private long connectDeadlineMs;
-    private final long replaySessionId;
     private final long correlationId;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final ExclusivePublication replayPublication;
@@ -80,7 +79,6 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         final ControlSession controlSession,
         final File archiveDir,
         final ControlResponseProxy threadLocalControlResponseProxy,
-        final long replaySessionId,
         final long correlationId,
         final EpochClock epochClock,
         final String replayChannel,
@@ -90,7 +88,6 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     {
         this.controlSession = controlSession;
         this.threadLocalControlResponseProxy = threadLocalControlResponseProxy;
-        this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
 
@@ -129,7 +126,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         }
 
         this.replayPublication = replayPublication;
-        controlSession.sendOkResponse(correlationId, replaySessionId, threadLocalControlResponseProxy);
+        controlSession.sendOkResponse(correlationId, replayPublication.sessionId(), threadLocalControlResponseProxy);
 
         connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
     }
@@ -144,7 +141,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 
     public long sessionId()
     {
-        return replaySessionId;
+        return replayPublication.sessionId();
     }
 
     public int doWork()

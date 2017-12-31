@@ -70,7 +70,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     protected SessionWorker<ReplaySession> replayer;
     protected SessionWorker<RecordingSession> recorder;
 
-    private long replaySessionId = ThreadLocalRandom.current().nextInt();
     private long controlSessionId = ThreadLocalRandom.current().nextInt();
 
     ArchiveConductor(final Aeron aeron, final Archive.Context ctx)
@@ -343,7 +342,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
 
         final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
-        final long newId = replaySessionId++;
 
         final ReplaySession replaySession = new ReplaySession(
             position,
@@ -352,7 +350,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             controlSession,
             archiveDir,
             controlResponseProxy,
-            newId,
             correlationId,
             epochClock,
             replayChannel,
@@ -360,7 +357,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             recordingSummary,
             null == recordingSession ? null : recordingSession.recordingPosition());
 
-        replaySessionByIdMap.put(newId, replaySession);
+        replaySessionByIdMap.put(replaySession.sessionId(), replaySession);
         replayer.addSession(replaySession);
     }
 

@@ -66,7 +66,7 @@ public class RecoveryState
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "snapshot: ";
+    public static final String NAME = "cluster recovery: ";
 
     public static final int RECORDING_ID_OFFSET = 0;
     public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;

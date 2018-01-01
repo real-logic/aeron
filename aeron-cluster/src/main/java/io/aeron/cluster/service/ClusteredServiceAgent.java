@@ -111,14 +111,17 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     {
         service.onStart(this);
 
-        checkForSnapshot();
+        final CountersReader counters = aeron.countersReader();
+        final int recoveryCounterId = findRecoveryCounterId(counters);
+
+        checkForSnapshot(counters, recoveryCounterId);
         sendAcknowledgment(ServiceAction.INIT, leadershipTermBeginPosition);
 
-        checkForReplay();
+        checkForReplay(counters, recoveryCounterId);
         sendAcknowledgment(ServiceAction.REPLAY, leadershipTermBeginPosition);
 
         fragmentAssembler.clear();
-        consensusPosition = findConsensusPosition(logSubscription);
+        consensusPosition = findConsensusPosition(counters, logSubscription);
 
         logImage = logSubscription.imageAtIndex(0);
         state = State.LEADING;
@@ -335,11 +338,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         throw new IllegalStateException("Failed to schedule timer");
     }
 
-    private void checkForSnapshot()
+    private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
     {
-        final CountersReader countersReader = aeron.countersReader();
-        final int snapshotCounterId = findSnapshotCounterId(countersReader);
-        final long logPosition = RecoveryState.getLogPosition(countersReader, snapshotCounterId);
+        final long logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
 
         if (logPosition > 0)
         {
@@ -350,34 +351,40 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             }
 
             leadershipTermBeginPosition = logPosition;
-            messageIndex = RecoveryState.getMessageIndex(countersReader, snapshotCounterId);
-            timestampMs = RecoveryState.getTimestamp(countersReader, snapshotCounterId);
+            messageIndex = RecoveryState.getMessageIndex(counters, recoveryCounterId);
+            timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
 
             snapshotEntry.confirmMatch(logPosition, messageIndex, timestampMs);
             loadSnapshot(snapshotEntry.recordingId);
         }
     }
 
-    private void checkForReplay()
+    private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
     {
+        final long replayTermCount = RecoveryState.getReplayTermCount(counters, recoveryCounterId);
+        if (0 == replayTermCount)
+        {
+            return;
+        }
+
     }
 
-    private int findSnapshotCounterId(final CountersReader countersReader)
+    private int findRecoveryCounterId(final CountersReader counters)
     {
-        int snapshotCounterId = RecoveryState.findActiveCounterId(countersReader);
+        int recoveryCounterId = RecoveryState.findActiveCounterId(counters);
 
-        while (RecoveryState.NULL_COUNTER_ID == snapshotCounterId)
+        while (RecoveryState.NULL_COUNTER_ID == recoveryCounterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
 
-            snapshotCounterId = RecoveryState.findActiveCounterId(countersReader);
+            recoveryCounterId = RecoveryState.findActiveCounterId(counters);
         }
 
-        return snapshotCounterId;
+        return recoveryCounterId;
     }
 
-    private ReadableCounter findConsensusPosition(final Subscription logSubscription)
+    private ReadableCounter findConsensusPosition(final CountersReader counters, final Subscription logSubscription)
     {
         idleStrategy.reset();
         while (!logSubscription.isConnected())
@@ -387,18 +394,17 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
 
         final int sessionId = logSubscription.imageAtIndex(0).sessionId();
-        final CountersReader countersReader = aeron.countersReader();
 
-        int counterId = ConsensusPos.findActiveCounterIdBySession(countersReader, sessionId);
+        int counterId = ConsensusPos.findActiveCounterIdBySession(counters, sessionId);
         while (ConsensusPos.NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
 
-            counterId = ConsensusPos.findActiveCounterIdBySession(countersReader, sessionId);
+            counterId = ConsensusPos.findActiveCounterIdBySession(counters, sessionId);
         }
 
-        return new ReadableCounter(countersReader, counterId);
+        return new ReadableCounter(counters, counterId);
     }
 
     private void loadSnapshot(final long recordingId)

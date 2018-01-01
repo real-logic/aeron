@@ -405,7 +405,7 @@ class SequencerAgent implements Agent
 
     private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
     {
-        final long termStepCount = plan.termSteps.size();
+        final int replayTermCount = plan.termSteps.size();
         final RecordingLog.ReplayStep snapshotStep = plan.snapshotStep;
 
         if (null != snapshotStep)
@@ -413,10 +413,10 @@ class SequencerAgent implements Agent
             final RecordingLog.Entry snapshot = snapshotStep.entry;
 
             return RecoveryState.allocate(
-                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp, termStepCount);
+                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp, replayTermCount);
         }
 
-        return RecoveryState.allocate(aeron, tempBuffer, 0, 0, 0, termStepCount);
+        return RecoveryState.allocate(aeron, tempBuffer, 0, 0, 0, replayTermCount);
     }
 
     private static void checkInterruptedStatus()

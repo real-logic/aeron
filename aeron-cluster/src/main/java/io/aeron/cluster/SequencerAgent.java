@@ -787,7 +787,11 @@ class SequencerAgent implements Agent
     {
         cachedEpochClock.update(timestamp);
         messageIndex.incrementOrdered();
-        timerService.cancelTimer(correlationId);
+
+        if (!timerService.cancelTimer(correlationId))
+        {
+            // TODO: store correlationId until end of term replay and cancel it then due to race.
+        }
     }
 
     void onReplaySessionOpen(

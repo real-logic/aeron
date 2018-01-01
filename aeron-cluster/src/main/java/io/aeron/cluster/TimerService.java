@@ -57,13 +57,17 @@ public class TimerService implements DeadlineTimerWheel.TimerHandler
         correlationIdByTimerIdMap.put(timerId, correlationId);
     }
 
-    public void cancelTimer(final long correlationId)
+    public boolean cancelTimer(final long correlationId)
     {
         final long timerId = timerIdByCorrelationIdMap.remove(correlationId);
         if (Long.MAX_VALUE != timerId)
         {
             timerWheel.cancelTimer(timerId);
             correlationIdByTimerIdMap.remove(timerId);
+
+            return true;
         }
+
+        return false;
     }
 }

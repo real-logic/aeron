@@ -84,7 +84,7 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onActionAck(
+                sequencerAgent.onServiceActionAck(
                     serviceActionAckDecoder.serviceId(),
                     serviceActionAckDecoder.logPosition(),
                     serviceActionAckDecoder.messageIndex(),

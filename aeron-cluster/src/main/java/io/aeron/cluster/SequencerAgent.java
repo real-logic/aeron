@@ -117,6 +117,7 @@ class SequencerAgent implements Agent
         final IdleStrategy idleStrategy = ctx.idleStrategy();
         final RecordingLog.RecoveryPlan recoveryPlan = ctx.recordingLog().createRecoveryPlan(aeronArchive);
 
+        serviceAckCount = 0;
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
             if (null != recoveryPlan.snapshotStep)
@@ -186,7 +187,7 @@ class SequencerAgent implements Agent
         return "sequencer";
     }
 
-    public void onActionAck(
+    public void onServiceActionAck(
         final long serviceId, final long logPosition, final long messageIndex, final ServiceAction action)
     {
         final long currentLogPosition = leadershipTermBeginPosition + logAppender.position();
@@ -204,7 +205,27 @@ class SequencerAgent implements Agent
             throw new IllegalStateException("Invalid action ack for state " + state + " action " + action);
         }
 
-        if (++serviceAckCount > ctx.serviceCount())
+        if (++serviceAckCount == ctx.serviceCount())
+        {
+            switch (action)
+            {
+                case SNAPSHOT:
+                    state(ConsensusModule.State.ACTIVE);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    break;
+
+                case SHUTDOWN:
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.shutdownSignalBarrier().signal();
+                    break;
+
+                case ABORT:
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.shutdownSignalBarrier().signal();
+                    break;
+            }
+        }
+        else if (serviceAckCount > ctx.serviceCount())
         {
             throw new IllegalStateException("Service count exceeded: " + serviceAckCount);
         }
@@ -366,6 +387,7 @@ class SequencerAgent implements Agent
                     idle(idleStrategy);
                 }
 
+                serviceAckCount = 0;
                 try (Counter counter = ConsensusPos.allocate(
                     aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId))
                 {
@@ -439,6 +461,10 @@ class SequencerAgent implements Agent
     {
     }
 
+    private void takeSnapshot()
+    {
+    }
+
     private void replayTerm(final Image image, final IdleStrategy idleStrategy, final Counter consensusPos)
     {
         final LogAdapter logAdapter = new LogAdapter(image, 10, this);
@@ -500,28 +526,30 @@ class SequencerAgent implements Agent
                 break;
 
             case SNAPSHOT:
+                serviceAckCount = 0;
                 if (ConsensusModule.State.ACTIVE == state && appendSnapshot(nowMs))
                 {
                     state(ConsensusModule.State.SNAPSHOT);
-                    serviceAckCount = 0;
+                    takeSnapshot();
                     workCount = 1;
                 }
                 break;
 
             case SHUTDOWN:
+                serviceAckCount = 0;
                 if (ConsensusModule.State.ACTIVE == state && appendShutdown(nowMs))
                 {
                     state(ConsensusModule.State.SHUTDOWN);
-                    serviceAckCount = 0;
+                    takeSnapshot();
                     workCount = 1;
                 }
                 break;
 
             case ABORT:
+                serviceAckCount = 0;
                 if (ConsensusModule.State.ACTIVE == state && appendAbort(nowMs))
                 {
                     state(ConsensusModule.State.ABORT);
-                    serviceAckCount = 0;
                     workCount = 1;
                 }
                 break;

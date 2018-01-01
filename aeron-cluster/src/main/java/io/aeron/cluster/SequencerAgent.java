@@ -131,7 +131,6 @@ class SequencerAgent implements Agent
             {
                 state(ConsensusModule.State.REPLAY);
                 recoverFromLog(recoveryPlan.termSteps, idleStrategy);
-                waitForServiceAcks(idleStrategy);
             }
 
             state(ConsensusModule.State.ACTIVE);
@@ -389,9 +388,11 @@ class SequencerAgent implements Agent
 
                 serviceAckCount = 0;
                 try (Counter counter = ConsensusPos.allocate(
-                    aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId))
+                    aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId, i))
                 {
                     replayTerm(image, idleStrategy, counter);
+
+                    waitForServiceAcks(idleStrategy);
                 }
             }
         }

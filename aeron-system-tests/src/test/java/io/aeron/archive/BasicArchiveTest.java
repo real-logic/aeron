@@ -110,7 +110,7 @@ public class BasicArchiveTest
 
             recordingIdFromCounter = RecordingPos.getRecordingId(
                 aeron.countersReader(),
-                RecordingPos.findActiveCounterIdBySession(aeron.countersReader(), publication.sessionId()));
+                RecordingPos.findCounterIdBySession(aeron.countersReader(), publication.sessionId()));
 
             consume(subscription, messageCount, messagePrefix);
 

@@ -365,24 +365,79 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             return;
         }
 
-        fragmentAssembler.clear();
+        try (Subscription subscription = aeron.addSubscription(ctx.replayLogChannel(), ctx.replayLogStreamId()))
+        {
+            for (int i = 0; i < replayTermCount; i++)
+            {
+                final int counterId = findReplayConsensusCounterId(counters, i);
+                final int sessionId = ConsensusPos.getReplayStep(counters, counterId);
+                leadershipTermBeginPosition = ConsensusPos.getBeginningLogPosition(counters, counterId);
 
-        sendAcknowledgment(ServiceAction.REPLAY, leadershipTermBeginPosition);
+                idleStrategy.reset();
+                Image image;
+                while ((image = subscription.imageBySessionId(sessionId)) == null)
+                {
+                    checkInterruptedStatus();
+                    idleStrategy.idle();
+                }
+
+                final ImageControlledFragmentAssembler assembler = new ImageControlledFragmentAssembler(this);
+                final ReadableCounter limit = new ReadableCounter(counters, counterId);
+
+                while (true)
+                {
+                    final int workCount = image.boundedControlledPoll(assembler, limit.get(), FRAGMENT_LIMIT);
+                    if (workCount == 0)
+                    {
+                        if (image.isClosed())
+                        {
+                            if (!image.isEndOfStream())
+                            {
+                                throw new IllegalStateException("Unexpected close of replay");
+                            }
+
+                            break;
+                        }
+
+                        checkInterruptedStatus();
+                    }
+
+                    idleStrategy.idle(workCount);
+                }
+
+                sendAcknowledgment(ServiceAction.REPLAY, leadershipTermBeginPosition);
+            }
+        }
     }
 
     private int findRecoveryCounterId(final CountersReader counters)
     {
-        int recoveryCounterId = RecoveryState.findActiveCounterId(counters);
+        int counterId = RecoveryState.findCounterId(counters);
 
-        while (RecoveryState.NULL_COUNTER_ID == recoveryCounterId)
+        while (RecoveryState.NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
 
-            recoveryCounterId = RecoveryState.findActiveCounterId(counters);
+            counterId = RecoveryState.findCounterId(counters);
         }
 
-        return recoveryCounterId;
+        return counterId;
+    }
+
+    private int findReplayConsensusCounterId(final CountersReader counters, final int replayStep)
+    {
+        int counterId = ConsensusPos.findCounterIdByReplayStep(counters, replayStep);
+
+        while (RecoveryState.NULL_COUNTER_ID == counterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+
+            counterId = ConsensusPos.findCounterIdByReplayStep(counters, replayStep);
+        }
+
+        return counterId;
     }
 
     private ReadableCounter findConsensusPosition(final CountersReader counters, final Subscription logSubscription)
@@ -396,13 +451,13 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         final int sessionId = logSubscription.imageAtIndex(0).sessionId();
 
-        int counterId = ConsensusPos.findActiveCounterIdBySession(counters, sessionId);
+        int counterId = ConsensusPos.findCounterIdBySession(counters, sessionId);
         while (ConsensusPos.NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
 
-            counterId = ConsensusPos.findActiveCounterIdBySession(counters, sessionId);
+            counterId = ConsensusPos.findCounterIdBySession(counters, sessionId);
         }
 
         return new ReadableCounter(counters, counterId);
@@ -466,7 +521,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 service.onTakeSnapshot(publication);
 
                 final CountersReader countersReader = aeron.countersReader();
-                final int recordingCounterId = RecordingPos.findActiveCounterIdBySession(
+                final int recordingCounterId = RecordingPos.findCounterIdBySession(
                     countersReader, publication.sessionId());
 
                 recordingId = RecordingPos.getRecordingId(countersReader, recordingCounterId);

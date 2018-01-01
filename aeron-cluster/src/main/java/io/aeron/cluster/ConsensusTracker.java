@@ -42,19 +42,20 @@ public class ConsensusTracker implements AutoCloseable
         final CountersReader countersReader = aeron.countersReader();
 
         idleStrategy.reset();
-        int recordingCounterId = RecordingPos.findActiveCounterIdBySession(countersReader, sessionId);
+        int recordingCounterId = RecordingPos.findCounterIdBySession(countersReader, sessionId);
         while (RecordingPos.NULL_COUNTER_ID == recordingCounterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
 
-            recordingCounterId = RecordingPos.findActiveCounterIdBySession(countersReader, sessionId);
+            recordingCounterId = RecordingPos.findCounterIdBySession(countersReader, sessionId);
         }
 
         recordingPosition = new ReadableCounter(countersReader, recordingCounterId);
 
         recordingId = RecordingPos.getRecordingId(countersReader, recordingCounterId);
-        consensusPosition = ConsensusPos.allocate(aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId);
+        consensusPosition = ConsensusPos.allocate(
+            aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId, -1);
     }
 
     public void close()

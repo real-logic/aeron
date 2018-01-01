@@ -106,7 +106,7 @@ public class RecordedBasicPublisher
                 // Wait for the recording to complete before the recording is stopped.
 
                 final CountersReader countersReader = archive.context().aeron().countersReader();
-                final int counterId = RecordingPos.findActiveCounterIdBySession(
+                final int counterId = RecordingPos.findCounterIdBySession(
                     countersReader, publication.sessionId());
                 final ReadableCounter recordedPosition = new ReadableCounter(countersReader, counterId);
 

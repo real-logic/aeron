@@ -117,7 +117,7 @@ public class RecoveryState
      * @param countersReader to search within.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static int findActiveCounterId(final CountersReader countersReader)
+    public static int findCounterId(final CountersReader countersReader)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 

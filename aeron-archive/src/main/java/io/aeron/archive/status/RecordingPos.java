@@ -121,7 +121,7 @@ public class RecordingPos
      * @param recordingId    for the active recording.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static int findActiveCounterIdByRecording(final CountersReader countersReader, final long recordingId)
+    public static int findCounterIdByRecording(final CountersReader countersReader, final long recordingId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 
@@ -179,7 +179,7 @@ public class RecordingPos
      * @param sessionId      for the active recording.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static int findActiveCounterIdBySession(final CountersReader countersReader, final int sessionId)
+    public static int findCounterIdBySession(final CountersReader countersReader, final int sessionId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 

@@ -46,6 +46,8 @@ import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
  *  +---------------------------------------------------------------+
  *  |                         Session ID                            |
  *  +---------------------------------------------------------------+
+ *  |                       Recovery Step                           |
+ *  +---------------------------------------------------------------+
  * </pre>
  */
 public class ConsensusPos
@@ -63,7 +65,7 @@ public class ConsensusPos
     /**
      * Represents a null value if the counter is not found.
      */
-    public static final long NULL_VALUE = -1L;
+    public static final int NULL_VALUE = -1;
 
     /**
      * Human readable name for the counter.
@@ -74,7 +76,8 @@ public class ConsensusPos
     public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
     public static final int MESSAGE_INDEX_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
     public static final int SESSION_ID_OFFSET = MESSAGE_INDEX_OFFSET + SIZE_OF_LONG;
-    public static final int KEY_LENGTH = SESSION_ID_OFFSET + SIZE_OF_INT;
+    public static final int REPLAY_STEP_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
+    public static final int KEY_LENGTH = REPLAY_STEP_OFFSET + SIZE_OF_INT;
 
     /**
      * Allocate a counter to represent the consensus position on stream for the current leadership term.
@@ -85,6 +88,7 @@ public class ConsensusPos
      * @param logPosition  of the log at the beginning of the term.
      * @param messageIndex of the log at the beginning of the term.
      * @param sessionId    of the stream for the current term.
+     * @param replayStep   during the recovery process or replaying term logs.
      * @return the {@link Counter} for the consensus position.
      */
     public static Counter allocate(
@@ -93,16 +97,20 @@ public class ConsensusPos
         final long recordingId,
         final long logPosition,
         final long messageIndex,
-        final int sessionId)
+        final int sessionId,
+        final int replayStep)
     {
         tempBuffer.putLong(RECORDING_ID_OFFSET, recordingId);
         tempBuffer.putLong(LOG_POSITION_OFFSET, logPosition);
         tempBuffer.putLong(MESSAGE_INDEX_OFFSET, messageIndex);
         tempBuffer.putInt(SESSION_ID_OFFSET, sessionId);
+        tempBuffer.putInt(REPLAY_STEP_OFFSET, replayStep);
 
         int labelOffset = 0;
         labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, NAME);
         labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, sessionId);
+        labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, " ");
+        labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, replayStep);
 
         return aeron.addCounter(
             CONSENSUS_POSITION_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, KEY_LENGTH, labelOffset);
@@ -115,7 +123,7 @@ public class ConsensusPos
      * @param sessionId      for the active log.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static int findActiveCounterIdBySession(final CountersReader countersReader, final int sessionId)
+    public static int findCounterIdBySession(final CountersReader countersReader, final int sessionId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 
@@ -127,6 +135,34 @@ public class ConsensusPos
 
                 if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID &&
                     buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
+                {
+                    return i;
+                }
+            }
+        }
+
+        return NULL_COUNTER_ID;
+    }
+
+    /**
+     * Find the active counter id for a stream based on the replay step during recovery.
+     *
+     * @param countersReader to search within.
+     * @param replayStep     for the active log.
+     * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
+     */
+    public static int findCounterIdByReplayStep(final CountersReader countersReader, final int replayStep)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            {
+                final int recordOffset = CountersReader.metaDataOffset(i);
+
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID &&
+                    buffer.getInt(recordOffset + KEY_OFFSET + REPLAY_STEP_OFFSET) == replayStep)
                 {
                     return i;
                 }
@@ -202,6 +238,30 @@ public class ConsensusPos
             if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + MESSAGE_INDEX_OFFSET);
+            }
+        }
+
+        return NULL_VALUE;
+    }
+
+    /**
+     * Get the replay step index for a given counter.
+     *
+     * @param countersReader to search within.
+     * @param counterId      for the active consensus position.
+     * @return the beginning message index if found otherwise {@link #NULL_VALUE}.
+     */
+    public static int getReplayStep(final CountersReader countersReader, final int counterId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        {
+            final int recordOffset = CountersReader.metaDataOffset(counterId);
+
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID)
+            {
+                return buffer.getInt(recordOffset + KEY_OFFSET + REPLAY_STEP_OFFSET);
             }
         }
 

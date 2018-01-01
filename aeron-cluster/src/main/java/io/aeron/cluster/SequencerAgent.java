@@ -490,7 +490,6 @@ class SequencerAgent implements Agent
                 consensusPos.setOrdered(image.position());
             }
 
-
             idle(idleStrategy, fragments);
         }
     }

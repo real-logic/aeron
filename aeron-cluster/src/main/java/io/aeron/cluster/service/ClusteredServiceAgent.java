@@ -115,12 +115,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         final int recoveryCounterId = findRecoveryCounterId(counters);
 
         checkForSnapshot(counters, recoveryCounterId);
-        sendAcknowledgment(ServiceAction.INIT, leadershipTermBeginPosition);
-
         checkForReplay(counters, recoveryCounterId);
-        sendAcknowledgment(ServiceAction.REPLAY, leadershipTermBeginPosition);
 
-        fragmentAssembler.clear();
         consensusPosition = findConsensusPosition(counters, logSubscription);
 
         logImage = logSubscription.imageAtIndex(0);
@@ -357,6 +353,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             snapshotEntry.confirmMatch(logPosition, messageIndex, timestampMs);
             loadSnapshot(snapshotEntry.recordingId);
         }
+
+        sendAcknowledgment(ServiceAction.INIT, leadershipTermBeginPosition);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
@@ -367,6 +365,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             return;
         }
 
+        fragmentAssembler.clear();
+
+        sendAcknowledgment(ServiceAction.REPLAY, leadershipTermBeginPosition);
     }
 
     private int findRecoveryCounterId(final CountersReader counters)

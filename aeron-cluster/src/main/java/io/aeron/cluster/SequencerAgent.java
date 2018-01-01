@@ -124,14 +124,16 @@ class SequencerAgent implements Agent
                 recoverFromSnapshot(recoveryPlan.snapshotStep, idleStrategy);
             }
 
-            waitForStateChange(ConsensusModule.State.REPLAY, idleStrategy);
+            waitForServiceAcks(idleStrategy);
 
             if (recoveryPlan.termSteps.size() > 0)
             {
+                state(ConsensusModule.State.REPLAY);
                 recoverFromLog(recoveryPlan.termSteps, idleStrategy);
+                waitForServiceAcks(idleStrategy);
             }
 
-            waitForStateChange(ConsensusModule.State.ACTIVE, idleStrategy);
+            state(ConsensusModule.State.ACTIVE);
         }
 
         final long timestamp = epochClock.time();
@@ -202,37 +204,7 @@ class SequencerAgent implements Agent
             throw new IllegalStateException("Invalid action ack for state " + state + " action " + action);
         }
 
-        if (++serviceAckCount == ctx.serviceCount())
-        {
-            switch (action)
-            {
-                case INIT:
-                    state(ConsensusModule.State.REPLAY);
-                    serviceAckCount = 0;
-                    break;
-
-                case REPLAY:
-                    state(ConsensusModule.State.ACTIVE);
-                    serviceAckCount = 0;
-                    break;
-
-                case SNAPSHOT:
-                    state(ConsensusModule.State.ACTIVE);
-                    ClusterControl.ToggleState.reset(controlToggle);
-                    break;
-
-                case SHUTDOWN:
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.shutdownSignalBarrier().signal();
-                    break;
-
-                case ABORT:
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.shutdownSignalBarrier().signal();
-                    break;
-            }
-        }
-        else if (serviceAckCount > ctx.serviceCount())
+        if (++serviceAckCount > ctx.serviceCount())
         {
             throw new IllegalStateException("Service count exceeded: " + serviceAckCount);
         }
@@ -427,12 +399,12 @@ class SequencerAgent implements Agent
         }
     }
 
-    private void waitForStateChange(final ConsensusModule.State expectedState, final IdleStrategy idleStrategy)
+    private void waitForServiceAcks(final IdleStrategy idleStrategy)
     {
         while (true)
         {
             final int fragmentsRead = consensusModuleAdapter.poll();
-            if (expectedState == state)
+            if (serviceAckCount >= ctx.serviceCount())
             {
                 break;
             }
@@ -496,7 +468,7 @@ class SequencerAgent implements Agent
         }
     }
 
-    private void state(final ConsensusModule.State state)
+    void state(final ConsensusModule.State state)
     {
         this.state = state;
         moduleState.set(state.code());

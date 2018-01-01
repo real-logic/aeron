@@ -803,6 +803,7 @@ class SequencerAgent implements Agent
         final ClusterSession session = sessionSupplier.newClusterSession(
             clusterSessionId, responseStreamId, responseChannel);
         session.lastActivity(timestamp, correlationId);
+        session.state(OPEN);
 
         sessionByIdMap.put(clusterSessionId, session);
     }
@@ -815,7 +816,7 @@ class SequencerAgent implements Agent
     {
         cachedEpochClock.update(timestamp);
         messageIndex.incrementOrdered();
-        sessionByIdMap.remove(clusterSessionId);
+        sessionByIdMap.remove(clusterSessionId).close();
     }
 
     void onReplayServiceAction(final long timestamp, final ServiceAction action)

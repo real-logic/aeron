@@ -365,7 +365,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             return;
         }
 
-        try (Subscription subscription = aeron.addSubscription(ctx.replayLogChannel(), ctx.replayLogStreamId()))
+        try (Subscription subscription = aeron.addSubscription(ctx.replayChannel(), ctx.replayStreamId()))
         {
             final ImageControlledFragmentAssembler assembler = new ImageControlledFragmentAssembler(this);
 
@@ -466,36 +466,31 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     private void loadSnapshot(final long recordingId)
     {
-        try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
+        try (AeronArchive archive = AeronArchive.connect(archiveCtx))
         {
             final RecordingExtent recordingExtent = new RecordingExtent();
-            if (0 == aeronArchive.listRecording(recordingId, recordingExtent))
+            if (0 == archive.listRecording(recordingId, recordingExtent))
             {
                 throw new IllegalStateException("Could not find recordingId: " + recordingId);
             }
 
-            try (Subscription replaySubscription = aeronArchive.replay(
-                recordingExtent.recordingId,
-                recordingExtent.startPosition,
-                recordingExtent.stopPosition - recordingExtent.startPosition,
-                ctx.replayLogChannel(),
-                ctx.replayLogStreamId()))
+            final String channel = ctx.replayChannel();
+            final int streamId = ctx.replayStreamId();
+
+            try (Subscription subscription = aeron.addSubscription(channel, streamId))
             {
-                idleStrategy.reset();
-                while (!replaySubscription.isConnected())
+                final long length = recordingExtent.stopPosition - recordingExtent.startPosition;
+                final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
+
+                Image image;
+                while ((image = subscription.imageBySessionId(sessionId)) == null)
                 {
                     checkInterruptedStatus();
                     idleStrategy.idle();
                 }
 
-                if (replaySubscription.imageCount() != 1)
-                {
-                    throw new IllegalStateException("Only expected one replay");
-                }
-
-                final Image snapshotImage = replaySubscription.imageAtIndex(0);
-                loadState(snapshotImage);
-                service.onLoadSnapshot(snapshotImage);
+                loadState(image);
+                service.onLoadSnapshot(image);
             }
         }
     }

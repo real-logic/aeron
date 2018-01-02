@@ -413,8 +413,8 @@ public class ConsensusModule implements
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private String logChannel = ClusteredServiceContainer.Configuration.logChannel();
         private int logStreamId = ClusteredServiceContainer.Configuration.logStreamId();
-        private String replayLogChannel = ClusteredServiceContainer.Configuration.replayLogChannel();
-        private int replayLogStreamId = ClusteredServiceContainer.Configuration.replayLogStreamId();
+        private String replayChannel = ClusteredServiceContainer.Configuration.replayChannel();
+        private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
         private String consensusModuleChannel = ClusteredServiceContainer.Configuration.consensusModuleChannel();
         private int consensusModuleStreamId = ClusteredServiceContainer.Configuration.consensusModuleStreamId();
 
@@ -730,11 +730,11 @@ public class ConsensusModule implements
          *
          * @param channel parameter for the cluster log replay channel.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#REPLAY_LOG_CHANNEL_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
          */
-        public Context replayLogChannel(final String channel)
+        public Context replayChannel(final String channel)
         {
-            replayLogChannel = channel;
+            replayChannel = channel;
             return this;
         }
 
@@ -742,11 +742,11 @@ public class ConsensusModule implements
          * Get the channel parameter for the cluster log and snapshot replay channel.
          *
          * @return the channel parameter for the cluster replay channel.
-         * @see ClusteredServiceContainer.Configuration#REPLAY_LOG_CHANNEL_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
          */
-        public String replayLogChannel()
+        public String replayChannel()
         {
-            return replayLogChannel;
+            return replayChannel;
         }
 
         /**
@@ -754,11 +754,11 @@ public class ConsensusModule implements
          *
          * @param streamId for the cluster log replay channel.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#REPLAY_LOG_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
-        public Context replayLogStreamId(final int streamId)
+        public Context replayStreamId(final int streamId)
         {
-            replayLogStreamId = streamId;
+            replayStreamId = streamId;
             return this;
         }
 
@@ -766,11 +766,11 @@ public class ConsensusModule implements
          * Get the stream id for the cluster log and snapshot replay channel.
          *
          * @return the stream id for the cluster log replay channel.
-         * @see ClusteredServiceContainer.Configuration#REPLAY_LOG_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
-        public int replayLogStreamId()
+        public int replayStreamId()
         {
-            return replayLogStreamId;
+            return replayStreamId;
         }
 
         /**

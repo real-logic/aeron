@@ -363,8 +363,8 @@ class SequencerAgent implements Agent
     private void recoverFromLog(
         final List<RecordingLog.ReplayStep> steps, final IdleStrategy idleStrategy, final AeronArchive archive)
     {
-        final String channel = ctx.replayLogChannel();
-        final int streamId = ctx.replayLogStreamId();
+        final String channel = ctx.replayChannel();
+        final int streamId = ctx.replayStreamId();
 
         try (Subscription subscription = aeron.addSubscription(channel, streamId))
         {

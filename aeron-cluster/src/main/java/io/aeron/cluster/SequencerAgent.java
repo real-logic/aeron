@@ -388,7 +388,6 @@ class SequencerAgent implements Agent
                     idle(idleStrategy);
                 }
 
-                failedTimerCancellations.clear();
                 serviceAckCount = 0;
                 try (Counter counter = ConsensusPos.allocate(
                     aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId, i))
@@ -397,6 +396,7 @@ class SequencerAgent implements Agent
                     waitForServiceAcks(idleStrategy);
 
                     failedTimerCancellations.forEachOrderedLong(timerService::cancelTimer);
+                    failedTimerCancellations.clear();
                 }
             }
 

@@ -21,10 +21,7 @@ import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.NoOpLock;
+import org.agrona.concurrent.*;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -69,6 +66,7 @@ public class AeronArchive implements AutoCloseable
     private final RecordingDescriptorPoller recordingDescriptorPoller;
     private final Lock lock;
     private final NanoClock nanoClock;
+    private final AgentInvoker aeronClientInvoker;
 
     AeronArchive(final Context ctx)
     {
@@ -80,6 +78,7 @@ public class AeronArchive implements AutoCloseable
 
             context = ctx;
             aeron = ctx.aeron();
+            aeronClientInvoker = aeron.conductorAgentInvoker();
             idleStrategy = ctx.idleStrategy();
             messageTimeoutNs = ctx.messageTimeoutNs();
             lock = ctx.lock();
@@ -93,7 +92,8 @@ public class AeronArchive implements AutoCloseable
                 publication, idleStrategy, nanoClock, messageTimeoutNs, DEFAULT_RETRY_ATTEMPTS);
 
             final long correlationId = aeron.nextCorrelationId();
-            if (!archiveProxy.connect(ctx.controlResponseChannel(), ctx.controlResponseStreamId(), correlationId))
+            if (!archiveProxy.connect(
+                ctx.controlResponseChannel(), ctx.controlResponseStreamId(), correlationId, aeronClientInvoker))
             {
                 throw new IllegalStateException("Cannot connect to aeron archive: " + ctx.controlRequestChannel());
             }
@@ -630,6 +630,7 @@ public class AeronArchive implements AutoCloseable
             }
 
             idleStrategy.idle();
+            invokeAeronClient();
         }
 
         while (true)
@@ -654,11 +655,13 @@ public class AeronArchive implements AutoCloseable
                 }
 
                 idleStrategy.idle();
+                invokeAeronClient();
             }
 
             if (poller.correlationId() != expectedCorrelationId ||
                 poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
             {
+                invokeAeronClient();
                 continue;
             }
 
@@ -710,7 +713,10 @@ public class AeronArchive implements AutoCloseable
                 }
 
                 idleStrategy.idle();
+                invokeAeronClient();
             }
+
+            invokeAeronClient();
 
             if (poller.controlSessionId() != controlSessionId ||
                 poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
@@ -754,6 +760,8 @@ public class AeronArchive implements AutoCloseable
                 return recordCount - poller.remainingRecordCount();
             }
 
+            invokeAeronClient();
+
             if (fragments > 0)
             {
                 continue;
@@ -771,6 +779,14 @@ public class AeronArchive implements AutoCloseable
             }
 
             idleStrategy.idle();
+        }
+    }
+
+    private void invokeAeronClient()
+    {
+        if (null != aeronClientInvoker)
+        {
+            aeronClientInvoker.invoke();
         }
     }
 

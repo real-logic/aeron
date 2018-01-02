@@ -422,6 +422,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
             {
                 archiveContext = new AeronArchive.Context()
                     .aeron(aeron)
+                    .ownsAeronClient(false)
                     .lock(new NoOpLock());
             }
 

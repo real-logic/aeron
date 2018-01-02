@@ -18,10 +18,7 @@ package io.aeron.archive.client;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.*;
 import org.agrona.ExpandableDirectByteBuffer;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.SystemNanoClock;
-import org.agrona.concurrent.YieldingIdleStrategy;
+import org.agrona.concurrent.*;
 
 import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT_DEFAULT_NS;
 
@@ -76,11 +73,11 @@ public class ArchiveProxy
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
      *
-     * @param publication       publication for sending control messages to an archive.
-     * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
-     * @param nanoClock         to be used for calculating checking deadlines.
-     * @param connectTimeoutNs  for for connection requests.
-     * @param retryAttempts     for offering control messages before giving up.
+     * @param publication        publication for sending control messages to an archive.
+     * @param retryIdleStrategy  for what should happen between retry attempts at offering messages.
+     * @param nanoClock          to be used for calculating checking deadlines.
+     * @param connectTimeoutNs   for for connection requests.
+     * @param retryAttempts      for offering control messages before giving up.
      */
     public ArchiveProxy(
         final Publication publication,
@@ -122,7 +119,31 @@ public class ArchiveProxy
             .responseStreamId(responseStreamId)
             .responseChannel(responseChannel);
 
-        return offerWithTimeout(connectRequestEncoder.encodedLength());
+        return offerWithTimeout(connectRequestEncoder.encodedLength(), null);
+    }
+
+    /**
+     * Connect to an archive on its control interface providing the response stream details.
+     *
+     * @param responseChannel    for the control message responses.
+     * @param responseStreamId   for the control message responses.
+     * @param correlationId      for this request.
+     * @param aeronClientInvoker for aeron client conductor thread.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean connect(
+        final String responseChannel,
+        final int responseStreamId,
+        final long correlationId,
+        final AgentInvoker aeronClientInvoker)
+    {
+        connectRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .responseStreamId(responseStreamId)
+            .responseChannel(responseChannel);
+
+        return offerWithTimeout(connectRequestEncoder.encodedLength(), aeronClientInvoker);
     }
 
     /**
@@ -356,7 +377,7 @@ public class ArchiveProxy
         }
     }
 
-    private boolean offerWithTimeout(final int length)
+    private boolean offerWithTimeout(final int length, final AgentInvoker aeronClientInvoker)
     {
         retryIdleStrategy.reset();
 
@@ -367,6 +388,11 @@ public class ArchiveProxy
             if ((result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length)) > 0)
             {
                 return true;
+            }
+
+            if (null != aeronClientInvoker)
+            {
+                aeronClientInvoker.invoke();
             }
 
             if (result == Publication.MAX_POSITION_EXCEEDED)

@@ -552,6 +552,8 @@ public class ConsensusModule implements
             if (null == archiveContext)
             {
                 archiveContext = new AeronArchive.Context()
+                    .aeron(aeron)
+                    .ownsAeronClient(false)
                     .lock(new NoOpLock());
             }
 

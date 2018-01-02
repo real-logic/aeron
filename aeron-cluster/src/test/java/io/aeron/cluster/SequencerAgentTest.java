@@ -121,6 +121,8 @@ public class SequencerAgentTest
     @Test
     public void shouldSuspendThenResume()
     {
+        final CachedEpochClock clock = new CachedEpochClock();
+
         final MutableLong stateValue = new MutableLong();
         final Counter mockState = mock(Counter.class);
         when(mockState.get()).thenAnswer((invocation) -> stateValue.value);
@@ -131,8 +133,6 @@ public class SequencerAgentTest
                 return null;
             })
             .when(mockState).set(anyLong());
-
-        ctx.moduleState(mockState);
 
         final MutableLong controlValue = new MutableLong(NEUTRAL.code());
         final Counter mockControlToggle = mock(Counter.class);
@@ -145,7 +145,9 @@ public class SequencerAgentTest
             })
             .when(mockControlToggle).set(anyLong());
 
+        ctx.moduleState(mockState);
         ctx.controlToggle(mockControlToggle);
+        ctx.epochClock(clock);
 
         final SequencerAgent agent = newSequencerAgent();
         assertThat((int)stateValue.get(), is(ConsensusModule.State.INIT.code()));
@@ -154,12 +156,14 @@ public class SequencerAgentTest
         assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
 
         controlValue.value = SUSPEND.code();
+        clock.update(1);
         agent.doWork();
 
         assertThat((int)stateValue.get(), is(ConsensusModule.State.SUSPENDED.code()));
         assertThat((int)controlValue.get(), is(NEUTRAL.code()));
 
         controlValue.value = RESUME.code();
+        clock.update(2);
         agent.doWork();
 
         assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));

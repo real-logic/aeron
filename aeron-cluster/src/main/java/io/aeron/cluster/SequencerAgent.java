@@ -158,27 +158,31 @@ class SequencerAgent implements Agent
         int workCount = 0;
 
         final long nowMs = epochClock.time();
-        cachedEpochClock.update(nowMs);
 
-        if (null != aeronClientInvoker)
+        if (cachedEpochClock.time() != nowMs)
         {
-            workCount += aeronClientInvoker.invoke();
+            cachedEpochClock.update(nowMs);
+            workCount += invokeAeronClient();
+            workCount += checkControlToggle(nowMs);
+
+            if (ConsensusModule.State.ACTIVE == state)
+            {
+                workCount += processPendingSessions(pendingSessions, nowMs);
+                workCount += checkSessions(sessionByIdMap, nowMs);
+            }
+        }
+
+        workCount += consensusModuleAdapter.poll();
+
+        if (ConsensusModule.State.ACTIVE == state)
+        {
+            workCount += timerService.poll(nowMs);
+            workCount += ingressAdapter.poll();
         }
 
         if (null != consensusTracker)
         {
             consensusTracker.updatePosition();
-        }
-
-        workCount += checkControlToggle(nowMs);
-        workCount += consensusModuleAdapter.poll();
-
-        if (ConsensusModule.State.ACTIVE == state)
-        {
-            workCount += processPendingSessions(pendingSessions, nowMs);
-            workCount += timerService.poll(nowMs);
-            workCount += ingressAdapter.poll();
-            workCount += checkSessions(sessionByIdMap, nowMs);
         }
 
         processRejectedSessions(rejectedSessions, nowMs);
@@ -449,22 +453,26 @@ class SequencerAgent implements Agent
     {
         checkInterruptedStatus();
         idleStrategy.idle(workCount);
-
-        if (null != aeronClientInvoker)
-        {
-            aeronClientInvoker.invoke();
-        }
+        invokeAeronClient();
     }
 
     private void idle(final IdleStrategy idleStrategy)
     {
         checkInterruptedStatus();
         idleStrategy.idle();
+        invokeAeronClient();
+    }
+
+    private int invokeAeronClient()
+    {
+        int workCount = 0;
 
         if (null != aeronClientInvoker)
         {
-            aeronClientInvoker.invoke();
+            workCount += aeronClientInvoker.invoke();
         }
+
+        return workCount;
     }
 
     private void loadSnapshot(final long recordingId, final IdleStrategy idleStrategy)

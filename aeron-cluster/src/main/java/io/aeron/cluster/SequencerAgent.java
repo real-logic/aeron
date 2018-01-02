@@ -26,6 +26,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.*;
 
 import java.util.ArrayList;
@@ -63,6 +64,7 @@ class SequencerAgent implements Agent
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
     private final MutableDirectBuffer tempBuffer;
+    private final LongArrayList failedTimerCancellations = new LongArrayList();
     private ConsensusTracker consensusTracker;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
 
@@ -386,14 +388,19 @@ class SequencerAgent implements Agent
                     idle(idleStrategy);
                 }
 
+                failedTimerCancellations.clear();
                 serviceAckCount = 0;
                 try (Counter counter = ConsensusPos.allocate(
                     aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId, i))
                 {
                     replayTerm(image, idleStrategy, counter);
                     waitForServiceAcks(idleStrategy);
+
+                    failedTimerCancellations.forEachOrderedLong(timerService::cancelTimer);
                 }
             }
+
+            failedTimerCancellations.trimToSize();
         }
     }
 
@@ -789,7 +796,7 @@ class SequencerAgent implements Agent
 
         if (!timerService.cancelTimer(correlationId))
         {
-            // TODO: store correlationId until end of term replay and cancel it then due to race.
+            failedTimerCancellations.addLong(correlationId);
         }
     }
 

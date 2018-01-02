@@ -112,10 +112,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         service.onStart(this);
 
         final CountersReader counters = aeron.countersReader();
-        final int recoveryCounterId = findRecoveryCounterId(counters);
+        final int counterId = findRecoveryCounterId(counters);
 
-        checkForSnapshot(counters, recoveryCounterId);
-        checkForReplay(counters, recoveryCounterId);
+        checkForSnapshot(counters, counterId);
+        checkForReplay(counters, counterId);
 
         consensusPosition = findConsensusPosition(counters, logSubscription);
 
@@ -500,9 +500,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         state = State.SNAPSHOTTING;
         final long recordingId;
 
-        try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
+        try (AeronArchive archive = AeronArchive.connect(archiveCtx))
         {
-            aeronArchive.startRecording(ctx.snapshotChannel(), ctx.snapshotStreamId(), SourceLocation.LOCAL);
+            archive.startRecording(ctx.snapshotChannel(), ctx.snapshotStreamId(), SourceLocation.LOCAL);
 
             try (Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
             {
@@ -516,13 +516,12 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 snapshotState(publication);
                 service.onTakeSnapshot(publication);
 
-                final CountersReader countersReader = aeron.countersReader();
-                final int recordingCounterId = RecordingPos.findCounterIdBySession(
-                    countersReader, publication.sessionId());
+                final CountersReader counters = aeron.countersReader();
+                final int recordingCounterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
 
-                recordingId = RecordingPos.getRecordingId(countersReader, recordingCounterId);
+                recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
 
-                while (countersReader.getCounterValue(recordingCounterId) < publication.position())
+                while (counters.getCounterValue(recordingCounterId) < publication.position())
                 {
                     checkInterruptedStatus();
                     Thread.yield();
@@ -530,7 +529,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             }
             finally
             {
-                aeronArchive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
+                archive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
             }
         }
         finally

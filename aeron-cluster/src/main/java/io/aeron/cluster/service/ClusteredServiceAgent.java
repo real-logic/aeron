@@ -60,7 +60,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final ClusteredService service;
     private final Subscription logSubscription;
     private final ExclusivePublication consensusModulePublication;
-    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(
+    private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(
         this, INITIAL_BUFFER_LENGTH, true);
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();

@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ConsensusPos;
 import io.aeron.cluster.service.RecordingLog;
@@ -51,7 +52,6 @@ class SequencerAgent implements Agent
     private final ConsensusModuleAdapter consensusModuleAdapter;
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
-    private final AeronArchive aeronArchive;
     private final LogAppender logAppender;
     private final Counter messageIndex;
     private final Counter moduleState;
@@ -71,7 +71,6 @@ class SequencerAgent implements Agent
     SequencerAgent(
         final ConsensusModule.Context ctx,
         final EgressPublisher egressPublisher,
-        final AeronArchive aeronArchive,
         final LogAppender logAppender,
         final IngressAdapterSupplier ingressAdapterSupplier,
         final TimerServiceSupplier timerServiceSupplier,
@@ -87,7 +86,6 @@ class SequencerAgent implements Agent
         this.messageIndex = ctx.messageIndex();
         this.moduleState = ctx.moduleState();
         this.controlToggle = ctx.controlToggle();
-        this.aeronArchive = aeronArchive;
         this.logAppender = logAppender;
         this.sessionSupplier = clusterSessionSupplier;
         this.sessionProxy = new SessionProxy(egressPublisher);
@@ -116,26 +114,31 @@ class SequencerAgent implements Agent
 
     public void onStart()
     {
-        final IdleStrategy idleStrategy = ctx.idleStrategy();
-        final RecordingLog.RecoveryPlan recoveryPlan = ctx.recordingLog().createRecoveryPlan(aeronArchive);
-
-        serviceAckCount = 0;
-        try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
+        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
         {
-            if (null != recoveryPlan.snapshotStep)
+            final IdleStrategy idleStrategy = ctx.idleStrategy();
+            final RecordingLog.RecoveryPlan recoveryPlan = ctx.recordingLog().createRecoveryPlan(archive);
+
+            serviceAckCount = 0;
+            try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
             {
-                recoverFromSnapshot(recoveryPlan.snapshotStep, idleStrategy);
+                if (null != recoveryPlan.snapshotStep)
+                {
+                    recoverFromSnapshot(recoveryPlan.snapshotStep, idleStrategy);
+                }
+
+                waitForServiceAcks(idleStrategy);
+
+                if (recoveryPlan.termSteps.size() > 0)
+                {
+                    state(ConsensusModule.State.REPLAY);
+                    recoverFromLog(recoveryPlan.termSteps, idleStrategy, archive);
+                }
+
+                state(ConsensusModule.State.ACTIVE);
             }
 
-            waitForServiceAcks(idleStrategy);
-
-            if (recoveryPlan.termSteps.size() > 0)
-            {
-                state(ConsensusModule.State.REPLAY);
-                recoverFromLog(recoveryPlan.termSteps, idleStrategy);
-            }
-
-            state(ConsensusModule.State.ACTIVE);
+            archive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
         }
 
         final long timestamp = epochClock.time();
@@ -353,7 +356,8 @@ class SequencerAgent implements Agent
         loadSnapshot(snapshot.recordingId, idleStrategy);
     }
 
-    private void recoverFromLog(final List<RecordingLog.ReplayStep> steps, final IdleStrategy idleStrategy)
+    private void recoverFromLog(
+        final List<RecordingLog.ReplayStep> steps, final IdleStrategy idleStrategy, final AeronArchive archive)
     {
         final String channel = ctx.replayLogChannel();
         final int streamId = ctx.replayLogStreamId();
@@ -378,8 +382,7 @@ class SequencerAgent implements Agent
                     this.messageIndex.setOrdered(messageIndex);
                 }
 
-                final int sessionId = (int)aeronArchive.startReplay(
-                    recordingId, startPosition, length, channel, streamId);
+                final int sessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, streamId);
 
                 idleStrategy.reset();
                 Image image;

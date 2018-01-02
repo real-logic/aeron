@@ -17,7 +17,6 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.ServiceAction;
 import io.aeron.cluster.service.*;
@@ -149,7 +148,6 @@ public class ConsensusModule implements
     private static final int TIMER_POLL_LIMIT = 10;
 
     private final Context ctx;
-    private final AeronArchive aeronArchive;
     private final LogAppender logAppender;
     private final AgentRunner conductorRunner;
 
@@ -158,9 +156,6 @@ public class ConsensusModule implements
         this.ctx = ctx;
         ctx.conclude();
 
-        aeronArchive = AeronArchive.connect(ctx.archiveContext());
-        aeronArchive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
-
         final Aeron aeron = ctx.aeron();
         final ExclusivePublication publication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
         logAppender = new LogAppender(publication);
@@ -168,7 +163,6 @@ public class ConsensusModule implements
         final SequencerAgent conductor = new SequencerAgent(
             ctx,
             new EgressPublisher(),
-            aeronArchive,
             logAppender,
             this,
             this,
@@ -219,7 +213,6 @@ public class ConsensusModule implements
     {
         CloseHelper.close(conductorRunner);
         CloseHelper.close(logAppender);
-        CloseHelper.close(aeronArchive);
         CloseHelper.close(ctx);
     }
 

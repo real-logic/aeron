@@ -269,7 +269,8 @@ public class ConsensusPos
     }
 
     /**
-     * Get the session id for a active counter.
+     * Get the session id for a active counter. Since a session id can have any value there is no possible
+     * null value so an exception will be thrown if the counter is not found.
      *
      * @param countersReader to search within.
      * @param counterId      for the active consensus position.

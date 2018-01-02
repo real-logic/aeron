@@ -391,7 +391,6 @@ class SequencerAgent implements Agent
                     aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId, i))
                 {
                     replayTerm(image, idleStrategy, counter);
-
                     waitForServiceAcks(idleStrategy);
                 }
             }

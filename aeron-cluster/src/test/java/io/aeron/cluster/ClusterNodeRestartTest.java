@@ -37,7 +37,6 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-@Ignore
 public class ClusterNodeRestartTest
 {
     private ClusteredMediaDriver clusteredMediaDriver;
@@ -138,8 +137,16 @@ public class ClusterNodeRestartTest
 
         msgBuffer.putInt(0, value);
 
-        while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, SIZE_OF_INT) < 0)
+        while (true)
         {
+            final long result = sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, SIZE_OF_INT);
+            if (result > 0)
+            {
+                break;
+            }
+
+            checkResult(result);
+
             Thread.yield();
         }
     }
@@ -201,5 +208,15 @@ public class ClusterNodeRestartTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context());
+    }
+
+    private static void checkResult(final long result)
+    {
+        if (result == Publication.NOT_CONNECTED ||
+            result == Publication.CLOSED ||
+            result == Publication.MAX_POSITION_EXCEEDED)
+        {
+            throw new IllegalStateException("Unexpected publication state: " + result);
+        }
     }
 }

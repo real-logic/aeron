@@ -367,10 +367,12 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         try (Subscription subscription = aeron.addSubscription(ctx.replayLogChannel(), ctx.replayLogStreamId()))
         {
+            final ImageControlledFragmentAssembler assembler = new ImageControlledFragmentAssembler(this);
+
             for (int i = 0; i < replayTermCount; i++)
             {
                 final int counterId = findReplayConsensusCounterId(counters, i);
-                final int sessionId = ConsensusPos.getReplayStep(counters, counterId);
+                final int sessionId = ConsensusPos.getSessionId(counters, counterId);
                 leadershipTermBeginPosition = ConsensusPos.getBeginningLogPosition(counters, counterId);
 
                 idleStrategy.reset();
@@ -381,7 +383,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     idleStrategy.idle();
                 }
 
-                final ImageControlledFragmentAssembler assembler = new ImageControlledFragmentAssembler(this);
                 final ReadableCounter limit = new ReadableCounter(counters, counterId);
 
                 while (true)

@@ -249,7 +249,7 @@ public class ConsensusPos
      *
      * @param countersReader to search within.
      * @param counterId      for the active consensus position.
-     * @return the beginning message index if found otherwise {@link #NULL_VALUE}.
+     * @return the replay step value if found otherwise {@link #NULL_VALUE}.
      */
     public static int getReplayStep(final CountersReader countersReader, final int counterId)
     {
@@ -266,5 +266,30 @@ public class ConsensusPos
         }
 
         return NULL_VALUE;
+    }
+
+    /**
+     * Get the session id for a active counter.
+     *
+     * @param countersReader to search within.
+     * @param counterId      for the active consensus position.
+     * @return the session id if found other which throw {@link IllegalStateException}
+     * @throws IllegalStateException if counter is not found.
+     */
+    public static int getSessionId(final CountersReader countersReader, final int counterId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        {
+            final int recordOffset = CountersReader.metaDataOffset(counterId);
+
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID)
+            {
+                return buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET);
+            }
+        }
+
+        throw new IllegalStateException("No active counter for id: " + counterId);
     }
 }

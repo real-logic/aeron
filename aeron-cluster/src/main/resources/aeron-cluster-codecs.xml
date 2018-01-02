@@ -283,4 +283,11 @@
         <data  name="responseChannel"      id="6" type="varAsciiEncoding"/>
     </sbe:message>
 
+    <sbe:message name="DeadlineTimer"
+                 id="104"
+                 description="A serialised schedule deadline timer">
+        <field name="correlationId"        id="1" type="int64"/>
+        <field name="deadline"             id="2" type="time_t"/>
+    </sbe:message>
+
 </sbe:messageSchema>

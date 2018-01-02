@@ -39,7 +39,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     /**
      * Type of snapshot for this agent.
      */
-    public static final long SNAPSHOT_TYPE_ID = 1;
+    public static final long SNAPSHOT_TYPE_ID = 2;
 
     /**
      * Length of the session header that will precede application protocol message.
@@ -517,11 +517,11 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 service.onTakeSnapshot(publication);
 
                 final CountersReader counters = aeron.countersReader();
-                final int recordingCounterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
 
-                recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
+                recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                while (counters.getCounterValue(recordingCounterId) < publication.position())
+                while (counters.getCounterValue(counterId) < publication.position())
                 {
                     checkInterruptedStatus();
                     Thread.yield();

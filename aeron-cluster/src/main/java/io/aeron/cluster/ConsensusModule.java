@@ -31,6 +31,8 @@ import java.util.function.Supplier;
 
 import static io.aeron.cluster.ConsensusModule.Configuration.CONSENSUS_MODULE_STATE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.CONTROL_TOGGLE_TYPE_ID;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
@@ -249,6 +251,16 @@ public class ConsensusModule implements
     public static class Configuration
     {
         /**
+         * Channel to be used for archiving snapshots.
+         */
+        public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+
+        /**
+         * Stream id for the archived snapshots within a channel.
+         */
+        public static final int SNAPSHOT_STREAM_ID_DEFAULT = 6;
+
+        /**
          * Message detail to be sent when max concurrent session limit is reached.
          */
         public static final String SESSION_LIMIT_MSG = "Concurrent session limit";
@@ -328,6 +340,30 @@ public class ConsensusModule implements
          * a non-authenticating option.
          */
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.cluster.DefaultAuthenticatorSupplier";
+
+        /**
+         * The value {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property
+         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property
+         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME} if set.
+         */
+        public static String snapshotChannel()
+        {
+            return System.getProperty(SNAPSHOT_CHANNEL_PROP_NAME, SNAPSHOT_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #SNAPSHOT_STREAM_ID_DEFAULT} or system property
+         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME} if set.
+         *
+         * @return {@link #SNAPSHOT_STREAM_ID_DEFAULT} or system property
+         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int snapshotStreamId()
+        {
+            return Integer.getInteger(SNAPSHOT_STREAM_ID_PROP_NAME, SNAPSHOT_STREAM_ID_DEFAULT);
+        }
 
         /**
          * The value {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
@@ -417,6 +453,8 @@ public class ConsensusModule implements
         private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
         private String consensusModuleChannel = ClusteredServiceContainer.Configuration.consensusModuleChannel();
         private int consensusModuleStreamId = ClusteredServiceContainer.Configuration.consensusModuleStreamId();
+        private String snapshotChannel = Configuration.snapshotChannel();
+        private int snapshotStreamId = Configuration.snapshotStreamId();
 
         private int serviceCount = Configuration.serviceCount();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
@@ -819,6 +857,54 @@ public class ConsensusModule implements
         public int consensusModuleStreamId()
         {
             return consensusModuleStreamId;
+        }
+
+        /**
+         * Set the channel parameter for snapshot recordings.
+         *
+         * @param channel parameter for snapshot recordings
+         * @return this for a fluent API.
+         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME
+         */
+        public Context snapshotChannel(final String channel)
+        {
+            snapshotChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for snapshot recordings.
+         *
+         * @return the channel parameter for snapshot recordings.
+         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME
+         */
+        public String snapshotChannel()
+        {
+            return snapshotChannel;
+        }
+
+        /**
+         * Set the stream id for snapshot recordings.
+         *
+         * @param streamId for snapshot recordings.
+         * @return this for a fluent API
+         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
+         */
+        public Context snapshotStreamId(final int streamId)
+        {
+            snapshotStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for snapshot recordings.
+         *
+         * @return the stream id for snapshot recordings.
+         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
+         */
+        public int snapshotStreamId()
+        {
+            return snapshotStreamId;
         }
 
         /**

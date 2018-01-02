@@ -199,7 +199,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Stream id for the archived snapshots within a channel.
          */
-        public static final int SNAPSHOT_STREAM_ID_DEFAULT = 6;
+        public static final int SNAPSHOT_STREAM_ID_DEFAULT = 7;
 
         /**
          * Directory to use for the clustered service.

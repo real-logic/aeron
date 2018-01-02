@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ConsensusPos;
 import io.aeron.cluster.service.RecordingLog;
@@ -29,6 +30,7 @@ import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -64,6 +66,7 @@ class SequencerAgent implements Agent
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
     private final MutableDirectBuffer tempBuffer;
+    final IdleStrategy idleStrategy;
     private final LongArrayList failedTimerCancellations = new LongArrayList();
     private ConsensusTracker consensusTracker;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -90,6 +93,7 @@ class SequencerAgent implements Agent
         this.sessionSupplier = clusterSessionSupplier;
         this.sessionProxy = new SessionProxy(egressPublisher);
         this.tempBuffer = ctx.tempBuffer();
+        this.idleStrategy = ctx.idleStrategy();
 
         ingressAdapter = ingressAdapterSupplier.newIngressAdapter(this);
         timerService = timerServiceSupplier.newTimerService(this);
@@ -116,7 +120,6 @@ class SequencerAgent implements Agent
     {
         try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
         {
-            final IdleStrategy idleStrategy = ctx.idleStrategy();
             final RecordingLog.RecoveryPlan recoveryPlan = ctx.recordingLog().createRecoveryPlan(archive);
 
             serviceAckCount = 0;
@@ -124,15 +127,15 @@ class SequencerAgent implements Agent
             {
                 if (null != recoveryPlan.snapshotStep)
                 {
-                    recoverFromSnapshot(recoveryPlan.snapshotStep, idleStrategy);
+                    recoverFromSnapshot(recoveryPlan.snapshotStep);
                 }
 
-                waitForServiceAcks(idleStrategy);
+                waitForServiceAcks();
 
                 if (recoveryPlan.termSteps.size() > 0)
                 {
                     state(ConsensusModule.State.REPLAY);
-                    recoverFromLog(recoveryPlan.termSteps, idleStrategy, archive);
+                    recoverFromLog(recoveryPlan.termSteps, archive);
                 }
 
                 state(ConsensusModule.State.ACTIVE);
@@ -220,6 +223,7 @@ class SequencerAgent implements Agent
                 case SNAPSHOT:
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
+                    // TODO: Should session timestamps be reset in case of timeout
                     break;
 
                 case SHUTDOWN:
@@ -349,7 +353,7 @@ class SequencerAgent implements Agent
         timerService.cancelTimer(correlationId);
     }
 
-    private void recoverFromSnapshot(final RecordingLog.ReplayStep snapshotStep, final IdleStrategy idleStrategy)
+    private void recoverFromSnapshot(final RecordingLog.ReplayStep snapshotStep)
     {
         final RecordingLog.Entry snapshot = snapshotStep.entry;
 
@@ -357,11 +361,10 @@ class SequencerAgent implements Agent
         leadershipTermBeginPosition = snapshot.logPosition;
         messageIndex.setOrdered(snapshot.messageIndex);
 
-        loadSnapshot(snapshot.recordingId, idleStrategy);
+        loadSnapshot(snapshot.recordingId);
     }
 
-    private void recoverFromLog(
-        final List<RecordingLog.ReplayStep> steps, final IdleStrategy idleStrategy, final AeronArchive archive)
+    private void recoverFromLog(final List<RecordingLog.ReplayStep> steps, final AeronArchive archive)
     {
         final String channel = ctx.replayChannel();
         final int streamId = ctx.replayStreamId();
@@ -392,15 +395,15 @@ class SequencerAgent implements Agent
                 Image image;
                 while ((image = subscription.imageBySessionId(sessionId)) == null)
                 {
-                    idle(idleStrategy);
+                    idle();
                 }
 
                 serviceAckCount = 0;
                 try (Counter counter = ConsensusPos.allocate(
                     aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId, i))
                 {
-                    replayTerm(image, idleStrategy, counter);
-                    waitForServiceAcks(idleStrategy);
+                    replayTerm(image, counter);
+                    waitForServiceAcks();
 
                     failedTimerCancellations.forEachOrderedLong(timerService::cancelTimer);
                     failedTimerCancellations.clear();
@@ -435,7 +438,7 @@ class SequencerAgent implements Agent
         }
     }
 
-    private void waitForServiceAcks(final IdleStrategy idleStrategy)
+    private void waitForServiceAcks()
     {
         while (true)
         {
@@ -445,21 +448,21 @@ class SequencerAgent implements Agent
                 break;
             }
 
-            idle(idleStrategy, fragmentsRead);
+            idle(fragmentsRead);
         }
     }
 
-    private void idle(final IdleStrategy idleStrategy, final int workCount)
-    {
-        checkInterruptedStatus();
-        idleStrategy.idle(workCount);
-        invokeAeronClient();
-    }
-
-    private void idle(final IdleStrategy idleStrategy)
+    private void idle()
     {
         checkInterruptedStatus();
         idleStrategy.idle();
+        invokeAeronClient();
+    }
+
+    private void idle(final int workCount)
+    {
+        checkInterruptedStatus();
+        idleStrategy.idle(workCount);
         invokeAeronClient();
     }
 
@@ -475,15 +478,55 @@ class SequencerAgent implements Agent
         return workCount;
     }
 
-    private void loadSnapshot(final long recordingId, final IdleStrategy idleStrategy)
+    private void loadSnapshot(final long recordingId)
     {
     }
 
-    private void takeSnapshot()
+    private void takeSnapshot(final long timestampMs)
+    {
+        final long recordingId;
+
+        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
+        {
+            final String channel = ctx.snapshotChannel();
+            final int streamId = ctx.snapshotStreamId();
+
+            archive.startRecording(channel, streamId, SourceLocation.LOCAL);
+
+            try (Publication publication = aeron.addExclusivePublication(channel, streamId))
+            {
+                while (!publication.isConnected())
+                {
+                    idle();
+                }
+
+                snapshotState(publication);
+
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+
+                recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                while (counters.getCounterValue(counterId) < publication.position())
+                {
+                    idle();
+                }
+            }
+            finally
+            {
+                archive.stopRecording(channel, streamId);
+            }
+        }
+
+        final long position = leadershipTermBeginPosition + logAppender.position();
+        ctx.recordingLog().appendSnapshot(recordingId, position, messageIndex.getWeak(), timestampMs);
+    }
+
+    private void snapshotState(final Publication publication)
     {
     }
 
-    private void replayTerm(final Image image, final IdleStrategy idleStrategy, final Counter consensusPos)
+    private void replayTerm(final Image image, final Counter consensusPos)
     {
         final LogAdapter logAdapter = new LogAdapter(image, 10, this);
 
@@ -507,7 +550,7 @@ class SequencerAgent implements Agent
                 consensusPos.setOrdered(image.position());
             }
 
-            idle(idleStrategy, fragments);
+            idle(fragments);
         }
     }
 
@@ -547,7 +590,7 @@ class SequencerAgent implements Agent
                 if (ConsensusModule.State.ACTIVE == state && appendSnapshot(nowMs))
                 {
                     state(ConsensusModule.State.SNAPSHOT);
-                    takeSnapshot();
+                    takeSnapshot(nowMs);
                     workCount = 1;
                 }
                 break;
@@ -557,7 +600,7 @@ class SequencerAgent implements Agent
                 if (ConsensusModule.State.ACTIVE == state && appendShutdown(nowMs))
                 {
                     state(ConsensusModule.State.SHUTDOWN);
-                    takeSnapshot();
+                    takeSnapshot(nowMs);
                     workCount = 1;
                 }
                 break;

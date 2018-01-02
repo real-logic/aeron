@@ -20,7 +20,6 @@ import io.aeron.Counter;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
-import io.aeron.cluster.codecs.ServiceAction;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -50,6 +49,7 @@ public class SequencerAgentTest
         .messageIndex(mock(Counter.class))
         .moduleState(mock(Counter.class))
         .controlToggle(mock(Counter.class))
+        .idleStrategySupplier(NoOpIdleStrategy::new)
         .aeron(mock(Aeron.class))
         .epochClock(new SystemEpochClock())
         .cachedEpochClock(new CachedEpochClock())
@@ -168,25 +168,6 @@ public class SequencerAgentTest
 
         assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
         assertThat((int)controlValue.get(), is(NEUTRAL.code()));
-    }
-
-    @Test
-    public void shouldAppendSnapshotRequest()
-    {
-        final MutableLong counterValue = new MutableLong(SNAPSHOT.code());
-        final Counter mockControlToggle = mock(Counter.class);
-        when(mockControlToggle.get()).thenReturn(counterValue.value);
-
-        ctx.controlToggle(mockControlToggle);
-        final SequencerAgent agent = newSequencerAgent();
-        agent.state(ConsensusModule.State.ACTIVE);
-
-        when(mockLogAppender.appendActionRequest(eq(ServiceAction.SNAPSHOT), anyLong(), anyLong(), anyLong()))
-            .thenReturn(Boolean.TRUE);
-
-        agent.doWork();
-
-        verify(mockLogAppender).appendActionRequest(eq(ServiceAction.SNAPSHOT), anyLong(), anyLong(), anyLong());
     }
 
     private SequencerAgent newSequencerAgent()

@@ -167,7 +167,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                ++messageIndex;
                 timestampMs = sessionHeaderDecoder.timestamp();
+
                 service.onSessionMessage(
                     sessionHeaderDecoder.clusterSessionId(),
                     sessionHeaderDecoder.correlationId(),
@@ -188,7 +190,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                ++messageIndex;
                 timestampMs = timerEventDecoder.timestamp();
+
                 service.onTimerEvent(timerEventDecoder.correlationId(), timestampMs);
                 break;
             }
@@ -209,7 +213,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                         openEventDecoder.responseStreamId()),
                     this);
 
+                ++messageIndex;
                 timestampMs = openEventDecoder.timestamp();
+
                 sessionByIdMap.put(sessionId, session);
                 service.onSessionOpen(session, timestampMs);
                 break;
@@ -223,13 +229,12 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                ++messageIndex;
+                timestampMs = closeEventDecoder.timestamp();
+
                 final ClientSession session = sessionByIdMap.remove(closeEventDecoder.clusterSessionId());
-                if (null != session)
-                {
-                    timestampMs = closeEventDecoder.timestamp();
-                    session.responsePublication().close();
-                    service.onSessionClose(session, timestampMs, closeEventDecoder.closeReason());
-                }
+                session.responsePublication().close();
+                service.onSessionClose(session, timestampMs, closeEventDecoder.closeReason());
                 break;
             }
 
@@ -241,14 +246,14 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                ++messageIndex;
                 timestampMs = actionRequestDecoder.timestamp();
+
                 final long resultingPosition = leadershipTermBeginPosition + header.position();
                 executeAction(actionRequestDecoder.action(), resultingPosition);
                 break;
             }
         }
-
-        ++messageIndex;
 
         return Action.CONTINUE;
     }
@@ -531,19 +536,20 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             try (Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
             {
                 idleStrategy.reset();
-                while (!publication.isConnected())
+
+                final CountersReader counters = aeron.countersReader();
+                int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                while (RecordingPos.NULL_COUNTER_ID == counterId)
                 {
                     checkInterruptedStatus();
                     idleStrategy.idle();
+                    counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
                 }
+
+                recordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 snapshotState(publication);
                 service.onTakeSnapshot(publication);
-
-                final CountersReader counters = aeron.countersReader();
-                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-
-                recordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 while (counters.getCounterValue(counterId) < publication.position())
                 {

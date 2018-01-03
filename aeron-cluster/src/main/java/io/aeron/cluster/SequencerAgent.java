@@ -517,6 +517,8 @@ class SequencerAgent implements Agent
     private void takeSnapshot(final long timestampMs)
     {
         final long recordingId;
+        final long logPosition = leadershipTermBeginPosition + logAppender.position();
+        final long messageIndex = this.messageIndex.getWeak();
 
         try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
         {
@@ -539,7 +541,7 @@ class SequencerAgent implements Agent
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                snapshotState(publication);
+                snapshotState(publication, logPosition, messageIndex);
 
                 while (counters.getCounterValue(counterId) < publication.position())
                 {
@@ -552,14 +554,13 @@ class SequencerAgent implements Agent
             }
         }
 
-        final long position = leadershipTermBeginPosition + logAppender.position();
-        ctx.recordingLog().appendSnapshot(recordingId, position, messageIndex.getWeak(), timestampMs);
+        ctx.recordingLog().appendSnapshot(recordingId, logPosition, messageIndex, timestampMs);
     }
 
-    private void snapshotState(final Publication publication)
+    private void snapshotState(final Publication publication, final long logPosition, final long messageIndex)
     {
         final SnapshotTaker snapshotTaker = new SnapshotTaker(publication, aeronClientInvoker, idleStrategy);
-        snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, 0);
+        snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, messageIndex, 0);
 
         for (final ClusterSession session : sessionByIdMap.values())
         {
@@ -573,7 +574,7 @@ class SequencerAgent implements Agent
 
         timerService.snapshot(snapshotTaker);
 
-        snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, 0);
+        snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, messageIndex, 0);
     }
 
     private void replayTerm(final Image image, final Counter consensusPos)

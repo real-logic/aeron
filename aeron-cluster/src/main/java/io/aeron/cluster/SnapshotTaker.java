@@ -47,17 +47,24 @@ class SnapshotTaker
         this.idleStrategy = idleStrategy;
     }
 
-    public void markBegin(final long snapshotTypeId, final int snapshotIndex)
+    public void markBegin(
+        final long snapshotTypeId, final long logPosition, final long messageIndex, final int snapshotIndex)
     {
-        markSnapshot(snapshotTypeId, snapshotIndex, SnapshotMark.BEGIN);
+        markSnapshot(snapshotTypeId, logPosition, messageIndex, snapshotIndex, SnapshotMark.BEGIN);
     }
 
-    public void markEnd(final long snapshotTypeId, final int snapshotIndex)
+    public void markEnd(
+        final long snapshotTypeId, final long logPosition, final long messageIndex, final int snapshotIndex)
     {
-        markSnapshot(snapshotTypeId, snapshotIndex, SnapshotMark.END);
+        markSnapshot(snapshotTypeId, logPosition, messageIndex, snapshotIndex, SnapshotMark.END);
     }
 
-    public void markSnapshot(final long snapshotTypeId, final int snapshotIndex, final SnapshotMark snapshotMark)
+    public void markSnapshot(
+        final long snapshotTypeId,
+        final long logPosition,
+        final long messageIndex,
+        final int snapshotIndex,
+        final SnapshotMark snapshotMark)
     {
         idleStrategy.reset();
         while (true)
@@ -68,6 +75,8 @@ class SnapshotTaker
                 snapshotMarkerEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .typeId(snapshotTypeId)
+                    .logPosition(logPosition)
+                    .messageIndex(messageIndex)
                     .index(snapshotIndex)
                     .mark(snapshotMark);
 

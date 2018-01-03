@@ -96,8 +96,8 @@ class SnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.version());
 
                 sequencerAgent.addOpenSession(
-                    clusterSessionDecoder.clusterSessionId(),
                     clusterSessionDecoder.lastCorrelationId(),
+                    clusterSessionDecoder.clusterSessionId(),
                     clusterSessionDecoder.timeOfLastActivity(),
                     clusterSessionDecoder.responseStreamId(),
                     clusterSessionDecoder.responseChannel());

@@ -62,7 +62,7 @@ class SnapshotLoader implements ControlledFragmentHandler
             case SnapshotMarkerDecoder.TEMPLATE_ID:
                 snapshotMarkerDecoder.wrap(
                     buffer,
-                    offset,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
@@ -91,7 +91,7 @@ class SnapshotLoader implements ControlledFragmentHandler
             case ClusterSessionDecoder.TEMPLATE_ID:
                 clusterSessionDecoder.wrap(
                     buffer,
-                    offset,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
@@ -106,7 +106,7 @@ class SnapshotLoader implements ControlledFragmentHandler
             case TimerDecoder.TEMPLATE_ID:
                 timerDecoder.wrap(
                     buffer,
-                    offset,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 

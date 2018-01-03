@@ -34,6 +34,11 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 public final class ClusteredServiceContainer implements AutoCloseable
 {
+    /**
+     * Type of snapshot for this service.
+     */
+    public static final long SNAPSHOT_TYPE_ID = 2;
+
     private final Context ctx;
     private final AgentRunner serviceAgentRunner;
 

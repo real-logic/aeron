@@ -27,7 +27,6 @@ import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -36,11 +35,6 @@ import static io.aeron.CommonContext.SPY_PREFIX;
 
 public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, Cluster
 {
-    /**
-     * Type of snapshot for this agent.
-     */
-    public static final long SNAPSHOT_TYPE_ID = 2;
-
     /**
      * Length of the session header that will precede application protocol message.
      */
@@ -334,6 +328,16 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         throw new IllegalStateException("Failed to schedule timer");
     }
 
+    void addSession(final long clusterSessionId, final int responseStreamId, final String responseChannel)
+    {
+        sessionByIdMap.put(
+            clusterSessionId,
+            new ClientSession(
+                clusterSessionId,
+                aeron.addExclusivePublication(responseChannel, responseStreamId),
+                ClusteredServiceAgent.this));
+    }
+
     private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
     {
         final long logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
@@ -495,6 +499,26 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
     }
 
+    private void loadState(final Image image)
+    {
+        final SnapshotLoader snapshotLoader = new SnapshotLoader(image, this);
+        while (snapshotLoader.inProgress())
+        {
+            final int fragments = snapshotLoader.poll();
+            if (fragments == 0)
+            {
+                checkInterruptedStatus();
+
+                if (image.isClosed() && snapshotLoader.inProgress())
+                {
+                    throw new IllegalStateException("Snapshot ended unexpectedly");
+                }
+            }
+
+            idleStrategy.idle(fragments);
+        }
+    }
+
     private void onTakeSnapshot(final long position)
     {
         state = State.SNAPSHOTTING;
@@ -576,91 +600,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         markSnapshot(publication, SnapshotMark.END);
     }
 
-    private void loadState(final Image image)
-    {
-        final MutableBoolean inSnapshot = new MutableBoolean(false);
-        final MutableBoolean inProgress = new MutableBoolean(true);
-        final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
-        final ClientSessionDecoder clientSessionDecoder = new ClientSessionDecoder();
-
-        while (inProgress.get())
-        {
-            final int fragmentsRead = image.controlledPoll(
-                (buffer, offset, length, header) ->
-                {
-                    messageHeaderDecoder.wrap(buffer, offset);
-
-                    final int templateId = messageHeaderDecoder.templateId();
-                    switch (templateId)
-                    {
-                        case SnapshotMarkerDecoder.TEMPLATE_ID:
-                            snapshotMarkerDecoder.wrap(
-                                buffer,
-                                offset,
-                                messageHeaderDecoder.blockLength(),
-                                messageHeaderDecoder.version());
-
-                            final long typeId = snapshotMarkerDecoder.typeId();
-                            if (typeId != SNAPSHOT_TYPE_ID)
-                            {
-                                throw new IllegalStateException("Unexpected snapshot type: " + typeId);
-                            }
-
-                            final SnapshotMark mark = snapshotMarkerDecoder.mark();
-                            if (!inSnapshot.get() && mark == SnapshotMark.BEGIN)
-                            {
-                                inSnapshot.set(true);
-                                return Action.BREAK;
-                            }
-                            else if (inSnapshot.get() && mark == SnapshotMark.END)
-                            {
-                                inProgress.set(false);
-                            }
-                            else
-                            {
-                                throw new IllegalStateException("inSnapshot=" + inSnapshot + " mark=" + mark);
-                            }
-                            break;
-
-                        case ClientSessionDecoder.TEMPLATE_ID:
-                            clientSessionDecoder.wrap(
-                                buffer,
-                                offset,
-                                messageHeaderDecoder.blockLength(),
-                                messageHeaderDecoder.version());
-
-                            final long sessionId = clientSessionDecoder.clusterSessionId();
-                            sessionByIdMap.put(
-                                sessionId,
-                                new ClientSession(
-                                    sessionId,
-                                    aeron.addExclusivePublication(
-                                        clientSessionDecoder.responseChannel(),
-                                        clientSessionDecoder.responseStreamId()),
-                                    ClusteredServiceAgent.this));
-                            break;
-
-                        default:
-                            throw new IllegalStateException("Unknown template id: " + templateId);
-                    }
-
-                    return Action.CONTINUE;
-                },
-                FRAGMENT_LIMIT
-            );
-
-            if (0 == fragmentsRead)
-            {
-                checkInterruptedStatus();
-                idleStrategy.idle();
-            }
-            else
-            {
-                idleStrategy.reset();
-            }
-        }
-    }
-
     private void markSnapshot(final Publication publication, final SnapshotMark snapshotMark)
     {
         idleStrategy.reset();
@@ -672,7 +611,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             {
                 new SnapshotMarkerEncoder()
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .typeId(SNAPSHOT_TYPE_ID)
+                    .typeId(ClusteredServiceContainer.SNAPSHOT_TYPE_ID)
                     .index(0)
                     .mark(snapshotMark);
 

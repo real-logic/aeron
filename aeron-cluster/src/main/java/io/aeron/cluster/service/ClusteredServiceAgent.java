@@ -524,7 +524,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
     }
 
-    private void onTakeSnapshot(final long position)
+    private void onTakeSnapshot(final long logPosition)
     {
         state = State.SNAPSHOTTING;
         final long recordingId;
@@ -551,7 +551,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                snapshotState(publication);
+                snapshotState(publication, logPosition);
                 service.onTakeSnapshot(publication);
 
                 while (counters.getCounterValue(counterId) < publication.position())
@@ -566,13 +566,13 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             }
         }
 
-        recordingLog.appendSnapshot(recordingId, position, messageIndex, timestampMs);
+        recordingLog.appendSnapshot(recordingId, logPosition, messageIndex, timestampMs);
         state = State.LEADING;
     }
 
-    private void snapshotState(final Publication publication)
+    private void snapshotState(final Publication publication, final long logPosition)
     {
-        markSnapshot(publication, SnapshotMark.BEGIN);
+        markSnapshot(publication, logPosition, SnapshotMark.BEGIN);
 
         for (final ClientSession clientSession : sessionByIdMap.values())
         {
@@ -603,21 +603,25 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             }
         }
 
-        markSnapshot(publication, SnapshotMark.END);
+        markSnapshot(publication, logPosition, SnapshotMark.END);
     }
 
-    private void markSnapshot(final Publication publication, final SnapshotMark snapshotMark)
+    private void markSnapshot(final Publication publication, final long logPosition, final SnapshotMark snapshotMark)
     {
+        final SnapshotMarkerEncoder snapshotMarkerEncoder = new SnapshotMarkerEncoder();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SnapshotMarkerEncoder.BLOCK_LENGTH;
+
         idleStrategy.reset();
         while (true)
         {
-            final int length = MessageHeaderEncoder.ENCODED_LENGTH + SnapshotMarkerEncoder.BLOCK_LENGTH;
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                new SnapshotMarkerEncoder()
+                snapshotMarkerEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .typeId(ClusteredServiceContainer.SNAPSHOT_TYPE_ID)
+                    .logPosition(logPosition)
+                    .messageIndex(messageIndex)
                     .index(0)
                     .mark(snapshotMark);
 

@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
@@ -28,13 +29,19 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.NoOpLock;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.*;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 public class ClusterNodeRestartTest
@@ -46,6 +53,7 @@ public class ClusterNodeRestartTest
     private AeronCluster aeronCluster;
     private SessionDecorator sessionDecorator;
     private Publication publication;
+    private final AtomicReference<String> serviceState = new AtomicReference<>();
 
     @Before
     public void before()
@@ -56,6 +64,7 @@ public class ClusterNodeRestartTest
     @After
     public void after()
     {
+        CloseHelper.close(aeronCluster);
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
@@ -127,8 +136,54 @@ public class ClusterNodeRestartTest
         {
             Thread.yield();
         }
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldRestartServiceFromSnapshot() throws Exception
+    {
+        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+        container = launchService(true, serviceMsgCounter);
+
+        connectClient();
+
+        sendCountedMessageIntoCluster(0);
+        sendCountedMessageIntoCluster(1);
+        sendCountedMessageIntoCluster(2);
+
+        while (serviceMsgCounter.get() < 2)
+        {
+            Thread.yield();
+        }
+
+        final CountersReader counters = aeronCluster.context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+        assertNotNull(controlToggle);
+
+        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+        Thread.sleep(3000);
+        sendCountedMessageIntoCluster(3);
+
+        while (serviceMsgCounter.get() < 3)
+        {
+            Thread.yield();
+        }
 
         aeronCluster.close();
+        container.close();
+        clusteredMediaDriver.close();
+
+        serviceState.set(null);
+        launchClusteredMediaDriver(false);
+        container = launchService(false, serviceMsgCounter);
+
+        while (null == serviceState.get())
+        {
+            Thread.yield();
+        }
+
+        assertThat(serviceState.get(), is("3"));
     }
 
     private void sendCountedMessageIntoCluster(final int value)
@@ -167,9 +222,51 @@ public class ClusterNodeRestartTest
                     final int length,
                     final Header header)
                 {
-                    assertThat(buffer.getInt(offset), is(counterValue));
-                    msgCounter.getAndIncrement();
+                    final int sentValue = buffer.getInt(offset);
+                    assertThat(sentValue, is(counterValue));
+
                     counterValue++;
+                    msgCounter.getAndIncrement();
+                }
+
+                public void onTakeSnapshot(final Publication snapshotPublication)
+                {
+                    final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+
+                    int length = 0;
+                    buffer.putInt(length, counterValue);
+                    length += SIZE_OF_INT;
+
+                    length += buffer.putIntAscii(length, counterValue);
+
+                    snapshotPublication.offer(buffer, 0, length);
+                }
+
+                public void onLoadSnapshot(final Image snapshotImage)
+                {
+                    while (true)
+                    {
+                        final int fragments = snapshotImage.poll(
+                            (buffer, offset, length, header) ->
+                            {
+                                counterValue = buffer.getInt(offset);
+                                serviceState.set(
+                                    buffer.getStringWithoutLengthAscii(offset + SIZE_OF_INT, length - SIZE_OF_INT));
+                            },
+                            1);
+
+                        if (fragments == 1)
+                        {
+                            break;
+                        }
+
+                        if (Thread.currentThread().isInterrupted())
+                        {
+                            throw new AgentTerminationException("Unexpected interrupt during operation");
+                        }
+
+                        Thread.yield();
+                    }
                 }
             };
 
@@ -207,7 +304,8 @@ public class ClusterNodeRestartTest
             new Archive.Context()
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(initialLaunch),
-            new ConsensusModule.Context());
+            new ConsensusModule.Context()
+                .deleteDirOnStart(initialLaunch));
     }
 
     private static void checkResult(final long result)

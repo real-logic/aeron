@@ -71,19 +71,23 @@ class SnapshotLoader implements ControlledFragmentHandler
                     throw new IllegalStateException("Unexpected snapshot type: " + typeId);
                 }
 
-                final SnapshotMark mark = snapshotMarkerDecoder.mark();
-                if (!inSnapshot && mark == SnapshotMark.BEGIN)
+                switch (snapshotMarkerDecoder.mark())
                 {
-                    inSnapshot = true;
-                    return Action.BREAK;
-                }
-                else if (inSnapshot && mark == SnapshotMark.END)
-                {
-                    inProgress = false;
-                }
-                else
-                {
-                    throw new IllegalStateException("inSnapshot=" + inSnapshot + " mark=" + mark);
+                    case BEGIN:
+                        if (inSnapshot)
+                        {
+                            throw new IllegalStateException("Already in snapshot");
+                        }
+                        inSnapshot = true;
+                        return Action.CONTINUE;
+
+                    case END:
+                        if (!inSnapshot)
+                        {
+                            throw new IllegalStateException("Missing begin snapshot");
+                        }
+                        inProgress = false;
+                        return Action.BREAK;
                 }
                 break;
 

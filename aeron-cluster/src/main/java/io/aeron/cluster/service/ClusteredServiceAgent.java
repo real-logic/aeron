@@ -579,11 +579,11 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private void loadState(final Image image)
     {
         final MutableBoolean inSnapshot = new MutableBoolean(false);
-        final MutableBoolean isDone = new MutableBoolean(false);
+        final MutableBoolean inProgress = new MutableBoolean(true);
         final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
         final ClientSessionDecoder clientSessionDecoder = new ClientSessionDecoder();
 
-        while (!isDone.get())
+        while (inProgress.get())
         {
             final int fragmentsRead = image.controlledPoll(
                 (buffer, offset, length, header) ->
@@ -614,7 +614,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                             }
                             else if (inSnapshot.get() && mark == SnapshotMark.END)
                             {
-                                isDone.set(true);
+                                inProgress.set(false);
                             }
                             else
                             {

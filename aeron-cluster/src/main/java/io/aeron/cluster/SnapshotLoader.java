@@ -27,8 +27,8 @@ class SnapshotLoader implements ControlledFragmentHandler
 {
     private static final int FRAGMENT_LIMIT = 10;
 
-    private boolean inSnapshot;
-    private boolean isDone = false;
+    private boolean inSnapshot = false;
+    private boolean inProgress = true;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
     private final ClusterSessionDecoder clusterSessionDecoder = new ClusterSessionDecoder();
@@ -42,9 +42,9 @@ class SnapshotLoader implements ControlledFragmentHandler
         this.sequencerAgent = agent;
     }
 
-    public boolean isDone()
+    public boolean inProgress()
     {
-        return isDone;
+        return inProgress;
     }
 
     public int poll()
@@ -80,11 +80,11 @@ class SnapshotLoader implements ControlledFragmentHandler
                 }
                 else if (inSnapshot && mark == SnapshotMark.END)
                 {
-                    isDone = true;
+                    inProgress = false;
                 }
                 else
                 {
-                    throw new IllegalStateException("inSnapshot=" + inSnapshot + " mark=" + mark);
+                    throw new IllegalStateException("inProgress=" + inSnapshot + " mark=" + mark);
                 }
                 break;
 

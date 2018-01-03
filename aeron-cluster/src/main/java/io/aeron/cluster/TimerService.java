@@ -20,12 +20,13 @@ import org.agrona.collections.Long2LongHashMap;
 
 import java.util.concurrent.TimeUnit;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 public class TimerService implements DeadlineTimerWheel.TimerHandler
 {
     private final int timerLimit;
     private final SequencerAgent sequencerAgent;
-    private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(
-        TimeUnit.MILLISECONDS, 0, 1, 128);
+    private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(MILLISECONDS, 0, 1, 128);
     private Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
 
@@ -69,5 +70,11 @@ public class TimerService implements DeadlineTimerWheel.TimerHandler
         }
 
         return false;
+    }
+
+    public void snapshot(final SnapshotTaker snapshotTaker)
+    {
+        timerWheel.forEach(
+            (deadline, timerId) -> snapshotTaker.snapshotTimer(correlationIdByTimerIdMap.get(timerId), deadline));
     }
 }

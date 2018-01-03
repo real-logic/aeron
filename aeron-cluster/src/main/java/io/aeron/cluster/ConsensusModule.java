@@ -45,6 +45,11 @@ public class ConsensusModule implements
     ConsensusModuleAdapterSupplier
 {
     /**
+     * Type of snapshot for this agent.
+     */
+    public static final long SNAPSHOT_TYPE_ID = 1;
+
+    /**
      * Possible states for the consensus module. These will be reflected in the {@link Context#moduleState()} counter.
      */
     public enum State

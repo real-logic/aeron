@@ -524,6 +524,22 @@ class SequencerAgent implements Agent
 
     private void snapshotState(final Publication publication)
     {
+        final SnapshotTaker snapshotTaker = new SnapshotTaker(publication, aeronClientInvoker, idleStrategy);
+        snapshotTaker.markBegin(ConsensusModule.SNAPSHOT_TYPE_ID, 0);
+
+        for (final ClusterSession session : sessionByIdMap.values())
+        {
+            if (session.state() == OPEN)
+            {
+                snapshotTaker.snapshotSession(session);
+            }
+        }
+
+        invokeAeronClient();
+
+        timerService.snapshot(snapshotTaker);
+
+        snapshotTaker.markEnd(ConsensusModule.SNAPSHOT_TYPE_ID, 0);
     }
 
     private void replayTerm(final Image image, final Counter consensusPos)

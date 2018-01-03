@@ -750,7 +750,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         }
     }
 
-    private void checkInterruptedStatus()
+    private static void checkInterruptedStatus()
     {
         if (Thread.currentThread().isInterrupted())
         {

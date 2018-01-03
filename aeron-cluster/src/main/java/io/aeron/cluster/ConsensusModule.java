@@ -572,7 +572,7 @@ public class ConsensusModule implements
 
             if (null == controlToggle)
             {
-                controlToggle = aeron.addCounter(CONTROL_TOGGLE_TYPE_ID, "Control toggle");
+                controlToggle = aeron.addCounter(CONTROL_TOGGLE_TYPE_ID, "Cluster control toggle");
             }
 
             if (null == threadFactory)

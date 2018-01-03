@@ -151,13 +151,13 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         return "clustered-service";
     }
 
+    @SuppressWarnings("MethodLength")
     public ControlledFragmentHandler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
-        final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        switch (messageHeaderDecoder.templateId())
         {
             case SessionHeaderDecoder.TEMPLATE_ID:
             {
@@ -531,9 +531,12 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         try (AeronArchive archive = AeronArchive.connect(archiveCtx))
         {
-            archive.startRecording(ctx.snapshotChannel(), ctx.snapshotStreamId(), SourceLocation.LOCAL);
+            final String channel = ctx.snapshotChannel();
+            final int streamId = ctx.snapshotStreamId();
 
-            try (Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
+            archive.startRecording(channel, streamId, SourceLocation.LOCAL);
+
+            try (Publication publication = aeron.addExclusivePublication(channel, streamId))
             {
                 idleStrategy.reset();
 
@@ -559,15 +562,12 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             }
             finally
             {
-                archive.stopRecording(ctx.snapshotChannel(), ctx.snapshotStreamId());
+                archive.stopRecording(channel, streamId);
             }
-        }
-        finally
-        {
-            state = State.LEADING;
         }
 
         recordingLog.appendSnapshot(recordingId, position, messageIndex, timestampMs);
+        state = State.LEADING;
     }
 
     private void snapshotState(final Publication publication)
@@ -576,8 +576,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         for (final ClientSession clientSession : sessionByIdMap.values())
         {
-            final String responseChannel = clientSession.responsePublication().channel();
             final int responseStreamId = clientSession.responsePublication().streamId();
+            final String responseChannel = clientSession.responsePublication().channel();
             final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClientSessionEncoder.BLOCK_LENGTH +
                 ClientSessionEncoder.responseChannelHeaderLength() + responseChannel.length();
 

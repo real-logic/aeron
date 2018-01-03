@@ -527,17 +527,19 @@ class SequencerAgent implements Agent
 
             try (Publication publication = aeron.addExclusivePublication(channel, streamId))
             {
-                while (!publication.isConnected())
-                {
-                    idle();
-                }
-
-                snapshotState(publication);
+                idleStrategy.reset();
 
                 final CountersReader counters = aeron.countersReader();
-                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                while (RecordingPos.NULL_COUNTER_ID == counterId)
+                {
+                    idle();
+                    counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                }
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                snapshotState(publication);
 
                 while (counters.getCounterValue(counterId) < publication.position())
                 {

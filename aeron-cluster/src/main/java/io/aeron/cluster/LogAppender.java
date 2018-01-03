@@ -74,7 +74,7 @@ class LogAppender implements AutoCloseable
         return false;
     }
 
-    public boolean appendConnectedSession(final ClusterSession session, final long timestampMs)
+    public boolean appendConnectedSession(final ClusterSession session, final long nowMs)
     {
         final String channel = session.responsePublication().channel();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
@@ -91,7 +91,7 @@ class LogAppender implements AutoCloseable
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .correlationId(session.lastCorrelationId())
-                    .timestamp(timestampMs)
+                    .timestamp(nowMs)
                     .responseStreamId(session.responsePublication().streamId())
                     .responseChannel(channel);
 
@@ -155,7 +155,7 @@ class LogAppender implements AutoCloseable
     }
 
     public boolean appendActionRequest(
-        final ServiceAction action, final long nowMs, final long logPosition, final long messageIndex)
+        final ServiceAction action, final long logPosition, final long messageIndex, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionRequestEncoder.BLOCK_LENGTH;
 

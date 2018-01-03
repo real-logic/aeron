@@ -68,7 +68,7 @@ class SnapshotTaker
                 snapshotMarkerEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .typeId(snapshotTypeId)
-                    .index(0)
+                    .index(snapshotIndex)
                     .mark(snapshotMark);
 
                 bufferClaim.commit();
@@ -84,9 +84,8 @@ class SnapshotTaker
 
     public void snapshotSession(final ClusterSession session)
     {
-        final String responseChannel = session.responsePublication().channel();
         final int responseStreamId = session.responsePublication().streamId();
-
+        final String responseChannel = session.responsePublication().channel();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterSessionEncoder.BLOCK_LENGTH +
             ClusterSessionEncoder.responseChannelHeaderLength() + responseChannel.length();
 

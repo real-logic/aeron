@@ -47,6 +47,7 @@ public class ClusterNodeTest
 
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
+    private AeronCluster aeronCluster;
 
     @Before
     public void before()
@@ -68,17 +69,18 @@ public class ClusterNodeTest
     @After
     public void after()
     {
+        CloseHelper.close(aeronCluster);
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
-
-        clusteredMediaDriver.consensusModule().context().deleteDirectory();
-        clusteredMediaDriver.archive().context().deleteArchiveDirectory();
-        clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
 
         if (null != container)
         {
             container.context().deleteDirectory();
         }
+
+        clusteredMediaDriver.consensusModule().context().deleteDirectory();
+        clusteredMediaDriver.archive().context().deleteArchiveDirectory();
+        clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
     @Test
@@ -86,10 +88,9 @@ public class ClusterNodeTest
     {
         container = launchEchoService();
 
-        try (AeronCluster aeronCluster = connectToCluster())
-        {
-            assertTrue(aeronCluster.sendKeepAlive());
-        }
+        aeronCluster = connectToCluster();
+
+        assertTrue(aeronCluster.sendKeepAlive());
     }
 
     @Test(timeout = 10_000)
@@ -97,7 +98,7 @@ public class ClusterNodeTest
     {
         container = launchEchoService();
 
-        final AeronCluster aeronCluster = connectToCluster();
+        aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
 
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
@@ -142,16 +143,13 @@ public class ClusterNodeTest
                 Thread.yield();
             }
         }
-
-        aeronCluster.close();
     }
 
     @Test(timeout = 10_000)
     public void shouldScheduleEventInService()
     {
         container = launchScheduledService();
-
-        final AeronCluster aeronCluster = connectToCluster();
+        aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
 
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
@@ -196,8 +194,6 @@ public class ClusterNodeTest
                 Thread.yield();
             }
         }
-
-        aeronCluster.close();
     }
 
     private ClusteredServiceContainer launchEchoService()

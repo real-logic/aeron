@@ -62,6 +62,7 @@ public class AuthenticationTest
     @After
     public void after()
     {
+        CloseHelper.close(aeronCluster);
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
@@ -131,8 +132,6 @@ public class AuthenticationTest
 
         assertThat(authenticatorSessionId.value, is(aeronCluster.sessionId()));
         assertThat(serviceSessionId.value, is(aeronCluster.sessionId()));
-
-        aeronCluster.close();
     }
 
     @Test(timeout = 10_000)
@@ -195,8 +194,6 @@ public class AuthenticationTest
 
         assertThat(authenticatorSessionId.value, is(aeronCluster.sessionId()));
         assertThat(serviceSessionId.value, is(aeronCluster.sessionId()));
-
-        aeronCluster.close();
     }
 
     @Test(timeout = 10_000)
@@ -267,8 +264,6 @@ public class AuthenticationTest
 
         assertThat(authenticatorSessionId.value, is(aeronCluster.sessionId()));
         assertThat(serviceSessionId.value, is(aeronCluster.sessionId()));
-
-        aeronCluster.close();
     }
 
     @Test(timeout = 10_000)
@@ -329,8 +324,6 @@ public class AuthenticationTest
         catch (final AuthenticationException ex)
         {
             assertThat(serviceSessionId.value, is(-1L));
-
-            CloseHelper.close(aeronCluster);
             return;
         }
 
@@ -403,8 +396,6 @@ public class AuthenticationTest
         catch (final AuthenticationException ex)
         {
             assertThat(serviceSessionId.value, is(-1L));
-
-            CloseHelper.close(aeronCluster);
             return;
         }
 

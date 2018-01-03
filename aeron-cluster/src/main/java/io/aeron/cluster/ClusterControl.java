@@ -198,21 +198,21 @@ public class ClusterControl
     /**
      * Find the control toggle counter or return null if not found.
      *
-     * @param countersReader to search for the control toggle.
+     * @param counters to search for the control toggle.
      * @return the control toggle counter or return null if not found.
      */
-    public static AtomicCounter findControlToggle(final CountersReader countersReader)
+    public static AtomicCounter findControlToggle(final CountersReader counters)
     {
-        final AtomicBuffer buffer = countersReader.metaDataBuffer();
+        final AtomicBuffer buffer = counters.metaDataBuffer();
 
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int i = 0, size = counters.maxCounterId(); i < size; i++)
         {
             final int recordOffset = CountersReader.metaDataOffset(i);
 
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED &&
+            if (counters.getCounterState(i) == RECORD_ALLOCATED &&
                 buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONTROL_TOGGLE_TYPE_ID)
             {
-                return new AtomicCounter(buffer, i, null);
+                return new AtomicCounter(counters.valuesBuffer(), i, null);
             }
         }
 

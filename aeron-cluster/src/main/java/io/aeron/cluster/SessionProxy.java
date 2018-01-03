@@ -20,7 +20,7 @@ import io.aeron.cluster.codecs.EventCode;
 import static io.aeron.cluster.ClusterSession.State.*;
 
 /**
- * Proxy for a session for authenication purposes. Used to inform system of client authentication status.
+ * Proxy for a session for authentication purposes. Used to inform system of client authentication status.
  */
 public class SessionProxy
 {

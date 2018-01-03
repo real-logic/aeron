@@ -210,7 +210,9 @@ public final class AeronCluster implements AutoCloseable
 
             while (true)
             {
-                if (publication.tryClaim(length, bufferClaim) > 0)
+                final long result = publication.tryClaim(length, bufferClaim);
+
+                if (result > 0)
                 {
                     keepAliveRequestEncoder
                         .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -221,7 +223,10 @@ public final class AeronCluster implements AutoCloseable
 
                     return true;
                 }
-                else if (--attempts <= 0)
+
+                checkResult(result);
+
+                if (--attempts <= 0)
                 {
                     break;
                 }
@@ -241,20 +246,26 @@ public final class AeronCluster implements AutoCloseable
     {
         idleStrategy.reset();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseRequestEncoder.BLOCK_LENGTH;
+        final SessionCloseRequestEncoder sessionCloseRequestEncoder = new SessionCloseRequestEncoder();
         int attempts = SEND_ATTEMPTS;
 
         while (true)
         {
-            if (publication.tryClaim(length, bufferClaim) > 0)
+            final long result = publication.tryClaim(length, bufferClaim);
+
+            if (result > 0)
             {
-                new SessionCloseRequestEncoder()
+                sessionCloseRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(sessionId);
 
                 bufferClaim.commit();
                 break;
             }
-            else if (--attempts <= 0)
+
+            checkResult(result);
+
+            if (--attempts <= 0)
             {
                 break;
             }
@@ -266,13 +277,9 @@ public final class AeronCluster implements AutoCloseable
     private long connectToCluster()
     {
         final CredentialProvider credentialProvider = ctx.credentialProvider();
-
         final byte[] credentialData = credentialProvider.connectRequestCredentialData();
-
         final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
-
         long correlationId = sendConnectRequest(credentialData, deadlineNs);
-
         final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
 
         idleStrategy.reset();
@@ -302,11 +309,11 @@ public final class AeronCluster implements AutoCloseable
             {
                 if (poller.challenged())
                 {
-                    final byte[] challengeResponseCredentialData =
-                        credentialProvider.onChallenge(poller.challengeData());
+                    final byte[] challengeResponseCredentialData = credentialProvider.onChallenge(
+                        poller.challengeData());
 
-                    correlationId =
-                        sendChallengeResponse(poller.clusterSessionId(), challengeResponseCredentialData, deadlineNs);
+                    correlationId = sendChallengeResponse(
+                        poller.clusterSessionId(), challengeResponseCredentialData, deadlineNs);
                 }
                 else if (poller.eventCode() == EventCode.ERROR)
                 {
@@ -327,6 +334,8 @@ public final class AeronCluster implements AutoCloseable
     private long sendConnectRequest(final byte[] credentialData, final long deadlineNs)
     {
         final long correlationId = aeron.nextCorrelationId();
+
+        final SessionConnectRequestEncoder sessionConnectRequestEncoder = new SessionConnectRequestEncoder();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             SessionConnectRequestEncoder.BLOCK_LENGTH +
             SessionConnectRequestEncoder.responseChannelHeaderLength() +
@@ -338,9 +347,10 @@ public final class AeronCluster implements AutoCloseable
 
         while (true)
         {
-            if (publication.tryClaim(length, bufferClaim) > 0)
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
-                new SessionConnectRequestEncoder()
+                sessionConnectRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId)
                     .responseStreamId(ctx.egressStreamId())
@@ -351,7 +361,13 @@ public final class AeronCluster implements AutoCloseable
 
                 break;
             }
-            else if (nanoClock.nanoTime() > deadlineNs)
+
+            if (Publication.CLOSED == result)
+            {
+                throw new IllegalStateException("Unexpected close from cluster");
+            }
+
+            if (nanoClock.nanoTime() > deadlineNs)
             {
                 throw new TimeoutException("Failed to connect to cluster");
             }
@@ -365,6 +381,8 @@ public final class AeronCluster implements AutoCloseable
     private long sendChallengeResponse(final long sessionId, final byte[] credentialData, final long deadlineNs)
     {
         final long correlationId = aeron.nextCorrelationId();
+
+        final ChallengeResponseEncoder challengeResponseEncoder = new ChallengeResponseEncoder();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             ChallengeResponseEncoder.BLOCK_LENGTH +
             ChallengeResponseEncoder.credentialDataHeaderLength() +
@@ -374,9 +392,10 @@ public final class AeronCluster implements AutoCloseable
 
         while (true)
         {
-            if (publication.tryClaim(length, bufferClaim) > 0)
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
-                new ChallengeResponseEncoder()
+                challengeResponseEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId)
                     .clusterSessionId(sessionId)
@@ -386,7 +405,10 @@ public final class AeronCluster implements AutoCloseable
 
                 break;
             }
-            else if (nanoClock.nanoTime() > deadlineNs)
+
+            checkResult(result);
+
+            if (nanoClock.nanoTime() > deadlineNs)
             {
                 throw new TimeoutException("Failed to connect to cluster");
             }
@@ -395,6 +417,16 @@ public final class AeronCluster implements AutoCloseable
         }
 
         return correlationId;
+    }
+
+    private static void checkResult(final long result)
+    {
+        if (result == Publication.NOT_CONNECTED ||
+            result == Publication.CLOSED ||
+            result == Publication.MAX_POSITION_EXCEEDED)
+        {
+            throw new IllegalStateException("Unexpected publication state: " + result);
+        }
     }
 
     /**

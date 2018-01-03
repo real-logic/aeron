@@ -358,6 +358,11 @@ public class ArchiveProxy
                 return true;
             }
 
+            if (result == Publication.CLOSED)
+            {
+                throw new IllegalStateException("Connection to the archive has been closed");
+            }
+
             if (result == Publication.NOT_CONNECTED)
             {
                 throw new IllegalStateException("Connection to the archive is no longer available");
@@ -393,6 +398,11 @@ public class ArchiveProxy
             if (null != aeronClientInvoker)
             {
                 aeronClientInvoker.invoke();
+            }
+
+            if (result == Publication.CLOSED)
+            {
+                throw new IllegalStateException("Connection to the archive has been closed");
             }
 
             if (result == Publication.MAX_POSITION_EXCEEDED)

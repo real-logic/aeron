@@ -583,7 +583,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
         final ClientSessionDecoder clientSessionDecoder = new ClientSessionDecoder();
 
-        while (true)
+        while (!isDone.get())
         {
             final int fragmentsRead = image.controlledPoll(
                 (buffer, offset, length, header) ->
@@ -648,11 +648,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 },
                 FRAGMENT_LIMIT
             );
-
-            if (isDone.get())
-            {
-                break;
-            }
 
             if (0 == fragmentsRead)
             {

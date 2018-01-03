@@ -21,6 +21,7 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.ConsensusPos;
+import io.aeron.cluster.service.RecordingExtent;
 import io.aeron.cluster.service.RecordingLog;
 import io.aeron.cluster.service.RecoveryState;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -39,6 +40,7 @@ import java.util.List;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
+import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 
 class SequencerAgent implements Agent
 {
@@ -127,7 +129,7 @@ class SequencerAgent implements Agent
             {
                 if (null != recoveryPlan.snapshotStep)
                 {
-                    recoverFromSnapshot(recoveryPlan.snapshotStep);
+                    recoverFromSnapshot(recoveryPlan.snapshotStep, archive);
                 }
 
                 waitForServiceAcks();
@@ -353,7 +355,7 @@ class SequencerAgent implements Agent
         timerService.cancelTimer(correlationId);
     }
 
-    private void recoverFromSnapshot(final RecordingLog.ReplayStep snapshotStep)
+    private void recoverFromSnapshot(final RecordingLog.ReplayStep snapshotStep, final AeronArchive archive)
     {
         final RecordingLog.Entry snapshot = snapshotStep.entry;
 
@@ -361,7 +363,42 @@ class SequencerAgent implements Agent
         leadershipTermBeginPosition = snapshot.logPosition;
         messageIndex.setOrdered(snapshot.messageIndex);
 
-        loadSnapshot(snapshot.recordingId);
+        final long recordingId = snapshot.recordingId;
+        final RecordingExtent recordingExtent = new RecordingExtent();
+        if (0 == archive.listRecording(recordingId, recordingExtent))
+        {
+            throw new IllegalStateException("Could not find recordingId: " + recordingId);
+        }
+
+        final String channel = ctx.replayChannel();
+        final int streamId = ctx.replayStreamId();
+        try (Subscription subscription = aeron.addSubscription(channel, streamId))
+        {
+            final long length = recordingExtent.stopPosition - recordingExtent.startPosition;
+            final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
+
+            Image image;
+            while ((image = subscription.imageBySessionId(sessionId)) == null)
+            {
+                idle();
+            }
+
+            final SnapshotLoader snapshotLoader = new SnapshotLoader(image, this);
+
+            while (!snapshotLoader.isDone())
+            {
+                final int fragments = snapshotLoader.poll();
+                if (fragments == 0)
+                {
+                    if (image.isClosed() && !snapshotLoader.isDone())
+                    {
+                        throw new IllegalStateException("Snapshot ended unexpectedly");
+                    }
+                }
+
+                idle(fragments);
+            }
+        }
     }
 
     private void recoverFromLog(final List<RecordingLog.ReplayStep> steps, final AeronArchive archive)
@@ -478,10 +515,6 @@ class SequencerAgent implements Agent
         return workCount;
     }
 
-    private void loadSnapshot(final long recordingId)
-    {
-    }
-
     private void takeSnapshot(final long timestampMs)
     {
         final long recordingId;
@@ -525,7 +558,7 @@ class SequencerAgent implements Agent
     private void snapshotState(final Publication publication)
     {
         final SnapshotTaker snapshotTaker = new SnapshotTaker(publication, aeronClientInvoker, idleStrategy);
-        snapshotTaker.markBegin(ConsensusModule.SNAPSHOT_TYPE_ID, 0);
+        snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, 0);
 
         for (final ClusterSession session : sessionByIdMap.values())
         {
@@ -539,7 +572,7 @@ class SequencerAgent implements Agent
 
         timerService.snapshot(snapshotTaker);
 
-        snapshotTaker.markEnd(ConsensusModule.SNAPSHOT_TYPE_ID, 0);
+        snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, 0);
     }
 
     private void replayTerm(final Image image, final Counter consensusPos)
@@ -844,6 +877,7 @@ class SequencerAgent implements Agent
         return false;
     }
 
+    @SuppressWarnings("unused")
     void onReplaySessionMessage(
         final long correlationId,
         final long clusterSessionId,
@@ -880,6 +914,16 @@ class SequencerAgent implements Agent
         cachedEpochClock.update(timestamp);
         messageIndex.incrementOrdered();
 
+        addOpenSession(correlationId, clusterSessionId, timestamp, responseStreamId, responseChannel);
+    }
+
+    void addOpenSession(
+        final long correlationId,
+        final long clusterSessionId,
+        final long timestamp,
+        final int responseStreamId,
+        final String responseChannel)
+    {
         final ClusterSession session = sessionSupplier.newClusterSession(
             clusterSessionId, responseStreamId, responseChannel);
         session.lastActivity(timestamp, correlationId);
@@ -888,6 +932,7 @@ class SequencerAgent implements Agent
         sessionByIdMap.put(clusterSessionId, session);
     }
 
+    @SuppressWarnings("unused")
     void onReplaySessionClose(
         final long correlationId,
         final long clusterSessionId,
@@ -899,6 +944,7 @@ class SequencerAgent implements Agent
         sessionByIdMap.remove(clusterSessionId).close();
     }
 
+    @SuppressWarnings("unused")
     void onReplayServiceAction(final long timestamp, final ServiceAction action)
     {
         cachedEpochClock.update(timestamp);

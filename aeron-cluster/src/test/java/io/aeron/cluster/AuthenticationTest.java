@@ -485,6 +485,7 @@ public class AuthenticationTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
-                .authenticatorSupplier(authenticatorSupplier));
+                .authenticatorSupplier(authenticatorSupplier)
+                .deleteDirOnStart(true));
     }
 }

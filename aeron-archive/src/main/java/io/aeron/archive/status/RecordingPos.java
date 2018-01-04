@@ -223,4 +223,28 @@ public class RecordingPos
 
         return NULL_RECORDING_ID;
     }
+
+    /**
+     * Is the recording counter still active.
+     *
+     * @param countersReader to search within.
+     * @param counterId      to search for.
+     * @param recordingId    to confirm it is still the same value.
+     * @return true if the counter is still active otherwise false.
+     */
+    public static boolean isActive(final CountersReader countersReader, final int counterId, final long recordingId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        {
+            final int recordOffset = CountersReader.metaDataOffset(counterId);
+
+            return
+                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
+                buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
+        }
+
+        return false;
+    }
 }

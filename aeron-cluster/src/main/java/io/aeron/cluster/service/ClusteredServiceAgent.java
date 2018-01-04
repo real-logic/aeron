@@ -556,6 +556,11 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
                 while (counters.getCounterValue(counterId) < publication.position())
                 {
+                    if (!RecordingPos.isActive(counters, counterId, recordingId))
+                    {
+                        throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
+                    }
+
                     checkInterruptedStatus();
                     Thread.yield();
                 }

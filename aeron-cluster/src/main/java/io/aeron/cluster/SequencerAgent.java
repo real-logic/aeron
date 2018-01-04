@@ -545,6 +545,10 @@ class SequencerAgent implements Agent
 
                 while (counters.getCounterValue(counterId) < publication.position())
                 {
+                    if (!RecordingPos.isActive(counters, counterId, recordingId))
+                    {
+                        throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
+                    }
                     idle();
                 }
             }

@@ -105,13 +105,19 @@ public class RecordedBasicPublisher
 
                 // Wait for the recording to complete before the recording is stopped.
 
-                final CountersReader countersReader = archive.context().aeron().countersReader();
-                final int counterId = RecordingPos.findCounterIdBySession(countersReader, publication.sessionId());
-                final ReadableCounter recordedPosition = new ReadableCounter(countersReader, counterId);
+                final CountersReader counters = archive.context().aeron().countersReader();
+                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+                final ReadableCounter recordedPosition = new ReadableCounter(counters, counterId);
 
                 final long publicationPosition = publication.position();
                 while (recordedPosition.get() < publicationPosition)
                 {
+                    if (!RecordingPos.isActive(counters, counterId, recordingId))
+                    {
+                        throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
+                    }
+
                     Thread.yield();
                 }
 

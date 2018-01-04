@@ -72,7 +72,7 @@ public class TimerService implements DeadlineTimerWheel.TimerHandler
         return false;
     }
 
-    public void snapshot(final SnapshotTaker snapshotTaker)
+    public void snapshot(final ConsensusModuleSnapshotTaker snapshotTaker)
     {
         timerWheel.forEach(
             (deadline, timerId) -> snapshotTaker.snapshotTimer(correlationIdByTimerIdMap.get(timerId), deadline));

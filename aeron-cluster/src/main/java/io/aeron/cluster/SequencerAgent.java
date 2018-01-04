@@ -68,7 +68,7 @@ class SequencerAgent implements Agent
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
     private final MutableDirectBuffer tempBuffer;
-    final IdleStrategy idleStrategy;
+    private final IdleStrategy idleStrategy;
     private final LongArrayList failedTimerCancellations = new LongArrayList();
     private ConsensusTracker consensusTracker;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -564,7 +564,9 @@ class SequencerAgent implements Agent
 
     private void snapshotState(final Publication publication, final long logPosition, final long messageIndex)
     {
-        final SnapshotTaker snapshotTaker = new SnapshotTaker(publication, aeronClientInvoker, idleStrategy);
+        final ConsensusModuleSnapshotTaker snapshotTaker = new ConsensusModuleSnapshotTaker(
+            publication, idleStrategy, aeronClientInvoker);
+
         snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, messageIndex, 0);
 
         for (final ClusterSession session : sessionByIdMap.values())

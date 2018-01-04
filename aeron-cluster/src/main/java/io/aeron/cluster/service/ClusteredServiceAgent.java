@@ -67,7 +67,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final ScheduleTimerRequestEncoder scheduleTimerRequestEncoder = new ScheduleTimerRequestEncoder();
     private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
     private final ServiceActionAckEncoder serviceActionAckEncoder = new ServiceActionAckEncoder();
-    private final ClientSessionEncoder clientSessionEncoder = new ClientSessionEncoder();
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final IdleStrategy idleStrategy;
@@ -587,67 +586,16 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     private void snapshotState(final Publication publication, final long logPosition)
     {
-        markSnapshot(publication, logPosition, SnapshotMark.BEGIN);
+        final ServiceSnapshotTaker snapshotTaker = new ServiceSnapshotTaker(publication, idleStrategy, null);
+
+        snapshotTaker.markBegin(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, messageIndex, 0);
 
         for (final ClientSession clientSession : sessionByIdMap.values())
         {
-            final int responseStreamId = clientSession.responsePublication().streamId();
-            final String responseChannel = clientSession.responsePublication().channel();
-            final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClientSessionEncoder.BLOCK_LENGTH +
-                ClientSessionEncoder.responseChannelHeaderLength() + responseChannel.length();
-
-            idleStrategy.reset();
-            while (true)
-            {
-                final long result = publication.tryClaim(length, bufferClaim);
-                if (result > 0)
-                {
-                    clientSessionEncoder
-                        .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                        .clusterSessionId(clientSession.id())
-                        .responseStreamId(responseStreamId)
-                        .responseChannel(responseChannel);
-
-                    bufferClaim.commit();
-                    break;
-                }
-
-                checkResult(result);
-                checkInterruptedStatus();
-                idleStrategy.idle();
-            }
+            snapshotTaker.snapshotSession(clientSession);
         }
 
-        markSnapshot(publication, logPosition, SnapshotMark.END);
-    }
-
-    private void markSnapshot(final Publication publication, final long logPosition, final SnapshotMark snapshotMark)
-    {
-        final SnapshotMarkerEncoder snapshotMarkerEncoder = new SnapshotMarkerEncoder();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SnapshotMarkerEncoder.BLOCK_LENGTH;
-
-        idleStrategy.reset();
-        while (true)
-        {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                snapshotMarkerEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .typeId(ClusteredServiceContainer.SNAPSHOT_TYPE_ID)
-                    .logPosition(logPosition)
-                    .messageIndex(messageIndex)
-                    .index(0)
-                    .mark(snapshotMark);
-
-                bufferClaim.commit();
-                break;
-            }
-
-            checkResult(result);
-            checkInterruptedStatus();
-            idleStrategy.idle();
-        }
+        snapshotTaker.markEnd(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, messageIndex, 0);
     }
 
     private void sendAcknowledgment(final ServiceAction action, final long logPosition)
@@ -658,7 +606,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (consensusModulePublication.tryClaim(length, bufferClaim) > 0)
+            final long result = consensusModulePublication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
                 serviceActionAckEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -673,6 +622,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 return;
             }
 
+            checkResult(result);
             idleStrategy.idle();
         }
         while (--attempts > 0);

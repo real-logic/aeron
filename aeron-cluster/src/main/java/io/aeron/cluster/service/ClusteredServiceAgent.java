@@ -528,9 +528,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 {
                     throw new IllegalStateException("Snapshot ended unexpectedly");
                 }
-            }
 
-            idleStrategy.idle(fragments);
+                idleStrategy.idle(fragments);
+            }
         }
     }
 
@@ -560,20 +560,20 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                 }
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
-
                 snapshotState(publication, logPosition);
                 service.onTakeSnapshot(publication);
 
-                while (counters.getCounterValue(counterId) < publication.position())
+                do
                 {
+                    idleStrategy.idle();
+                    checkInterruptedStatus();
+
                     if (!RecordingPos.isActive(counters, counterId, recordingId))
                     {
                         throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
                     }
-
-                    checkInterruptedStatus();
-                    Thread.yield();
                 }
+                while (counters.getCounterValue(counterId) < publication.position());
             }
             finally
             {

@@ -25,6 +25,7 @@ import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -108,9 +109,9 @@ public class BasicArchiveTest
         {
             offer(publication, messageCount, messagePrefix);
 
-            recordingIdFromCounter = RecordingPos.getRecordingId(
-                aeron.countersReader(),
-                RecordingPos.findCounterIdBySession(aeron.countersReader(), publication.sessionId()));
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+            recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             consume(subscription, messageCount, messagePrefix);
 

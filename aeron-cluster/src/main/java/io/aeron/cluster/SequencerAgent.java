@@ -540,17 +540,18 @@ class SequencerAgent implements Agent
                 }
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
-
                 snapshotState(publication, logPosition, messageIndex);
 
-                while (counters.getCounterValue(counterId) < publication.position())
+                do
                 {
+                    idle();
+
                     if (!RecordingPos.isActive(counters, counterId, recordingId))
                     {
                         throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
                     }
-                    idle();
                 }
+                while (counters.getCounterValue(counterId) < publication.position());
             }
             finally
             {

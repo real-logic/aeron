@@ -20,7 +20,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.*;
-import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
@@ -41,11 +40,9 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
 
-    private static final int SEND_ATTEMPTS = 3;
     private static final int FRAGMENT_LIMIT = 10;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
-    private final long serviceId;
     private long leadershipTermBeginPosition = 0;
     private long messageIndex;
     private long timestampMs;
@@ -53,7 +50,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final Aeron aeron;
     private final ClusteredService service;
     private final Subscription logSubscription;
-    private final ExclusivePublication consensusModulePublication;
+    private final ConsensusModuleProxy consensusModule;
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(
         this, INITIAL_BUFFER_LENGTH, true);
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -62,11 +59,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ServiceActionRequestDecoder actionRequestDecoder = new ServiceActionRequestDecoder();
-    private final BufferClaim bufferClaim = new BufferClaim();
-    private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final ScheduleTimerRequestEncoder scheduleTimerRequestEncoder = new ScheduleTimerRequestEncoder();
-    private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
-    private final ServiceActionAckEncoder serviceActionAckEncoder = new ServiceActionAckEncoder();
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final IdleStrategy idleStrategy;
@@ -85,7 +77,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         this.ctx = ctx;
 
         archiveCtx = ctx.archiveContext();
-        serviceId = ctx.serviceId();
         aeron = ctx.aeron();
         shouldCloseResources = ctx.ownsAeronClient();
         service = ctx.clusteredService();
@@ -97,8 +88,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         logSubscription = aeron.addSubscription(logChannel, ctx.logStreamId());
 
-        consensusModulePublication = aeron.addExclusivePublication(
-            ctx.consensusModuleChannel(), ctx.consensusModuleStreamId());
+        consensusModule = new ConsensusModuleProxy(
+            ctx.serviceId(),
+            aeron.addExclusivePublication(ctx.consensusModuleChannel(), ctx.consensusModuleStreamId()),
+            idleStrategy);
     }
 
     public void onStart()
@@ -124,7 +117,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         if (shouldCloseResources)
         {
             CloseHelper.close(logSubscription);
-            CloseHelper.close(consensusModulePublication);
+            CloseHelper.close(consensusModule.publication());
 
             for (final ClientSession session : sessionByIdMap.values())
             {
@@ -288,57 +281,12 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     public void scheduleTimer(final long correlationId, final long deadlineMs)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerRequestEncoder.BLOCK_LENGTH;
-
-        idleStrategy.reset();
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            if (consensusModulePublication.tryClaim(length, bufferClaim) > 0)
-            {
-                scheduleTimerRequestEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .serviceId(serviceId)
-                    .correlationId(correlationId)
-                    .deadline(deadlineMs);
-
-                bufferClaim.commit();
-
-                return;
-            }
-
-            idleStrategy.idle();
-        }
-        while (--attempts > 0);
-
-        throw new IllegalStateException("Failed to schedule timer");
+        consensusModule.scheduleTimer(correlationId, deadlineMs);
     }
 
     public void cancelTimer(final long correlationId)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerRequestEncoder.BLOCK_LENGTH;
-
-        idleStrategy.reset();
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            if (consensusModulePublication.tryClaim(length, bufferClaim) > 0)
-            {
-                cancelTimerRequestEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .serviceId(serviceId)
-                    .correlationId(correlationId);
-
-                bufferClaim.commit();
-
-                return;
-            }
-
-            idleStrategy.idle();
-        }
-        while (--attempts > 0);
-
-        throw new IllegalStateException("Failed to schedule timer");
+        consensusModule.cancelTimer(correlationId);
     }
 
     void addSession(final long clusterSessionId, final int responseStreamId, final String responseChannel)
@@ -371,7 +319,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             loadSnapshot(snapshotEntry.recordingId);
         }
 
-        sendAcknowledgment(ServiceAction.INIT, leadershipTermBeginPosition);
+        consensusModule.sendAcknowledgment(ServiceAction.INIT, leadershipTermBeginPosition, messageIndex, timestampMs);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
@@ -423,7 +371,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
                     idleStrategy.idle(workCount);
                 }
 
-                sendAcknowledgment(ServiceAction.REPLAY, leadershipTermBeginPosition);
+                consensusModule.sendAcknowledgment(
+                    ServiceAction.REPLAY, leadershipTermBeginPosition, messageIndex, timestampMs);
             }
         }
     }
@@ -598,38 +547,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         snapshotTaker.markEnd(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, messageIndex, 0);
     }
 
-    private void sendAcknowledgment(final ServiceAction action, final long logPosition)
-    {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionAckEncoder.BLOCK_LENGTH;
-
-        idleStrategy.reset();
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = consensusModulePublication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                serviceActionAckEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .serviceId(serviceId)
-                    .logPosition(logPosition)
-                    .messageIndex(messageIndex)
-                    .timestamp(timestampMs)
-                    .action(action);
-
-                bufferClaim.commit();
-
-                return;
-            }
-
-            checkResult(result);
-            idleStrategy.idle();
-        }
-        while (--attempts > 0);
-
-        throw new IllegalStateException("Failed to send ACK");
-    }
-
     private void executeAction(final ServiceAction action, final long position)
     {
         if (State.RECOVERING == state)
@@ -641,18 +558,18 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         {
             case SNAPSHOT:
                 onTakeSnapshot(position);
-                sendAcknowledgment(ServiceAction.SNAPSHOT, position);
+                consensusModule.sendAcknowledgment(ServiceAction.SNAPSHOT, position, messageIndex, timestampMs);
                 break;
 
             case SHUTDOWN:
                 onTakeSnapshot(position);
-                sendAcknowledgment(ServiceAction.SHUTDOWN, position);
+                consensusModule.sendAcknowledgment(ServiceAction.SHUTDOWN, position, messageIndex, timestampMs);
                 state = State.CLOSED;
                 ctx.shutdownSignalBarrier().signal();
                 break;
 
             case ABORT:
-                sendAcknowledgment(ServiceAction.ABORT, position);
+                consensusModule.sendAcknowledgment(ServiceAction.ABORT, position, messageIndex, timestampMs);
                 state = State.CLOSED;
                 ctx.shutdownSignalBarrier().signal();
                 break;
@@ -664,16 +581,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         if (Thread.currentThread().isInterrupted())
         {
             throw new AgentTerminationException("Unexpected interrupt during operation");
-        }
-    }
-
-    private static void checkResult(final long result)
-    {
-        if (result == Publication.NOT_CONNECTED ||
-            result == Publication.CLOSED ||
-            result == Publication.MAX_POSITION_EXCEEDED)
-        {
-            throw new IllegalStateException("Unexpected publication state: " + result);
         }
     }
 }

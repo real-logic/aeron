@@ -268,7 +268,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
         try (Subscription subscription = aeron.addSubscription(ctx.replayChannel(), ctx.replayStreamId()))
         {
-
             for (int i = 0; i < replayTermCount; i++)
             {
                 final int counterId = findReplayConsensusCounterId(counters, i);

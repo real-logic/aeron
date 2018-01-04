@@ -76,6 +76,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
 
+    private long currentRecordingId;
     private ReadableCounter consensusPosition;
     private Image logImage;
     private State state = State.INIT;
@@ -111,7 +112,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         checkForSnapshot(counters, counterId);
         checkForReplay(counters, counterId);
 
-        consensusPosition = findConsensusPosition(counters, logSubscription);
+        findConsensusPosition(counters, logSubscription);
 
         logImage = logSubscription.imageAtIndex(0);
         state = State.LEADING;
@@ -138,9 +139,17 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         int workCount = 0;
 
         workCount += logImage.boundedControlledPoll(fragmentAssembler, consensusPosition.get(), FRAGMENT_LIMIT);
-        if (0 == workCount && logImage.isClosed())
+        if (0 == workCount)
         {
-            throw new IllegalStateException("Image closed unexpectedly");
+            if (logImage.isClosed())
+            {
+                throw new IllegalStateException("Image closed unexpectedly");
+            }
+
+            if (!ConsensusPos.isActive(aeron.countersReader(), consensusPosition.counterId(), currentRecordingId))
+            {
+                throw new IllegalStateException("Consensus position is not active");
+            }
         }
 
         return workCount;
@@ -450,7 +459,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         return counterId;
     }
 
-    private ReadableCounter findConsensusPosition(final CountersReader counters, final Subscription logSubscription)
+    private void findConsensusPosition(final CountersReader counters, final Subscription logSubscription)
     {
         idleStrategy.reset();
         while (!logSubscription.isConnected())
@@ -470,7 +479,8 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
             counterId = ConsensusPos.findCounterIdBySession(counters, sessionId);
         }
 
-        return new ReadableCounter(counters, counterId);
+        currentRecordingId = ConsensusPos.getRecordingId(counters, counterId);
+        consensusPosition = new ReadableCounter(counters, counterId);
     }
 
     private void loadSnapshot(final long recordingId)

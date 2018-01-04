@@ -119,17 +119,17 @@ public class ConsensusPos
     /**
      * Find the active counter id for a stream based on the session id.
      *
-     * @param countersReader to search within.
-     * @param sessionId      for the active log.
+     * @param counters  to search within.
+     * @param sessionId for the active log.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static int findCounterIdBySession(final CountersReader countersReader, final int sessionId)
+    public static int findCounterIdBySession(final CountersReader counters, final int sessionId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int i = 0, size = counters.maxCounterId(); i < size; i++)
         {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            if (counters.getCounterState(i) == RECORD_ALLOCATED)
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
@@ -147,17 +147,17 @@ public class ConsensusPos
     /**
      * Find the active counter id for a stream based on the replay step during recovery.
      *
-     * @param countersReader to search within.
-     * @param replayStep     for the active log.
+     * @param counters   to search within.
+     * @param replayStep for the active log.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static int findCounterIdByReplayStep(final CountersReader countersReader, final int replayStep)
+    public static int findCounterIdByReplayStep(final CountersReader counters, final int replayStep)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int i = 0, size = counters.maxCounterId(); i < size; i++)
         {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            if (counters.getCounterState(i) == RECORD_ALLOCATED)
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
@@ -175,15 +175,15 @@ public class ConsensusPos
     /**
      * Get the recording id for the current term.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active consensus position.
+     * @param counters  to search within.
+     * @param counterId for the active consensus position.
      * @return the recording id if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getRecordingId(final CountersReader countersReader, final int counterId)
+    public static long getRecordingId(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
@@ -199,15 +199,15 @@ public class ConsensusPos
     /**
      * Get the beginning log position for a term for a given active counter.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active consensus position.
+     * @param counters  to search within.
+     * @param counterId for the active consensus position.
      * @return the beginning log position if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getBeginningLogPosition(final CountersReader countersReader, final int counterId)
+    public static long getBeginningLogPosition(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
@@ -223,15 +223,15 @@ public class ConsensusPos
     /**
      * Get the beginning message index for the term for a given active counter.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active consensus position.
+     * @param counters  to search within.
+     * @param counterId for the active consensus position.
      * @return the beginning message index if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getBeginningMessageIndex(final CountersReader countersReader, final int counterId)
+    public static long getBeginningMessageIndex(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
@@ -247,15 +247,15 @@ public class ConsensusPos
     /**
      * Get the replay step index for a given counter.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active consensus position.
+     * @param counters  to search within.
+     * @param counterId for the active consensus position.
      * @return the replay step value if found otherwise {@link #NULL_VALUE}.
      */
-    public static int getReplayStep(final CountersReader countersReader, final int counterId)
+    public static int getReplayStep(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
@@ -272,16 +272,16 @@ public class ConsensusPos
      * Get the session id for a active counter. Since a session id can have any value there is no possible
      * null value so an exception will be thrown if the counter is not found.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active consensus position.
+     * @param counters  to search within.
+     * @param counterId for the active consensus position.
      * @return the session id if found other which throw {@link IllegalStateException}
      * @throws IllegalStateException if counter is not found.
      */
-    public static int getSessionId(final CountersReader countersReader, final int counterId)
+    public static int getSessionId(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
@@ -292,5 +292,29 @@ public class ConsensusPos
         }
 
         throw new IllegalStateException("No active counter for id: " + counterId);
+    }
+
+    /**
+     * Is the counter still active and recording?
+     *
+     * @param counters    to search within.
+     * @param counterId   to search for.
+     * @param recordingId to match against.
+     * @return true if the counter is still active otherwise false.
+     */
+    public static boolean isActive(final CountersReader counters, final int counterId, final long recordingId)
+    {
+        final DirectBuffer buffer = counters.metaDataBuffer();
+
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
+        {
+            final int recordOffset = CountersReader.metaDataOffset(counterId);
+
+            return
+                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID &&
+                buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
+        }
+
+        return false;
     }
 }

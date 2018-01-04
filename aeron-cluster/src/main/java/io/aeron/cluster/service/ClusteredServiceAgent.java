@@ -20,7 +20,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.*;
-import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
@@ -32,31 +31,13 @@ import org.agrona.concurrent.status.CountersReader;
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.CommonContext.SPY_PREFIX;
 
-public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, Cluster
+final class ClusteredServiceAgent implements Agent, Cluster
 {
-    /**
-     * Length of the session header that will precede application protocol message.
-     */
-    public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
-
-    private static final int FRAGMENT_LIMIT = 10;
-    private static final int INITIAL_BUFFER_LENGTH = 4096;
-
     private final boolean shouldCloseResources;
     private final Aeron aeron;
     private final ClusteredService service;
     private final Subscription logSubscription;
     private final ConsensusModuleProxy consensusModule;
-    private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(
-        this, INITIAL_BUFFER_LENGTH, true);
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
-    private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
-    private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
-    private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
-    private final ServiceActionRequestDecoder actionRequestDecoder = new ServiceActionRequestDecoder();
-
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
@@ -69,9 +50,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private long currentRecordingId;
     private ReadableCounter consensusPosition;
     private Image logImage;
+    private BoundedLogAdapter logAdapter;
     private State state = State.INIT;
 
-    public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
+    ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
         this.ctx = ctx;
 
@@ -106,6 +88,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
         findConsensusPosition(counters, logSubscription);
 
         logImage = logSubscription.imageAtIndex(0);
+        logAdapter = new BoundedLogAdapter(logImage, consensusPosition, this);
         state = State.LEADING;
     }
 
@@ -127,9 +110,7 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     public int doWork()
     {
-        int workCount = 0;
-
-        workCount += logImage.boundedControlledPoll(fragmentAssembler, consensusPosition.get(), FRAGMENT_LIMIT);
+        final int workCount = logAdapter.poll();
         if (0 == workCount)
         {
             if (logImage.isClosed())
@@ -149,113 +130,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     public String roleName()
     {
         return "clustered-service";
-    }
-
-    @SuppressWarnings("MethodLength")
-    public ControlledFragmentHandler.Action onFragment(
-        final DirectBuffer buffer, final int offset, final int length, final Header header)
-    {
-        messageHeaderDecoder.wrap(buffer, offset);
-
-        switch (messageHeaderDecoder.templateId())
-        {
-            case SessionHeaderDecoder.TEMPLATE_ID:
-            {
-                sessionHeaderDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                ++messageIndex;
-                timestampMs = sessionHeaderDecoder.timestamp();
-
-                service.onSessionMessage(
-                    sessionHeaderDecoder.clusterSessionId(),
-                    sessionHeaderDecoder.correlationId(),
-                    timestampMs,
-                    buffer,
-                    offset + SESSION_HEADER_LENGTH,
-                    length - SESSION_HEADER_LENGTH,
-                    header);
-
-                break;
-            }
-
-            case TimerEventDecoder.TEMPLATE_ID:
-            {
-                timerEventDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                ++messageIndex;
-                timestampMs = timerEventDecoder.timestamp();
-
-                service.onTimerEvent(timerEventDecoder.correlationId(), timestampMs);
-                break;
-            }
-
-            case SessionOpenEventDecoder.TEMPLATE_ID:
-            {
-                openEventDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                final long sessionId = openEventDecoder.clusterSessionId();
-                final ClientSession session = new ClientSession(
-                    sessionId,
-                    aeron.addExclusivePublication(
-                        openEventDecoder.responseChannel(),
-                        openEventDecoder.responseStreamId()),
-                    this);
-
-                ++messageIndex;
-                timestampMs = openEventDecoder.timestamp();
-
-                sessionByIdMap.put(sessionId, session);
-                service.onSessionOpen(session, timestampMs);
-                break;
-            }
-
-            case SessionCloseEventDecoder.TEMPLATE_ID:
-            {
-                closeEventDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                ++messageIndex;
-                timestampMs = closeEventDecoder.timestamp();
-
-                final ClientSession session = sessionByIdMap.remove(closeEventDecoder.clusterSessionId());
-                session.responsePublication().close();
-                service.onSessionClose(session, timestampMs, closeEventDecoder.closeReason());
-                break;
-            }
-
-            case ServiceActionRequestDecoder.TEMPLATE_ID:
-            {
-                actionRequestDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                ++messageIndex;
-                timestampMs = actionRequestDecoder.timestamp();
-
-                final long resultingPosition = leadershipTermBeginPosition + header.position();
-                executeAction(actionRequestDecoder.action(), resultingPosition);
-                break;
-            }
-        }
-
-        return Action.CONTINUE;
     }
 
     public State state()
@@ -286,6 +160,69 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     public void cancelTimer(final long correlationId)
     {
         consensusModule.cancelTimer(correlationId);
+    }
+
+    void onSessionMessage(
+        final long clusterSessionId,
+        final long correlationId,
+        final long timestampMs,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
+    {
+        ++messageIndex;
+        this.timestampMs = timestampMs;
+
+        service.onSessionMessage(
+            clusterSessionId,
+            correlationId,
+            timestampMs,
+            buffer,
+            offset,
+            length,
+            header);
+    }
+
+    void onTimerEvent(final long correlationId, final long timestampMs)
+    {
+        ++messageIndex;
+        this.timestampMs = timestampMs;
+
+        service.onTimerEvent(correlationId, timestampMs);
+    }
+
+    void onSessionOpen(
+        final long clusterSessionId, final long timestampMs, final int responseStreamId, final String responseChannel)
+    {
+        ++messageIndex;
+        this.timestampMs = timestampMs;
+
+        final ClientSession session = new ClientSession(
+            clusterSessionId,
+            aeron.addExclusivePublication(responseChannel, responseStreamId),
+            this);
+
+        sessionByIdMap.put(clusterSessionId, session);
+        service.onSessionOpen(session, timestampMs);
+    }
+
+    void onSessionClose(final long clusterSessionId, final long timestampMs, final CloseReason closeReason)
+    {
+        ++messageIndex;
+        this.timestampMs = timestampMs;
+
+        final ClientSession session = sessionByIdMap.remove(clusterSessionId);
+        session.responsePublication().close();
+        service.onSessionClose(session, timestampMs, closeReason);
+    }
+
+    void onServiceAction(final long resultingPosition, final long timestampMs, final ServiceAction action)
+    {
+        ++messageIndex;
+        this.timestampMs = timestampMs;
+
+        executeAction(action, leadershipTermBeginPosition + resultingPosition);
     }
 
     void addSession(final long clusterSessionId, final int responseStreamId, final String responseChannel)
@@ -331,7 +268,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
         try (Subscription subscription = aeron.addSubscription(ctx.replayChannel(), ctx.replayStreamId()))
         {
-            final ImageControlledFragmentAssembler assembler = new ImageControlledFragmentAssembler(this);
 
             for (int i = 0; i < replayTermCount; i++)
             {
@@ -349,9 +285,10 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
                 final ReadableCounter limit = new ReadableCounter(counters, counterId);
 
+                final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
                 while (true)
                 {
-                    final int workCount = image.boundedControlledPoll(assembler, limit.get(), FRAGMENT_LIMIT);
+                    final int workCount = adapter.poll();
                     if (workCount == 0)
                     {
                         if (image.isClosed())

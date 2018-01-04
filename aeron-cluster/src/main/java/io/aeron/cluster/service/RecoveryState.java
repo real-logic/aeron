@@ -114,16 +114,16 @@ public class RecoveryState
     /**
      * Find the active counter id for a snapshot.
      *
-     * @param countersReader to search within.
+     * @param counters to search within.
      * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
      */
-    public static int findCounterId(final CountersReader countersReader)
+    public static int findCounterId(final CountersReader counters)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int i = 0, size = counters.maxCounterId(); i < size; i++)
         {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            if (counters.getCounterState(i) == RECORD_ALLOCATED)
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
@@ -140,15 +140,15 @@ public class RecoveryState
     /**
      * Get the recording id for the current term.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active consensus position.
+     * @param counters  to search within.
+     * @param counterId for the active consensus position.
      * @return the counter id if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getRecordingId(final CountersReader countersReader, final int counterId)
+    public static long getRecordingId(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
@@ -164,15 +164,15 @@ public class RecoveryState
     /**
      * Get the log position for the snapshot.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active consensus position.
+     * @param counters  to search within.
+     * @param counterId for the active consensus position.
      * @return the log position if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getLogPosition(final CountersReader countersReader, final int counterId)
+    public static long getLogPosition(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
@@ -188,15 +188,15 @@ public class RecoveryState
     /**
      * Get the message index for the snapshot.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active consensus position.
+     * @param counters  to search within.
+     * @param counterId for the active consensus position.
      * @return the message index if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getMessageIndex(final CountersReader countersReader, final int counterId)
+    public static long getMessageIndex(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
@@ -212,15 +212,15 @@ public class RecoveryState
     /**
      * Get the timestamp for when the snapshot was taken.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active consensus position.
+     * @param counters  to search within.
+     * @param counterId for the active consensus position.
      * @return the timestamp if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getTimestamp(final CountersReader countersReader, final int counterId)
+    public static long getTimestamp(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
@@ -236,15 +236,15 @@ public class RecoveryState
     /**
      * Get the count of terms that will be replayed during recovery.
      *
-     * @param countersReader to search within.
-     * @param counterId      for the active consensus position.
+     * @param counters  to search within.
+     * @param counterId for the active consensus position.
      * @return the count of replay terms if found otherwise {@link #NULL_VALUE}.
      */
-    public static int getReplayTermCount(final CountersReader countersReader, final int counterId)
+    public static int getReplayTermCount(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 

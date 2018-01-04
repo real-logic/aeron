@@ -43,9 +43,6 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
     private static final int FRAGMENT_LIMIT = 10;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
 
-    private long leadershipTermBeginPosition = 0;
-    private long messageIndex;
-    private long timestampMs;
     private final boolean shouldCloseResources;
     private final Aeron aeron;
     private final ClusteredService service;
@@ -62,11 +59,13 @@ public class ClusteredServiceAgent implements ControlledFragmentHandler, Agent, 
 
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final IdleStrategy idleStrategy;
-
     private final RecordingLog recordingLog;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
 
+    private long leadershipTermBeginPosition = 0;
+    private long messageIndex;
+    private long timestampMs;
     private long currentRecordingId;
     private ReadableCounter consensusPosition;
     private Image logImage;

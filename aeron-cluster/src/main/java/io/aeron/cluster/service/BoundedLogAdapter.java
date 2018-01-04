@@ -51,6 +51,11 @@ final class BoundedLogAdapter implements ControlledFragmentHandler
         this.agent = agent;
     }
 
+    public Image image()
+    {
+        return image;
+    }
+
     public int poll()
     {
         return image.boundedControlledPoll(fragmentAssembler, limit.get(), FRAGMENT_LIMIT);

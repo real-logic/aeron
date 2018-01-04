@@ -34,23 +34,22 @@ import static io.aeron.CommonContext.SPY_PREFIX;
 final class ClusteredServiceAgent implements Agent, Cluster
 {
     private final boolean shouldCloseResources;
-    private final Aeron aeron;
-    private final ClusteredService service;
-    private final Subscription logSubscription;
-    private final ConsensusModuleProxy consensusModule;
-    private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
-    private final IdleStrategy idleStrategy;
-    private final RecordingLog recordingLog;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
+    private final Aeron aeron;
+    private final Subscription logSubscription;
+    private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
+    private final ClusteredService service;
+    private final ConsensusModuleProxy consensusModule;
+    private final IdleStrategy idleStrategy;
+    private final RecordingLog recordingLog;
 
     private long leadershipTermBeginPosition = 0;
+    private long currentRecordingId;
     private long messageIndex;
     private long timestampMs;
-    private long currentRecordingId;
-    private ReadableCounter consensusPosition;
-    private Image logImage;
     private BoundedLogAdapter logAdapter;
+    private ReadableCounter consensusPosition;
     private State state = State.INIT;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
@@ -87,8 +86,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
         findConsensusPosition(counters, logSubscription);
 
-        logImage = logSubscription.imageAtIndex(0);
-        logAdapter = new BoundedLogAdapter(logImage, consensusPosition, this);
+        logAdapter = new BoundedLogAdapter(logSubscription.imageAtIndex(0), consensusPosition, this);
         state = State.LEADING;
     }
 
@@ -113,7 +111,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final int workCount = logAdapter.poll();
         if (0 == workCount)
         {
-            if (logImage.isClosed())
+            if (logAdapter.image().isClosed())
             {
                 throw new IllegalStateException("Image closed unexpectedly");
             }

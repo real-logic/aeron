@@ -236,8 +236,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->timer_interval_ns = 1 * 1000 * 1000 * 1000L;
     _context->term_buffer_length = 16 * 1024 * 1024;
     _context->ipc_term_buffer_length = 64 * 1024 * 1024;
-    _context->mtu_length = 4096;
-    _context->ipc_mtu_length = 4096;
+    _context->mtu_length = 1440;
+    _context->ipc_mtu_length = 1440;
     _context->ipc_publication_window_length = 0;
     _context->publication_window_length = 0;
     _context->publication_linger_timeout_ns = 5 * 1000 * 1000 * 1000L;

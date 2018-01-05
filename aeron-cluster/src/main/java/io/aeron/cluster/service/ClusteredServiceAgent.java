@@ -86,7 +86,10 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
         findConsensusPosition(counters, logSubscription);
 
-        logAdapter = new BoundedLogAdapter(logSubscription.imageAtIndex(0), consensusPosition, this);
+        final int sessionId = ConsensusPos.getSessionId(counters, consensusPosition.counterId());
+        final Image image = logSubscription.imageBySessionId(sessionId);
+        logAdapter = new BoundedLogAdapter(image, consensusPosition, this);
+
         state = State.LEADING;
     }
 

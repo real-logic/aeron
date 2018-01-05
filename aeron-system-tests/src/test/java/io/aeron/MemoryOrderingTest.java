@@ -101,6 +101,7 @@ public class MemoryOrderingTest
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_BUFFER_LENGTH);
 
@@ -155,6 +156,7 @@ public class MemoryOrderingTest
 
     static class Subscriber implements Runnable, FragmentHandler
     {
+        private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
         private final Subscription subscription;
 
         long previousValue = -1;
@@ -171,7 +173,7 @@ public class MemoryOrderingTest
 
             while (messageNum < NUM_MESSAGES && null == failedMessage)
             {
-                idleStrategy.idle(subscription.poll(this, FRAGMENT_COUNT_LIMIT));
+                idleStrategy.idle(subscription.poll(fragmentAssembler, FRAGMENT_COUNT_LIMIT));
             }
         }
 

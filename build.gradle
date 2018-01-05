@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,7 @@ subprojects {
     }
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:8.5'
+        checkstyle 'com.puppycrawl.tools:checkstyle:8.7'
 
         testCompile 'org.hamcrest:hamcrest-all:1.3'
         testCompile 'junit:junit:4.12'
@@ -128,7 +128,7 @@ subprojects {
 
     checkstyle {
         configFile = new File(rootDir, 'config/checkstyle/checkstyle.xml')
-        toolVersion = '8.5'
+        toolVersion = '8.7'
     }
 
     test {
@@ -140,7 +140,7 @@ subprojects {
 
     javadoc {
         title = '<h1>Aeron Message Transport</h1>'
-        options.bottom = '<i>Copyright &#169; 2014-2017 Real Logic Ltd. All Rights Reserved.</i>'
+        options.bottom = '<i>Copyright &#169; 2014-2018 Real Logic Ltd. All Rights Reserved.</i>'
     }
 
     task testJar(type: Jar, dependsOn: testClasses) {

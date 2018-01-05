@@ -796,7 +796,7 @@ public class PubAndSubTest
     {
         final int termBufferLength = 64 * 1024;
         final int numFragmentsPerMessage = 2;
-        final int mtuLength = 4096;
+        final int mtuLength = context.mtuLength();
         final int frameLength = mtuLength - HEADER_LENGTH;
         final int messageLength = frameLength * numFragmentsPerMessage;
         final int numMessagesToSend = 2;

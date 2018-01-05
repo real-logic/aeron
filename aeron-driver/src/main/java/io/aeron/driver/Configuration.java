@@ -599,9 +599,10 @@ public class Configuration
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
 
     /**
-     * Default length is greater than typical Ethernet MTU so will fragment to save on system calls.
+     * The default is conservative to avoid fragmentation on IPv4 or IPv6 over Ethernet with PPPoE header.
+     * On networks that suffer little congestion then a larger value can be used to reduce syscall costs.
      */
-    public static final int MTU_LENGTH_DEFAULT = 4096;
+    public static final int MTU_LENGTH_DEFAULT = 1440;
 
     /**
      * Length of the MTU to use for sending messages.

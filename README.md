@@ -37,22 +37,6 @@ For the latest version information and changes see the [Change Log](https://gith
 1. [Hacking on Aeron](https://github.com/real-logic/aeron/wiki/Hacking-on-Aeron)
 1. [Performance Testing](https://github.com/real-logic/aeron/wiki/Performance-Testing)
 
-Directory Structure
--------------------
-
-Client API and common classes
-
-    aeron-client
-
-Samples
-
-    aeron-samples
-
-Media Driver
-
-    aeron-driver
-
-
 Build
 -----
 

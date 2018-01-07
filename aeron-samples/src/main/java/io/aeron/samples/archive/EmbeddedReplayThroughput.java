@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -133,7 +134,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     private long makeRecording()
     {
         try (ExclusivePublication publication = aeronArchive.addRecordedExclusivePublication(CHANNEL, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             while (!subscription.isConnected())
             {
@@ -202,29 +203,26 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     {
         final MutableLong foundRecordingId = new MutableLong();
 
+        final RecordingDescriptorConsumer consumer =
+            (controlSessionId,
+            correlationId,
+            recordingId,
+            startTimestamp,
+            stopTimestamp,
+            startPosition,
+            stopPosition,
+            initialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
+            sessionId,
+            streamId,
+            strippedChannel,
+            originalChannel,
+            sourceIdentity) -> foundRecordingId.set(recordingId);
+
         final int recordingsFound = aeronArchive.listRecordingsForUri(
-            0L,
-            10,
-            expectedChannel,
-            expectedStreamId,
-            (
-                controlSessionId,
-                correlationId,
-                recordingId,
-                startTimestamp,
-                stopTimestamp,
-                startPosition,
-                stopPosition,
-                initialTermId,
-                segmentFileLength,
-                termBufferLength,
-                mtuLength,
-                sessionId,
-                streamId,
-                strippedChannel,
-                originalChannel,
-                sourceIdentity
-            ) -> foundRecordingId.set(recordingId));
+            0L, 10, expectedChannel, expectedStreamId, consumer);
 
         if (1 != recordingsFound)
         {

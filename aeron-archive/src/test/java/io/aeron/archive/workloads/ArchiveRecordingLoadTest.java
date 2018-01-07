@@ -128,7 +128,7 @@ public class ArchiveRecordingLoadTest
     public void archive() throws InterruptedException
     {
         try (Subscription recordingEvents = aeron.addSubscription(
-                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+            archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             initRecordingStartIndicator(recordingEvents);
             initRecordingEndIndicator(recordingEvents);

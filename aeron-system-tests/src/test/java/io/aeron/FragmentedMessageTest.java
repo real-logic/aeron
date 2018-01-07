@@ -60,9 +60,9 @@ public class FragmentedMessageTest
             .threadingMode(ThreadingMode.SHARED);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(ctx.aeronDirectoryName()));
-             Publication publication = aeron.addPublication(channel, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(ctx.aeronDirectoryName()));
+            Publication publication = aeron.addPublication(channel, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[ctx.mtuLength() * 4]);
             final int offset = 0;

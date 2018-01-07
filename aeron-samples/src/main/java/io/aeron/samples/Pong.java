@@ -69,8 +69,8 @@ public class Pong
         SigInt.register(() -> running.set(false));
 
         try (Aeron aeron = Aeron.connect(ctx);
-             Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
-             Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID))
+            Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
+            Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID))
         {
             final FragmentAssembler dataHandler = new FragmentAssembler(
                 (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));

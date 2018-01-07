@@ -75,11 +75,10 @@ public class ArchivingMediaDriver implements AutoCloseable
     {
         final MediaDriver driver = MediaDriver.launch(driverCtx);
 
-        final Archive archive = Archive.launch(
-            archiveCtx
-                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-                .errorHandler(driverCtx.errorHandler())
-                .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
+        final Archive archive = Archive.launch(archiveCtx
+            .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+            .errorHandler(driverCtx.errorHandler())
+            .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
 
         return new ArchivingMediaDriver(driver, archive);
     }

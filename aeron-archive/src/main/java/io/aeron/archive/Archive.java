@@ -54,10 +54,9 @@ public class Archive implements AutoCloseable
 
         final Aeron aeron = ctx.aeron();
 
-        final ArchiveConductor conductor =
-            ArchiveThreadingMode.DEDICATED == ctx.threadingMode() ?
-                new DedicatedModeArchiveConductor(aeron, ctx) :
-                new SharedModeArchiveConductor(aeron, ctx);
+        final ArchiveConductor conductor = ArchiveThreadingMode.DEDICATED == ctx.threadingMode() ?
+            new DedicatedModeArchiveConductor(aeron, ctx) :
+            new SharedModeArchiveConductor(aeron, ctx);
 
         if (ArchiveThreadingMode.INVOKER == ctx.threadingMode())
         {

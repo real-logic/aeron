@@ -175,10 +175,14 @@ public class ArchiveTest
     @Test(timeout = 10000)
     public void recordAndReplayExclusivePublication() throws IOException
     {
-        try (Publication controlPublication = publishingClient.addPublication(
-                archive.context().controlChannel(), archive.context().controlStreamId());
-             Subscription recordingEvents = publishingClient.addSubscription(
-                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+        final String controlChannel = archive.context().controlChannel();
+        final int controlStreamId = archive.context().controlStreamId();
+
+        final String recordingChannel = archive.context().recordingEventsChannel();
+        final int recordingStreamId = archive.context().recordingEventsStreamId();
+
+        try (Publication controlPublication = publishingClient.addPublication(controlChannel, controlStreamId);
+            Subscription recordingEvents = publishingClient.addSubscription(recordingChannel, recordingStreamId))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -214,10 +218,14 @@ public class ArchiveTest
     @Test(timeout = 10000)
     public void replayExclusivePublicationWhileRecording()
     {
-        try (Publication controlPublication = publishingClient.addPublication(
-                archive.context().controlChannel(), archive.context().controlStreamId());
-             Subscription recordingEvents = publishingClient.addSubscription(
-                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+        final String controlChannel = archive.context().controlChannel();
+        final int controlStreamId = archive.context().controlStreamId();
+
+        final String recordingChannel = archive.context().recordingEventsChannel();
+        final int recordingStreamId = archive.context().recordingEventsStreamId();
+
+        try (Publication controlPublication = publishingClient.addPublication(controlChannel, controlStreamId);
+            Subscription recordingEvents = publishingClient.addSubscription(recordingChannel, recordingStreamId))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -257,10 +265,14 @@ public class ArchiveTest
     @Test(timeout = 10000)
     public void recordAndReplayRegularPublication() throws IOException
     {
-        try (Publication controlPublication = publishingClient.addPublication(
-                archive.context().controlChannel(), archive.context().controlStreamId());
-             Subscription recordingEvents = publishingClient.addSubscription(
-                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+        final String controlChannel = archive.context().controlChannel();
+        final int controlStreamId = archive.context().controlStreamId();
+
+        final String recordingChannel = archive.context().recordingEventsChannel();
+        final int recordingStreamId = archive.context().recordingEventsStreamId();
+
+        try (Publication controlPublication = publishingClient.addPublication(controlChannel, controlStreamId);
+            Subscription recordingEvents = publishingClient.addSubscription(recordingChannel, recordingStreamId))
         {
             final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -574,24 +586,27 @@ public class ArchiveTest
     {
         remaining = totalDataLength;
         final File archiveDir = archive.context().archiveDir();
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis);
-             RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
-                 catalog,
-                 catalog.recordingSummary(recordingId, new RecordingSummary()),
-                 archiveDir,
-                 AeronArchive.NULL_POSITION,
-                 RecordingFragmentReader.NULL_LENGTH,
-                 null))
-        {
-            this.messageCount = 0;
-            remaining = totalDataLength;
-            while (!archiveDataFileReader.isDone())
-            {
-                archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
-            }
 
-            assertThat(remaining, is(0L));
-            assertThat(this.messageCount, is(messageCount));
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis))
+        {
+            try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
+                catalog,
+                catalog.recordingSummary(recordingId, new RecordingSummary()),
+                archiveDir,
+                AeronArchive.NULL_POSITION,
+                RecordingFragmentReader.NULL_LENGTH,
+                null))
+            {
+                this.messageCount = 0;
+                remaining = totalDataLength;
+                while (!archiveDataFileReader.isDone())
+                {
+                    archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
+                }
+
+                assertThat(remaining, is(0L));
+                assertThat(this.messageCount, is(messageCount));
+            }
         }
     }
 

@@ -17,7 +17,6 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
@@ -174,13 +173,10 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
                 final long controlSessionId = controlSession.sessionId();
+                final AvailableImageHandler handler = (image) ->
+                    startRecordingSession(controlSessionId, correlationId, strippedChannel, originalChannel, image);
 
-                final Subscription subscription = aeron.addSubscription(
-                    channel,
-                    streamId,
-                    (image) -> startRecordingSession(
-                        controlSessionId, correlationId, strippedChannel, originalChannel, image),
-                    null);
+                final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
 
                 subscriptionMap.put(key, subscription);
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
@@ -318,12 +314,10 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long startPosition = recordingSummary.startPosition;
         if (position - startPosition < 0)
         {
-            controlSession.sendResponse(
-                correlationId,
-                ControlResponseCode.ERROR,
-                "requested replay start position(=" + position +
-                    ") is before recording start position(=" + startPosition + ")",
-                controlResponseProxy);
+            final String msg = "requested replay start position(=" + position +
+                ") is before recording start position(=" + startPosition + ")";
+
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
 
             return;
         }
@@ -331,12 +325,10 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long stopPosition = recordingSummary.stopPosition;
         if (stopPosition != NULL_POSITION && position >= stopPosition)
         {
-            controlSession.sendResponse(
-                correlationId,
-                ControlResponseCode.ERROR,
-                "requested replay start position(=" + position +
-                    ") must be before current highest recorded position(=" + stopPosition + ")",
-                controlResponseProxy);
+            final String msg = "requested replay start position(=" + position +
+                ") must be before current highest recorded position(=" + stopPosition + ")";
+
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
 
             return;
         }

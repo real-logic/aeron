@@ -351,13 +351,12 @@ public class PubAndSubTest
 
         context.publicationTermBufferLength(termBufferLength);
 
-        context.sendChannelEndpointSupplier(
-            (udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
-                udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
+        context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
+            udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
         context.receiveChannelEndpointSupplier(
             (udpChannel, dispatcher, statusIndicator, context) -> new DebugReceiveChannelEndpoint(
-                udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
+            udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
 
         launch(channel);
 
@@ -416,13 +415,12 @@ public class PubAndSubTest
 
         context.publicationTermBufferLength(termBufferLength);
 
-        context.sendChannelEndpointSupplier(
-            (udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
-                udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
+        context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
+            udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
         context.receiveChannelEndpointSupplier(
             (udpChannel, dispatcher, statusIndicator, context) -> new DebugReceiveChannelEndpoint(
-                udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
+            udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
 
         launch(channel);
 

@@ -59,9 +59,8 @@ public class IpcPublicationTest
     @Before
     public void setUp()
     {
-        final RingBuffer fromClientCommands =
-            new ManyToOneRingBuffer(new UnsafeBuffer(
-                ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH)));
+        final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new UnsafeBuffer(
+            ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH)));
 
         final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
         final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));

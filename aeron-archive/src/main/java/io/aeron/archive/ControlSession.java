@@ -215,7 +215,7 @@ class ControlSession implements Session
         }
     }
 
-    void sendOkResponse(final long correlationId, final long relevantId,  final ControlResponseProxy proxy)
+    void sendOkResponse(final long correlationId, final long relevantId, final ControlResponseProxy proxy)
     {
         if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, OK, null, controlPublication))
         {
@@ -339,13 +339,12 @@ class ControlSession implements Session
     private void queueResponse(
         final long correlationId, final long relevantId, final ControlResponseCode code, final String message)
     {
-        queuedResponses.offer(
-            () -> controlResponseProxy.sendResponse(
-                controlSessionId,
-                correlationId,
-                relevantId,
-                code,
-                message,
-                controlPublication));
+        queuedResponses.offer(() -> controlResponseProxy.sendResponse(
+            controlSessionId,
+            correlationId,
+            relevantId,
+            code,
+            message,
+            controlPublication));
     }
 }

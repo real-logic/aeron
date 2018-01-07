@@ -55,10 +55,10 @@ public class PublicationUnblockTest
             .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(10));
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron client = Aeron.connect(new Aeron.Context());
-             Publication publicationA = client.addPublication(channel, STREAM_ID);
-             Publication publicationB = client.addPublication(channel, STREAM_ID);
-             Subscription subscription = client.addSubscription(channel, STREAM_ID))
+            Aeron client = Aeron.connect(new Aeron.Context());
+            Publication publicationA = client.addPublication(channel, STREAM_ID);
+            Publication publicationB = client.addPublication(channel, STREAM_ID);
+            Subscription subscription = client.addSubscription(channel, STREAM_ID))
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[ctx.mtuLength()]);
             final int length = 128;

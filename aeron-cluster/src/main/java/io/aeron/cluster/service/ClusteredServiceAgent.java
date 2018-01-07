@@ -228,12 +228,12 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     void addSession(final long clusterSessionId, final int responseStreamId, final String responseChannel)
     {
-        sessionByIdMap.put(
+        final ClientSession session = new ClientSession(
             clusterSessionId,
-            new ClientSession(
-                clusterSessionId,
-                aeron.addExclusivePublication(responseChannel, responseStreamId),
-                ClusteredServiceAgent.this));
+            aeron.addExclusivePublication(responseChannel, responseStreamId),
+            ClusteredServiceAgent.this);
+
+        sessionByIdMap.put(clusterSessionId, session);
     }
 
     private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)

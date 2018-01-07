@@ -65,10 +65,10 @@ public class ExclusivePublicationTest
         final Aeron.Context clientCtx = new Aeron.Context().availableImageHandler(availableImageHandler);
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);
-             Aeron aeron = Aeron.connect(clientCtx);
-             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
-             ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+            Aeron aeron = Aeron.connect(clientCtx);
+            ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
+            ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
         {
             final int expectedNumberOfFragments = 778;
 

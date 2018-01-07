@@ -40,9 +40,9 @@ public class ControlledMessageTest
         ctx.threadingMode(ThreadingMode.SHARED);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect();
-             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+            Aeron aeron = Aeron.connect();
+            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
 

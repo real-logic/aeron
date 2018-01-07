@@ -193,19 +193,18 @@ public class ReceiverTest
             lossReport,
             true);
 
-        final int messagesRead = toConductorQueue.drain(
-            (e) ->
-            {
-                final CreatePublicationImageCmd cmd = (CreatePublicationImageCmd)e;
+        final int messagesRead = toConductorQueue.drain((e) ->
+        {
+            final CreatePublicationImageCmd cmd = (CreatePublicationImageCmd)e;
 
-                assertThat(cmd.channelEndpoint().udpChannel(), is(UDP_CHANNEL));
-                assertThat(cmd.streamId(), is(STREAM_ID));
-                assertThat(cmd.sessionId(), is(SESSION_ID));
-                assertThat(cmd.termId(), is(ACTIVE_TERM_ID));
+            assertThat(cmd.channelEndpoint().udpChannel(), is(UDP_CHANNEL));
+            assertThat(cmd.streamId(), is(STREAM_ID));
+            assertThat(cmd.sessionId(), is(SESSION_ID));
+            assertThat(cmd.termId(), is(ACTIVE_TERM_ID));
 
-                // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
-            });
+            // pass in new term buffer from conductor, which should trigger SM
+            receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
+        });
 
         assertThat(messagesRead, is(1));
 
@@ -245,36 +244,35 @@ public class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress);
 
-        final int commandsRead = toConductorQueue.drain(
-            (e) ->
-            {
-                assertTrue(e instanceof CreatePublicationImageCmd);
-                // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newPublicationImage(
-                    receiveChannelEndpoint,
-                    new PublicationImage(
-                        CORRELATION_ID,
-                        Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
-                        receiveChannelEndpoint,
-                        senderAddress,
-                        SESSION_ID,
-                        STREAM_ID,
-                        INITIAL_TERM_ID,
-                        ACTIVE_TERM_ID,
-                        INITIAL_TERM_OFFSET,
-                        rawLog,
-                        mockFeedbackDelayGenerator,
-                        POSITIONS,
-                        mockHighestReceivedPosition,
-                        mockRebuildPosition,
-                        nanoClock,
-                        epochClock,
-                        mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        congestionControl,
-                        lossReport,
-                        true));
-            });
+        final int commandsRead = toConductorQueue.drain((e) ->
+        {
+            assertTrue(e instanceof CreatePublicationImageCmd);
+            // pass in new term buffer from conductor, which should trigger SM
+            final PublicationImage image = new PublicationImage(
+                CORRELATION_ID,
+                Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                receiveChannelEndpoint,
+                senderAddress,
+                SESSION_ID,
+                STREAM_ID,
+                INITIAL_TERM_ID,
+                ACTIVE_TERM_ID,
+                INITIAL_TERM_OFFSET,
+                rawLog,
+                mockFeedbackDelayGenerator,
+                POSITIONS,
+                mockHighestReceivedPosition,
+                mockRebuildPosition,
+                nanoClock,
+                epochClock,
+                mockSystemCounters,
+                SOURCE_ADDRESS,
+                congestionControl,
+                lossReport,
+                true);
+
+            receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
+        });
 
         assertThat(commandsRead, is(1));
 
@@ -315,36 +313,35 @@ public class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress);
 
-        final int commandsRead = toConductorQueue.drain(
-            (e) ->
-            {
-                assertTrue(e instanceof CreatePublicationImageCmd);
-                // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newPublicationImage(
-                    receiveChannelEndpoint,
-                    new PublicationImage(
-                        CORRELATION_ID,
-                        Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
-                        receiveChannelEndpoint,
-                        senderAddress,
-                        SESSION_ID,
-                        STREAM_ID,
-                        INITIAL_TERM_ID,
-                        ACTIVE_TERM_ID,
-                        INITIAL_TERM_OFFSET,
-                        rawLog,
-                        mockFeedbackDelayGenerator,
-                        POSITIONS,
-                        mockHighestReceivedPosition,
-                        mockRebuildPosition,
-                        nanoClock,
-                        epochClock,
-                        mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        congestionControl,
-                        lossReport,
-                        true));
-            });
+        final int commandsRead = toConductorQueue.drain((e) ->
+        {
+            assertTrue(e instanceof CreatePublicationImageCmd);
+            // pass in new term buffer from conductor, which should trigger SM
+            final PublicationImage image = new PublicationImage(
+                CORRELATION_ID,
+                Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                receiveChannelEndpoint,
+                senderAddress,
+                SESSION_ID,
+                STREAM_ID,
+                INITIAL_TERM_ID,
+                ACTIVE_TERM_ID,
+                INITIAL_TERM_OFFSET,
+                rawLog,
+                mockFeedbackDelayGenerator,
+                POSITIONS,
+                mockHighestReceivedPosition,
+                mockRebuildPosition,
+                nanoClock,
+                epochClock,
+                mockSystemCounters,
+                SOURCE_ADDRESS,
+                congestionControl,
+                lossReport,
+                true);
+
+            receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
+        });
 
         assertThat(commandsRead, is(1));
 
@@ -388,36 +385,35 @@ public class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress);
 
-        final int commandsRead = toConductorQueue.drain(
-            (e) ->
-            {
-                assertTrue(e instanceof CreatePublicationImageCmd);
-                // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newPublicationImage(
-                    receiveChannelEndpoint,
-                    new PublicationImage(
-                        CORRELATION_ID,
-                        Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
-                        receiveChannelEndpoint,
-                        senderAddress,
-                        SESSION_ID,
-                        STREAM_ID,
-                        INITIAL_TERM_ID,
-                        ACTIVE_TERM_ID,
-                        INITIAL_TERM_OFFSET,
-                        rawLog,
-                        mockFeedbackDelayGenerator,
-                        POSITIONS,
-                        mockHighestReceivedPosition,
-                        mockRebuildPosition,
-                        nanoClock,
-                        epochClock,
-                        mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        congestionControl,
-                        lossReport,
-                        true));
-            });
+        final int commandsRead = toConductorQueue.drain((e) ->
+        {
+            assertTrue(e instanceof CreatePublicationImageCmd);
+            // pass in new term buffer from conductor, which should trigger SM
+            final PublicationImage image = new PublicationImage(
+                CORRELATION_ID,
+                Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                receiveChannelEndpoint,
+                senderAddress,
+                SESSION_ID,
+                STREAM_ID,
+                INITIAL_TERM_ID,
+                ACTIVE_TERM_ID,
+                INITIAL_TERM_OFFSET,
+                rawLog,
+                mockFeedbackDelayGenerator,
+                POSITIONS,
+                mockHighestReceivedPosition,
+                mockRebuildPosition,
+                nanoClock,
+                epochClock,
+                mockSystemCounters,
+                SOURCE_ADDRESS,
+                congestionControl,
+                lossReport,
+                true);
+
+            receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
+        });
 
         assertThat(commandsRead, is(1));
 
@@ -465,36 +461,35 @@ public class ReceiverTest
         fillSetupFrame(setupHeader, initialTermOffset);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress);
 
-        final int commandsRead = toConductorQueue.drain(
-            (e) ->
-            {
-                assertTrue(e instanceof CreatePublicationImageCmd);
-                // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newPublicationImage(
-                    receiveChannelEndpoint,
-                    new PublicationImage(
-                        CORRELATION_ID,
-                        Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
-                        receiveChannelEndpoint,
-                        senderAddress,
-                        SESSION_ID,
-                        STREAM_ID,
-                        INITIAL_TERM_ID,
-                        ACTIVE_TERM_ID,
-                        initialTermOffset,
-                        rawLog,
-                        mockFeedbackDelayGenerator,
-                        POSITIONS,
-                        mockHighestReceivedPosition,
-                        mockRebuildPosition,
-                        nanoClock,
-                        epochClock,
-                        mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        congestionControl,
-                        lossReport,
-                        true));
-            });
+        final int commandsRead = toConductorQueue.drain((e) ->
+        {
+            assertTrue(e instanceof CreatePublicationImageCmd);
+            // pass in new term buffer from conductor, which should trigger SM
+            final PublicationImage image = new PublicationImage(
+                CORRELATION_ID,
+                Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                receiveChannelEndpoint,
+                senderAddress,
+                SESSION_ID,
+                STREAM_ID,
+                INITIAL_TERM_ID,
+                ACTIVE_TERM_ID,
+                initialTermOffset,
+                rawLog,
+                mockFeedbackDelayGenerator,
+                POSITIONS,
+                mockHighestReceivedPosition,
+                mockRebuildPosition,
+                nanoClock,
+                epochClock,
+                mockSystemCounters,
+                SOURCE_ADDRESS,
+                congestionControl,
+                lossReport,
+                true);
+
+            receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
+        });
 
         assertThat(commandsRead, is(1));
 

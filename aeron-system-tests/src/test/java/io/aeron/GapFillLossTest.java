@@ -64,18 +64,17 @@ public class GapFillLossTest
         final LossGenerator noLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 
-        ctx.sendChannelEndpointSupplier(
-            (udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
-                udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
+        ctx.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
+            udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
         ctx.receiveChannelEndpointSupplier(
             (udpChannel, dispatcher, statusIndicator, context) -> new DebugReceiveChannelEndpoint(
-                udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
+            udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect();
-             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID))
+            Aeron aeron = Aeron.connect();
+            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID))
         {
             final IdleStrategy idleStrategy = new YieldingIdleStrategy();
 

@@ -44,8 +44,8 @@ public class MultiplePublishersWithFragmentation
             "Publishing to " + CHANNEL + " on stream Id " + STREAM_ID_1 + " and stream Id " + STREAM_ID_2);
 
         try (Aeron aeron = Aeron.connect();
-             Publication publication1 = aeron.addPublication(CHANNEL, STREAM_ID_1);
-             Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
+            Publication publication1 = aeron.addPublication(CHANNEL, STREAM_ID_1);
+            Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
         {
             int j = 1;
             int k = 1;
@@ -81,6 +81,7 @@ public class MultiplePublishersWithFragmentation
                             {
                                 System.out.println(" Offer failed due to unknown reason");
                             }
+
                             offerStatus1 = false;
                         }
                         else

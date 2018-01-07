@@ -54,9 +54,9 @@ public class EmbeddedExclusiveVectoredIpcThroughput
             .sharedIdleStrategy(new NoOpIdleStrategy());
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect();
-             ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+            Aeron aeron = Aeron.connect();
+            ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final Subscriber subscriber = new Subscriber(running, subscription);
             final Thread subscriberThread = new Thread(subscriber);

@@ -50,9 +50,9 @@ public class MaxPositionPublicationTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context();
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);
-             Aeron aeron = Aeron.connect();
-             ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
+            Aeron aeron = Aeron.connect();
+            ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
         {
             long resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
             while (resultingPosition < 0)

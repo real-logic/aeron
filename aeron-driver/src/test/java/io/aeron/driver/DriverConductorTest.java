@@ -105,15 +105,14 @@ public class DriverConductorTest
 
     private DriverConductor driverConductor;
 
-    private final Answer<Void> closeChannelEndpointAnswer =
-        (invocation) ->
-        {
-            final Object args[] = invocation.getArguments();
-            final ReceiveChannelEndpoint channelEndpoint = (ReceiveChannelEndpoint)args[0];
-            channelEndpoint.close();
+    private final Answer<Void> closeChannelEndpointAnswer = (invocation) ->
+    {
+        final Object args[] = invocation.getArguments();
+        final ReceiveChannelEndpoint channelEndpoint = (ReceiveChannelEndpoint)args[0];
+        channelEndpoint.close();
 
-            return null;
-        };
+        return null;
+    };
 
     @Before
     public void setUp()
@@ -192,9 +191,8 @@ public class DriverConductorTest
         final NetworkPublication publication = captor.getValue();
         assertThat(publication.streamId(), is(STREAM_ID_1));
 
-        verify(mockClientProxy)
-            .onPublicationReady(
-                anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
+        verify(mockClientProxy).onPublicationReady(
+            anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
     }
 
     @Test
@@ -231,9 +229,8 @@ public class DriverConductorTest
         assertThat(publication.producerPosition(), is(expectedPosition));
         assertThat(publication.consumerPosition(), is(expectedPosition));
 
-        verify(mockClientProxy)
-            .onPublicationReady(
-                anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(true));
+        verify(mockClientProxy).onPublicationReady(
+            anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(true));
     }
 
     @Test
@@ -695,8 +692,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
-        verify(mockClientProxy)
-            .onUnavailableImage(eq(publicationImage.correlationId()), eq(subId), eq(STREAM_ID_1), anyString());
+        verify(mockClientProxy).onUnavailableImage(
+            eq(publicationImage.correlationId()), eq(subId), eq(STREAM_ID_1), anyString());
     }
 
     @Test
@@ -809,9 +806,8 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         assertNotNull(driverConductor.getSharedIpcPublication(STREAM_ID_1));
-        verify(mockClientProxy)
-            .onPublicationReady(
-                anyLong(), eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
+        verify(mockClientProxy).onPublicationReady(
+            anyLong(), eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
     }
 
     @Test
@@ -1139,12 +1135,11 @@ public class DriverConductorTest
         driverProxy.removePublication(id1);
         driverProxy.removePublication(id2);
 
-        doWorkUntil(
-            () ->
-            {
-                driverProxy.sendClientKeepalive();
-                return nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2;
-            });
+        doWorkUntil(() ->
+        {
+            driverProxy.sendClientKeepalive();
+            return nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2;
+        });
 
         verify(senderProxy, times(1)).closeSendChannelEndpoint(any());
     }
@@ -1157,12 +1152,11 @@ public class DriverConductorTest
         driverProxy.removeSubscription(id1);
         driverProxy.removeSubscription(id2);
 
-        doWorkUntil(
-            () ->
-            {
-                driverProxy.sendClientKeepalive();
-                return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
-            });
+        doWorkUntil(() ->
+        {
+            driverProxy.sendClientKeepalive();
+            return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
+        });
 
         verify(receiverProxy, times(1)).closeReceiveChannelEndpoint(any());
     }
@@ -1218,15 +1212,14 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         verify(mockClientProxy).onCounterReady(eq(registrationId), anyInt());
-        verify(spyCountersManager)
-            .newCounter(
-                eq(COUNTER_TYPE_ID),
-                any(),
-                anyInt(),
-                eq(COUNTER_KEY_LENGTH),
-                any(),
-                anyInt(),
-                eq(COUNTER_LABEL_LENGTH));
+        verify(spyCountersManager).newCounter(
+            eq(COUNTER_TYPE_ID),
+            any(),
+            anyInt(),
+            eq(COUNTER_KEY_LENGTH),
+            any(),
+            anyInt(),
+            eq(COUNTER_LABEL_LENGTH));
     }
 
     @Test
@@ -1296,12 +1289,11 @@ public class DriverConductorTest
 
         verify(mockClientProxy).onCounterReady(eq(registrationId), captor.capture());
 
-        doWorkUntil(
-            () ->
-            {
-                driverProxy.sendClientKeepalive();
-                return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
-            });
+        doWorkUntil(() ->
+        {
+            driverProxy.sendClientKeepalive();
+            return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
+        });
 
         verify(spyCountersManager, never()).free(captor.getValue());
     }

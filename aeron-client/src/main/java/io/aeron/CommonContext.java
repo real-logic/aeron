@@ -20,6 +20,7 @@ import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.errors.ErrorConsumer;
 import org.agrona.concurrent.errors.ErrorLogReader;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
@@ -526,16 +527,10 @@ public class CommonContext implements AutoCloseable
 
         final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
         final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+        final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->
+            formatError(out, dateFormat, count, firstTimestamp, lastTimestamp, ex);
 
-        final int distinctErrorCount = ErrorLogReader.read(
-            buffer,
-            (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                out.format(
-                    "***%n%d observations from %s to %s for:%n %s%n",
-                    observationCount,
-                    dateFormat.format(new Date(firstObservationTimestamp)),
-                    dateFormat.format(new Date(lastObservationTimestamp)),
-                    encodedException));
+        final int distinctErrorCount = ErrorLogReader.read(buffer, errorConsumer);
 
         out.format("%n%d distinct errors observed.%n", distinctErrorCount);
 
@@ -547,5 +542,21 @@ public class CommonContext implements AutoCloseable
      */
     public void close()
     {
+    }
+
+    public static void formatError(
+        final PrintStream out,
+        final SimpleDateFormat dateFormat,
+        final int observationCount,
+        final long firstObservationTimestamp,
+        final long lastObservationTimestamp,
+        final String encodedException)
+    {
+        out.format(
+            "***%n%d observations from %s to %s for:%n %s%n",
+            observationCount,
+            dateFormat.format(new Date(firstObservationTimestamp)),
+            dateFormat.format(new Date(lastObservationTimestamp)),
+            encodedException);
     }
 }

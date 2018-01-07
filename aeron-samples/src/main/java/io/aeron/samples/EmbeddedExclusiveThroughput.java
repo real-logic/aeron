@@ -56,9 +56,9 @@ public class EmbeddedExclusiveThroughput
         final AtomicBoolean running = new AtomicBoolean(true);
 
         try (MediaDriver ignore = MediaDriver.launch();
-             Aeron aeron = Aeron.connect();
-             ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+            Aeron aeron = Aeron.connect();
+            ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             executor.execute(reporter);
             executor.execute(() -> SamplesUtil.subscriberLoop(

@@ -143,9 +143,11 @@ public class ArchiveReplayLoadTest
     @Test(timeout = TEST_DURATION_SEC * 2000)
     public void replay() throws InterruptedException
     {
+        final String channel = archive.context().recordingEventsChannel();
+        final int streamId = archive.context().recordingEventsStreamId();
+
         try (Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
-             Subscription recordingEvents = aeron.addSubscription(
-                 archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+            Subscription recordingEvents = aeron.addSubscription(channel, streamId))
         {
             await(recordingEvents::isConnected);
             aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
@@ -276,58 +278,57 @@ public class ArchiveReplayLoadTest
 
     private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch recordingStopped)
     {
-        final Thread t = new Thread(
-            () ->
+        final Thread t = new Thread(() ->
+        {
+            try
             {
-                try
+                recordedLength = 0;
+                final IdleStrategy idleStrategy = new SleepingMillisIdleStrategy(1);
+                final RecordingEventsPoller poller = new RecordingEventsPoller(recordingEvents);
+
+                while (0 == expectedRecordingLength || recordedLength < expectedRecordingLength)
                 {
-                    recordedLength = 0;
-                    final IdleStrategy idleStrategy = new SleepingMillisIdleStrategy(1);
-                    final RecordingEventsPoller poller = new RecordingEventsPoller(recordingEvents);
+                    idleStrategy.reset();
 
-                    while (0 == expectedRecordingLength || recordedLength < expectedRecordingLength)
+                    while (poller.poll() <= 0 && !poller.isPollComplete())
                     {
-                        idleStrategy.reset();
+                        idleStrategy.idle();
+                    }
 
-                        while (poller.poll() <= 0 && !poller.isPollComplete())
+                    switch (poller.templateId())
+                    {
+                        case RecordingStartedDecoder.TEMPLATE_ID:
                         {
-                            idleStrategy.idle();
+                            final long startPosition = poller.recordingStartPosition();
+                            recordingId = poller.recordingId();
+
+                            if (0L != startPosition)
+                            {
+                                throw new IllegalStateException("expected=0 actual=" + startPosition);
+                            }
+
+                            printf("Recording started %d %n", recordingId);
+                            break;
                         }
 
-                        switch (poller.templateId())
+                        case RecordingProgressDecoder.TEMPLATE_ID:
                         {
-                            case RecordingStartedDecoder.TEMPLATE_ID:
-                            {
-                                final long startPosition = poller.recordingStartPosition();
-                                recordingId = poller.recordingId();
-
-                                if (0L != startPosition)
-                                {
-                                    throw new IllegalStateException("expected=0 actual=" + startPosition);
-                                }
-
-                                printf("Recording started %d %n", recordingId);
-                                break;
-                            }
-
-                            case RecordingProgressDecoder.TEMPLATE_ID:
-                            {
-                                recordedLength = poller.recordingPosition() - poller.recordingStartPosition();
-                                printf("Recording progress %d %n", recordedLength);
-                                break;
-                            }
+                            recordedLength = poller.recordingPosition() - poller.recordingStartPosition();
+                            printf("Recording progress %d %n", recordedLength);
+                            break;
                         }
                     }
                 }
-                catch (final Throwable throwable)
-                {
-                    trackerError = throwable;
-                }
-                finally
-                {
-                    recordingStopped.countDown();
-                }
-            });
+            }
+            catch (final Throwable throwable)
+            {
+                trackerError = throwable;
+            }
+            finally
+            {
+                recordingStopped.countDown();
+            }
+        });
 
         t.setDaemon(true);
         t.start();

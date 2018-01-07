@@ -104,7 +104,7 @@ public class StopStartSecondSubscriberTest
 
         buffer.putInt(0, 1);
 
-        final int numMessagesPerPublication = 1;
+        final int messagesPerPublication = 1;
 
         while (publicationOne.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
@@ -119,8 +119,7 @@ public class StopStartSecondSubscriberTest
         final MutableInteger fragmentsRead1 = new MutableInteger();
         final MutableInteger fragmentsRead2 = new MutableInteger();
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead1.get() >= numMessagesPerPublication &&
-                fragmentsRead2.get() >= numMessagesPerPublication,
+            () -> fragmentsRead1.get() >= messagesPerPublication && fragmentsRead2.get() >= messagesPerPublication,
             (i) ->
             {
                 fragmentsRead1.value += subscriptionOne.poll(fragmentHandlerOne, 10);
@@ -130,8 +129,8 @@ public class StopStartSecondSubscriberTest
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(9900));
 
-        assertEquals(numMessagesPerPublication, subOneCount.get());
-        assertEquals(numMessagesPerPublication, subTwoCount.get());
+        assertEquals(messagesPerPublication, subOneCount.get());
+        assertEquals(messagesPerPublication, subTwoCount.get());
     }
 
     @Test(timeout = 10000)

@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -105,7 +106,7 @@ public class BasicArchiveTest
         final long recordingIdFromCounter;
 
         try (Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-             Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+            Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             offer(publication, messageCount, messagePrefix);
 
@@ -141,7 +142,7 @@ public class BasicArchiveTest
         final long length;
 
         try (Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-             Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+            Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
@@ -164,29 +165,23 @@ public class BasicArchiveTest
     {
         final MutableLong foundRecordingId = new MutableLong();
 
-        final int recordingsFound = aeronArchive.listRecordingsForUri(
-            0L,
-            10,
-            expectedChannel,
-            expectedStreamId,
-            (
-                controlSessionId,
-                correlationId,
-                recordingId,
-                startTimestamp,
-                stopTimestamp,
-                startPosition,
-                stopPosition,
-                initialTermId,
-                segmentFileLength,
-                termBufferLength,
-                mtuLength,
-                sessionId,
-                streamId,
-                strippedChannel,
-                originalChannel,
-                sourceIdentity
-            ) ->
+        final RecordingDescriptorConsumer consumer =
+            (controlSessionId,
+            correlationId,
+            recordingId,
+            startTimestamp,
+            stopTimestamp,
+            startPosition,
+            stopPosition,
+            initialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
+            sessionId,
+            streamId,
+            strippedChannel,
+            originalChannel,
+            sourceIdentity) ->
             {
                 foundRecordingId.set(recordingId);
 
@@ -194,7 +189,14 @@ public class BasicArchiveTest
                 assertEquals(expectedPosition, stopPosition);
                 assertEquals(expectedStreamId, streamId);
                 assertEquals(expectedChannel, originalChannel);
-            });
+            };
+
+        final int recordingsFound = aeronArchive.listRecordingsForUri(
+            0L,
+            10,
+            expectedChannel,
+            expectedStreamId,
+            consumer);
 
         assertThat(recordingsFound, greaterThan(0));
 

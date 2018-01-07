@@ -78,9 +78,9 @@ public class PublishFromArbitraryPositionTest
             .termBufferSparseFile(true);
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);
-             Aeron aeron = Aeron.connect();
-             ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
+            Aeron aeron = Aeron.connect();
+            ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
         {
             while (!publication.isConnected())
             {

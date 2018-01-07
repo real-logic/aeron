@@ -246,13 +246,13 @@ public class AeronStat
             {
                 System.out.format(
                     "Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat%n" +
-                        "\t[delay=<seconds between updates>]%n" +
-                        "filter by optional regex patterns:%n" +
-                        "\t[type=<pattern>]%n" +
-                        "\t[identity=<pattern>]%n" +
-                        "\t[sessionId=<pattern>]%n" +
-                        "\t[streamId=<pattern>]%n" +
-                        "\t[channel=<pattern>]%n");
+                    "\t[delay=<seconds between updates>]%n" +
+                    "filter by optional regex patterns:%n" +
+                    "\t[type=<pattern>]%n" +
+                    "\t[identity=<pattern>]%n" +
+                    "\t[sessionId=<pattern>]%n" +
+                    "\t[streamId=<pattern>]%n" +
+                    "\t[channel=<pattern>]%n");
 
                 System.exit(0);
             }

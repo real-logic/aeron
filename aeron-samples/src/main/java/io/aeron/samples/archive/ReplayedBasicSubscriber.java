@@ -17,6 +17,7 @@ package io.aeron.samples.archive;
 
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.samples.SampleConfiguration;
 import io.aeron.samples.SamplesUtil;
@@ -81,31 +82,31 @@ public class ReplayedBasicSubscriber
     {
         final MutableLong foundRecordingId = new MutableLong();
 
-        final int recordingsFound = archive.listRecordingsForUri(
-            0L,
-            100,
-            expectedChannel,
-            expectedStreamId,
-            (
-                controlSessionId,
-                correlationId,
-                recordingId,
-                startTimestamp,
-                stopTimestamp,
-                startPosition,
-                stopPosition,
-                initialTermId,
-                segmentFileLength,
-                termBufferLength,
-                mtuLength,
-                sessionId,
-                streamId,
-                strippedChannel,
-                originalChannel,
-                sourceIdentity
-            ) -> foundRecordingId.set(recordingId));
+        final RecordingDescriptorConsumer consumer =
+            (controlSessionId,
+            correlationId,
+            recordingId,
+            startTimestamp,
+            stopTimestamp,
+            startPosition,
+            stopPosition,
+            initialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
+            sessionId,
+            streamId,
+            strippedChannel,
+            originalChannel,
+            sourceIdentity) -> foundRecordingId.set(recordingId);
 
-        if (recordingsFound == 0)
+        final long fromRecordingId = 0L;
+        final int recordCount = 100;
+
+        final int foundCount = archive.listRecordingsForUri(
+            fromRecordingId, recordCount, expectedChannel, expectedStreamId, consumer);
+
+        if (foundCount == 0)
         {
             throw new IllegalStateException(
                 "No recordings found for channel=" + expectedChannel + " streamId=" + expectedStreamId);

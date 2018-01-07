@@ -208,18 +208,18 @@ class ClientConductor implements Agent, DriverEventsListener
         final int statusIndicatorId,
         final String logFileName)
     {
-        resourceByRegIdMap.put(
-            correlationId,
-            new ConcurrentPublication(
-                this,
-                stashedChannel,
-                streamId,
-                sessionId,
-                new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-                statusIndicatorId,
-                logBuffers(registrationId, logFileName),
-                registrationId,
-                correlationId));
+        final ConcurrentPublication publication = new ConcurrentPublication(
+            this,
+            stashedChannel,
+            streamId,
+            sessionId,
+            new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+            statusIndicatorId,
+            logBuffers(registrationId, logFileName),
+            registrationId,
+            correlationId);
+
+        resourceByRegIdMap.put(correlationId, publication);
     }
 
     public void onNewExclusivePublication(
@@ -231,18 +231,18 @@ class ClientConductor implements Agent, DriverEventsListener
         final int statusIndicatorId,
         final String logFileName)
     {
-        resourceByRegIdMap.put(
-            correlationId,
-            new ExclusivePublication(
-                this,
-                stashedChannel,
-                streamId,
-                sessionId,
-                new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-                statusIndicatorId,
-                logBuffers(registrationId, logFileName),
-                registrationId,
-                correlationId));
+        final ExclusivePublication publication = new ExclusivePublication(
+            this,
+            stashedChannel,
+            streamId,
+            sessionId,
+            new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+            statusIndicatorId,
+            logBuffers(registrationId, logFileName),
+            registrationId,
+            correlationId);
+
+        resourceByRegIdMap.put(correlationId, publication);
     }
 
     public void onNewSubscription(final long correlationId, final int statusIndicatorId)

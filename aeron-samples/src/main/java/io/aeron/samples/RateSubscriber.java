@@ -60,15 +60,14 @@ public class RateSubscriber
         final FragmentHandler rateReporterHandler = new FragmentAssembler(rateReporterHandler(reporter));
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        SigInt.register(
-            () ->
-            {
-                reporter.halt();
-                running.set(false);
-            });
+        SigInt.register(() ->
+        {
+            reporter.halt();
+            running.set(false);
+        });
 
         try (Aeron aeron = Aeron.connect(ctx);
-             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final Future future = executor.submit(() -> SamplesUtil.subscriberLoop(
                 rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));

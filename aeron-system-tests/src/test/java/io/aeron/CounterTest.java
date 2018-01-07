@@ -86,15 +86,14 @@ public class CounterTest
     {
         launch();
 
-        final Counter counter =
-            clientA.addCounter(
-                COUNTER_TYPE_ID,
-                null,
-                0,
-                0,
-                labelBuffer,
-                0,
-                COUNTER_LABEL.length());
+        final Counter counter = clientA.addCounter(
+            COUNTER_TYPE_ID,
+            null,
+            0,
+            0,
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length());
 
         assertFalse(counter.isClosed());
 
@@ -111,15 +110,14 @@ public class CounterTest
 
         launch();
 
-        final Counter counter =
-            clientA.addCounter(
-                COUNTER_TYPE_ID,
-                null,
-                0,
-                0,
-                labelBuffer,
-                0,
-                COUNTER_LABEL.length());
+        final Counter counter = clientA.addCounter(
+            COUNTER_TYPE_ID,
+            null,
+            0,
+            0,
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length());
 
         while (null == readableCounter)
         {
@@ -139,15 +137,14 @@ public class CounterTest
 
         launch();
 
-        final Counter counter =
-            clientA.addCounter(
-                COUNTER_TYPE_ID,
-                null,
-                0,
-                0,
-                labelBuffer,
-                0,
-                COUNTER_LABEL.length());
+        final Counter counter = clientA.addCounter(
+            COUNTER_TYPE_ID,
+            null,
+            0,
+            0,
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length());
 
         while (null == readableCounter)
         {

@@ -380,14 +380,15 @@ public class NetworkPublication
             isConnected = true;
         }
 
-        senderLimit.setOrdered(
-            flowControl.onStatusMessage(
-                msg,
-                srcAddress,
-                senderLimit.get(),
-                initialTermId,
-                positionBitsToShift,
-                timeNs));
+        final long limit = flowControl.onStatusMessage(
+            msg,
+            srcAddress,
+            senderLimit.get(),
+            initialTermId,
+            positionBitsToShift,
+            timeNs);
+
+        senderLimit.setOrdered(limit);
     }
 
     public void onRttMeasurement(

@@ -50,13 +50,12 @@ public class RecordingWriterTest
     {
         when(position.getWeak()).then((invocation) -> positionLong);
         when(position.get()).then((invocation) -> positionLong);
-        doAnswer(
-            (invocation) ->
-            {
-                positionLong = invocation.getArgument(0);
-                return null;
-            })
-            .when(position).setOrdered(anyLong());
+        doAnswer((invocation) ->
+        {
+            positionLong = invocation.getArgument(0);
+            return null;
+        })
+        .when(position).setOrdered(anyLong());
 
         ctx
             .archiveDir(archiveDir)
@@ -100,7 +99,7 @@ public class RecordingWriterTest
             SOURCE);
 
         try (RecordingWriter writer = Mockito.spy(new RecordingWriter(
-                RECORDING_ID, TERM_BUFFER_LENGTH, ctx, mockArchiveDirFileChannel, position)))
+            RECORDING_ID, TERM_BUFFER_LENGTH, ctx, mockArchiveDirFileChannel, position)))
         {
             when(mockDataFileChannel.transferTo(eq(0L), eq(256L), any(FileChannel.class))).then(
                 (invocation) ->

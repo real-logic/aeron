@@ -819,10 +819,9 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             RETRANSMIT_UNICAST_DELAY_GENERATOR,
             RETRANSMIT_UNICAST_LINGER_GENERATOR);
 
-        final FlowControl flowControl =
-            udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
-                context.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
-                context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
+        final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
+            context.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
+            context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
 
         final NetworkPublication publication = new NetworkPublication(
             registrationId,

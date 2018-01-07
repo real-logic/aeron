@@ -98,8 +98,8 @@ public class EmbeddedPingPong
         final FragmentAssembler dataHandler = new FragmentAssembler(EmbeddedPingPong::pongHandler);
 
         try (Aeron aeron = Aeron.connect(ctx);
-             Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-             Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
+            Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
+            Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
         {
             System.out.println("Waiting for new image from Pong...");
 
@@ -107,7 +107,7 @@ public class EmbeddedPingPong
 
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS +
-                    " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
+                " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
@@ -141,8 +141,8 @@ public class EmbeddedPingPong
             final Aeron.Context ctx = new Aeron.Context().aeronDirectoryName(embeddedDirName);
 
             try (Aeron aeron = Aeron.connect(ctx);
-                 Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
-                 Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID))
+                Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
+                Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID))
             {
                 final FragmentAssembler dataHandler = new FragmentAssembler(
                     (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));

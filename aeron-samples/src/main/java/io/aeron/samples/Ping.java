@@ -78,7 +78,7 @@ public class Ping
                 " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
             try (Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-                 Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
+                Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
             {
                 LATCH.await();
 

@@ -446,6 +446,7 @@ public class Archive implements AutoCloseable
          * Get the channel URI on which the control request subscription will listen.
          *
          * @return the channel URI on which the control request subscription will listen.
+         * @see AeronArchive.Configuration#CONTROL_CHANNEL_PROP_NAME
          */
         public String controlChannel()
         {
@@ -457,6 +458,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlChannel channel URI on which the control request subscription will listen.
          * @return this for a fluent API.
+         * @see AeronArchive.Configuration#CONTROL_CHANNEL_PROP_NAME
          */
         public Context controlChannel(final String controlChannel)
         {
@@ -468,6 +470,7 @@ public class Archive implements AutoCloseable
          * Get the stream id on which the control request subscription will listen.
          *
          * @return the stream id on which the control request subscription will listen.
+         * @see AeronArchive.Configuration#CONTROL_STREAM_ID_PROP_NAME
          */
         public int controlStreamId()
         {
@@ -479,6 +482,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlStreamId stream id on which the control request subscription will listen.
          * @return this for a fluent API.
+         * @see AeronArchive.Configuration#CONTROL_STREAM_ID_PROP_NAME
          */
         public Context controlStreamId(final int controlStreamId)
         {
@@ -490,6 +494,7 @@ public class Archive implements AutoCloseable
          * Get the channel URI on which the recording events publication will publish.
          *
          * @return the channel URI on which the recording events publication will publish.
+         * @see AeronArchive.Configuration#RECORDING_EVENTS_CHANNEL_PROP_NAME
          */
         public String recordingEventsChannel()
         {
@@ -504,6 +509,7 @@ public class Archive implements AutoCloseable
          *
          * @param recordingEventsChannel channel URI on which the recording events publication will publish.
          * @return this for a fluent API.
+         * @see AeronArchive.Configuration#RECORDING_EVENTS_CHANNEL_PROP_NAME
          * @see io.aeron.CommonContext#MDC_CONTROL_PARAM_NAME
          */
         public Context recordingEventsChannel(final String recordingEventsChannel)
@@ -516,6 +522,7 @@ public class Archive implements AutoCloseable
          * Get the stream id on which the recording events publication will publish.
          *
          * @return the stream id on which the recording events publication will publish.
+         * @see AeronArchive.Configuration#RECORDING_EVENTS_STREAM_ID_PROP_NAME
          */
         public int recordingEventsStreamId()
         {
@@ -527,6 +534,7 @@ public class Archive implements AutoCloseable
          *
          * @param recordingEventsStreamId stream id on which the recording events publication will publish.
          * @return this for a fluent API.
+         * @see AeronArchive.Configuration#RECORDING_EVENTS_STREAM_ID_PROP_NAME
          */
         public Context recordingEventsStreamId(final int recordingEventsStreamId)
         {

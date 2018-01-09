@@ -612,11 +612,13 @@ public class PublicationImage
     {
         int workCount = 0;
 
-        // TODO: timestamp is flawed. We should use two timestamps, one for a check and one for precise time.
         if (congestionControl.shouldMeasureRtt(nowNs))
         {
             final long preciseTimeNs = nanoClock.nanoTime();
+
             channelEndpoint.sendRttMeasurement(controlAddress, sessionId, streamId, preciseTimeNs, 0, true);
+            congestionControl.rrtMeasurementSent(preciseTimeNs);
+
             workCount = 1;
         }
 

@@ -127,25 +127,16 @@ public class CubicCongestionControl implements CongestionControl
 
     public boolean shouldMeasureRtt(final long nowNs)
     {
-        boolean result = false;
+        return RTT_MEASUREMENT &&
+            outstandingRttMeasurements < MAX_OUTSTANDING_RTT_MEASUREMENTS &&
+            (nowNs > (lastRttTimestampNs + RTT_MAX_TIMEOUT_NS) ||
+                nowNs > (lastRttTimestampNs + RTT_MEASUREMENT_TIMEOUT_NS));
+    }
 
-        if (RTT_MEASUREMENT && outstandingRttMeasurements < MAX_OUTSTANDING_RTT_MEASUREMENTS)
-        {
-            if (nowNs > (lastRttTimestampNs + RTT_MAX_TIMEOUT_NS))
-            {
-                lastRttTimestampNs = nowNs;
-                outstandingRttMeasurements++;
-                result = true;
-            }
-            else if (nowNs > (lastRttTimestampNs + RTT_MEASUREMENT_TIMEOUT_NS))
-            {
-                lastRttTimestampNs = nowNs;
-                outstandingRttMeasurements++;
-                result = true;
-            }
-        }
-
-        return result;
+    public void rrtMeasurementSent(final long nowNs)
+    {
+        lastRttTimestampNs = nowNs;
+        outstandingRttMeasurements++;
     }
 
     public void onRttMeasurement(final long nowNs, final long rttNs, final InetSocketAddress srcAddress)

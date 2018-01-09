@@ -48,6 +48,10 @@ public class StaticWindowCongestionControl implements CongestionControl
         return false;
     }
 
+    public void rrtMeasurementSent(final long nowNs)
+    {
+    }
+
     public void onRttMeasurement(final long nowNs, final long rttNs, final InetSocketAddress srcAddress)
     {
     }

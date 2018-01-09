@@ -25,7 +25,9 @@ int aeron_counters_manager_init(
     uint8_t *metadata_buffer,
     size_t metadata_length,
     uint8_t *values_buffer,
-    size_t values_length)
+    size_t values_length,
+    aeron_counters_manager_clock_func_t clock_func,
+    int64_t free_to_reuse_timeout_ms)
 {
     int result = -1;
 
@@ -38,11 +40,12 @@ int aeron_counters_manager_init(
         manager->id_high_water_mark = -1;
         manager->free_list_index = -1;
         manager->free_list_length = 2;
+        manager->clock_func = clock_func;
+        manager->free_to_reuse_timeout_ms = free_to_reuse_timeout_ms;
         result = aeron_alloc((void **)&manager->free_list, sizeof(int32_t) * manager->free_list_length);
     }
 
     return result;
-
 }
 
 void aeron_counters_manager_close(aeron_counters_manager_t *manager)
@@ -74,6 +77,7 @@ int32_t aeron_counters_manager_allocate(
         (aeron_counter_metadata_descriptor_t *)(manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
 
     metadata->type_id = type_id;
+    metadata->free_to_reuse_deadline = AERON_COUNTER_NOT_FREE_TO_REUSE;
 
     if (NULL != key && key_length > 0)
     {
@@ -87,19 +91,40 @@ int32_t aeron_counters_manager_allocate(
     return counter_id;
 }
 
-int32_t aeron_counters_manager_next_counter_id(volatile aeron_counters_manager_t *manager)
+void aeron_counters_manager_remove_free_list_index(volatile aeron_counters_manager_t *manager, int index)
 {
-    if (manager->free_list_index < 0)
+    for (int i = index; i < manager->free_list_index; i++)
     {
-        return ++manager->id_high_water_mark;
+        manager->free_list[i] = manager->free_list[i+1];
     }
 
-    int32_t counter_id = manager->free_list[manager->free_list_index--];
-    aeron_counter_value_descriptor_t *value =
-        (aeron_counter_value_descriptor_t *)(manager->values + (counter_id * AERON_COUNTERS_MANAGER_VALUE_LENGTH));
-    AERON_PUT_ORDERED(value->counter_value, 0L);
+    manager->free_list_index--;
+}
 
-    return counter_id;
+int32_t aeron_counters_manager_next_counter_id(volatile aeron_counters_manager_t *manager)
+{
+    int64_t now_ms = manager->clock_func();
+
+    for (int i = 0; i <= manager->free_list_index; i++)
+    {
+        int32_t counter_id = manager->free_list[i];
+        aeron_counter_metadata_descriptor_t *metadata =
+            (aeron_counter_metadata_descriptor_t *)(manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
+
+        int64_t deadline;
+        AERON_GET_VOLATILE(deadline, metadata->free_to_reuse_deadline);
+
+        if (now_ms >= deadline)
+        {
+            aeron_counters_manager_remove_free_list_index(manager, i);
+            aeron_counter_value_descriptor_t *value =
+                (aeron_counter_value_descriptor_t *)(manager->values + (counter_id * AERON_COUNTERS_MANAGER_VALUE_LENGTH));
+            AERON_PUT_ORDERED(value->counter_value, 0L);
+            return counter_id;
+        }
+    }
+
+    return ++manager->id_high_water_mark;
 }
 
 int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int32_t counter_id)
@@ -107,6 +132,7 @@ int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int3
     aeron_counter_metadata_descriptor_t *metadata =
         (aeron_counter_metadata_descriptor_t *)(manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
 
+    metadata->free_to_reuse_deadline = manager->clock_func() + manager->free_to_reuse_timeout_ms;
     AERON_PUT_ORDERED(metadata->state, AERON_COUNTER_RECORD_RECLAIMED);
 
     if ((manager->free_list_index + 1) >= (int32_t)manager->free_list_length)

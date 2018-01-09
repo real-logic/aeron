@@ -37,6 +37,11 @@ static void aeron_error_log_resource_linger(void *clientd, uint8_t *resource)
     aeron_driver_conductor_proxy_on_linger_buffer(conductor->context->conductor_proxy, resource);
 }
 
+static int64_t aeron_driver_conductor_null_epoch_clock()
+{
+    return 0;
+}
+
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context)
 {
     if (aeron_mpsc_rb_init(
@@ -56,7 +61,9 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         context->counters_metadata_buffer,
         context->counters_metadata_buffer_length,
         context->counters_values_buffer,
-        context->counters_values_buffer_length) < 0)
+        context->counters_values_buffer_length,
+        aeron_driver_conductor_null_epoch_clock,
+        0) < 0)
     {
         return -1;
     }

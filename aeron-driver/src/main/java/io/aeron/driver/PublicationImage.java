@@ -115,6 +115,7 @@ public class PublicationImage
     private volatile State state = State.INIT;
 
     private final NanoClock nanoClock;
+    private final NanoClock cachedNanoClock;
     private final InetSocketAddress controlAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final UnsafeBuffer[] termBuffers;
@@ -129,7 +130,7 @@ public class PublicationImage
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
     private final AtomicCounter lossGapFills;
-    private final EpochClock epochClock;
+    private final EpochClock cachedEpochClock;
     private final RawLog rawLog;
 
     public PublicationImage(
@@ -148,7 +149,8 @@ public class PublicationImage
         final Position hwmPosition,
         final Position rebuildPosition,
         final NanoClock nanoClock,
-        final EpochClock epochClock,
+        final NanoClock cachedNanoClock,
+        final EpochClock cachedEpochClock,
         final SystemCounters systemCounters,
         final InetSocketAddress sourceAddress,
         final CongestionControl congestionControl,
@@ -179,8 +181,9 @@ public class PublicationImage
         lossGapFills = systemCounters.get(LOSS_GAP_FILLS);
 
         this.nanoClock = nanoClock;
-        this.epochClock = epochClock;
-        final long nowNs = nanoClock.nanoTime();
+        this.cachedNanoClock = cachedNanoClock;
+        this.cachedEpochClock = cachedEpochClock;
+        final long nowNs = cachedNanoClock.nanoTime();
         timeOfLastStateChangeNs = nowNs;
         lastPacketTimestampNs = nowNs;
 
@@ -304,12 +307,12 @@ public class PublicationImage
 
         if (null != reportEntry)
         {
-            reportEntry.recordObservation(length, epochClock.time());
+            reportEntry.recordObservation(length, cachedEpochClock.time());
         }
         else if (null != lossReport)
         {
             reportEntry = lossReport.createEntry(
-                length, epochClock.time(), sessionId, streamId, channel(), sourceAddress.toString());
+                length, cachedEpochClock.time(), sessionId, streamId, channel(), sourceAddress.toString());
 
             if (null == reportEntry)
             {
@@ -367,7 +370,7 @@ public class PublicationImage
 
     private void state(final State state)
     {
-        timeOfLastStateChangeNs = nanoClock.nanoTime();
+        timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
         this.state = state;
     }
 
@@ -490,7 +493,7 @@ public class PublicationImage
                 TermRebuilder.insert(termBuffer, termOffset, buffer, length);
             }
 
-            lastPacketTimestampNs = nanoClock.nanoTime();
+            lastPacketTimestampNs = cachedNanoClock.nanoTime();
             hwmPosition.proposeMaxOrdered(proposedPosition);
         }
 
@@ -609,9 +612,11 @@ public class PublicationImage
     {
         int workCount = 0;
 
+        // TODO: timestamp is flawed. We should use two timestamps, one for a check and one for precise time.
         if (congestionControl.shouldMeasureRtt(nowNs))
         {
-            channelEndpoint.sendRttMeasurement(controlAddress, sessionId, streamId, nowNs, 0, true);
+            final long preciseTimeNs = nanoClock.nanoTime();
+            channelEndpoint.sendRttMeasurement(controlAddress, sessionId, streamId, preciseTimeNs, 0, true);
             workCount = 1;
         }
 

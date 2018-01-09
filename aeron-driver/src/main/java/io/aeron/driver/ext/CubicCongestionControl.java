@@ -64,8 +64,8 @@ public class CubicCongestionControl implements CongestionControl
 
     private long lastLossTimestampNs;
     private long lastUpdateTimestampNs;
-    private long lastRttTimestamp = 0;
-    private long windowUpdateTimeout;
+    private long lastRttTimestampNs = 0;
+    private long windowUpdateTimeoutNs;
     private long rttInNs;
     private double k;
     private int cwnd;
@@ -98,7 +98,7 @@ public class CubicCongestionControl implements CongestionControl
 
         // determine interval for adjustment based on heuristic of MTU, max window, and/or RTT estimate
         rttInNs = CubicCongestionControlConfiguration.INITIAL_RTT_NS;
-        windowUpdateTimeout = rttInNs;
+        windowUpdateTimeoutNs = rttInNs;
 
         rttIndicator = PerImageIndicator.allocate(
             context.tempBuffer(),
@@ -131,15 +131,15 @@ public class CubicCongestionControl implements CongestionControl
 
         if (RTT_MEASUREMENT && outstandingRttMeasurements < MAX_OUTSTANDING_RTT_MEASUREMENTS)
         {
-            if (nowNs > (lastRttTimestamp + RTT_MAX_TIMEOUT_NS))
+            if (nowNs > (lastRttTimestampNs + RTT_MAX_TIMEOUT_NS))
             {
-                lastRttTimestamp = nowNs;
+                lastRttTimestampNs = nowNs;
                 outstandingRttMeasurements++;
                 result = true;
             }
-            else if (nowNs > (lastRttTimestamp + RTT_MEASUREMENT_TIMEOUT_NS))
+            else if (nowNs > (lastRttTimestampNs + RTT_MEASUREMENT_TIMEOUT_NS))
             {
-                lastRttTimestamp = nowNs;
+                lastRttTimestampNs = nowNs;
                 outstandingRttMeasurements++;
                 result = true;
             }
@@ -151,7 +151,7 @@ public class CubicCongestionControl implements CongestionControl
     public void onRttMeasurement(final long nowNs, final long rttNs, final InetSocketAddress srcAddress)
     {
         outstandingRttMeasurements--;
-        lastRttTimestamp = nowNs;
+        lastRttTimestampNs = nowNs;
         this.rttInNs = rttNs;
         rttIndicator.setOrdered(rttNs);
     }
@@ -175,7 +175,7 @@ public class CubicCongestionControl implements CongestionControl
             lastLossTimestampNs = nowNs;
             forceStatusMessage = true;
         }
-        else if (cwnd < maxCwnd && nowNs > (lastUpdateTimestampNs + windowUpdateTimeout))
+        else if (cwnd < maxCwnd && nowNs > (lastUpdateTimestampNs + windowUpdateTimeoutNs))
         {
             // W_cubic = C(T - K)^3 + w_max
             final double durationSinceDecr = (double)(nowNs - lastLossTimestampNs) / (double)SECOND_IN_NS;

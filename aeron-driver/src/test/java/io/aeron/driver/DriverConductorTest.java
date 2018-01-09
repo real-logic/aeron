@@ -36,7 +36,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
@@ -52,6 +51,7 @@ import java.util.function.LongConsumer;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -147,6 +147,8 @@ public class DriverConductorTest
             .countersManager(spyCountersManager)
             .epochClock(epochClock)
             .nanoClock(nanoClock)
+            .cachedEpochClock(new CachedEpochClock())
+            .cachedNanoClock(new CachedNanoClock())
             .sendChannelEndpointSupplier(Configuration.sendChannelEndpointSupplier())
             .receiveChannelEndpointSupplier(Configuration.receiveChannelEndpointSupplier())
             .congestControlSupplier(Configuration.congestionControlSupplier());
@@ -503,7 +505,6 @@ public class DriverConductorTest
         verify(senderProxy, never()).removeNetworkPublication(eq(publication));
     }
 
-    @Ignore
     @Test
     public void shouldTimeoutPublicationWithNoKeepaliveButNotDrained()
     {
@@ -543,12 +544,14 @@ public class DriverConductorTest
                 publication.updateHasReceivers(timeNs);
             });
 
-        assertThat(publication.state(), is(NetworkPublication.State.DRAINING));
+        assertThat(publication.state(),
+            anyOf(is(NetworkPublication.State.DRAINING), is(NetworkPublication.State.LINGER)));
 
         final long endTime = nanoClock.nanoTime() + PUBLICATION_CONNECTION_TIMEOUT_NS + TIMER_INTERVAL_NS;
         doWorkUntil(() -> nanoClock.nanoTime() >= endTime, publication::updateHasReceivers);
 
-        assertThat(publication.state(), is(NetworkPublication.State.LINGER));
+        assertThat(publication.state(),
+            anyOf(is(NetworkPublication.State.LINGER), is(NetworkPublication.State.CLOSING)));
 
         currentTimeNs += TIMER_INTERVAL_NS + PUBLICATION_LINGER_NS;
         driverConductor.doWork();

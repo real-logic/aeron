@@ -20,6 +20,8 @@ import io.aeron.driver.cmd.NewPublicationCmd;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CachedNanoClock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -112,8 +114,13 @@ public class SenderTest
         when(mockSendChannelEndpoint.send(any())).thenAnswer(saveByteBufferAnswer);
         when(mockSystemCounters.get(any())).thenReturn(mock(AtomicCounter.class));
 
+        final CachedNanoClock mockCachedNanoClock = mock(CachedNanoClock.class);
+        when(mockCachedNanoClock.nanoTime()).thenAnswer((invocation) -> currentTimestamp);
+
         sender = new Sender(
             new MediaDriver.Context()
+                .cachedEpochClock(new CachedEpochClock())
+                .cachedNanoClock(mockCachedNanoClock)
                 .controlTransportPoller(mockTransportPoller)
                 .systemCounters(mockSystemCounters)
                 .senderCommandQueue(senderCommandQueue)

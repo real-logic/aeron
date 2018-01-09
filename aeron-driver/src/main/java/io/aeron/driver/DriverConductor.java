@@ -60,6 +60,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     private long timeOfLastToDriverPositionChangeNs;
     private long timeOfLastTimerCheckNs;
     private long lastConsumerCommandPosition;
+    private long clockUpdateDeadlineNs;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
     private final Context context;
@@ -81,6 +82,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     private final ArrayList<AeronClient> clients = new ArrayList<>();
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
+    private final CachedEpochClock cachedEpochClock;
+    private final CachedNanoClock cachedNanoClock;
     private final CountersManager countersManager;
     private final AtomicCounter clientKeepAlives;
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
@@ -100,6 +103,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         rawLogFactory = ctx.rawLogBuffersFactory();
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
+        cachedEpochClock = ctx.cachedEpochClock();
+        cachedNanoClock = ctx.cachedNanoClock();
         toDriverCommands = ctx.toDriverCommands();
         clientProxy = ctx.clientProxy();
         tempBuffer = ctx.tempBuffer();
@@ -145,6 +150,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         workCount += driverCmdQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
 
         final long nowNs = nanoClock.nanoTime();
+        updateClocks(nowNs);
         workCount += processTimers(nowNs);
 
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
@@ -205,7 +211,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                 sessionId,
                 termBufferLength,
                 senderMtuLength,
-                nanoClock,
+                cachedNanoClock,
                 context,
                 countersManager);
 
@@ -225,7 +231,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                 ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
                 ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
                 nanoClock,
-                epochClock,
+                cachedNanoClock,
+                cachedEpochClock,
                 context.systemCounters(),
                 sourceAddress,
                 congestionControl,
@@ -638,7 +645,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {
-            client.timeOfLastKeepalive(nanoClock.nanoTime());
+            client.timeOfLastKeepalive(cachedNanoClock.nanoTime());
         }
     }
 
@@ -704,7 +711,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     private void heartbeatAndCheckTimers(final long nowNs)
     {
-        final long nowMs = epochClock.time();
+        final long nowMs = cachedEpochClock.time();
         toDriverCommands.consumerHeartbeatTime(nowMs);
 
         checkManagedResources(clients, nowNs, nowMs);
@@ -814,7 +821,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
 
         final RetransmitHandler retransmitHandler = new RetransmitHandler(
-            nanoClock,
+            cachedNanoClock,
             context.systemCounters(),
             RETRANSMIT_UNICAST_DELAY_GENERATOR,
             RETRANSMIT_UNICAST_LINGER_GENERATOR);
@@ -826,7 +833,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final NetworkPublication publication = new NetworkPublication(
             registrationId,
             channelEndpoint,
-            nanoClock,
+            cachedNanoClock,
             newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
             PublisherLimit.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
             senderPosition,
@@ -1126,7 +1133,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         AeronClient client = findClient(clients, clientId);
         if (null == client)
         {
-            client = new AeronClient(clientId, clientLivenessTimeoutNs, nanoClock.nanoTime());
+            client = new AeronClient(clientId, clientLivenessTimeoutNs, cachedNanoClock.nanoTime());
             clients.add(client);
         }
 
@@ -1177,7 +1184,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             PublisherLimit.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
             rawLog,
             publicationUnblockTimeoutNs,
-            nanoClock.nanoTime(),
+            cachedNanoClock.nanoTime(),
             context.systemCounters(),
             isExclusive);
 
@@ -1269,6 +1276,16 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             {
                 linkSpy(publication, subscription);
             }
+        }
+    }
+
+    private void updateClocks(final long nowNs)
+    {
+        if (nowNs >= clockUpdateDeadlineNs)
+        {
+            clockUpdateDeadlineNs = nowNs + 1_000_000;
+            cachedNanoClock.update(nowNs);
+            cachedEpochClock.update(epochClock.time());
         }
     }
 

@@ -404,6 +404,8 @@ public final class MediaDriver implements AutoCloseable
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
+        private CachedEpochClock cachedEpochClock;
+        private CachedNanoClock cachedNanoClock;
         private ThreadingMode threadingMode = Configuration.THREADING_MODE_DEFAULT;
         private ThreadFactory conductorThreadFactory;
         private ThreadFactory senderThreadFactory;
@@ -542,8 +544,6 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * /**
-         *
          * @return covariant return for fluent API.
          * @see CommonContext#countersValuesBuffer(UnsafeBuffer)
          */
@@ -565,8 +565,10 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        /*
+        /**
          * Should an attempt be made to use the high resolution timers for waiting on Windows.
+         *
+         * @return true if an attempt be made to use the high resolution timers for waiting on Windows.
          */
         public boolean useWindowsHighResTimer()
         {
@@ -1008,6 +1010,51 @@ public final class MediaDriver implements AutoCloseable
         public Context nanoClock(final NanoClock clock)
         {
             nanoClock = clock;
+            return this;
+        }
+
+        /**
+         * The {@link CachedEpochClock} as a source of time in milliseconds for wall clock time.
+         *
+         * @return the {@link CachedEpochClock} as a source of time in milliseconds for wall clock time.
+         */
+        public CachedEpochClock cachedEpochClock()
+        {
+            return cachedEpochClock;
+        }
+
+        /**
+         * The {@link CachedEpochClock} as a source of time in milliseconds for wall clock time.
+         *
+         * @param clock to be used.
+         * @return this for a fluent API.
+         */
+        public Context cachedEpochClock(final CachedEpochClock clock)
+        {
+            cachedEpochClock = clock;
+            return this;
+        }
+
+        /**
+         * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration. This is updated
+         * once per duty cycle of the {@link DriverConductor}.
+         *
+         * @return the {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration.
+         */
+        public CachedNanoClock cachedNanoClock()
+        {
+            return cachedNanoClock;
+        }
+
+        /**
+         * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration.
+         *
+         * @param clock to be used.
+         * @return this for a fluent API.
+         */
+        public Context cachedNanoClock(final CachedNanoClock clock)
+        {
+            cachedNanoClock = clock;
             return this;
         }
 
@@ -1801,6 +1848,7 @@ public final class MediaDriver implements AutoCloseable
             }
         }
 
+        @SuppressWarnings("MethodLength")
         private void concludeNullProperties()
         {
             if (null == epochClock)
@@ -1811,6 +1859,16 @@ public final class MediaDriver implements AutoCloseable
             if (null == nanoClock)
             {
                 nanoClock = new SystemNanoClock();
+            }
+
+            if (null == cachedEpochClock)
+            {
+                cachedEpochClock = new CachedEpochClock();
+            }
+
+            if (null == cachedNanoClock)
+            {
+                cachedNanoClock = new CachedNanoClock();
             }
 
             if (null == unicastFlowControlSupplier)

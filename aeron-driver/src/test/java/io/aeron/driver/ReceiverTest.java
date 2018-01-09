@@ -113,6 +113,9 @@ public class ReceiverTest
             .thenReturn(CongestionControlUtil.packOutcome(INITIAL_WINDOW_LENGTH, false));
         when(congestionControl.initialWindowLength()).thenReturn(INITIAL_WINDOW_LENGTH);
 
+        final CachedNanoClock mockCachedNanoClock = mock(CachedNanoClock.class);
+        when(mockCachedNanoClock.nanoTime()).thenAnswer((invocation) -> currentTime);
+
         final DriverConductorProxy driverConductorProxy =
             new DriverConductorProxy(ThreadingMode.DEDICATED, toConductorQueue, mock(AtomicCounter.class));
 
@@ -124,6 +127,7 @@ public class ReceiverTest
             .systemCounters(mockSystemCounters)
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .nanoClock(() -> currentTime)
+            .cachedNanoClock(mockCachedNanoClock)
             .driverConductorProxy(driverConductorProxy);
 
         receiverProxy = new ReceiverProxy(
@@ -185,6 +189,7 @@ public class ReceiverTest
             POSITIONS,
             mockHighestReceivedPosition,
             mockRebuildPosition,
+            nanoClock,
             nanoClock,
             epochClock,
             mockSystemCounters,
@@ -264,6 +269,7 @@ public class ReceiverTest
                 mockHighestReceivedPosition,
                 mockRebuildPosition,
                 nanoClock,
+                nanoClock,
                 epochClock,
                 mockSystemCounters,
                 SOURCE_ADDRESS,
@@ -332,6 +338,7 @@ public class ReceiverTest
                 POSITIONS,
                 mockHighestReceivedPosition,
                 mockRebuildPosition,
+                nanoClock,
                 nanoClock,
                 epochClock,
                 mockSystemCounters,
@@ -404,6 +411,7 @@ public class ReceiverTest
                 POSITIONS,
                 mockHighestReceivedPosition,
                 mockRebuildPosition,
+                nanoClock,
                 nanoClock,
                 epochClock,
                 mockSystemCounters,
@@ -480,6 +488,7 @@ public class ReceiverTest
                 POSITIONS,
                 mockHighestReceivedPosition,
                 mockRebuildPosition,
+                nanoClock,
                 nanoClock,
                 epochClock,
                 mockSystemCounters,

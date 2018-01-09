@@ -77,7 +77,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             }
             else if (null == mode || CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(mode))
             {
-                multiDestination = new DynamicMultiDestination(context.nanoClock(), DESTINATION_TIMEOUT);
+                multiDestination = new DynamicMultiDestination(context.cachedNanoClock(), DESTINATION_TIMEOUT);
             }
         }
 

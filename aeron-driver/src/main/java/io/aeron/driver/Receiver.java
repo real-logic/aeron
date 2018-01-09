@@ -39,7 +39,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     private final DataTransportPoller dataTransportPoller;
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
     private final AtomicCounter totalBytesReceived;
-    private final NanoClock clock;
+    private final NanoClock nanoClock;
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
     private final DriverConductorProxy conductorProxy;
@@ -49,7 +49,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         dataTransportPoller = ctx.dataTransportPoller();
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().get(BYTES_RECEIVED);
-        clock = ctx.nanoClock();
+        nanoClock = ctx.cachedNanoClock();
         conductorProxy = ctx.driverConductorProxy();
     }
 
@@ -68,7 +68,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         int workCount = commandQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
         final int bytesReceived = dataTransportPoller.pollTransports();
 
-        final long nowNs = clock.nanoTime();
+        final long nowNs = nanoClock.nanoTime();
 
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int lastIndex = publicationImages.size() - 1, i = lastIndex; i >= 0; i--)
@@ -104,7 +104,8 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     {
         final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(
             sessionId, streamId, channelEndpoint, periodic, controlAddress);
-        cmd.timeOfStatusMessageNs(clock.nanoTime());
+
+        cmd.timeOfStatusMessageNs(nanoClock.nanoTime());
         pendingSetupMessages.add(cmd);
     }
 

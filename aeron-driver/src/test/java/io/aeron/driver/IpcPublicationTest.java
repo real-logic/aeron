@@ -77,6 +77,8 @@ public class IpcPublicationTest
             .clientProxy(mock(ClientProxy.class))
             .driverCommandQueue(mock(ManyToOneConcurrentArrayQueue.class))
             .epochClock(new SystemEpochClock())
+            .cachedEpochClock(new CachedEpochClock())
+            .cachedNanoClock(new CachedNanoClock())
             .countersManager(countersManager)
             .systemCounters(mock(SystemCounters.class))
             .nanoClock(nanoClock);

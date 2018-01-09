@@ -34,7 +34,7 @@ public class LossDetector implements TermGapScanner.GapHandler
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
 
-    private long expiry = TIMER_INACTIVE;
+    private long deadlineNs = TIMER_INACTIVE;
 
     /**
      * Create a loss detector for a channel.
@@ -56,7 +56,7 @@ public class LossDetector implements TermGapScanner.GapHandler
      * @param termBuffer          to scan
      * @param rebuildPosition     to start scanning from
      * @param hwmPosition         to scan up to
-     * @param now                 time in nanoseconds
+     * @param nowNs               time in nanoseconds
      * @param termLengthMask      used for offset calculation
      * @param positionBitsToShift used for position calculation
      * @param initialTermId       used by the scanner
@@ -66,7 +66,7 @@ public class LossDetector implements TermGapScanner.GapHandler
         final UnsafeBuffer termBuffer,
         final long rebuildPosition,
         final long hwmPosition,
-        final long now,
+        final long nowNs,
         final int termLengthMask,
         final int positionBitsToShift,
         final int initialTermId)
@@ -88,11 +88,11 @@ public class LossDetector implements TermGapScanner.GapHandler
             {
                 if (!scannedGap.matches(activeGap))
                 {
-                    activateGap(now, scannedGap);
+                    activateGap(nowNs, scannedGap);
                     lossFound = true;
                 }
 
-                checkTimerExpiry(now);
+                checkTimerExpiry(nowNs);
             }
         }
 
@@ -138,26 +138,26 @@ public class LossDetector implements TermGapScanner.GapHandler
         return (int)(scanOutcome >>> 32);
     }
 
-    private void activateGap(final long now, final Gap gap)
+    private void activateGap(final long nowNs, final Gap gap)
     {
         activeGap.set(gap.termId, gap.termOffset, gap.length);
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
-            expiry = now;
+            deadlineNs = nowNs;
         }
         else
         {
-            expiry = now + delayGenerator.generateDelay();
+            deadlineNs = nowNs + delayGenerator.generateDelay();
         }
     }
 
-    private void checkTimerExpiry(final long now)
+    private void checkTimerExpiry(final long nowNs)
     {
-        if (now >= expiry)
+        if (nowNs >= deadlineNs)
         {
             lossHandler.onGapDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
-            expiry = now + delayGenerator.generateDelay();
+            deadlineNs = nowNs + delayGenerator.generateDelay();
         }
     }
 

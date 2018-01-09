@@ -133,7 +133,7 @@ public class CubicCongestionControl implements CongestionControl
                 nowNs > (lastRttTimestampNs + RTT_MEASUREMENT_TIMEOUT_NS));
     }
 
-    public void rrtMeasurementSent(final long nowNs)
+    public void onRttMeasurementSent(final long nowNs)
     {
         lastRttTimestampNs = nowNs;
         outstandingRttMeasurements++;

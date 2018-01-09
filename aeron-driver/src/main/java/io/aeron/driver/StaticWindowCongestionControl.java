@@ -48,7 +48,7 @@ public class StaticWindowCongestionControl implements CongestionControl
         return false;
     }
 
-    public void rrtMeasurementSent(final long nowNs)
+    public void onRttMeasurementSent(final long nowNs)
     {
     }
 

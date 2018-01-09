@@ -31,11 +31,11 @@ public interface CongestionControl extends AutoCloseable
     boolean shouldMeasureRtt(long nowNs);
 
     /**
-     * Called to record that a measurement request has been sent.
+     * Called by {@link Receiver} to record that a measurement request has been sent.
      *
      * @param nowNs in nanoseconds.
      */
-    void rrtMeasurementSent(long nowNs);
+    void onRttMeasurementSent(long nowNs);
 
     /**
      * Called by {@link Receiver} on reception of an RTT Measurement.

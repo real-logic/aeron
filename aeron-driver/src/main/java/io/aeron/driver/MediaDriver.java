@@ -36,6 +36,7 @@ import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static io.aeron.CncFileDescriptor.*;
@@ -395,6 +396,7 @@ public final class MediaDriver implements AutoCloseable
         private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
         private long publicationConnectionTimeoutNs = Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS;
         private long statusMessageTimeoutNs = Configuration.statusMessageTimeout();
+        private long counterFreeToReuseTimeoutNs = Configuration.counterFreeToReuseTimeout();
         private int publicationTermBufferLength = Configuration.termBufferLength();
         private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength);
         private int initialWindowLength = Configuration.initialWindowLength();
@@ -770,6 +772,28 @@ public final class MediaDriver implements AutoCloseable
         public Context statusMessageTimeoutNs(final long statusMessageTimeoutNs)
         {
             this.statusMessageTimeoutNs = statusMessageTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Time in nanoseconds after which a freed counter may be reused.
+         *
+         * @return time in nanoseconds after which a freed counter may be reused.
+         */
+        public long counterFreeToReuseTimeoutNs()
+        {
+            return counterFreeToReuseTimeoutNs;
+        }
+
+        /**
+         * Time in nanoseconds after which a freed counter may be reused.
+         *
+         * @param counterFreeToReuseTimeoutNs after which a freed counter may be reused.
+         * @return this for a fluent API.
+         */
+        public Context counterFreeToReuseTimeoutNs(final long counterFreeToReuseTimeoutNs)
+        {
+            this.counterFreeToReuseTimeoutNs = counterFreeToReuseTimeoutNs;
             return this;
         }
 
@@ -1830,15 +1854,27 @@ public final class MediaDriver implements AutoCloseable
                     countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
+                EpochClock counterEpochClock = () -> 0;
+                long freeToReuseTimeoutMs = 0;
+                if (counterFreeToReuseTimeoutNs > 0)
+                {
+                    counterEpochClock = epochClock;
+                    freeToReuseTimeoutMs = Math.min(TimeUnit.NANOSECONDS.toMillis(counterFreeToReuseTimeoutNs), 1);
+                }
+
                 final UnsafeBuffer metaDataBuffer = countersMetaDataBuffer();
                 final UnsafeBuffer valuesBuffer = countersValuesBuffer();
                 if (useConcurrentCountersManager)
                 {
-                    countersManager(new ConcurrentCountersManager(metaDataBuffer, valuesBuffer, US_ASCII));
+                    countersManager(
+                        new ConcurrentCountersManager(
+                        metaDataBuffer, valuesBuffer, US_ASCII, counterEpochClock, freeToReuseTimeoutMs));
                 }
                 else
                 {
-                    countersManager(new CountersManager(metaDataBuffer, valuesBuffer, US_ASCII));
+                    countersManager(
+                        new CountersManager(
+                        metaDataBuffer, valuesBuffer, US_ASCII, counterEpochClock, freeToReuseTimeoutMs));
                 }
             }
 

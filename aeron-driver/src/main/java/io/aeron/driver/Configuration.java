@@ -649,6 +649,16 @@ public class Configuration
         TIMER_INTERVAL_PROP_NAME, DEFAULT_TIMER_INTERVAL_NS);
 
     /**
+     *  Timeout between a counter being freed and being reused.
+     */
+    public static final String COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME = "aeron.counters.free.to.reuse.timeout";
+
+    /**
+     *  Timeout between a counter being freed and being reused
+     */
+    public static final long DEFAULT_COUNTER_FREE_TO_REUSE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
+
+    /**
      * Property name for {@link SendChannelEndpointSupplier}.
      */
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME = "aeron.SendChannelEndpoint.supplier";
@@ -905,6 +915,11 @@ public class Configuration
     static int sendToStatusMessagePollRatio()
     {
         return getInteger(SEND_TO_STATUS_POLL_RATIO_PROP_NAME, SEND_TO_STATUS_POLL_RATIO_DEFAULT);
+    }
+
+    static long counterFreeToReuseTimeout()
+    {
+        return getDurationInNanos(COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME, DEFAULT_COUNTER_FREE_TO_REUSE_TIMEOUT_NS);
     }
 
     /**

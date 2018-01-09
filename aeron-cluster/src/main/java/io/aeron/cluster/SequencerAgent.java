@@ -36,6 +36,7 @@ import org.agrona.concurrent.status.CountersReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterSession.State.*;
@@ -86,7 +87,7 @@ class SequencerAgent implements Agent
         this.aeron = ctx.aeron();
         this.epochClock = ctx.epochClock();
         this.cachedEpochClock = ctx.cachedEpochClock();
-        this.sessionTimeoutMs = ctx.sessionTimeoutNs() / 1000;
+        this.sessionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.sessionTimeoutNs());
         this.egressPublisher = egressPublisher;
         this.messageIndex = ctx.messageIndex();
         this.moduleState = ctx.moduleState();

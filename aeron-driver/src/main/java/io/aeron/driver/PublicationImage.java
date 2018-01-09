@@ -617,7 +617,7 @@ public class PublicationImage
             final long preciseTimeNs = nanoClock.nanoTime();
 
             channelEndpoint.sendRttMeasurement(controlAddress, sessionId, streamId, preciseTimeNs, 0, true);
-            congestionControl.rrtMeasurementSent(preciseTimeNs);
+            congestionControl.onRttMeasurementSent(preciseTimeNs);
 
             workCount = 1;
         }

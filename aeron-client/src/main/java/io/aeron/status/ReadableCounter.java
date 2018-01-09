@@ -99,7 +99,6 @@ public class ReadableCounter implements AutoCloseable
      * Return the state of the counter.
      *
      * @see CountersReader#RECORD_ALLOCATED
-     * @see CountersReader#RECORD_LINGERING
      * @see CountersReader#RECORD_RECLAIMED
      * @see CountersReader#RECORD_UNUSED
      *

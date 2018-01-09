@@ -26,6 +26,8 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import static io.aeron.cluster.ClusterControl.ToggleState.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -105,7 +107,7 @@ public class SequencerAgentTest
 
         verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), eq(startMs));
 
-        final long timeMs = startMs + (ConsensusModule.Configuration.sessionTimeoutNs() / 1000);
+        final long timeMs = startMs + TimeUnit.NANOSECONDS.toMillis(ConsensusModule.Configuration.sessionTimeoutNs());
         clock.update(timeMs);
         agent.doWork();
 

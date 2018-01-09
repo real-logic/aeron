@@ -35,7 +35,8 @@ typedef struct aeron_counter_metadata_descriptor_stct
 {
     int32_t state;
     int32_t type_id;
-    uint8_t key[(2 * AERON_CACHE_LINE_LENGTH) - (2 * sizeof(int32_t))];
+    int64_t free_to_reuse_deadline;
+    uint8_t key[(2 * AERON_CACHE_LINE_LENGTH) - (2 * sizeof(int32_t)) - sizeof(int64_t)];
     int32_t label_length;
     uint8_t label[(6 * AERON_CACHE_LINE_LENGTH) - sizeof(int32_t)];
 }
@@ -49,6 +50,10 @@ aeron_counter_metadata_descriptor_t;
 #define AERON_COUNTER_RECORD_ALLOCATED (1)
 #define AERON_COUNTER_RECORD_RECLAIMED (-1)
 
+#define AERON_COUNTER_NOT_FREE_TO_REUSE (INT64_MAX)
+
+typedef int64_t (*aeron_counters_manager_clock_func_t)();
+
 typedef struct aeron_counters_manager_stct
 {
     uint8_t *values;
@@ -60,17 +65,22 @@ typedef struct aeron_counters_manager_stct
     int32_t *free_list;
     int32_t free_list_index;
     size_t free_list_length;
+
+    aeron_counters_manager_clock_func_t clock_func;
+    int64_t free_to_reuse_timeout_ms;
 }
 aeron_counters_manager_t;
 
-#define AERON_COUNTERS_MANAGER_IS_VALID_BUFFER_SIZES(metadata,values) (metadata >= (values * 2))
+#define AERON_COUNTERS_MANAGER_IS_VALID_BUFFER_SIZES(metadata,values) ((metadata) >= ((values) * 2))
 
 int aeron_counters_manager_init(
     volatile aeron_counters_manager_t *manager,
     uint8_t *metadata_buffer,
     size_t metadata_length,
     uint8_t *values_buffer,
-    size_t values_length);
+    size_t values_length,
+    aeron_counters_manager_clock_func_t clock_func,
+    int64_t free_to_reuse_timeout_ms);
 
 void aeron_counters_manager_close(aeron_counters_manager_t *manager);
 
@@ -95,7 +105,7 @@ void aeron_counters_reader_foreach(
     aeron_counters_reader_foreach_func_t func,
     void *clientd);
 
-#define AERON_COUNTER_OFFSET(id) (id * AERON_COUNTERS_MANAGER_VALUE_LENGTH)
+#define AERON_COUNTER_OFFSET(id) ((id) * AERON_COUNTERS_MANAGER_VALUE_LENGTH)
 
 inline int64_t *aeron_counter_addr(aeron_counters_manager_t *manager, int32_t counter_id)
 {

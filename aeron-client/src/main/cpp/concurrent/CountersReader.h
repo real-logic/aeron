@@ -56,7 +56,10 @@ namespace aeron { namespace concurrent {
  *  +---------------------------------------------------------------+
  *  |                          Type Id                              |
  *  +---------------------------------------------------------------+
- *  |                      120 bytes for key                       ...
+ *  |                   Free-for-reuse Deadline                     |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                      112 bytes for key                       ...
  * ...                                                              |
  *  +-+-------------------------------------------------------------+
  *  |R|                      Label Length                           |
@@ -87,7 +90,8 @@ public:
     {
     }
 
-    void forEach(const on_counters_metadata_t& onCountersMetadata) const
+    template <typename F>
+    void forEach(F&& onCountersMetadata) const
     {
         std::int32_t id = 0;
 
@@ -132,6 +136,13 @@ public:
         return m_metadataBuffer.getInt32Volatile(metadataOffset(id));
     }
 
+    inline std::int64_t getFreeToReuseDeadline(std::int32_t id) const
+    {
+        validateCounterId(id);
+
+        return m_metadataBuffer.getInt64Volatile(metadataOffset(id) + FREE_TO_REUSE_DEADLINE_OFFSET);
+    }
+
     inline std::string getCounterLabel(std::int32_t id) const
     {
         validateCounterId(id);
@@ -171,7 +182,8 @@ public:
     {
         std::int32_t state;
         std::int32_t typeId;
-        std::int8_t key[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (2 * sizeof(std::int32_t))];
+        std::int64_t freeToReuseDeadline;
+        std::int8_t key[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (2 * sizeof(std::int32_t)) - sizeof(std::int64_t)];
         std::int32_t labelLength;
         std::int8_t label[(6 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int32_t)];
     };
@@ -180,10 +192,12 @@ public:
     static const std::int32_t RECORD_UNUSED = 0;
     static const std::int32_t RECORD_ALLOCATED = 1;
     static const std::int32_t RECORD_RECLAIMED = -1;
-    static const std::int32_t RECORD_LINGERING = -2;
+
+    static const std::int64_t NOT_FREE_TO_REUSE = INT64_MAX;
 
     static const util::index_t COUNTER_LENGTH = sizeof(CounterValueDefn);
     static const util::index_t METADATA_LENGTH = sizeof(CounterMetaDataDefn);
+    static const util::index_t FREE_TO_REUSE_DEADLINE_OFFSET = offsetof(CounterMetaDataDefn, freeToReuseDeadline);
     static const util::index_t KEY_OFFSET = offsetof(CounterMetaDataDefn, key);
     static const util::index_t LABEL_LENGTH_OFFSET = offsetof(CounterMetaDataDefn, labelLength);
 

@@ -27,6 +27,8 @@
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include <util/Exceptions.h>
 
+#define FREE_TO_REUSE_TIMEOUT (1000L)
+
 using namespace aeron::concurrent::status;
 using namespace aeron::concurrent;
 using namespace aeron::util;
@@ -37,7 +39,12 @@ public:
     CountersManagerTest() :
         m_countersManager(
             AtomicBuffer(&m_metadataBuffer[0], m_metadataBuffer.size()),
-            AtomicBuffer(&m_valuesBuffer[0], m_valuesBuffer.size()))
+            AtomicBuffer(&m_valuesBuffer[0], m_valuesBuffer.size())),
+        m_countersManagerWithCooldown(
+            AtomicBuffer(&m_metadataBuffer[0], m_metadataBuffer.size()),
+            AtomicBuffer(&m_valuesBuffer[0], m_valuesBuffer.size()),
+            [&]() { return m_currentTimestamp; },
+            FREE_TO_REUSE_TIMEOUT)
     {
     }
 
@@ -48,9 +55,12 @@ public:
     }
 
     static const std::int32_t NUM_COUNTERS = 4;
+
+    std::int64_t m_currentTimestamp = 0;
     std::array<std::uint8_t, NUM_COUNTERS * CountersReader::METADATA_LENGTH> m_metadataBuffer;
     std::array<std::uint8_t, NUM_COUNTERS * CountersReader::COUNTER_LENGTH> m_valuesBuffer;
     CountersManager m_countersManager;
+    CountersManager m_countersManagerWithCooldown;
 };
 
 TEST_F(CountersManagerTest, checkEmpty)
@@ -116,6 +126,41 @@ TEST_F(CountersManagerTest, checkRecycle)
         m_countersManager.free(2);
         ASSERT_EQ(m_countersManager.allocate("newLab2"), 2);
     });
+}
+
+TEST_F(CountersManagerTest, shouldFreeAndReuseCounters)
+{
+    m_countersManager.allocate("abc");
+    std::int32_t def = m_countersManager.allocate("def");
+    m_countersManager.allocate("ghi");
+
+    m_countersManager.free(def);
+
+    ASSERT_EQ(m_countersManager.allocate("the next label"), def);
+}
+
+TEST_F(CountersManagerTest, shouldFreeAndNotReuseCountersThatHaveCooldown)
+{
+    m_countersManagerWithCooldown.allocate("abc");
+    std::int32_t def = m_countersManagerWithCooldown.allocate("def");
+    std::int32_t ghi = m_countersManagerWithCooldown.allocate("ghi");
+
+    m_countersManagerWithCooldown.free(def);
+
+    m_currentTimestamp += FREE_TO_REUSE_TIMEOUT - 1;
+    ASSERT_GT(m_countersManagerWithCooldown.allocate("the next label"), ghi);
+}
+
+TEST_F(CountersManagerTest, shouldFreeAndReuseCountersAfterCooldown)
+{
+    m_countersManagerWithCooldown.allocate("abc");
+    std::int32_t def = m_countersManagerWithCooldown.allocate("def");
+    m_countersManagerWithCooldown.allocate("ghi");
+
+    m_countersManagerWithCooldown.free(def);
+
+    m_currentTimestamp += FREE_TO_REUSE_TIMEOUT;
+    ASSERT_EQ(m_countersManagerWithCooldown.allocate("the next label"), def);
 }
 
 TEST_F(CountersManagerTest, shouldMapPosition)

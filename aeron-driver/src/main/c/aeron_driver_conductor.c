@@ -56,14 +56,24 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         return -1;
     }
 
+    int64_t free_to_reuse_timeout_ms = 0;
+    aeron_clock_func_t clock_func = aeron_driver_conductor_null_epoch_clock;
+
+    if (context->counter_free_to_reuse_ns > 0)
+    {
+        free_to_reuse_timeout_ms = context->counter_free_to_reuse_ns / (1000 * 1000L);
+        free_to_reuse_timeout_ms = (free_to_reuse_timeout_ms <= 0) ? 1 : free_to_reuse_timeout_ms;
+        clock_func = aeron_epochclock;
+    }
+
     if (aeron_counters_manager_init(
         &conductor->counters_manager,
         context->counters_metadata_buffer,
         context->counters_metadata_buffer_length,
         context->counters_values_buffer,
         context->counters_values_buffer_length,
-        aeron_driver_conductor_null_epoch_clock,
-        0) < 0)
+        clock_func,
+        free_to_reuse_timeout_ms) < 0)
     {
         return -1;
     }

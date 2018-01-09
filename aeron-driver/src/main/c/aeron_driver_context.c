@@ -43,6 +43,7 @@
 #include "concurrent/aeron_mpsc_rb.h"
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "aeron_agent.h"
+#include "concurrent/aeron_counters_manager.h"
 
 inline static const char *tmp_dir()
 {
@@ -230,7 +231,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->to_driver_buffer_length = 1024 * 1024 + AERON_RB_TRAILER_LENGTH;
     _context->to_clients_buffer_length = 1024 * 1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH;
     _context->counters_values_buffer_length = 1024 * 1024;
-    _context->counters_metadata_buffer_length = _context->counters_values_buffer_length * 2;
+    _context->counters_metadata_buffer_length =
+        _context->counters_values_buffer_length *
+        (AERON_COUNTERS_MANAGER_METADATA_LENGTH / AERON_COUNTERS_MANAGER_VALUE_LENGTH);
     _context->error_buffer_length = 1024 * 1024;
     _context->client_liveness_timeout_ns = 5 * 1000 * 1000 * 1000L;
     _context->timer_interval_ns = 1 * 1000 * 1000 * 1000L;
@@ -252,6 +255,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->file_page_size = 4 * 1024;
     _context->publication_unblock_timeout_ns = 10 * 1000 * 1000 * 1000L;
     _context->publication_connection_timeout_ns = 5 * 1000 * 1000 * 1000L;
+    _context->counter_free_to_reuse_ns = 1 * 1000 * 1000 * 1000L;
 
     /* set from env */
     char *value = NULL;
@@ -350,7 +354,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             1024,
             INT32_MAX);
 
-    _context->counters_metadata_buffer_length = _context->counters_values_buffer_length * 2;
+    _context->counters_metadata_buffer_length =
+        _context->counters_values_buffer_length *
+        (AERON_COUNTERS_MANAGER_METADATA_LENGTH / AERON_COUNTERS_MANAGER_VALUE_LENGTH);
 
     _context->error_buffer_length =
         aeron_config_parse_uint64(
@@ -497,6 +503,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             getenv(AERON_TIMER_INTERVAL_ENV_VAR),
             _context->timer_interval_ns,
             1000,
+            INT64_MAX);
+
+    _context->counter_free_to_reuse_ns =
+        aeron_config_parse_uint64(
+            getenv(AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_ENV_VAR),
+            _context->counter_free_to_reuse_ns,
+            0,
             INT64_MAX);
 
     _context->to_driver_buffer = NULL;

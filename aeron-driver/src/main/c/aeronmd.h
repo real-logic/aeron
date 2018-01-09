@@ -227,6 +227,11 @@ typedef struct aeron_driver_stct aeron_driver_t;
  */
 #define AERON_AGENT_ON_START_FUNCTION_ENV_VAR "AERON_AGENT_ON_START_FUNCTION"
 
+/**
+ * Timeout for freed counters before they can be reused.
+ */
+#define AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_ENV_VAR "AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT"
+
 #define AERON_IPC_CHANNEL "aeron:ipc"
 #define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
 #define AERON_SPY_PREFIX "aeron-spy:"

@@ -138,6 +138,11 @@ public class CommonContext implements AutoCloseable
     public static final String MDC_CONTROL_MODE_PARAM_NAME = "control-mode";
 
     /**
+     * Key for the session id.
+     */
+    public static final String SESSION_ID_PARAM_NAME = "session-id";
+
+    /**
      * Valid value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when manual control is desired.
      */
     public static final String MDC_CONTROL_MODE_MANUAL = "manual";

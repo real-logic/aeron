@@ -314,6 +314,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         {
             publication = findPublication(networkPublications, streamId, channelEndpoint);
         }
+        else if (params.hasSessionId)
+        {
+            confirmNetworkSessionIdNotInUse(networkPublications, params.sessionId);
+        }
 
         if (null == publication)
         {
@@ -322,7 +326,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
         else
         {
-            confirmMatch(channelUri, params, publication.rawLog());
+            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId());
         }
 
         publicationLinks.add(new PublicationLink(correlationId, publication, getOrAddClient(clientId)));
@@ -805,7 +809,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final PublicationParams params,
         final boolean isExclusive)
     {
-        final int sessionId = nextSessionId++;
+        final int sessionId = params.hasSessionId ? params.sessionId : nextSessionId++;
         final UnsafeBufferPosition senderPosition = SenderPos.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
         final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
@@ -1144,14 +1148,17 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final long correlationId, final int streamId, final String channel, final boolean isExclusive)
     {
         IpcPublication publication = null;
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+        final PublicationParams params = getPublicationParams(context, channelUri, isExclusive, true);
 
         if (!isExclusive)
         {
             publication = findSharedIpcPublication(ipcPublications, streamId);
         }
-
-        final ChannelUri channelUri = ChannelUri.parse(channel);
-        final PublicationParams params = getPublicationParams(context, channelUri, isExclusive, true);
+        else if (params.hasSessionId)
+        {
+            confirmIpcSessionIdNotInUse(ipcPublications, params.sessionId);
+        }
 
         if (null == publication)
         {
@@ -1160,7 +1167,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
         else
         {
-            confirmMatch(channelUri, params, publication.rawLog());
+            confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId());
         }
 
         return publication;
@@ -1173,7 +1180,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final boolean isExclusive,
         final PublicationParams params)
     {
-        final int sessionId = nextSessionId++;
+        final int sessionId = params.hasSessionId ? params.sessionId : nextSessionId++;
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
         final RawLog rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
 
@@ -1247,6 +1254,38 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
 
         return ipcPublication;
+    }
+
+    private static void confirmIpcSessionIdNotInUse(
+        final ArrayList<IpcPublication> ipcPublications, final long sessionId)
+    {
+        for (int i = 0, size = ipcPublications.size(); i < size; i++)
+        {
+            final IpcPublication publication = ipcPublications.get(i);
+            if (publication.sessionId() == sessionId &&
+                publication.isExclusive() &&
+                IpcPublication.State.ACTIVE == publication.state())
+            {
+                throw new IllegalStateException(
+                    "Existing exclusive IPC publication has same session id: id=" + sessionId);
+            }
+        }
+    }
+
+    private static void confirmNetworkSessionIdNotInUse(
+        final ArrayList<NetworkPublication> networkPublications, final long sessionId)
+    {
+        for (int i = 0, size = networkPublications.size(); i < size; i++)
+        {
+            final NetworkPublication publication = networkPublications.get(i);
+            if (publication.sessionId() == sessionId &&
+                publication.isExclusive() &&
+                NetworkPublication.State.ACTIVE == publication.state())
+            {
+                throw new IllegalStateException(
+                    "Existing exclusive network publication has same session id: id=" + sessionId);
+            }
+        }
     }
 
     private <T extends DriverManagedResource> void checkManagedResources(

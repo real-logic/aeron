@@ -30,7 +30,9 @@ class PublicationParams
     int initialTermId = 0;
     int termId = 0;
     int termOffset = 0;
+    int sessionId = 0;
     boolean isReplay = false;
+    boolean hasSessionId = false;
 
     static int getTermBufferLength(final ChannelUri channelUri, final int defaultTermLength)
     {
@@ -73,7 +75,7 @@ class PublicationParams
     }
 
     static void confirmMatch(
-        final ChannelUri uri, final PublicationParams params, final RawLog rawLog)
+        final ChannelUri uri, final PublicationParams params, final RawLog rawLog, final int existingSessionId)
     {
         final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
         if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
@@ -86,6 +88,12 @@ class PublicationParams
         {
             throw new IllegalStateException("Existing publication has different term length: existing=" +
                 rawLog.termLength() + " requested=" + params.termLength);
+        }
+
+        if (uri.containsKey(SESSION_ID_PARAM_NAME) && params.sessionId != existingSessionId)
+        {
+            throw new IllegalStateException("Existing publication has different session id: existing=" +
+                existingSessionId + " requested=" + params.sessionId);
         }
     }
 
@@ -102,6 +110,13 @@ class PublicationParams
             channelUri, isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength());
 
         params.mtuLength = getMtuLength(channelUri, isIpc ? context.ipcMtuLength() : context.mtuLength());
+
+        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+        if (null != sessionIdStr)
+        {
+            params.sessionId = Integer.parseInt(sessionIdStr);
+            params.hasSessionId = true;
+        }
 
         if (isExclusive)
         {

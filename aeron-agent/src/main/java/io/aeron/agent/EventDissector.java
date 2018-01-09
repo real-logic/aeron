@@ -265,7 +265,7 @@ public class EventDissector
 
         builder.append(String.format(
             "[%1$f] %2$s [%3$d/%4$d]",
-            (double)timestamp / 1000000000.0, code.name(), captureLength, bufferLength));
+            ((double)timestamp) / 1_000_000_000.0, code.name(), captureLength, bufferLength));
 
         return relativeOffset;
     }

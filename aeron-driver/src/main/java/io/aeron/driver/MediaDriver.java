@@ -1866,14 +1866,12 @@ public final class MediaDriver implements AutoCloseable
                 final UnsafeBuffer valuesBuffer = countersValuesBuffer();
                 if (useConcurrentCountersManager)
                 {
-                    countersManager(
-                        new ConcurrentCountersManager(
+                    countersManager(new ConcurrentCountersManager(
                         metaDataBuffer, valuesBuffer, US_ASCII, counterEpochClock, freeToReuseTimeoutMs));
                 }
                 else
                 {
-                    countersManager(
-                        new CountersManager(
+                    countersManager(new CountersManager(
                         metaDataBuffer, valuesBuffer, US_ASCII, counterEpochClock, freeToReuseTimeoutMs));
                 }
             }

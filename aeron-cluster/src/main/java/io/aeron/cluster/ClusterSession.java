@@ -17,10 +17,11 @@ package io.aeron.cluster;
 
 import io.aeron.Publication;
 import org.agrona.CloseHelper;
+import org.agrona.collections.ArrayUtil;
 
 class ClusterSession implements AutoCloseable
 {
-    public static final byte[] NULL_PRINCIPLE_DATA = new byte[0];
+    public static final byte[] NULL_PRINCIPLE_DATA = ArrayUtil.EMPTY_BYTE_ARRAY;
 
     enum State
     {

@@ -15,12 +15,14 @@
  */
 package io.aeron.cluster;
 
+import org.agrona.collections.ArrayUtil;
+
 /**
  * Default Authenticator that authenticates all connection requests immediately.
  */
 public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
 {
-    private static final byte[] NULL_PRINCIPLE_DATA = new byte[0];
+    private static final byte[] NULL_PRINCIPLE_DATA = ArrayUtil.EMPTY_BYTE_ARRAY;
 
     public Authenticator newAuthenticator(final ConsensusModule.Context context)
     {

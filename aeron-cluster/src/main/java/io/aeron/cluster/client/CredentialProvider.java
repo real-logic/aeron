@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster.client;
 
+import org.agrona.collections.ArrayUtil;
+
 /**
  * Provider of credentials for authentication with a cluster leader.
  *
@@ -22,7 +24,7 @@ package io.aeron.cluster.client;
  */
 public class CredentialProvider
 {
-    public static final byte[] NULL_CREDENTIALS = new byte[0];
+    public static final byte[] NULL_CREDENTIALS = ArrayUtil.EMPTY_BYTE_ARRAY;
 
     /**
      * Provide credentials to be included in Session Connect message to the cluster.

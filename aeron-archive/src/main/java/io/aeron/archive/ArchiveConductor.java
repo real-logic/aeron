@@ -46,7 +46,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
-    private final Map<String, Subscription> subscriptionMap = new HashMap<>();
+    private final Map<String, Subscription> recordingSubscriptionMap = new HashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final RecordingSummary recordingSummary = new RecordingSummary();
@@ -116,8 +116,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     protected final void preSessionsClose()
     {
         closeSessionWorkers();
-        subscriptionMap.values().forEach(Subscription::close);
-        subscriptionMap.clear();
+        recordingSubscriptionMap.values().forEach(Subscription::close);
+        recordingSubscriptionMap.clear();
     }
 
     protected abstract void closeSessionWorkers();
@@ -170,7 +170,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         {
             final String strippedChannel = strippedChannelBuilder(originalChannel).build();
             final String key = makeKey(streamId, strippedChannel);
-            final Subscription oldSubscription = subscriptionMap.get(key);
+            final Subscription oldSubscription = recordingSubscriptionMap.get(key);
 
             if (oldSubscription == null)
             {
@@ -183,7 +183,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
                 final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
 
-                subscriptionMap.put(key, subscription);
+                recordingSubscriptionMap.put(key, subscription);
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
             }
             else
@@ -211,7 +211,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         try
         {
             final String key = makeKey(streamId, strippedChannelBuilder(channel).build());
-            final Subscription oldSubscription = subscriptionMap.remove(key);
+            final Subscription oldSubscription = recordingSubscriptionMap.remove(key);
 
             if (oldSubscription != null)
             {

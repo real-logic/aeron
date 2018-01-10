@@ -58,6 +58,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final EpochClock epochClock;
     private final File archiveDir;
     private final FileChannel archiveDirChannel;
+    private final Subscription controlSubscription;
 
     private final Catalog catalog;
     private final RecordingEventsProxy recordingEventsProxy;
@@ -87,7 +88,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
 
-        aeron.addSubscription(ctx.controlChannel(), ctx.controlStreamId(), this, null);
+        controlSubscription = aeron.addSubscription(
+            ctx.controlChannel(), ctx.controlStreamId(), this, null);
 
         recordingEventsProxy = new RecordingEventsProxy(
             ctx.idleStrategy(),
@@ -122,10 +124,13 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
     protected void postSessionsClose()
     {
+        if (!ctx.ownsAeronClient())
+        {
+            CloseHelper.close(controlSubscription);
+        }
+
         CloseHelper.quietClose(catalog);
         CloseHelper.quietClose(archiveDirChannel);
-        CloseHelper.quietClose(aeronAgentInvoker);
-        CloseHelper.quietClose(driverAgentInvoker);
     }
 
     protected int preWork()

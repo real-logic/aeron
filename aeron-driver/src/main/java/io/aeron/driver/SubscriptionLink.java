@@ -152,11 +152,11 @@ class NetworkSubscriptionLink extends SubscriptionLink
         final String channelUri,
         final AeronClient aeronClient,
         final long clientLivenessTimeoutNs,
-        final boolean isReliable)
+        final SubscriptionParams params)
     {
         super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
 
-        this.isReliable = isReliable;
+        this.isReliable = params.isReliable;
         this.channelEndpoint = channelEndpoint;
     }
 

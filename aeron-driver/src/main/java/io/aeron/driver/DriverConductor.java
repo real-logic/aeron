@@ -38,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static io.aeron.CommonContext.RELIABLE_STREAM_PARAM_NAME;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.PublicationParams.*;
@@ -547,10 +546,9 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final String reliableParam = udpChannel.channelUri().get(RELIABLE_STREAM_PARAM_NAME, "true");
-        final boolean isReliable = !"false".equals(reliableParam);
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri());
 
-        checkForClashingSubscription(isReliable, udpChannel, streamId);
+        checkForClashingSubscription(params, udpChannel, streamId);
 
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(udpChannel);
         final int refCount = channelEndpoint.incRefToStream(streamId);
@@ -561,7 +559,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscription = new NetworkSubscriptionLink(
-            registrationId, channelEndpoint, streamId, channel, client, clientLivenessTimeoutNs, isReliable);
+            registrationId, channelEndpoint, streamId, channel, client, clientLivenessTimeoutNs, params);
 
         subscriptionLinks.add(subscription);
         clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId());
@@ -984,7 +982,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         return channelEndpoint;
     }
 
-    private void checkForClashingSubscription(final boolean isReliable, final UdpChannel udpChannel, final int streamId)
+    private void checkForClashingSubscription(
+        final SubscriptionParams params, final UdpChannel udpChannel, final int streamId)
     {
         final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(
             udpChannel.canonicalForm());
@@ -994,10 +993,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             for (int i = 0, size = existingLinks.size(); i < size; i++)
             {
                 final SubscriptionLink subscription = existingLinks.get(i);
-                if (subscription.matches(channelEndpoint, streamId) && isReliable != subscription.isReliable())
+                if (subscription.matches(channelEndpoint, streamId) && params.isReliable != subscription.isReliable())
                 {
                     throw new IllegalStateException(
-                        "Option conflicts with existing subscriptions: reliable=" + isReliable);
+                        "Option conflicts with existing subscriptions: reliable=" + params.isReliable);
                 }
             }
         }

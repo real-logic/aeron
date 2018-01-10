@@ -21,6 +21,7 @@
 #include <deque>
 #include <memory>
 #include <iostream>
+#include <algorithm>
 
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>
@@ -147,7 +148,7 @@ private:
     std::deque<std::int32_t> m_freeList;
     clock_t m_clock = []() { return 0L; };
     const long m_freeToReuseTimeoutMs = 0;
-    util::index_t m_highwaterMark = -1;
+    util::index_t m_highWaterMark = -1;
 
     inline std::int32_t nextCounterId()
     {
@@ -172,7 +173,7 @@ private:
             return counterId;
         }
 
-        return ++m_highwaterMark;
+        return ++m_highWaterMark;
     }
 
     inline void checkCountersCapacity(std::int32_t counterId)

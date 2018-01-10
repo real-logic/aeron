@@ -76,11 +76,14 @@ class LogAppender implements AutoCloseable
 
     public boolean appendConnectedSession(final ClusterSession session, final long nowMs)
     {
+        final byte[] sessionPrincipleData = session.principleData();
         final String channel = session.responsePublication().channel();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             SessionOpenEventEncoder.BLOCK_LENGTH +
             SessionOpenEventEncoder.responseChannelHeaderLength() +
-            channel.length();
+            channel.length() +
+            SessionOpenEventEncoder.principleDataHeaderLength() +
+            sessionPrincipleData.length;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -93,7 +96,8 @@ class LogAppender implements AutoCloseable
                     .correlationId(session.lastCorrelationId())
                     .timestamp(nowMs)
                     .responseStreamId(session.responsePublication().streamId())
-                    .responseChannel(channel);
+                    .responseChannel(channel)
+                    .putPrincipleData(sessionPrincipleData, 0, sessionPrincipleData.length);
 
                 bufferClaim.commit();
 

@@ -71,13 +71,14 @@ public class SessionProxy
     /**
      * Inform the system that the session is met authentication requirements and can continue.
      *
+     * @param principleData to pass to the on session open cluster event.
      * @return true if success event was sent or false if success event could not be sent.
      */
-    public final boolean authenticate()
+    public final boolean authenticate(final byte[] principleData)
     {
         if (egressPublisher.sendEvent(clusterSession, EventCode.OK, ""))
         {
-            clusterSession.state(AUTHENTICATED);
+            clusterSession.authenticate(principleData);
             return true;
         }
 

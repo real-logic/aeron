@@ -20,6 +20,8 @@ package io.aeron.cluster;
  */
 public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
 {
+    private static final byte[] NULL_PRINCIPLE_DATA = new byte[0];
+
     public Authenticator newAuthenticator(final ConsensusModule.Context context)
     {
         return new Authenticator()
@@ -34,12 +36,12 @@ public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
 
             public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
             {
-                sessionProxy.authenticate();
+                sessionProxy.authenticate(NULL_PRINCIPLE_DATA);
             }
 
             public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
             {
-                sessionProxy.authenticate();
+                sessionProxy.authenticate(NULL_PRINCIPLE_DATA);
             }
         };
     }

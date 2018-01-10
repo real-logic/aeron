@@ -194,7 +194,11 @@ final class ClusteredServiceAgent implements Agent, Cluster
     }
 
     void onSessionOpen(
-        final long clusterSessionId, final long timestampMs, final int responseStreamId, final String responseChannel)
+        final long clusterSessionId,
+        final long timestampMs,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] principleData)
     {
         ++messageIndex;
         this.timestampMs = timestampMs;
@@ -205,7 +209,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
             this);
 
         sessionByIdMap.put(clusterSessionId, session);
-        service.onSessionOpen(session, timestampMs);
+        service.onSessionOpen(session, timestampMs, principleData);
     }
 
     void onSessionClose(final long clusterSessionId, final long timestampMs, final CloseReason closeReason)

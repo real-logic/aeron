@@ -190,6 +190,7 @@
         <field name="timestamp"            id="3" type="time_t"/>
         <field name="responseStreamId"     id="4" type="int32"/>
         <data  name="responseChannel"      id="5" type="varAsciiEncoding"/>
+        <data  name="principleData"        id="6" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="SessionCloseEvent"

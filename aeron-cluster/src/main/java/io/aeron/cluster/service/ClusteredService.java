@@ -37,10 +37,11 @@ public interface ClusteredService
     /**
      * A session has been opened for a client to the cluster.
      *
-     * @param session     for the client which have been opened.
-     * @param timestampMs at which the session was opened.
+     * @param session       for the client which have been opened.
+     * @param timestampMs   at which the session was opened.
+     * @param principleData for the client which has been opened.
      */
-    void onSessionOpen(ClientSession session, long timestampMs);
+    void onSessionOpen(ClientSession session, long timestampMs, byte[] principleData);
 
     /**
      * A session has been closed for a client to the cluster.

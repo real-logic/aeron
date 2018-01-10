@@ -31,6 +31,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableLong;
+import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.NoOpLock;
 import org.junit.After;
 import org.junit.Test;
@@ -47,6 +48,7 @@ public class AuthenticationTest
 {
     private static final String CREDENTIAL_STRING = "username=\"admin\"|password=\"secret\"";
     private static final String CHALLENGE_STRING = "I challenge you!";
+    private static final String PRINCIPLE_STRING = "I am THE Principle!";
 
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
@@ -78,6 +80,7 @@ public class AuthenticationTest
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
+        final MutableReference<byte[]> servicePrincipleData = new MutableReference<>();
 
         final CredentialProvider credentialProvider =
             spy(new CredentialProvider()
@@ -111,7 +114,7 @@ public class AuthenticationTest
                 public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
-                    sessionProxy.authenticate();
+                    sessionProxy.authenticate(null);
                 }
 
                 public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
@@ -121,7 +124,7 @@ public class AuthenticationTest
             });
 
         launchClusteredMediaDriver((ctx) -> authenticator);
-        launchService(serviceSessionId, serviceMsgCounter);
+        launchService(serviceSessionId, servicePrincipleData, serviceMsgCounter);
 
         connectClient(credentialProvider);
         sendCountedMessageIntoCluster(0);
@@ -132,6 +135,7 @@ public class AuthenticationTest
 
         assertThat(authenticatorSessionId.value, is(aeronCluster.sessionId()));
         assertThat(serviceSessionId.value, is(aeronCluster.sessionId()));
+        assertThat(servicePrincipleData.get().length, is(0));
     }
 
     @Test(timeout = 10_000)
@@ -140,6 +144,7 @@ public class AuthenticationTest
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
+        final MutableReference<byte[]> servicePrincipleData = new MutableReference<>();
 
         final CredentialProvider credentialProvider =
             spy(new CredentialProvider()
@@ -173,7 +178,7 @@ public class AuthenticationTest
                 public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
-                    sessionProxy.authenticate();
+                    sessionProxy.authenticate(PRINCIPLE_STRING.getBytes());
                 }
 
                 public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
@@ -183,7 +188,7 @@ public class AuthenticationTest
             });
 
         launchClusteredMediaDriver((ctx) -> authenticator);
-        launchService(serviceSessionId, serviceMsgCounter);
+        launchService(serviceSessionId, servicePrincipleData, serviceMsgCounter);
 
         connectClient(credentialProvider);
         sendCountedMessageIntoCluster(0);
@@ -194,6 +199,7 @@ public class AuthenticationTest
 
         assertThat(authenticatorSessionId.value, is(aeronCluster.sessionId()));
         assertThat(serviceSessionId.value, is(aeronCluster.sessionId()));
+        assertThat(new String(servicePrincipleData.get()), is(PRINCIPLE_STRING));
     }
 
     @Test(timeout = 10_000)
@@ -202,6 +208,7 @@ public class AuthenticationTest
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
+        final MutableReference<byte[]> servicePrincipleData = new MutableReference<>();
 
         final CredentialProvider credentialProvider =
             spy(new CredentialProvider()
@@ -247,13 +254,13 @@ public class AuthenticationTest
                     if (challengeSuccessful)
                     {
                         assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
-                        sessionProxy.authenticate();
+                        sessionProxy.authenticate(PRINCIPLE_STRING.getBytes());
                     }
                 }
             });
 
         launchClusteredMediaDriver((ctx) -> authenticator);
-        launchService(serviceSessionId, serviceMsgCounter);
+        launchService(serviceSessionId, servicePrincipleData, serviceMsgCounter);
 
         connectClient(credentialProvider);
         sendCountedMessageIntoCluster(0);
@@ -264,6 +271,7 @@ public class AuthenticationTest
 
         assertThat(authenticatorSessionId.value, is(aeronCluster.sessionId()));
         assertThat(serviceSessionId.value, is(aeronCluster.sessionId()));
+        assertThat(new String(servicePrincipleData.get()), is(PRINCIPLE_STRING));
     }
 
     @Test(timeout = 10_000)
@@ -272,6 +280,7 @@ public class AuthenticationTest
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
+        final MutableReference<byte[]> servicePrincipleData = new MutableReference<>();
 
         final CredentialProvider credentialProvider =
             spy(new CredentialProvider()
@@ -315,7 +324,7 @@ public class AuthenticationTest
             });
 
         launchClusteredMediaDriver((ctx) -> authenticator);
-        launchService(serviceSessionId, serviceMsgCounter);
+        launchService(serviceSessionId, servicePrincipleData, serviceMsgCounter);
 
         try
         {
@@ -336,6 +345,7 @@ public class AuthenticationTest
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
+        final MutableReference<byte[]> servicePrincipleData = new MutableReference<>();
 
         final CredentialProvider credentialProvider =
             spy(new CredentialProvider()
@@ -387,7 +397,7 @@ public class AuthenticationTest
             });
 
         launchClusteredMediaDriver((ctx) -> authenticator);
-        launchService(serviceSessionId, serviceMsgCounter);
+        launchService(serviceSessionId, servicePrincipleData, serviceMsgCounter);
 
         try
         {
@@ -414,16 +424,21 @@ public class AuthenticationTest
         }
     }
 
-    private void launchService(final MutableLong sessionId, final AtomicLong msgCounter)
+    private void launchService(
+        final MutableLong sessionId, final MutableReference<byte[]> principleDataRef, final AtomicLong msgCounter)
     {
         final ClusteredService service =
             new StubClusteredService()
             {
                 private int counterValue = 0;
 
-                public void onSessionOpen(final ClientSession session, final long timestampMs)
+                public void onSessionOpen(
+                    final ClientSession session,
+                    final long timestampMs,
+                    final byte[] principleData)
                 {
                     sessionId.value = session.id();
+                    principleDataRef.set(principleData);
                 }
 
                 public void onSessionMessage(

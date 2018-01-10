@@ -20,6 +20,8 @@ import org.agrona.CloseHelper;
 
 class ClusterSession implements AutoCloseable
 {
+    public static final byte[] NULL_PRINCIPLE_DATA = new byte[0];
+
     enum State
     {
         INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, TIMED_OUT, CLOSED
@@ -30,6 +32,7 @@ class ClusterSession implements AutoCloseable
     private final long id;
     private final Publication responsePublication;
     private State state = State.INIT;
+    private byte[] principleData = NULL_PRINCIPLE_DATA;
 
     ClusterSession(final long sessionId, final Publication responsePublication)
     {
@@ -61,6 +64,21 @@ class ClusterSession implements AutoCloseable
     void state(final State state)
     {
         this.state = state;
+    }
+
+    void authenticate(final byte[] principleData)
+    {
+        this.state = State.AUTHENTICATED;
+
+        if (principleData != null)
+        {
+            this.principleData = principleData;
+        }
+    }
+
+    byte[] principleData()
+    {
+        return principleData;
     }
 
     void lastActivity(final long timeMs, final long correlationId)

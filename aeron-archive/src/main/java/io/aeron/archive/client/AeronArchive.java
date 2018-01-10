@@ -826,6 +826,27 @@ public class AeronArchive implements AutoCloseable
         public static final int CONTROL_STREAM_ID_DEFAULT = 0;
 
         /**
+         * Channel for sending control messages to a driver local archive.
+         */
+        public static final String LOCAL_CONTROL_CHANNEL_PROP_NAME = "aeron.archive.local.control.channel";
+
+        /**
+         * Channel for sending control messages to a driver local archive. Default to IPC.
+         */
+        public static final String LOCAL_CONTROL_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+
+        /**
+         * Stream id within a channel for sending control messages to a driver local archive.
+         */
+        public static final String LOCAL_CONTROL_STREAM_ID_PROP_NAME = "aeron.archive.local.control.stream.id";
+
+        /**
+         * Stream id within a channel for sending control messages to a driver local archive.
+         * Default to stream id of 10.
+         */
+        public static final int LOCAL_CONTROL_STREAM_ID_DEFAULT = 10;
+
+        /**
          * Channel for receiving control response messages from an archive.
          */
         public static final String CONTROL_RESPONSE_CHANNEL_PROP_NAME = "aeron.archive.control.response.channel";
@@ -942,6 +963,30 @@ public class AeronArchive implements AutoCloseable
         public static int controlStreamId()
         {
             return Integer.getInteger(CONTROL_STREAM_ID_PROP_NAME, CONTROL_STREAM_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #LOCAL_CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #CONTROL_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #LOCAL_CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #LOCAL_CONTROL_CHANNEL_PROP_NAME} if set.
+         */
+        public static String localControlChannel()
+        {
+            return System.getProperty(LOCAL_CONTROL_CHANNEL_PROP_NAME, LOCAL_CONTROL_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #LOCAL_CONTROL_STREAM_ID_DEFAULT} or system property
+         * {@link #LOCAL_CONTROL_STREAM_ID_PROP_NAME} if set.
+         *
+         * @return {@link #LOCAL_CONTROL_STREAM_ID_DEFAULT} or system property
+         * {@link #LOCAL_CONTROL_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int localControlStreamId()
+        {
+            return Integer.getInteger(LOCAL_CONTROL_STREAM_ID_PROP_NAME, LOCAL_CONTROL_STREAM_ID_DEFAULT);
         }
 
         /**

@@ -59,6 +59,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final File archiveDir;
     private final FileChannel archiveDirChannel;
     private final Subscription controlSubscription;
+    private final Subscription localControlSubscription;
 
     private final Catalog catalog;
     private final RecordingEventsProxy recordingEventsProxy;
@@ -90,6 +91,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         controlSubscription = aeron.addSubscription(
             ctx.controlChannel(), ctx.controlStreamId(), this, null);
+
+        localControlSubscription = aeron.addSubscription(
+            ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
 
         recordingEventsProxy = new RecordingEventsProxy(
             ctx.idleStrategy(),
@@ -126,6 +130,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     {
         if (!ctx.ownsAeronClient())
         {
+            CloseHelper.close(localControlSubscription);
             CloseHelper.close(controlSubscription);
         }
 

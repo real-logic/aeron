@@ -290,6 +290,8 @@ public class Archive implements AutoCloseable
 
         private String controlChannel = AeronArchive.Configuration.controlChannel();
         private int controlStreamId = AeronArchive.Configuration.controlStreamId();
+        private String localControlChannel = AeronArchive.Configuration.localControlChannel();
+        private int localControlStreamId = AeronArchive.Configuration.localControlStreamId();
 
         private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
         private int recordingEventsStreamId = AeronArchive.Configuration.recordingEventsStreamId();
@@ -487,6 +489,54 @@ public class Archive implements AutoCloseable
         public Context controlStreamId(final int controlStreamId)
         {
             this.controlStreamId = controlStreamId;
+            return this;
+        }
+
+        /**
+         * Get the driver local channel URI on which the control request subscription will listen.
+         *
+         * @return the channel URI on which the control request subscription will listen.
+         * @see AeronArchive.Configuration#LOCAL_CONTROL_CHANNEL_PROP_NAME
+         */
+        public String localControlChannel()
+        {
+            return localControlChannel;
+        }
+
+        /**
+         * Set the driver local channel URI on which the control request subscription will listen.
+         *
+         * @param controlChannel channel URI on which the control request subscription will listen.
+         * @return this for a fluent API.
+         * @see AeronArchive.Configuration#LOCAL_CONTROL_CHANNEL_PROP_NAME
+         */
+        public Context localControlChannel(final String controlChannel)
+        {
+            this.localControlChannel = controlChannel;
+            return this;
+        }
+
+        /**
+         * Get the local stream id on which the control request subscription will listen.
+         *
+         * @return the stream id on which the control request subscription will listen.
+         * @see AeronArchive.Configuration#LOCAL_CONTROL_STREAM_ID_PROP_NAME
+         */
+        public int localControlStreamId()
+        {
+            return localControlStreamId;
+        }
+
+        /**
+         * Set the local stream id on which the control request subscription will listen.
+         *
+         * @param controlStreamId stream id on which the control request subscription will listen.
+         * @return this for a fluent API.
+         * @see AeronArchive.Configuration#LOCAL_CONTROL_STREAM_ID_PROP_NAME
+         */
+        public Context localControlStreamId(final int controlStreamId)
+        {
+            this.localControlStreamId = controlStreamId;
             return this;
         }
 

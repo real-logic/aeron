@@ -206,10 +206,11 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final ClientSession session = new ClientSession(
             clusterSessionId,
             aeron.addExclusivePublication(responseChannel, responseStreamId),
+            principleData,
             this);
 
         sessionByIdMap.put(clusterSessionId, session);
-        service.onSessionOpen(session, timestampMs, principleData);
+        service.onSessionOpen(session, timestampMs);
     }
 
     void onSessionClose(final long clusterSessionId, final long timestampMs, final CloseReason closeReason)
@@ -230,11 +231,16 @@ final class ClusteredServiceAgent implements Agent, Cluster
         executeAction(action, leadershipTermBeginPosition + resultingPosition);
     }
 
-    void addSession(final long clusterSessionId, final int responseStreamId, final String responseChannel)
+    void addSession(
+        final long clusterSessionId,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] principleData)
     {
         final ClientSession session = new ClientSession(
             clusterSessionId,
             aeron.addExclusivePublication(responseChannel, responseStreamId),
+            principleData,
             ClusteredServiceAgent.this);
 
         sessionByIdMap.put(clusterSessionId, session);

@@ -434,11 +434,10 @@ public class AuthenticationTest
 
                 public void onSessionOpen(
                     final ClientSession session,
-                    final long timestampMs,
-                    final byte[] principleData)
+                    final long timestampMs)
                 {
                     sessionId.value = session.id();
-                    principleDataRef.set(principleData);
+                    principleDataRef.set(session.principleData());
                 }
 
                 public void onSessionMessage(

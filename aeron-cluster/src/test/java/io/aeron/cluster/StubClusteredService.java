@@ -33,7 +33,7 @@ public class StubClusteredService implements ClusteredService
         this.cluster = cluster;
     }
 
-    public void onSessionOpen(final ClientSession session, final long timestampMs, final byte[] principleData)
+    public void onSessionOpen(final ClientSession session, final long timestampMs)
     {
     }
 

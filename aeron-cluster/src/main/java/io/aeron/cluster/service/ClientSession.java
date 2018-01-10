@@ -36,15 +36,18 @@ public class ClientSession
 
     private final long id;
     private final Publication responsePublication;
+    private final byte[] principleData;
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
     private final Cluster cluster;
 
-    ClientSession(final long sessionId, final Publication responsePublication, final Cluster cluster)
+    ClientSession(
+        final long sessionId, final Publication responsePublication, final byte[] principleData, final Cluster cluster)
     {
         this.id = sessionId;
         this.responsePublication = responsePublication;
+        this.principleData = principleData;
         this.cluster = cluster;
 
         final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
@@ -64,6 +67,17 @@ public class ClientSession
     public long id()
     {
         return id;
+    }
+
+    /**
+     * Cluster session principle data passed from {@link io.aeron.cluster.Authenticator}
+     * when the session was authenticated.
+     *
+     * @return principle data passed. May be 0 length to indicate no data.
+     */
+    public byte[] principleData()
+    {
+        return principleData;
     }
 
     /**

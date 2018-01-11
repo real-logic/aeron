@@ -307,12 +307,12 @@ class SequencerAgent implements Agent
         return ControlledFragmentHandler.Action.ABORT;
     }
 
-    public void onKeepAlive(final long correlationId, final long clusterSessionId)
+    public void onKeepAlive(final long clusterSessionId)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
-            session.lastActivity(cachedEpochClock.time(), correlationId);
+            session.timeOfLastActivityMs(cachedEpochClock.time());
         }
     }
 

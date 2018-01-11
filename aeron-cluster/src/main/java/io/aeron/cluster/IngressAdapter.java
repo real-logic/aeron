@@ -119,9 +119,7 @@ public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onKeepAlive(
-                    keepAliveRequestDecoder.correlationId(),
-                    keepAliveRequestDecoder.clusterSessionId());
+                sequencerAgent.onKeepAlive(keepAliveRequestDecoder.clusterSessionId());
                 break;
 
             case ChallengeResponseDecoder.TEMPLATE_ID:

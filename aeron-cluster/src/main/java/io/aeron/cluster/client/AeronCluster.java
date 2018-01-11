@@ -204,7 +204,6 @@ public final class AeronCluster implements AutoCloseable
         try
         {
             idleStrategy.reset();
-            final long correlationId = aeron.nextCorrelationId();
             final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveRequestEncoder.BLOCK_LENGTH;
             int attempts = SEND_ATTEMPTS;
 
@@ -216,7 +215,7 @@ public final class AeronCluster implements AutoCloseable
                 {
                     keepAliveRequestEncoder
                         .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                        .correlationId(correlationId)
+                        .correlationId(0L)
                         .clusterSessionId(sessionId);
 
                     bufferClaim.commit();

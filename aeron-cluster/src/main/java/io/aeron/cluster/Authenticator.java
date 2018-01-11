@@ -30,7 +30,7 @@ public interface Authenticator
     void onConnectRequest(long sessionId, byte[] credentialData, long nowMs);
 
     /**
-     * Called upon recpetion of a Challenge Response from an unauthenticated client.
+     * Called upon reception of a Challenge Response from an unauthenticated client.
      *
      * @param sessionId      of the unauthenticated client assigned by the consensus module.
      * @param credentialData from the Challenge Response. Will not be null, but may be 0 length.

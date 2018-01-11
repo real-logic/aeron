@@ -479,6 +479,7 @@ public class ConsensusModule implements
         private Counter moduleState;
         private Counter controlToggle;
         private ShutdownSignalBarrier shutdownSignalBarrier;
+        private Runnable terminationHook;
 
         private AeronArchive.Context archiveContext;
         private AuthenticatorSupplier authenticatorSupplier;
@@ -598,6 +599,11 @@ public class ConsensusModule implements
             if (null == shutdownSignalBarrier)
             {
                 shutdownSignalBarrier = new ShutdownSignalBarrier();
+            }
+
+            if (null == terminationHook)
+            {
+                terminationHook = () -> shutdownSignalBarrier.signal();
             }
 
             if (null == authenticatorSupplier)
@@ -1347,6 +1353,32 @@ public class ConsensusModule implements
         public ShutdownSignalBarrier shutdownSignalBarrier()
         {
             return shutdownSignalBarrier;
+        }
+
+        /**
+         * Set the {@link Runnable} that is called when the {@link ConsensusModule} processes a termination action such
+         * as a {@link ConsensusModule.State#SHUTDOWN} or {@link ConsensusModule.State#ABORT}.
+         *
+         * @param terminationHook that can be used to terminate a consensus module.
+         * @return this for a fluent API.
+         */
+        public Context terminationHook(final Runnable terminationHook)
+        {
+            this.terminationHook = terminationHook;
+            return this;
+        }
+
+        /**
+         * Get the {@link Runnable} that is called when the {@link ConsensusModule} processes a termination action such
+         * as a {@link ConsensusModule.State#SHUTDOWN} or {@link ConsensusModule.State#ABORT}.
+         * <p>
+         * The default action is to call signal on the {@link #shutdownSignalBarrier()}.
+         *
+         * @return the {@link Runnable} that can be used to terminate a consensus module.
+         */
+        public Runnable terminationHook()
+        {
+            return terminationHook;
         }
 
         /**

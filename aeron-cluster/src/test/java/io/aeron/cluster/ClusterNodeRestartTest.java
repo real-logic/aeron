@@ -35,6 +35,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.*;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -54,6 +55,7 @@ public class ClusterNodeRestartTest
     private SessionDecorator sessionDecorator;
     private Publication publication;
     private final AtomicReference<String> serviceState = new AtomicReference<>();
+    private final AtomicBoolean isShutdown = new AtomicBoolean();
 
     @Before
     public void before()
@@ -273,6 +275,7 @@ public class ClusterNodeRestartTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
+                .terminationHook(() -> {})
                 .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(initialLaunch));
     }
@@ -305,6 +308,7 @@ public class ClusterNodeRestartTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
+                .terminationHook(() -> isShutdown.set(true))
                 .deleteDirOnStart(initialLaunch));
     }
 

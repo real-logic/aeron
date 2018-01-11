@@ -511,13 +511,13 @@ final class ClusteredServiceAgent implements Agent, Cluster
                 onTakeSnapshot(position);
                 consensusModule.sendAcknowledgment(ServiceAction.SHUTDOWN, position, messageIndex, timestampMs);
                 state = State.CLOSED;
-                ctx.shutdownSignalBarrier().signal();
+                ctx.terminationHook().run();
                 break;
 
             case ABORT:
                 consensusModule.sendAcknowledgment(ServiceAction.ABORT, position, messageIndex, timestampMs);
                 state = State.CLOSED;
-                ctx.shutdownSignalBarrier().signal();
+                ctx.terminationHook().run();
                 break;
         }
     }

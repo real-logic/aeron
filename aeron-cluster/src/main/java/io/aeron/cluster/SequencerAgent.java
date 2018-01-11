@@ -231,12 +231,12 @@ class SequencerAgent implements Agent
 
                 case SHUTDOWN:
                     state(ConsensusModule.State.CLOSED);
-                    ctx.shutdownSignalBarrier().signal();
+                    ctx.terminationHook().run();
                     break;
 
                 case ABORT:
                     state(ConsensusModule.State.CLOSED);
-                    ctx.shutdownSignalBarrier().signal();
+                    ctx.terminationHook().run();
                     break;
             }
         }

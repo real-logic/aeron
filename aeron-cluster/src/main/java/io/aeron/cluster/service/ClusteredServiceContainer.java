@@ -370,6 +370,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private ClusteredService clusteredService;
         private RecordingLog recordingLog;
         private ShutdownSignalBarrier shutdownSignalBarrier;
+        private Runnable terminationHook;
 
         public void conclude()
         {
@@ -464,6 +465,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null == shutdownSignalBarrier)
             {
                 shutdownSignalBarrier = new ShutdownSignalBarrier();
+            }
+
+            if (null == terminationHook)
+            {
+                terminationHook = () -> shutdownSignalBarrier.signal();
             }
         }
 
@@ -1015,6 +1021,32 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public ShutdownSignalBarrier shutdownSignalBarrier()
         {
             return shutdownSignalBarrier;
+        }
+
+        /**
+         * Set the {@link Runnable} that is called when processing a
+         * {@link io.aeron.cluster.codecs.ServiceAction#SHUTDOWN} or {@link io.aeron.cluster.codecs.ServiceAction#ABORT}
+         *
+         * @param terminationHook that can be used to terminate a service container.
+         * @return this for a fluent API.
+         */
+        public Context terminationHook(final Runnable terminationHook)
+        {
+            this.terminationHook = terminationHook;
+            return this;
+        }
+
+        /**
+         * Get the {@link Runnable} that is called when processing a
+         * {@link io.aeron.cluster.codecs.ServiceAction#SHUTDOWN} or {@link io.aeron.cluster.codecs.ServiceAction#ABORT}
+         * <p>
+         * The default action is to call signal on the {@link #shutdownSignalBarrier()}.
+
+         * @return the {@link Runnable} that can be used to terminate a service container.
+         */
+        public Runnable terminationHook()
+        {
+            return terminationHook;
         }
 
         /**

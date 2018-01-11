@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,29 @@ package io.aeron.cluster;
 
 public class AuthenticationException extends RuntimeException
 {
-    public AuthenticationException(final String s)
+    public AuthenticationException()
     {
-        super(s);
+        super();
+    }
+
+    public AuthenticationException(final String message)
+    {
+        super(message);
+    }
+
+    public AuthenticationException(final String message, final Throwable cause)
+    {
+        super(message, cause);
+    }
+
+    public AuthenticationException(final Throwable cause)
+    {
+        super(cause);
+    }
+
+    protected AuthenticationException(
+        final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace)
+    {
+        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

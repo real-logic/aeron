@@ -21,6 +21,8 @@ import static io.aeron.cluster.ClusterSession.State.*;
 
 /**
  * Proxy for a session for authentication purposes. Used to inform system of client authentication status.
+ * <p>
+ * <b>Note:</b> The object is not threadsafe.
  */
 public class SessionProxy
 {

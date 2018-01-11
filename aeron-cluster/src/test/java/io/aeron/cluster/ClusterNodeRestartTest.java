@@ -58,7 +58,7 @@ public class ClusterNodeRestartTest
     private SessionDecorator sessionDecorator;
     private Publication publication;
     private final AtomicReference<String> serviceState = new AtomicReference<>();
-    private final AtomicBoolean isShutdown = new AtomicBoolean();
+    private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final AtomicLong snapshotCount = new AtomicLong();
     private final Counter mockSnapshotCounter = mock(Counter.class);
 
@@ -320,7 +320,7 @@ public class ClusterNodeRestartTest
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
                 .snapshotCounter(mockSnapshotCounter)
-                .terminationHook(() -> isShutdown.set(true))
+                .terminationHook(() -> isTerminated.set(true))
                 .deleteDirOnStart(initialLaunch));
     }
 

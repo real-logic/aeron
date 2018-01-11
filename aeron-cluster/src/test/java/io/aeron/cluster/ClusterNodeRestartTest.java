@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Counter;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.archive.Archive;
@@ -44,6 +45,8 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ClusterNodeRestartTest
 {
@@ -56,10 +59,14 @@ public class ClusterNodeRestartTest
     private Publication publication;
     private final AtomicReference<String> serviceState = new AtomicReference<>();
     private final AtomicBoolean isShutdown = new AtomicBoolean();
+    private final AtomicLong snapshotCount = new AtomicLong();
+    private final Counter mockSnapshotCounter = mock(Counter.class);
 
     @Before
     public void before()
     {
+        when(mockSnapshotCounter.incrementOrdered()).thenAnswer((inv) -> snapshotCount.getAndIncrement());
+
         launchClusteredMediaDriver(true);
     }
 
@@ -164,7 +171,11 @@ public class ClusterNodeRestartTest
 
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        Thread.sleep(3000);
+        while (snapshotCount.get() == 0)
+        {
+            Thread.sleep(1);
+        }
+
         sendCountedMessageIntoCluster(3);
 
         while (serviceMsgCounter.get() < 3)
@@ -308,6 +319,7 @@ public class ClusterNodeRestartTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
+                .snapshotCounter(mockSnapshotCounter)
                 .terminationHook(() -> isShutdown.set(true))
                 .deleteDirOnStart(initialLaunch));
     }

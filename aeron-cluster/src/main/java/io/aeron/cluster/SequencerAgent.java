@@ -224,12 +224,14 @@ class SequencerAgent implements Agent
             switch (action)
             {
                 case SNAPSHOT:
+                    ctx.snapshotCounter().incrementOrdered();
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
                     // TODO: Should session timestamps be reset in case of timeout
                     break;
 
                 case SHUTDOWN:
+                    ctx.snapshotCounter().incrementOrdered();
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
                     break;

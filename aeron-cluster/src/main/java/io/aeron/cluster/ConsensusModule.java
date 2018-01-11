@@ -478,6 +478,7 @@ public class ConsensusModule implements
         private Counter messageIndex;
         private Counter moduleState;
         private Counter controlToggle;
+        private Counter snapshotCounter;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
 
@@ -574,6 +575,11 @@ public class ConsensusModule implements
             if (null == controlToggle)
             {
                 controlToggle = aeron.addCounter(CONTROL_TOGGLE_TYPE_ID, "Cluster control toggle");
+            }
+
+            if (null == snapshotCounter)
+            {
+                snapshotCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Snapshot count");
             }
 
             if (null == threadFactory)
@@ -1235,6 +1241,28 @@ public class ConsensusModule implements
         public Context controlToggle(final Counter controlToggle)
         {
             this.controlToggle = controlToggle;
+            return this;
+        }
+
+        /**
+         * Get the counter for the count of snapshots taken.
+         *
+         * @return the counter for the count of snapshots taken.
+         */
+        public Counter snapshotCounter()
+        {
+            return snapshotCounter;
+        }
+
+        /**
+         * Set the counter for the count of snapshots taken.
+         *
+         * @param snapshotCounter the count of snapshots taken.
+         * @return this for a fluent API.
+         */
+        public Context snapshotCounter(final Counter snapshotCounter)
+        {
+            this.snapshotCounter = snapshotCounter;
             return this;
         }
 

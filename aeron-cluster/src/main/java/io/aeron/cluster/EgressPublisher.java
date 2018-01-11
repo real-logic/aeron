@@ -61,8 +61,7 @@ class EgressPublisher
         return false;
     }
 
-    public boolean sendChallenge(
-        final ClusterSession session, final long correlationId, final long sessionId, final byte[] challengeData)
+    public boolean sendChallenge(final ClusterSession session, final byte[] challengeData)
     {
         final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +

@@ -34,12 +34,14 @@ public class SessionProxy
         this.egressPublisher = egressPublisher;
     }
 
-    public final void clusterSession(final ClusterSession clusterSession)
+    public final SessionProxy session(final ClusterSession clusterSession)
     {
         if (this.clusterSession != clusterSession)
         {
             this.clusterSession = clusterSession;
         }
+
+        return this;
     }
 
     /**
@@ -60,8 +62,7 @@ public class SessionProxy
      */
     public final boolean challenge(final byte[] challengeData)
     {
-        if (egressPublisher.sendChallenge(
-            clusterSession, clusterSession.lastCorrelationId(), clusterSession.id(), challengeData))
+        if (egressPublisher.sendChallenge(clusterSession, challengeData))
         {
             clusterSession.state(CHALLENGED);
             return true;

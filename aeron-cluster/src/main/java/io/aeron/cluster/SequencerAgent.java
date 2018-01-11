@@ -737,8 +737,7 @@ class SequencerAgent implements Agent
                 if (session.responsePublication().isConnected())
                 {
                     session.state(CONNECTED);
-                    sessionProxy.clusterSession(session);
-                    authenticator.onProcessConnectedSession(sessionProxy, nowMs);
+                    authenticator.onProcessConnectedSession(sessionProxy.session(session), nowMs);
                 }
             }
 
@@ -746,8 +745,7 @@ class SequencerAgent implements Agent
             {
                 if (session.responsePublication().isConnected())
                 {
-                    sessionProxy.clusterSession(session);
-                    authenticator.onProcessChallengedSession(sessionProxy, nowMs);
+                    authenticator.onProcessChallengedSession(sessionProxy.session(session), nowMs);
                 }
             }
 

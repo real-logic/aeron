@@ -115,26 +115,26 @@ public class ChannelEndpointStatusTest
     }
 
     @Test(timeout = 5000)
-    public void shouldBeAbleToQueryChannelStatusForSubscription() throws Exception
+    public void shouldBeAbleToQueryChannelStatusForSubscription()
     {
         final Subscription subscription = clientA.addSubscription(URI, STREAM_ID);
 
         while (subscription.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
-            Thread.sleep(1);
+            Thread.yield();
         }
 
         assertThat(subscription.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
     @Test(timeout = 5000)
-    public void shouldBeAbleToQueryChannelStatusForPublication() throws Exception
+    public void shouldBeAbleToQueryChannelStatusForPublication()
     {
         final Publication publication = clientA.addPublication(URI, STREAM_ID);
 
         while (publication.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
-            Thread.sleep(1);
+            Thread.yield();
         }
 
         assertThat(publication.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
@@ -144,6 +144,14 @@ public class ChannelEndpointStatusTest
     public void shouldCatchErrorOnAddressAlreadyInUseForSubscriptions()
     {
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
+
+        while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+        {
+            Thread.yield();
+        }
+
+        assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
+
         final Subscription subscriptionB = clientB.addSubscription(URI, STREAM_ID);
 
         final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
@@ -163,6 +171,14 @@ public class ChannelEndpointStatusTest
     public void shouldCatchErrorOnAddressAlreadyInUseForPublications()
     {
         final Publication publicationA = clientA.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
+
+        while (publicationA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+        {
+            Thread.yield();
+        }
+
+        assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
+
         final Publication publicationB = clientB.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
 
         final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
@@ -180,19 +196,26 @@ public class ChannelEndpointStatusTest
 
     @Test
     public void shouldNotErrorOnAddressAlreadyInUseOnActiveChannelEndpointForSubscriptions()
-        throws InterruptedException
     {
         final Subscription subscriptionA = clientA.addSubscription(URI, STREAM_ID);
+
+        while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+        {
+            Thread.yield();
+        }
+
         final Subscription subscriptionB = clientB.addSubscription(URI_NO_CONFLICT, STREAM_ID);
         final Subscription subscriptionC = clientC.addSubscription(URI, STREAM_ID);
+
+        while (subscriptionB.channelStatus() == ChannelEndpointStatus.INITIALIZING ||
+            subscriptionC.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+        {
+            Thread.yield();
+        }
 
         verify(errorHandlerClientC, timeout(5000)).onError(any(ChannelEndpointException.class));
         assertThat(subscriptionC.channelStatus(), is(ChannelEndpointStatus.ERRORED));
 
-        while (subscriptionB.channelStatus() == ChannelEndpointStatus.INITIALIZING)
-        {
-            Thread.sleep(1);
-        }
 
         assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
         assertThat(subscriptionB.channelStatus(), is(ChannelEndpointStatus.ACTIVE));

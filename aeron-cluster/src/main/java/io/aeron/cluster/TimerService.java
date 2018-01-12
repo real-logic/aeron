@@ -74,7 +74,17 @@ public class TimerService implements DeadlineTimerWheel.TimerHandler
 
     public void snapshot(final ConsensusModuleSnapshotTaker snapshotTaker)
     {
-        timerWheel.forEach(
-            (deadline, timerId) -> snapshotTaker.snapshotTimer(correlationIdByTimerIdMap.get(timerId), deadline));
+        final Long2LongHashMap.EntryIterator iter =
+            (Long2LongHashMap.EntryIterator)timerIdByCorrelationIdMap.entrySet().iterator();
+
+        while (iter.hasNext())
+        {
+            iter.next();
+
+            final long correlationId = iter.getLongKey();
+            final long deadline = timerWheel.deadline(iter.getLongValue());
+
+            snapshotTaker.snapshotTimer(correlationId, deadline);
+        }
     }
 }

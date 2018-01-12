@@ -22,6 +22,7 @@ import org.agrona.collections.ArrayUtil;
 class ClusterSession implements AutoCloseable
 {
     public static final byte[] NULL_PRINCIPLE_DATA = ArrayUtil.EMPTY_BYTE_ARRAY;
+    public static final int MAX_PRINCIPLE_DATA_LENGTH = 4 * 1024;
 
     enum State
     {
@@ -69,12 +70,12 @@ class ClusterSession implements AutoCloseable
 
     void authenticate(final byte[] principleData)
     {
-        this.state = State.AUTHENTICATED;
-
         if (principleData != null)
         {
             this.principleData = principleData;
         }
+
+        this.state = State.AUTHENTICATED;
     }
 
     void open()
@@ -107,6 +108,18 @@ class ClusterSession implements AutoCloseable
     long lastCorrelationId()
     {
         return lastCorrelationId;
+    }
+
+    static void checkPrincipleDataLength(final byte[] principleData)
+    {
+        if (null != principleData && principleData.length > MAX_PRINCIPLE_DATA_LENGTH)
+        {
+            throw new IllegalArgumentException(
+                "Principle Data max length " +
+                MAX_PRINCIPLE_DATA_LENGTH +
+                " exceeded: length=" +
+                principleData.length);
+        }
     }
 
     public String toString()

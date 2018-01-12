@@ -79,6 +79,8 @@ public class SessionProxy
      */
     public final boolean authenticate(final byte[] principleData)
     {
+        ClusterSession.checkPrincipleDataLength(principleData);
+
         if (egressPublisher.sendEvent(clusterSession, EventCode.OK, ""))
         {
             clusterSession.authenticate(principleData);

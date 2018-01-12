@@ -77,6 +77,12 @@ class ClusterSession implements AutoCloseable
         }
     }
 
+    void open()
+    {
+        this.state = State.OPEN;
+        principleData = null;
+    }
+
     byte[] principleData()
     {
         return principleData;

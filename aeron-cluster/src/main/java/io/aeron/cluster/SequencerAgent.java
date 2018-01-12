@@ -866,7 +866,7 @@ class SequencerAgent implements Agent
         if (logAppender.appendConnectedSession(session, nowMs))
         {
             messageIndex.incrementOrdered();
-            session.state(OPEN);
+            session.open();
 
             return true;
         }

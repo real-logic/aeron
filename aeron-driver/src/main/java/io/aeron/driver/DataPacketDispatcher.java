@@ -109,13 +109,10 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         if (null == streamIdState)
         {
             streamIdState = new StreamIdState(false);
-            streamIdState.reservedSessionIds.add(sessionId);
             sessionsByStreamIdMap.put(streamId, streamIdState);
         }
-        else
-        {
-            streamIdState.reservedSessionIds.add(sessionId);
-        }
+
+        streamIdState.reservedSessionIds.add(sessionId);
     }
 
     public void removeSubscription(final int streamId)
@@ -130,14 +127,20 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         {
             final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
 
-            if (null != sessionIdState.image)
+            if (!streamIdState.reservedSessionIds.contains(sessionId))
             {
-                sessionIdState.image.ifActiveGoInactive();
+                if (null != sessionIdState.image)
+                {
+                    sessionIdState.image.ifActiveGoInactive();
+                }
+
                 streamIdState.sessionIdMap.remove(sessionId);
             }
         }
 
-        if (streamIdState.sessionIdMap.isEmpty())
+        streamIdState.acceptAll = false;
+
+        if (streamIdState.reservedSessionIds.isEmpty())
         {
             sessionsByStreamIdMap.remove(streamId);
         }
@@ -151,10 +154,15 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
         }
 
-        streamIdState.sessionIdMap.remove(sessionId);
+        final SessionIdState sessionIdState = streamIdState.sessionIdMap.remove(sessionId);
+        if (null != sessionIdState.image)
+        {
+            sessionIdState.image.ifActiveGoInactive();
+        }
+
         streamIdState.reservedSessionIds.remove(sessionId);
 
-        if (streamIdState.sessionIdMap.isEmpty())
+        if (!streamIdState.acceptAll && streamIdState.reservedSessionIds.isEmpty())
         {
             sessionsByStreamIdMap.remove(streamId);
         }

@@ -37,7 +37,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 {
     public enum SessionState
     {
-        ADDED,
+        ACTIVE,
         PENDING_SETUP_FRAME,
         INIT_IN_PROGRESS,
         ON_COOL_DOWN,
@@ -57,13 +57,13 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
     private static class StreamIdState
     {
-        boolean acceptAll;
+        boolean isAcceptingAllSessions;
         Int2ObjectHashMap<SessionIdState> sessionIdMap;
         IntHashSet reservedSessionIds;
 
-        StreamIdState(final boolean acceptAll)
+        StreamIdState(final boolean isAcceptingAllSessions)
         {
-            this.acceptAll = acceptAll;
+            this.isAcceptingAllSessions = isAcceptingAllSessions;
             sessionIdMap = new Int2ObjectHashMap<>();
             reservedSessionIds = new IntHashSet();
         }
@@ -87,14 +87,14 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         {
             sessionsByStreamIdMap.put(streamId, new StreamIdState(true));
         }
-        else if (!streamIdState.acceptAll)
+        else if (!streamIdState.isAcceptingAllSessions)
         {
-            streamIdState.acceptAll = true;
+            streamIdState.isAcceptingAllSessions = true;
 
             for (final int sessionId : streamIdState.sessionIdMap.keySet())
             {
                 final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
-                if (sessionIdState.state == REJECTED)
+                if (REJECTED == sessionIdState.state)
                 {
                     streamIdState.sessionIdMap.remove(sessionId);
                 }
@@ -113,6 +113,12 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         }
 
         streamIdState.reservedSessionIds.add(sessionId);
+
+        final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
+        if (null != sessionIdState && REJECTED == sessionIdState.state)
+        {
+            streamIdState.sessionIdMap.remove(sessionId);
+        }
     }
 
     public void removeSubscription(final int streamId)
@@ -138,7 +144,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             }
         }
 
-        streamIdState.acceptAll = false;
+        streamIdState.isAcceptingAllSessions = false;
 
         if (streamIdState.reservedSessionIds.isEmpty())
         {
@@ -162,7 +168,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
         streamIdState.reservedSessionIds.remove(sessionId);
 
-        if (!streamIdState.acceptAll && streamIdState.reservedSessionIds.isEmpty())
+        if (!streamIdState.isAcceptingAllSessions && streamIdState.reservedSessionIds.isEmpty())
         {
             sessionsByStreamIdMap.remove(streamId);
         }
@@ -178,12 +184,12 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
         if (null == sessionIdState)
         {
-            sessionIdState = new SessionIdState(ADDED);
+            sessionIdState = new SessionIdState(ACTIVE);
             streamIdState.sessionIdMap.put(sessionId, sessionIdState);
         }
         else
         {
-            sessionIdState.state = ADDED;
+            sessionIdState.state = ACTIVE;
         }
 
         sessionIdState.image = image;
@@ -263,12 +269,12 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
                 }
             }
             else if (!DataHeaderFlyweight.isEndOfStream(buffer) &&
-                (streamIdState.acceptAll || streamIdState.reservedSessionIds.contains(sessionId)))
+                (streamIdState.isAcceptingAllSessions || streamIdState.reservedSessionIds.contains(sessionId)))
             {
                 streamIdState.sessionIdMap.put(sessionId, new SessionIdState(PENDING_SETUP_FRAME));
                 elicitSetupMessageFromSource(channelEndpoint, srcAddress, streamId, sessionId);
             }
-            else if (!streamIdState.acceptAll && !DataHeaderFlyweight.isEndOfStream(buffer))
+            else if (!streamIdState.isAcceptingAllSessions && !DataHeaderFlyweight.isEndOfStream(buffer))
             {
                 streamIdState.sessionIdMap.put(sessionId, new SessionIdState(REJECTED));
             }
@@ -312,7 +318,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
                         header.ttl());
                 }
             }
-            else if (streamIdState.acceptAll || streamIdState.reservedSessionIds.contains(sessionId))
+            else if (streamIdState.isAcceptingAllSessions || streamIdState.reservedSessionIds.contains(sessionId))
             {
                 streamIdState.sessionIdMap.put(sessionId, new SessionIdState(INIT_IN_PROGRESS));
                 createPublicationImage(

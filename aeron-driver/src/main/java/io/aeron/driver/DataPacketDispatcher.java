@@ -35,7 +35,7 @@ import static io.aeron.driver.DataPacketDispatcher.SessionState.*;
  */
 public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHandler
 {
-    public enum SessionState
+    enum SessionState
     {
         ACTIVE,
         PENDING_SETUP_FRAME,
@@ -44,32 +44,32 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         REJECTED
     }
 
-    private static class SessionIdState
+    static class SessionInterest
     {
         SessionState state;
         PublicationImage image;
 
-        SessionIdState(final SessionState state)
+        SessionInterest(final SessionState state)
         {
             this.state = state;
         }
     }
 
-    private static class StreamIdState
+    static class StreamInterest
     {
-        boolean isAcceptingAllSessions;
-        Int2ObjectHashMap<SessionIdState> sessionIdMap;
-        IntHashSet reservedSessionIds;
+        boolean isForAllSessions;
+        Int2ObjectHashMap<SessionInterest> sessionInterestByIdMap;
+        IntHashSet subscribedSessionIds;
 
-        StreamIdState(final boolean isAcceptingAllSessions)
+        StreamInterest(final boolean isForAllSessions)
         {
-            this.isAcceptingAllSessions = isAcceptingAllSessions;
-            sessionIdMap = new Int2ObjectHashMap<>();
-            reservedSessionIds = new IntHashSet();
+            this.isForAllSessions = isForAllSessions;
+            sessionInterestByIdMap = new Int2ObjectHashMap<>();
+            subscribedSessionIds = new IntHashSet();
         }
     }
 
-    private final Int2ObjectHashMap<StreamIdState> sessionsByStreamIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<StreamInterest> streamInterestByIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final Receiver receiver;
 
@@ -81,22 +81,22 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
     public void addSubscription(final int streamId)
     {
-        final StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
 
-        if (null == streamIdState)
+        if (null == streamInterest)
         {
-            sessionsByStreamIdMap.put(streamId, new StreamIdState(true));
+            streamInterestByIdMap.put(streamId, new StreamInterest(true));
         }
-        else if (!streamIdState.isAcceptingAllSessions)
+        else if (!streamInterest.isForAllSessions)
         {
-            streamIdState.isAcceptingAllSessions = true;
+            streamInterest.isForAllSessions = true;
 
-            for (final int sessionId : streamIdState.sessionIdMap.keySet())
+            for (final int sessionId : streamInterest.sessionInterestByIdMap.keySet())
             {
-                final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
-                if (REJECTED == sessionIdState.state)
+                final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
+                if (REJECTED == sessionInterest.state)
                 {
-                    streamIdState.sessionIdMap.remove(sessionId);
+                    streamInterest.sessionInterestByIdMap.remove(sessionId);
                 }
             }
         }
@@ -104,73 +104,73 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
     public void addSubscription(final int streamId, final int sessionId)
     {
-        StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
+        StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
 
-        if (null == streamIdState)
+        if (null == streamInterest)
         {
-            streamIdState = new StreamIdState(false);
-            sessionsByStreamIdMap.put(streamId, streamIdState);
+            streamInterest = new StreamInterest(false);
+            streamInterestByIdMap.put(streamId, streamInterest);
         }
 
-        streamIdState.reservedSessionIds.add(sessionId);
+        streamInterest.subscribedSessionIds.add(sessionId);
 
-        final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
-        if (null != sessionIdState && REJECTED == sessionIdState.state)
+        final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
+        if (null != sessionInterest && REJECTED == sessionInterest.state)
         {
-            streamIdState.sessionIdMap.remove(sessionId);
+            streamInterest.sessionInterestByIdMap.remove(sessionId);
         }
     }
 
     public void removeSubscription(final int streamId)
     {
-        final StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
-        if (null == streamIdState)
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
+        if (null == streamInterest)
         {
             throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
         }
 
-        for (final int sessionId : streamIdState.sessionIdMap.keySet())
+        for (final int sessionId : streamInterest.sessionInterestByIdMap.keySet())
         {
-            final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
+            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
-            if (!streamIdState.reservedSessionIds.contains(sessionId))
+            if (!streamInterest.subscribedSessionIds.contains(sessionId))
             {
-                if (null != sessionIdState.image)
+                if (null != sessionInterest.image)
                 {
-                    sessionIdState.image.ifActiveGoInactive();
+                    sessionInterest.image.ifActiveGoInactive();
                 }
 
-                streamIdState.sessionIdMap.remove(sessionId);
+                streamInterest.sessionInterestByIdMap.remove(sessionId);
             }
         }
 
-        streamIdState.isAcceptingAllSessions = false;
+        streamInterest.isForAllSessions = false;
 
-        if (streamIdState.reservedSessionIds.isEmpty())
+        if (streamInterest.subscribedSessionIds.isEmpty())
         {
-            sessionsByStreamIdMap.remove(streamId);
+            streamInterestByIdMap.remove(streamId);
         }
     }
 
     public void removeSubscription(final int streamId, final int sessionId)
     {
-        final StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
-        if (null == streamIdState)
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
+        if (null == streamInterest)
         {
             throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
         }
 
-        final SessionIdState sessionIdState = streamIdState.sessionIdMap.remove(sessionId);
-        if (null != sessionIdState.image)
+        final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.remove(sessionId);
+        if (null != sessionInterest.image)
         {
-            sessionIdState.image.ifActiveGoInactive();
+            sessionInterest.image.ifActiveGoInactive();
         }
 
-        streamIdState.reservedSessionIds.remove(sessionId);
+        streamInterest.subscribedSessionIds.remove(sessionId);
 
-        if (!streamIdState.isAcceptingAllSessions && streamIdState.reservedSessionIds.isEmpty())
+        if (!streamInterest.isForAllSessions && streamInterest.subscribedSessionIds.isEmpty())
         {
-            sessionsByStreamIdMap.remove(streamId);
+            streamInterestByIdMap.remove(streamId);
         }
     }
 
@@ -179,20 +179,20 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final int sessionId = image.sessionId();
         final int streamId = image.streamId();
 
-        final StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
-        SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
+        SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
-        if (null == sessionIdState)
+        if (null == sessionInterest)
         {
-            sessionIdState = new SessionIdState(ACTIVE);
-            streamIdState.sessionIdMap.put(sessionId, sessionIdState);
+            sessionInterest = new SessionInterest(ACTIVE);
+            streamInterest.sessionInterestByIdMap.put(sessionId, sessionInterest);
         }
         else
         {
-            sessionIdState.state = ACTIVE;
+            sessionInterest.state = ACTIVE;
         }
 
-        sessionIdState.image = image;
+        sessionInterest.image = image;
 
         image.activate();
     }
@@ -202,16 +202,16 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final int sessionId = image.sessionId();
         final int streamId = image.streamId();
 
-        final StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
-        if (null != streamIdState)
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
+        if (null != streamInterest)
         {
-            final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
-            if (null != sessionIdState && null != sessionIdState.image)
+            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
+            if (null != sessionInterest && null != sessionInterest.image)
             {
-                if (sessionIdState.image.correlationId() == image.correlationId())
+                if (sessionInterest.image.correlationId() == image.correlationId())
                 {
-                    sessionIdState.state = ON_COOL_DOWN;
-                    sessionIdState.image = null;
+                    sessionInterest.state = ON_COOL_DOWN;
+                    sessionInterest.image = null;
                 }
             }
         }
@@ -221,26 +221,26 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
     public void removePendingSetup(final int sessionId, final int streamId)
     {
-        final StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
-        if (null != streamIdState)
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
+        if (null != streamInterest)
         {
-            final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
-            if (null != sessionIdState && PENDING_SETUP_FRAME == sessionIdState.state)
+            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
+            if (null != sessionInterest && PENDING_SETUP_FRAME == sessionInterest.state)
             {
-                streamIdState.sessionIdMap.remove(sessionId);
+                streamInterest.sessionInterestByIdMap.remove(sessionId);
             }
         }
     }
 
     public void removeCoolDown(final int sessionId, final int streamId)
     {
-        final StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
-        if (null != streamIdState)
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
+        if (null != streamInterest)
         {
-            final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
-            if (null != sessionIdState && ON_COOL_DOWN == sessionIdState.state)
+            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
+            if (null != sessionInterest && ON_COOL_DOWN == sessionInterest.state)
             {
-                streamIdState.sessionIdMap.remove(sessionId);
+                streamInterest.sessionInterestByIdMap.remove(sessionId);
             }
         }
     }
@@ -253,30 +253,32 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
-        final StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
 
-        if (null != streamIdState)
+        if (null != streamInterest)
         {
             final int sessionId = header.sessionId();
             final int termId = header.termId();
-            final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
+            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
-            if (null != sessionIdState)
+            if (null != sessionInterest)
             {
-                if (null != sessionIdState.image)
+                if (null != sessionInterest.image)
                 {
-                    return sessionIdState.image.insertPacket(termId, header.termOffset(), buffer, length);
+                    return sessionInterest.image.insertPacket(termId, header.termOffset(), buffer, length);
                 }
             }
-            else if (!DataHeaderFlyweight.isEndOfStream(buffer) &&
-                (streamIdState.isAcceptingAllSessions || streamIdState.reservedSessionIds.contains(sessionId)))
+            else if (!DataHeaderFlyweight.isEndOfStream(buffer))
             {
-                streamIdState.sessionIdMap.put(sessionId, new SessionIdState(PENDING_SETUP_FRAME));
-                elicitSetupMessageFromSource(channelEndpoint, srcAddress, streamId, sessionId);
-            }
-            else if (!streamIdState.isAcceptingAllSessions && !DataHeaderFlyweight.isEndOfStream(buffer))
-            {
-                streamIdState.sessionIdMap.put(sessionId, new SessionIdState(REJECTED));
+                if (streamInterest.isForAllSessions || streamInterest.subscribedSessionIds.contains(sessionId))
+                {
+                    streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(PENDING_SETUP_FRAME));
+                    elicitSetupMessageFromSource(channelEndpoint, srcAddress, streamId, sessionId);
+                }
+                else
+                {
+                    streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(REJECTED));
+                }
             }
         }
 
@@ -290,20 +292,20 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
-        final StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
 
-        if (null != streamIdState)
+        if (null != streamInterest)
         {
             final int sessionId = header.sessionId();
             final int initialTermId = header.initialTermId();
             final int activeTermId = header.activeTermId();
-            final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
+            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
-            if (null != sessionIdState)
+            if (null != sessionInterest)
             {
-                if (null == sessionIdState.image && (PENDING_SETUP_FRAME == sessionIdState.state))
+                if (null == sessionInterest.image && (PENDING_SETUP_FRAME == sessionInterest.state))
                 {
-                    sessionIdState.state = INIT_IN_PROGRESS;
+                    sessionInterest.state = INIT_IN_PROGRESS;
 
                     createPublicationImage(
                         channelEndpoint,
@@ -318,9 +320,9 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
                         header.ttl());
                 }
             }
-            else if (streamIdState.isAcceptingAllSessions || streamIdState.reservedSessionIds.contains(sessionId))
+            else if (streamInterest.isForAllSessions || streamInterest.subscribedSessionIds.contains(sessionId))
             {
-                streamIdState.sessionIdMap.put(sessionId, new SessionIdState(INIT_IN_PROGRESS));
+                streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(INIT_IN_PROGRESS));
                 createPublicationImage(
                     channelEndpoint,
                     srcAddress,
@@ -335,7 +337,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             }
             else
             {
-                streamIdState.sessionIdMap.put(sessionId, new SessionIdState(REJECTED));
+                streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(REJECTED));
             }
         }
     }
@@ -346,28 +348,28 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
-        final StreamIdState streamIdState = sessionsByStreamIdMap.get(streamId);
+        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
 
-        if (null != streamIdState)
+        if (null != streamInterest)
         {
             final int sessionId = header.sessionId();
-            final SessionIdState sessionIdState = streamIdState.sessionIdMap.get(sessionId);
+            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
-            if (null != sessionIdState && null != sessionIdState.image)
+            if (null != sessionInterest && null != sessionInterest.image)
             {
                 if (RttMeasurementFlyweight.REPLY_FLAG == (header.flags() & RttMeasurementFlyweight.REPLY_FLAG))
                 {
                     // TODO: check rate limit
 
-                    final InetSocketAddress controlAddress =
-                        channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
+                    final InetSocketAddress controlAddress = channelEndpoint.isMulticast() ?
+                        channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
                     channelEndpoint.sendRttMeasurement(
                         controlAddress, sessionId, streamId, header.echoTimestampNs(), 0, false);
                 }
                 else
                 {
-                    sessionIdState.image.onRttMeasurement(header, srcAddress);
+                    sessionInterest.image.onRttMeasurement(header, srcAddress);
                 }
             }
         }
@@ -375,7 +377,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
     public boolean shouldElicitSetupMessage()
     {
-        return !sessionsByStreamIdMap.isEmpty();
+        return !streamInterestByIdMap.isEmpty();
     }
 
     private void elicitSetupMessageFromSource(
@@ -403,8 +405,8 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final int mtuLength,
         final int setupTtl)
     {
-        final InetSocketAddress controlAddress =
-            channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
+        final InetSocketAddress controlAddress = channelEndpoint.isMulticast() ?
+            channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
         if (channelEndpoint.isMulticast() && channelEndpoint.multicastTtl() < setupTtl)
         {

@@ -569,8 +569,9 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel));
         final IpcSubscriptionLink subscription = new IpcSubscriptionLink(
-            registrationId, streamId, channel, getOrAddClient(clientId), clientLivenessTimeoutNs);
+            registrationId, streamId, channel, getOrAddClient(clientId), clientLivenessTimeoutNs, params);
 
         subscriptionLinks.add(subscription);
         clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
@@ -589,8 +590,9 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronClient client = getOrAddClient(clientId);
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri());
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
-            registrationId, udpChannel, streamId, client, context.clientLivenessTimeoutNs());
+            registrationId, udpChannel, streamId, client, context.clientLivenessTimeoutNs(), params);
 
         subscriptionLinks.add(subscriptionLink);
         clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);

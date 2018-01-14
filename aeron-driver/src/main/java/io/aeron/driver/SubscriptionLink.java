@@ -30,6 +30,8 @@ public abstract class SubscriptionLink implements DriverManagedResource
     protected final long registrationId;
     protected final long clientLivenessTimeoutNs;
     protected final int streamId;
+    protected final int sessionId;
+    protected final boolean hasSessionId;
     protected final String channel;
     protected final AeronClient aeronClient;
     protected final Map<Subscribable, ReadablePosition> positionBySubscribableMap = new IdentityHashMap<>();
@@ -41,13 +43,16 @@ public abstract class SubscriptionLink implements DriverManagedResource
         final int streamId,
         final String channel,
         final AeronClient aeronClient,
-        final long clientLivenessTimeoutNs)
+        final long clientLivenessTimeoutNs,
+        final SubscriptionParams params)
     {
         this.registrationId = registrationId;
         this.streamId = streamId;
         this.channel = channel;
         this.aeronClient = aeronClient;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
+        this.hasSessionId = params.hasSessionId;
+        this.sessionId = params.sessionId;
     }
 
     public long registrationId()
@@ -149,13 +154,16 @@ public abstract class SubscriptionLink implements DriverManagedResource
     {
         close();
     }
+
+    public boolean isWildcardOrSessionIdMatch(final int sessionId)
+    {
+        return !hasSessionId || (this.sessionId == sessionId);
+    }
 }
 
 class NetworkSubscriptionLink extends SubscriptionLink
 {
     private final boolean isReliable;
-    private final boolean hasSessionId;
-    private final int sessionId;
     private final ReceiveChannelEndpoint channelEndpoint;
 
     NetworkSubscriptionLink(
@@ -167,12 +175,10 @@ class NetworkSubscriptionLink extends SubscriptionLink
         final long clientLivenessTimeoutNs,
         final SubscriptionParams params)
     {
-        super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
+        super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs, params);
 
         this.isReliable = params.isReliable;
         this.channelEndpoint = channelEndpoint;
-        this.hasSessionId = params.hasSessionId;
-        this.sessionId = params.sessionId;
     }
 
     public boolean isReliable()
@@ -209,11 +215,6 @@ class NetworkSubscriptionLink extends SubscriptionLink
             streamId == this.streamId &&
             isWildcardOrSessionIdMatch(sessionId);
     }
-
-    private boolean isWildcardOrSessionIdMatch(final int sessionId)
-    {
-        return !hasSessionId || (this.sessionId == sessionId);
-    }
 }
 
 class IpcSubscriptionLink extends SubscriptionLink
@@ -223,14 +224,15 @@ class IpcSubscriptionLink extends SubscriptionLink
         final int streamId,
         final String channelUri,
         final AeronClient aeronClient,
-        final long clientLivenessTimeoutNs)
+        final long clientLivenessTimeoutNs,
+        final SubscriptionParams params)
     {
-        super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
+        super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs, params);
     }
 
     public boolean matches(final IpcPublication publication)
     {
-        return publication.streamId() == streamId;
+        return publication.streamId() == streamId && isWildcardOrSessionIdMatch(publication.sessionId());
     }
 }
 
@@ -243,15 +245,18 @@ class SpySubscriptionLink extends SubscriptionLink
         final UdpChannel spiedChannel,
         final int streamId,
         final AeronClient aeronClient,
-        final long clientLivenessTimeoutNs)
+        final long clientLivenessTimeoutNs,
+        final SubscriptionParams params)
     {
-        super(registrationId, streamId, spiedChannel.originalUriString(), aeronClient, clientLivenessTimeoutNs);
+        super(registrationId, streamId, spiedChannel.originalUriString(), aeronClient, clientLivenessTimeoutNs, params);
+
         this.udpChannel = spiedChannel;
     }
 
     public boolean matches(final NetworkPublication publication)
     {
         return streamId == publication.streamId() &&
-            udpChannel.canonicalForm().equals(publication.channelEndpoint().udpChannel().canonicalForm());
+            udpChannel.canonicalForm().equals(publication.channelEndpoint().udpChannel().canonicalForm()) &&
+            isWildcardOrSessionIdMatch(publication.sessionId());
     }
 }

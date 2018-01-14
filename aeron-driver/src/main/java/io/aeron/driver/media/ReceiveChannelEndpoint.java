@@ -19,7 +19,9 @@ import io.aeron.driver.*;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.*;
 import org.agrona.LangUtil;
+import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
+import org.agrona.collections.Long2LongCounterMap;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -49,6 +51,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter possibleTtlAsymmetry;
     private final AtomicCounter statusIndicator;
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
+    private final Long2LongCounterMap refCountByStreamIdAndSessionIdMap = new Long2LongCounterMap(0);
 
     private final long receiverId;
     private boolean isClosed = false;
@@ -180,6 +183,29 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         {
             refCountByStreamIdMap.remove(streamId);
             throw new IllegalStateException("Could not find stream Id to decrement: " + streamId);
+        }
+
+        return count;
+    }
+
+    public long incRefToStreamAndSession(final int streamId, final int sessionId)
+    {
+        incRefToStream(streamId);
+        return refCountByStreamIdAndSessionIdMap.incrementAndGet(Hashing.compoundKey(streamId, sessionId));
+    }
+
+    public long decRefToStreamAndSession(final int streamId, final int sessionId)
+    {
+        final long key = Hashing.compoundKey(streamId, sessionId);
+
+        decRefToStream(streamId);
+        final long count = refCountByStreamIdAndSessionIdMap.decrementAndGet(key);
+
+        if (-1 == count)
+        {
+            refCountByStreamIdAndSessionIdMap.remove(key);
+            throw new IllegalStateException(
+                "Could not find stream Id + session Id to decrement: " + streamId + " " + sessionId);
         }
 
         return count;

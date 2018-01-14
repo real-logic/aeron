@@ -41,7 +41,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         PENDING_SETUP_FRAME,
         INIT_IN_PROGRESS,
         ON_COOL_DOWN,
-        REJECTED
+        NO_INTEREST
     }
 
     static class SessionInterest
@@ -94,7 +94,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             for (final int sessionId : streamInterest.sessionInterestByIdMap.keySet())
             {
                 final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
-                if (REJECTED == sessionInterest.state)
+                if (NO_INTEREST == sessionInterest.state)
                 {
                     streamInterest.sessionInterestByIdMap.remove(sessionId);
                 }
@@ -115,7 +115,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         streamInterest.subscribedSessionIds.add(sessionId);
 
         final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
-        if (null != sessionInterest && REJECTED == sessionInterest.state)
+        if (null != sessionInterest && NO_INTEREST == sessionInterest.state)
         {
             streamInterest.sessionInterestByIdMap.remove(sessionId);
         }
@@ -277,7 +277,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
                 }
                 else
                 {
-                    streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(REJECTED));
+                    streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(NO_INTEREST));
                 }
             }
         }
@@ -337,7 +337,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             }
             else
             {
-                streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(REJECTED));
+                streamInterest.sessionInterestByIdMap.put(sessionId, new SessionInterest(NO_INTEREST));
             }
         }
     }

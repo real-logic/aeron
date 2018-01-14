@@ -42,7 +42,8 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (publication.tryClaim(length, bufferClaim) > 0)
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
                 sessionEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -55,6 +56,8 @@ class EgressPublisher
 
                 return true;
             }
+
+            checkResult(result);
         }
         while (--attempts > 0);
 
@@ -72,7 +75,8 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (publication.tryClaim(length, bufferClaim) > 0)
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
                 challengeEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -84,9 +88,21 @@ class EgressPublisher
 
                 return true;
             }
+
+            checkResult(result);
         }
         while (--attempts > 0);
 
         return false;
+    }
+
+    private static void checkResult(final long result)
+    {
+        if (result == Publication.NOT_CONNECTED ||
+            result == Publication.CLOSED ||
+            result == Publication.MAX_POSITION_EXCEEDED)
+        {
+            throw new IllegalStateException("Unexpected publication state: " + result);
+        }
     }
 }

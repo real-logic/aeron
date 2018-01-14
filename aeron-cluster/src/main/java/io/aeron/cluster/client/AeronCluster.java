@@ -136,8 +136,8 @@ public final class AeronCluster implements AutoCloseable
 
             if (!ctx.ownsAeronClient())
             {
-                subscription.close();
-                publication.close();
+                CloseHelper.close(subscription);
+                CloseHelper.close(publication);
             }
 
             ctx.close();
@@ -878,7 +878,7 @@ public final class AeronCluster implements AutoCloseable
         {
             if (ownsAeronClient)
             {
-                aeron.close();
+                CloseHelper.close(aeron);
             }
         }
     }

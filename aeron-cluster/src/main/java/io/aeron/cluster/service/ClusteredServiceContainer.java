@@ -1069,7 +1069,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             if (ownsAeronClient)
             {
-                aeron.close();
+                CloseHelper.close(aeron);
             }
         }
     }

@@ -128,11 +128,11 @@ public class AeronArchive implements AutoCloseable
 
             if (!context.ownsAeronClient())
             {
-                controlResponsePoller.subscription().close();
-                archiveProxy.publication().close();
+                CloseHelper.close(controlResponsePoller.subscription());
+                CloseHelper.close(archiveProxy.publication());
             }
 
-            context.close();
+            CloseHelper.close(context);
         }
         finally
         {
@@ -1433,7 +1433,7 @@ public class AeronArchive implements AutoCloseable
         {
             if (ownsAeronClient)
             {
-                aeron.close();
+                CloseHelper.close(aeron);
             }
         }
     }

@@ -64,10 +64,13 @@ class LogAppender implements AutoCloseable
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (publication.offer(buffer, offset, length) > 0)
+            final long result = publication.offer(buffer, offset, length);
+            if (result > 0)
             {
                 return true;
             }
+
+            checkResult(result);
         }
         while (--attempts > 0);
 
@@ -88,7 +91,8 @@ class LogAppender implements AutoCloseable
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (publication.tryClaim(length, bufferClaim) > 0)
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
                 connectEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -103,6 +107,9 @@ class LogAppender implements AutoCloseable
 
                 return true;
             }
+
+            checkResult(result);
+
         }
         while (--attempts > 0);
 
@@ -116,7 +123,8 @@ class LogAppender implements AutoCloseable
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (publication.tryClaim(length, bufferClaim) > 0)
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
                 closeEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -128,6 +136,8 @@ class LogAppender implements AutoCloseable
 
                 return true;
             }
+
+            checkResult(result);
         }
         while (--attempts > 0);
 
@@ -141,7 +151,8 @@ class LogAppender implements AutoCloseable
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (publication.tryClaim(length, bufferClaim) > 0)
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
                 timerEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -152,6 +163,8 @@ class LogAppender implements AutoCloseable
 
                 return true;
             }
+
+            checkResult(result);
         }
         while (--attempts > 0);
 
@@ -166,7 +179,8 @@ class LogAppender implements AutoCloseable
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (publication.tryClaim(length, bufferClaim) > 0)
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
                 actionRequestEncoder.wrapAndApplyHeader(
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -179,9 +193,21 @@ class LogAppender implements AutoCloseable
 
                 return true;
             }
+
+            checkResult(result);
         }
         while (--attempts > 0);
 
         return false;
+    }
+
+    private static void checkResult(final long result)
+    {
+        if (result == Publication.NOT_CONNECTED ||
+            result == Publication.CLOSED ||
+            result == Publication.MAX_POSITION_EXCEEDED)
+        {
+            throw new IllegalStateException("Unexpected publication state: " + result);
+        }
     }
 }

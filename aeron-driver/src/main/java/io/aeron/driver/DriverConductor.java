@@ -758,7 +758,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             final SubscriptionLink subscription = subscriptionLinks.get(i);
-            if (subscription.matches(channelEndpoint, streamId))
+            if (subscription.matches(channelEndpoint, streamId, sessionId))
             {
                 final Position position = SubscriberPos.allocate(
                     tempBuffer,
@@ -993,7 +993,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             for (int i = 0, size = existingLinks.size(); i < size; i++)
             {
                 final SubscriptionLink subscription = existingLinks.get(i);
-                if (subscription.matches(channelEndpoint, streamId) && params.isReliable != subscription.isReliable())
+                if (subscription.matches(channelEndpoint, streamId, params) &&
+                    params.isReliable != subscription.isReliable())
                 {
                     throw new IllegalStateException(
                         "Option conflicts with existing subscriptions: reliable=" + params.isReliable);
@@ -1011,7 +1012,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
             final PublicationImage image = publicationImages.get(i);
-            if (image.matches(channelEndpoint, streamId) && image.isAcceptingSubscriptions())
+            if (subscription.matches(image) && image.isAcceptingSubscriptions())
             {
                 final long rebuildPosition = image.rebuildPosition();
                 final int sessionId = image.sessionId();
@@ -1043,7 +1044,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             final SubscriptionLink subscription = subscriptionLinks.get(i);
-            if (subscription.matches(streamId) && !subscription.isLinked(publication))
+            if (subscription.matches(publication) && !subscription.isLinked(publication))
             {
                 linkIpcSubscription((IpcSubscriptionLink)subscription, publication);
             }

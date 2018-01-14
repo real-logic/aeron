@@ -256,18 +256,6 @@ public class PublicationImage
     }
 
     /**
-     * Does this image match a given {@link ReceiveChannelEndpoint} and stream id?
-     *
-     * @param channelEndpoint to match by identity.
-     * @param streamId        to match on value.
-     * @return true on a match otherwise false.
-     */
-    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
-    {
-        return this.streamId == streamId && this.channelEndpoint == channelEndpoint;
-    }
-
-    /**
      * Remove a {@link ReadablePosition} for a subscriber that has been removed so it is not tracked for flow control.
      *
      * @param subscriberPosition for the subscriber that has been removed.

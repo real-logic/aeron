@@ -80,12 +80,23 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return false;
     }
 
-    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    public boolean matches(final PublicationImage image)
     {
         return false;
     }
 
-    public boolean matches(final int streamId)
+    public boolean matches(final IpcPublication publication)
+    {
+        return false;
+    }
+
+    public boolean matches(
+        final ReceiveChannelEndpoint channelEndpoint, final int streamId, final SubscriptionParams params)
+    {
+        return false;
+    }
+
+    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
     {
         return false;
     }
@@ -143,6 +154,8 @@ public abstract class SubscriptionLink implements DriverManagedResource
 class NetworkSubscriptionLink extends SubscriptionLink
 {
     private final boolean isReliable;
+    private final boolean hasSessionId;
+    private final int sessionId;
     private final ReceiveChannelEndpoint channelEndpoint;
 
     NetworkSubscriptionLink(
@@ -158,6 +171,8 @@ class NetworkSubscriptionLink extends SubscriptionLink
 
         this.isReliable = params.isReliable;
         this.channelEndpoint = channelEndpoint;
+        this.hasSessionId = params.hasSessionId;
+        this.sessionId = params.sessionId;
     }
 
     public boolean isReliable()
@@ -170,9 +185,34 @@ class NetworkSubscriptionLink extends SubscriptionLink
         return channelEndpoint;
     }
 
-    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    public boolean matches(final PublicationImage image)
     {
-        return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
+        return image.channelEndpoint() == this.channelEndpoint &&
+            image.streamId() == this.streamId &&
+            isWildcardOrSessionIdMatch(image.sessionId());
+    }
+
+    public boolean matches(
+        final ReceiveChannelEndpoint channelEndpoint, final int streamId, final SubscriptionParams params)
+    {
+        final boolean isExactWildcardOrSessionIdMatch =
+            hasSessionId == params.hasSessionId && (!hasSessionId || this.sessionId == params.sessionId);
+
+        return channelEndpoint == this.channelEndpoint &&
+            streamId == this.streamId &&
+            isExactWildcardOrSessionIdMatch;
+    }
+
+    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
+    {
+        return channelEndpoint == this.channelEndpoint &&
+            streamId == this.streamId &&
+            isWildcardOrSessionIdMatch(sessionId);
+    }
+
+    private boolean isWildcardOrSessionIdMatch(final int sessionId)
+    {
+        return !hasSessionId || (this.sessionId == sessionId);
     }
 }
 
@@ -188,9 +228,9 @@ class IpcSubscriptionLink extends SubscriptionLink
         super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs);
     }
 
-    public boolean matches(final int streamId)
+    public boolean matches(final IpcPublication publication)
     {
-        return streamId() == streamId;
+        return publication.streamId() == streamId;
     }
 }
 

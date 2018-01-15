@@ -330,7 +330,8 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the maximum transmission unit (MTU) including Aeron header for a datagram payload.
+     * Set the maximum transmission unit (MTU) including Aeron header for a datagram payload. If this is greater
+     * than the network MTU for UDP then the packet will be fragmented and can amplify the impact of loss.
      *
      * @param mtu the maximum transmission unit including Aeron header for a datagram payload.
      * @return this for a fluent API.
@@ -356,7 +357,8 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Get the maximum transmission unit (MTU) including Aeron header for a datagram payload.
+     * Get the maximum transmission unit (MTU) including Aeron header for a datagram payload. If this is greater
+     * than the network MTU for UDP then the packet will be fragmented and can amplify the impact of loss.
      *
      * @return the maximum transmission unit (MTU) including Aeron header for a datagram payload.
      * @see CommonContext#MTU_LENGTH_PARAM_NAME

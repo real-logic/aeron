@@ -943,7 +943,8 @@ public final class MediaDriver implements AutoCloseable
          * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
          * <p>
          * Larger MTUs reduce system call overhead at the expense of possible increase in loss which
-         * will need to be recovered.
+         * will need to be recovered. If this is greater than the network MTU for UDP then the packet will be
+         * fragmented and can amplify the impact of loss.
          *
          * @return MTU in bytes for datagrams sent to the network.
          */
@@ -956,7 +957,8 @@ public final class MediaDriver implements AutoCloseable
          * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
          * <p>
          * Larger MTUs reduce system call overhead at the expense of possible increase in loss which
-         * will need to be recovered.
+         * will need to be recovered. If this is greater than the network MTU for UDP then the packet will be
+         * fragmented and can amplify the impact of loss.
          *
          * @param mtuLength in bytes for datagrams sent to the network.
          * @return this for a fluent API.
@@ -968,9 +970,10 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
+         * MTU in bytes for datagrams sent over shared memory. Messages larger than this are fragmented.
          * <p>
-         * Larger MTUs reduce fragmentation.
+         * Larger MTUs reduce fragmentation. If an IPC stream is recorded to be later sent over the network then
+         * then a large MTU may be an issue.
          *
          * @return MTU in bytes for message fragments.
          */
@@ -980,9 +983,10 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
+         * MTU in bytes for datagrams sent over shared memory. Messages larger than this are fragmented.
          * <p>
-         * Larger MTUs reduce fragmentation.
+         * Larger MTUs reduce fragmentation. If an IPC stream is recorded to be later sent over the network then
+         * then a large MTU may be an issue.
          *
          * @param ipcMtuLength in bytes for message fragments.
          * @return this for a fluent API.

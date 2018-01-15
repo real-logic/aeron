@@ -118,7 +118,8 @@ public class CommonContext implements AutoCloseable
     public static final String TERM_LENGTH_PARAM_NAME = "term-length";
 
     /**
-     * MTU length parameter name for using as a channel URI param.
+     * MTU length parameter name for using as a channel URI param. If this is greater than the network MTU for UDP
+     * then the packet will be fragmented and can amplify the impact of loss.
      */
     public static final String MTU_LENGTH_PARAM_NAME = "mtu";
 

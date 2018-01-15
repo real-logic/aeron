@@ -594,7 +594,8 @@ public class Configuration
     public static final int MAX_UDP_PAYLOAD_LENGTH = 65504;
 
     /**
-     * Length of the maximum transmission unit of the media driver's protocol
+     * Length of the maximum transmission unit of the media driver's protocol. If this is greater
+     * than the network MTU for UDP then the packet will be fragmented and can amplify the impact of loss.
      */
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
 

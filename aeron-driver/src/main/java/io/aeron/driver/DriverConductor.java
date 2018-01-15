@@ -375,9 +375,19 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         if (null != channelEndpoint)
         {
-            if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
+            if (subscription.hasSessionId())
             {
-                receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
+                if (0 == channelEndpoint.decRefToStreamAndSession(subscription.streamId(), subscription.sessionId()))
+                {
+                    receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
+                }
+            }
+            else
+            {
+                if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
+                {
+                    receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
+                }
             }
 
             if (channelEndpoint.shouldBeClosed())
@@ -551,10 +561,20 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         checkForClashingSubscription(params, udpChannel, streamId);
 
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(udpChannel);
-        final int refCount = channelEndpoint.incRefToStream(streamId);
-        if (1 == refCount)
+
+        if (params.hasSessionId)
         {
-            receiverProxy.addSubscription(channelEndpoint, streamId);
+            if (1 == channelEndpoint.incRefToStreamAndSession(streamId, params.sessionId))
+            {
+                receiverProxy.addSubscription(channelEndpoint, streamId, params.sessionId);
+            }
+        }
+        else
+        {
+            if (1 == channelEndpoint.incRefToStream(streamId))
+            {
+                receiverProxy.addSubscription(channelEndpoint, streamId);
+            }
         }
 
         final AeronClient client = getOrAddClient(clientId);
@@ -625,10 +645,20 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         if (null != channelEndpoint)
         {
-            final int refCount = channelEndpoint.decRefToStream(subscription.streamId());
-            if (0 == refCount)
+            if (subscription.hasSessionId())
             {
-                receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
+                if (0 == channelEndpoint.decRefToStreamAndSession(subscription.streamId(), subscription.sessionId()))
+                {
+                    receiverProxy.removeSubscription(
+                        channelEndpoint, subscription.streamId(), subscription.sessionId());
+                }
+            }
+            else
+            {
+                if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
+                {
+                    receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
+                }
             }
 
             if (channelEndpoint.shouldBeClosed())

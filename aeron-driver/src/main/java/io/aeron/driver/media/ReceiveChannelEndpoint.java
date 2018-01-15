@@ -362,9 +362,19 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         dispatcher.addSubscription(streamId);
     }
 
+    public void addSubscription(final int streamId, final int sessionId)
+    {
+        dispatcher.addSubscription(streamId, sessionId);
+    }
+
     public void removeSubscription(final int streamId)
     {
         dispatcher.removeSubscription(streamId);
+    }
+
+    public void removeSubscription(final int streamId, final int sessionId)
+    {
+        dispatcher.removeSubscription(streamId, sessionId);
     }
 
     public void addPublicationImage(final PublicationImage image)

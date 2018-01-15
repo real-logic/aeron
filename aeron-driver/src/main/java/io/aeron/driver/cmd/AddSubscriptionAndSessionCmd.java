@@ -15,22 +15,25 @@
  */
 package io.aeron.driver.cmd;
 
-import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.Receiver;
+import io.aeron.driver.media.ReceiveChannelEndpoint;
 
-public class AddSubscriptionCmd implements ReceiverCmd
+public class AddSubscriptionAndSessionCmd implements ReceiverCmd
 {
     private final ReceiveChannelEndpoint channelEndpoint;
     private final int streamId;
+    private final int sessionId;
 
-    public AddSubscriptionCmd(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    public AddSubscriptionAndSessionCmd(
+        final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
     {
         this.channelEndpoint = channelEndpoint;
         this.streamId = streamId;
+        this.sessionId = sessionId;
     }
 
     public void execute(final Receiver receiver)
     {
-        receiver.onAddSubscription(channelEndpoint, streamId);
+        receiver.onAddSubscription(channelEndpoint, streamId, sessionId);
     }
 }

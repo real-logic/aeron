@@ -114,9 +114,21 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         channelEndpoint.addSubscription(streamId);
     }
 
+    public void onAddSubscription(
+        final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
+    {
+        channelEndpoint.addSubscription(streamId, sessionId);
+    }
+
     public void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
         channelEndpoint.removeSubscription(streamId);
+    }
+
+    public void onRemoveSubscription(
+        final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
+    {
+        channelEndpoint.removeSubscription(streamId, sessionId);
     }
 
     public void onNewPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)

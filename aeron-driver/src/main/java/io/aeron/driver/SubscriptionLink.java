@@ -65,6 +65,11 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return streamId;
     }
 
+    public int sessionId()
+    {
+        return sessionId;
+    }
+
     public String channel()
     {
         return channel;
@@ -78,6 +83,11 @@ public abstract class SubscriptionLink implements DriverManagedResource
     public boolean isReliable()
     {
         return true;
+    }
+
+    public boolean hasSessionId()
+    {
+        return hasSessionId;
     }
 
     public boolean matches(final NetworkPublication publication)

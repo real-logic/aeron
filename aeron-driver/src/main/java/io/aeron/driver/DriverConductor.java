@@ -1291,8 +1291,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         {
             final IpcPublication publication = ipcPublications.get(i);
             if (publication.sessionId() == sessionId &&
-                publication.isExclusive() &&
-                IpcPublication.State.ACTIVE == publication.state())
+                publication.isExclusive())
             {
                 throw new IllegalStateException(
                     "Existing exclusive IPC publication has same session id: " + sessionId);
@@ -1307,8 +1306,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         {
             final NetworkPublication publication = networkPublications.get(i);
             if (publication.sessionId() == sessionId &&
-                publication.isExclusive() &&
-                NetworkPublication.State.ACTIVE == publication.state())
+                publication.isExclusive())
             {
                 throw new IllegalStateException(
                     "Existing exclusive network publication has same session id: " + sessionId);

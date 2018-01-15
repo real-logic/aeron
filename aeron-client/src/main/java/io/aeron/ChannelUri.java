@@ -45,7 +45,7 @@ public class ChannelUri
     public static final String AERON_SCHEME = "aeron";
 
     /**
-     * Qualifier for spy subscriptions.
+     * Qualifier for spy subscriptions which spy on outgoing network destined traffic efficiently.
      */
     public static final String SPY_QUALIFIER = "aeron-spy";
 

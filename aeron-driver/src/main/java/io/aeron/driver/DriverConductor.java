@@ -584,7 +584,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         subscriptionLinks.add(subscription);
         clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId());
 
-        linkMatchingImages(channelEndpoint, subscription);
+        linkMatchingImages(subscription);
     }
 
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
@@ -723,11 +723,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             throw new ControlProtocolException(UNKNOWN_COUNTER, "Unknown counter: " + registrationId);
         }
 
-        // acknowledge remove counter request
         clientProxy.operationSucceeded(correlationId);
-
-        // inform all clients of counter being removed.
-        clientProxy.onUnavailableCounter(counterLink.registrationId(), counterLink.counterId());
+        clientProxy.onUnavailableCounter(registrationId, counterLink.counterId());
 
         counterLink.close();
     }
@@ -1035,7 +1032,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
     }
 
-    private void linkMatchingImages(final ReceiveChannelEndpoint channelEndpoint, final SubscriptionLink subscription)
+    private void linkMatchingImages(final SubscriptionLink subscription)
     {
         final long registrationId = subscription.registrationId();
         final int streamId = subscription.streamId();
@@ -1070,7 +1067,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     private void linkIpcSubscriptions(final IpcPublication publication)
     {
-        final int streamId = publication.streamId();
         final ArrayList<SubscriptionLink> subscriptionLinks = this.subscriptionLinks;
 
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
@@ -1299,7 +1295,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                 IpcPublication.State.ACTIVE == publication.state())
             {
                 throw new IllegalStateException(
-                    "Existing exclusive IPC publication has same session id: id=" + sessionId);
+                    "Existing exclusive IPC publication has same session id: " + sessionId);
             }
         }
     }
@@ -1315,7 +1311,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                 NetworkPublication.State.ACTIVE == publication.state())
             {
                 throw new IllegalStateException(
-                    "Existing exclusive network publication has same session id: id=" + sessionId);
+                    "Existing exclusive network publication has same session id: " + sessionId);
             }
         }
     }

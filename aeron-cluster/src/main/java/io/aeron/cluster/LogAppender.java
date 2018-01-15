@@ -20,20 +20,23 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
+
+import java.nio.ByteOrder;
 
 class LogAppender implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
     private final SessionOpenEventEncoder connectEventEncoder = new SessionOpenEventEncoder();
     private final SessionCloseEventEncoder closeEventEncoder = new SessionCloseEventEncoder();
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
     private final ServiceActionRequestEncoder actionRequestEncoder = new ServiceActionRequestEncoder();
-    private final BufferClaim bufferClaim = new BufferClaim();
+    private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final Publication publication;
+    private final BufferClaim bufferClaim = new BufferClaim();
 
     LogAppender(final Publication publication)
     {
@@ -57,9 +60,10 @@ class LogAppender implements AutoCloseable
 
     public boolean appendMessage(final DirectBuffer buffer, final int offset, final int length, final long nowMs)
     {
-        sessionHeaderEncoder
-            .wrap((UnsafeBuffer)buffer, offset + MessageHeaderEncoder.ENCODED_LENGTH)
-            .timestamp(nowMs);
+        final int timestampOffset =
+            offset + MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.timestampEncodingOffset();
+
+        ((MutableDirectBuffer)buffer).putLong(timestampOffset, nowMs, ByteOrder.LITTLE_ENDIAN);
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -81,35 +85,28 @@ class LogAppender implements AutoCloseable
     {
         final byte[] sessionPrincipleData = session.principleData();
         final String channel = session.responsePublication().channel();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
-            SessionOpenEventEncoder.BLOCK_LENGTH +
-            SessionOpenEventEncoder.responseChannelHeaderLength() +
-            channel.length() +
-            SessionOpenEventEncoder.principleDataHeaderLength() +
-            sessionPrincipleData.length;
+
+        connectEventEncoder
+            .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
+            .clusterSessionId(session.id())
+            .correlationId(session.lastCorrelationId())
+            .timestamp(nowMs)
+            .responseStreamId(session.responsePublication().streamId())
+            .responseChannel(channel)
+            .putPrincipleData(sessionPrincipleData, 0, sessionPrincipleData.length);
+
+        final int length = connectEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = publication.offer(expandableArrayBuffer, 0, length);
             if (result > 0)
             {
-                connectEventEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(session.id())
-                    .correlationId(session.lastCorrelationId())
-                    .timestamp(nowMs)
-                    .responseStreamId(session.responsePublication().streamId())
-                    .responseChannel(channel)
-                    .putPrincipleData(sessionPrincipleData, 0, sessionPrincipleData.length);
-
-                bufferClaim.commit();
-
                 return true;
             }
 
             checkResult(result);
-
         }
         while (--attempts > 0);
 

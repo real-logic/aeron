@@ -28,6 +28,7 @@ import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.*;
+import org.agrona.collections.IntHashSet;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.*;
@@ -79,6 +80,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
     private final ArrayList<CounterLink> counterLinks = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
+    private final IntHashSet activeSessionIds = new IntHashSet();
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
     private final CachedEpochClock cachedEpochClock;
@@ -315,7 +317,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
         else if (params.hasSessionId)
         {
-            confirmNetworkSessionIdNotInUse(networkPublications, params.sessionId);
+            confirmSessionIdNotInUse(params.sessionId);
         }
 
         if (null == publication)
@@ -358,6 +360,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void cleanupPublication(final NetworkPublication publication)
     {
+        activeSessionIds.remove(publication.sessionId());
         senderProxy.removeNetworkPublication(publication);
 
         final SendChannelEndpoint channelEndpoint = publication.channelEndpoint();
@@ -442,6 +445,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void cleanupIpcPublication(final IpcPublication publication)
     {
+        activeSessionIds.remove(publication.sessionId());
+
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             subscriptionLinks.get(i).unlink(publication);
@@ -836,7 +841,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final PublicationParams params,
         final boolean isExclusive)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : nextSessionId++;
+        final int sessionId = params.hasSessionId ? params.sessionId : assignNonClashingSessionId();
         final UnsafeBufferPosition senderPosition = SenderPos.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
         final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
@@ -1185,7 +1190,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
         else if (params.hasSessionId)
         {
-            confirmIpcSessionIdNotInUse(ipcPublications, params.sessionId);
+            confirmSessionIdNotInUse(params.sessionId);
         }
 
         if (null == publication)
@@ -1208,7 +1213,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final boolean isExclusive,
         final PublicationParams params)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : nextSessionId++;
+        final int sessionId = params.hasSessionId ? params.sessionId : assignNonClashingSessionId();
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
         final RawLog rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
 
@@ -1284,32 +1289,34 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         return ipcPublication;
     }
 
-    private static void confirmIpcSessionIdNotInUse(
-        final ArrayList<IpcPublication> ipcPublications, final long sessionId)
+    private void confirmSessionIdNotInUse(final int sessionId)
     {
-        for (int i = 0, size = ipcPublications.size(); i < size; i++)
+        if (activeSessionIds.contains(sessionId))
         {
-            final IpcPublication publication = ipcPublications.get(i);
-            if (publication.sessionId() == sessionId && publication.isExclusive())
-            {
-                throw new IllegalStateException(
-                    "Existing exclusive IPC publication has same session id: " + sessionId);
-            }
+            throw new IllegalStateException("Existing publication has same session id: " + sessionId);
         }
     }
 
-    private static void confirmNetworkSessionIdNotInUse(
-        final ArrayList<NetworkPublication> networkPublications, final long sessionId)
+    private int assignNonClashingSessionId()
     {
-        for (int i = 0, size = networkPublications.size(); i < size; i++)
+        final int startingSessionId = nextSessionId;
+        int sessionId = startingSessionId;
+
+        do
         {
-            final NetworkPublication publication = networkPublications.get(i);
-            if (publication.sessionId() == sessionId && publication.isExclusive())
+            if (!activeSessionIds.contains(sessionId))
             {
-                throw new IllegalStateException(
-                    "Existing exclusive network publication has same session id: " + sessionId);
+                nextSessionId = sessionId;
+                activeSessionIds.add(nextSessionId);
+                return nextSessionId++;
             }
+
+            sessionId++;
         }
+        while ((sessionId - startingSessionId) <= (activeSessionIds.size() + 1));
+
+        throw new IllegalStateException(
+            "could not find non clashing session Id: starting=" + startingSessionId + " current=" + sessionId);
     }
 
     private <T extends DriverManagedResource> void checkManagedResources(

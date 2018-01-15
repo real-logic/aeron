@@ -46,6 +46,7 @@ public class ChannelUriStringBuilder
     private Integer initialTermId;
     private Integer termId;
     private Integer termOffset;
+    private Integer sessionId;
 
     /**
      * Clear out all the values thus setting back to the initial state.
@@ -67,6 +68,7 @@ public class ChannelUriStringBuilder
         initialTermId = null;
         termId = null;
         termOffset = null;
+        sessionId = null;
 
         return this;
     }
@@ -108,6 +110,7 @@ public class ChannelUriStringBuilder
      *
      * @param prefix to be applied to the URI before the the scheme.
      * @return this for a fluent API.
+     * @see ChannelUri#SPY_QUALIFIER
      */
     public ChannelUriStringBuilder prefix(final String prefix)
     {
@@ -168,6 +171,7 @@ public class ChannelUriStringBuilder
      *
      * @param endpoint address and port for the channel.
      * @return this for a fluent API.
+     * @see CommonContext#ENDPOINT_PARAM_NAME
      */
     public ChannelUriStringBuilder endpoint(final String endpoint)
     {
@@ -179,6 +183,7 @@ public class ChannelUriStringBuilder
      * Get the endpoint address:port pairing for the channel.
      *
      * @return the endpoint address:port pairing for the channel.
+     * @see CommonContext#ENDPOINT_PARAM_NAME
      */
     public String endpoint()
     {
@@ -190,6 +195,7 @@ public class ChannelUriStringBuilder
      *
      * @param networkInterface for routing traffic.
      * @return this for a fluent API.
+     * @see CommonContext#INTERFACE_PARAM_NAME
      */
     public ChannelUriStringBuilder networkInterface(final String networkInterface)
     {
@@ -201,6 +207,7 @@ public class ChannelUriStringBuilder
      * Get the address of the local interface in the form host:[port]/[subnet mask] for routing traffic.
      *
      * @return the address of the local interface in the form host:[port]/[subnet mask] for routing traffic.
+     * @see CommonContext#INTERFACE_PARAM_NAME
      */
     public String networkInterface()
     {
@@ -212,6 +219,7 @@ public class ChannelUriStringBuilder
      *
      * @param controlEndpoint for joining a MDC control socket.
      * @return this for a fluent API.
+     * @see CommonContext#MDC_CONTROL_PARAM_NAME
      */
     public ChannelUriStringBuilder controlEndpoint(final String controlEndpoint)
     {
@@ -223,6 +231,7 @@ public class ChannelUriStringBuilder
      * Get the control address:port pair for dynamically joining a multi-destination-cast publication.
      *
      * @return the control address:port pair for dynamically joining a multi-destination-cast publication.
+     * @see CommonContext#MDC_CONTROL_PARAM_NAME
      */
     public String controlEndpoint()
     {
@@ -236,6 +245,9 @@ public class ChannelUriStringBuilder
      * @return this for a fluent API.
      * @see Publication#addDestination(String)
      * @see Publication#removeDestination(String)
+     * @see CommonContext#MDC_CONTROL_MODE_PARAM_NAME
+     * @see CommonContext#MDC_CONTROL_MODE_MANUAL
+     * @see CommonContext#MDC_CONTROL_MODE_DYNAMIC
      */
     public ChannelUriStringBuilder controlMode(final String controlMode)
     {
@@ -254,6 +266,9 @@ public class ChannelUriStringBuilder
      * Get the control mode for multi-destination-cast.
      *
      * @return the control mode for multi-destination-cast.
+     * @see CommonContext#MDC_CONTROL_MODE_PARAM_NAME
+     * @see CommonContext#MDC_CONTROL_MODE_MANUAL
+     * @see CommonContext#MDC_CONTROL_MODE_DYNAMIC
      */
     public String controlMode()
     {
@@ -265,6 +280,7 @@ public class ChannelUriStringBuilder
      *
      * @param isReliable false if loss can be be gap filled.
      * @return this for a fluent API.
+     * @see CommonContext#RELIABLE_STREAM_PARAM_NAME
      */
     public ChannelUriStringBuilder reliable(final Boolean isReliable)
     {
@@ -276,6 +292,7 @@ public class ChannelUriStringBuilder
      * Get the subscription semantics for if loss is acceptable, or not, for a reliable message delivery.
      *
      * @return the subscription semantics for if loss is acceptable, or not, for a reliable message delivery.
+     * @see CommonContext#RELIABLE_STREAM_PARAM_NAME
      */
     public Boolean reliable()
     {
@@ -288,6 +305,7 @@ public class ChannelUriStringBuilder
      *
      * @param ttl value for a multicast datagram.
      * @return this for a fluent API.
+     * @see CommonContext#TTL_PARAM_NAME
      */
     public ChannelUriStringBuilder ttl(final Integer ttl)
     {
@@ -304,6 +322,7 @@ public class ChannelUriStringBuilder
      * Get the Time To Live (TTL) for a multicast datagram.
      *
      * @return the Time To Live (TTL) for a multicast datagram.
+     * @see CommonContext#TTL_PARAM_NAME
      */
     public Integer ttl()
     {
@@ -315,6 +334,7 @@ public class ChannelUriStringBuilder
      *
      * @param mtu the maximum transmission unit including Aeron header for a datagram payload.
      * @return this for a fluent API.
+     * @see CommonContext#MTU_LENGTH_PARAM_NAME
      */
     public ChannelUriStringBuilder mtu(final Integer mtu)
     {
@@ -339,6 +359,7 @@ public class ChannelUriStringBuilder
      * Get the maximum transmission unit (MTU) including Aeron header for a datagram payload.
      *
      * @return the maximum transmission unit (MTU) including Aeron header for a datagram payload.
+     * @see CommonContext#MTU_LENGTH_PARAM_NAME
      */
     public Integer mtu()
     {
@@ -350,6 +371,7 @@ public class ChannelUriStringBuilder
      *
      * @param termLength of the buffer used for each term of the log.
      * @return this for a fluent API.
+     * @see CommonContext#TERM_LENGTH_PARAM_NAME
      */
     public ChannelUriStringBuilder termLength(final Integer termLength)
     {
@@ -366,6 +388,7 @@ public class ChannelUriStringBuilder
      * Get the length of buffer used for each term of the log.
      *
      * @return the length of buffer used for each term of the log.
+     * @see CommonContext#TERM_LENGTH_PARAM_NAME
      */
     public Integer termLength()
     {
@@ -377,6 +400,7 @@ public class ChannelUriStringBuilder
      *
      * @param initialTermId the initial term id at which a publication will start.
      * @return this for a fluent API.
+     * @see CommonContext#INITIAL_TERM_ID_PARAM_NAME
      */
     public ChannelUriStringBuilder initialTermId(final Integer initialTermId)
     {
@@ -388,6 +412,7 @@ public class ChannelUriStringBuilder
      * the initial term id at which a publication will start.
      *
      * @return the initial term id at which a publication will start.
+     * @see CommonContext#INITIAL_TERM_ID_PARAM_NAME
      */
     public Integer initialTermId()
     {
@@ -400,6 +425,7 @@ public class ChannelUriStringBuilder
      *
      * @param termId at which a publication will start.
      * @return this for a fluent API.
+     * @see CommonContext#TERM_ID_PARAM_NAME
      */
     public ChannelUriStringBuilder termId(final Integer termId)
     {
@@ -411,6 +437,7 @@ public class ChannelUriStringBuilder
      * Get the current term id at which a publication will start.
      *
      * @return the current term id at which a publication will start.
+     * @see CommonContext#TERM_ID_PARAM_NAME
      */
     public Integer termId()
     {
@@ -423,6 +450,7 @@ public class ChannelUriStringBuilder
      *
      * @param termOffset within a term at which a publication will start.
      * @return this for a fluent API.
+     * @see CommonContext#TERM_OFFSET_PARAM_NAME
      */
     public ChannelUriStringBuilder termOffset(final Integer termOffset)
     {
@@ -447,10 +475,35 @@ public class ChannelUriStringBuilder
      * Get the offset within a term at which a publication will start.
      *
      * @return the offset within a term at which a publication will start.
+     * @see CommonContext#TERM_OFFSET_PARAM_NAME
      */
     public Integer termOffset()
     {
         return termOffset;
+    }
+
+    /**
+     * Set the session id for a publication or restricted subscription.
+     *
+     * @param sessionId for the publication or a restricted subscription.
+     * @return this for a fluent API.
+     * @see CommonContext#SESSION_ID_PARAM_NAME
+     */
+    public ChannelUriStringBuilder sessionId(final Integer sessionId)
+    {
+        this.sessionId = sessionId;
+        return this;
+    }
+
+    /**
+     * Get the session id for a publication or restricted subscription.
+     *
+     * @return the session id for a publication or restricted subscription.
+     * @see CommonContext#SESSION_ID_PARAM_NAME
+     */
+    public Integer sessionId()
+    {
+        return sessionId;
     }
 
     /**
@@ -522,6 +575,11 @@ public class ChannelUriStringBuilder
         if (null != termOffset)
         {
             sb.append(TERM_OFFSET_PARAM_NAME).append('=').append(termOffset.intValue()).append('|');
+        }
+
+        if (null != sessionId)
+        {
+            sb.append(SESSION_ID_PARAM_NAME).append('=').append(sessionId.intValue()).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

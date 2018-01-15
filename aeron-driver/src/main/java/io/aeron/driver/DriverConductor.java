@@ -1290,8 +1290,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
             final IpcPublication publication = ipcPublications.get(i);
-            if (publication.sessionId() == sessionId &&
-                publication.isExclusive())
+            if (publication.sessionId() == sessionId && publication.isExclusive())
             {
                 throw new IllegalStateException(
                     "Existing exclusive IPC publication has same session id: " + sessionId);
@@ -1305,8 +1304,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
             final NetworkPublication publication = networkPublications.get(i);
-            if (publication.sessionId() == sessionId &&
-                publication.isExclusive())
+            if (publication.sessionId() == sessionId && publication.isExclusive())
             {
                 throw new IllegalStateException(
                     "Existing exclusive network publication has same session id: " + sessionId);

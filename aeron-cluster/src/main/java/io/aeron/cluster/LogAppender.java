@@ -23,8 +23,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 
-import java.nio.ByteOrder;
-
 class LogAppender implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
@@ -35,8 +33,8 @@ class LogAppender implements AutoCloseable
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
     private final ServiceActionRequestEncoder actionRequestEncoder = new ServiceActionRequestEncoder();
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
-    private final Publication publication;
     private final BufferClaim bufferClaim = new BufferClaim();
+    private final Publication publication;
 
     LogAppender(final Publication publication)
     {
@@ -63,7 +61,7 @@ class LogAppender implements AutoCloseable
         final int timestampOffset =
             offset + MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.timestampEncodingOffset();
 
-        ((MutableDirectBuffer)buffer).putLong(timestampOffset, nowMs, ByteOrder.LITTLE_ENDIAN);
+        ((MutableDirectBuffer)buffer).putLong(timestampOffset, nowMs, SessionHeaderEncoder.BYTE_ORDER);
 
         int attempts = SEND_ATTEMPTS;
         do

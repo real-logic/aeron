@@ -841,7 +841,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final PublicationParams params,
         final boolean isExclusive)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : assignNonClashingSessionId();
+        final int sessionId = params.hasSessionId ? params.sessionId : assignSessionId();
         final UnsafeBufferPosition senderPosition = SenderPos.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
         final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
@@ -1213,7 +1213,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final boolean isExclusive,
         final PublicationParams params)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : assignNonClashingSessionId();
+        final int sessionId = params.hasSessionId ? params.sessionId : assignSessionId();
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
         final RawLog rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
 
@@ -1297,26 +1297,16 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
     }
 
-    private int assignNonClashingSessionId()
+    private int assignSessionId()
     {
-        final int startingSessionId = nextSessionId;
-        int sessionId = startingSessionId;
-
-        do
+        while (true)
         {
-            if (!activeSessionIds.contains(sessionId))
+            final int sessionId = nextSessionId++;
+            if (activeSessionIds.add(sessionId))
             {
-                nextSessionId = sessionId;
-                activeSessionIds.add(nextSessionId);
-                return nextSessionId++;
+                return sessionId;
             }
-
-            sessionId++;
         }
-        while ((sessionId - startingSessionId) <= (activeSessionIds.size() + 1));
-
-        throw new IllegalStateException(
-            "could not find non clashing session Id: starting=" + startingSessionId + " current=" + sessionId);
     }
 
     private <T extends DriverManagedResource> void checkManagedResources(

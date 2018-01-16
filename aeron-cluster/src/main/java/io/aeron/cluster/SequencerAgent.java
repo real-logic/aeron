@@ -48,6 +48,7 @@ class SequencerAgent implements Agent
     private final long sessionTimeoutMs;
     private long nextSessionId = 1;
     private long leadershipTermBeginPosition = 0;
+    private long leadershipTermId = 0;
     private int serviceAckCount = 0;
     private final Aeron aeron;
     private final AgentInvoker aeronClientInvoker;
@@ -58,7 +59,6 @@ class SequencerAgent implements Agent
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
     private final LogAppender logAppender;
-    private final Counter messageIndex;
     private final Counter moduleState;
     private final Counter controlToggle;
     private final ClusterSessionSupplier sessionSupplier;
@@ -89,7 +89,6 @@ class SequencerAgent implements Agent
         this.cachedEpochClock = ctx.cachedEpochClock();
         this.sessionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.sessionTimeoutNs());
         this.egressPublisher = egressPublisher;
-        this.messageIndex = ctx.messageIndex();
         this.moduleState = ctx.moduleState();
         this.controlToggle = ctx.controlToggle();
         this.logAppender = logAppender;
@@ -150,13 +149,12 @@ class SequencerAgent implements Agent
         final long timestamp = epochClock.time();
         cachedEpochClock.update(timestamp);
 
-        final long messageIndex = this.messageIndex.getWeak();
         final long position = leadershipTermBeginPosition;
 
         consensusTracker = new ConsensusTracker(
-            aeron, ctx.tempBuffer(), position, messageIndex, logAppender.sessionId(), ctx.idleStrategy());
+            aeron, ctx.tempBuffer(), position, leadershipTermId, logAppender.sessionId(), ctx.idleStrategy());
 
-        ctx.recordingLog().appendTerm(consensusTracker.recordingId(), position, messageIndex, timestamp);
+        ctx.recordingLog().appendTerm(consensusTracker.recordingId(), position, leadershipTermId, timestamp);
     }
 
     public int doWork()
@@ -202,16 +200,15 @@ class SequencerAgent implements Agent
     }
 
     public void onServiceActionAck(
-        final long serviceId, final long logPosition, final long messageIndex, final ServiceAction action)
+        final long serviceId, final long logPosition, final long leadershipTermId, final ServiceAction action)
     {
         final long currentLogPosition = leadershipTermBeginPosition + logAppender.position();
-        final long currentMessageIndex = this.messageIndex.getWeak();
-        if (logPosition != currentLogPosition || messageIndex != currentMessageIndex)
+        if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)
         {
             throw new IllegalStateException("Invalid log state:" +
                 " serviceId=" + serviceId +
-                ", logPosition=" + logPosition + " current log position is " + currentLogPosition +
-                ", messageIndex=" + messageIndex + " current message index is " + currentMessageIndex);
+                ", logPosition=" + logPosition + " current is " + currentLogPosition +
+                ", leadershipTermId=" + leadershipTermId + " current is " + this.leadershipTermId);
         }
 
         if (!state.isValid(action))
@@ -300,7 +297,6 @@ class SequencerAgent implements Agent
 
         if (session.state() == OPEN && logAppender.appendMessage(buffer, offset, length, nowMs))
         {
-            messageIndex.incrementOrdered();
             session.lastActivity(nowMs, correlationId);
 
             return ControlledFragmentHandler.Action.CONTINUE;
@@ -338,14 +334,7 @@ class SequencerAgent implements Agent
 
     public boolean onTimerEvent(final long correlationId, final long nowMs)
     {
-        if (logAppender.appendTimerEvent(correlationId, nowMs))
-        {
-            messageIndex.incrementOrdered();
-
-            return true;
-        }
-
-        return false;
+        return logAppender.appendTimerEvent(correlationId, nowMs);
     }
 
     public void onScheduleTimer(final long correlationId, final long deadlineMs)
@@ -364,7 +353,7 @@ class SequencerAgent implements Agent
 
         cachedEpochClock.update(snapshot.timestamp);
         leadershipTermBeginPosition = snapshot.logPosition;
-        messageIndex.setOrdered(snapshot.messageIndex);
+        leadershipTermId = snapshot.leadershipTermId;
 
         final long recordingId = snapshot.recordingId;
         final RecordingExtent recordingExtent = new RecordingExtent();
@@ -418,15 +407,10 @@ class SequencerAgent implements Agent
                 final long startPosition = step.recordingStartPosition;
                 final long stopPosition = step.recordingStopPosition;
                 final long length = NULL_POSITION == stopPosition ? Long.MAX_VALUE : stopPosition - startPosition;
-                final long messageIndex = entry.messageIndex;
                 final long logPosition = entry.logPosition;
 
                 leadershipTermBeginPosition = logPosition;
-
-                if (0 == startPosition)
-                {
-                    this.messageIndex.setOrdered(messageIndex);
-                }
+                leadershipTermId = entry.leadershipTermId;
 
                 final int sessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, streamId);
 
@@ -439,7 +423,7 @@ class SequencerAgent implements Agent
 
                 serviceAckCount = 0;
                 try (Counter counter = ConsensusPos.allocate(
-                    aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId, i))
+                    aeron, tempBuffer, recordingId, logPosition, leadershipTermId, sessionId, i))
                 {
                     replayTerm(image, counter);
                     waitForServiceAcks();
@@ -455,7 +439,7 @@ class SequencerAgent implements Agent
 
     private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
     {
-        final int replayTermCount = plan.termSteps.size();
+        final int termCount = plan.termSteps.size();
         final RecordingLog.ReplayStep snapshotStep = plan.snapshotStep;
 
         if (null != snapshotStep)
@@ -463,10 +447,10 @@ class SequencerAgent implements Agent
             final RecordingLog.Entry snapshot = snapshotStep.entry;
 
             return RecoveryState.allocate(
-                aeron, tempBuffer, snapshot.logPosition, snapshot.messageIndex, snapshot.timestamp, replayTermCount);
+                aeron, tempBuffer, snapshot.logPosition, snapshot.leadershipTermId, snapshot.timestamp, termCount);
         }
 
-        return RecoveryState.allocate(aeron, tempBuffer, 0, 0, 0, replayTermCount);
+        return RecoveryState.allocate(aeron, tempBuffer, 0, leadershipTermId, 0, termCount);
     }
 
     private static void checkInterruptedStatus()
@@ -521,7 +505,6 @@ class SequencerAgent implements Agent
     {
         final long recordingId;
         final long logPosition = leadershipTermBeginPosition + logAppender.position();
-        final long messageIndex = this.messageIndex.getWeak();
 
         try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
         {
@@ -543,7 +526,7 @@ class SequencerAgent implements Agent
                 }
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
-                snapshotState(publication, logPosition, messageIndex);
+                snapshotState(publication, logPosition, leadershipTermId);
 
                 do
                 {
@@ -562,15 +545,15 @@ class SequencerAgent implements Agent
             }
         }
 
-        ctx.recordingLog().appendSnapshot(recordingId, logPosition, messageIndex, timestampMs);
+        ctx.recordingLog().appendSnapshot(recordingId, logPosition, leadershipTermId, timestampMs);
     }
 
-    private void snapshotState(final Publication publication, final long logPosition, final long messageIndex)
+    private void snapshotState(final Publication publication, final long logPosition, final long leadershipTermId)
     {
         final ConsensusModuleSnapshotTaker snapshotTaker = new ConsensusModuleSnapshotTaker(
             publication, idleStrategy, aeronClientInvoker);
 
-        snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, messageIndex, 0);
+        snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
 
         for (final ClusterSession session : sessionByIdMap.values())
         {
@@ -584,7 +567,7 @@ class SequencerAgent implements Agent
 
         timerService.snapshot(snapshotTaker);
 
-        snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, messageIndex, 0);
+        snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
     private void replayTerm(final Image image, final Counter consensusPos)
@@ -683,39 +666,21 @@ class SequencerAgent implements Agent
     {
         final long position = resultingServiceActionPosition();
 
-        if (logAppender.appendActionRequest(ServiceAction.SNAPSHOT, messageIndex.getWeak(), position, nowMs))
-        {
-            messageIndex.incrementOrdered();
-            return true;
-        }
-
-        return false;
+        return logAppender.appendActionRequest(ServiceAction.SNAPSHOT, leadershipTermId, position, nowMs);
     }
 
     private boolean appendShutdown(final long nowMs)
     {
         final long position = resultingServiceActionPosition();
 
-        if (logAppender.appendActionRequest(ServiceAction.SHUTDOWN, messageIndex.getWeak(), position, nowMs))
-        {
-            messageIndex.incrementOrdered();
-            return true;
-        }
-
-        return false;
+        return logAppender.appendActionRequest(ServiceAction.SHUTDOWN, leadershipTermId, position, nowMs);
     }
 
     private boolean appendAbort(final long nowMs)
     {
         final long position = resultingServiceActionPosition();
 
-        if (logAppender.appendActionRequest(ServiceAction.ABORT, messageIndex.getWeak(), position, nowMs))
-        {
-            messageIndex.incrementOrdered();
-            return true;
-        }
-
-        return false;
+        return logAppender.appendActionRequest(ServiceAction.ABORT, leadershipTermId, position, nowMs);
     }
 
     private long resultingServiceActionPosition()
@@ -865,7 +830,6 @@ class SequencerAgent implements Agent
     {
         if (logAppender.appendConnectedSession(session, nowMs))
         {
-            messageIndex.incrementOrdered();
             session.open();
 
             return true;
@@ -878,7 +842,6 @@ class SequencerAgent implements Agent
     {
         if (logAppender.appendClosedSession(session, closeReason, nowMs))
         {
-            messageIndex.incrementOrdered();
             session.close();
 
             return true;
@@ -898,15 +861,12 @@ class SequencerAgent implements Agent
         final Header header)
     {
         cachedEpochClock.update(timestamp);
-        messageIndex.incrementOrdered();
-
         sessionByIdMap.get(clusterSessionId).lastActivity(timestamp, correlationId);
     }
 
     void onReplayTimerEvent(final long correlationId, final long timestamp)
     {
         cachedEpochClock.update(timestamp);
-        messageIndex.incrementOrdered();
 
         if (!timerService.cancelTimer(correlationId))
         {
@@ -922,7 +882,6 @@ class SequencerAgent implements Agent
         final String responseChannel)
     {
         cachedEpochClock.update(timestamp);
-        messageIndex.incrementOrdered();
 
         addOpenSession(correlationId, clusterSessionId, timestamp, responseStreamId, responseChannel);
     }
@@ -950,7 +909,6 @@ class SequencerAgent implements Agent
         final CloseReason closeReason)
     {
         cachedEpochClock.update(timestamp);
-        messageIndex.incrementOrdered();
         sessionByIdMap.remove(clusterSessionId).close();
     }
 
@@ -958,6 +916,5 @@ class SequencerAgent implements Agent
     void onReplayServiceAction(final long timestamp, final ServiceAction action)
     {
         cachedEpochClock.update(timestamp);
-        messageIndex.incrementOrdered();
     }
 }

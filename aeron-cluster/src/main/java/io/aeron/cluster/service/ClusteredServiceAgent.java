@@ -45,8 +45,8 @@ final class ClusteredServiceAgent implements Agent, Cluster
     private final RecordingLog recordingLog;
 
     private long leadershipTermBeginPosition = 0;
+    private long leadershipTermId;
     private long currentRecordingId;
-    private long messageIndex;
     private long timestampMs;
     private BoundedLogAdapter logAdapter;
     private ReadableCounter consensusPosition;
@@ -172,7 +172,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final int length,
         final Header header)
     {
-        ++messageIndex;
         this.timestampMs = timestampMs;
 
         service.onSessionMessage(
@@ -187,7 +186,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     void onTimerEvent(final long correlationId, final long timestampMs)
     {
-        ++messageIndex;
         this.timestampMs = timestampMs;
 
         service.onTimerEvent(correlationId, timestampMs);
@@ -200,7 +198,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final String responseChannel,
         final byte[] principleData)
     {
-        ++messageIndex;
         this.timestampMs = timestampMs;
 
         final ClientSession session = new ClientSession(
@@ -215,7 +212,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     void onSessionClose(final long clusterSessionId, final long timestampMs, final CloseReason closeReason)
     {
-        ++messageIndex;
         this.timestampMs = timestampMs;
 
         final ClientSession session = sessionByIdMap.remove(clusterSessionId);
@@ -225,7 +221,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     void onServiceAction(final long resultingPosition, final long timestampMs, final ServiceAction action)
     {
-        ++messageIndex;
         this.timestampMs = timestampMs;
 
         executeAction(action, leadershipTermBeginPosition + resultingPosition);
@@ -259,14 +254,15 @@ final class ClusteredServiceAgent implements Agent, Cluster
             }
 
             leadershipTermBeginPosition = logPosition;
-            messageIndex = RecoveryState.getMessageIndex(counters, recoveryCounterId);
+            leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
             timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
 
-            snapshotEntry.confirmMatch(logPosition, messageIndex, timestampMs);
+            snapshotEntry.confirmMatch(logPosition, leadershipTermId, timestampMs);
             loadSnapshot(snapshotEntry.recordingId);
         }
 
-        consensusModule.sendAcknowledgment(ServiceAction.INIT, leadershipTermBeginPosition, messageIndex, timestampMs);
+        consensusModule.sendAcknowledgment(
+            ServiceAction.INIT, leadershipTermBeginPosition, leadershipTermId, timestampMs);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
@@ -318,7 +314,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
                 }
 
                 consensusModule.sendAcknowledgment(
-                    ServiceAction.REPLAY, leadershipTermBeginPosition, messageIndex, timestampMs);
+                    ServiceAction.REPLAY, leadershipTermBeginPosition, leadershipTermId, timestampMs);
             }
         }
     }
@@ -475,7 +471,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
             }
         }
 
-        recordingLog.appendSnapshot(recordingId, logPosition, messageIndex, timestampMs);
+        recordingLog.appendSnapshot(recordingId, logPosition, leadershipTermId, timestampMs);
         state = State.LEADING;
     }
 
@@ -483,14 +479,14 @@ final class ClusteredServiceAgent implements Agent, Cluster
     {
         final ServiceSnapshotTaker snapshotTaker = new ServiceSnapshotTaker(publication, idleStrategy, null);
 
-        snapshotTaker.markBegin(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, messageIndex, 0);
+        snapshotTaker.markBegin(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
 
         for (final ClientSession clientSession : sessionByIdMap.values())
         {
             snapshotTaker.snapshotSession(clientSession);
         }
 
-        snapshotTaker.markEnd(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, messageIndex, 0);
+        snapshotTaker.markEnd(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
     private void executeAction(final ServiceAction action, final long position)
@@ -504,18 +500,18 @@ final class ClusteredServiceAgent implements Agent, Cluster
         {
             case SNAPSHOT:
                 onTakeSnapshot(position);
-                consensusModule.sendAcknowledgment(ServiceAction.SNAPSHOT, position, messageIndex, timestampMs);
+                consensusModule.sendAcknowledgment(ServiceAction.SNAPSHOT, position, leadershipTermId, timestampMs);
                 break;
 
             case SHUTDOWN:
                 onTakeSnapshot(position);
-                consensusModule.sendAcknowledgment(ServiceAction.SHUTDOWN, position, messageIndex, timestampMs);
+                consensusModule.sendAcknowledgment(ServiceAction.SHUTDOWN, position, leadershipTermId, timestampMs);
                 state = State.CLOSED;
                 ctx.terminationHook().run();
                 break;
 
             case ABORT:
-                consensusModule.sendAcknowledgment(ServiceAction.ABORT, position, messageIndex, timestampMs);
+                consensusModule.sendAcknowledgment(ServiceAction.ABORT, position, leadershipTermId, timestampMs);
                 state = State.CLOSED;
                 ctx.terminationHook().run();
                 break;

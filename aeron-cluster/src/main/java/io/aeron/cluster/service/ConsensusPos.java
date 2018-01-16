@@ -41,7 +41,7 @@ import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
  *  |              Log Position at beginning of term                |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |              Message Index at beginning of term               |
+ *  |                     Leadership Term ID                        |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                         Session ID                            |
@@ -74,21 +74,21 @@ public class ConsensusPos
 
     public static final int RECORDING_ID_OFFSET = 0;
     public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
-    public static final int MESSAGE_INDEX_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
-    public static final int SESSION_ID_OFFSET = MESSAGE_INDEX_OFFSET + SIZE_OF_LONG;
+    public static final int LEADERSHIP_TERM_ID_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
+    public static final int SESSION_ID_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
     public static final int REPLAY_STEP_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     public static final int KEY_LENGTH = REPLAY_STEP_OFFSET + SIZE_OF_INT;
 
     /**
      * Allocate a counter to represent the consensus position on stream for the current leadership term.
      *
-     * @param aeron        to allocate the counter.
-     * @param tempBuffer   to use for building the key and label without allocation.
-     * @param recordingId  for the current term.
-     * @param logPosition  of the log at the beginning of the term.
-     * @param messageIndex of the log at the beginning of the term.
-     * @param sessionId    of the stream for the current term.
-     * @param replayStep   during the recovery process or replaying term logs.
+     * @param aeron            to allocate the counter.
+     * @param tempBuffer       to use for building the key and label without allocation.
+     * @param recordingId      for the current term.
+     * @param logPosition      of the log at the beginning of the term.
+     * @param leadershipTermId of the log at the beginning of the term.
+     * @param sessionId        of the stream for the current term.
+     * @param replayStep       during the recovery process or replaying term logs.
      * @return the {@link Counter} for the consensus position.
      */
     public static Counter allocate(
@@ -96,13 +96,13 @@ public class ConsensusPos
         final MutableDirectBuffer tempBuffer,
         final long recordingId,
         final long logPosition,
-        final long messageIndex,
+        final long leadershipTermId,
         final int sessionId,
         final int replayStep)
     {
         tempBuffer.putLong(RECORDING_ID_OFFSET, recordingId);
         tempBuffer.putLong(LOG_POSITION_OFFSET, logPosition);
-        tempBuffer.putLong(MESSAGE_INDEX_OFFSET, messageIndex);
+        tempBuffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
         tempBuffer.putInt(SESSION_ID_OFFSET, sessionId);
         tempBuffer.putInt(REPLAY_STEP_OFFSET, replayStep);
 
@@ -221,13 +221,13 @@ public class ConsensusPos
     }
 
     /**
-     * Get the beginning message index for the term for a given active counter.
+     * Get the leadership term id for the given consensus position.
      *
      * @param counters  to search within.
      * @param counterId for the active consensus position.
      * @return the beginning message index if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getBeginningMessageIndex(final CountersReader counters, final int counterId)
+    public static long getLeadershipTermId(final CountersReader counters, final int counterId)
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
@@ -237,7 +237,7 @@ public class ConsensusPos
 
             if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID)
             {
-                return buffer.getLong(recordOffset + KEY_OFFSET + MESSAGE_INDEX_OFFSET);
+                return buffer.getLong(recordOffset + KEY_OFFSET + LEADERSHIP_TERM_ID_OFFSET);
             }
         }
 
@@ -312,7 +312,7 @@ public class ConsensusPos
 
             return
                 buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID &&
-                buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
+                    buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
         }
 
         return false;

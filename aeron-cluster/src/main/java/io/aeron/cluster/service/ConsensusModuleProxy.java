@@ -46,7 +46,7 @@ class ConsensusModuleProxy
     }
 
     public void sendAcknowledgment(
-        final ServiceAction action, final long logPosition, final long messageIndex, final long timestamp)
+        final ServiceAction action, final long logPosition, final long leadershipTermId, final long timestamp)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionAckEncoder.BLOCK_LENGTH;
 
@@ -61,7 +61,7 @@ class ConsensusModuleProxy
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .serviceId(serviceId)
                     .logPosition(logPosition)
-                    .messageIndex(messageIndex)
+                    .leadershipTermId(leadershipTermId)
                     .timestamp(timestamp)
                     .action(action);
 

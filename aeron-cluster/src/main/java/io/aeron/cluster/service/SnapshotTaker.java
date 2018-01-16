@@ -44,21 +44,21 @@ public class SnapshotTaker
     }
 
     public void markBegin(
-        final long snapshotTypeId, final long logPosition, final long messageIndex, final int snapshotIndex)
+        final long snapshotTypeId, final long logPosition, final long leadershipTermId, final int snapshotIndex)
     {
-        markSnapshot(snapshotTypeId, logPosition, messageIndex, snapshotIndex, SnapshotMark.BEGIN);
+        markSnapshot(snapshotTypeId, logPosition, leadershipTermId, snapshotIndex, SnapshotMark.BEGIN);
     }
 
     public void markEnd(
-        final long snapshotTypeId, final long logPosition, final long messageIndex, final int snapshotIndex)
+        final long snapshotTypeId, final long logPosition, final long leadershipTermId, final int snapshotIndex)
     {
-        markSnapshot(snapshotTypeId, logPosition, messageIndex, snapshotIndex, SnapshotMark.END);
+        markSnapshot(snapshotTypeId, logPosition, leadershipTermId, snapshotIndex, SnapshotMark.END);
     }
 
     public void markSnapshot(
         final long snapshotTypeId,
         final long logPosition,
-        final long messageIndex,
+        final long leadershipTermId,
         final int snapshotIndex,
         final SnapshotMark snapshotMark)
     {
@@ -72,7 +72,7 @@ public class SnapshotTaker
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .typeId(snapshotTypeId)
                     .logPosition(logPosition)
-                    .messageIndex(messageIndex)
+                    .leadershipTermId(leadershipTermId)
                     .index(snapshotIndex)
                     .mark(snapshotMark);
 

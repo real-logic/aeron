@@ -36,7 +36,7 @@ import static org.agrona.concurrent.status.CountersReader.*;
  *  |            Log Position at beginning for snapshot             |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |           Message Index at beginning for snapshot             |
+ *  |                     Leadership Term ID                        |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |              Timestamp at beginning of recovery               |
@@ -70,8 +70,8 @@ public class RecoveryState
 
     public static final int RECORDING_ID_OFFSET = 0;
     public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
-    public static final int MESSAGE_INDEX_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
-    public static final int TIMESTAMP_OFFSET = MESSAGE_INDEX_OFFSET + SIZE_OF_LONG;
+    public static final int LEADERSHIP_TERM_ID_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
+    public static final int TIMESTAMP_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
     public static final int REPLAY_TERM_COUNT_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
     public static final int KEY_LENGTH = REPLAY_TERM_COUNT_OFFSET + SIZE_OF_INT;
 
@@ -81,7 +81,7 @@ public class RecoveryState
      * @param aeron           to allocate the counter.
      * @param tempBuffer      to use for building the key and label without allocation.
      * @param logPosition     at which the snapshot was taken.
-     * @param messageIndex    at which the snapshot was taken.
+     * @param leadershipTermId    at which the snapshot was taken.
      * @param timestamp       the snapshot was taken.
      * @param replayTermCount for the count of terms to be replayed during recovery after snapshot.
      * @return the {@link Counter} for the consensus position.
@@ -90,12 +90,12 @@ public class RecoveryState
         final Aeron aeron,
         final MutableDirectBuffer tempBuffer,
         final long logPosition,
-        final long messageIndex,
+        final long leadershipTermId,
         final long timestamp,
         final int replayTermCount)
     {
         tempBuffer.putLong(LOG_POSITION_OFFSET, logPosition);
-        tempBuffer.putLong(MESSAGE_INDEX_OFFSET, messageIndex);
+        tempBuffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
         tempBuffer.putLong(TIMESTAMP_OFFSET, timestamp);
         tempBuffer.putInt(REPLAY_TERM_COUNT_OFFSET, replayTermCount);
 
@@ -103,7 +103,7 @@ public class RecoveryState
         labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, NAME);
         labelOffset += tempBuffer.putLongAscii(KEY_LENGTH + labelOffset, logPosition);
         labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, " ");
-        labelOffset += tempBuffer.putLongAscii(KEY_LENGTH + labelOffset, messageIndex);
+        labelOffset += tempBuffer.putLongAscii(KEY_LENGTH + labelOffset, leadershipTermId);
         labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, " ");
         labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, replayTermCount);
 
@@ -138,7 +138,7 @@ public class RecoveryState
     }
 
     /**
-     * Get the recording id for the current term.
+     * Get the recording id for the current leadership term.
      *
      * @param counters  to search within.
      * @param counterId for the active consensus position.
@@ -186,13 +186,13 @@ public class RecoveryState
     }
 
     /**
-     * Get the message index for the snapshot.
+     * Get the leadership term id for the snapshot.
      *
      * @param counters  to search within.
      * @param counterId for the active consensus position.
      * @return the message index if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getMessageIndex(final CountersReader counters, final int counterId)
+    public static long getLeadershipTermId(final CountersReader counters, final int counterId)
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
@@ -202,7 +202,7 @@ public class RecoveryState
 
             if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SNAPSHOT_TYPE_ID)
             {
-                return buffer.getLong(recordOffset + KEY_OFFSET + MESSAGE_INDEX_OFFSET);
+                return buffer.getLong(recordOffset + KEY_OFFSET + LEADERSHIP_TERM_ID_OFFSET);
             }
         }
 

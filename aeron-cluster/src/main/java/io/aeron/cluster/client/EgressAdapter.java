@@ -83,10 +83,9 @@ public class EgressAdapter implements FragmentHandler
                     newLeaderEventDecoder.lastCorrelationId(),
                     newLeaderEventDecoder.clusterSessionId(),
                     newLeaderEventDecoder.lastMessageTimestamp(),
-                    newLeaderEventDecoder.clusterTermTimestamp(),
-                    newLeaderEventDecoder.clusterMessageIndex(),
-                    newLeaderEventDecoder.clusterTermId(),
-                    newLeaderEventDecoder.clusterLeader());
+                    newLeaderEventDecoder.leadershipTimestamp(),
+                    newLeaderEventDecoder.leadershipTermId(),
+                    newLeaderEventDecoder.leaderAddress());
                 break;
 
             case SessionHeaderDecoder.TEMPLATE_ID:

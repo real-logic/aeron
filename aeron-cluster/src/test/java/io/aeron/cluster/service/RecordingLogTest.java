@@ -50,7 +50,7 @@ public class RecordingLogTest
 
         final RecordingLog.Entry entry = new RecordingLog.Entry(1, 2, 3, 4, ENTRY_TYPE_SNAPSHOT);
 
-        recordingLog.appendSnapshot(entry.recordingId, entry.logPosition, entry.messageIndex, entry.timestamp);
+        recordingLog.appendSnapshot(entry.recordingId, entry.logPosition, entry.leadershipTermId, entry.timestamp);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
         assertThat(recordingLogTwo.entries().size(), is(1));

@@ -35,7 +35,7 @@ public class ConsensusTracker implements AutoCloseable
         final Aeron aeron,
         final MutableDirectBuffer tempBuffer,
         final long logPosition,
-        final long messageIndex,
+        final long leadershipTermId,
         final int sessionId,
         final IdleStrategy idleStrategy)
     {
@@ -55,7 +55,7 @@ public class ConsensusTracker implements AutoCloseable
 
         recordingId = RecordingPos.getRecordingId(countersReader, recordingCounterId);
         consensusPosition = ConsensusPos.allocate(
-            aeron, tempBuffer, recordingId, logPosition, messageIndex, sessionId, -1);
+            aeron, tempBuffer, recordingId, logPosition, leadershipTermId, sessionId, -1);
     }
 
     public void close()

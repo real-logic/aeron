@@ -151,10 +151,9 @@
         <field name="lastCorrelationId"    id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
         <field name="lastMessageTimestamp" id="3" type="time_t"/>
-        <field name="clusterTermTimestamp" id="4" type="time_t"/>
-        <field name="clusterMessageIndex"  id="5" type="int64"/>
-        <field name="clusterTermId"        id="6" type="int64"/>
-        <data  name="clusterLeader"        id="7" type="varAsciiEncoding"/>
+        <field name="leadershipTimestamp"  id="4" type="time_t"/>
+        <field name="leadershipTermId"     id="5" type="int64"/>
+        <data  name="leaderAddress"        id="6" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="Challenge"
@@ -206,7 +205,7 @@
                  id="23"
                  description="Request an action to be taken by the service">
         <field name="logPosition"          id="1" type="int64"/>
-        <field name="messageIndex"         id="2" type="int64"/>
+        <field name="leadershipTermId"     id="2" type="int64"/>
         <field name="timestamp"            id="3" type="time_t"/>
         <field name="action"               id="4" type="ServiceAction"/>
     </sbe:message>
@@ -235,7 +234,7 @@
                  description="Acknowledge the service action request">
         <field name="serviceId"            id="1" type="int64"/>
         <field name="logPosition"          id="2" type="int64"/>
-        <field name="messageIndex"         id="3" type="int64"/>
+        <field name="leadershipTermId"     id="3" type="int64"/>
         <field name="timestamp"            id="4" type="time_t"/>
         <field name="action"               id="5" type="ServiceAction"/>
     </sbe:message>
@@ -249,8 +248,8 @@
                  id="100"
                  description="Mark the beginning of a snapshot">
         <field name="typeId"               id="1" type="int64"/>
-        <field name="messageIndex"         id="2" type="int64"/>
-        <field name="logPosition"          id="3" type="int64"/>
+        <field name="logPosition"          id="2" type="int64"/>
+        <field name="leadershipTermId"     id="3" type="int64"/>
         <field name="index"                id="4" type="int32"/>
         <field name="mark"                 id="5" type="SnapshotMark"/>
     </sbe:message>

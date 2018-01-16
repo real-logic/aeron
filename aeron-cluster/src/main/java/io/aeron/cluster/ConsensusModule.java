@@ -475,7 +475,6 @@ public class ConsensusModule implements
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
-        private Counter messageIndex;
         private Counter moduleState;
         private Counter controlToggle;
         private Counter snapshotCounter;
@@ -560,11 +559,6 @@ public class ConsensusModule implements
                 {
                     aeron.context().errorHandler(countedErrorHandler);
                 }
-            }
-
-            if (null == messageIndex)
-            {
-                messageIndex = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
             }
 
             if (null == moduleState)
@@ -1175,28 +1169,6 @@ public class ConsensusModule implements
         }
 
         /**
-         * Get the counter for the message index of the log.
-         *
-         * @return the counter for the message index of the log.
-         */
-        public Counter messageIndex()
-        {
-            return messageIndex;
-        }
-
-        /**
-         * Set the counter for the message index of the log.
-         *
-         * @param messageIndex the counter for the message index of the log.
-         * @return this for a fluent API.
-         */
-        public Context messageIndex(final Counter messageIndex)
-        {
-            this.messageIndex = messageIndex;
-            return this;
-        }
-
-        /**
          * Get the counter for the current state of the consensus module.
          *
          * @return the counter for the current state of the consensus module.
@@ -1433,7 +1405,6 @@ public class ConsensusModule implements
             }
             else
             {
-                CloseHelper.close(messageIndex);
                 CloseHelper.close(moduleState);
                 CloseHelper.close(controlToggle);
             }

@@ -167,7 +167,7 @@ class LogAppender implements AutoCloseable
     }
 
     public boolean appendActionRequest(
-        final ServiceAction action, final long logPosition, final long messageIndex, final long nowMs)
+        final ServiceAction action, final long logPosition, final long leadershipTermId, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionRequestEncoder.BLOCK_LENGTH;
 
@@ -180,7 +180,7 @@ class LogAppender implements AutoCloseable
                 actionRequestEncoder.wrapAndApplyHeader(
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logPosition(logPosition)
-                    .messageIndex(messageIndex)
+                    .leadershipTermId(leadershipTermId)
                     .timestamp(nowMs)
                     .action(action);
 

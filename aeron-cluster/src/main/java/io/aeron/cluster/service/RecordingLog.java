@@ -36,7 +36,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 /**
  * An log of recordings that make up the history of a Raft log. Entries are in chronological order.
  * <p>
- * The log is made up of entries of log terms or snapshots to roll up state as of a log position and message index.
+ * The log is made up of entries of log terms or snapshots to roll up state as of a log position and leadership term.
  * <p>
  * The latest state is made up of a the latest snapshot followed by any term logs which follow. It is possible that
  * the a snapshot is taken mid term and therefore the latest state is the snapshot plus the log of messages which
@@ -53,7 +53,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  |         Log Position at beginning of term or snapshot         |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |        Message Index at beginning of term or snapshot         |
+ *  |                     Leadership Term ID                        |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |   Timestamp at beginning of term or when snapshot was taken   |
@@ -77,20 +77,20 @@ public class RecordingLog
     {
         public final long recordingId;
         public final long logPosition;
-        public final long messageIndex;
+        public final long leadershipTermId;
         public final long timestamp;
         public final int type;
 
         public Entry(
             final long recordingId,
             final long logPosition,
-            final long messageIndex,
+            final long leadershipTermId,
             final long timestamp,
             final int type)
         {
             this.recordingId = recordingId;
             this.logPosition = logPosition;
-            this.messageIndex = messageIndex;
+            this.leadershipTermId = leadershipTermId;
             this.timestamp = timestamp;
             this.type = type;
         }
@@ -100,13 +100,13 @@ public class RecordingLog
             return "Entry{" +
                 "recordingId=" + recordingId +
                 ", logPosition=" + logPosition +
-                ", messageIndex=" + messageIndex +
+                ", leadershipTermId=" + leadershipTermId +
                 ", timestamp=" + timestamp +
                 ", type=" + type +
                 '}';
         }
 
-        public void confirmMatch(final long logPosition, final long messageIndex, final long timestamp)
+        public void confirmMatch(final long logPosition, final long leadershipTermId, final long timestamp)
         {
             if (logPosition != this.logPosition)
             {
@@ -114,10 +114,10 @@ public class RecordingLog
                     "Log position does not match: this=" + this.logPosition + " that=" + logPosition);
             }
 
-            if (messageIndex != this.messageIndex)
+            if (leadershipTermId != this.leadershipTermId)
             {
                 throw new IllegalStateException(
-                    "Message index does not match: this=" + this.messageIndex + " that=" + messageIndex);
+                    "Leadership term id does not match: this=" + this.leadershipTermId + " that=" + leadershipTermId);
             }
 
             if (timestamp != this.timestamp)
@@ -195,14 +195,14 @@ public class RecordingLog
     public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
 
     /**
-     * The offset at which the message index for the entry is stored.
+     * The offset at which the leadership term id for the entry is stored.
      */
-    public static final int MESSAGE_INDEX_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
+    public static final int LEADERSHIP_TERM_ID_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
 
     /**
-     * The offset at which the message index for the entry is stored.
+     * The offset at which the timestamp for the entry is stored.
      */
-    public static final int TIMESTAMP_OFFSET = MESSAGE_INDEX_OFFSET + SIZE_OF_LONG;
+    public static final int TIMESTAMP_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
 
     /**
      * The offset at which the type of the entry is stored.
@@ -417,41 +417,41 @@ public class RecordingLog
     /**
      * Append an index entry for a Raft term.
      *
-     * @param recordingId  in the archive for the term.
-     * @param logPosition  reached at the beginning of the term.
-     * @param messageIndex reached at the beginning of the term.
-     * @param timestamp    at the beginning of the term.
+     * @param recordingId      in the archive for the term.
+     * @param logPosition      reached at the beginning of the term.
+     * @param leadershipTermId for the current term.
+     * @param timestamp        at the beginning of the term.
      */
     public void appendTerm(
-        final long recordingId, final long logPosition, final long messageIndex, final long timestamp)
+        final long recordingId, final long logPosition, final long leadershipTermId, final long timestamp)
     {
-        append(ENTRY_TYPE_TERM, recordingId, logPosition, messageIndex, timestamp);
+        append(ENTRY_TYPE_TERM, recordingId, logPosition, leadershipTermId, timestamp);
     }
 
     /**
      * Append an index entry for a snapshot.
      *
-     * @param recordingId  in the archive for the snapshot.
-     * @param logPosition  reached for the snapshot.
-     * @param messageIndex reached for the snapshot.
-     * @param timestamp    at which the snapshot was taken.
+     * @param recordingId      in the archive for the snapshot.
+     * @param logPosition      reached for the snapshot.
+     * @param leadershipTermId for the current term
+     * @param timestamp        at which the snapshot was taken.
      */
     public void appendSnapshot(
-        final long recordingId, final long logPosition, final long messageIndex, final long timestamp)
+        final long recordingId, final long logPosition, final long leadershipTermId, final long timestamp)
     {
-        append(ENTRY_TYPE_SNAPSHOT, recordingId, logPosition, messageIndex, timestamp);
+        append(ENTRY_TYPE_SNAPSHOT, recordingId, logPosition, leadershipTermId, timestamp);
     }
 
     private void append(
         final int entryType,
         final long recordingId,
         final long logPosition,
-        final long messageIndex,
+        final long leadershipTermId,
         final long timestamp)
     {
         buffer.putLong(RECORDING_ID_OFFSET, recordingId);
         buffer.putLong(LOG_POSITION_OFFSET, logPosition);
-        buffer.putLong(MESSAGE_INDEX_OFFSET, messageIndex);
+        buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
         buffer.putLong(TIMESTAMP_OFFSET, timestamp);
         buffer.putInt(ENTRY_TYPE_OFFSET, entryType);
 
@@ -466,7 +466,7 @@ public class RecordingLog
             LangUtil.rethrowUnchecked(ex);
         }
 
-        entries.add(new Entry(recordingId, logPosition, messageIndex, timestamp, entryType));
+        entries.add(new Entry(recordingId, logPosition, leadershipTermId, timestamp, entryType));
     }
 
     private static void captureEntriesFromBuffer(
@@ -477,7 +477,7 @@ public class RecordingLog
             entries.add(new Entry(
                 buffer.getLong(i + RECORDING_ID_OFFSET),
                 buffer.getLong(i + LOG_POSITION_OFFSET),
-                buffer.getLong(i + MESSAGE_INDEX_OFFSET),
+                buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET),
                 buffer.getLong(i + TIMESTAMP_OFFSET),
                 buffer.getInt(i + ENTRY_TYPE_OFFSET)));
         }

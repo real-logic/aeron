@@ -48,7 +48,6 @@ public class SequencerAgentTest
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .errorCounter(mock(AtomicCounter.class))
         .errorHandler(Throwable::printStackTrace)
-        .messageIndex(mock(Counter.class))
         .moduleState(mock(Counter.class))
         .controlToggle(mock(Counter.class))
         .idleStrategySupplier(NoOpIdleStrategy::new)

@@ -34,10 +34,9 @@ public class StubEgressListener implements EgressListener
         final long correlationId,
         final long clusterSessionId,
         final long lastMessageTimestamp,
-        final long clusterTermTimestamp,
-        final long clusterMessageIndex,
-        final long clusterTermId,
-        final String leader)
+        final long leadershipTimestamp,
+        final long leadershipTermId,
+        final String leaderAddress)
     {
     }
 

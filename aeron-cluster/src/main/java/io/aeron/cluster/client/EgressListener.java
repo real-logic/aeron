@@ -27,10 +27,9 @@ public interface EgressListener
         long correlationId,
         long clusterSessionId,
         long lastMessageTimestamp,
-        long clusterTermTimestamp,
-        long clusterMessageIndex,
-        long clusterTermId,
-        String leader);
+        long leadershipTimestamp,
+        long leadershipTermId,
+        String leaderAddress);
 
     void onMessage(
         long correlationId,

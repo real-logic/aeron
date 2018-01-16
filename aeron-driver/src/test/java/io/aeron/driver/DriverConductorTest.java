@@ -1328,6 +1328,140 @@ public class DriverConductorTest
         verify(spyCountersManager).free(captor.getValue());
     }
 
+    @Test
+    public void shouldAddPublicationWithSessionId()
+    {
+        final int sessionId = 4096;
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
+        driverProxy.addPublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        assertThat(argumentCaptor.getValue().sessionId(), is(sessionId));
+    }
+
+    @Test
+    public void shouldAddExclusivePublicationWithSessionId()
+    {
+        final int sessionId = 4096;
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
+        driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        assertThat(argumentCaptor.getValue().sessionId(), is(sessionId));
+    }
+
+    @Test
+    public void shouldAddPublicationWithSameSessionId()
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        final int sessionId = argumentCaptor.getValue().sessionId();
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
+        driverProxy.addPublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy, times(2)).onPublicationReady(
+            anyLong(), anyLong(), eq(STREAM_ID_1), eq(sessionId), anyString(), anyInt(), anyInt(), eq(false));
+    }
+
+    @Test
+    public void shouldAddExclusivePublicationWithSameSessionId()
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        final int sessionId = argumentCaptor.getValue().sessionId();
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + (sessionId + 1);
+        driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onPublicationReady(
+            anyLong(), anyLong(), eq(STREAM_ID_1), eq(sessionId), anyString(), anyInt(), anyInt(), eq(false));
+        verify(mockClientProxy).onPublicationReady(
+            anyLong(), anyLong(), eq(STREAM_ID_1), eq(sessionId + 1), anyString(), anyInt(), anyInt(), eq(true));
+    }
+
+    @Test
+    public void shouldErrorOnAddPublicationWithNonEqualSessionId()
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        final String sessionIdParam =
+            "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + (argumentCaptor.getValue().sessionId() + 1);
+        final long correlationId = driverProxy.addPublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(eq(correlationId), eq(GENERIC_ERROR), anyString());
+        verify(mockErrorCounter).increment();
+        verify(mockErrorHandler).onError(any(Throwable.class));
+    }
+
+    @Test
+    public void shouldErrorOnAddPublicationWithClashingSessionId()
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        final String sessionIdParam =
+            "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + argumentCaptor.getValue().sessionId();
+        final long correlationId = driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(eq(correlationId), eq(GENERIC_ERROR), anyString());
+        verify(mockErrorCounter).increment();
+        verify(mockErrorHandler).onError(any(Throwable.class));
+    }
+
+    @Test
+    public void shouldAvoidAssigningClashingSessionIdOnAddPublication()
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        final int sessionId = argumentCaptor.getValue().sessionId();
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + (sessionId + 1);
+        driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final long correlationId = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1 + 1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onPublicationReady(
+            eq(correlationId),
+            anyLong(),
+            eq(STREAM_ID_1 + 1),
+            eq(sessionId + 2),
+            anyString(),
+            anyInt(),
+            anyInt(),
+            eq(false));
+    }
+
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)
     {
         while (!condition.getAsBoolean())

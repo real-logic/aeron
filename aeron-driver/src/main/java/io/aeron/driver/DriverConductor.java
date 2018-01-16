@@ -891,6 +891,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         networkPublications.add(publication);
         senderProxy.newNetworkPublication(publication);
         linkSpies(subscriptionLinks, publication);
+        activeSessionIds.add(sessionId);
 
         return publication;
     }
@@ -1229,6 +1230,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             isExclusive);
 
         ipcPublications.add(publication);
+        activeSessionIds.add(sessionId);
 
         return publication;
     }

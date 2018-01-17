@@ -182,7 +182,6 @@ public class SequencerAgentTest
             mockEgressPublisher,
             mockLogAppender,
             (sequencerAgent) -> mock(IngressAdapter.class),
-            (sequencerAgent) -> mock(TimerService.class),
             (sequencerAgent) -> mock(ConsensusModuleAdapter.class));
     }
 }

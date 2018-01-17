@@ -20,25 +20,24 @@ import org.agrona.collections.Long2LongHashMap;
 
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.cluster.ConsensusModule.Configuration.TIMER_POLL_LIMIT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class TimerService implements DeadlineTimerWheel.TimerHandler
+class TimerService implements DeadlineTimerWheel.TimerHandler
 {
-    private final int timerLimit;
     private final SequencerAgent sequencerAgent;
     private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(MILLISECONDS, 0, 1, 128);
     private Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
 
-    public TimerService(final int timerPollLimit, final SequencerAgent sequencerAgent)
+    TimerService(final SequencerAgent sequencerAgent)
     {
-        this.timerLimit = timerPollLimit;
         this.sequencerAgent = sequencerAgent;
     }
 
     public int poll(final long nowMs)
     {
-        return timerWheel.poll(nowMs, this, timerLimit);
+        return timerWheel.poll(nowMs, this, TIMER_POLL_LIMIT);
     }
 
     public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId)

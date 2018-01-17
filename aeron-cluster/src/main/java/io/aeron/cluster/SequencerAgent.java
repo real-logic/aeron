@@ -78,7 +78,6 @@ class SequencerAgent implements Agent
         final EgressPublisher egressPublisher,
         final LogAppender logAppender,
         final IngressAdapterSupplier ingressAdapterSupplier,
-        final TimerServiceSupplier timerServiceSupplier,
         final ConsensusModuleAdapterSupplier consensusModuleAdapterSupplier)
     {
         this.ctx = ctx;
@@ -93,9 +92,9 @@ class SequencerAgent implements Agent
         this.sessionProxy = new SessionProxy(egressPublisher);
         this.tempBuffer = ctx.tempBuffer();
         this.idleStrategy = ctx.idleStrategy();
+        this.timerService = new TimerService(this);
 
         ingressAdapter = ingressAdapterSupplier.newIngressAdapter(this);
-        timerService = timerServiceSupplier.newTimerService(this);
         consensusModuleAdapter = consensusModuleAdapterSupplier.newConsensusModuleAdapter(this);
         authenticator = ctx.authenticatorSupplier().newAuthenticator(this.ctx);
         aeronClientInvoker = ctx.ownsAeronClient() ? ctx.aeron().conductorAgentInvoker() : null;

@@ -37,11 +37,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
-public class ConsensusModule implements
-    AutoCloseable,
-    IngressAdapterSupplier,
-    TimerServiceSupplier,
-    ConsensusModuleAdapterSupplier
+public class ConsensusModule implements AutoCloseable, IngressAdapterSupplier, ConsensusModuleAdapterSupplier
 {
     /**
      * Type of snapshot for this agent.
@@ -151,7 +147,6 @@ public class ConsensusModule implements
     }
 
     private static final int FRAGMENT_POLL_LIMIT = 10;
-    private static final int TIMER_POLL_LIMIT = 10;
 
     private final Context ctx;
     private final LogAppender logAppender;
@@ -170,7 +165,6 @@ public class ConsensusModule implements
             ctx,
             new EgressPublisher(),
             logAppender,
-            this,
             this,
             this);
 
@@ -229,11 +223,6 @@ public class ConsensusModule implements
             FRAGMENT_POLL_LIMIT);
     }
 
-    public TimerService newTimerService(final SequencerAgent sequencerAgent)
-    {
-        return new TimerService(TIMER_POLL_LIMIT, sequencerAgent);
-    }
-
     public ConsensusModuleAdapter newConsensusModuleAdapter(final SequencerAgent sequencerAgent)
     {
         return new ConsensusModuleAdapter(
@@ -246,6 +235,8 @@ public class ConsensusModule implements
      */
     public static class Configuration
     {
+        static final int TIMER_POLL_LIMIT = 10;
+
         /**
          * Channel to be used for archiving snapshots.
          */

@@ -99,14 +99,14 @@ class SnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.version());
 
                 final String responseChannel = clientSessionDecoder.responseChannel();
-                final byte[] principleData = new byte[clientSessionDecoder.principleDataLength()];
-                clientSessionDecoder.getPrincipleData(principleData, 0, principleData.length);
+                final byte[] principalData = new byte[clientSessionDecoder.principalDataLength()];
+                clientSessionDecoder.getPrincipalData(principalData, 0, principalData.length);
 
                 agent.addSession(
                     clientSessionDecoder.clusterSessionId(),
                     clientSessionDecoder.responseStreamId(),
                     responseChannel,
-                    principleData);
+                    principalData);
                 break;
 
             default:

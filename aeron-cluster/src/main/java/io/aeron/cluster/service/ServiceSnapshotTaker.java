@@ -34,10 +34,10 @@ class ServiceSnapshotTaker extends SnapshotTaker
     {
         final int responseStreamId = session.responsePublication().streamId();
         final String responseChannel = session.responsePublication().channel();
-        final byte[] principleData = session.principleData();
+        final byte[] pricipalData = session.principalData();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClientSessionEncoder.BLOCK_LENGTH +
             ClientSessionEncoder.responseChannelHeaderLength() + responseChannel.length() +
-            ClientSessionEncoder.principleDataHeaderLength() + principleData.length;
+            ClientSessionEncoder.principalDataHeaderLength() + pricipalData.length;
 
         idleStrategy.reset();
         while (true)
@@ -50,7 +50,7 @@ class ServiceSnapshotTaker extends SnapshotTaker
                     .clusterSessionId(session.id())
                     .responseStreamId(responseStreamId)
                     .responseChannel(responseChannel)
-                    .putPrincipleData(principleData, 0, principleData.length);
+                    .putPrincipalData(pricipalData, 0, pricipalData.length);
 
                 bufferClaim.commit();
                 break;

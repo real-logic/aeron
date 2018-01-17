@@ -189,7 +189,7 @@
         <field name="timestamp"            id="3" type="time_t"/>
         <field name="responseStreamId"     id="4" type="int32"/>
         <data  name="responseChannel"      id="5" type="varAsciiEncoding"/>
-        <data  name="principleData"        id="6" type="varDataEncoding"/>
+        <data  name="principalData"        id="6" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="SessionCloseEvent"
@@ -260,7 +260,7 @@
         <field name="clusterSessionId"     id="1" type="int64"/>
         <field name="responseStreamId"     id="2" type="int32"/>
         <data  name="responseChannel"      id="3" type="varAsciiEncoding"/>
-        <data  name="principleData"        id="4" type="varDataEncoding"/>
+        <data  name="principalData"        id="4" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="ClusterSession"

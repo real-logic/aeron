@@ -108,15 +108,15 @@ final class BoundedLogAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.version());
 
                 final String responseChannel = openEventDecoder.responseChannel();
-                final byte[] principleData = new byte[openEventDecoder.principleDataLength()];
-                openEventDecoder.getPrincipleData(principleData, 0, principleData.length);
+                final byte[] principalData = new byte[openEventDecoder.principalDataLength()];
+                openEventDecoder.getPrincipalData(principalData, 0, principalData.length);
 
                 agent.onSessionOpen(
                     openEventDecoder.clusterSessionId(),
                     openEventDecoder.timestamp(),
                     openEventDecoder.responseStreamId(),
                     responseChannel,
-                    principleData);
+                    principalData);
                 break;
             }
 

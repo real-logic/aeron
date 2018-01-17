@@ -21,8 +21,8 @@ import org.agrona.collections.ArrayUtil;
 
 class ClusterSession implements AutoCloseable
 {
-    public static final byte[] NULL_PRINCIPLE_DATA = ArrayUtil.EMPTY_BYTE_ARRAY;
-    public static final int MAX_PRINCIPLE_DATA_LENGTH = 4 * 1024;
+    public static final byte[] NULL_PRINCIPAL_DATA = ArrayUtil.EMPTY_BYTE_ARRAY;
+    public static final int MAX_PRINCIPAL_DATA_LENGTH = 4 * 1024;
 
     enum State
     {
@@ -34,7 +34,7 @@ class ClusterSession implements AutoCloseable
     private final long id;
     private final Publication responsePublication;
     private State state = State.INIT;
-    private byte[] principleData = NULL_PRINCIPLE_DATA;
+    private byte[] principalData = NULL_PRINCIPAL_DATA;
 
     ClusterSession(final long sessionId, final Publication responsePublication)
     {
@@ -68,11 +68,11 @@ class ClusterSession implements AutoCloseable
         this.state = state;
     }
 
-    void authenticate(final byte[] principleData)
+    void authenticate(final byte[] principalData)
     {
-        if (principleData != null)
+        if (principalData != null)
         {
-            this.principleData = principleData;
+            this.principalData = principalData;
         }
 
         this.state = State.AUTHENTICATED;
@@ -81,12 +81,12 @@ class ClusterSession implements AutoCloseable
     void open()
     {
         this.state = State.OPEN;
-        principleData = null;
+        principalData = null;
     }
 
-    byte[] principleData()
+    byte[] principalData()
     {
-        return principleData;
+        return principalData;
     }
 
     void lastActivity(final long timeMs, final long correlationId)
@@ -110,15 +110,15 @@ class ClusterSession implements AutoCloseable
         return lastCorrelationId;
     }
 
-    static void checkPrincipleDataLength(final byte[] principleData)
+    static void checkPrincipalDataLength(final byte[] principalData)
     {
-        if (null != principleData && principleData.length > MAX_PRINCIPLE_DATA_LENGTH)
+        if (null != principalData && principalData.length > MAX_PRINCIPAL_DATA_LENGTH)
         {
             throw new IllegalArgumentException(
-                "Principle Data max length " +
-                MAX_PRINCIPLE_DATA_LENGTH +
+                "Principal Data max length " +
+                    MAX_PRINCIPAL_DATA_LENGTH +
                 " exceeded: length=" +
-                principleData.length);
+                principalData.length);
         }
     }
 

@@ -196,14 +196,14 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final long timestampMs,
         final int responseStreamId,
         final String responseChannel,
-        final byte[] principleData)
+        final byte[] principalData)
     {
         this.timestampMs = timestampMs;
 
         final ClientSession session = new ClientSession(
             clusterSessionId,
             aeron.addExclusivePublication(responseChannel, responseStreamId),
-            principleData,
+            principalData,
             this);
 
         sessionByIdMap.put(clusterSessionId, session);
@@ -230,12 +230,12 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final long clusterSessionId,
         final int responseStreamId,
         final String responseChannel,
-        final byte[] principleData)
+        final byte[] principalData)
     {
         final ClientSession session = new ClientSession(
             clusterSessionId,
             aeron.addExclusivePublication(responseChannel, responseStreamId),
-            principleData,
+            principalData,
             ClusteredServiceAgent.this);
 
         sessionByIdMap.put(clusterSessionId, session);

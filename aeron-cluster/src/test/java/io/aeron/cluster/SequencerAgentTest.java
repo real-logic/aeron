@@ -17,7 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
-import io.aeron.Publication;
+import io.aeron.ExclusivePublication;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
 import org.agrona.collections.MutableLong;
@@ -29,6 +29,7 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ClusterControl.ToggleState.*;
+import static java.lang.Boolean.TRUE;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +44,8 @@ public class SequencerAgentTest
 
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogAppender mockLogAppender = mock(LogAppender.class);
-    private final Publication mockResponsePublication = mock(Publication.class);
+    private final Aeron mockAeron = mock(Aeron.class);
+    private final ExclusivePublication mockResponsePublication = mock(ExclusivePublication.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .errorCounter(mock(AtomicCounter.class))
@@ -51,7 +53,7 @@ public class SequencerAgentTest
         .moduleState(mock(Counter.class))
         .controlToggle(mock(Counter.class))
         .idleStrategySupplier(NoOpIdleStrategy::new)
-        .aeron(mock(Aeron.class))
+        .aeron(mockAeron)
         .epochClock(new SystemEpochClock())
         .cachedEpochClock(new CachedEpochClock())
         .authenticatorSupplier(new DefaultAuthenticatorSupplier());
@@ -59,9 +61,11 @@ public class SequencerAgentTest
     @Before
     public void before()
     {
-        when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(Boolean.TRUE);
-        when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(Boolean.TRUE);
-        when(mockResponsePublication.isConnected()).thenReturn(true);
+        when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
+        when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(TRUE);
+        when(mockAeron.addExclusivePublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
+
+        when(mockResponsePublication.isConnected()).thenReturn(TRUE);
     }
 
     @Test
@@ -179,7 +183,6 @@ public class SequencerAgentTest
             mockLogAppender,
             (sequencerAgent) -> mock(IngressAdapter.class),
             (sequencerAgent) -> mock(TimerService.class),
-            (sessionId, responseStreamId, responseChannel) -> new ClusterSession(sessionId, mockResponsePublication),
             (sequencerAgent) -> mock(ConsensusModuleAdapter.class));
     }
 }

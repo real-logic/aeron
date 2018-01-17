@@ -82,14 +82,14 @@ class LogAppender implements AutoCloseable
     public boolean appendConnectedSession(final ClusterSession session, final long nowMs)
     {
         final byte[] sessionPrincipalData = session.principalData();
-        final String channel = session.responsePublication().channel();
+        final String channel = session.responseChannel();
 
         connectEventEncoder
             .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
             .clusterSessionId(session.id())
             .correlationId(session.lastCorrelationId())
             .timestamp(nowMs)
-            .responseStreamId(session.responsePublication().streamId())
+            .responseStreamId(session.responseStreamId())
             .responseChannel(channel)
             .putPrincipalData(sessionPrincipalData, 0, sessionPrincipalData.length);
 

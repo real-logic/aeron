@@ -37,8 +37,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
 
     public void snapshotSession(final ClusterSession session)
     {
-        final int responseStreamId = session.responsePublication().streamId();
-        final String responseChannel = session.responsePublication().channel();
+        final String responseChannel = session.responseChannel();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterSessionEncoder.BLOCK_LENGTH +
             ClusterSessionEncoder.responseChannelHeaderLength() + responseChannel.length();
 
@@ -53,7 +52,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
                     .clusterSessionId(session.id())
                     .lastCorrelationId(session.lastCorrelationId())
                     .timeOfLastActivity(session.timeOfLastActivityMs())
-                    .responseStreamId(responseStreamId)
+                    .responseStreamId(session.responseStreamId())
                     .responseChannel(responseChannel);
 
                 bufferClaim.commit();

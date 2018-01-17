@@ -15,10 +15,12 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SessionHeaderEncoder;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -34,7 +36,9 @@ public class ClientSession
         MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
 
     private final long id;
-    private final Publication responsePublication;
+    private final int responseStreamId;
+    private final String responseChannel;
+    private Publication responsePublication;
     private final byte[] principalData;
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
@@ -42,10 +46,15 @@ public class ClientSession
     private final Cluster cluster;
 
     ClientSession(
-        final long sessionId, final Publication responsePublication, final byte[] principalData, final Cluster cluster)
+        final long sessionId,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] principalData,
+        final Cluster cluster)
     {
         this.id = sessionId;
-        this.responsePublication = responsePublication;
+        this.responseStreamId = responseStreamId;
+        this.responseChannel = responseChannel;
         this.principalData = principalData;
         this.cluster = cluster;
 
@@ -66,6 +75,26 @@ public class ClientSession
     public long id()
     {
         return id;
+    }
+
+    /**
+     * The response channel stream id for responding to the client.
+     *
+     * @return response channel stream id for responding to the client.
+     */
+    public int responseStreamId()
+    {
+        return responseStreamId;
+    }
+
+    /**
+     * The response channel for responding to the client.
+     *
+     * @return response channel for responding to the client.
+     */
+    public String responseChannel()
+    {
+        return responseChannel;
     }
 
     /**
@@ -105,6 +134,22 @@ public class ClientSession
         messageBuffer.reset(buffer, offset, length);
 
         return responsePublication.offer(vectors, null);
+    }
+
+    void connect(final Aeron aeron)
+    {
+        if (null != responsePublication)
+        {
+            throw new IllegalStateException("Response publication already present");
+        }
+
+        responsePublication = aeron.addExclusivePublication(responseChannel, responseStreamId);
+    }
+
+    void disconnect()
+    {
+        CloseHelper.close(responsePublication);
+        responsePublication = null;
     }
 
     Publication responsePublication()

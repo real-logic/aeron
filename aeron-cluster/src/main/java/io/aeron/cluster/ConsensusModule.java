@@ -41,7 +41,6 @@ public class ConsensusModule implements
     AutoCloseable,
     IngressAdapterSupplier,
     TimerServiceSupplier,
-    ClusterSessionSupplier,
     ConsensusModuleAdapterSupplier
 {
     /**
@@ -173,7 +172,6 @@ public class ConsensusModule implements
             logAppender,
             this,
             this,
-            this,
             this);
 
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
@@ -234,13 +232,6 @@ public class ConsensusModule implements
     public TimerService newTimerService(final SequencerAgent sequencerAgent)
     {
         return new TimerService(TIMER_POLL_LIMIT, sequencerAgent);
-    }
-
-    public ClusterSession newClusterSession(
-        final long sessionId, final int responseStreamId, final String responseChannel)
-    {
-        return new ClusterSession(
-            sessionId, ctx.aeron().addPublication(responseChannel, responseStreamId));
     }
 
     public ConsensusModuleAdapter newConsensusModuleAdapter(final SequencerAgent sequencerAgent)

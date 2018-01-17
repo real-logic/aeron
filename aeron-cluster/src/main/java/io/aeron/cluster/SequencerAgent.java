@@ -61,7 +61,6 @@ class SequencerAgent implements Agent
     private final LogAppender logAppender;
     private final Counter moduleState;
     private final Counter controlToggle;
-    private final ClusterSessionSupplier sessionSupplier;
     private final Long2ObjectHashMap<ClusterSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
@@ -80,7 +79,6 @@ class SequencerAgent implements Agent
         final LogAppender logAppender,
         final IngressAdapterSupplier ingressAdapterSupplier,
         final TimerServiceSupplier timerServiceSupplier,
-        final ClusterSessionSupplier clusterSessionSupplier,
         final ConsensusModuleAdapterSupplier consensusModuleAdapterSupplier)
     {
         this.ctx = ctx;
@@ -92,7 +90,6 @@ class SequencerAgent implements Agent
         this.moduleState = ctx.moduleState();
         this.controlToggle = ctx.controlToggle();
         this.logAppender = logAppender;
-        this.sessionSupplier = clusterSessionSupplier;
         this.sessionProxy = new SessionProxy(egressPublisher);
         this.tempBuffer = ctx.tempBuffer();
         this.idleStrategy = ctx.idleStrategy();
@@ -253,7 +250,8 @@ class SequencerAgent implements Agent
     {
         final long nowMs = cachedEpochClock.time();
         final long sessionId = nextSessionId++;
-        final ClusterSession session = sessionSupplier.newClusterSession(sessionId, responseStreamId, responseChannel);
+        final ClusterSession session = new ClusterSession(sessionId, responseStreamId, responseChannel);
+        session.connect(aeron);
         session.lastActivity(nowMs, correlationId);
 
         authenticator.onConnectRequest(sessionId, credentialData, nowMs);
@@ -893,8 +891,8 @@ class SequencerAgent implements Agent
         final int responseStreamId,
         final String responseChannel)
     {
-        final ClusterSession session = sessionSupplier.newClusterSession(
-            clusterSessionId, responseStreamId, responseChannel);
+        final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
+        session.connect(aeron);
         session.lastActivity(timestamp, correlationId);
         session.state(OPEN);
 

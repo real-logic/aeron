@@ -15,9 +15,12 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.Publication;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
+
+import java.util.Arrays;
 
 class ClusterSession implements AutoCloseable
 {
@@ -32,14 +35,17 @@ class ClusterSession implements AutoCloseable
     private long timeOfLastActivityMs;
     private long lastCorrelationId;
     private final long id;
-    private final Publication responsePublication;
+    private final int responseStreamId;
+    private final String responseChannel;
+    private Publication responsePublication;
     private State state = State.INIT;
     private byte[] principalData = NULL_PRINCIPAL_DATA;
 
-    ClusterSession(final long sessionId, final Publication responsePublication)
+    ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
     {
         this.id = sessionId;
-        this.responsePublication = responsePublication;
+        this.responseStreamId = responseStreamId;
+        this.responseChannel = responseChannel;
     }
 
     public void close()
@@ -51,6 +57,32 @@ class ClusterSession implements AutoCloseable
     long id()
     {
         return id;
+    }
+
+    int responseStreamId()
+    {
+        return responseStreamId;
+    }
+
+    String responseChannel()
+    {
+        return responseChannel;
+    }
+
+    void connect(final Aeron aeron)
+    {
+        if (null != responsePublication)
+        {
+            throw new IllegalStateException("Response publication already present");
+        }
+
+        responsePublication = aeron.addExclusivePublication(responseChannel, responseStreamId);
+    }
+
+    void disconnect()
+    {
+        CloseHelper.close(responsePublication);
+        responsePublication = null;
     }
 
     Publication responsePublication()
@@ -122,14 +154,17 @@ class ClusterSession implements AutoCloseable
         }
     }
 
+
     public String toString()
     {
         return "ClusterSession{" +
             "id=" + id +
             ", timeOfLastActivityMs=" + timeOfLastActivityMs +
             ", lastCorrelationId=" + lastCorrelationId +
-            ", responsePublication=" + responsePublication +
+            ", responseStreamId=" + responseStreamId +
+            ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +
+            ", principalData=" + Arrays.toString(principalData) +
             '}';
     }
 }

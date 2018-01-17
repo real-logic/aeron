@@ -104,7 +104,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
             for (final ClientSession session : sessionByIdMap.values())
             {
-                CloseHelper.close(session.responsePublication());
+                session.disconnect();
             }
         }
     }
@@ -202,10 +202,12 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
         final ClientSession session = new ClientSession(
             clusterSessionId,
-            aeron.addExclusivePublication(responseChannel, responseStreamId),
+            responseStreamId,
+            responseChannel,
             principalData,
             this);
 
+        session.connect(aeron);
         sessionByIdMap.put(clusterSessionId, session);
         service.onSessionOpen(session, timestampMs);
     }
@@ -234,10 +236,12 @@ final class ClusteredServiceAgent implements Agent, Cluster
     {
         final ClientSession session = new ClientSession(
             clusterSessionId,
-            aeron.addExclusivePublication(responseChannel, responseStreamId),
+            responseStreamId,
+            responseChannel,
             principalData,
             ClusteredServiceAgent.this);
 
+        session.connect(aeron);
         sessionByIdMap.put(clusterSessionId, session);
     }
 
@@ -290,8 +294,8 @@ final class ClusteredServiceAgent implements Agent, Cluster
                 }
 
                 final ReadableCounter limit = new ReadableCounter(counters, counterId);
-
                 final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
+
                 while (true)
                 {
                     final int workCount = adapter.poll();

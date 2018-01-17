@@ -21,21 +21,42 @@ package io.aeron.driver;
 public class PublicationLink implements DriverManagedResource
 {
     private final long registrationId;
-    private final DriverManagedResource publication;
+    private final NetworkPublication networkPublication;
+    private final IpcPublication ipcPublication;
     private final AeronClient client;
     private boolean reachedEndOfLife = false;
 
-    public PublicationLink(final long registrationId, final DriverManagedResource publication, final AeronClient client)
+    public PublicationLink(final long registrationId, final AeronClient client, final NetworkPublication publication)
     {
         this.registrationId = registrationId;
-        this.publication = publication;
         this.client = client;
-        this.publication.incRef();
+
+        this.networkPublication = publication;
+        this.ipcPublication = null;
+        publication.incRef();
+    }
+
+    public PublicationLink(final long registrationId, final AeronClient client, final IpcPublication publication)
+    {
+        this.registrationId = registrationId;
+        this.client = client;
+
+        this.networkPublication = null;
+        this.ipcPublication = publication;
+        publication.incRef();
     }
 
     public void close()
     {
-        publication.decRef();
+        if (null != networkPublication)
+        {
+            networkPublication.decRef();
+        }
+
+        if (null != ipcPublication)
+        {
+            ipcPublication.decRef();
+        }
     }
 
     public long registrationId()

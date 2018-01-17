@@ -736,11 +736,9 @@ public class NetworkPublication
         return hasSenderReleased;
     }
 
-    public int decRef()
+    public void decRef()
     {
-        final int count = --refCount;
-
-        if (0 == count)
+        if (0 == --refCount)
         {
             state = State.DRAINING;
             channelEndpoint.decRef();
@@ -753,13 +751,11 @@ public class NetworkPublication
                 isEndOfStream = true;
             }
         }
-
-        return count;
     }
 
-    public int incRef()
+    public void incRef()
     {
-        return ++refCount;
+        ++refCount;
     }
 
     State state()

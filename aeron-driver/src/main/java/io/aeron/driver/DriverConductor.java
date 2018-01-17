@@ -330,7 +330,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             confirmMatch(channelUri, params, publication.rawLog(), publication.sessionId());
         }
 
-        publicationLinks.add(new PublicationLink(correlationId, publication, getOrAddClient(clientId)));
+        publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), publication));
 
         clientProxy.onPublicationReady(
             correlationId,
@@ -461,7 +461,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final boolean isExclusive)
     {
         final IpcPublication ipcPublication = getOrAddIpcPublication(correlationId, streamId, channel, isExclusive);
-        publicationLinks.add(new PublicationLink(correlationId, ipcPublication, getOrAddClient(clientId)));
+        publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), ipcPublication));
 
         clientProxy.onPublicationReady(
             correlationId,

@@ -37,24 +37,4 @@ public interface DriverManagedResource extends AutoCloseable
      * @return whether resource has reached end of life or not
      */
     boolean hasReachedEndOfLife();
-
-    /**
-     * Increment reference count to this resource.
-     *
-     * @return new reference count value
-     */
-    default int incRef()
-    {
-        return 0;
-    }
-
-    /**
-     * Decrement reference count to this resource.
-     *
-     * @return new reference count value
-     */
-    default int decRef()
-    {
-        return 0;
-    }
 }

@@ -274,22 +274,18 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         return reachedEndOfLife;
     }
 
-    public int incRef()
+    public void incRef()
     {
-        return ++refCount;
+        ++refCount;
     }
 
-    public int decRef()
+    public void decRef()
     {
-        final int count = --refCount;
-
-        if (0 == count)
+        if (0 == --refCount)
         {
             state = State.INACTIVE;
             LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition());
         }
-
-        return count;
     }
 
     long consumerPosition()

@@ -17,7 +17,6 @@ package io.aeron.cluster.service;
 
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
-import io.aeron.ReservedValueSupplier;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SessionHeaderEncoder;
 import org.agrona.DirectBuffer;
@@ -106,36 +105,6 @@ public class ClientSession
         messageBuffer.reset(buffer, offset, length);
 
         return responsePublication.offer(vectors, null);
-    }
-
-    /**
-     * Non-blocking publish of a partial buffer containing a message to a cluster.
-     *
-     * @param correlationId         to be used to identify the message to the cluster.
-     * @param buffer                containing message.
-     * @param offset                offset in the buffer at which the encoded message begins.
-     * @param length                in bytes of the encoded message.
-     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.State#LEADING}
-     * otherwise 1.
-     */
-    public long offer(
-        final long correlationId,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        final ReservedValueSupplier reservedValueSupplier)
-    {
-        if (cluster.state() != Cluster.State.LEADING)
-        {
-            return 1;
-        }
-
-        sessionHeaderEncoder.correlationId(correlationId);
-        sessionHeaderEncoder.timestamp(cluster.timeMs());
-        messageBuffer.reset(buffer, offset, length);
-
-        return responsePublication.offer(vectors, reservedValueSupplier);
     }
 
     Publication responsePublication()

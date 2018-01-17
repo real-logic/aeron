@@ -68,8 +68,8 @@ class ClientConductor implements Agent, DriverEventsListener
     private final Long2ObjectHashMap<LogBuffers> logBuffersByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<Object> resourceByRegIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
-    private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final AvailableImageHandler defaultAvailableImageHandler;
+    private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final AvailableCounterHandler availableCounterHandler;
     private final UnavailableCounterHandler unavailableCounterHandler;
     private final DriverProxy driverProxy;

@@ -151,9 +151,4 @@ public class ClientSession
         CloseHelper.close(responsePublication);
         responsePublication = null;
     }
-
-    Publication responsePublication()
-    {
-        return responsePublication;
-    }
 }

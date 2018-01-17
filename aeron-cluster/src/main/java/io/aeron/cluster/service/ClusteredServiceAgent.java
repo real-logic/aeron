@@ -91,6 +91,11 @@ final class ClusteredServiceAgent implements Agent, Cluster
         logAdapter = new BoundedLogAdapter(image, consensusPosition, this);
 
         state = State.LEADING;
+
+        for (final ClientSession session : sessionByIdMap.values())
+        {
+            session.connect(aeron);
+        }
     }
 
     public void onClose()
@@ -100,7 +105,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         if (shouldCloseResources)
         {
             CloseHelper.close(logSubscription);
-            CloseHelper.close(consensusModule.publication());
+            CloseHelper.close(consensusModule);
 
             for (final ClientSession session : sessionByIdMap.values())
             {
@@ -207,7 +212,11 @@ final class ClusteredServiceAgent implements Agent, Cluster
             principalData,
             this);
 
-        session.connect(aeron);
+        if (State.LEADING == state)
+        {
+            session.connect(aeron);
+        }
+
         sessionByIdMap.put(clusterSessionId, session);
         service.onSessionOpen(session, timestampMs);
     }
@@ -217,7 +226,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         this.timestampMs = timestampMs;
 
         final ClientSession session = sessionByIdMap.remove(clusterSessionId);
-        session.responsePublication().close();
+        session.disconnect();
         service.onSessionClose(session, timestampMs, closeReason);
     }
 
@@ -241,7 +250,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
             principalData,
             ClusteredServiceAgent.this);
 
-        session.connect(aeron);
         sessionByIdMap.put(clusterSessionId, session);
     }
 

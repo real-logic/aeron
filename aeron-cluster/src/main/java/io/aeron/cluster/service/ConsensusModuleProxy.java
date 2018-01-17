@@ -18,9 +18,10 @@ package io.aeron.cluster.service;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.IdleStrategy;
 
-class ConsensusModuleProxy
+class ConsensusModuleProxy implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
 
@@ -40,9 +41,9 @@ class ConsensusModuleProxy
         this.idleStrategy = idleStrategy;
     }
 
-    public Publication publication()
+    public void close()
     {
-        return publication;
+        CloseHelper.close(publication);
     }
 
     public void sendAcknowledgment(

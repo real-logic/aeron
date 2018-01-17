@@ -179,10 +179,6 @@ public class SequencerAgentTest
 
     private SequencerAgent newSequencerAgent()
     {
-        return new SequencerAgent(
-            ctx,
-            mockEgressPublisher,
-            mockLogAppender,
-            (sequencerAgent) -> mock(IngressAdapter.class));
+        return new SequencerAgent(ctx, mockEgressPublisher, mockLogAppender);
     }
 }

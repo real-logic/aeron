@@ -25,7 +25,7 @@ import org.agrona.DirectBuffer;
 
 public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
-    private static final int INITIAL_CREDENTIAL_BUFFER_LENGTH = 1024;
+    private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionConnectRequestDecoder connectRequestDecoder = new SessionConnectRequestDecoder();
@@ -35,18 +35,13 @@ public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
 
     private final ControlledFragmentHandler fragmentAssembler = new ControlledFragmentAssembler(this);
-    private final SequencerAgent sequencerAgent;
     private final Subscription subscription;
-    private final int fragmentLimit;
+    private final SequencerAgent sequencerAgent;
 
-    private byte[] credentialsBuffer = new byte[INITIAL_CREDENTIAL_BUFFER_LENGTH];
-
-    public IngressAdapter(
-        final SequencerAgent sequencerAgent, final Subscription subscription, final int fragmentLimit)
+    public IngressAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
     {
-        this.sequencerAgent = sequencerAgent;
         this.subscription = subscription;
-        this.fragmentLimit = fragmentLimit;
+        this.sequencerAgent = sequencerAgent;
     }
 
     public void close()
@@ -56,7 +51,7 @@ public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 
     public int poll()
     {
-        return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
+        return subscription.controlledPoll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
     }
 
     public ControlledFragmentAssembler.Action onFragment(

@@ -604,7 +604,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
             final IpcPublication publication = ipcPublications.get(i);
-            if (subscription.matches(publication) && IpcPublication.State.ACTIVE == publication.state())
+            if (IpcPublication.State.ACTIVE == publication.state() && subscription.matches(publication))
             {
                 linkIpcSubscription(subscription, publication);
             }
@@ -622,13 +622,11 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         subscriptionLinks.add(subscriptionLink);
         clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
-        final SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
-
         for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
             final NetworkPublication publication = networkPublications.get(i);
 
-            if (subscriptionLink.matches(publication) && NetworkPublication.State.ACTIVE == publication.state())
+            if (NetworkPublication.State.ACTIVE == publication.state() && subscriptionLink.matches(publication))
             {
                 linkSpy(publication, subscriptionLink);
             }

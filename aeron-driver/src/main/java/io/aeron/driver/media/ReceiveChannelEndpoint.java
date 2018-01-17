@@ -190,7 +190,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public long incRefToStreamAndSession(final int streamId, final int sessionId)
     {
-        incRefToStream(streamId);
         return refCountByStreamIdAndSessionIdMap.incrementAndGet(Hashing.compoundKey(streamId, sessionId));
     }
 
@@ -198,7 +197,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     {
         final long key = Hashing.compoundKey(streamId, sessionId);
 
-        decRefToStream(streamId);
         final long count = refCountByStreamIdAndSessionIdMap.decrementAndGet(key);
 
         if (-1 == count)
@@ -213,12 +211,14 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public int streamCount()
     {
-        return refCountByStreamIdMap.size();
+        return refCountByStreamIdMap.size() + refCountByStreamIdAndSessionIdMap.size();
     }
 
     public boolean shouldBeClosed()
     {
-        return refCountByStreamIdMap.isEmpty() && !statusIndicator.isClosed();
+        return refCountByStreamIdMap.isEmpty() &&
+            refCountByStreamIdAndSessionIdMap.isEmpty() &&
+            !statusIndicator.isClosed();
     }
 
     public boolean hasExplicitControl()

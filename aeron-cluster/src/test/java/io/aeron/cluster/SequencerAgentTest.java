@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
+import io.aeron.Subscription;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
 import org.agrona.collections.MutableLong;
@@ -46,6 +47,7 @@ public class SequencerAgentTest
     private final LogAppender mockLogAppender = mock(LogAppender.class);
     private final Aeron mockAeron = mock(Aeron.class);
     private final ExclusivePublication mockResponsePublication = mock(ExclusivePublication.class);
+    private final Subscription mockConsensusModuleSubscription = mock(Subscription.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .errorCounter(mock(AtomicCounter.class))
@@ -64,7 +66,7 @@ public class SequencerAgentTest
         when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
         when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(TRUE);
         when(mockAeron.addExclusivePublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
-
+        when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mockConsensusModuleSubscription);
         when(mockResponsePublication.isConnected()).thenReturn(TRUE);
     }
 
@@ -181,7 +183,6 @@ public class SequencerAgentTest
             ctx,
             mockEgressPublisher,
             mockLogAppender,
-            (sequencerAgent) -> mock(IngressAdapter.class),
-            (sequencerAgent) -> mock(ConsensusModuleAdapter.class));
+            (sequencerAgent) -> mock(IngressAdapter.class));
     }
 }

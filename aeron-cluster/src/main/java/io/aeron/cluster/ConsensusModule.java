@@ -37,7 +37,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
-public class ConsensusModule implements AutoCloseable, IngressAdapterSupplier, ConsensusModuleAdapterSupplier
+public class ConsensusModule implements AutoCloseable, IngressAdapterSupplier
 {
     /**
      * Type of snapshot for this agent.
@@ -161,12 +161,7 @@ public class ConsensusModule implements AutoCloseable, IngressAdapterSupplier, C
         final ExclusivePublication publication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
         logAppender = new LogAppender(publication);
 
-        final SequencerAgent conductor = new SequencerAgent(
-            ctx,
-            new EgressPublisher(),
-            logAppender,
-            this,
-            this);
+        final SequencerAgent conductor = new SequencerAgent(ctx, new EgressPublisher(), logAppender, this);
 
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
@@ -221,13 +216,6 @@ public class ConsensusModule implements AutoCloseable, IngressAdapterSupplier, C
             sequencerAgent,
             ctx.aeron().addSubscription(ctx.ingressChannel(), ctx.ingressStreamId()),
             FRAGMENT_POLL_LIMIT);
-    }
-
-    public ConsensusModuleAdapter newConsensusModuleAdapter(final SequencerAgent sequencerAgent)
-    {
-        return new ConsensusModuleAdapter(
-            ctx.aeron().addSubscription(ctx.consensusModuleChannel(), ctx.consensusModuleStreamId()),
-            sequencerAgent);
     }
 
     /**

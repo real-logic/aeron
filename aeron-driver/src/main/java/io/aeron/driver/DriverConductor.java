@@ -839,7 +839,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final PublicationParams params,
         final boolean isExclusive)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : assignSessionId();
+        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId();
         final UnsafeBufferPosition senderPosition = SenderPos.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
         final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
@@ -1212,7 +1212,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final boolean isExclusive,
         final PublicationParams params)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : assignSessionId();
+        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId();
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
         final RawLog rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
 
@@ -1297,12 +1297,12 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
     }
 
-    private int assignSessionId()
+    private int nextAvailableSessionId()
     {
         while (true)
         {
             final int sessionId = nextSessionId++;
-            if (activeSessionIds.add(sessionId))
+            if (!activeSessionIds.contains(sessionId))
             {
                 return sessionId;
             }

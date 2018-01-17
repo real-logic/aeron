@@ -32,6 +32,10 @@ public class AeronClient implements DriverManagedResource
         this.timeOfLastKeepaliveNs = nowNs;
     }
 
+    public void close()
+    {
+    }
+
     public long clientId()
     {
         return clientId;
@@ -63,10 +67,5 @@ public class AeronClient implements DriverManagedResource
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;
-    }
-
-    public void delete()
-    {
-        // nothing to do
     }
 }

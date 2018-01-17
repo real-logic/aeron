@@ -676,11 +676,6 @@ public class PublicationImage
         return State.DONE == state;
     }
 
-    public void delete()
-    {
-        close();
-    }
-
     private boolean isDrained()
     {
         final long rebuildPosition = this.rebuildPosition.get();

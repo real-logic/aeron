@@ -274,11 +274,6 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         return reachedEndOfLife;
     }
 
-    public void delete()
-    {
-        close();
-    }
-
     public int incRef()
     {
         return ++refCount;

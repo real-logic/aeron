@@ -15,12 +15,12 @@
  */
 package io.aeron.driver;
 
-public interface DriverManagedResource
+public interface DriverManagedResource extends AutoCloseable
 {
     /**
-     * Delete any resources held. This method should be idempotent.
+     * Override {@link AutoCloseable#close()} method to remove the checked exception expectation.
      */
-    void delete();
+    void close();
 
     /**
      * Inform resource of timeNs passing and pass it DriverConductor to inform of any state transitions.

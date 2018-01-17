@@ -150,11 +150,6 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return reachedEndOfLife;
     }
 
-    public void delete()
-    {
-        close();
-    }
-
     public boolean isWildcardOrSessionIdMatch(final int sessionId)
     {
         return !hasSessionId || (this.sessionId == sessionId);

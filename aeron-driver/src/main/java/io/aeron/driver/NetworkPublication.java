@@ -736,11 +736,6 @@ public class NetworkPublication
         return hasSenderReleased;
     }
 
-    public void delete()
-    {
-        close();
-    }
-
     public int decRef()
     {
         final int count = --refCount;

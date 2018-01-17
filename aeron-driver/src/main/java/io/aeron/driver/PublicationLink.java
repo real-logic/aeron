@@ -55,9 +55,4 @@ public class PublicationLink implements DriverManagedResource
     {
         return reachedEndOfLife;
     }
-
-    public void delete()
-    {
-        close();
-    }
 }

@@ -1322,7 +1322,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             {
                 fastUnorderedRemove(list, i, lastIndex);
                 lastIndex--;
-                resource.delete();
+                resource.close();
             }
         }
     }

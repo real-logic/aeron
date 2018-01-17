@@ -22,7 +22,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
-public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
+class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
 {
     final Subscription subscription;
     final SequencerAgent sequencerAgent;
@@ -32,7 +32,7 @@ public class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
     private final CancelTimerRequestDecoder cancelTimerRequestDecoder = new CancelTimerRequestDecoder();
     private final ServiceActionAckDecoder serviceActionAckDecoder = new ServiceActionAckDecoder();
 
-    public ConsensusModuleAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
+    ConsensusModuleAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
     {
         this.subscription = subscription;
         this.sequencerAgent = sequencerAgent;

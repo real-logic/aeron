@@ -25,13 +25,13 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 
-public class ConsensusTracker implements AutoCloseable
+class ConsensusTracker implements AutoCloseable
 {
     private final long recordingId;
     private final ReadableCounter recordingPosition;
     private final Counter consensusPosition;
 
-    public ConsensusTracker(
+    ConsensusTracker(
         final Aeron aeron,
         final MutableDirectBuffer tempBuffer,
         final long logPosition,

@@ -23,7 +23,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
-public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
+class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
     private static final int FRAGMENT_POLL_LIMIT = 10;
 
@@ -38,7 +38,7 @@ public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final Subscription subscription;
     private final SequencerAgent sequencerAgent;
 
-    public IngressAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
+    IngressAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
     {
         this.subscription = subscription;
         this.sequencerAgent = sequencerAgent;

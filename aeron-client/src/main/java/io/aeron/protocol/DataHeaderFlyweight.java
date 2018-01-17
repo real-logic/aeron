@@ -84,7 +84,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Is the frame at data frame at the beginning of packet a heartbeat message.
+     * Is the frame at data frame at the beginning of packet a heartbeat message?
      *
      * @param packet containing the data frame.
      * @param length of the data frame.

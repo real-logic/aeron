@@ -899,7 +899,7 @@ public class Aeron implements AutoCloseable
          * This value is controlled by the driver and included in the CnC file. It can be configured by adjusting
          * the aeron.client.liveness.timeout property on the media driver.
          *
-         * @return the timeout in nanoseconds between service calls in nanoseconds.
+         * @return the timeout in nanoseconds between service calls.
          */
         public long interServiceTimeout()
         {

@@ -65,16 +65,6 @@ public class AeronClient implements DriverManagedResource
         return reachedEndOfLife;
     }
 
-    public void timeOfLastStateChange(final long timeNs)
-    {
-        timeOfLastKeepaliveNs = timeNs;
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return timeOfLastKeepaliveNs;
-    }
-
     public void delete()
     {
         // nothing to do

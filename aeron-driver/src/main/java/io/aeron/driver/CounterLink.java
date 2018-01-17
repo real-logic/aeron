@@ -62,15 +62,6 @@ public class CounterLink implements DriverManagedResource
         return reachedEndOfLife;
     }
 
-    public void timeOfLastStateChange(final long time)
-    {
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return client.timeOfLastKeepalive();
-    }
-
     public void delete()
     {
         close();

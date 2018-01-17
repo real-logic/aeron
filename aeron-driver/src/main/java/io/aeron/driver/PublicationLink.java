@@ -56,16 +56,6 @@ public class PublicationLink implements DriverManagedResource
         return reachedEndOfLife;
     }
 
-    public void timeOfLastStateChange(final long time)
-    {
-        // not set this way
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return client.timeOfLastKeepalive();
-    }
-
     public void delete()
     {
         close();

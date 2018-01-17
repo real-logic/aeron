@@ -15,10 +15,13 @@
  */
 package io.aeron.driver;
 
-import org.agrona.ManagedResource;
-
-public interface DriverManagedResource extends ManagedResource
+public interface DriverManagedResource
 {
+    /**
+     * Delete any resources held. This method should be idempotent.
+     */
+    void delete();
+
     /**
      * Inform resource of timeNs passing and pass it DriverConductor to inform of any state transitions.
      *

@@ -150,16 +150,6 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return reachedEndOfLife;
     }
 
-    public void timeOfLastStateChange(final long time)
-    {
-        // not set this way
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return aeronClient.timeOfLastKeepalive();
-    }
-
     public void delete()
     {
         close();

@@ -676,15 +676,6 @@ public class PublicationImage
         return State.DONE == state;
     }
 
-    public void timeOfLastStateChange(final long time)
-    {
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return timeOfLastStateChangeNs;
-    }
-
     public void delete()
     {
         close();

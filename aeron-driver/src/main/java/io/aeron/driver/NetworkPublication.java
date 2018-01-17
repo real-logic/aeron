@@ -736,15 +736,6 @@ public class NetworkPublication
         return hasSenderReleased;
     }
 
-    public void timeOfLastStateChange(final long time)
-    {
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return timeOfLastActivityNs;
-    }
-
     public void delete()
     {
         close();

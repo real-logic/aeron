@@ -274,16 +274,6 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         return reachedEndOfLife;
     }
 
-    public void timeOfLastStateChange(final long timeNs)
-    {
-        timeOfLastStateChangeNs = timeNs;
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return timeOfLastStateChangeNs;
-    }
-
     public void delete()
     {
         close();

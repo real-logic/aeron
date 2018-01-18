@@ -440,6 +440,7 @@ public class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
+            final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
             final long correlationId = aeron.nextCorrelationId();
 
             if (!archiveProxy.replay(
@@ -454,9 +455,11 @@ public class AeronArchive implements AutoCloseable
                 throw new IllegalStateException("Failed to send replay request");
             }
 
-            pollForResponse(correlationId);
+            final long replaySessionId = pollForResponse(correlationId);
 
-            return aeron.addSubscription(replayChannel, replayStreamId);
+            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString((int)replaySessionId));
+
+            return aeron.addSubscription(replayChannelUri.toString(), replayStreamId);
         }
         finally
         {
@@ -489,6 +492,7 @@ public class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
+            final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
             final long correlationId = aeron.nextCorrelationId();
 
             if (!archiveProxy.replay(
@@ -503,9 +507,12 @@ public class AeronArchive implements AutoCloseable
                 throw new IllegalStateException("Failed to send replay request");
             }
 
-            pollForResponse(correlationId);
+            final long replaySessionId = pollForResponse(correlationId);
 
-            return aeron.addSubscription(replayChannel, replayStreamId, availableImageHandler, unavailableImageHandler);
+            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString((int)replaySessionId));
+
+            return aeron.addSubscription(
+                replayChannelUri.toString(), replayStreamId, availableImageHandler, unavailableImageHandler);
         }
         finally
         {

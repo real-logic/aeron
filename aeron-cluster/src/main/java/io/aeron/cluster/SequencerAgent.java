@@ -202,14 +202,7 @@ class SequencerAgent implements Agent
     public void onServiceActionAck(
         final long serviceId, final long logPosition, final long leadershipTermId, final ServiceAction action)
     {
-        final long currentLogPosition = leadershipTermBeginPosition + logAppender.position();
-        if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)
-        {
-            throw new IllegalStateException("Invalid log state:" +
-                " serviceId=" + serviceId +
-                ", logPosition=" + logPosition + " current is " + currentLogPosition +
-                ", leadershipTermId=" + leadershipTermId + " current is " + this.leadershipTermId);
-        }
+        validateServiceAck(serviceId, logPosition, leadershipTermId);
 
         if (!state.isValid(action))
         {
@@ -454,14 +447,6 @@ class SequencerAgent implements Agent
         return RecoveryState.allocate(aeron, tempBuffer, 0, leadershipTermId, 0, termCount);
     }
 
-    private static void checkInterruptedStatus()
-    {
-        if (Thread.currentThread().isInterrupted())
-        {
-            throw new RuntimeException("Unexpected interrupt");
-        }
-    }
-
     private void waitForServiceAcks()
     {
         while (true)
@@ -473,6 +458,18 @@ class SequencerAgent implements Agent
             }
 
             idle(fragmentsRead);
+        }
+    }
+
+    private void validateServiceAck(final long serviceId, final long logPosition, final long leadershipTermId)
+    {
+        final long currentLogPosition = leadershipTermBeginPosition + logAppender.position();
+        if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)
+        {
+            throw new IllegalStateException("Invalid log state:" +
+                " serviceId=" + serviceId +
+                ", logPosition=" + logPosition + " current is " + currentLogPosition +
+                ", leadershipTermId=" + leadershipTermId + " current is " + this.leadershipTermId);
         }
     }
 
@@ -488,6 +485,14 @@ class SequencerAgent implements Agent
         checkInterruptedStatus();
         idleStrategy.idle(workCount);
         invokeAeronClient();
+    }
+
+    private static void checkInterruptedStatus()
+    {
+        if (Thread.currentThread().isInterrupted())
+        {
+            throw new RuntimeException("Unexpected interrupt");
+        }
     }
 
     private int invokeAeronClient()

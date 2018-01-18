@@ -55,7 +55,7 @@ public class ConsensusPos
     /**
      * Type id of a consensus position counter.
      */
-    public static final int CONSENSUS_POSITION_TYPE_ID = 202;
+    public static final int CONSENSUS_POSITION_TYPE_ID = 203;
 
     /**
      * Represents a null counter id when not found.

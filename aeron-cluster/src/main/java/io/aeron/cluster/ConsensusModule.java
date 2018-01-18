@@ -29,8 +29,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static io.aeron.cluster.ConsensusModule.Configuration.CONSENSUS_MODULE_STATE_TYPE_ID;
-import static io.aeron.cluster.ConsensusModule.Configuration.CONTROL_TOGGLE_TYPE_ID;
+import static io.aeron.cluster.ConsensusModule.Configuration.*;
+import static io.aeron.cluster.service.ClusterNodeRole.CLUSTER_NODE_ROLE_TYPE_ID;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
@@ -89,9 +89,6 @@ public class ConsensusModule implements AutoCloseable
          */
         CLOSED(7, null);
 
-        private final int code;
-        private final ServiceAction validServiceAction;
-
         static final State[] STATES;
 
         static
@@ -109,6 +106,9 @@ public class ConsensusModule implements AutoCloseable
                 STATES[code] = state;
             }
         }
+
+        private final int code;
+        private final ServiceAction validServiceAction;
 
         State(final int code, final ServiceAction serviceAction)
         {
@@ -141,14 +141,14 @@ public class ConsensusModule implements AutoCloseable
          */
         public static State get(final AtomicCounter counter)
         {
-            final long value = counter.get();
+            final long code = counter.get();
 
-            if (value < 0 || value > (STATES.length - 1))
+            if (code < 0 || code > (STATES.length - 1))
             {
-                throw new IllegalStateException("Invalid state counter value: " + value);
+                throw new IllegalStateException("Invalid state counter code: " + code);
             }
 
-            return STATES[(int)value];
+            return STATES[(int)code];
         }
     }
 
@@ -246,6 +246,11 @@ public class ConsensusModule implements AutoCloseable
         public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;
 
         /**
+         * Counter type id for the consensus module role.
+         */
+        public static final int CONSENSUS_MODULE_ROLE_TYPE_ID = CLUSTER_NODE_ROLE_TYPE_ID;
+
+        /**
          * Counter type id for the control toggle.
          */
         public static final int CONTROL_TOGGLE_TYPE_ID = ClusterControl.CONTROL_TOGGLE_TYPE_ID;
@@ -254,6 +259,16 @@ public class ConsensusModule implements AutoCloseable
          * Type id of a consensus position counter.
          */
         public static final int CONSENSUS_POSITION_TYPE_ID = ConsensusPos.CONSENSUS_POSITION_TYPE_ID;
+
+        /**
+         * Type id of a recovery state counter.
+         */
+        public static final int RECOVERY_STATE_TYPE_ID = RecoveryState.RECOVERY_STATE_TYPE_ID;
+
+        /**
+         * Counter type id for count of snapshots taken.
+         */
+        public static final int SNAPSHOT_COUNTER_TYPE_ID = 205;
 
         /**
          * Directory to use for the aeron cluster.
@@ -436,6 +451,7 @@ public class ConsensusModule implements AutoCloseable
         private CountedErrorHandler countedErrorHandler;
 
         private Counter moduleState;
+        private Counter moduleRole;
         private Counter controlToggle;
         private Counter snapshotCounter;
         private ShutdownSignalBarrier shutdownSignalBarrier;
@@ -523,7 +539,12 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == moduleState)
             {
-                moduleState = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus Module state");
+                moduleState = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus Module State");
+            }
+
+            if (null == moduleRole)
+            {
+                moduleRole = aeron.addCounter(CONSENSUS_MODULE_ROLE_TYPE_ID, "Cluster Module Role");
             }
 
             if (null == controlToggle)
@@ -533,7 +554,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == snapshotCounter)
             {
-                snapshotCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Snapshot count");
+                snapshotCounter = aeron.addCounter(SNAPSHOT_COUNTER_TYPE_ID, "Snapshot count");
             }
 
             if (null == threadFactory)
@@ -1142,13 +1163,37 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Set the counter for the current state of the consensus module.
          *
-         * @param moduleState the counter for the current state of the consensus module.t
+         * @param moduleState the counter for the current state of the consensus module.
          * @return this for a fluent API.
          * @see State
          */
         public Context moduleState(final Counter moduleState)
         {
             this.moduleState = moduleState;
+            return this;
+        }
+
+        /**
+         * Get the counter for representing the current {@link Cluster.Role} of the consensus module.
+         *
+         * @return the counter for representing the current {@link Cluster.Role} of the consensus module.
+         * @see Cluster.Role
+         */
+        public Counter moduleRole()
+        {
+            return moduleRole;
+        }
+
+        /**
+         * Set the counter for representing the current {@link Cluster.Role} of the consensus module.
+         *
+         * @param moduleRole the counter for representing the current {@link Cluster.Role} of the consensus module.
+         * @return this for a fluent API.
+         * @see Cluster.Role
+         */
+        public Context moduleRole(final Counter moduleRole)
+        {
+            this.moduleRole = moduleRole;
             return this;
         }
 
@@ -1366,7 +1411,9 @@ public class ConsensusModule implements AutoCloseable
             else
             {
                 CloseHelper.close(moduleState);
+                CloseHelper.close(moduleRole);
                 CloseHelper.close(controlToggle);
+                CloseHelper.close(snapshotCounter);
             }
         }
     }

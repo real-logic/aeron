@@ -20,10 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.*;
-import io.aeron.cluster.service.ConsensusPos;
-import io.aeron.cluster.service.RecordingExtent;
-import io.aeron.cluster.service.RecordingLog;
-import io.aeron.cluster.service.RecoveryState;
+import io.aeron.cluster.service.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.*;
@@ -156,6 +153,8 @@ class SequencerAgent implements Agent
             aeron, ctx.tempBuffer(), position, leadershipTermId, logAppender.sessionId(), ctx.idleStrategy());
 
         ctx.recordingLog().appendTerm(consensusTracker.recordingId(), position, leadershipTermId, timestamp);
+
+        ctx.moduleRole().set(Cluster.Role.LEADER.code());
     }
 
     public int doWork()

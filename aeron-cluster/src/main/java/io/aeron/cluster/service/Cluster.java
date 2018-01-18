@@ -39,6 +39,24 @@ public interface Cluster
          */
         FOLLOWER(2);
 
+        static final Role[] ROLES;
+
+        static
+        {
+            final Role[] roles = values();
+            ROLES = new Role[roles.length];
+            for (final Role role : roles)
+            {
+                final int code = role.code();
+                if (null != ROLES[code])
+                {
+                    throw new IllegalStateException("Code already in use: " + code);
+                }
+
+                ROLES[code] = role;
+            }
+        }
+
         private final int code;
 
         Role(final int code)
@@ -54,6 +72,22 @@ public interface Cluster
         public final int code()
         {
             return code;
+        }
+
+        /**
+         * Get the role from a code read from a counter.
+         *
+         * @param code for the {@link Role}.
+         * @return the {@link Role} of the cluster node.
+         */
+        public static Role get(final int code)
+        {
+            if (code < 0 || code > (ROLES.length - 1))
+            {
+                throw new IllegalStateException("Invalid role counter code: " + code);
+            }
+
+            return ROLES[code];
         }
     }
 

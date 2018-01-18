@@ -148,7 +148,7 @@ public class ClusterControl
     /**
      * Counter type id for the control toggle.
      */
-    public static final int CONTROL_TOGGLE_TYPE_ID = 201;
+    public static final int CONTROL_TOGGLE_TYPE_ID = 202;
 
     /**
      * Map a {@link CountersReader} over the default location CnC file.

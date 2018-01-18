@@ -49,9 +49,9 @@ import static org.agrona.concurrent.status.CountersReader.*;
 public class RecoveryState
 {
     /**
-     * Type id of a snapshot counter.
+     * Type id of a recovery state counter.
      */
-    public static final int SNAPSHOT_TYPE_ID = 203;
+    public static final int RECOVERY_STATE_TYPE_ID = 204;
 
     /**
      * Represents a null counter id when not found.
@@ -108,7 +108,7 @@ public class RecoveryState
         labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, replayTermCount);
 
         return aeron.addCounter(
-            SNAPSHOT_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, KEY_LENGTH, labelOffset);
+            RECOVERY_STATE_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, KEY_LENGTH, labelOffset);
     }
 
     /**
@@ -127,7 +127,7 @@ public class RecoveryState
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SNAPSHOT_TYPE_ID)
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
                 {
                     return i;
                 }
@@ -152,7 +152,7 @@ public class RecoveryState
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SNAPSHOT_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET);
             }
@@ -176,7 +176,7 @@ public class RecoveryState
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SNAPSHOT_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + LOG_POSITION_OFFSET);
             }
@@ -200,7 +200,7 @@ public class RecoveryState
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SNAPSHOT_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + LEADERSHIP_TERM_ID_OFFSET);
             }
@@ -224,7 +224,7 @@ public class RecoveryState
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SNAPSHOT_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + TIMESTAMP_OFFSET);
             }
@@ -248,7 +248,7 @@ public class RecoveryState
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SNAPSHOT_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
             {
                 return buffer.getInt(recordOffset + KEY_OFFSET + REPLAY_TERM_COUNT_OFFSET);
             }

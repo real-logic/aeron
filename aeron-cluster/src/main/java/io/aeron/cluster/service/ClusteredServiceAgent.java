@@ -55,6 +55,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
     private long timestampMs;
     private BoundedLogAdapter logAdapter;
     private ReadableCounter consensusPosition;
+    private ReadableCounter roleCounter;
     private State state = State.INIT;
     private Role role = Role.CANDIDATE;
 
@@ -85,10 +86,10 @@ final class ClusteredServiceAgent implements Agent, Cluster
         service.onStart(this);
 
         final CountersReader counters = aeron.countersReader();
-        final int counterId = findRecoveryCounterId(counters);
+        final int recoveryCounterId = findRecoveryCounterId(counters);
 
-        checkForSnapshot(counters, counterId);
-        checkForReplay(counters, counterId);
+        checkForSnapshot(counters, recoveryCounterId);
+        checkForReplay(counters, recoveryCounterId);
 
         findConsensusPosition(counters, logSubscription);
 
@@ -96,12 +97,26 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final Image image = logSubscription.imageBySessionId(sessionId);
         logAdapter = new BoundedLogAdapter(image, consensusPosition, this);
 
-        state = State.ACTIVE;
-        role = Role.LEADER;
+        findClusterRole(counters);
 
-        for (final ClientSession session : sessionByIdMap.values())
+        idleStrategy.reset();
+        long roleValue = roleCounter.get();
+        while (roleValue == Role.CANDIDATE.code())
         {
-            session.connect(aeron);
+            checkInterruptedStatus();
+            idleStrategy.idle();
+            roleValue = roleCounter.get();
+        }
+
+        role = Role.get((int)roleValue);
+        state = State.ACTIVE;
+
+        if (Role.LEADER == role)
+        {
+            for (final ClientSession session : sessionByIdMap.values())
+            {
+                session.connect(aeron);
+            }
         }
     }
 
@@ -397,6 +412,21 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
         currentRecordingId = ConsensusPos.getRecordingId(counters, counterId);
         consensusPosition = new ReadableCounter(counters, counterId);
+    }
+
+    private void findClusterRole(final CountersReader counters)
+    {
+        idleStrategy.reset();
+
+        int counterId = ClusterNodeRole.findCounterId(counters);
+        while (ClusterNodeRole.NULL_COUNTER_ID == counterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+            counterId = ClusterNodeRole.findCounterId(counters);
+        }
+
+        roleCounter = new ReadableCounter(counters, counterId);
     }
 
     private void loadSnapshot(final long recordingId)

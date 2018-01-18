@@ -466,11 +466,11 @@ public class Configuration
     public static final long IDLE_MAX_YIELDS = 100;
 
     /**
-     * Park for the minimum period of time which is typically 50 microseconds on 64-bit non-virtualised Linux.
-     * You will typically get 50 microseconds plus the number of nanoseconds requested if a core is available.
+     * Park for the minimum period of time which is typically 50-55 microseconds on 64-bit non-virtualised Linux.
+     * You will typically get 50-55 microseconds plus the number of nanoseconds requested if a core is available.
      * On Windows expect to wait for at least 16ms or 1ms if the high-res timers are enabled.
      */
-    public static final long IDLE_MIN_PARK_NS = 1;
+    public static final long IDLE_MIN_PARK_NS = 1000;
 
     /**
      * Maximum back-off park time which doubles on each interval stepping up from the min park idle.

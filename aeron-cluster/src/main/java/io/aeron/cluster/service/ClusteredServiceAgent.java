@@ -150,6 +150,11 @@ final class ClusteredServiceAgent implements Agent, Cluster
         return role;
     }
 
+    public boolean isReplay()
+    {
+        return State.REPLAY == state;
+    }
+
     public Aeron aeron()
     {
         return aeron;

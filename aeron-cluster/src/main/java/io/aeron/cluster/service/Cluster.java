@@ -65,6 +65,13 @@ public interface Cluster
     Role role();
 
     /**
+     * Is the node currently in replay of existing messages.
+     *
+     * @return true if the node currently in replay of existing messages otherwise false.
+     */
+    boolean isReplay();
+
+    /**
      * Get the {@link Aeron} client used by the cluster.
      *
      * @return the {@link Aeron} client used by the cluster.

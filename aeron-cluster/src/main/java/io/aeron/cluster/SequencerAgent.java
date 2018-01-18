@@ -111,6 +111,7 @@ class SequencerAgent implements Agent
                 session.close();
             }
 
+            CloseHelper.close(logAppender);
             CloseHelper.close(ingressAdapter);
             CloseHelper.close(consensusModuleAdapter);
         }
@@ -143,6 +144,8 @@ class SequencerAgent implements Agent
 
             archive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
         }
+
+        logAppender.connect(aeron, ctx.logChannel(), ctx.logStreamId());
 
         final long timestamp = epochClock.time();
         cachedEpochClock.update(timestamp);

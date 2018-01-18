@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
@@ -34,16 +35,27 @@ class LogAppender implements AutoCloseable
     private final ServiceActionRequestEncoder actionRequestEncoder = new ServiceActionRequestEncoder();
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
-    private final Publication publication;
-
-    LogAppender(final Publication publication)
-    {
-        this.publication = publication;
-    }
+    private Publication publication;
 
     public void close()
     {
         CloseHelper.close(publication);
+    }
+
+    public void connect(final Aeron aeron, final String channel, final int streamId)
+    {
+        if (null != publication)
+        {
+            throw new IllegalStateException("Publication already exists");
+        }
+
+        publication = aeron.addExclusivePublication(channel, streamId);
+    }
+
+    public void disconnect()
+    {
+        publication.close();
+        publication = null;
     }
 
     public int sessionId()
@@ -53,6 +65,11 @@ class LogAppender implements AutoCloseable
 
     public long position()
     {
+        if (null == publication)
+        {
+            return 0;
+        }
+
         return publication.position();
     }
 

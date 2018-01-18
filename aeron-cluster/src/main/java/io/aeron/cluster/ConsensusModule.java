@@ -153,7 +153,6 @@ public class ConsensusModule implements AutoCloseable
     }
 
     private final Context ctx;
-    private final LogAppender logAppender;
     private final AgentRunner conductorRunner;
 
     ConsensusModule(final Context ctx)
@@ -161,11 +160,7 @@ public class ConsensusModule implements AutoCloseable
         this.ctx = ctx;
         ctx.conclude();
 
-        final Aeron aeron = ctx.aeron();
-        final ExclusivePublication publication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
-        logAppender = new LogAppender(publication);
-
-        final SequencerAgent conductor = new SequencerAgent(ctx, new EgressPublisher(), logAppender);
+        final SequencerAgent conductor = new SequencerAgent(ctx, new EgressPublisher(), new LogAppender());
 
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
@@ -210,7 +205,6 @@ public class ConsensusModule implements AutoCloseable
     public void close()
     {
         CloseHelper.close(conductorRunner);
-        CloseHelper.close(logAppender);
         CloseHelper.close(ctx);
     }
 

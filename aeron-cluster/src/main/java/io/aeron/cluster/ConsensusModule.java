@@ -50,7 +50,7 @@ public class ConsensusModule implements AutoCloseable
     public enum State
     {
         /**
-         * Starting up and reloading latest snapshot.
+         * Starting up.
          */
         INIT(0, ServiceAction.INIT),
 

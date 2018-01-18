@@ -33,6 +33,11 @@ import static io.aeron.CommonContext.SPY_PREFIX;
 
 final class ClusteredServiceAgent implements Agent, Cluster
 {
+    enum State
+    {
+        INIT, REPLAY, ACTIVE, SNAPSHOT, CLOSED
+    }
+
     private final boolean shouldCloseResources;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
@@ -51,6 +56,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
     private BoundedLogAdapter logAdapter;
     private ReadableCounter consensusPosition;
     private State state = State.INIT;
+    private Role role = Role.CANDIDATE;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
@@ -90,7 +96,8 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final Image image = logSubscription.imageBySessionId(sessionId);
         logAdapter = new BoundedLogAdapter(image, consensusPosition, this);
 
-        state = State.LEADING;
+        state = State.ACTIVE;
+        role = Role.LEADER;
 
         for (final ClientSession session : sessionByIdMap.values())
         {
@@ -138,9 +145,9 @@ final class ClusteredServiceAgent implements Agent, Cluster
         return "clustered-service";
     }
 
-    public State state()
+    public Cluster.Role role()
     {
-        return state;
+        return role;
     }
 
     public Aeron aeron()
@@ -212,7 +219,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
             principalData,
             this);
 
-        if (State.LEADING == state)
+        if (Role.LEADER == role)
         {
             session.connect(aeron);
         }
@@ -284,6 +291,8 @@ final class ClusteredServiceAgent implements Agent, Cluster
         {
             return;
         }
+
+        state = State.REPLAY;
 
         try (Subscription subscription = aeron.addSubscription(ctx.replayChannel(), ctx.replayStreamId()))
         {
@@ -438,7 +447,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     private void onTakeSnapshot(final long logPosition)
     {
-        state = State.SNAPSHOTTING;
+        state = State.SNAPSHOT;
         final long recordingId;
 
         try (AeronArchive archive = AeronArchive.connect(archiveCtx))
@@ -484,7 +493,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         }
 
         recordingLog.appendSnapshot(recordingId, logPosition, leadershipTermId, timestampMs);
-        state = State.LEADING;
+        state = State.ACTIVE;
     }
 
     private void snapshotState(final Publication publication, final long logPosition)
@@ -503,7 +512,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     private void executeAction(final ServiceAction action, final long position)
     {
-        if (State.RECOVERING == state)
+        if (State.ACTIVE != state)
         {
             return;
         }

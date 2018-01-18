@@ -115,7 +115,7 @@ public class ClientSession
      * @param buffer        containing message.
      * @param offset        offset in the buffer at which the encoded message begins.
      * @param length        in bytes of the encoded message.
-     * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.State#LEADING}
+     * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.Role#LEADER}
      * otherwise 1.
      */
     public long offer(
@@ -124,7 +124,7 @@ public class ClientSession
         final int offset,
         final int length)
     {
-        if (cluster.state() != Cluster.State.LEADING)
+        if (cluster.role() != Cluster.Role.LEADER)
         {
             return 1;
         }

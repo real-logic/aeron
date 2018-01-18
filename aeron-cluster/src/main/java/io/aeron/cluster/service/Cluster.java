@@ -22,48 +22,47 @@ import io.aeron.Aeron;
  */
 public interface Cluster
 {
-    /**
-     * State of the node participating in a cluster.
-     */
-    enum State
+    enum Role
     {
         /**
-         * Initialising.
+         * The cluster node is a candidate in a cluster election.
          */
-        INIT,
+        CANDIDATE(0),
 
         /**
-         * Recover state by loading latest snapshot and subsequent logs.
+         * The cluster node is the leader of the current leadership term.
          */
-        RECOVERING,
+        LEADER(1),
 
         /**
-         * The cluster node is the active leader and responding to client sessions.
+         * The cluster node is a follower of the current leader.
          */
-        LEADING,
+        FOLLOWER(2);
+
+        private final int code;
+
+        Role(final int code)
+        {
+            this.code = code;
+        }
 
         /**
-         * The cluster node is an active follower and accumulates state but does not respond to client sessions.
+         * The code which matches the role in the cluster.
+         *
+         * @return the code which matches the role in the cluster.
          */
-        FOLLOWING,
-
-        /**
-         * The cluster node is currently taking a snapshot.
-         */
-        SNAPSHOTTING,
-
-        /**
-         * The cluster node has been closed.
-         */
-        CLOSED
+        public final int code()
+        {
+            return code;
+        }
     }
 
     /**
-     * Get the current state of the node in the cluster.
+     * The role the cluster node is playing.
      *
-     * @return the current state of the node in the cluster.
+     * @return the role the cluster node is playing.
      */
-    State state();
+    Role role();
 
     /**
      * Get the {@link Aeron} client used by the cluster.

@@ -202,12 +202,7 @@ class SequencerAgent implements Agent
     public void onServiceActionAck(
         final long serviceId, final long logPosition, final long leadershipTermId, final ServiceAction action)
     {
-        validateServiceAck(serviceId, logPosition, leadershipTermId);
-
-        if (!state.isValid(action))
-        {
-            throw new IllegalStateException("Invalid action ack for state " + state + " action " + action);
-        }
+        validateServiceAck(serviceId, logPosition, leadershipTermId, action);
 
         if (++serviceAckCount == ctx.serviceCount())
         {
@@ -461,7 +456,8 @@ class SequencerAgent implements Agent
         }
     }
 
-    private void validateServiceAck(final long serviceId, final long logPosition, final long leadershipTermId)
+    private void validateServiceAck(
+        final long serviceId, final long logPosition, final long leadershipTermId, final ServiceAction action)
     {
         final long currentLogPosition = leadershipTermBeginPosition + logAppender.position();
         if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)
@@ -470,6 +466,11 @@ class SequencerAgent implements Agent
                 " serviceId=" + serviceId +
                 ", logPosition=" + logPosition + " current is " + currentLogPosition +
                 ", leadershipTermId=" + leadershipTermId + " current is " + this.leadershipTermId);
+        }
+
+        if (!state.isValid(action))
+        {
+            throw new IllegalStateException("Invalid action ack for state " + state + " action " + action);
         }
     }
 

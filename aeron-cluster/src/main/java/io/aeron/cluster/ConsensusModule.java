@@ -100,7 +100,13 @@ public class ConsensusModule implements AutoCloseable
             STATES = new State[states.length];
             for (final State state : states)
             {
-                STATES[state.code()] = state;
+                final int code = state.code();
+                if (null != STATES[code])
+                {
+                    throw new IllegalStateException("Code already in use: " + code);
+                }
+
+                STATES[code] = state;
             }
         }
 

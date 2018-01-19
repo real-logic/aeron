@@ -454,6 +454,7 @@ public class ConsensusModule implements AutoCloseable
         private Counter moduleRole;
         private Counter controlToggle;
         private Counter snapshotCounter;
+        private Counter invalidRequestCounter;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
 
@@ -555,6 +556,11 @@ public class ConsensusModule implements AutoCloseable
             if (null == snapshotCounter)
             {
                 snapshotCounter = aeron.addCounter(SNAPSHOT_COUNTER_TYPE_ID, "Snapshot count");
+            }
+
+            if (null == invalidRequestCounter)
+            {
+                invalidRequestCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Invalid Cluster Request");
             }
 
             if (null == threadFactory)
@@ -1240,6 +1246,28 @@ public class ConsensusModule implements AutoCloseable
         public Context snapshotCounter(final Counter snapshotCounter)
         {
             this.snapshotCounter = snapshotCounter;
+            return this;
+        }
+
+        /**
+         * Get the counter for the count of invalid client requests.
+         *
+         * @return the counter for the count of invalid client requests.
+         */
+        public Counter invalidRequestCounter()
+        {
+            return invalidRequestCounter;
+        }
+
+        /**
+         * Set the counter for the count of invalid client requests.
+         *
+         * @param invalidRequestCounter the count of invalid client requests.
+         * @return this for a fluent API.
+         */
+        public Context invalidRequestCounter(final Counter invalidRequestCounter)
+        {
+            this.invalidRequestCounter = invalidRequestCounter;
             return this;
         }
 

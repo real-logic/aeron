@@ -22,6 +22,7 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 
 class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
@@ -37,11 +38,14 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final ControlledFragmentHandler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
     private final SequencerAgent sequencerAgent;
+    private final AtomicCounter invalidRequests;
 
-    IngressAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
+    IngressAdapter(
+        final Subscription subscription, final SequencerAgent sequencerAgent, final AtomicCounter invalidRequests)
     {
         this.subscription = subscription;
         this.sequencerAgent = sequencerAgent;
+        this.invalidRequests = invalidRequests;
     }
 
     public void close()
@@ -134,7 +138,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                 break;
 
             default:
-                throw new IllegalStateException("Unknown templateId: " + templateId);
+                invalidRequests.incrementOrdered();
         }
 
         return Action.CONTINUE;

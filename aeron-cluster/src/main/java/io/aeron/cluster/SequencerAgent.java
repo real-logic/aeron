@@ -90,7 +90,7 @@ class SequencerAgent implements Agent
         this.timerService = new TimerService(this);
 
         ingressAdapter = new IngressAdapter(
-            aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId()), this);
+            aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
 
         consensusModuleAdapter = new ConsensusModuleAdapter(
             aeron.addSubscription(ctx.consensusModuleChannel(), ctx.consensusModuleStreamId()), this);

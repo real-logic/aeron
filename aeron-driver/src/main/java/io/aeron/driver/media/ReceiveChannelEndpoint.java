@@ -98,7 +98,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         int bytesSent = 0;
         try
         {
-            bytesSent = sendDatagramChannel.send(buffer, remoteAddress);
+            if (null != sendDatagramChannel)
+            {
+                bytesSent = sendDatagramChannel.send(buffer, remoteAddress);
+            }
         }
         catch (final IOException ex)
         {

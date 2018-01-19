@@ -30,6 +30,7 @@ import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.NotYetConnectedException;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.status.ChannelEndpointStatus.status;
@@ -192,9 +193,13 @@ public class SendChannelEndpoint extends UdpChannelTransport
             try
             {
                 presend(buffer, connectAddress);
-                bytesSent = sendDatagramChannel.write(buffer);
+
+                if (null != sendDatagramChannel)
+                {
+                    bytesSent = sendDatagramChannel.write(buffer);
+                }
             }
-            catch (final PortUnreachableException | ClosedChannelException ignore)
+            catch (final PortUnreachableException | ClosedChannelException | NotYetConnectedException ignore)
             {
             }
             catch (final IOException ex)
@@ -204,7 +209,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
         else
         {
-            bytesSent = multiDestination.send(sendDatagramChannel, buffer, this);
+            if (null != sendDatagramChannel)
+            {
+                bytesSent = multiDestination.send(sendDatagramChannel, buffer, this);
+            }
         }
 
         return bytesSent;

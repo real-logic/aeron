@@ -23,17 +23,19 @@ public class StartStopSystemTest
     @Test(timeout = 10_000)
     public void shouldStartAndStopInstantly()
     {
-        final MediaDriver.Context driverCtx = new MediaDriver.Context();
-        try
-        {
-            final MediaDriver mediaDriver = MediaDriver.launchEmbedded(driverCtx);
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace);
 
+        try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
+        {
             final Aeron.Context clientCtx = new Aeron.Context()
                 .aeronDirectoryName(driverCtx.aeronDirectoryName());
-            final Aeron aeron = Aeron.connect(clientCtx);
 
-            aeron.close();
-            mediaDriver.close();
+            //noinspection EmptyTryBlock
+            try (Aeron ignored = Aeron.connect(clientCtx))
+            {
+               // ignore
+            }
         }
         finally
         {

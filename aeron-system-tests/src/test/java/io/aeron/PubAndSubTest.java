@@ -87,6 +87,7 @@ public class PubAndSubTest
     {
         context
             .threadingMode(THREADING_MODE)
+            .errorHandler(Throwable::printStackTrace)
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 

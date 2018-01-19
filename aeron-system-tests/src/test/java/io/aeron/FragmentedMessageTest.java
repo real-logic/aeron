@@ -57,6 +57,7 @@ public class FragmentedMessageTest
         final FragmentAssembler assembler = new FragmentAssembler(mockFragmentHandler);
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .aeronDirectoryName(CommonContext.generateRandomDirName())
+            .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);

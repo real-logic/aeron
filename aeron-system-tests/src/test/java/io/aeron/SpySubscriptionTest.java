@@ -49,11 +49,11 @@ public class SpySubscriptionTest
     @Test(timeout = 10000)
     public void shouldReceivePublishedMessage(final String channel)
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-        final Aeron.Context aeronCtx = new Aeron.Context();
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
-            Aeron aeron = Aeron.connect(aeronCtx);
+            Aeron aeron = Aeron.connect();
             Publication publication = aeron.addPublication(channel, STREAM_ID);
             Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID))

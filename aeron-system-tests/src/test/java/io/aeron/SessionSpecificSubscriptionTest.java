@@ -50,10 +50,9 @@ public class SessionSpecificSubscriptionTest
         (buffer, offset, length, header) -> assertThat(header.sessionId(), is(SESSION_ID_1));
     private final FragmentHandler handlerSessionId2 =
         (buffer, offset, length, header) -> assertThat(header.sessionId(), is(SESSION_ID_2));
-    private final FragmentHandler handlerWildcard =
-        (buffer, offset, length, header) -> {};
 
     private final MediaDriver.Context driverCtx = new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
         .termBufferSparseFile(true);
 
     @Test(timeout = 10000)
@@ -105,8 +104,7 @@ public class SessionSpecificSubscriptionTest
         }
     }
 
-    private static void publishMessage(
-        final UnsafeBuffer buffer, final ExclusivePublication publication)
+    private static void publishMessage(final UnsafeBuffer buffer, final ExclusivePublication publication)
     {
         while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
         {

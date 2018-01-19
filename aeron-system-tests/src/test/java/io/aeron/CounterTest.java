@@ -55,6 +55,7 @@ public class CounterTest
 
         driverContext =
             new MediaDriver.Context()
+                .errorHandler(Throwable::printStackTrace)
                 .threadingMode(ThreadingMode.SHARED);
 
         driver = MediaDriver.launch(driverContext);

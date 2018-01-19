@@ -77,6 +77,7 @@ public class SpySimulatedConnectionTest
     {
         driverContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .sharedIdleStrategy(new YieldingIdleStrategy())
+            .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED);
 
         driver = MediaDriver.launch(driverContext);

@@ -36,8 +36,9 @@ public class ControlledMessageTest
     @Test(timeout = 10000)
     public void shouldReceivePublishedMessage()
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-        ctx.threadingMode(ThreadingMode.SHARED);
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
+            .threadingMode(ThreadingMode.SHARED);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
             Aeron aeron = Aeron.connect();

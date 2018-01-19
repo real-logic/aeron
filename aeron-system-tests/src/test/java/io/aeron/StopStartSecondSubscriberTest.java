@@ -62,8 +62,15 @@ public class StopStartSecondSubscriberTest
 
     private void launch(final String channelOne, final int streamOne, final String channelTwo, final int streamTwo)
     {
-        driverOne = MediaDriver.launchEmbedded(new MediaDriver.Context().termBufferSparseFile(true));
-        driverTwo = MediaDriver.launchEmbedded(new MediaDriver.Context().termBufferSparseFile(true));
+        driverOne = MediaDriver.launchEmbedded(
+            new MediaDriver.Context()
+                .errorHandler(Throwable::printStackTrace)
+                .termBufferSparseFile(true));
+
+        driverTwo = MediaDriver.launchEmbedded(
+            new MediaDriver.Context()
+                .errorHandler(Throwable::printStackTrace)
+                .termBufferSparseFile(true));
 
         publisherOne = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverOne.aeronDirectoryName()));
         subscriberOne = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverTwo.aeronDirectoryName()));

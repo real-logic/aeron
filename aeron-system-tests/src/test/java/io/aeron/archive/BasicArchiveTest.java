@@ -77,7 +77,9 @@ public class BasicArchiveTest
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
-        aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
+        aeron = Aeron.connect(
+            new Aeron.Context()
+                .aeronDirectoryName(aeronDirectoryName));
 
         aeronArchive = AeronArchive.connect(
             new AeronArchive.Context()

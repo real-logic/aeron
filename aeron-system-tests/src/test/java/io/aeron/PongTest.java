@@ -59,7 +59,11 @@ public class PongTest
     @Before
     public void setUp()
     {
-        driver = MediaDriver.launch(new MediaDriver.Context().threadingMode(ThreadingMode.SHARED));
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
+            .threadingMode(ThreadingMode.SHARED);
+
+        driver = MediaDriver.launch(ctx);
         pingClient = Aeron.connect();
         pongClient = Aeron.connect();
 

@@ -79,11 +79,13 @@ public class MultiDestinationCastTest
         buffer.putInt(0, 1);
 
         final MediaDriver.Context driverAContext = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
+            .errorHandler(Throwable::printStackTrace)
             .aeronDirectoryName(baseDirB)
             .threadingMode(ThreadingMode.SHARED);
 

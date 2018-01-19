@@ -37,7 +37,8 @@ public class MultiSubscriberTest
     @Test(timeout = 10000)
     public void shouldReceiveMessageOnSeparateSubscriptions()
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context();
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace);
 
         final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);
         final FragmentHandler mockFragmentHandlerTwo = mock(FragmentHandler.class);

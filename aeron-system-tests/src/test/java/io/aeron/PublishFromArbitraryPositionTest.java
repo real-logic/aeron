@@ -72,9 +72,11 @@ public class PublishFromArbitraryPositionTest
             .mtu(mtu)
             .media("udp")
             .build();
+
         final int expectedNumberOfFragments = 10 + rnd.nextInt(10000);
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
             .termBufferSparseFile(true);
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);

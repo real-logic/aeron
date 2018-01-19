@@ -51,6 +51,7 @@ public class PublicationUnblockTest
         final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
+            .errorHandler(Throwable::printStackTrace)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
             .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(10));
 

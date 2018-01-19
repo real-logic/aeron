@@ -47,7 +47,8 @@ public class MaxPositionPublicationTest
             .validate()
             .build();
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context();
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace);
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);
             Aeron aeron = Aeron.connect();

@@ -74,11 +74,13 @@ public class FlowControlStrategiesTest
 
         driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
+            .errorHandler(Throwable::printStackTrace)
             .sharedIdleStrategy(new YieldingIdleStrategy())
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
+            .errorHandler(Throwable::printStackTrace)
             .sharedIdleStrategy(new YieldingIdleStrategy())
             .threadingMode(ThreadingMode.SHARED);
 

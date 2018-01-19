@@ -53,6 +53,7 @@ public class GapFillLossTest
         srcBuffer.setMemory(0, MSG_LENGTH, (byte)7);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH);
 

@@ -61,7 +61,9 @@ public class ExclusivePublicationTest
         final AvailableImageHandler availableImageHandler = (image) -> imageCounter.getAndIncrement();
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED);
+
         final Aeron.Context clientCtx = new Aeron.Context().availableImageHandler(availableImageHandler);
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);

@@ -19,7 +19,7 @@ import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.CredentialProvider;
+import io.aeron.cluster.client.CredentialsSupplier;
 import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
@@ -38,6 +38,7 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static io.aeron.cluster.client.NullCredentialsSupplier.NULL_CREDENTIAL;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -82,12 +83,12 @@ public class AuthenticationTest
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
         final MutableReference<byte[]> servicePrincipalData = new MutableReference<>();
 
-        final CredentialProvider credentialProvider =
-            spy(new CredentialProvider()
+        final CredentialsSupplier credentialsSupplier =
+            spy(new CredentialsSupplier()
             {
                 public byte[] connectRequestCredentialData()
                 {
-                    return CredentialProvider.NULL_CREDENTIALS;
+                    return NULL_CREDENTIAL;
                 }
 
                 public byte[] onChallenge(final byte[] challengeData)
@@ -126,7 +127,7 @@ public class AuthenticationTest
         launchClusteredMediaDriver((ctx) -> authenticator);
         launchService(serviceSessionId, servicePrincipalData, serviceMsgCounter);
 
-        connectClient(credentialProvider);
+        connectClient(credentialsSupplier);
         sendCountedMessageIntoCluster(0);
         while (serviceMsgCounter.get() == 0)
         {
@@ -146,8 +147,8 @@ public class AuthenticationTest
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
         final MutableReference<byte[]> servicePrincipalData = new MutableReference<>();
 
-        final CredentialProvider credentialProvider =
-            spy(new CredentialProvider()
+        final CredentialsSupplier credentialsSupplier =
+            spy(new CredentialsSupplier()
             {
                 public byte[] connectRequestCredentialData()
                 {
@@ -190,7 +191,7 @@ public class AuthenticationTest
         launchClusteredMediaDriver((ctx) -> authenticator);
         launchService(serviceSessionId, servicePrincipalData, serviceMsgCounter);
 
-        connectClient(credentialProvider);
+        connectClient(credentialsSupplier);
         sendCountedMessageIntoCluster(0);
         while (serviceMsgCounter.get() == 0)
         {
@@ -210,12 +211,12 @@ public class AuthenticationTest
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
         final MutableReference<byte[]> servicePrincipalData = new MutableReference<>();
 
-        final CredentialProvider credentialProvider =
-            spy(new CredentialProvider()
+        final CredentialsSupplier credentialsSupplier =
+            spy(new CredentialsSupplier()
             {
                 public byte[] connectRequestCredentialData()
                 {
-                    return CredentialProvider.NULL_CREDENTIALS;
+                    return NULL_CREDENTIAL;
                 }
 
                 public byte[] onChallenge(final byte[] challengeData)
@@ -262,7 +263,7 @@ public class AuthenticationTest
         launchClusteredMediaDriver((ctx) -> authenticator);
         launchService(serviceSessionId, servicePrincipalData, serviceMsgCounter);
 
-        connectClient(credentialProvider);
+        connectClient(credentialsSupplier);
         sendCountedMessageIntoCluster(0);
         while (serviceMsgCounter.get() == 0)
         {
@@ -282,12 +283,12 @@ public class AuthenticationTest
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
         final MutableReference<byte[]> servicePrincipalData = new MutableReference<>();
 
-        final CredentialProvider credentialProvider =
-            spy(new CredentialProvider()
+        final CredentialsSupplier credentialsSupplier =
+            spy(new CredentialsSupplier()
             {
                 public byte[] connectRequestCredentialData()
                 {
-                    return CredentialProvider.NULL_CREDENTIALS;
+                    return NULL_CREDENTIAL;
                 }
 
                 public byte[] onChallenge(final byte[] challengeData)
@@ -328,7 +329,7 @@ public class AuthenticationTest
 
         try
         {
-            connectClient(credentialProvider);
+            connectClient(credentialsSupplier);
         }
         catch (final AuthenticationException ex)
         {
@@ -347,12 +348,12 @@ public class AuthenticationTest
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
         final MutableReference<byte[]> servicePrincipalData = new MutableReference<>();
 
-        final CredentialProvider credentialProvider =
-            spy(new CredentialProvider()
+        final CredentialsSupplier credentialsSupplier =
+            spy(new CredentialsSupplier()
             {
                 public byte[] connectRequestCredentialData()
                 {
-                    return CredentialProvider.NULL_CREDENTIALS;
+                    return NULL_CREDENTIAL;
                 }
 
                 public byte[] onChallenge(final byte[] challengeData)
@@ -401,7 +402,7 @@ public class AuthenticationTest
 
         try
         {
-            connectClient(credentialProvider);
+            connectClient(credentialsSupplier);
         }
         catch (final AuthenticationException ex)
         {
@@ -462,17 +463,17 @@ public class AuthenticationTest
                 .deleteDirOnStart(true));
     }
 
-    private AeronCluster connectToCluster(final CredentialProvider credentialProvider)
+    private AeronCluster connectToCluster(final CredentialsSupplier credentialsSupplier)
     {
         return AeronCluster.connect(
             new AeronCluster.Context()
-                .credentialProvider(credentialProvider)
+                .credentialsSupplier(credentialsSupplier)
                 .lock(new NoOpLock()));
     }
 
-    private void connectClient(final CredentialProvider credentialProvider)
+    private void connectClient(final CredentialsSupplier credentialsSupplier)
     {
-        aeronCluster = connectToCluster(credentialProvider);
+        aeronCluster = connectToCluster(credentialsSupplier);
         sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
         publication = aeronCluster.ingressPublication();
     }

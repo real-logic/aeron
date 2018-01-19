@@ -275,10 +275,9 @@ public final class AeronCluster implements AutoCloseable
 
     private long connectToCluster()
     {
-        final CredentialProvider credentialProvider = ctx.credentialProvider();
-        final byte[] credentialData = credentialProvider.connectRequestCredentialData();
         final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
-        long correlationId = sendConnectRequest(credentialData, deadlineNs);
+
+        long correlationId = sendConnectRequest(ctx.credentialsSupplier().connectRequestCredentialData(), deadlineNs);
         final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
 
         idleStrategy.reset();
@@ -306,13 +305,12 @@ public final class AeronCluster implements AutoCloseable
 
             if (poller.correlationId() == correlationId)
             {
+                final long clusterSessionId = poller.clusterSessionId();
+
                 if (poller.challenged())
                 {
-                    final byte[] challengeResponseCredentialData = credentialProvider.onChallenge(
-                        poller.challengeData());
-
-                    correlationId = sendChallengeResponse(
-                        poller.clusterSessionId(), challengeResponseCredentialData, deadlineNs);
+                    final byte[] credentialData = ctx.credentialsSupplier().onChallenge(poller.challengeData());
+                    correlationId = sendChallengeResponse(clusterSessionId, credentialData, deadlineNs);
                 }
                 else if (poller.eventCode() == EventCode.ERROR)
                 {
@@ -324,7 +322,7 @@ public final class AeronCluster implements AutoCloseable
                 }
                 else
                 {
-                    return poller.clusterSessionId();
+                    return clusterSessionId;
                 }
             }
         }
@@ -557,7 +555,7 @@ public final class AeronCluster implements AutoCloseable
         private Lock lock;
         private String aeronDirectoryName = CommonContext.AERON_DIR_PROP_DEFAULT;
         private Aeron aeron;
-        private CredentialProvider credentialProvider;
+        private CredentialsSupplier credentialsSupplier;
         private boolean ownsAeronClient = true;
         private boolean isIngressExclusive = true;
 
@@ -579,9 +577,9 @@ public final class AeronCluster implements AutoCloseable
                 lock = new ReentrantLock();
             }
 
-            if (null == credentialProvider)
+            if (null == credentialsSupplier)
             {
-                credentialProvider = new CredentialProvider();
+                credentialsSupplier = new NullCredentialsSupplier();
             }
         }
 
@@ -848,24 +846,24 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Get the {@link CredentialProvider} to be used for authentication with the cluster.
+         * Get the {@link CredentialsSupplier} to be used for authentication with the cluster.
          *
-         * @return the {@link CredentialProvider} to be used for authentication with the cluster.
+         * @return the {@link CredentialsSupplier} to be used for authentication with the cluster.
          */
-        public CredentialProvider credentialProvider()
+        public CredentialsSupplier credentialsSupplier()
         {
-            return credentialProvider;
+            return credentialsSupplier;
         }
 
         /**
-         * Set the {@link CredentialProvider} to be used for authentication with the cluster.
+         * Set the {@link CredentialsSupplier} to be used for authentication with the cluster.
          *
-         * @param credentialProvider to be used for authentication with the cluster.
+         * @param credentialsSupplier to be used for authentication with the cluster.
          * @return this for fluent API.
          */
-        public Context credentialProvider(final CredentialProvider credentialProvider)
+        public Context credentialsSupplier(final CredentialsSupplier credentialsSupplier)
         {
-            this.credentialProvider = credentialProvider;
+            this.credentialsSupplier = credentialsSupplier;
             return this;
         }
 

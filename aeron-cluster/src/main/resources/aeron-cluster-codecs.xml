@@ -62,7 +62,7 @@
           - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
           - If successful, a OK session-event will be sent in the return path with the list of destinations
             for the cluster members. The leader will come first.
-          - If a change of leader occurs mid session then a NewLeaderSessionEvent will be sent from the new leader.
+          - If a change of leader occurs mid session then a new-leader-event will be sent from the new leader.
 
         2. Session Message - Service messages which make up application protocol.
           - Messages are sent to a clustered service with a SessionHeader followed by application protocol payload.

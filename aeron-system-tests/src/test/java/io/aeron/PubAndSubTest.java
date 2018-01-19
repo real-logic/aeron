@@ -110,43 +110,6 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldSpinUpAndShutdown(final String channel)
-    {
-        launch(channel);
-    }
-
-    @Theory
-    @Test(timeout = 10000)
-    public void shouldReceivePublishedMessage(final String channel)
-    {
-        launch(channel);
-
-        publishMessage();
-
-        final MutableInteger fragmentsRead = new MutableInteger();
-        SystemTestHelper.executeUntil(
-            () -> fragmentsRead.value > 0,
-            (i) ->
-            {
-                final int fragments = subscription.poll(fragmentHandler, 10);
-                if (0 == fragments)
-                {
-                    Thread.yield();
-                }
-                fragmentsRead.value += fragments;
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(9900));
-
-        verify(fragmentHandler).onFragment(
-            any(DirectBuffer.class),
-            eq(HEADER_LENGTH),
-            eq(SIZE_OF_INT),
-            any(Header.class));
-    }
-
-    @Theory
-    @Test(timeout = 10000)
     public void shouldReceivePublishedMessageViaPollFile(final String channel)
     {
         launch(channel);

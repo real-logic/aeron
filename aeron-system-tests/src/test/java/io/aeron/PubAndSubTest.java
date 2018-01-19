@@ -23,7 +23,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -45,7 +44,6 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -105,7 +103,10 @@ public class PubAndSubTest
         CloseHelper.quietClose(publishingClient);
         CloseHelper.quietClose(driver);
 
-        context.deleteAeronDirectory();
+        if (null != context.aeronDirectory())
+        {
+            context.deleteAeronDirectory();
+        }
     }
 
     @Theory
@@ -300,6 +301,11 @@ public class PubAndSubTest
     @Test(timeout = 10000)
     public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel)
     {
+        if (IPC_URI.equals(channel))
+        {
+            return;
+        }
+
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
@@ -323,8 +329,6 @@ public class PubAndSubTest
             udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
 
         launch(channel);
-
-        Assume.assumeThat(channel, not(IPC_URI));
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -362,6 +366,11 @@ public class PubAndSubTest
     @Test(timeout = 10000)
     public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel)
     {
+        if (IPC_URI.equals(channel))
+        {
+            return;
+        }
+
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
@@ -387,8 +396,6 @@ public class PubAndSubTest
             udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
 
         launch(channel);
-
-        Assume.assumeThat(channel, not(IPC_URI));
 
         for (int i = 0; i < numBatches; i++)
         {

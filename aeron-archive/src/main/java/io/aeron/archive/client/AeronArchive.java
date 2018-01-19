@@ -243,7 +243,9 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Add a {@link Publication} and set it up to be recorded.
+     * Add a {@link Publication} and set it up to be recorded. If this is not the first,
+     * i.e. {@link Publication#isOriginal()} is true,  then an {@link IllegalStateException}
+     * will be thrown and the recording stopped.
      *
      * @param channel  for the publication.
      * @param streamId for the publication.
@@ -260,6 +262,7 @@ public class AeronArchive implements AutoCloseable
             if (!publication.isOriginal())
             {
                 publication.close();
+                stopRecording(channel, streamId);
 
                 throw new IllegalStateException(
                     "Publication already added for channel=" + channel + " streamId=" + streamId);

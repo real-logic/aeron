@@ -80,24 +80,24 @@
         Connect protocol can occur in multiple valid sequences
 
         1. Authenticated via Session Connect
-        -> session-connect, ...
-                  \
-        <-          *session-event (OK), ...
+            -> session-connect, ...
+                      \
+            <-          *session-event (OK), ...
 
         2. Authenticated via Challenge Response
-        -> session-connect,   challenge-response, ...
-                  \            /              \
-        <-          challenge,                  session-event (OK), ...
+            -> session-connect,   challenge-response, ...
+                      \            /              \
+            <-          challenge,                  session-event (OK), ...
 
         3. Rejected via Session Connect
-        -> session-connect
-                  \
-        <-          *session-event (AUTHENTICATION_REJECTED)
+            -> session-connect
+                      \
+            <-          *session-event (AUTHENTICATION_REJECTED)
 
         4. Rejected via Challenge Response
-        -> session-connect,   challenge-response
-                  \            /              \
-        <-          challenge,                  session-event (AUTHENTICATION_REJECTED)
+            -> session-connect,   challenge-response
+                      \            /              \
+            <-          challenge,                  session-event (AUTHENTICATION_REJECTED)
 
     -->
 

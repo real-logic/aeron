@@ -29,10 +29,12 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.mockito.Mockito.*;
 
 public class ChannelEndpointStatusTest
@@ -58,11 +60,14 @@ public class ChannelEndpointStatusTest
     private MediaDriver driverA;
     private MediaDriver driverB;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
 
-    private ErrorHandler errorHandlerClientA = mock(ErrorHandler.class);
-    private ErrorHandler errorHandlerClientB = mock(ErrorHandler.class);
-    private ErrorHandler errorHandlerClientC = mock(ErrorHandler.class);
+    private final ErrorHandler errorHandlerClientA = mock(ErrorHandler.class);
+    private final ErrorHandler errorHandlerClientB = mock(ErrorHandler.class);
+    private final ErrorHandler errorHandlerClientC = mock(ErrorHandler.class);
+
+    private final AtomicInteger errorCounter = new AtomicInteger();
+    private final ErrorHandler countingErrorHandler = (ex) -> errorCounter.getAndIncrement();
 
     @Before
     public void before()
@@ -75,11 +80,13 @@ public class ChannelEndpointStatusTest
         final MediaDriver.Context driverAContext = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
+            .errorHandler(countingErrorHandler)
             .threadingMode(THREADING_MODE);
 
         final MediaDriver.Context driverBContext = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
+            .errorHandler(countingErrorHandler)
             .threadingMode(THREADING_MODE);
 
         driverA = MediaDriver.launch(driverAContext);
@@ -163,6 +170,8 @@ public class ChannelEndpointStatusTest
         final long status = clientB.countersReader().getCounterValue(channelEndpointException.statusIndicatorId());
 
         assertThat(status, is(ChannelEndpointStatus.ERRORED));
+        assertThat(errorCounter.get(), greaterThan(0));
+
         assertThat(subscriptionB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
         assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
@@ -190,6 +199,8 @@ public class ChannelEndpointStatusTest
         final long status = clientB.countersReader().getCounterValue(channelEndpointException.statusIndicatorId());
 
         assertThat(status, is(ChannelEndpointStatus.ERRORED));
+        assertThat(errorCounter.get(), greaterThan(0));
+
         assertThat(publicationB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
         assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
@@ -215,7 +226,7 @@ public class ChannelEndpointStatusTest
 
         verify(errorHandlerClientC, timeout(5000)).onError(any(ChannelEndpointException.class));
         assertThat(subscriptionC.channelStatus(), is(ChannelEndpointStatus.ERRORED));
-
+        assertThat(errorCounter.get(), greaterThan(0));
 
         assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
         assertThat(subscriptionB.channelStatus(), is(ChannelEndpointStatus.ACTIVE));

@@ -41,7 +41,7 @@ public final class AeronCluster implements AutoCloseable
     private static final int SEND_ATTEMPTS = 3;
     private static final int FRAGMENT_LIMIT = 1;
 
-    private final long sessionId;
+    private final long clusterSessionId;
     private final boolean isManualMdc;
     private final Context ctx;
     private final Aeron aeron;
@@ -115,7 +115,7 @@ public final class AeronCluster implements AutoCloseable
 
             this.publication = publication;
             this.subscription = subscription;
-            this.sessionId = connectToCluster();
+            this.clusterSessionId = connectToCluster();
         }
         catch (final Exception ex)
         {
@@ -172,9 +172,9 @@ public final class AeronCluster implements AutoCloseable
      *
      * @return session id for the session that was opened as the result of a successful connect.
      */
-    public long sessionId()
+    public long clusterSessionId()
     {
-        return sessionId;
+        return clusterSessionId;
     }
 
     /**
@@ -225,7 +225,7 @@ public final class AeronCluster implements AutoCloseable
                     keepAliveRequestEncoder
                         .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                         .correlationId(0L)
-                        .clusterSessionId(sessionId);
+                        .clusterSessionId(clusterSessionId);
 
                     bufferClaim.commit();
 
@@ -265,7 +265,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 sessionCloseRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(sessionId);
+                    .clusterSessionId(clusterSessionId);
 
                 bufferClaim.commit();
                 break;

@@ -134,8 +134,8 @@ public class AuthenticationTest
             Thread.yield();
         }
 
-        assertThat(authenticatorSessionId.value, is(aeronCluster.sessionId()));
-        assertThat(serviceSessionId.value, is(aeronCluster.sessionId()));
+        assertThat(authenticatorSessionId.value, is(aeronCluster.clusterSessionId()));
+        assertThat(serviceSessionId.value, is(aeronCluster.clusterSessionId()));
         assertThat(servicePrincipalData.get().length, is(0));
     }
 
@@ -198,8 +198,8 @@ public class AuthenticationTest
             Thread.yield();
         }
 
-        assertThat(authenticatorSessionId.value, is(aeronCluster.sessionId()));
-        assertThat(serviceSessionId.value, is(aeronCluster.sessionId()));
+        assertThat(authenticatorSessionId.value, is(aeronCluster.clusterSessionId()));
+        assertThat(serviceSessionId.value, is(aeronCluster.clusterSessionId()));
         assertThat(new String(servicePrincipalData.get()), is(PRINCIPAL_STRING));
     }
 
@@ -270,8 +270,8 @@ public class AuthenticationTest
             Thread.yield();
         }
 
-        assertThat(authenticatorSessionId.value, is(aeronCluster.sessionId()));
-        assertThat(serviceSessionId.value, is(aeronCluster.sessionId()));
+        assertThat(authenticatorSessionId.value, is(aeronCluster.clusterSessionId()));
+        assertThat(serviceSessionId.value, is(aeronCluster.clusterSessionId()));
         assertThat(new String(servicePrincipalData.get()), is(PRINCIPAL_STRING));
     }
 
@@ -474,7 +474,7 @@ public class AuthenticationTest
     private void connectClient(final CredentialsSupplier credentialsSupplier)
     {
         aeronCluster = connectToCluster(credentialsSupplier);
-        sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         publication = aeronCluster.ingressPublication();
     }
 

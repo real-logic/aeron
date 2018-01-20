@@ -301,7 +301,7 @@ public class ClusterNodeRestartTest
     private void connectClient()
     {
         aeronCluster = connectToCluster();
-        sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         publication = aeronCluster.ingressPublication();
     }
 

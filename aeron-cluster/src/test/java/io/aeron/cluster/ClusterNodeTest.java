@@ -101,7 +101,7 @@ public class ClusterNodeTest
         aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
 
-        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         final Publication publication = aeronCluster.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -152,7 +152,7 @@ public class ClusterNodeTest
         aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
 
-        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         final Publication publication = aeronCluster.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();

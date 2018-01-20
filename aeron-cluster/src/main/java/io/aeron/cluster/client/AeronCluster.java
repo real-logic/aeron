@@ -291,15 +291,7 @@ public final class AeronCluster implements AutoCloseable
 
         while (true)
         {
-            while (poller.poll() <= 0 && !poller.isPollComplete())
-            {
-                if (nanoClock.nanoTime() > deadlineNs)
-                {
-                    throw new TimeoutException("Awaiting response for correlationId=" + correlationId);
-                }
-
-                idleStrategy.idle();
-            }
+            pollForResponse(deadlineNs, correlationId, poller);
 
             if (poller.correlationId() == correlationId)
             {
@@ -326,6 +318,19 @@ public final class AeronCluster implements AutoCloseable
                         throw new AuthenticationException(poller.detail());
                 }
             }
+        }
+    }
+
+    private void pollForResponse(final long deadlineNs, final long correlationId, final EgressPoller poller)
+    {
+        while (poller.poll() <= 0 && !poller.isPollComplete())
+        {
+            if (nanoClock.nanoTime() > deadlineNs)
+            {
+                throw new TimeoutException("Awaiting response for correlationId=" + correlationId);
+            }
+
+            idleStrategy.idle();
         }
     }
 

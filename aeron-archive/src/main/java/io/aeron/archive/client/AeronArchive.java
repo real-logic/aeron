@@ -699,30 +699,20 @@ public class AeronArchive implements AutoCloseable
         final ControlResponsePoller poller = controlResponsePoller;
         idleStrategy.reset();
 
+        while (!poller.subscription().isConnected())
+        {
+            if (nanoClock.nanoTime() > deadlineNs)
+            {
+                throw new TimeoutException("Failed to establish response connection");
+            }
+
+            idleStrategy.idle();
+            invokeAeronClient();
+        }
+
         while (true)
         {
-            while (true)
-            {
-                final int fragments = poller.poll();
-
-                if (poller.isPollComplete())
-                {
-                    break;
-                }
-
-                if (fragments > 0)
-                {
-                    continue;
-                }
-
-                if (nanoClock.nanoTime() > deadlineNs)
-                {
-                    throw new TimeoutException("Awaiting response for correlationId=" + expectedCorrelationId);
-                }
-
-                idleStrategy.idle();
-                invokeAeronClient();
-            }
+            pollNextResponse(expectedCorrelationId, deadlineNs, poller);
 
             if (poller.correlationId() != expectedCorrelationId ||
                 poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
@@ -754,39 +744,12 @@ public class AeronArchive implements AutoCloseable
 
         while (true)
         {
-            while (true)
-            {
-                final int fragments = poller.poll();
-
-                if (poller.isPollComplete())
-                {
-                    break;
-                }
-
-                if (fragments > 0)
-                {
-                    continue;
-                }
-
-                if (!poller.subscription().isConnected())
-                {
-                    throw new IllegalStateException("Subscription to archive is not connected");
-                }
-
-                if (nanoClock.nanoTime() > deadlineNs)
-                {
-                    throw new TimeoutException("Waiting for correlationId=" + expectedCorrelationId);
-                }
-
-                idleStrategy.idle();
-                invokeAeronClient();
-            }
-
-            invokeAeronClient();
+            pollNextResponse(expectedCorrelationId, deadlineNs, poller);
 
             if (poller.controlSessionId() != controlSessionId ||
                 poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
             {
+                invokeAeronClient();
                 continue;
             }
 
@@ -806,6 +769,38 @@ public class AeronArchive implements AutoCloseable
             {
                 return poller.relevantId();
             }
+        }
+    }
+
+    private void pollNextResponse(
+        final long expectedCorrelationId, final long deadlineNs, final ControlResponsePoller poller)
+    {
+        while (true)
+        {
+            final int fragments = poller.poll();
+
+            if (poller.isPollComplete())
+            {
+                break;
+            }
+
+            if (fragments > 0)
+            {
+                continue;
+            }
+
+            if (!poller.subscription().isConnected())
+            {
+                throw new IllegalStateException("Subscription to archive is not connected");
+            }
+
+            if (nanoClock.nanoTime() > deadlineNs)
+            {
+                throw new TimeoutException("Awaiting response for correlationId=" + expectedCorrelationId);
+            }
+
+            idleStrategy.idle();
+            invokeAeronClient();
         }
     }
 

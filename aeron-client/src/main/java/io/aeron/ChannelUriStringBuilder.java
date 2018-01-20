@@ -596,12 +596,12 @@ public class ChannelUriStringBuilder
     /**
      * Call {@link Integer#valueOf(String)} only if the value param is not null. Else pass null on.
      *
-     * @param value to check for null and pass on.
+     * @param value to check for null and convert if not null.
      * @return null if value param is null or result of {@link Integer#valueOf(String)}.
      * @see Integer#valueOf(String)
      */
-    public static Integer intValueOfOrNull(final String value)
+    public static Integer integerValueOf(final String value)
     {
-        return (null == value) ? null : Integer.valueOf(value);
+        return null == value ? null : Integer.valueOf(value);
     }
 }

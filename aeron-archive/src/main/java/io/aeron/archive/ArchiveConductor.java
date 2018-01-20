@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static io.aeron.ChannelUriStringBuilder.integerValueOf;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
@@ -421,7 +422,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
             .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
             .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME))
-            .sessionId(ChannelUriStringBuilder.intValueOfOrNull(channelUri.get(CommonContext.SESSION_ID_PARAM_NAME)));
+            .sessionId(integerValueOf(channelUri.get(CommonContext.SESSION_ID_PARAM_NAME)));
 
         return channelBuilder;
     }

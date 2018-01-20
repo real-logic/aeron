@@ -315,7 +315,7 @@ public final class AeronCluster implements AutoCloseable
                     case OK:
                         if (isManualMdc)
                         {
-                            removeAllButLeader(poller.detail());
+                            connectToOnlyTheLeader(poller.detail());
                         }
                         return poller.clusterSessionId();
 
@@ -329,7 +329,7 @@ public final class AeronCluster implements AutoCloseable
         }
     }
 
-    private void removeAllButLeader(final String detail)
+    private void connectToOnlyTheLeader(final String detail)
     {
         final String[] endpoints = detail.split(",");
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");

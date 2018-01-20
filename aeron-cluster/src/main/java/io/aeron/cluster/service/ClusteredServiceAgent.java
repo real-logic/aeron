@@ -299,9 +299,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
             snapshotEntry.confirmMatch(logPosition, leadershipTermId, timestampMs);
             loadSnapshot(snapshotEntry.recordingId);
         }
-
-        consensusModule.sendAcknowledgment(
-            ServiceAction.INIT, leadershipTermBeginPosition, leadershipTermId, timestampMs);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
@@ -309,6 +306,9 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final long replayTermCount = RecoveryState.getReplayTermCount(counters, recoveryCounterId);
         if (0 == replayTermCount)
         {
+            consensusModule.sendAcknowledgment(
+                ServiceAction.INIT, leadershipTermBeginPosition, leadershipTermId, timestampMs);
+
             return;
         }
 
@@ -316,6 +316,9 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
         try (Subscription subscription = aeron.addSubscription(ctx.replayChannel(), ctx.replayStreamId()))
         {
+            consensusModule.sendAcknowledgment(
+                ServiceAction.INIT, leadershipTermBeginPosition, leadershipTermId, timestampMs);
+
             for (int i = 0; i < replayTermCount; i++)
             {
                 final int counterId = findReplayConsensusCounterId(counters, i);

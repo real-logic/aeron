@@ -98,7 +98,7 @@ public class AeronArchive implements AutoCloseable
                 throw new IllegalStateException("Cannot connect to aeron archive: " + ctx.controlRequestChannel());
             }
 
-            controlSessionId = pollForConnected(correlationId);
+            controlSessionId = awaitSessionOpened(correlationId);
             recordingDescriptorPoller = new RecordingDescriptorPoller(subscription, FRAGMENT_LIMIT, controlSessionId);
         }
         catch (final Exception ex)
@@ -693,22 +693,12 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
-    private long pollForConnected(final long expectedCorrelationId)
+    private long awaitSessionOpened(final long expectedCorrelationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;
-        idleStrategy.reset();
 
-        while (!poller.subscription().isConnected())
-        {
-            if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("Failed to establish response connection");
-            }
-
-            idleStrategy.idle();
-            invokeAeronClient();
-        }
+        awaitConnection(deadlineNs, poller);
 
         while (true)
         {
@@ -736,11 +726,26 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    private void awaitConnection(final long deadlineNs, final ControlResponsePoller poller)
+    {
+        idleStrategy.reset();
+
+        while (!poller.subscription().isConnected())
+        {
+            if (nanoClock.nanoTime() > deadlineNs)
+            {
+                throw new TimeoutException("Failed to establish response connection");
+            }
+
+            idleStrategy.idle();
+            invokeAeronClient();
+        }
+    }
+
     private long pollForResponse(final long expectedCorrelationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;
-        idleStrategy.reset();
 
         while (true)
         {
@@ -775,6 +780,8 @@ public class AeronArchive implements AutoCloseable
     private void pollNextResponse(
         final long expectedCorrelationId, final long deadlineNs, final ControlResponsePoller poller)
     {
+        idleStrategy.reset();
+
         while (true)
         {
             final int fragments = poller.poll();

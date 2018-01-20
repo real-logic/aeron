@@ -291,7 +291,7 @@ public final class AeronCluster implements AutoCloseable
 
         while (true)
         {
-            pollForResponse(deadlineNs, correlationId, poller);
+            pollNextResponse(deadlineNs, correlationId, poller);
 
             if (poller.correlationId() == correlationId)
             {
@@ -321,8 +321,10 @@ public final class AeronCluster implements AutoCloseable
         }
     }
 
-    private void pollForResponse(final long deadlineNs, final long correlationId, final EgressPoller poller)
+    private void pollNextResponse(final long deadlineNs, final long correlationId, final EgressPoller poller)
     {
+        idleStrategy.reset();
+
         while (poller.poll() <= 0 && !poller.isPollComplete())
         {
             if (nanoClock.nanoTime() > deadlineNs)

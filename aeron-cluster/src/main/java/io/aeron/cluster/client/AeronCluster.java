@@ -42,6 +42,7 @@ public final class AeronCluster implements AutoCloseable
     private static final int FRAGMENT_LIMIT = 1;
 
     private final long sessionId;
+    private final boolean isManualMdc;
     private final Context ctx;
     private final Aeron aeron;
     private final Subscription subscription;
@@ -89,6 +90,7 @@ public final class AeronCluster implements AutoCloseable
             this.lock = ctx.lock();
             this.idleStrategy = ctx.idleStrategy();
             this.nanoClock = aeron.context().nanoClock();
+            this.isManualMdc = ctx.ingressChannel().contains(Configuration.MANUAL_MDC_MATCH);
 
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
 
@@ -101,7 +103,7 @@ public final class AeronCluster implements AutoCloseable
                 publication = aeron.addPublication(ctx.ingressChannel(), ctx.ingressStreamId());
             }
 
-            if (ctx.ingressChannel().contains(Configuration.MANUAL_MDC_MATCH))
+            if (isManualMdc)
             {
                 final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");
 
@@ -287,24 +289,13 @@ public final class AeronCluster implements AutoCloseable
         long correlationId = sendConnectRequest(ctx.credentialsSupplier().connectRequestCredentialData(), deadlineNs);
         final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
 
-        idleStrategy.reset();
-        while (!poller.subscription().isConnected())
-        {
-            if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("Failed to establish response connection");
-            }
-
-            idleStrategy.idle();
-        }
-
         while (true)
         {
             while (poller.poll() <= 0 && !poller.isPollComplete())
             {
                 if (nanoClock.nanoTime() > deadlineNs)
                 {
-                    throw new TimeoutException("Waiting for correlationId=" + correlationId);
+                    throw new TimeoutException("Awaiting response for correlationId=" + correlationId);
                 }
 
                 idleStrategy.idle();
@@ -312,26 +303,40 @@ public final class AeronCluster implements AutoCloseable
 
             if (poller.correlationId() == correlationId)
             {
-                final long clusterSessionId = poller.clusterSessionId();
-
                 if (poller.challenged())
                 {
                     final byte[] credentialData = ctx.credentialsSupplier().onChallenge(poller.challengeData());
-                    correlationId = sendChallengeResponse(clusterSessionId, credentialData, deadlineNs);
+                    correlationId = sendChallengeResponse(poller.clusterSessionId(), credentialData, deadlineNs);
+                    continue;
                 }
-                else if (poller.eventCode() == EventCode.ERROR)
+
+                switch (poller.eventCode())
                 {
-                    throw new IllegalStateException(poller.detail());
-                }
-                else if (poller.eventCode() == EventCode.AUTHENTICATION_REJECTED)
-                {
-                    throw new AuthenticationException(poller.detail());
-                }
-                else
-                {
-                    return clusterSessionId;
+                    case OK:
+                        if (isManualMdc)
+                        {
+                            removeAllButLeader(poller.detail());
+                        }
+                        return poller.clusterSessionId();
+
+                    case ERROR:
+                        throw new AuthenticationException(poller.detail());
+
+                    case AUTHENTICATION_REJECTED:
+                        throw new AuthenticationException(poller.detail());
                 }
             }
+        }
+    }
+
+    private void removeAllButLeader(final String detail)
+    {
+        final String[] endpoints = detail.split(",");
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");
+
+        for (int i = 1, size = endpoints.length; i < size; i++)
+        {
+            publication.removeDestination(builder.endpoint(endpoints[i]).build());
         }
     }
 

@@ -133,7 +133,7 @@ public class EgressPoller implements ControlledFragmentHandler
      */
     public boolean challenged()
     {
-        return (ChallengeDecoder.TEMPLATE_ID == templateId);
+        return ChallengeDecoder.TEMPLATE_ID == templateId;
     }
 
     public int poll()

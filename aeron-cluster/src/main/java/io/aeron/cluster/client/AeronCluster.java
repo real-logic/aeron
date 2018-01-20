@@ -15,10 +15,7 @@
  */
 package io.aeron.cluster.client;
 
-import io.aeron.Aeron;
-import io.aeron.CommonContext;
-import io.aeron.Publication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.cluster.AuthenticationException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.TimeoutException;
@@ -102,6 +99,16 @@ public final class AeronCluster implements AutoCloseable
             else
             {
                 publication = aeron.addPublication(ctx.ingressChannel(), ctx.ingressStreamId());
+            }
+
+            if (ctx.ingressChannel().contains(Configuration.MANUAL_MDC_MATCH))
+            {
+                final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");
+
+                for (final String endpoint : ctx.clusterMemberEndpoints())
+                {
+                    publication.addDestination(builder.endpoint(endpoint).build());
+                }
             }
 
             this.publication = publication;
@@ -431,6 +438,9 @@ public final class AeronCluster implements AutoCloseable
      */
     public static class Configuration
     {
+        public static final String MANUAL_MDC_MATCH =
+            CommonContext.MDC_CONTROL_MODE_PARAM_NAME + "=" + CommonContext.MDC_CONTROL_MODE_MANUAL;
+
         /**
          * Timeout when waiting on a message to be sent or received.
          */
@@ -442,12 +452,23 @@ public final class AeronCluster implements AutoCloseable
         public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
-         * Channel for sending messages to a cluster.
+         * Property name for the comma separated list of cluster member endpoints.
+         */
+        public static final String CLUSTER_MEMBER_ENDPOINTS_PROP_NAME = "aeron.cluster.member.endpoints";
+
+        /**
+         * Property name for the comma separated list of cluster member endpoints.
+         */
+        public static final String CLUSTER_MEMBER_ENDPOINTS_DEFAULT = "localhost:9001";
+
+        /**
+         * Channel for sending messages to a cluster. Ideally this will be a multicast address or manual control mode
+         * MDC (multi-destination-cast) as a second choice.
          */
         public static final String INGRESS_CHANNEL_PROP_NAME = "aeron.cluster.ingress.channel";
 
         /**
-         * Channel for sending messages to a cluster. Default to localhost:9010.
+         * Channel for sending messages to a cluster. Default to localhost:9010 for testing.
          */
         public static final String INGRESS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9010";
 
@@ -467,7 +488,7 @@ public final class AeronCluster implements AutoCloseable
         public static final String EGRESS_CHANNEL_PROP_NAME = "aeron.cluster.egress.channel";
 
         /**
-         * Channel for receiving response messages from a cluster. Default to localhost:9020.
+         * Channel for receiving response messages from a cluster. Default to localhost:9020 for testing.
          */
         public static final String EGRESS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9020";
 
@@ -490,6 +511,18 @@ public final class AeronCluster implements AutoCloseable
         public static long messageTimeoutNs()
         {
             return getDurationInNanos(MESSAGE_TIMEOUT_PROP_NAME, MESSAGE_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * The value {@link #CLUSTER_MEMBER_ENDPOINTS_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBER_ENDPOINTS_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_MEMBER_ENDPOINTS_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBER_ENDPOINTS_PROP_NAME} if set.
+         */
+        public static String[] clusterMemberEndpoints()
+        {
+            return System.getProperty(CLUSTER_MEMBER_ENDPOINTS_PROP_NAME, CLUSTER_MEMBER_ENDPOINTS_DEFAULT).split(",");
         }
 
         /**
@@ -547,6 +580,7 @@ public final class AeronCluster implements AutoCloseable
     public static class Context implements AutoCloseable
     {
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
+        private String[] clusterMemberEndpoints = Configuration.clusterMemberEndpoints();
         private String ingressChannel = Configuration.ingressChannel();
         private int ingressStreamId = Configuration.ingressStreamId();
         private String egressChannel = Configuration.egressChannel();
@@ -605,6 +639,30 @@ public final class AeronCluster implements AutoCloseable
         public long messageTimeoutNs()
         {
             return messageTimeoutNs;
+        }
+
+        /**
+         * The endpoints representing members of the cluster which are all candidates to be leader.
+         *
+         * @param clusterMembers which are all candidates to be leader.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_MEMBER_ENDPOINTS_PROP_NAME
+         */
+        public Context clusterMemberEndpoints(final String... clusterMembers)
+        {
+            this.clusterMemberEndpoints = clusterMembers;
+            return this;
+        }
+
+        /**
+         * The endpoints representing members of the cluster which are all candidates to be leader.
+         *
+         * @return members of the cluster which are all candidates to be leader.
+         * @see Configuration#CLUSTER_MEMBER_ENDPOINTS_PROP_NAME
+         */
+        public String[] clusterMemberEndpoints()
+        {
+            return clusterMemberEndpoints;
         }
 
         /**

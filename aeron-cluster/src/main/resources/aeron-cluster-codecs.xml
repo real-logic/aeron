@@ -28,7 +28,8 @@
         <enum name="EventCode" encodingType="int32" description="Type of event for a response">
             <validValue name="OK">0</validValue>
             <validValue name="ERROR">1</validValue>
-            <validValue name="AUTHENTICATION_REJECTED">2</validValue>
+            <validValue name="REDIRECT">2</validValue>
+            <validValue name="AUTHENTICATION_REJECTED">3</validValue>
         </enum>
         <enum name="CloseReason" encodingType="int32" description="Reason why a session was closed">
             <validValue name="USER_ACTION">0</validValue>
@@ -60,8 +61,10 @@
 
         1. Session Connect
           - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
-          - If successful, a OK session-event will be sent in the return path with the list of destinations
+          - If successful, a OK session-event will be sent in the return path with the list of endpoint destinations
             for the cluster members. The leader will come first.
+          - Followers can respond with a REDIRECT code and a list of member endpoint destinations in the
+            detail that will have the leader first.
           - If a change of leader occurs mid session then a new-leader-event will be sent from the new leader.
 
         2. Session Message - Service messages which make up application protocol.

@@ -425,6 +425,7 @@ public class ConsensusModule implements AutoCloseable
         private File clusterDir;
         private RecordingLog recordingLog;
 
+        private String[] clusterMemberEndpoints = AeronCluster.Configuration.clusterMemberEndpoints();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private String logChannel = ClusteredServiceContainer.Configuration.logChannel();
@@ -665,6 +666,30 @@ public class ConsensusModule implements AutoCloseable
         public RecordingLog recordingLog()
         {
             return recordingLog;
+        }
+
+        /**
+         * The endpoints representing members of the cluster which are all candidates to be leader.
+         *
+         * @param clusterMembers which are all candidates to be leader.
+         * @return this for a fluent API.
+         * @see AeronCluster.Configuration#CLUSTER_MEMBER_ENDPOINTS_PROP_NAME
+         */
+        public Context clusterMemberEndpoints(final String... clusterMembers)
+        {
+            this.clusterMemberEndpoints = clusterMembers;
+            return this;
+        }
+
+        /**
+         * The endpoints representing members of the cluster which are all candidates to be leader.
+         *
+         * @return members of the cluster which are all candidates to be leader.
+         * @see AeronCluster.Configuration#CLUSTER_MEMBER_ENDPOINTS_PROP_NAME
+         */
+        public String[] clusterMemberEndpoints()
+        {
+            return clusterMemberEndpoints;
         }
 
         /**

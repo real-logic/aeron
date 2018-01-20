@@ -43,8 +43,6 @@ import static org.mockito.Mockito.*;
 
 public class ReplaySessionTest
 {
-    private static final String REPLAY_CHANNEL = "aeron:ipc";
-    private static final int REPLAY_STREAM_ID = 101;
     private static final int RECORDING_ID = 0;
     private static final int TERM_BUFFER_LENGTH = 4096 * 4;
     private static final int INITIAL_TERM_ID = 8231773;
@@ -216,8 +214,7 @@ public class ReplaySessionTest
             FRAME_LENGTH,
             correlationId,
             mockReplayPub,
-            mockControlSession,
-            mockArchiveConductor);
+            mockControlSession);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(false);
@@ -232,13 +229,6 @@ public class ReplaySessionTest
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
         verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
-        verify(mockArchiveConductor).newReplayPublication(
-            REPLAY_CHANNEL,
-            REPLAY_STREAM_ID,
-            RECORDING_POSITION,
-            MTU_LENGTH,
-            INITIAL_TERM_ID,
-            TERM_BUFFER_LENGTH);
 
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
         mockPublication(mockReplayPub, termBuffer);
@@ -258,14 +248,13 @@ public class ReplaySessionTest
         new ReplaySession(
             RECORDING_POSITION + 1,
             FRAME_LENGTH,
-            mockArchiveConductor,
+            mockCatalog,
             mockControlSession,
             archiveDir,
             proxy,
             correlationId,
             epochClock,
-            REPLAY_CHANNEL,
-            REPLAY_STREAM_ID,
+            mockReplayPub,
             recordingSummary,
             position);
     }
@@ -281,8 +270,7 @@ public class ReplaySessionTest
             length,
             correlationId,
             mockReplayPub,
-            mockControlSession,
-            mockArchiveConductor);
+            mockControlSession);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(false);
@@ -297,13 +285,6 @@ public class ReplaySessionTest
         assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
         verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
-        verify(mockArchiveConductor).newReplayPublication(
-            REPLAY_CHANNEL,
-            REPLAY_STREAM_ID,
-            RECORDING_POSITION,
-            MTU_LENGTH,
-            INITIAL_TERM_ID,
-            TERM_BUFFER_LENGTH);
 
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
         mockPublication(mockReplayPub, termBuffer);
@@ -330,8 +311,7 @@ public class ReplaySessionTest
             length,
             correlationId,
             mockReplayPub,
-            mockControlSession,
-            mockArchiveConductor);
+            mockControlSession);
 
         when(mockReplayPub.isClosed()).thenReturn(false);
         when(mockReplayPub.isConnected()).thenReturn(false);
@@ -378,8 +358,7 @@ public class ReplaySessionTest
                 length,
                 correlationId,
                 mockReplayPub,
-                mockControlSession,
-                mockArchiveConductor);
+                mockControlSession);
 
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -394,14 +373,6 @@ public class ReplaySessionTest
             assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
             verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
-
-            verify(mockArchiveConductor).newReplayPublication(
-                REPLAY_CHANNEL,
-                REPLAY_STREAM_ID,
-                RECORDING_POSITION,
-                MTU_LENGTH,
-                INITIAL_TERM_ID,
-                TERM_BUFFER_LENGTH);
 
             mockPublication(mockReplayPub, termBuffer);
 
@@ -487,28 +458,18 @@ public class ReplaySessionTest
         final long length,
         final long correlationId,
         final ExclusivePublication replay,
-        final ControlSession control,
-        final ArchiveConductor conductor)
+        final ControlSession control)
     {
-        when(conductor.newReplayPublication(
-            eq(REPLAY_CHANNEL),
-            eq(REPLAY_STREAM_ID),
-            eq(recordingPosition),
-            eq(MTU_LENGTH),
-            eq(INITIAL_TERM_ID),
-            eq(TERM_BUFFER_LENGTH))).thenReturn(replay);
-
         return new ReplaySession(
             recordingPosition,
             length,
-            conductor,
+            mockCatalog,
             control,
             archiveDir,
             proxy,
             correlationId,
             epochClock,
-            REPLAY_CHANNEL,
-            REPLAY_STREAM_ID,
+            replay,
             recordingSummary,
             position);
     }

@@ -346,17 +346,24 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
 
+        final ExclusivePublication replayPublication = newReplayPublication(
+            replayChannel,
+            replayStreamId,
+            position,
+            recordingSummary.mtuLength,
+            recordingSummary.initialTermId,
+            recordingSummary.termBufferLength);
+
         final ReplaySession replaySession = new ReplaySession(
             position,
             length,
-            this,
+            catalog,
             controlSession,
             archiveDir,
             controlResponseProxy,
             correlationId,
             epochClock,
-            replayChannel,
-            replayStreamId,
+            replayPublication,
             recordingSummary,
             null == recordingSession ? null : recordingSession.recordingPosition());
 
@@ -499,7 +506,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         recorder.addSession(session);
     }
 
-    ExclusivePublication newReplayPublication(
+    private ExclusivePublication newReplayPublication(
         final String replayChannel,
         final int replayStreamId,
         final long fromPosition,

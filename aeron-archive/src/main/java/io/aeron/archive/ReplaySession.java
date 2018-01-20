@@ -75,14 +75,13 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     ReplaySession(
         final long replayPosition,
         final long replayLength,
-        final ArchiveConductor archiveConductor,
+        final Catalog catalog,
         final ControlSession controlSession,
         final File archiveDir,
         final ControlResponseProxy threadLocalControlResponseProxy,
         final long correlationId,
         final EpochClock epochClock,
-        final String replayChannel,
-        final int replayStreamId,
+        final ExclusivePublication replayPublication,
         final RecordingSummary recordingSummary,
         final Counter recordingPosition)
     {
@@ -90,12 +89,13 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         this.threadLocalControlResponseProxy = threadLocalControlResponseProxy;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
+        this.replayPublication = replayPublication;
 
         RecordingFragmentReader cursor = null;
         try
         {
             cursor = new RecordingFragmentReader(
-                archiveConductor.catalog(),
+                catalog,
                 recordingSummary,
                 archiveDir,
                 replayPosition,
@@ -109,23 +109,6 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 
         this.cursor = cursor;
 
-        ExclusivePublication replayPublication = null;
-        try
-        {
-            replayPublication = archiveConductor.newReplayPublication(
-                replayChannel,
-                replayStreamId,
-                cursor.fromPosition(),
-                recordingSummary.mtuLength,
-                recordingSummary.initialTermId,
-                recordingSummary.termBufferLength);
-        }
-        catch (final Exception ex)
-        {
-            closeOnError(ex, "failed to create replay publication because: " + ex.getMessage());
-        }
-
-        this.replayPublication = replayPublication;
         controlSession.sendOkResponse(correlationId, replayPublication.sessionId(), threadLocalControlResponseProxy);
 
         connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
@@ -263,6 +246,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     private void closeOnError(final Throwable ex, final String errorMessage)
     {
         state = State.INACTIVE;
+        CloseHelper.quietClose(replayPublication);
         CloseHelper.quietClose(cursor);
 
         if (!controlSession.isDone())

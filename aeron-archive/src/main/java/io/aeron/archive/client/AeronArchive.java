@@ -699,17 +699,6 @@ public class AeronArchive implements AutoCloseable
         final ControlResponsePoller poller = controlResponsePoller;
         idleStrategy.reset();
 
-        while (!poller.subscription().isConnected())
-        {
-            if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("Failed to establish response connection");
-            }
-
-            idleStrategy.idle();
-            invokeAeronClient();
-        }
-
         while (true)
         {
             while (true)
@@ -728,7 +717,7 @@ public class AeronArchive implements AutoCloseable
 
                 if (nanoClock.nanoTime() > deadlineNs)
                 {
-                    throw new TimeoutException("Waiting for correlationId=" + expectedCorrelationId);
+                    throw new TimeoutException("Awaiting response for correlationId=" + expectedCorrelationId);
                 }
 
                 idleStrategy.idle();

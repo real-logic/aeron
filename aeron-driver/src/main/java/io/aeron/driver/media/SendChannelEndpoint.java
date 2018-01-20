@@ -85,14 +85,14 @@ public class SendChannelEndpoint extends UdpChannelTransport
         this.multiDestination = multiDestination;
     }
 
-    public int decRef()
+    public void decRef()
     {
-        return --refCount;
+        --refCount;
     }
 
-    public int incRef()
+    public void incRef()
     {
-        return ++refCount;
+        ++refCount;
     }
 
     public void openChannel(final DriverConductorProxy conductorProxy)

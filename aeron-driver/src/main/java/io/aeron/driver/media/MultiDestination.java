@@ -29,7 +29,8 @@ import java.util.ArrayList;
 
 abstract class MultiDestination
 {
-    abstract int send(DatagramChannel datagramChannel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint);
+    abstract int send(
+        DatagramChannel datagramChannel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint, int bytesToSend);
 
     abstract void onStatusMessage(StatusMessageFlyweight msg, InetSocketAddress address);
 
@@ -59,8 +60,8 @@ class DynamicMultiDestination extends MultiDestination
 
     void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
     {
-        final ArrayList<Destination> destinations = this.destinations;
         final long nowNs = nanoClock.nanoTime();
+        final ArrayList<Destination> destinations = this.destinations;
         boolean isExisting = false;
         final long receiverId = msg.receiverId();
 
@@ -82,12 +83,15 @@ class DynamicMultiDestination extends MultiDestination
         }
     }
 
-    int send(final DatagramChannel datagramChannel, final ByteBuffer buffer, final SendChannelEndpoint channelEndpoint)
+    int send(
+        final DatagramChannel datagramChannel,
+        final ByteBuffer buffer,
+        final SendChannelEndpoint channelEndpoint,
+        final int bytesToSend)
     {
-        final ArrayList<Destination> destinations = this.destinations;
         final long nowNs = nanoClock.nanoTime();
+        final ArrayList<Destination> destinations = this.destinations;
         final int position = buffer.position();
-        final int bytesToSend = buffer.remaining();
         int minBytesSent = bytesToSend;
 
         for (int lastIndex = destinations.size() - 1, i = lastIndex; i >= 0; i--)
@@ -151,7 +155,9 @@ class DynamicMultiDestination extends MultiDestination
 
 class ManualMultiDestination extends MultiDestination
 {
-    private final ArrayList<InetSocketAddress> destinations = new ArrayList<>();
+    private static final InetSocketAddress[] EMPTY_DESTINATIONS = new InetSocketAddress[0];
+
+    private InetSocketAddress[] destinations = EMPTY_DESTINATIONS;
 
     boolean isManualControlMode()
     {
@@ -162,17 +168,17 @@ class ManualMultiDestination extends MultiDestination
     {
     }
 
-    int send(final DatagramChannel datagramChannel, final ByteBuffer buffer, final SendChannelEndpoint channelEndpoint)
+    int send(
+        final DatagramChannel datagramChannel,
+        final ByteBuffer buffer,
+        final SendChannelEndpoint channelEndpoint,
+        final int bytesToSend)
     {
-        final ArrayList<InetSocketAddress> destinations = this.destinations;
         final int position = buffer.position();
-        final int bytesToSend = buffer.remaining();
         int minBytesSent = bytesToSend;
 
-        for (int i = 0, size = destinations.size(); i < size; i++)
+        for (final InetSocketAddress destination : destinations)
         {
-            final InetSocketAddress destination = destinations.get(i);
-
             int bytesSent = 0;
             try
             {
@@ -197,22 +203,45 @@ class ManualMultiDestination extends MultiDestination
 
     void addDestination(final InetSocketAddress address)
     {
-        destinations.add(address);
+        final int length = destinations.length;
+        final InetSocketAddress[] newElements = new InetSocketAddress[length + 1];
+
+        System.arraycopy(destinations, 0, newElements, 0, length);
+        newElements[length] = address;
+
+        destinations = newElements;
     }
 
     void removeDestination(final InetSocketAddress address)
     {
-        final ArrayList<InetSocketAddress> destinations = this.destinations;
-
-        for (int lastIndex = destinations.size() - 1, i = lastIndex; i >= 0; i--)
+        boolean found = false;
+        int index = 0;
+        for (final InetSocketAddress destination : destinations)
         {
-            final InetSocketAddress destination = destinations.get(i);
-
-            if (address.equals(destination))
+            if (destination.equals(address))
             {
-                ArrayListUtil.fastUnorderedRemove(destinations, i, lastIndex);
+                found = true;
                 break;
             }
+
+            index++;
+        }
+
+        if (found)
+        {
+            final InetSocketAddress[] oldElements = this.destinations;
+            final int length = oldElements.length;
+            final InetSocketAddress[] newElements = new InetSocketAddress[length - 1];
+
+            for (int i = 0, j = 0; i < length; i++)
+            {
+                if (index != i)
+                {
+                    newElements[j++] = oldElements[i];
+                }
+            }
+
+            this.destinations = newElements;
         }
     }
 }

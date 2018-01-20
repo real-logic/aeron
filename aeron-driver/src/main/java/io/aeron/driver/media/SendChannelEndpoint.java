@@ -185,33 +185,30 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public int send(final ByteBuffer buffer)
     {
-        final int bytesToSend = buffer.remaining();
         int bytesSent = 0;
 
-        if (null == multiDestination)
+        if (null != sendDatagramChannel)
         {
-            try
-            {
-                presend(buffer, connectAddress);
+            final int bytesToSend = buffer.remaining();
 
-                if (null != sendDatagramChannel)
+            if (null == multiDestination)
+            {
+                try
                 {
+                    presend(buffer, connectAddress);
                     bytesSent = sendDatagramChannel.write(buffer);
                 }
+                catch (final PortUnreachableException | ClosedChannelException | NotYetConnectedException ignore)
+                {
+                }
+                catch (final IOException ex)
+                {
+                    throw new RuntimeException("Failed to send: " + bytesToSend, ex);
+                }
             }
-            catch (final PortUnreachableException | ClosedChannelException | NotYetConnectedException ignore)
+            else
             {
-            }
-            catch (final IOException ex)
-            {
-                throw new RuntimeException("Failed to send: " + bytesToSend, ex);
-            }
-        }
-        else
-        {
-            if (null != sendDatagramChannel)
-            {
-                bytesSent = multiDestination.send(sendDatagramChannel, buffer, this);
+                bytesSent = multiDestination.send(sendDatagramChannel, buffer, this, bytesToSend);
             }
         }
 

@@ -329,45 +329,7 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Start recording a specific channel, stream, and session.
-     *
-     * @param channel        to be recorded.
-     * @param streamId       to be recorded.
-     * @param sessionId      to be recorded.
-     * @param sourceLocation of the publication to be recorded.
-     * @return the correlationId used to identify the request.
-     */
-    public long startRecording(
-        final String channel, final int streamId, final int sessionId, final SourceLocation sourceLocation)
-    {
-        lock.lock();
-        try
-        {
-            final ChannelUri channelUri = ChannelUri.parse(channel);
-            final long correlationId = aeron.nextCorrelationId();
-
-            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
-
-            if (!archiveProxy.startRecording(
-                channelUri.toString(), streamId, sourceLocation, correlationId, controlSessionId))
-            {
-                throw new IllegalStateException("Failed to send start recording request");
-            }
-
-            pollForResponse(correlationId);
-
-            return correlationId;
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    /**
      * Stop recording for a channel and stream pairing.
-     *
-     * Note: Does not stop recording of session specific recordings.
      *
      * @param channel  to stop recording for.
      * @param streamId to stop recording for.
@@ -380,35 +342,6 @@ public class AeronArchive implements AutoCloseable
             final long correlationId = aeron.nextCorrelationId();
 
             if (!archiveProxy.stopRecording(channel, streamId, correlationId, controlSessionId))
-            {
-                throw new IllegalStateException("Failed to send stop recording request");
-            }
-
-            pollForResponse(correlationId);
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Stop recording for a specific channel, stream, and session.
-     *
-     * @param channel  to stop recording for.
-     * @param streamId to stop recording for.
-     * @param sessionId to stop recording for.
-     */
-    public void stopRecording(final String channel, final int streamId, final int sessionId)
-    {
-        lock.lock();
-        try
-        {
-            final ChannelUri channelUri = ChannelUri.parse(channel);
-            final long correlationId = aeron.nextCorrelationId();
-
-            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
-            if (!archiveProxy.stopRecording(channelUri.toString(), streamId, correlationId, controlSessionId))
             {
                 throw new IllegalStateException("Failed to send stop recording request");
             }

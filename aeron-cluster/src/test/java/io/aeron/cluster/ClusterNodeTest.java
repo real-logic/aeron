@@ -63,6 +63,9 @@ public class ClusterNodeTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
+                .ingressChannel("aeron:udp?endpoint=localhost:9002")
+                .clusterMemberEndpoint("localhost:9002")
+                .clusterMemberEndpoints("localhost:9001", "localhost:9002", "localhost:9003")
                 .deleteDirOnStart(true));
     }
 
@@ -274,6 +277,8 @@ public class ClusterNodeTest
     {
         return AeronCluster.connect(
             new AeronCluster.Context()
+                .ingressChannel("aeron:udp?control=localhost:54325|control-mode=manual")
+                .clusterMemberEndpoints("localhost:9001", "localhost:9002", "localhost:9003")
                 .lock(new NoOpLock()));
     }
 }

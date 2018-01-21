@@ -300,6 +300,10 @@ public class AeronArchive implements AutoCloseable
 
     /**
      * Start recording a channel and stream pairing.
+     * <p>
+     * Channels that include sessionId parameters are considered different than channels without sessionIds. If a
+     * publication matches both a sessionId specific channel recording and a non-sessionId specific recording, it will
+     * be recorded twice.
      *
      * @param channel        to be recorded.
      * @param streamId       to be recorded.

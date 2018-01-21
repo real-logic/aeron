@@ -27,7 +27,9 @@ import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
 import io.aeron.status.ChannelEndpointStatus;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.IntHashSet;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
@@ -463,6 +465,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final IpcPublication ipcPublication = getOrAddIpcPublication(correlationId, streamId, channel, isExclusive);
         publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), ipcPublication));
 
+        final ArrayList<SubscriberPosition> subscriberPositions = linkIpcSubscriptions(ipcPublication);
+
         clientProxy.onPublicationReady(
             correlationId,
             ipcPublication.registrationId(),
@@ -473,7 +477,19 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             ChannelEndpointStatus.NO_ID_ALLOCATED,
             isExclusive);
 
-        linkIpcSubscriptions(ipcPublication);
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        {
+            final SubscriberPosition subscriberPosition = subscriberPositions.get(i);
+
+            clientProxy.onAvailableImage(
+                ipcPublication.registrationId(),
+                streamId,
+                ipcPublication.sessionId(),
+                subscriberPosition.subscription().registrationId,
+                subscriberPosition.position().id(),
+                ipcPublication.rawLog().fileName(),
+                channel);
+        }
     }
 
     void onRemovePublication(final long registrationId, final long correlationId)
@@ -594,20 +610,38 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
+        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel));
-        final IpcSubscriptionLink subscription = new IpcSubscriptionLink(
+        final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
             registrationId, streamId, channel, getOrAddClient(clientId), clientLivenessTimeoutNs, params);
 
-        subscriptionLinks.add(subscription);
-        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
+        subscriptionLinks.add(subscriptionLink);
 
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
             final IpcPublication publication = ipcPublications.get(i);
-            if (IpcPublication.State.ACTIVE == publication.state() && subscription.matches(publication))
+            if (IpcPublication.State.ACTIVE == publication.state() && subscriptionLink.matches(publication))
             {
-                linkIpcSubscription(subscription, publication);
+                final Position subPos = linkIpcSubscription(publication, subscriptionLink);
+                subscriberPositions.add(new SubscriberPosition(subscriptionLink, publication, subPos));
             }
+        }
+
+        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
+
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        {
+            final SubscriberPosition subscriberPosition = subscriberPositions.get(i);
+            final IpcPublication publication = (IpcPublication)subscriberPosition.subscribable();
+
+            clientProxy.onAvailableImage(
+                publication.registrationId(),
+                streamId,
+                publication.sessionId(),
+                registrationId,
+                subscriberPosition.position().id(),
+                publication.rawLog().fileName(),
+                channel);
         }
     }
 
@@ -616,11 +650,11 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri());
+        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
             registrationId, udpChannel, streamId, client, clientLivenessTimeoutNs, params);
 
         subscriptionLinks.add(subscriptionLink);
-        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
 
         for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
@@ -628,8 +662,26 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
             if (NetworkPublication.State.ACTIVE == publication.state() && subscriptionLink.matches(publication))
             {
-                linkSpy(publication, subscriptionLink);
+                final Position subPos = linkSpy(publication, subscriptionLink);
+                subscriberPositions.add(new SubscriberPosition(subscriptionLink, publication, subPos));
             }
+        }
+
+        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
+
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        {
+            final SubscriberPosition subscriberPosition = subscriberPositions.get(i);
+            final NetworkPublication publication = (NetworkPublication)subscriberPosition.subscribable();
+
+            clientProxy.onAvailableImage(
+                publication.registrationId(),
+                streamId,
+                publication.sessionId(),
+                registrationId,
+                subscriberPosition.position().id(),
+                publication.rawLog().fileName(),
+                CommonContext.IPC_CHANNEL);
         }
     }
 
@@ -800,7 +852,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                     joinPosition);
 
                 position.setOrdered(joinPosition);
-                subscriberPositions.add(new SubscriberPosition(subscription, position));
+                subscriberPositions.add(new SubscriberPosition(subscription, null, position));
             }
         }
 
@@ -1067,18 +1119,22 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
     }
 
-    private void linkIpcSubscriptions(final IpcPublication publication)
+    private ArrayList<SubscriberPosition> linkIpcSubscriptions(final IpcPublication publication)
     {
         final ArrayList<SubscriptionLink> subscriptionLinks = this.subscriptionLinks;
+        final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
 
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             final SubscriptionLink subscription = subscriptionLinks.get(i);
             if (subscription.matches(publication) && !subscription.isLinked(publication))
             {
-                linkIpcSubscription((IpcSubscriptionLink)subscription, publication);
+                final Position subPos = linkIpcSubscription(publication, subscription);
+                subscriberPositions.add(new SubscriberPosition(subscription, publication, subPos));
             }
         }
+
+        return subscriberPositions;
     }
 
     private static ReadablePosition[] positionArray(final List<SubscriberPosition> subscriberPositions)
@@ -1094,7 +1150,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         return positions;
     }
 
-    private void linkIpcSubscription(final IpcSubscriptionLink subscription, final IpcPublication publication)
+    private Position linkIpcSubscription(final IpcPublication publication, final SubscriptionLink subscription)
     {
         final long joinPosition = publication.joinPosition();
         final long registrationId = subscription.registrationId();
@@ -1109,17 +1165,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         publication.addSubscriber(position);
         subscription.link(publication, position);
 
-        clientProxy.onAvailableImage(
-            publication.registrationId(),
-            streamId,
-            sessionId,
-            registrationId,
-            position.id(),
-            publication.rawLog().fileName(),
-            channel);
+        return position;
     }
 
-    private void linkSpy(final NetworkPublication publication, final SubscriptionLink subscription)
+    private Position linkSpy(final NetworkPublication publication, final SubscriptionLink subscription)
     {
         final long joinPosition = publication.consumerPosition();
         final long subscriberRegistrationId = subscription.registrationId();
@@ -1134,14 +1183,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         publication.addSubscriber(position);
         subscription.link(publication, position);
 
-        clientProxy.onAvailableImage(
-            publication.registrationId(),
-            streamId,
-            sessionId,
-            subscriberRegistrationId,
-            position.id(),
-            publication.rawLog().fileName(),
-            CommonContext.IPC_CHANNEL);
+        return position;
     }
 
     private ReceiveChannelEndpoint getOrCreateReceiveChannelEndpoint(final UdpChannel udpChannel)
@@ -1332,7 +1374,16 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             final SubscriptionLink subscription = links.get(i);
             if (subscription.matches(publication) && !subscription.isLinked(publication))
             {
-                linkSpy(publication, subscription);
+                final Position subPos = linkSpy(publication, subscription);
+
+                clientProxy.onAvailableImage(
+                    publication.registrationId(),
+                    publication.streamId(),
+                    publication.sessionId(),
+                    subscription.registrationId(),
+                    subPos.id(),
+                    publication.rawLog().fileName(),
+                    CommonContext.IPC_CHANNEL);
             }
         }
     }

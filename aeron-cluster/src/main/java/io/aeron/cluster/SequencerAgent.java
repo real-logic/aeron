@@ -352,12 +352,16 @@ class SequencerAgent implements Agent
         }
 
         final String channel = ctx.replayChannel();
+        final ChannelUri channelUri = ChannelUri.parse(channel);
         final int streamId = ctx.replayStreamId();
-        try (Subscription subscription = aeron.addSubscription(channel, streamId))
-        {
-            final long length = recordingExtent.stopPosition - recordingExtent.startPosition;
-            final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
 
+        final long length = recordingExtent.stopPosition - recordingExtent.startPosition;
+        final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
+
+        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
+
+        try (Subscription subscription = aeron.addSubscription(channelUri.toString(), streamId))
+        {
             Image image;
             while ((image = subscription.imageBySessionId(sessionId)) == null)
             {

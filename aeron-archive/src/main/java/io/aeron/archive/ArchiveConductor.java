@@ -20,6 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.logbuffer.FrameDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
@@ -312,25 +313,71 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         if (!catalog.hasRecording(recordingId))
         {
             controlSession.sendResponse(
-                correlationId,
-                ERROR,
-                "Unknown recording : " + recordingId,
-                controlResponseProxy);
+                correlationId, ERROR, "Unknown recording : " + recordingId, controlResponseProxy);
 
             return;
         }
 
         catalog.recordingSummary(recordingId, recordingSummary);
 
+        final long replayPosition;
+        if (position != NULL_POSITION)
+        {
+            if (!validateReplayPosition(correlationId, controlSession, position, recordingSummary))
+            {
+                return;
+            }
+
+            replayPosition = position;
+        }
+        else
+        {
+            replayPosition = recordingSummary.startPosition;
+        }
+
+        final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
+        final ReplaySession replaySession = new ReplaySession(
+            replayPosition,
+            length,
+            catalog,
+            controlSession,
+            archiveDir,
+            controlResponseProxy,
+            correlationId,
+            epochClock,
+            newReplayPublication(replayChannel, replayStreamId, replayPosition, recordingSummary),
+            recordingSummary,
+            null == recordingSession ? null : recordingSession.recordingPosition());
+
+        replaySessionByIdMap.put(replaySession.sessionId(), replaySession);
+        replayer.addSession(replaySession);
+    }
+
+    private boolean validateReplayPosition(
+        final long correlationId,
+        final ControlSession controlSession,
+        final long position,
+        final RecordingSummary recordingSummary)
+    {
+        if ((position & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
+        {
+            final String msg = "requested replay start position(=" + position +
+                ") is not a multiple of FRAME_ALIGNMENT (=" + FrameDescriptor.FRAME_ALIGNMENT + ")";
+
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
+
+            return false;
+        }
+
         final long startPosition = recordingSummary.startPosition;
-        if (position != NULL_POSITION && position - startPosition < 0)
+        if (position - startPosition < 0)
         {
             final String msg = "requested replay start position(=" + position +
                 ") is before recording start position(=" + startPosition + ")";
 
             controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
 
-            return;
+            return false;
         }
 
         final long stopPosition = recordingSummary.stopPosition;
@@ -341,34 +388,10 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
             controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
 
-            return;
+            return false;
         }
 
-        final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
-
-        final ExclusivePublication replayPublication = newReplayPublication(
-            replayChannel,
-            replayStreamId,
-            position,
-            recordingSummary.mtuLength,
-            recordingSummary.initialTermId,
-            recordingSummary.termBufferLength);
-
-        final ReplaySession replaySession = new ReplaySession(
-            position,
-            length,
-            catalog,
-            controlSession,
-            archiveDir,
-            controlResponseProxy,
-            correlationId,
-            epochClock,
-            replayPublication,
-            recordingSummary,
-            null == recordingSession ? null : recordingSession.recordingPosition());
-
-        replaySessionByIdMap.put(replaySession.sessionId(), replaySession);
-        replayer.addSession(replaySession);
+        return true;
     }
 
     public void stopReplay(final long correlationId, final ControlSession controlSession, final long replaySessionId)
@@ -510,15 +533,16 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final String replayChannel,
         final int replayStreamId,
         final long fromPosition,
-        final int mtuLength,
-        final int initialTermId,
-        final int termBufferLength)
+        final RecordingSummary recordingSummary)
     {
+        final int initialTermId = recordingSummary.initialTermId;
+        final int termBufferLength = recordingSummary.termBufferLength;
+
         final int termId = (int)((fromPosition / termBufferLength) + initialTermId);
         final int termOffset = (int)(fromPosition % termBufferLength);
 
         final String channel = strippedChannelBuilder(replayChannel)
-            .mtu(mtuLength)
+            .mtu(recordingSummary.mtuLength)
             .termLength(termBufferLength)
             .initialTermId(initialTermId)
             .termId(termId)

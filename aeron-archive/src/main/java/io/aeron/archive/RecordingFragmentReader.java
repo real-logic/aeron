@@ -49,7 +49,6 @@ class RecordingFragmentReader implements AutoCloseable
     private final UnsafeBuffer termBuffer;
     private MappedByteBuffer mappedSegmentBuffer;
 
-    private long fromPosition;
     private long stopPosition;
     private long replayPosition;
     private long replayLimit;
@@ -67,33 +66,17 @@ class RecordingFragmentReader implements AutoCloseable
         final Counter recordingPosition) throws IOException
     {
         this.catalog = catalog;
-        stopPosition = recordingSummary.stopPosition;
+        this.archiveDir = archiveDir;
+        this.recordingPosition = recordingPosition;
         termLength = recordingSummary.termBufferLength;
         segmentLength = recordingSummary.segmentFileLength;
         startPosition = recordingSummary.startPosition;
         recordingId = recordingSummary.recordingId;
 
-        if (stopPosition == NULL_POSITION)
-        {
-            if (recordingPosition == null)
-            {
-                throw new IllegalArgumentException(
-                    "Recording descriptor indicates live recording, but recordedPosition" +
-                        " is null. Replay for recording id:" + recordingId);
-            }
+        final long fromPosition = position == NULL_POSITION ? startPosition : position;
+        final long stopPosition = recordingSummary.stopPosition;
+        this.stopPosition = stopPosition == NULL_POSITION ? recordingPosition.get() : stopPosition;
 
-            stopPosition = recordingPosition.get();
-        }
-
-        this.archiveDir = archiveDir;
-
-        fromPosition = position == NULL_POSITION ? startPosition : position;
-        if (fromPosition < 0)
-        {
-            throw new IllegalArgumentException("fromPosition must be positive");
-        }
-
-        this.recordingPosition = recordingPosition;
         final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
         final long replayLength = length == NULL_LENGTH ? maxLength : Math.min(length, maxLength);
 
@@ -139,11 +122,6 @@ class RecordingFragmentReader implements AutoCloseable
     boolean isDone()
     {
         return isDone;
-    }
-
-    long fromPosition()
-    {
-        return fromPosition;
     }
 
     int controlledPoll(final SimplifiedControlledFragmentHandler fragmentHandler, final int fragmentLimit)
@@ -250,11 +228,7 @@ class RecordingFragmentReader implements AutoCloseable
 
     private void closeRecordingSegment()
     {
-        if (null != mappedSegmentBuffer)
-        {
-            IoUtil.unmap(mappedSegmentBuffer);
-        }
-
+        IoUtil.unmap(mappedSegmentBuffer);
         mappedSegmentBuffer = null;
     }
 

@@ -45,12 +45,12 @@ import static org.agrona.SystemUtil.getSizeAsInt;
 public class AeronArchive implements AutoCloseable
 {
     /**
-     * Represents a timestamp that has not been set. Used when the stop time is not known.
+     * Represents a timestamp that has not been set. Can be used when the time is not known.
      */
     public static final long NULL_TIMESTAMP = -1L;
 
     /**
-     * Represents a position that has not been set. Used when the stop position is not known.
+     * Represents a position that has not been set. Can be used when the position is not known.
      */
     public static final long NULL_POSITION = -1L;
 
@@ -355,11 +355,12 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Start a replay for a length in bytes of a recording from a position.
+     * Start a replay for a length in bytes of a recording from a position. If the position is {@link #NULL_POSITION}
+     * then the stream will be replayed from the start.
      *
      * @param recordingId    to be replayed.
-     * @param position       from which the replay should be started.
-     * @param length         of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live stream.
+     * @param position       from which the replay should begin or {@link #NULL_POSITION} if from the start.
+     * @param length         of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live recording.
      * @param replayChannel  to which the replay should be sent.
      * @param replayStreamId to which the replay should be sent.
      * @return the id of the replay session which will be the same as the {@link Image#sessionId()} of the received
@@ -424,11 +425,11 @@ public class AeronArchive implements AutoCloseable
 
     /**
      * Replay a length in bytes of a recording from a position and for convenience create a {@link Subscription}
-     * to receive the replay.
+     * to receive the replay. If the position is {@link #NULL_POSITION} then the stream will be replayed from the start.
      *
      * @param recordingId    to be replayed.
-     * @param position       from which the replay should be started.
-     * @param length         of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live stream.
+     * @param position       from which the replay should begin or {@link #NULL_POSITION} if from the start.
+     * @param length         of the stream to be replayed or {@link Long#MAX_VALUE} to follow a live recording.
      * @param replayChannel  to which the replay should be sent.
      * @param replayStreamId to which the replay should be sent.
      * @return the {@link Subscription} for consuming the replay.
@@ -471,11 +472,11 @@ public class AeronArchive implements AutoCloseable
 
     /**
      * Replay a length in bytes of a recording from a position and for convenience create a {@link Subscription}
-     * to receive the replay.
+     * to receive the replay. If the position is {@link #NULL_POSITION} then the stream will be replayed from the start.
      *
      * @param recordingId             to be replayed.
-     * @param position                from which the replay should be started.
-     * @param length                  of the stream to be replayed.
+     * @param position                from which the replay should begin or {@link #NULL_POSITION} if from the start.
+     * @param length                  of the stream to be replayed or {@link Long#MAX_VALUE} to follow a live recording.
      * @param replayChannel           to which the replay should be sent.
      * @param replayStreamId          to which the replay should be sent.
      * @param availableImageHandler   to be called when the replay image becomes available.

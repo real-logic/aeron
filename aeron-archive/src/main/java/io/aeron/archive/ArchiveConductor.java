@@ -323,7 +323,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         catalog.recordingSummary(recordingId, recordingSummary);
 
         final long startPosition = recordingSummary.startPosition;
-        if (position - startPosition < 0)
+        if (position != NULL_POSITION && position - startPosition < 0)
         {
             final String msg = "requested replay start position(=" + position +
                 ") is before recording start position(=" + startPosition + ")";

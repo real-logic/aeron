@@ -490,18 +490,22 @@ final class ClusteredServiceAgent implements Agent, Cluster
     {
         state = State.SNAPSHOT;
         final long recordingId;
+        final String channel = ctx.snapshotChannel();
+        final int streamId = ctx.snapshotStreamId();
 
-        try (AeronArchive archive = AeronArchive.connect(archiveCtx))
+        try (AeronArchive archive = AeronArchive.connect(archiveCtx);
+            Publication publication = aeron.addExclusivePublication(channel, streamId))
         {
-            final String channel = ctx.snapshotChannel();
-            final int streamId = ctx.snapshotStreamId();
+            final ChannelUri channelUri = ChannelUri.parse(channel);
 
-            archive.startRecording(channel, streamId, SourceLocation.LOCAL);
+            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(publication.sessionId()));
+            final String recordingChannel = channelUri.toString();
 
-            try (Publication publication = aeron.addExclusivePublication(channel, streamId))
+            archive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
+            idleStrategy.reset();
+
+            try
             {
-                idleStrategy.reset();
-
                 final CountersReader counters = aeron.countersReader();
                 int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
                 while (RecordingPos.NULL_COUNTER_ID == counterId)
@@ -529,7 +533,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
             }
             finally
             {
-                archive.stopRecording(channel, streamId);
+                archive.stopRecording(recordingChannel, streamId);
             }
         }
 

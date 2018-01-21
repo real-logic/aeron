@@ -16,7 +16,11 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.ChannelUri;
+import io.aeron.CommonContext;
 import io.aeron.Publication;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
@@ -36,20 +40,27 @@ class LogAppender implements AutoCloseable
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
     private Publication publication;
+    private String recordingChannel;
 
     public void close()
     {
         CloseHelper.close(publication);
     }
 
-    public void connect(final Aeron aeron, final String channel, final int streamId)
+    public void connect(final Aeron aeron, final AeronArchive aeronArchive, final String channel, final int streamId)
     {
         if (null != publication)
         {
             throw new IllegalStateException("Publication already exists");
         }
 
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+
         publication = aeron.addExclusivePublication(channel, streamId);
+        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(publication.sessionId()));
+        recordingChannel = channelUri.toString();
+
+        aeronArchive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
     }
 
     public void disconnect()
@@ -61,6 +72,11 @@ class LogAppender implements AutoCloseable
     public int sessionId()
     {
         return publication.sessionId();
+    }
+
+    public String recordingChannel()
+    {
+        return recordingChannel;
     }
 
     public long position()

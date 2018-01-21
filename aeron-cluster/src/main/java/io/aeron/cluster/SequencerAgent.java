@@ -139,10 +139,8 @@ class SequencerAgent implements Agent
                 state(ConsensusModule.State.ACTIVE);
             }
 
-            archive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
+            logAppender.connect(aeron, archive, ctx.logChannel(), ctx.logStreamId());
         }
-
-        logAppender.connect(aeron, ctx.logChannel(), ctx.logStreamId());
 
         final long timestamp = epochClock.time();
         cachedEpochClock.update(timestamp);
@@ -516,18 +514,22 @@ class SequencerAgent implements Agent
     {
         final long recordingId;
         final long logPosition = leadershipTermBeginPosition + logAppender.position();
+        final String channel = ctx.snapshotChannel();
+        final int streamId = ctx.snapshotStreamId();
 
-        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
+        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext());
+            Publication publication = aeron.addExclusivePublication(channel, streamId))
         {
-            final String channel = ctx.snapshotChannel();
-            final int streamId = ctx.snapshotStreamId();
+            final ChannelUri channelUri = ChannelUri.parse(channel);
 
-            archive.startRecording(channel, streamId, SourceLocation.LOCAL);
+            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(publication.sessionId()));
+            final String recordingChannel = channelUri.toString();
 
-            try (Publication publication = aeron.addExclusivePublication(channel, streamId))
+            archive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
+            idleStrategy.reset();
+
+            try
             {
-                idleStrategy.reset();
-
                 final CountersReader counters = aeron.countersReader();
                 int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
                 while (RecordingPos.NULL_COUNTER_ID == counterId)
@@ -552,7 +554,7 @@ class SequencerAgent implements Agent
             }
             finally
             {
-                archive.stopRecording(channel, streamId);
+                archive.stopRecording(recordingChannel, streamId);
             }
         }
 

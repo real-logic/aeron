@@ -50,7 +50,7 @@ public class AeronArchive implements AutoCloseable
     public static final long NULL_TIMESTAMP = -1L;
 
     /**
-     * Represents a position that has not been set. used when the stop position is not known.
+     * Represents a position that has not been set. Used when the stop position is not known.
      */
     public static final long NULL_POSITION = -1L;
 
@@ -458,9 +458,8 @@ public class AeronArchive implements AutoCloseable
                 throw new IllegalStateException("Failed to send replay request");
             }
 
-            final long replaySessionId = pollForResponse(correlationId);
-
-            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString((int)replaySessionId));
+            final int replaySessionId = (int)pollForResponse(correlationId);
+            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
 
             return aeron.addSubscription(replayChannelUri.toString(), replayStreamId);
         }
@@ -510,9 +509,8 @@ public class AeronArchive implements AutoCloseable
                 throw new IllegalStateException("Failed to send replay request");
             }
 
-            final long replaySessionId = pollForResponse(correlationId);
-
-            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString((int)replaySessionId));
+            final int replaySessionId = (int)pollForResponse(correlationId);
+            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
 
             return aeron.addSubscription(
                 replayChannelUri.toString(), replayStreamId, availableImageHandler, unavailableImageHandler);
@@ -626,7 +624,7 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
-    private long awaitSessionOpened(final long expectedCorrelationId)
+    private long awaitSessionOpened(final long correlationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;
@@ -635,10 +633,9 @@ public class AeronArchive implements AutoCloseable
 
         while (true)
         {
-            pollNextResponse(expectedCorrelationId, deadlineNs, poller);
+            pollNextResponse(correlationId, deadlineNs, poller);
 
-            if (poller.correlationId() != expectedCorrelationId ||
-                poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
+            if (poller.correlationId() != correlationId || poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
             {
                 invokeAeronClient();
                 continue;
@@ -675,14 +672,14 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
-    private long pollForResponse(final long expectedCorrelationId)
+    private long pollForResponse(final long correlationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;
 
         while (true)
         {
-            pollNextResponse(expectedCorrelationId, deadlineNs, poller);
+            pollNextResponse(correlationId, deadlineNs, poller);
 
             if (poller.controlSessionId() != controlSessionId ||
                 poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
@@ -693,7 +690,7 @@ public class AeronArchive implements AutoCloseable
 
             if (poller.code() == ControlResponseCode.ERROR)
             {
-                throw new IllegalStateException("response for expectedCorrelationId=" + expectedCorrelationId +
+                throw new IllegalStateException("response for correlationId=" + correlationId +
                     ", error: " + poller.errorMessage());
             }
 
@@ -703,15 +700,14 @@ public class AeronArchive implements AutoCloseable
                 throw new IllegalStateException("Unexpected response code: " + code);
             }
 
-            if (poller.correlationId() == expectedCorrelationId)
+            if (poller.correlationId() == correlationId)
             {
                 return poller.relevantId();
             }
         }
     }
 
-    private void pollNextResponse(
-        final long expectedCorrelationId, final long deadlineNs, final ControlResponsePoller poller)
+    private void pollNextResponse(final long correlationId, final long deadlineNs, final ControlResponsePoller poller)
     {
         idleStrategy.reset();
 
@@ -736,7 +732,7 @@ public class AeronArchive implements AutoCloseable
 
             if (nanoClock.nanoTime() > deadlineNs)
             {
-                throw new TimeoutException("Awaiting response for correlationId=" + expectedCorrelationId);
+                throw new TimeoutException("Awaiting response for correlationId=" + correlationId);
             }
 
             idleStrategy.idle();
@@ -745,11 +741,11 @@ public class AeronArchive implements AutoCloseable
     }
 
     private int pollForDescriptors(
-        final long expectedCorrelationId, final int recordCount, final RecordingDescriptorConsumer consumer)
+        final long correlationId, final int recordCount, final RecordingDescriptorConsumer consumer)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final RecordingDescriptorPoller poller = recordingDescriptorPoller;
-        poller.reset(expectedCorrelationId, recordCount, consumer);
+        poller.reset(correlationId, recordCount, consumer);
         idleStrategy.reset();
 
         while (true)
@@ -775,8 +771,7 @@ public class AeronArchive implements AutoCloseable
 
             if (nanoClock.nanoTime() > deadlineNs)
             {
-                throw new TimeoutException(
-                    "Waiting for recording descriptors: correlationId=" + expectedCorrelationId);
+                throw new TimeoutException("Awaiting recording descriptors: correlationId=" + correlationId);
             }
 
             idleStrategy.idle();

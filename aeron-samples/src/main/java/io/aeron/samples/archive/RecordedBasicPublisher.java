@@ -50,6 +50,17 @@ public class RecordedBasicPublisher
         try (AeronArchive archive = AeronArchive.connect();
             Publication publication = archive.addRecordedPublication(CHANNEL, STREAM_ID))
         {
+            // Wait for recording to have started before publishing.
+            final CountersReader counters = archive.context().aeron().countersReader();
+            int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+            while (RecordingPos.NULL_COUNTER_ID == counterId)
+            {
+                Thread.yield();
+                counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+            }
+
+            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+
             try
             {
                 for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
@@ -106,9 +117,6 @@ public class RecordedBasicPublisher
 
                 // Wait for the recording to complete before the recording is stopped.
 
-                final CountersReader counters = archive.context().aeron().countersReader();
-                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
                 final ReadableCounter recordedPosition = new ReadableCounter(counters, counterId);
 
                 final long publicationPosition = publication.position();

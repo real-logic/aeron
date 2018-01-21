@@ -28,6 +28,7 @@ public class SessionProxy
 {
     private final EgressPublisher egressPublisher;
     private ClusterSession clusterSession;
+    private String memberEndpointDetail;
 
     public SessionProxy(final EgressPublisher egressPublisher)
     {
@@ -36,11 +37,13 @@ public class SessionProxy
 
     public final SessionProxy session(final ClusterSession clusterSession)
     {
-        if (this.clusterSession != clusterSession)
-        {
-            this.clusterSession = clusterSession;
-        }
+        this.clusterSession = clusterSession;
+        return this;
+    }
 
+    public final SessionProxy memberEndpointDetail(final String memberEndpointDetail)
+    {
+        this.memberEndpointDetail = memberEndpointDetail;
         return this;
     }
 
@@ -81,7 +84,7 @@ public class SessionProxy
     {
         ClusterSession.checkPrincipalDataLength(principalData);
 
-        if (egressPublisher.sendEvent(clusterSession, EventCode.OK, ""))
+        if (egressPublisher.sendEvent(clusterSession, EventCode.OK, memberEndpointDetail))
         {
             clusterSession.authenticate(principalData);
             return true;

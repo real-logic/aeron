@@ -216,6 +216,16 @@ public class ConsensusModule implements AutoCloseable
         static final int TIMER_POLL_LIMIT = 10;
 
         /**
+         * Property name for endpoint for this cluster member.
+         */
+        public static final String CLUSTER_MEMBER_ENDPOINT_PROP_NAME = "aeron.cluster.member.endpoint";
+
+        /**
+         * Property name for endpoint for this cluster member.
+         */
+        public static final String CLUSTER_MEMBER_ENDPOINT_DEFAULT = "localhost:9001";
+
+        /**
          * Channel to be used for archiving snapshots.
          */
         public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
@@ -322,6 +332,18 @@ public class ConsensusModule implements AutoCloseable
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.cluster.DefaultAuthenticatorSupplier";
 
         /**
+         * The value {@link #CLUSTER_MEMBER_ENDPOINT_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBER_ENDPOINT_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_MEMBER_ENDPOINT_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBER_ENDPOINT_PROP_NAME} if set.
+         */
+        public static String clusterMemberEndpoint()
+        {
+            return System.getProperty(CLUSTER_MEMBER_ENDPOINT_PROP_NAME, CLUSTER_MEMBER_ENDPOINT_DEFAULT);
+        }
+
+        /**
          * The value {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property
          * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME} if set.
          *
@@ -425,6 +447,7 @@ public class ConsensusModule implements AutoCloseable
         private File clusterDir;
         private RecordingLog recordingLog;
 
+        private String clusterMemberEndpoint = Configuration.clusterMemberEndpoint();
         private String[] clusterMemberEndpoints = AeronCluster.Configuration.clusterMemberEndpoints();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
@@ -666,6 +689,30 @@ public class ConsensusModule implements AutoCloseable
         public RecordingLog recordingLog()
         {
             return recordingLog;
+        }
+
+        /**
+         * This cluster member endpoint.
+         *
+         * @param clusterMemberEndpoint for this member.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_MEMBER_ENDPOINT_PROP_NAME
+         */
+        public Context clusterMemberEndpoint(final String clusterMemberEndpoint)
+        {
+            this.clusterMemberEndpoint = clusterMemberEndpoint;
+            return this;
+        }
+
+        /**
+         * This cluster member endpoint.
+         *
+         * @return this cluster member endpoint.
+         * @see Configuration#CLUSTER_MEMBER_ENDPOINT_PROP_NAME
+         */
+        public String clusterMemberEndpoint()
+        {
+            return clusterMemberEndpoint;
         }
 
         /**

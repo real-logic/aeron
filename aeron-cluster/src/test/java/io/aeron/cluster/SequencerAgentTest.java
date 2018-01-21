@@ -42,6 +42,7 @@ public class SequencerAgentTest
 {
     private static final String RESPONSE_CHANNEL_ONE = "responseChannelOne";
     private static final String RESPONSE_CHANNEL_TWO = "responseChannelTwo";
+    private static final String MEMBER_ENDPOINTS = "address.one:1111,address.two:2222,address.three:3333";
 
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogAppender mockLogAppender = mock(LogAppender.class);
@@ -56,6 +57,8 @@ public class SequencerAgentTest
         .controlToggle(mock(Counter.class))
         .idleStrategySupplier(NoOpIdleStrategy::new)
         .aeron(mockAeron)
+        .clusterMemberEndpoints(MEMBER_ENDPOINTS.split(","))
+        .clusterMemberEndpoint("address.one:1111")
         .epochClock(new SystemEpochClock())
         .cachedEpochClock(new CachedEpochClock())
         .authenticatorSupplier(new DefaultAuthenticatorSupplier());
@@ -83,7 +86,7 @@ public class SequencerAgentTest
         agent.doWork();
 
         verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), anyLong());
-        verify(mockEgressPublisher).sendEvent(any(ClusterSession.class), eq(EventCode.OK), eq(""));
+        verify(mockEgressPublisher).sendEvent(any(ClusterSession.class), eq(EventCode.OK), eq(MEMBER_ENDPOINTS));
 
         final long correlationIdTwo = 2L;
         agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO, new byte[0]);

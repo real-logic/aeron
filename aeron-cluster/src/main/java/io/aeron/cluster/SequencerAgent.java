@@ -69,6 +69,7 @@ class SequencerAgent implements Agent
     private final LongArrayList failedTimerCancellations = new LongArrayList();
     private ConsensusTracker consensusTracker;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
+    private String[] memberEndpoints;
 
     SequencerAgent(
         final ConsensusModule.Context ctx,
@@ -84,10 +85,12 @@ class SequencerAgent implements Agent
         this.moduleState = ctx.moduleState();
         this.controlToggle = ctx.controlToggle();
         this.logAppender = logAppender;
-        this.sessionProxy = new SessionProxy(egressPublisher);
         this.tempBuffer = ctx.tempBuffer();
         this.idleStrategy = ctx.idleStrategy();
         this.timerService = new TimerService(this);
+        this.memberEndpoints = ctx.clusterMemberEndpoints();
+        this.sessionProxy = new SessionProxy(egressPublisher);
+        updateClusterMemberDetails(ctx.clusterMemberEndpoint());
 
         ingressAdapter = new IngressAdapter(
             aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
@@ -152,6 +155,7 @@ class SequencerAgent implements Agent
 
         ctx.recordingLog().appendTerm(consensusTracker.recordingId(), position, leadershipTermId, timestamp);
 
+        updateClusterMemberDetails(ctx.clusterMemberEndpoint());
         ctx.moduleRole().set(Cluster.Role.LEADER.code());
     }
 
@@ -474,6 +478,30 @@ class SequencerAgent implements Agent
         {
             throw new IllegalStateException("Invalid action ack for state " + state + " action " + action);
         }
+    }
+
+    private void updateClusterMemberDetails(final String leaderEndpoint)
+    {
+        final String[] oldMembers = memberEndpoints;
+        final int length = oldMembers.length;
+        final String[] newMembers = new String[length];
+        final StringBuilder builder = new StringBuilder((leaderEndpoint.length() * length) + length);
+
+        newMembers[0] = leaderEndpoint;
+        builder.append(leaderEndpoint);
+
+        for (int i = 0, j = 1; i < length; i++)
+        {
+            final String oldMember = oldMembers[i];
+            if (!oldMember.equals(leaderEndpoint))
+            {
+                newMembers[j++] = oldMember;
+                builder.append(',').append(oldMember);
+            }
+        }
+
+        memberEndpoints = newMembers;
+        sessionProxy.memberEndpointDetail(builder.toString());
     }
 
     private void idle()

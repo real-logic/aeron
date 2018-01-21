@@ -140,21 +140,26 @@ public class BasicArchiveTest
     public void shouldRecordReplayAndCancelReplayEarly()
     {
         final String messagePrefix = "Message-Prefix-";
-        final int messageCount = 10;
         final long length;
+        final int messageCount = 10;
+        final int sessionId;
 
         try (Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
             Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
+            sessionId = publication.sessionId();
+
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
 
             length = publication.position();
         }
 
-        aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+        final String recordingChannelWithSessionId = ChannelUri.addSessionId(RECORDING_CHANNEL, sessionId);
 
-        final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, length);
+        aeronArchive.stopRecording(recordingChannelWithSessionId, RECORDING_STREAM_ID);
+
+        final long recordingId = findRecordingId(recordingChannelWithSessionId, RECORDING_STREAM_ID, length);
         final long fromPosition = 0L;
 
         final long replaySessionId = aeronArchive.startReplay(

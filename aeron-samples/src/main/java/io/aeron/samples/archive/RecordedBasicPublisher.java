@@ -47,9 +47,10 @@ public class RecordedBasicPublisher
     {
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        try (AeronArchive archive = AeronArchive.connect())
+        try (AeronArchive archive = AeronArchive.connect();
+            Publication publication = archive.addRecordedPublication(CHANNEL, STREAM_ID))
         {
-            try (Publication publication = archive.addRecordedPublication(CHANNEL, STREAM_ID))
+            try
             {
                 for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
@@ -125,7 +126,7 @@ public class RecordedBasicPublisher
             }
             finally
             {
-                archive.stopRecording(CHANNEL, STREAM_ID);
+                archive.stopRecording(publication);
             }
         }
     }

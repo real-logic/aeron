@@ -245,7 +245,9 @@ public class AeronArchive implements AutoCloseable
     /**
      * Add a {@link Publication} and set it up to be recorded. If this is not the first,
      * i.e. {@link Publication#isOriginal()} is true,  then an {@link IllegalStateException}
-     * will be thrown and the recording stopped.
+     * will be thrown and the recording not initiated.
+     * <p>
+     * This is a sessionId specific recording.
      *
      * @param channel  for the publication.
      * @param streamId for the publication.
@@ -256,17 +258,16 @@ public class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            startRecording(channel, streamId, SourceLocation.LOCAL);
-
             final Publication publication = aeron.addPublication(channel, streamId);
             if (!publication.isOriginal())
             {
                 publication.close();
-                stopRecording(channel, streamId);
 
                 throw new IllegalStateException(
                     "Publication already added for channel=" + channel + " streamId=" + streamId);
             }
+
+            startRecording(ChannelUri.addSessionId(channel, publication.sessionId()), streamId, SourceLocation.LOCAL);
 
             return publication;
         }
@@ -278,6 +279,8 @@ public class AeronArchive implements AutoCloseable
 
     /**
      * Add a {@link ExclusivePublication} and set it up to be recorded.
+     * <p>
+     * This is a sessionId specific recording.
      *
      * @param channel  for the publication.
      * @param streamId for the publication.
@@ -288,9 +291,11 @@ public class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            startRecording(channel, streamId, SourceLocation.LOCAL);
+            final ExclusivePublication publication = aeron.addExclusivePublication(channel, streamId);
 
-            return aeron.addExclusivePublication(channel, streamId);
+            startRecording(ChannelUri.addSessionId(channel, publication.sessionId()), streamId, SourceLocation.LOCAL);
+
+            return publication;
         }
         finally
         {
@@ -334,6 +339,10 @@ public class AeronArchive implements AutoCloseable
 
     /**
      * Stop recording for a channel and stream pairing.
+     * <p>
+     * Channels that include sessionId parameters are considered different than channels without sessionIds. Stopping
+     * a recording on a channel without a sessionId parameter will not stop the recording of any sessionId specific
+     * recordings that use the same channel and streamId.
      *
      * @param channel  to stop recording for.
      * @param streamId to stop recording for.
@@ -356,6 +365,18 @@ public class AeronArchive implements AutoCloseable
         {
             lock.unlock();
         }
+    }
+
+    /**
+     * Stop recording a sessionId specific recording that pertains to the given {@link Publication}.
+     *
+     * @param publication to stop recording for.
+     */
+    public void stopRecording(final Publication publication)
+    {
+        final String recordingChannel = ChannelUri.addSessionId(publication.channel(), publication.sessionId());
+
+        stopRecording(recordingChannel, publication.streamId());
     }
 
     /**

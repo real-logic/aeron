@@ -56,6 +56,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, FRAME_ALIGNMENT));
     private FragmentHandler fragmentHandler = new FragmentAssembler(this::onMessage);
     private int messageCount;
+    private int publicationSessionId;
 
     public static void main(final String[] args) throws Exception
     {
@@ -68,7 +69,8 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             Thread.sleep(10);
 
             System.out.println("Finding the recording...");
-            final long recordingId = test.findRecordingId(CHANNEL, STREAM_ID);
+            final long recordingId =
+                test.findRecordingId(ChannelUri.addSessionId(CHANNEL, test.publicationSessionId), STREAM_ID);
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
             do
@@ -136,37 +138,42 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         try (ExclusivePublication publication = aeronArchive.addRecordedExclusivePublication(CHANNEL, STREAM_ID);
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            while (!subscription.isConnected())
+            try
             {
-                Thread.yield();
-            }
+                publicationSessionId = publication.sessionId();
 
-            final Image image = subscription.imageAtIndex(0);
-
-            int i = 0;
-            while (i < NUMBER_OF_MESSAGES)
-            {
-                buffer.putInt(0, i);
-
-                if (publication.offer(buffer, 0, MESSAGE_LENGTH) > 0)
+                while (!subscription.isConnected())
                 {
-                    i++;
+                    Thread.yield();
                 }
 
-                image.poll(NOOP_FRAGMENT_HANDLER, 10);
-            }
+                final Image image = subscription.imageAtIndex(0);
 
-            final long position = publication.position();
-            while (image.position() < position)
+                int i = 0;
+                while (i < NUMBER_OF_MESSAGES)
+                {
+                    buffer.putInt(0, i);
+
+                    if (publication.offer(buffer, 0, MESSAGE_LENGTH) > 0)
+                    {
+                        i++;
+                    }
+
+                    image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                }
+
+                final long position = publication.position();
+                while (image.position() < position)
+                {
+                    image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                }
+
+                return position;
+            }
+            finally
             {
-                image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                aeronArchive.stopRecording(publication);
             }
-
-            return position;
-        }
-        finally
-        {
-            aeronArchive.stopRecording(CHANNEL, STREAM_ID);
         }
     }
 

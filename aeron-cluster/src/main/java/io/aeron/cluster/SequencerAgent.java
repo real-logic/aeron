@@ -501,7 +501,7 @@ class SequencerAgent implements Agent
         }
 
         memberEndpoints = newMembers;
-        sessionProxy.memberEndpointDetail(builder.toString());
+        sessionProxy.memberEndpointsDetail(builder.toString());
     }
 
     private void idle()

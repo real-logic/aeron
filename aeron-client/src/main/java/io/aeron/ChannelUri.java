@@ -306,6 +306,22 @@ public class ChannelUri
         return new ChannelUri(prefix, media, params);
     }
 
+    /**
+     * Add a sessionId to a given channel.
+     *
+     * @param channel   to add sessionId to.
+     * @param sessionId to add to channel.
+     * @return new string that represents channel with sessionId added.
+     */
+    public static String addSessionId(final String channel, final int sessionId)
+    {
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+
+        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
+
+        return channelUri.toString();
+    }
+
     private static boolean startsWith(final CharSequence input, final int position, final CharSequence prefix)
     {
         if ((input.length() - position) < prefix.length())

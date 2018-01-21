@@ -443,15 +443,14 @@ final class ClusteredServiceAgent implements Agent, Cluster
             }
 
             final String channel = ctx.replayChannel();
-            final ChannelUri channelUri = ChannelUri.parse(channel);
             final int streamId = ctx.replayStreamId();
 
             final long length = recordingExtent.stopPosition - recordingExtent.startPosition;
             final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
 
-            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
+            final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, sessionId);
 
-            try (Subscription subscription = aeron.addSubscription(channelUri.toString(), streamId))
+            try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
             {
                 Image image;
                 while ((image = subscription.imageBySessionId(sessionId)) == null)
@@ -496,10 +495,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         try (AeronArchive archive = AeronArchive.connect(archiveCtx);
             Publication publication = aeron.addExclusivePublication(channel, streamId))
         {
-            final ChannelUri channelUri = ChannelUri.parse(channel);
-
-            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(publication.sessionId()));
-            final String recordingChannel = channelUri.toString();
+            final String recordingChannel = ChannelUri.addSessionId(channel, publication.sessionId());
 
             archive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
             idleStrategy.reset();

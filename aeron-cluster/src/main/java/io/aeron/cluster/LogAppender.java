@@ -17,7 +17,6 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
-import io.aeron.CommonContext;
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
@@ -54,12 +53,8 @@ class LogAppender implements AutoCloseable
             throw new IllegalStateException("Publication already exists");
         }
 
-        final ChannelUri channelUri = ChannelUri.parse(channel);
-
         publication = aeron.addExclusivePublication(channel, streamId);
-        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(publication.sessionId()));
-        recordingChannel = channelUri.toString();
-
+        recordingChannel = ChannelUri.addSessionId(channel, publication.sessionId());
         aeronArchive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
     }
 

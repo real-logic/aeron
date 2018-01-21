@@ -18,12 +18,12 @@ package io.aeron.archive;
 import org.agrona.concurrent.UnsafeBuffer;
 
 @FunctionalInterface
-interface SimplifiedControlledFragmentHandler
+interface SimpleFragmentHandler
 {
     /**
      * Called by the {@link RecordingFragmentReader}. Implementors need to process DATA and PADDING fragments.
      *
      * @return true if fragment processed, false to abort.
      */
-    boolean onFragment(UnsafeBuffer fragmentBuffer, int fragmentOffset, int fragmentLength);
+    boolean onFragment(UnsafeBuffer buffer, int offset, int length);
 }

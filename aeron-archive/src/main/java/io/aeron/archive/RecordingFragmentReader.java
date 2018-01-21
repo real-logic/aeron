@@ -124,7 +124,7 @@ class RecordingFragmentReader implements AutoCloseable
         return isDone;
     }
 
-    int controlledPoll(final SimplifiedControlledFragmentHandler fragmentHandler, final int fragmentLimit)
+    int controlledPoll(final SimpleFragmentHandler fragmentHandler, final int fragmentLimit)
         throws IOException
     {
         if (isDone() || noAvailableData())

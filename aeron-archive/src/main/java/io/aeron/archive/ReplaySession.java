@@ -47,7 +47,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <li>If the replay is aborted part way through, send a ReplayAborted message and terminate.</li>
  * </ul>
  */
-class ReplaySession implements Session, SimplifiedControlledFragmentHandler
+class ReplaySession implements Session, SimpleFragmentHandler
 {
     enum State
     {
@@ -155,19 +155,19 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         return state == State.INACTIVE;
     }
 
-    public boolean onFragment(final UnsafeBuffer termBuffer, final int offset, final int length)
+    public boolean onFragment(final UnsafeBuffer buffer, final int offset, final int length)
     {
-        if (isDone())
+        if (state != State.REPLAY)
         {
             return false;
         }
 
         final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
-        final int frameType = frameType(termBuffer, frameOffset);
+        final int frameType = frameType(buffer, frameOffset);
 
         final long result = frameType == FrameDescriptor.PADDING_FRAME_TYPE ?
             replayPublication.appendPadding(length) :
-            replayFrame(termBuffer, offset, length, frameOffset);
+            replayFrame(buffer, offset, length, frameOffset);
 
         if (result > 0)
         {
@@ -210,15 +210,15 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         return workDone;
     }
 
-    private long replayFrame(final UnsafeBuffer termBuffer, final int offset, final int length, final int frameOffset)
+    private long replayFrame(final UnsafeBuffer buffer, final int offset, final int length, final int frameOffset)
     {
         final long result = replayPublication.tryClaim(length, bufferClaim);
         if (result > 0)
         {
             bufferClaim
-                .flags(frameFlags(termBuffer, frameOffset))
-                .reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
-                .buffer().putBytes(bufferClaim.offset(), termBuffer, offset, length);
+                .flags(frameFlags(buffer, frameOffset))
+                .reservedValue(buffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
+                .buffer().putBytes(bufferClaim.offset(), buffer, offset, length);
 
             bufferClaim.commit();
         }

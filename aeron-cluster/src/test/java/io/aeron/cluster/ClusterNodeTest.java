@@ -44,6 +44,8 @@ import static org.junit.Assert.assertTrue;
 public class ClusterNodeTest
 {
     private static final int FRAGMENT_LIMIT = 1;
+    public static final String MEMBERS =
+        "0,localhost:9001,localhost:9001|1,localhost:9002,localhost:9002|2,localhost:9003,localhost:9003";
 
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
@@ -64,8 +66,8 @@ public class ClusterNodeTest
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
                 .ingressChannel("aeron:udp?endpoint=localhost:9002")
-                .clusterMemberEndpoint("localhost:9002")
-                .clusterMemberEndpoints("localhost:9001", "localhost:9002", "localhost:9003")
+                .clusterMemberId(1)
+                .clusterMembers(MEMBERS)
                 .deleteDirOnStart(true));
     }
 

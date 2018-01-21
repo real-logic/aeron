@@ -47,6 +47,7 @@ class SequencerAgent implements Agent
     private long leadershipTermBeginPosition = 0;
     private long leadershipTermId = 0;
     private int serviceAckCount = 0;
+    private final int clusterMemberId;
     private final Aeron aeron;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
@@ -69,7 +70,7 @@ class SequencerAgent implements Agent
     private final LongArrayList failedTimerCancellations = new LongArrayList();
     private ConsensusTracker consensusTracker;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
-    private String[] memberEndpoints;
+    private ClusterMember[] clusterMembers;
 
     SequencerAgent(
         final ConsensusModule.Context ctx,
@@ -88,9 +89,12 @@ class SequencerAgent implements Agent
         this.tempBuffer = ctx.tempBuffer();
         this.idleStrategy = ctx.idleStrategy();
         this.timerService = new TimerService(this);
-        this.memberEndpoints = ctx.clusterMemberEndpoints();
+        this.clusterMembers = ClusterMember.parse(ctx.clusterMembers());
         this.sessionProxy = new SessionProxy(egressPublisher);
-        updateClusterMemberDetails(ctx.clusterMemberEndpoint());
+        this.clusterMemberId = ctx.clusterMemberId();
+
+        clusterMembers[clusterMemberId].isLeader(true);
+        updateClusterMemberDetails(clusterMembers);
 
         ingressAdapter = new IngressAdapter(
             aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
@@ -155,7 +159,8 @@ class SequencerAgent implements Agent
 
         ctx.recordingLog().appendTerm(consensusTracker.recordingId(), position, leadershipTermId, timestamp);
 
-        updateClusterMemberDetails(ctx.clusterMemberEndpoint());
+        clusterMembers[clusterMemberId].isLeader(true);
+        updateClusterMemberDetails(clusterMembers);
         ctx.moduleRole().set(Cluster.Role.LEADER.code());
     }
 
@@ -479,27 +484,29 @@ class SequencerAgent implements Agent
         }
     }
 
-    private void updateClusterMemberDetails(final String leaderEndpoint)
+    private void updateClusterMemberDetails(final ClusterMember[] members)
     {
-        final String[] oldMembers = memberEndpoints;
-        final int length = oldMembers.length;
-        final String[] newMembers = new String[length];
-        final StringBuilder builder = new StringBuilder((leaderEndpoint.length() * length) + length);
-
-        newMembers[0] = leaderEndpoint;
-        builder.append(leaderEndpoint);
-
-        for (int i = 0, j = 1; i < length; i++)
+        int leaderIndex = 0;
+        for (int i = 0, length = members.length; i < length; i++)
         {
-            final String oldMember = oldMembers[i];
-            if (!oldMember.equals(leaderEndpoint))
+            if (members[i].isLeader())
             {
-                newMembers[j++] = oldMember;
-                builder.append(',').append(oldMember);
+                leaderIndex = i;
+                break;
             }
         }
 
-        memberEndpoints = newMembers;
+        final StringBuilder builder = new StringBuilder(100);
+        builder.append(members[leaderIndex].clientFacingEndpoint());
+
+        for (int i = 0, length = members.length; i < length; i++)
+        {
+            if (i != leaderIndex)
+            {
+                builder.append(',').append(members[i].clientFacingEndpoint());
+            }
+        }
+
         sessionProxy.memberEndpointsDetail(builder.toString());
     }
 

@@ -216,14 +216,24 @@ public class ConsensusModule implements AutoCloseable
         static final int TIMER_POLL_LIMIT = 10;
 
         /**
-         * Property name for endpoint for this cluster member.
+         * Property name for the identity of the cluster member.
          */
-        public static final String CLUSTER_MEMBER_ENDPOINT_PROP_NAME = "aeron.cluster.member.endpoint";
+        public static final String CLUSTER_MEMBER_ID_PROP_NAME = "aeron.cluster.member.id";
 
         /**
-         * Property name for endpoint for this cluster member.
+         * Default property for the cluster member identity.
          */
-        public static final String CLUSTER_MEMBER_ENDPOINT_DEFAULT = "localhost:9001";
+        public static final int CLUSTER_MEMBER_ID_DEFAULT = 0;
+
+        /**
+         * Property name for the comma separated list of cluster member endpoints.
+         */
+        public static final String CLUSTER_MEMBERS_PROP_NAME = "aeron.cluster.members";
+
+        /**
+         * Default property for the list of cluster member endpoints.
+         */
+        public static final String CLUSTER_MEMBERS_DEFAULT = "0,localhost:9001,localhost:9001";
 
         /**
          * Channel to be used for archiving snapshots.
@@ -332,15 +342,27 @@ public class ConsensusModule implements AutoCloseable
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.cluster.DefaultAuthenticatorSupplier";
 
         /**
-         * The value {@link #CLUSTER_MEMBER_ENDPOINT_DEFAULT} or system property
-         * {@link #CLUSTER_MEMBER_ENDPOINT_PROP_NAME} if set.
+         * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBER_ID_PROP_NAME} if set.
          *
-         * @return {@link #CLUSTER_MEMBER_ENDPOINT_DEFAULT} or system property
-         * {@link #CLUSTER_MEMBER_ENDPOINT_PROP_NAME} if set.
+         * @return {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBER_ID_PROP_NAME} if set.
          */
-        public static String clusterMemberEndpoint()
+        public static int clusterMemberId()
         {
-            return System.getProperty(CLUSTER_MEMBER_ENDPOINT_PROP_NAME, CLUSTER_MEMBER_ENDPOINT_DEFAULT);
+            return Integer.getInteger(CLUSTER_MEMBER_ID_PROP_NAME, CLUSTER_MEMBER_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #CLUSTER_MEMBERS_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBERS_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_MEMBERS_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBERS_PROP_NAME} if set.
+         */
+        public static String clusterMembers()
+        {
+            return System.getProperty(CLUSTER_MEMBERS_PROP_NAME, CLUSTER_MEMBERS_DEFAULT);
         }
 
         /**
@@ -447,8 +469,8 @@ public class ConsensusModule implements AutoCloseable
         private File clusterDir;
         private RecordingLog recordingLog;
 
-        private String clusterMemberEndpoint = Configuration.clusterMemberEndpoint();
-        private String[] clusterMemberEndpoints = AeronCluster.Configuration.clusterMemberEndpoints();
+        private int clusterMemberId = Configuration.clusterMemberId();
+        private String clusterMembers = Configuration.clusterMembers();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private String logChannel = ClusteredServiceContainer.Configuration.logChannel();
@@ -692,39 +714,43 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * This cluster member endpoint.
+         * This cluster member identity.
          *
-         * @param clusterMemberEndpoint for this member.
+         * @param clusterMemberId for this member.
          * @return this for a fluent API.
-         * @see Configuration#CLUSTER_MEMBER_ENDPOINT_PROP_NAME
+         * @see Configuration#CLUSTER_MEMBER_ID_PROP_NAME
          */
-        public Context clusterMemberEndpoint(final String clusterMemberEndpoint)
+        public Context clusterMemberId(final int clusterMemberId)
         {
-            this.clusterMemberEndpoint = clusterMemberEndpoint;
+            this.clusterMemberId = clusterMemberId;
             return this;
         }
 
         /**
-         * This cluster member endpoint.
+         * This cluster member identity.
          *
-         * @return this cluster member endpoint.
-         * @see Configuration#CLUSTER_MEMBER_ENDPOINT_PROP_NAME
+         * @return this cluster member identity.
+         * @see Configuration#CLUSTER_MEMBER_ID_PROP_NAME
          */
-        public String clusterMemberEndpoint()
+        public int clusterMemberId()
         {
-            return clusterMemberEndpoint;
+            return clusterMemberId;
         }
 
         /**
-         * The endpoints representing members of the cluster which are all candidates to be leader.
+         * String representing the cluster members.
+         * <p>
+         * <code>
+         *     0,client-facing:port,member-facing:port|1,client-facing:port,member-facing:port| ...
+         * </code>
          *
          * @param clusterMembers which are all candidates to be leader.
          * @return this for a fluent API.
-         * @see AeronCluster.Configuration#CLUSTER_MEMBER_ENDPOINTS_PROP_NAME
+         * @see Configuration#CLUSTER_MEMBERS_PROP_NAME
          */
-        public Context clusterMemberEndpoints(final String... clusterMembers)
+        public Context clusterMembers(final String clusterMembers)
         {
-            this.clusterMemberEndpoints = clusterMembers;
+            this.clusterMembers = clusterMembers;
             return this;
         }
 
@@ -732,11 +758,11 @@ public class ConsensusModule implements AutoCloseable
          * The endpoints representing members of the cluster which are all candidates to be leader.
          *
          * @return members of the cluster which are all candidates to be leader.
-         * @see AeronCluster.Configuration#CLUSTER_MEMBER_ENDPOINTS_PROP_NAME
+         * @see Configuration#CLUSTER_MEMBERS_PROP_NAME
          */
-        public String[] clusterMemberEndpoints()
+        public String clusterMembers()
         {
-            return clusterMemberEndpoints;
+            return clusterMembers;
         }
 
         /**

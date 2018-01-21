@@ -43,6 +43,10 @@ public class SequencerAgentTest
     private static final String RESPONSE_CHANNEL_ONE = "responseChannelOne";
     private static final String RESPONSE_CHANNEL_TWO = "responseChannelTwo";
     private static final String MEMBER_ENDPOINTS = "address.one:1111,address.two:2222,address.three:3333";
+    private static final String MEMBERS =
+        "0,address.one:1111,address.one:111|" +
+        "1,address.two:2222,address.two:222|" +
+        "2,address.three:3333,address.three:333";
 
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogAppender mockLogAppender = mock(LogAppender.class);
@@ -57,8 +61,8 @@ public class SequencerAgentTest
         .controlToggle(mock(Counter.class))
         .idleStrategySupplier(NoOpIdleStrategy::new)
         .aeron(mockAeron)
-        .clusterMemberEndpoints(MEMBER_ENDPOINTS.split(","))
-        .clusterMemberEndpoint("address.one:1111")
+        .clusterMembers(MEMBERS)
+        .clusterMemberId(0)
         .epochClock(new SystemEpochClock())
         .cachedEpochClock(new CachedEpochClock())
         .authenticatorSupplier(new DefaultAuthenticatorSupplier());

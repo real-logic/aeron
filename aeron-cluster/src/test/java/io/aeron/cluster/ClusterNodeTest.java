@@ -279,7 +279,7 @@ public class ClusterNodeTest
     {
         return AeronCluster.connect(
             new AeronCluster.Context()
-                .ingressChannel("aeron:udp?control=localhost:54325|control-mode=manual")
+                .ingressChannel("aeron:udp?endpoint=localhost:54325")
                 .clusterMemberEndpoints("localhost:9001", "localhost:9002", "localhost:9003")
                 .lock(new NoOpLock()));
     }

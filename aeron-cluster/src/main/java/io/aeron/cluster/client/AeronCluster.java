@@ -42,7 +42,7 @@ public final class AeronCluster implements AutoCloseable
     private static final int FRAGMENT_LIMIT = 1;
 
     private final long clusterSessionId;
-    private final boolean isManualMdc;
+    private final boolean isUnicast;
     private final Context ctx;
     private final Aeron aeron;
     private final Subscription subscription;
@@ -90,39 +90,22 @@ public final class AeronCluster implements AutoCloseable
             this.lock = ctx.lock();
             this.idleStrategy = ctx.idleStrategy();
             this.nanoClock = aeron.context().nanoClock();
-            this.isManualMdc = ctx.ingressChannel().contains(Configuration.MANUAL_MDC_MATCH);
+            this.isUnicast = ctx.clusterMemberEndpoints() != null;
+
+            publication = connectToCluster();
+            this.publication = publication;
 
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
-
-            if (ctx.isIngressExclusive())
-            {
-                publication = aeron.addExclusivePublication(ctx.ingressChannel(), ctx.ingressStreamId());
-            }
-            else
-            {
-                publication = aeron.addPublication(ctx.ingressChannel(), ctx.ingressStreamId());
-            }
-
-            if (isManualMdc)
-            {
-                final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");
-
-                for (final String endpoint : ctx.clusterMemberEndpoints())
-                {
-                    publication.addDestination(builder.endpoint(endpoint).build());
-                }
-            }
-
-            this.publication = publication;
             this.subscription = subscription;
-            this.clusterSessionId = connectToCluster();
+
+            this.clusterSessionId = openSession();
         }
         catch (final Exception ex)
         {
             if (!ctx.ownsAeronClient())
             {
-                CloseHelper.quietClose(subscription);
                 CloseHelper.quietClose(publication);
+                CloseHelper.quietClose(subscription);
             }
 
             CloseHelper.quietClose(ctx);
@@ -282,10 +265,98 @@ public final class AeronCluster implements AutoCloseable
         }
     }
 
-    private long connectToCluster()
+    private Publication connectToCluster()
     {
+        Publication publication = null;
+        final String ingressChannel = ctx.ingressChannel();
+        final int ingressStreamId = ctx.ingressStreamId();
         final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
 
+        if (isUnicast)
+        {
+            final ChannelUri channelUri = ChannelUri.parse(ingressChannel);
+            final String[] memberEndpoints = ctx.clusterMemberEndpoints();
+            final int memberCount = memberEndpoints.length;
+            final Publication[] publications = new Publication[memberCount];
+
+            for (int i = 0; i < memberCount; i++)
+            {
+                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, memberEndpoints[i]);
+                final String channel = channelUri.toString();
+                publications[i] = addIngressPublication(channel, ingressStreamId);
+            }
+
+            int connectedIndex = -1;
+            while (true)
+            {
+                for (int i = 0; i < memberCount; i++)
+                {
+                    if (publications[i].isConnected())
+                    {
+                        connectedIndex = i;
+                        break;
+                    }
+                }
+
+                if (-1 != connectedIndex)
+                {
+                    for (int i = 0; i < memberCount; i++)
+                    {
+                        if (i == connectedIndex)
+                        {
+                            publication = publications[i];
+                        }
+                        else
+                        {
+                            publications[i].close();
+                        }
+                    }
+
+                    break;
+                }
+
+                if (nanoClock.nanoTime() > deadlineNs)
+                {
+                    throw new TimeoutException("Awaiting connection to cluster");
+                }
+
+                idleStrategy.idle();
+            }
+        }
+        else
+        {
+            publication = addIngressPublication(ingressChannel, ingressStreamId);
+
+            idleStrategy.reset();
+            while (!publication.isConnected())
+            {
+                if (nanoClock.nanoTime() > deadlineNs)
+                {
+                    throw new TimeoutException("Awaiting connection to cluster");
+                }
+
+                idleStrategy.idle();
+            }
+        }
+
+        return publication;
+    }
+
+    private Publication addIngressPublication(final String channel, final int streamId)
+    {
+        if (ctx.isIngressExclusive())
+        {
+            return aeron.addExclusivePublication(channel, streamId);
+        }
+        else
+        {
+            return aeron.addPublication(channel, streamId);
+        }
+    }
+
+    private long openSession()
+    {
+        final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
         long correlationId = sendConnectRequest(ctx.credentialsSupplier().connectRequestCredentialData(), deadlineNs);
         final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
 
@@ -305,10 +376,6 @@ public final class AeronCluster implements AutoCloseable
                 switch (poller.eventCode())
                 {
                     case OK:
-                        if (isManualMdc)
-                        {
-                            connectToOnlyTheLeader(poller.detail());
-                        }
                         return poller.clusterSessionId();
 
                     case ERROR:
@@ -333,17 +400,6 @@ public final class AeronCluster implements AutoCloseable
             }
 
             idleStrategy.idle();
-        }
-    }
-
-    private void connectToOnlyTheLeader(final String detail)
-    {
-        final String[] endpoints = detail.split(",");
-        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");
-
-        for (int i = 1, size = endpoints.length; i < size; i++)
-        {
-            publication.removeDestination(builder.endpoint(endpoints[i]).build());
         }
     }
 
@@ -450,9 +506,6 @@ public final class AeronCluster implements AutoCloseable
      */
     public static class Configuration
     {
-        public static final String MANUAL_MDC_MATCH =
-            CommonContext.MDC_CONTROL_MODE_PARAM_NAME + "=" + CommonContext.MDC_CONTROL_MODE_MANUAL;
-
         /**
          * Timeout when waiting on a message to be sent or received.
          */
@@ -464,14 +517,16 @@ public final class AeronCluster implements AutoCloseable
         public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
-         * Property name for the comma separated list of cluster member endpoints.
+         * Property name for the comma separated list of cluster member endpoints for use with unicast.
+         * <p>
+         * Each member of the list will be substituted for the endpoint in the {@link #INGRESS_CHANNEL_PROP_NAME} value.
          */
         public static final String CLUSTER_MEMBER_ENDPOINTS_PROP_NAME = "aeron.cluster.member.endpoints";
 
         /**
-         * Property name for the comma separated list of cluster member endpoints.
+         * Property name for the comma separated list of cluster member endpoints. Default of null is for multicast.
          */
-        public static final String CLUSTER_MEMBER_ENDPOINTS_DEFAULT = "localhost:9001";
+        public static final String CLUSTER_MEMBER_ENDPOINTS_DEFAULT = null;
 
         /**
          * Channel for sending messages to a cluster. Ideally this will be a multicast address or manual control mode
@@ -534,7 +589,10 @@ public final class AeronCluster implements AutoCloseable
          */
         public static String[] clusterMemberEndpoints()
         {
-            return System.getProperty(CLUSTER_MEMBER_ENDPOINTS_PROP_NAME, CLUSTER_MEMBER_ENDPOINTS_DEFAULT).split(",");
+            final String memberEndpoints = System.getProperty(
+                CLUSTER_MEMBER_ENDPOINTS_PROP_NAME, CLUSTER_MEMBER_ENDPOINTS_DEFAULT);
+
+            return null == memberEndpoints ? null : memberEndpoints.split(",");
         }
 
         /**
@@ -654,7 +712,7 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * The endpoints representing members of the cluster which are all candidates to be leader.
+         * The endpoints representing members for use with unicast. A null value can be used when multicast.
          *
          * @param clusterMembers which are all candidates to be leader.
          * @return this for a fluent API.
@@ -667,7 +725,7 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * The endpoints representing members of the cluster which are all candidates to be leader.
+         * The endpoints representing members for use with unicast. A null value can be used when multicast.
          *
          * @return members of the cluster which are all candidates to be leader.
          * @see Configuration#CLUSTER_MEMBER_ENDPOINTS_PROP_NAME

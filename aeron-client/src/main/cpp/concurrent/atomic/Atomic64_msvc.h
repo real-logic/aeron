@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ namespace aeron { namespace concurrent { namespace atomic {
 */
 inline void thread_fence()
 {
-    _ReadWriteBarrier(); // TODO: should maybe use std::atomic_thread_fence(...) instead because _ReadWriteBarrier() is deprecated
+    std::atomic_thread_fence(std::memory_order_acq_rel);
 }
 
 /**
@@ -52,7 +52,7 @@ inline void release()
 */
 inline void cpu_pause()
 {
-	_mm_pause();
+    _mm_pause();
 }
 
 /**
@@ -62,7 +62,7 @@ inline void cpu_pause()
 inline std::int32_t getInt32Volatile(volatile std::int32_t* source)
 {
     int32_t sequence = *reinterpret_cast<volatile std::int32_t *>(source);
-    thread_fence();
+    acquire();
     return sequence;
 }
 
@@ -71,7 +71,7 @@ inline std::int32_t getInt32Volatile(volatile std::int32_t* source)
 */
 inline void putInt32Ordered(volatile std::int32_t* source, std::int32_t value)
 {
-    thread_fence();
+    release();
     *reinterpret_cast<volatile std::int32_t *>(source) = value;
 }
 
@@ -90,7 +90,7 @@ inline void putInt32Atomic(volatile std::int32_t*  address, std::int32_t value)
 inline std::int64_t getInt64Volatile(volatile std::int64_t* source)
 {
     int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
-    thread_fence();
+    acquire();
     return sequence;
 }
 
@@ -99,7 +99,7 @@ inline std::int64_t getInt64Volatile(volatile std::int64_t* source)
 */
 inline void  putInt64Ordered(volatile std::int64_t*  address, std::int64_t value)
 {
-    thread_fence();
+    release();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ inline void cpu_pause()
 inline std::int32_t getInt32Volatile(volatile std::int32_t* source)
 {
     int32_t sequence = *reinterpret_cast<volatile std::int32_t *>(source);
-    thread_fence();
+    acquire();
     return sequence;
 }
 
@@ -66,7 +66,7 @@ inline void putInt32Volatile(volatile std::int32_t* source, std::int32_t value)
 
 inline void putInt32Ordered(volatile std::int32_t* source, std::int32_t value)
 {
-    thread_fence();
+    release();
     *reinterpret_cast<volatile std::int32_t *>(source) = value;
 }
 
@@ -79,7 +79,7 @@ inline void putInt32Atomic(volatile std::int32_t*  address, std::int32_t value)
 inline std::int64_t getInt64Volatile(volatile std::int64_t* source)
 {
     int64_t sequence = *reinterpret_cast<volatile std::int64_t *>(source);
-    thread_fence();
+    acquire();
     return sequence;
 }
 
@@ -87,13 +87,13 @@ template<typename T>
 inline volatile T* getValueVolatile(volatile T** source)
 {
     volatile T* t = *reinterpret_cast<volatile T**>(source);
-    thread_fence();
+    acquire();
     return t;
 }
 
 inline void putInt64Volatile(volatile std::int64_t*  address, std::int64_t value)
 {
-    thread_fence();
+    release();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
 }
 
@@ -102,20 +102,20 @@ inline void putValueVolatile(volatile T* address, T value)
 {
     static_assert(sizeof(T) <= 8, "Requires size <= 8 bytes");
 
-    thread_fence();
+    release();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
 }
 
 inline void  putInt64Ordered(volatile std::int64_t*  address, std::int64_t value)
 {
-    thread_fence();
+    release();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
 }
 
 template<typename T>
 inline void putValueOrdered(volatile T** address, volatile T* value)
 {
-    thread_fence();
+    release();
     *reinterpret_cast<volatile T**>(address) = value;
 }
 

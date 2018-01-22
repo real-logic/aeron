@@ -503,6 +503,13 @@ project(':aeron-archive') {
         args = ['src/main/resources/aeron-archive-codecs.xml']
     }
 
+    test {
+        systemProperties(
+        'aeron.dir.warn.if.exists': 'false',
+        'aeron.term.buffer.sparse.file': 'true',
+        'aeron.perform.storage.checks' : 'false')
+    }
+
     jar {
         from("${buildDir}/classes/java/generated") {
             include '**/*.class'
@@ -578,6 +585,13 @@ project(':aeron-cluster') {
                 'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
                 'sbe.validation.stop.on.error': 'true')
         args = ['src/main/resources/aeron-cluster-codecs.xml']
+    }
+
+    test {
+        systemProperties(
+        'aeron.dir.warn.if.exists': 'false',
+        'aeron.term.buffer.sparse.file': 'true',
+        'aeron.perform.storage.checks' : 'false')
     }
 
     jar {

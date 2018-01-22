@@ -39,7 +39,7 @@ public:
     inline void write(AtomicBuffer& termBuffer, util::index_t offset, util::index_t length, std::int32_t termId) const
     {
         termBuffer.putInt32Ordered(offset, -length);
-        atomic::thread_fence();
+        atomic::release();
 
         struct DataFrameHeader::DataFrameHeaderDefn* hdr =
             (struct DataFrameHeader::DataFrameHeaderDefn *)(termBuffer.buffer() + offset);

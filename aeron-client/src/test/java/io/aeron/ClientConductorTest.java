@@ -175,6 +175,8 @@ public class ClientConductorTest
 
         when(logBuffersSession1.metaDataBuffer()).thenReturn(logMetaDataSession1);
         when(logBuffersSession2.metaDataBuffer()).thenReturn(logMetaDataSession2);
+        when(logBuffersSession1.termLength()).thenReturn(TERM_BUFFER_LENGTH);
+        when(logBuffersSession2.termLength()).thenReturn(TERM_BUFFER_LENGTH);
     }
 
     // --------------------------------

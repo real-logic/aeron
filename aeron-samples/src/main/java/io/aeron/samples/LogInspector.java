@@ -103,14 +103,14 @@ public class LogInspector
                 final long termOffset = rawTail & 0xFFFF_FFFFL;
                 final int termId = termId(rawTail);
                 final int offset = (int)Math.min(termOffset, termLength);
-                final int bitsToShift = Integer.numberOfTrailingZeros(termLength);
+                final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
                 out.format(
                     "Index %d Term Meta Data termOffset=%d termId=%d rawTail=%d position=%d%n",
                     i,
                     termOffset,
                     termId,
                     rawTail,
-                    LogBufferDescriptor.computePosition(termId, offset, bitsToShift, initialTermId));
+                    LogBufferDescriptor.computePosition(termId, offset, positionBitsToShift, initialTermId));
             }
 
             for (int i = 0; i < PARTITION_COUNT; i++)

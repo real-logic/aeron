@@ -198,7 +198,7 @@ public class NetworkPublication
         timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
         statusMessageDeadlineNs = spiesSimulateConnection ? nowNs : (nowNs + connectionTimeoutNs);
 
-        positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
 
         lastSenderPosition = senderPosition.get();

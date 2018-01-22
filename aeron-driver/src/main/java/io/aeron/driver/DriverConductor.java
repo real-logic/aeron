@@ -26,6 +26,7 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
@@ -197,7 +198,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final long registrationId = toDriverCommands.nextCorrelationId();
 
         final long joinPosition = computePosition(
-            activeTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
+            activeTermId, initialTermOffset, LogBufferDescriptor.positionBitsToShift(termBufferLength), initialTermId);
 
         final List<SubscriberPosition> subscriberPositions = createSubscriberPositions(
             sessionId, streamId, channelEndpoint, joinPosition);
@@ -898,7 +899,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
         if (params.isReplay)
         {
-            final int bits = Integer.numberOfTrailingZeros(params.termLength);
+            final int bits = LogBufferDescriptor.positionBitsToShift(params.termLength);
             final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
             senderLimit.setOrdered(position);
             senderPosition.setOrdered(position);

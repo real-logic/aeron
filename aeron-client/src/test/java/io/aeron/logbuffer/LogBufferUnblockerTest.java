@@ -37,7 +37,7 @@ public class LogBufferUnblockerTest
     private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH)));
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
 
-    private final int positionBitsToShift = Integer.numberOfTrailingZeros(TERM_LENGTH);
+    private final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(TERM_LENGTH);
 
     @Before
     public void setUp()

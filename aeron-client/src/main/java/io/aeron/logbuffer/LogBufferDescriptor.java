@@ -821,4 +821,48 @@ public class LogBufferDescriptor
         final int index = TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex);
         return logMetaDataBuffer.compareAndSetLong(index, expectedRawTail, updateRawTail);
     }
+
+    /**
+     * Get the number of bits to shift when dividing or multiplying by the term buffer length.
+     *
+     * @param termBufferLength to compute the number of bits to shift for.
+     * @return the number of bits to shift to divide or multiply by the term buffer length.
+     */
+    public static int positionBitsToShift(final int termBufferLength)
+    {
+        switch (termBufferLength)
+        {
+            case 64 * 1024: return 16;
+
+            case 128 * 1024: return 17;
+
+            case 256 * 1024: return 18;
+
+            case 512 * 1024: return 19;
+
+            case 1024 * 1024: return 20;
+
+            case 2 * 1024 * 1024: return 21;
+
+            case 4 * 1024 * 1024: return 22;
+
+            case 8 * 1024 * 1024: return 23;
+
+            case 16 * 1024 * 1024: return 24;
+
+            case 32 * 1024 * 1024: return 25;
+
+            case 64 * 1024 * 1024: return 26;
+
+            case 128 * 1024 * 1024: return 27;
+
+            case 256 * 1024 * 1024: return 28;
+
+            case 512 * 1024 * 1024: return 29;
+
+            case 1024 * 1024 * 1024: return 30;
+        }
+
+        throw new IllegalArgumentException("Invalid term buffer length: " + termBufferLength);
+    }
 }

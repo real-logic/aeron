@@ -32,7 +32,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
-import static java.lang.Integer.numberOfTrailingZeros;
 import static junit.framework.TestCase.assertTrue;
 import static org.agrona.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,6 +42,7 @@ import static org.mockito.Mockito.*;
 public class ReceiverTest
 {
     private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
+    private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH);
     private static final String URI = "aeron:udp?endpoint=localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
     private static final long CORRELATION_ID = 20;
@@ -106,7 +106,7 @@ public class ReceiverTest
     public void setUp() throws Exception
     {
         when(POSITION.getVolatile())
-            .thenReturn(computePosition(ACTIVE_TERM_ID, 0, numberOfTrailingZeros(TERM_BUFFER_LENGTH), ACTIVE_TERM_ID));
+            .thenReturn(computePosition(ACTIVE_TERM_ID, 0, POSITION_BITS_TO_SHIFT, ACTIVE_TERM_ID));
         when(mockSystemCounters.get(any())).thenReturn(mock(AtomicCounter.class));
         when(congestionControl.onTrackRebuild(
             anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyBoolean()))

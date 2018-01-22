@@ -39,7 +39,7 @@ public class LogBufferUnblocker
         final long blockedPosition,
         final int termLength)
     {
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         final int blockedTermCount = (int)(blockedPosition >> positionBitsToShift);
         final int blockedOffset = computeTermOffsetFromPosition(blockedPosition, positionBitsToShift);
         final int activeTermCount = activeTermCount(logMetaDataBuffer);

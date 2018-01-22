@@ -87,7 +87,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
         final int termLength = rawLog.termLength();
         this.termBufferLength = termLength;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        this.positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         this.termWindowLength = Configuration.ipcPublicationTermWindowLength(termLength);
         this.tripGain = termWindowLength / 8;
         this.publisherLimit = publisherLimit;

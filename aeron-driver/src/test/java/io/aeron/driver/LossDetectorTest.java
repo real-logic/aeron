@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.junit.Test;
 import org.mockito.InOrder;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -34,7 +35,7 @@ import static org.agrona.BitUtil.align;
 public class LossDetectorTest
 {
     private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
-    private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH);
+    private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH);
     private static final int MASK = TERM_BUFFER_LENGTH - 1;
 
     private static final byte[] DATA = new byte[36];

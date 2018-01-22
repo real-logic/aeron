@@ -192,7 +192,7 @@ public class PublicationImage
 
         final int termLength = rawLog.termLength();
         termLengthMask = termLength - 1;
-        positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
 
         final long initialPosition = computePosition(
             activeTermId, initialTermOffset, positionBitsToShift, initialTermId);

@@ -27,6 +27,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -255,7 +256,7 @@ public class ArchiveRecordingLoadTest
         buffer.setMemory(0, 1024, (byte)'z');
 
         final int termLength = publication.termBufferLength();
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         final int initialTermId = publication.initialTermId();
         final long startPosition = publication.position();
         final int startTermOffset = computeTermOffsetFromPosition(startPosition, positionBitsToShift);

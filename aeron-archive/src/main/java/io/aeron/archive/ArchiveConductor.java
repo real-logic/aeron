@@ -21,6 +21,7 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
@@ -532,17 +533,18 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private ExclusivePublication newReplayPublication(
         final String replayChannel,
         final int replayStreamId,
-        final long fromPosition,
-        final RecordingSummary recordingSummary)
+        final long position,
+        final RecordingSummary recording)
     {
-        final int initialTermId = recordingSummary.initialTermId;
-        final int termBufferLength = recordingSummary.termBufferLength;
+        final int initialTermId = recording.initialTermId;
+        final int termBufferLength = recording.termBufferLength;
 
-        final int termId = (int)((fromPosition / termBufferLength) + initialTermId);
-        final int termOffset = (int)(fromPosition % termBufferLength);
+        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termBufferLength);
+        final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
+        final int termOffset = (int)(position & (termBufferLength - 1));
 
         final String channel = strippedChannelBuilder(replayChannel)
-            .mtu(recordingSummary.mtuLength)
+            .mtu(recording.mtuLength)
             .termLength(termBufferLength)
             .initialTermId(initialTermId)
             .termId(termId)

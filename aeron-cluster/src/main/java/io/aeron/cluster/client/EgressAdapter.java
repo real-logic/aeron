@@ -85,7 +85,8 @@ public class EgressAdapter implements FragmentHandler
                     newLeaderEventDecoder.lastMessageTimestamp(),
                     newLeaderEventDecoder.leadershipTimestamp(),
                     newLeaderEventDecoder.leadershipTermId(),
-                    newLeaderEventDecoder.leaderAddress());
+                    newLeaderEventDecoder.leaderMemberId(),
+                    newLeaderEventDecoder.memberEndpoints());
                 break;
 
             case SessionHeaderDecoder.TEMPLATE_ID:

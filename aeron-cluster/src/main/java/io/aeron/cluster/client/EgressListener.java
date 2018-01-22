@@ -29,7 +29,8 @@ public interface EgressListener
         long lastMessageTimestamp,
         long leadershipTimestamp,
         long leadershipTermId,
-        String leaderAddress);
+        int leaderMemberId,
+        String memberEndpoints);
 
     void onMessage(
         long correlationId,

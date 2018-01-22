@@ -36,7 +36,8 @@ public class StubEgressListener implements EgressListener
         final long lastMessageTimestamp,
         final long leadershipTimestamp,
         final long leadershipTermId,
-        final String leaderAddress)
+        final int leaderMemberId,
+        final String memberEndpoints)
     {
     }
 

@@ -118,7 +118,7 @@ class DynamicMultiDestination extends MultiDestination
                 }
                 catch (final IOException ex)
                 {
-                    throw new RuntimeException("Failed to send: " + bytesToSend, ex);
+                    throw new RuntimeException("Failed to send packet of length: " + bytesToSend, ex);
                 }
 
                 minBytesSent = Math.min(minBytesSent, bytesSent);

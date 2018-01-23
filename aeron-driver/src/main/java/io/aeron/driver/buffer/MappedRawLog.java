@@ -24,6 +24,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.OpenOption;
+import java.nio.file.attribute.FileAttribute;
+import java.util.HashSet;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -36,6 +39,21 @@ import static org.agrona.BitUtil.align;
 class MappedRawLog implements RawLog
 {
     private static final int ONE_GIG = 1 << 30;
+    private static final HashSet<OpenOption> FILE_OPTIONS = new HashSet<>();
+    private static final HashSet<OpenOption> SPARSE_FILE_OPTIONS = new HashSet<>();
+    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
+
+    static
+    {
+        FILE_OPTIONS.add(CREATE_NEW);
+        FILE_OPTIONS.add(READ);
+        FILE_OPTIONS.add(WRITE);
+
+        SPARSE_FILE_OPTIONS.add(CREATE_NEW);
+        SPARSE_FILE_OPTIONS.add(READ);
+        SPARSE_FILE_OPTIONS.add(WRITE);
+        SPARSE_FILE_OPTIONS.add(SPARSE);
+    }
 
     private final int termLength;
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
@@ -55,7 +73,9 @@ class MappedRawLog implements RawLog
         this.errorLog = errorLog;
         this.logFile = location;
 
-        try (FileChannel logChannel = FileChannel.open(logFile.toPath(), CREATE_NEW, READ, WRITE))
+        final HashSet<OpenOption> options = useSparseFiles ? SPARSE_FILE_OPTIONS : FILE_OPTIONS;
+
+        try (FileChannel logChannel = FileChannel.open(logFile.toPath(), options, NO_ATTRIBUTES))
         {
             final long logLength = computeLogLength(termLength, filePageSize);
 
@@ -83,8 +103,8 @@ class MappedRawLog implements RawLog
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
-                    mappedBuffers[i] =
-                        logChannel.map(READ_WRITE, termLength * (long)i, termLength);
+                    mappedBuffers[i] = logChannel.map(
+                        READ_WRITE, termLength * (long)i, termLength);
                     if (!useSparseFiles)
                     {
                         allocatePages(mappedBuffers[i], termLength, filePageSize);
@@ -100,11 +120,10 @@ class MappedRawLog implements RawLog
                     READ_WRITE, metaDataSectionOffset, metaDataMappingLength);
 
                 mappedBuffers[LOG_META_DATA_SECTION_INDEX] = metaDataMappedBuffer;
-                logMetaDataBuffer =
-                    new UnsafeBuffer(
-                        metaDataMappedBuffer,
-                        metaDataMappingLength - LOG_META_DATA_LENGTH,
-                        LOG_META_DATA_LENGTH);
+                logMetaDataBuffer = new UnsafeBuffer(
+                    metaDataMappedBuffer,
+                    metaDataMappingLength - LOG_META_DATA_LENGTH,
+                    LOG_META_DATA_LENGTH);
             }
         }
         catch (final IOException ex)

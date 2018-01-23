@@ -463,7 +463,7 @@ public class Configuration
     /**
      * Yield the thread so others can run before backing off to parking.
      */
-    public static final long IDLE_MAX_YIELDS = 100;
+    public static final long IDLE_MAX_YIELDS = 20;
 
     /**
      * Park for the minimum period of time which is typically 50-55 microseconds on 64-bit non-virtualised Linux.

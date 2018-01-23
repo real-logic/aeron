@@ -340,6 +340,7 @@ project(':aeron-system-tests') {
 
     test {
         systemProperties(
+                'aeron.use.windows.high.res.timer' : 'true',
                 'aeron.dir.warn.if.exists': 'false',
                 'aeron.term.buffer.sparse.file': 'true',
                 'aeron.perform.storage.checks' : 'false')
@@ -505,6 +506,7 @@ project(':aeron-archive') {
 
     test {
         systemProperties(
+        'aeron.use.windows.high.res.timer' : 'true',
         'aeron.dir.warn.if.exists': 'false',
         'aeron.term.buffer.sparse.file': 'true',
         'aeron.perform.storage.checks' : 'false')
@@ -589,6 +591,7 @@ project(':aeron-cluster') {
 
     test {
         systemProperties(
+        'aeron.use.windows.high.res.timer' : 'true',
         'aeron.dir.warn.if.exists': 'false',
         'aeron.term.buffer.sparse.file': 'true',
         'aeron.perform.storage.checks' : 'false')

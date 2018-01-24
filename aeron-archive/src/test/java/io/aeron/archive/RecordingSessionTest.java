@@ -117,7 +117,7 @@ public class RecordingSessionTest
     public void shouldRecordFragmentsFromImage() throws Exception
     {
         final RecordingSession session = new RecordingSession(
-            RECORDING_ID, CHANNEL, recordingEventsProxy, image, position, ARCHIVE_CHANNEL, context);
+            RECORDING_ID, START_POSITION, CHANNEL, recordingEventsProxy, image, position, ARCHIVE_CHANNEL, context);
 
         assertEquals(RECORDING_ID, session.sessionId());
 

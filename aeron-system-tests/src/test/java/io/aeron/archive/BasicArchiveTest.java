@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,12 +40,13 @@ import static org.junit.Assert.assertThat;
 public class BasicArchiveTest
 {
     private static final int FRAGMENT_LIMIT = 10;
+    private static final int TERM_BUFFER_LENGTH = 64 * 1024;
 
     private static final int RECORDING_STREAM_ID = 33;
     private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
-        .termLength(64 * 1024)
+        .termLength(TERM_BUFFER_LENGTH)
         .build();
 
     private static final int REPLAY_STREAM_ID = 66;

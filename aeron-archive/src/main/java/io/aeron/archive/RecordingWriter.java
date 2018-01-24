@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
@@ -66,13 +67,15 @@ class RecordingWriter implements RawBlockHandler
      * by NULL_SEGMENT_POSITION
      */
     private int segmentPosition = NULL_SEGMENT_POSITION;
-    private int segmentIndex = 0;
+    private int segmentIndex;
     private FileChannel recordingFileChannel;
 
     private boolean isClosed = false;
 
     RecordingWriter(
         final long recordingId,
+        final long startPosition,
+        final long joinPosition,
         final int termBufferLength,
         final Archive.Context context,
         final FileChannel archiveDirChannel,
@@ -86,6 +89,8 @@ class RecordingWriter implements RawBlockHandler
         segmentFileLength = Math.max(context.segmentFileLength(), termBufferLength);
         forceWrites = context.fileSyncLevel() > 0;
         forceMetadata = context.fileSyncLevel() > 1;
+
+        segmentIndex = segmentFileIndex(startPosition, joinPosition, segmentFileLength);
     }
 
     public void onBlock(

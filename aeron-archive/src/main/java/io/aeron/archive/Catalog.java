@@ -377,6 +377,14 @@ class Catalog implements AutoCloseable
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), timestamp, BYTE_ORDER);
     }
 
+    void extendRecording(final long recordingId)
+    {
+        final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
+
+        fieldAccessBuffer.putLong(offset + stopPositionEncodingOffset(), NULL_POSITION, BYTE_ORDER);
+        fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), NULL_TIMESTAMP, BYTE_ORDER);
+    }
+
     long stopPosition(final long recordingId)
     {
         final int offset = recordingDescriptorOffset(recordingId) +

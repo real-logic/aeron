@@ -108,7 +108,7 @@ public class ReplaySessionTest
         recordingSummary.sessionId = SESSION_ID;
 
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, TERM_BUFFER_LENGTH, context, null, position);
+            RECORDING_ID, START_POSITION, START_POSITION, TERM_BUFFER_LENGTH, context, null, position);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 
@@ -337,7 +337,8 @@ public class ReplaySessionTest
         when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
         position.setOrdered(START_POSITION);
 
-        final RecordingWriter writer = new RecordingWriter(recordingId, TERM_BUFFER_LENGTH, context, null, position);
+        final RecordingWriter writer = new RecordingWriter(
+            recordingId, START_POSITION, START_POSITION, TERM_BUFFER_LENGTH, context, null, position);
 
         when(epochClock.time()).thenReturn(TIME);
 

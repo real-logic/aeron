@@ -445,11 +445,13 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             return;
         }
 
-        catalog.recordingSummary(recordingId, recordingSummary);
+        final RecordingSummary originalRecordingSummary = new RecordingSummary();
+        catalog.recordingSummary(recordingId, originalRecordingSummary);
+
         final ChannelUri channelUri = ChannelUri.parse(originalChannel);
         final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
 
-        if (null == sessionIdStr || recordingSummary.sessionId != Integer.parseInt(sessionIdStr))
+        if (null == sessionIdStr || originalRecordingSummary.sessionId != Integer.parseInt(sessionIdStr))
         {
             controlSession.sendResponse(
                 correlationId,
@@ -478,6 +480,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                     recordingId,
                     strippedChannel,
                     originalChannel,
+                    originalRecordingSummary,
                     image);
 
                 final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
@@ -615,6 +618,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         final RecordingSession session = new RecordingSession(
             recordingId,
+            startPosition,
             originalChannel,
             recordingEventsProxy,
             image,
@@ -632,6 +636,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long recordingId,
         final String strippedChannel,
         final String originalChannel,
+        final RecordingSummary originalRecordingSummary,
         final Image image)
     {
         if (recordingSessionByIdMap.size() >= 2 * maxConcurrentRecordings)
@@ -640,26 +645,48 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 "Too many recordings, can't record: " + originalChannel + ":" + image.subscription().streamId());
         }
 
+        // TODO: make these into a validation method for the image
+
+        if (image.joinPosition() != originalRecordingSummary.stopPosition)
+        {
+            throw new IllegalStateException(
+                "Can't extend recording: " + recordingId + ": image joinPosition=" + image.joinPosition() +
+                " not equal to recording stopPosition=" + originalRecordingSummary.stopPosition);
+        }
+
+        if (image.termBufferLength() != originalRecordingSummary.termBufferLength)
+        {
+            throw new IllegalStateException(
+                "Can't extend recording: " + recordingId + ": image termBufferLength=" + image.termBufferLength() +
+                    " not equal to recording termBufferLength=" + originalRecordingSummary.termBufferLength);
+        }
+
+        if (image.mtuLength() != originalRecordingSummary.mtuLength)
+        {
+            throw new IllegalStateException(
+                "Can't extend recording: " + recordingId + ": image mtuLength=" + image.mtuLength() +
+                    " not equal to recording mtuLength=" + originalRecordingSummary.mtuLength);
+        }
+
         final int sessionId = image.sessionId();
         final int streamId = image.subscription().streamId();
-        final long startPosition = image.joinPosition();
-
-        // TODO: do we need to check the joinPosition vs. the end position of the entry?
-
-        // TODO: do we need to update the catalog entry?
+        final long newStartPosition = image.joinPosition();
 
         final Counter position = RecordingPos.allocate(
             aeron, tempBuffer, recordingId, controlSessionId, correlationId, sessionId, streamId, strippedChannel);
-        position.setOrdered(startPosition);
+        position.setOrdered(newStartPosition);
 
         final RecordingSession session = new RecordingSession(
             recordingId,
+            recordingSummary.startPosition,
             originalChannel,
             recordingEventsProxy,
             image,
             position,
             archiveDirChannel,
             ctx);
+
+        catalog.extendRecording(recordingId);
 
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);

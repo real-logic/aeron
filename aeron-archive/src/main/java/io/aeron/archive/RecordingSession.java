@@ -45,6 +45,7 @@ class RecordingSession implements Session
 
     RecordingSession(
         final long recordingId,
+        final long startPosition,
         final String originalChannel,
         final RecordingEventsProxy recordingEventsProxy,
         final Image image,
@@ -61,7 +62,8 @@ class RecordingSession implements Session
         final int termBufferLength = image.termBufferLength();
         blockLengthLimit = Math.min(termBufferLength, MAX_BLOCK_LENGTH);
 
-        recordingWriter = new RecordingWriter(recordingId, termBufferLength, context, archiveDirChannel, position);
+        recordingWriter = new RecordingWriter(
+            recordingId, startPosition, image.joinPosition(), termBufferLength, context, archiveDirChannel, position);
     }
 
     public long sessionId()

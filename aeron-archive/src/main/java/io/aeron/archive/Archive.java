@@ -20,6 +20,7 @@ import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.exceptions.ConfigurationException;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -33,6 +34,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
@@ -397,6 +400,10 @@ public class Archive implements AutoCloseable
             if (!BitUtil.isPowerOfTwo(segmentFileLength))
             {
                 throw new ConfigurationException("Segment file length not a power of 2: " + segmentFileLength);
+            }
+            else if (segmentFileLength < TERM_MIN_LENGTH || segmentFileLength > TERM_MAX_LENGTH)
+            {
+                throw new ConfigurationException("Segment file not in valid range: " + segmentFileLength);
             }
         }
 
@@ -969,7 +976,7 @@ public class Archive implements AutoCloseable
 
     static int segmentFileIndex(final long startPosition, final long position, final int segmentFileLength)
     {
-        return (int)((position - startPosition) / segmentFileLength);
+        return (int)((position - startPosition) >> LogBufferDescriptor.positionBitsToShift(segmentFileLength));
     }
 
     static String segmentFileName(final long recordingId, final int segmentIndex)

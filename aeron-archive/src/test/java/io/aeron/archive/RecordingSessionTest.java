@@ -19,6 +19,7 @@ import io.aeron.Counter;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
@@ -42,7 +43,7 @@ public class RecordingSessionTest
 {
     private static final int RECORDED_BLOCK_LENGTH = 100;
     private static final long RECORDING_ID = 12345;
-    private static final int TERM_BUFFER_LENGTH = 4096;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int SEGMENT_FILE_SIZE = TERM_BUFFER_LENGTH;
 
     private static final String CHANNEL = "channel";

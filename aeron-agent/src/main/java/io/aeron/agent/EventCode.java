@@ -61,7 +61,8 @@ public enum EventCode
 
     CMD_IN_CLIENT_CLOSE(40, EventDissector::dissectAsCommand);
 
-    private static final EventCode[] EVENT_CODE_BY_ID = new EventCode[41];
+    private static final int MAX_ID = 63;
+    private static final EventCode[] EVENT_CODE_BY_ID = new EventCode[MAX_ID];
 
     @FunctionalInterface
     private interface DissectFunction
@@ -77,7 +78,13 @@ public enum EventCode
     {
         for (final EventCode code : EventCode.values())
         {
-            EVENT_CODE_BY_ID[code.id()] = code;
+            final int id = code.id();
+            if (null != EVENT_CODE_BY_ID[id])
+            {
+                throw new IllegalArgumentException("Id already in use: " + id);
+            }
+
+            EVENT_CODE_BY_ID[id] = code;
         }
     }
 
@@ -106,7 +113,7 @@ public enum EventCode
 
     public static EventCode get(final int id)
     {
-        if (id < 0 || id >= EVENT_CODE_BY_ID.length)
+        if (id < 0 || id > MAX_ID)
         {
             throw new IllegalArgumentException("No EventCode for ID: " + id);
         }

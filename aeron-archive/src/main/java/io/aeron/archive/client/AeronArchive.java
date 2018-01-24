@@ -338,6 +338,41 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Extend an existing, non-active recording of a channel and stream pairing.
+     * <p>
+     * Channel must be session specific and include the existing recording sessionId.
+     *
+     * @param recordingId    of the existing recording.
+     * @param channel        to be recorded.
+     * @param streamId       to be recorded.
+     * @param sourceLocation of the publication to be recorded.
+     * @return the correlationId used to identify the request.
+     */
+    public long extendRecording(
+        final long recordingId, final String channel, final int streamId, final SourceLocation sourceLocation)
+    {
+        lock.lock();
+        try
+        {
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.extendRecording(
+                channel, streamId, sourceLocation, recordingId, correlationId, controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send extend recording request");
+            }
+
+            pollForResponse(correlationId);
+
+            return correlationId;
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Stop recording for a channel and stream pairing.
      * <p>
      * Channels that include sessionId parameters are considered different than channels without sessionIds. Stopping

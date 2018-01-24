@@ -410,6 +410,97 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
     }
 
+    public void extendRecording(
+        final long correlationId,
+        final ControlSession controlSession,
+        final long recordingId,
+        final int streamId,
+        final String originalChannel,
+        final SourceLocation sourceLocation)
+    {
+        if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
+        {
+            controlSession.sendResponse(
+                correlationId,
+                ERROR,
+                "Max concurrent recordings reached: " + maxConcurrentRecordings,
+                controlResponseProxy);
+
+            return;
+        }
+
+        if (!catalog.hasRecording(recordingId))
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "Unknown recording : " + recordingId, controlResponseProxy);
+
+            return;
+        }
+
+        if (recordingSessionByIdMap.containsKey(recordingId))
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "Can not extend active recording : " + recordingId, controlResponseProxy);
+
+            return;
+        }
+
+        catalog.recordingSummary(recordingId, recordingSummary);
+        final ChannelUri channelUri = ChannelUri.parse(originalChannel);
+        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+
+        if (null == sessionIdStr || recordingSummary.sessionId != Integer.parseInt(sessionIdStr))
+        {
+            controlSession.sendResponse(
+                correlationId,
+                ERROR,
+                "Extend recording channel must contain correct sessionId: " + recordingId,
+                controlResponseProxy);
+
+            return;
+        }
+
+        try
+        {
+            final String strippedChannel = strippedChannelBuilder(channelUri).build();
+            final String key = makeKey(streamId, strippedChannel);
+            final Subscription oldSubscription = recordingSubscriptionMap.get(key);
+
+            if (oldSubscription == null)
+            {
+                final String channel = originalChannel.contains("udp") && sourceLocation == SourceLocation.LOCAL ?
+                    SPY_PREFIX + strippedChannel : strippedChannel;
+
+                final long controlSessionId = controlSession.sessionId();
+                final AvailableImageHandler handler = (image) -> extendRecordingSession(
+                    controlSessionId,
+                    correlationId,
+                    recordingId,
+                    strippedChannel,
+                    originalChannel,
+                    image);
+
+                final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
+
+                recordingSubscriptionMap.put(key, subscription);
+                controlSession.sendOkResponse(correlationId, controlResponseProxy);
+            }
+            else
+            {
+                controlSession.sendResponse(
+                    correlationId,
+                    ERROR,
+                    "Recording already setup for subscription: " + key,
+                    controlResponseProxy);
+            }
+        }
+        catch (final Exception ex)
+        {
+            errorHandler.onError(ex);
+            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
+        }
+    }
+
     ControlSession newControlSession(
         final long correlationId,
         final int streamId,
@@ -444,9 +535,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         return controlSession;
     }
 
-    ChannelUriStringBuilder strippedChannelBuilder(final String channel)
+    ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
     {
-        final ChannelUri channelUri = ChannelUri.parse(channel);
         channelBuilder
             .clear()
             .media(channelUri.media())
@@ -457,6 +547,12 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         return channelBuilder;
     }
+
+    ChannelUriStringBuilder strippedChannelBuilder(final String channel)
+    {
+        return strippedChannelBuilder(ChannelUri.parse(channel));
+    }
+
 
     void closeRecordingSession(final RecordingSession session)
     {
@@ -512,6 +608,45 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             strippedChannel,
             originalChannel,
             sourceIdentity);
+
+        final Counter position = RecordingPos.allocate(
+            aeron, tempBuffer, recordingId, controlSessionId, correlationId, sessionId, streamId, strippedChannel);
+        position.setOrdered(startPosition);
+
+        final RecordingSession session = new RecordingSession(
+            recordingId,
+            originalChannel,
+            recordingEventsProxy,
+            image,
+            position,
+            archiveDirChannel,
+            ctx);
+
+        recordingSessionByIdMap.put(recordingId, session);
+        recorder.addSession(session);
+    }
+
+    private void extendRecordingSession(
+        final long controlSessionId,
+        final long correlationId,
+        final long recordingId,
+        final String strippedChannel,
+        final String originalChannel,
+        final Image image)
+    {
+        if (recordingSessionByIdMap.size() >= 2 * maxConcurrentRecordings)
+        {
+            throw new IllegalStateException(
+                "Too many recordings, can't record: " + originalChannel + ":" + image.subscription().streamId());
+        }
+
+        final int sessionId = image.sessionId();
+        final int streamId = image.subscription().streamId();
+        final long startPosition = image.joinPosition();
+
+        // TODO: do we need to check the joinPosition vs. the end position of the entry?
+
+        // TODO: do we need to update the catalog entry?
 
         final Counter position = RecordingPos.allocate(
             aeron, tempBuffer, recordingId, controlSessionId, correlationId, sessionId, streamId, strippedChannel);

@@ -194,6 +194,16 @@ class ControlSession implements Session
         conductor.stopReplay(correlationId, this, replaySessionId);
     }
 
+    public void onExtendRecording(
+        final long correlationId,
+        final long recordingId,
+        final String channel,
+        final int streamId,
+        final SourceLocation sourceLocation)
+    {
+        conductor.extendRecording(correlationId, this, recordingId, streamId, channel, sourceLocation);
+    }
+
     void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)
     {
         if (listRecordingsSession != listRecordingsSessions.poll())

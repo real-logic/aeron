@@ -50,6 +50,7 @@ public class ArchiveProxy
     private final ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder =
         new ListRecordingsForUriRequestEncoder();
     private final ListRecordingRequestEncoder listRecordingRequestEncoder = new ListRecordingRequestEncoder();
+    private final ExtendRecordingRequestEncoder extendRecordingRequestEncoder = new ExtendRecordingRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -343,6 +344,37 @@ public class ArchiveProxy
             .recordingId(recordingId);
 
         return offer(listRecordingRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Extend a recorded stream for a given channel and stream id pairing.
+     *
+     * @param channel          to be recorded.
+     * @param streamId         to be recorded.
+     * @param sourceLocation   of the publication to be recorded.
+     * @param recordingId      to be extended.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean extendRecording(
+        final String channel,
+        final int streamId,
+        final SourceLocation sourceLocation,
+        final long recordingId,
+        final long correlationId,
+        final long controlSessionId)
+    {
+        extendRecordingRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .streamId(streamId)
+            .sourceLocation(sourceLocation)
+            .channel(channel);
+
+        return offer(extendRecordingRequestEncoder.encodedLength());
     }
 
     private boolean offer(final int length)

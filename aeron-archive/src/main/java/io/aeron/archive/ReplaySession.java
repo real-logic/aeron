@@ -118,8 +118,12 @@ class ReplaySession implements Session, SimpleFragmentHandler
     {
         state = State.CLOSED;
 
-        CloseHelper.quietClose(cursor);
-        CloseHelper.quietClose(replayPublication);
+        if (null != cursor)
+        {
+            cursor.close();
+        }
+
+        CloseHelper.close(replayPublication);
     }
 
     public long sessionId()
@@ -247,7 +251,11 @@ class ReplaySession implements Session, SimpleFragmentHandler
     {
         state = State.INACTIVE;
         CloseHelper.quietClose(replayPublication);
-        CloseHelper.quietClose(cursor);
+
+        if (null != cursor)
+        {
+            cursor.close();
+        }
 
         if (!controlSession.isDone())
         {

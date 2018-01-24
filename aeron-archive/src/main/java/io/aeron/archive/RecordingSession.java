@@ -84,8 +84,8 @@ class RecordingSession implements Session
         if (State.CLOSED != state)
         {
             state = State.CLOSED;
-            CloseHelper.close(recordingWriter);
             CloseHelper.close(position);
+            recordingWriter.close();
         }
     }
 

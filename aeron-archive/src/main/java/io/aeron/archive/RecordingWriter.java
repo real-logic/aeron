@@ -49,7 +49,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  * creating a {@link RecordingWriter}.</li>
  * </ul>
  */
-class RecordingWriter implements AutoCloseable, RawBlockHandler
+class RecordingWriter implements RawBlockHandler
 {
     private static final int NULL_SEGMENT_POSITION = -1;
 
@@ -112,13 +112,14 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             long bytesWritten = 0;
             do
             {
-                bytesWritten += transferTo(fileChannel, fileOffset + bytesWritten, blockLength - bytesWritten);
+                bytesWritten += fileChannel.transferTo(
+                    fileOffset + bytesWritten, blockLength - bytesWritten, recordingFileChannel);
             }
             while (bytesWritten < blockLength);
 
             if (forceWrites)
             {
-                forceData(recordingFileChannel, forceMetadata);
+                recordingFileChannel.force(forceMetadata);
             }
 
             afterWrite(blockLength);
@@ -150,6 +151,11 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
         isClosed = true;
         CloseHelper.close(recordingFileChannel);
+    }
+
+    boolean isClosed()
+    {
+        return isClosed;
     }
 
     /**
@@ -186,7 +192,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
 
             if (forceWrites)
             {
-                forceData(recordingFileChannel, forceMetadata);
+                recordingFileChannel.force(forceMetadata);
             }
 
             afterWrite(alignedLength);
@@ -198,15 +204,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
         }
     }
 
-    // extend for testing
-    long transferTo(final FileChannel fromFileChannel, final long position, final long count)
-        throws IOException
-    {
-        return fromFileChannel.transferTo(position, count, recordingFileChannel);
-    }
-
-    // extend for testing
-    void newRecordingSegmentFile()
+    private void newRecordingSegmentFile()
     {
         final File file = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
 
@@ -218,7 +216,7 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             recordingFileChannel = recordingFile.getChannel();
             if (forceWrites && null != archiveDirChannel)
             {
-                forceData(archiveDirChannel, forceMetadata);
+                archiveDirChannel.force(forceMetadata);
             }
         }
         catch (final IOException ex)
@@ -227,17 +225,6 @@ class RecordingWriter implements AutoCloseable, RawBlockHandler
             close();
             LangUtil.rethrowUnchecked(ex);
         }
-    }
-
-    // extend for testing
-    void forceData(final FileChannel fileChannel, final boolean forceMetadata) throws IOException
-    {
-        fileChannel.force(forceMetadata);
-    }
-
-    boolean isClosed()
-    {
-        return isClosed;
     }
 
     private void onFileRollOver()

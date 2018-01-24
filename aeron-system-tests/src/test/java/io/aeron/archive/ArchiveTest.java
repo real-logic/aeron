@@ -589,24 +589,25 @@ public class ArchiveTest
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis))
         {
-            try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
+            final RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
                 catalog,
                 catalog.recordingSummary(recordingId, new RecordingSummary()),
                 archiveDir,
                 AeronArchive.NULL_POSITION,
                 RecordingFragmentReader.NULL_LENGTH,
-                null))
-            {
-                this.messageCount = 0;
-                remaining = totalDataLength;
-                while (!archiveDataFileReader.isDone())
-                {
-                    archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
-                }
+                null);
 
-                assertThat(remaining, is(0L));
-                assertThat(this.messageCount, is(messageCount));
+            this.messageCount = 0;
+            remaining = totalDataLength;
+            while (!archiveDataFileReader.isDone())
+            {
+                archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
             }
+
+            archiveDataFileReader.close();
+
+            assertThat(remaining, is(0L));
+            assertThat(this.messageCount, is(messageCount));
         }
     }
 

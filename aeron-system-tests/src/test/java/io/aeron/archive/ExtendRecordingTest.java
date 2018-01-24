@@ -43,6 +43,7 @@ public class ExtendRecordingTest
     private static final int FRAGMENT_LIMIT = 10;
     private static final int TERM_BUFFER_LENGTH = 64 * 1024;
     private static final int MTU_LENGTH = Configuration.MTU_LENGTH;
+    private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH);
 
     private static final int RECORDING_STREAM_ID = 33;
     private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
@@ -71,12 +72,8 @@ public class ExtendRecordingTest
     @After
     public void after()
     {
-        CloseHelper.close(aeronArchive);
-        CloseHelper.close(aeron);
-        CloseHelper.close(archivingMediaDriver);
-
+        closeDownAndCleanMediaDriver();
         archivingMediaDriver.archive().context().deleteArchiveDirectory();
-        archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
     @Test(timeout = 10000)
@@ -116,12 +113,8 @@ public class ExtendRecordingTest
             }
         }
 
-        closeDownForRestartOfArchive();
+        closeDownAndCleanMediaDriver();
         launchAeronAndArchive();
-
-        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH);
-        final int termId = LogBufferDescriptor.computeTermIdFromPosition(length, positionBitsToShift, initialTermId);
-        final int termOffset = (int)(length & (TERM_BUFFER_LENGTH - 1));
 
         final String publicationExtendRecordingChannel = new ChannelUriStringBuilder()
             .media("udp")
@@ -130,8 +123,8 @@ public class ExtendRecordingTest
             .sessionId(sessionId)
             .initialTermId(initialTermId)
             .mtu(MTU_LENGTH)
-            .termOffset(termOffset)
-            .termId(termId)
+            .termOffset((int)(length & (TERM_BUFFER_LENGTH - 1)))
+            .termId(LogBufferDescriptor.computeTermIdFromPosition(length, POSITION_BITS_TO_SHIFT, initialTermId))
             .build();
 
         final String subscriptionExtendRecordingChannel = new ChannelUriStringBuilder()
@@ -152,11 +145,6 @@ public class ExtendRecordingTest
             try
             {
                 offer(publication, messageCount, messageCount, messagePrefix);
-
-                final CountersReader counters = aeron.countersReader();
-                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-                // recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
-
                 consume(subscription, messageCount, messageCount, messagePrefix);
 
                 totalLength = publication.position();
@@ -220,7 +208,7 @@ public class ExtendRecordingTest
         assertThat(received.get(), is(startIndex + count));
     }
 
-    private void closeDownForRestartOfArchive()
+    private void closeDownAndCleanMediaDriver()
     {
         CloseHelper.close(aeronArchive);
         CloseHelper.close(aeron);

@@ -403,7 +403,7 @@ public class Archive implements AutoCloseable
             }
             else if (segmentFileLength < TERM_MIN_LENGTH || segmentFileLength > TERM_MAX_LENGTH)
             {
-                throw new ConfigurationException("Segment file not in valid range: " + segmentFileLength);
+                throw new ConfigurationException("Segment file length not in valid range: " + segmentFileLength);
             }
         }
 

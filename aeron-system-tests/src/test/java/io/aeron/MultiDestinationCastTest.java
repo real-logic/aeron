@@ -266,7 +266,7 @@ public class MultiDestinationCastTest
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
-        final CountDownLatch unavailableCountDownLatch = new CountDownLatch(1);
+        final CountDownLatch unavailableImage = new CountDownLatch(1);
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
 
@@ -275,7 +275,7 @@ public class MultiDestinationCastTest
         publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(
-            SUB2_MDC_MANUAL_URI, STREAM_ID, null, (image) -> unavailableCountDownLatch.countDown());
+            SUB2_MDC_MANUAL_URI, STREAM_ID, null, (image) -> unavailableImage.countDown());
 
         publication.addDestination(SUB1_MDC_MANUAL_URI);
         publication.addDestination(SUB2_MDC_MANUAL_URI);
@@ -314,7 +314,7 @@ public class MultiDestinationCastTest
             }
         }
 
-        unavailableCountDownLatch.await();
+        unavailableImage.await();
 
         verifyFragments(fragmentHandlerA, numMessagesToSend);
         verifyFragments(fragmentHandlerB, numMessageForSub2);
@@ -325,14 +325,14 @@ public class MultiDestinationCastTest
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
-        final CountDownLatch availableCountDownLatch = new CountDownLatch(1);
+        final CountDownLatch availableImage = new CountDownLatch(1);
 
         launch();
 
         publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(
-            SUB2_MDC_MANUAL_URI, STREAM_ID, (image) -> availableCountDownLatch.countDown(), null);
+            SUB2_MDC_MANUAL_URI, STREAM_ID, (image) -> availableImage.countDown(), null);
 
         publication.addDestination(SUB1_MDC_MANUAL_URI);
 
@@ -367,7 +367,7 @@ public class MultiDestinationCastTest
             if (i == (numMessagesToSend - numMessageForSub2 - 1))
             {
                 publication.addDestination(SUB2_MDC_MANUAL_URI);
-                availableCountDownLatch.await();
+                availableImage.await();
             }
         }
 

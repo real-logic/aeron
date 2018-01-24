@@ -75,8 +75,12 @@ class SessionWorker<T extends Session> implements Agent
         isClosed = true;
 
         preSessionsClose();
-        sessions.forEach(this::closeSession);
-        sessions.clear();
+
+        for (int i = 0, size = sessions.size(); i < size; i++)
+        {
+            closeSession(sessions.get(i));
+        }
+
         postSessionsClose();
     }
 

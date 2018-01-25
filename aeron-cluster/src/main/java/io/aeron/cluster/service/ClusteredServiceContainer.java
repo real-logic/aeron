@@ -174,7 +174,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Channel for for sending messages to the Consensus Module. This should be IPC.
          */
-        public static final String CONSENSUS_MODULE_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+        public static final String CONSENSUS_MODULE_CHANNEL_DEFAULT = "aeron:ipc?term-length=65536";
 
         /**
          * Stream id within a channel for sending messages to the Consensus Module.

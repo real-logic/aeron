@@ -422,7 +422,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         idleStrategy.reset();
 
         int counterId = ClusterNodeRole.findCounterId(counters);
-        while (ClusterNodeRole.NULL_COUNTER_ID == counterId)
+        while (CountersReader.NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();

@@ -18,6 +18,7 @@ package io.aeron.cluster.service;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
 import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 
@@ -32,15 +33,10 @@ public class ClusterNodeRole
     public static final int CLUSTER_NODE_ROLE_TYPE_ID = 201;
 
     /**
-     * Represents a null counter id when not found.
-     */
-    public static final int NULL_COUNTER_ID = -1;
-
-    /**
      * Find the active counter id for a cluster node role.
      *
      * @param counters to search within.
-     * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
+     * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
      */
     public static int findCounterId(final CountersReader counters)
     {

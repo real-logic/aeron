@@ -294,6 +294,16 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
+     * Get the counter used to represent the channel status for this publication.
+     *
+     * @return the counter used to represent the channel status for this publication.
+     */
+    public int channelStatusId()
+    {
+        return channelStatusId;
+    }
+
+    /**
      * Get the current position to which the publication has advanced for this stream.
      *
      * @return the current position to which the publication has advanced for this stream.
@@ -327,6 +337,16 @@ public abstract class Publication implements AutoCloseable
         }
 
         return positionLimit.getVolatile();
+    }
+
+    /**
+     * Get the counter id for the position limit after which the publication will be back pressured.
+     *
+     * @return the counter id for the position limit after which the publication will be back pressured.
+     */
+    public int positionLimitId()
+    {
+        return positionLimit.id();
     }
 
     /**
@@ -460,11 +480,6 @@ public abstract class Publication implements AutoCloseable
     void internalClose()
     {
         isClosed = true;
-    }
-
-    int channelStatusId()
-    {
-        return channelStatusId;
     }
 
     LogBuffers logBuffers()

@@ -226,6 +226,16 @@ public class Image
     }
 
     /**
+     * The counter id for the subscriber position counter.
+     *
+     * @return the id for the subscriber position counter.
+     */
+    public int subscriberPositionId()
+    {
+        return subscriberPosition.id();
+    }
+
+    /**
      * Is the current consumed position at the end of the stream?
      *
      * @return true if at the end of the stream or false if not.

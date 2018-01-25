@@ -658,14 +658,14 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         {
             throw new IllegalStateException(
                 "Can't extend recording: " + recordingId + ": image termBufferLength=" + image.termBufferLength() +
-                    " not equal to recording termBufferLength=" + originalRecordingSummary.termBufferLength);
+                " not equal to recording termBufferLength=" + originalRecordingSummary.termBufferLength);
         }
 
         if (image.mtuLength() != originalRecordingSummary.mtuLength)
         {
             throw new IllegalStateException(
                 "Can't extend recording: " + recordingId + ": image mtuLength=" + image.mtuLength() +
-                    " not equal to recording mtuLength=" + originalRecordingSummary.mtuLength);
+                " not equal to recording mtuLength=" + originalRecordingSummary.mtuLength);
         }
 
         final int sessionId = image.sessionId();

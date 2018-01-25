@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.TestUtil.makeTempDir;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -48,12 +49,14 @@ public class ReplaySessionTest
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
     private static final long START_POSITION = INITIAL_TERM_OFFSET;
+    private static final long JOIN_POSITION = START_POSITION;
     private static final long RECORDING_POSITION = INITIAL_TERM_OFFSET;
     private static final int MTU_LENGTH = 4096;
     private static final long TIME = 0;
     private static final int FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
     private static final int STREAM_ID = 1;
+    public static final FileChannel ARCHIVE_DIR_CHANNEL = null;
 
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
     private final ControlSession mockControlSession = mock(ControlSession.class);
@@ -108,7 +111,7 @@ public class ReplaySessionTest
         recordingSummary.sessionId = SESSION_ID;
 
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, START_POSITION, START_POSITION, TERM_BUFFER_LENGTH, context, null, position);
+            RECORDING_ID, START_POSITION, JOIN_POSITION, TERM_BUFFER_LENGTH, context, ARCHIVE_DIR_CHANNEL, position);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 
@@ -338,7 +341,7 @@ public class ReplaySessionTest
         position.setOrdered(START_POSITION);
 
         final RecordingWriter writer = new RecordingWriter(
-            recordingId, START_POSITION, START_POSITION, TERM_BUFFER_LENGTH, context, null, position);
+            recordingId, START_POSITION, JOIN_POSITION, TERM_BUFFER_LENGTH, context, ARCHIVE_DIR_CHANNEL, position);
 
         when(epochClock.time()).thenReturn(TIME);
 

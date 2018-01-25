@@ -94,6 +94,13 @@ configurations {
 
 jar.enabled = false
 
+allprojects {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+}
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'maven'
@@ -112,11 +119,6 @@ subprojects {
     jar.enabled = true
 
     [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
-
-    repositories {
-        mavenCentral()
-        mavenLocal()
-    }
 
     dependencies {
         checkstyle 'com.puppycrawl.tools:checkstyle:8.7'
@@ -753,6 +755,6 @@ task uploadToMavenCentral {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.4'
+    gradleVersion = '4.5'
     distributionType = 'ALL'
 }

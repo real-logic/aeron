@@ -58,11 +58,6 @@ public class ConsensusPos
     public static final int CONSENSUS_POSITION_TYPE_ID = 203;
 
     /**
-     * Represents a null counter id when not found.
-     */
-    public static final int NULL_COUNTER_ID = -1;
-
-    /**
      * Represents a null value if the counter is not found.
      */
     public static final int NULL_VALUE = -1;
@@ -121,7 +116,7 @@ public class ConsensusPos
      *
      * @param counters  to search within.
      * @param sessionId for the active log.
-     * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
+     * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
      */
     public static int findCounterIdBySession(final CountersReader counters, final int sessionId)
     {
@@ -141,7 +136,7 @@ public class ConsensusPos
             }
         }
 
-        return NULL_COUNTER_ID;
+        return CountersReader.NULL_COUNTER_ID;
     }
 
     /**
@@ -149,7 +144,7 @@ public class ConsensusPos
      *
      * @param counters   to search within.
      * @param replayStep for the active log.
-     * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
+     * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
      */
     public static int findCounterIdByReplayStep(final CountersReader counters, final int replayStep)
     {
@@ -169,7 +164,7 @@ public class ConsensusPos
             }
         }
 
-        return NULL_COUNTER_ID;
+        return CountersReader.NULL_COUNTER_ID;
     }
 
     /**

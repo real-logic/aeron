@@ -43,7 +43,7 @@ class ConsensusTracker implements AutoCloseable
 
         idleStrategy.reset();
         int recordingCounterId = RecordingPos.findCounterIdBySession(countersReader, sessionId);
-        while (RecordingPos.NULL_COUNTER_ID == recordingCounterId)
+        while (CountersReader.NULL_COUNTER_ID == recordingCounterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();

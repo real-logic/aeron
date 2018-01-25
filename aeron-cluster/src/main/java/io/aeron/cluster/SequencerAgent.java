@@ -563,7 +563,7 @@ class SequencerAgent implements Agent
             {
                 final CountersReader counters = aeron.countersReader();
                 int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-                while (RecordingPos.NULL_COUNTER_ID == counterId)
+                while (CountersReader.NULL_COUNTER_ID == counterId)
                 {
                     idle();
                     counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());

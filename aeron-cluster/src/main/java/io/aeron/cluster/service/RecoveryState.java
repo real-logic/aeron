@@ -54,11 +54,6 @@ public class RecoveryState
     public static final int RECOVERY_STATE_TYPE_ID = 204;
 
     /**
-     * Represents a null counter id when not found.
-     */
-    public static final int NULL_COUNTER_ID = -1;
-
-    /**
      * Represents a null value if the counter is not found.
      */
     public static final int NULL_VALUE = -1;
@@ -115,7 +110,7 @@ public class RecoveryState
      * Find the active counter id for a snapshot.
      *
      * @param counters to search within.
-     * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
+     * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
      */
     public static int findCounterId(final CountersReader counters)
     {

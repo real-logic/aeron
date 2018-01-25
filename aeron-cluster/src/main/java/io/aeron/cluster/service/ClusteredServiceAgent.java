@@ -367,7 +367,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
     {
         int counterId = RecoveryState.findCounterId(counters);
 
-        while (RecoveryState.NULL_COUNTER_ID == counterId)
+        while (CountersReader.NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
@@ -382,7 +382,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
     {
         int counterId = ConsensusPos.findCounterIdByReplayStep(counters, replayStep);
 
-        while (RecoveryState.NULL_COUNTER_ID == counterId)
+        while (CountersReader.NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
@@ -405,7 +405,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final int sessionId = logSubscription.imageAtIndex(0).sessionId();
 
         int counterId = ConsensusPos.findCounterIdBySession(counters, sessionId);
-        while (ConsensusPos.NULL_COUNTER_ID == counterId)
+        while (CountersReader.NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
@@ -504,7 +504,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
             {
                 final CountersReader counters = aeron.countersReader();
                 int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-                while (RecordingPos.NULL_COUNTER_ID == counterId)
+                while (CountersReader.NULL_COUNTER_ID == counterId)
                 {
                     checkInterruptedStatus();
                     idleStrategy.idle();

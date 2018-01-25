@@ -61,11 +61,6 @@ public class RecordingPos
     public static final long NULL_RECORDING_ID = -1L;
 
     /**
-     * Represents a null counter id when not found.
-     */
-    public static final int NULL_COUNTER_ID = -1;
-
-    /**
      * Human readable name for the counter.
      */
     public static final String NAME = "rec-pos";
@@ -119,7 +114,7 @@ public class RecordingPos
      *
      * @param countersReader to search within.
      * @param recordingId    for the active recording.
-     * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
+     * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
      */
     public static int findCounterIdByRecording(final CountersReader countersReader, final long recordingId)
     {
@@ -177,7 +172,7 @@ public class RecordingPos
      *
      * @param countersReader to search within.
      * @param sessionId      for the active recording.
-     * @return the counter id if found otherwise {@link #NULL_COUNTER_ID}.
+     * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
      */
     public static int findCounterIdBySession(final CountersReader countersReader, final int sessionId)
     {

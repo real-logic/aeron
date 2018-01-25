@@ -53,7 +53,7 @@ public class RecordedBasicPublisher
             // Wait for recording to have started before publishing.
             final CountersReader counters = archive.context().aeron().countersReader();
             int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-            while (RecordingPos.NULL_COUNTER_ID == counterId)
+            while (CountersReader.NULL_COUNTER_ID == counterId)
             {
                 Thread.yield();
                 counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());

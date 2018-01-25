@@ -2019,7 +2019,6 @@ public final class MediaDriver implements AutoCloseable
                     {
                         receiverIdleStrategy = Configuration.receiverIdleStrategy(indicator);
                     }
-
                     break;
 
                 case SHARED_NETWORK:

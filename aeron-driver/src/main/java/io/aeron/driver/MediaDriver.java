@@ -1992,32 +1992,50 @@ public final class MediaDriver implements AutoCloseable
 
         private void concludeIdleStrategies()
         {
-            final StatusIndicator controllableIdleStrategyStatus = new UnsafeBufferStatusIndicator(
+            final StatusIndicator indicator = new UnsafeBufferStatusIndicator(
                 countersManager.valuesBuffer(), CONTROLLABLE_IDLE_STRATEGY.id());
 
-            if (null == conductorIdleStrategy)
+            switch (threadingMode)
             {
-                conductorIdleStrategy(Configuration.conductorIdleStrategy(controllableIdleStrategyStatus));
-            }
+                case SHARED:
+                    if (null == sharedIdleStrategy)
+                    {
+                        sharedIdleStrategy = Configuration.sharedIdleStrategy(indicator);
+                    }
+                    break;
 
-            if (null == senderIdleStrategy)
-            {
-                senderIdleStrategy(Configuration.senderIdleStrategy(controllableIdleStrategyStatus));
-            }
+                case DEDICATED:
+                    if (null == conductorIdleStrategy)
+                    {
+                        conductorIdleStrategy = Configuration.conductorIdleStrategy(indicator);
+                    }
 
-            if (null == receiverIdleStrategy)
-            {
-                receiverIdleStrategy(Configuration.receiverIdleStrategy(controllableIdleStrategyStatus));
-            }
+                    if (null == senderIdleStrategy)
+                    {
+                        senderIdleStrategy = Configuration.senderIdleStrategy(indicator);
+                    }
 
-            if (null == sharedNetworkIdleStrategy)
-            {
-                sharedNetworkIdleStrategy(Configuration.sharedNetworkIdleStrategy(controllableIdleStrategyStatus));
-            }
+                    if (null == receiverIdleStrategy)
+                    {
+                        receiverIdleStrategy = Configuration.receiverIdleStrategy(indicator);
+                    }
 
-            if (null == sharedIdleStrategy)
-            {
-                sharedIdleStrategy(Configuration.sharedIdleStrategy(controllableIdleStrategyStatus));
+                    break;
+
+                case SHARED_NETWORK:
+                    if (null == conductorIdleStrategy)
+                    {
+                        conductorIdleStrategy = Configuration.conductorIdleStrategy(indicator);
+                    }
+
+                    if (null == sharedNetworkIdleStrategy)
+                    {
+                        sharedNetworkIdleStrategy = Configuration.sharedNetworkIdleStrategy(indicator);
+                    }
+                    break;
+
+                case INVOKER:
+                    break;
             }
         }
     }

@@ -243,8 +243,39 @@
         <field name="action"               id="5" type="ServiceAction"/>
     </sbe:message>
 
-    <!-- Cluster Consensus Protocol -->
+    <!--
+        Cluster Consensus Protocol
+        ==========================
 
+        The leader replicates a log stream to all followers for its term as leader. Leadership term ids are monotonic.
+
+        The followers persist the replicated log locally and send updates to the leader of the highest position they
+        have persisted in the current term. Each term as a position starting at zero with the total position the log
+        has reached being an accumulation of the term positions across all leadership terms.
+
+        The leader gathers the positions reached by the followers, plus its own locally persisted log, and publishes
+        the highest position for a quorum of the member nodes including itself. If the quorum position does not
+        progress within a timeout then the latest position will be re-transmitted as a heartbeat from the leader.
+
+        Messages are only valid within the context of a leadership term and all updates are applied as monotonically
+        increasing state.
+    -->
+
+    <sbe:message name="FollowerAppendPosition"
+                 id="50"
+                 description="The highest position a follower has appended to their local log">
+        <field name="termPosition"         id="1" type="int64"/>
+        <field name="leadershipTermId"     id="2" type="int64"/>
+        <field name="followerMemberId"     id="3" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="QuorumPosition"
+                 id="51"
+                 description="The highest position reached by quorum of the cluster as determined by the leader">
+        <field name="termPosition"         id="1" type="int64"/>
+        <field name="leadershipTermId"     id="2" type="int64"/>
+        <field name="leaderMemberId"       id="3" type="int32"/>
+    </sbe:message>
 
     <!-- Snapshot serialisation -->
 

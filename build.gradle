@@ -158,9 +158,9 @@ subprojects {
 
     jar {
         manifest.attributes(
-                'Implementation-Title' : 'Aeron',
-                'Implementation-Version' : "${aeronVersion}",
-                'Implementation-Vendor' : 'Real Logic Limited')
+            'Implementation-Title' : 'Aeron',
+            'Implementation-Version' : "${aeronVersion}",
+            'Implementation-Vendor' : 'Real Logic Limited')
     }
 
     signing {
@@ -340,10 +340,14 @@ project(':aeron-system-tests') {
 
     test {
         systemProperties(
-                'aeron.use.windows.high.res.timer' : 'true',
-                'aeron.dir.warn.if.exists': 'false',
-                'aeron.term.buffer.sparse.file': 'true',
-                'aeron.perform.storage.checks' : 'false')
+            'aeron.shared.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.conductor.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.sender.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.receiver.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.use.windows.high.res.timer' : 'true',
+            'aeron.dir.warn.if.exists': 'false',
+            'aeron.term.buffer.sparse.file': 'true',
+            'aeron.perform.storage.checks' : 'false')
     }
 
     uploadArchives {
@@ -393,10 +397,10 @@ project(':aeron-agent') {
 
     jar {
         manifest.attributes(
-                "Premain-Class": "io.aeron.agent.EventLogAgent",
-                "Agent-Class": "io.aeron.agent.EventLogAgent",
-                "Can-Redefine-Classes": "true",
-                "Can-Retransform-Classes": "true")
+            "Premain-Class": "io.aeron.agent.EventLogAgent",
+            "Agent-Class": "io.aeron.agent.EventLogAgent",
+            "Can-Redefine-Classes": "true",
+            "Can-Retransform-Classes": "true")
     }
 
     shadowJar {
@@ -506,10 +510,14 @@ project(':aeron-archive') {
 
     test {
         systemProperties(
-        'aeron.use.windows.high.res.timer' : 'true',
-        'aeron.dir.warn.if.exists': 'false',
-        'aeron.term.buffer.sparse.file': 'true',
-        'aeron.perform.storage.checks' : 'false')
+            'aeron.shared.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.conductor.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.sender.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.receiver.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.use.windows.high.res.timer' : 'true',
+            'aeron.dir.warn.if.exists': 'false',
+            'aeron.term.buffer.sparse.file': 'true',
+            'aeron.perform.storage.checks' : 'false')
     }
 
     jar {
@@ -582,19 +590,23 @@ project(':aeron-cluster') {
         main = 'uk.co.real_logic.sbe.SbeTool'
         classpath = configurations.codecGeneration
         systemProperties(
-                'sbe.output.dir': generatedDir,
-                'sbe.target.language': 'Java',
-                'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
-                'sbe.validation.stop.on.error': 'true')
+            'sbe.output.dir': generatedDir,
+            'sbe.target.language': 'Java',
+            'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
+            'sbe.validation.stop.on.error': 'true')
         args = ['src/main/resources/aeron-cluster-codecs.xml']
     }
 
     test {
         systemProperties(
-        'aeron.use.windows.high.res.timer' : 'true',
-        'aeron.dir.warn.if.exists': 'false',
-        'aeron.term.buffer.sparse.file': 'true',
-        'aeron.perform.storage.checks' : 'false')
+            'aeron.shared.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.conductor.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.sender.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.receiver.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.use.windows.high.res.timer' : 'true',
+            'aeron.dir.warn.if.exists': 'false',
+            'aeron.term.buffer.sparse.file': 'true',
+            'aeron.perform.storage.checks' : 'false')
     }
 
     jar {
@@ -651,9 +663,9 @@ project(':aeron-all') {
 
     shadowJar {
         manifest.attributes(
-                'Implementation-Title' : 'Aeron',
-                'Implementation-Version' : "${aeronVersion}",
-                'Implementation-Vendor' : 'Real Logic Limited')
+            'Implementation-Title' : 'Aeron',
+            'Implementation-Version' : "${aeronVersion}",
+            'Implementation-Vendor' : 'Real Logic Limited')
     }
 
     uploadArchives {
@@ -730,14 +742,14 @@ project(':aeron-all') {
 
 task uploadToMavenCentral {
     dependsOn 'aeron-client:uploadArchives',
-            'aeron-driver:uploadArchives',
-            'aeron-samples:uploadArchives',
-            'aeron-system-tests:uploadArchives',
-            'aeron-archive:uploadArchives',
-            'aeron-all:uploadArchives',
-            'aeron-all:uploadShadow',
-            'aeron-agent:uploadArchives',
-            'aeron-agent:uploadShadow'
+        'aeron-driver:uploadArchives',
+        'aeron-samples:uploadArchives',
+        'aeron-system-tests:uploadArchives',
+        'aeron-archive:uploadArchives',
+        'aeron-all:uploadArchives',
+        'aeron-all:uploadShadow',
+        'aeron-agent:uploadArchives',
+        'aeron-agent:uploadShadow'
 }
 
 task wrapper(type: Wrapper) {

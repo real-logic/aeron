@@ -630,6 +630,34 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         recorder.addSession(session);
     }
 
+    private static void validateImageForExtendRecording(
+        final Image image, final RecordingSummary originalRecordingSummary)
+    {
+        if (image.joinPosition() != originalRecordingSummary.stopPosition)
+        {
+            throw new IllegalStateException(
+                "Can't extend recording: " + originalRecordingSummary.recordingId +
+                ": image joinPosition=" + image.joinPosition() +
+                " not equal to recording stopPosition=" + originalRecordingSummary.stopPosition);
+        }
+
+        if (image.termBufferLength() != originalRecordingSummary.termBufferLength)
+        {
+            throw new IllegalStateException(
+                "Can't extend recording: " + originalRecordingSummary.recordingId +
+                ": image termBufferLength=" + image.termBufferLength() +
+                " not equal to recording termBufferLength=" + originalRecordingSummary.termBufferLength);
+        }
+
+        if (image.mtuLength() != originalRecordingSummary.mtuLength)
+        {
+            throw new IllegalStateException(
+                "Can't extend recording: " + originalRecordingSummary.recordingId +
+                ": image mtuLength=" + image.mtuLength() +
+                " not equal to recording mtuLength=" + originalRecordingSummary.mtuLength);
+        }
+    }
+
     private void extendRecordingSession(
         final long controlSessionId,
         final long correlationId,
@@ -645,28 +673,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 "Too many recordings, can't record: " + originalChannel + ":" + image.subscription().streamId());
         }
 
-        // TODO: make these into a validation method for the image
-
-        if (image.joinPosition() != originalRecordingSummary.stopPosition)
-        {
-            throw new IllegalStateException(
-                "Can't extend recording: " + recordingId + ": image joinPosition=" + image.joinPosition() +
-                " not equal to recording stopPosition=" + originalRecordingSummary.stopPosition);
-        }
-
-        if (image.termBufferLength() != originalRecordingSummary.termBufferLength)
-        {
-            throw new IllegalStateException(
-                "Can't extend recording: " + recordingId + ": image termBufferLength=" + image.termBufferLength() +
-                " not equal to recording termBufferLength=" + originalRecordingSummary.termBufferLength);
-        }
-
-        if (image.mtuLength() != originalRecordingSummary.mtuLength)
-        {
-            throw new IllegalStateException(
-                "Can't extend recording: " + recordingId + ": image mtuLength=" + image.mtuLength() +
-                " not equal to recording mtuLength=" + originalRecordingSummary.mtuLength);
-        }
+        validateImageForExtendRecording(image, originalRecordingSummary);
 
         final int sessionId = image.sessionId();
         final int streamId = image.subscription().streamId();

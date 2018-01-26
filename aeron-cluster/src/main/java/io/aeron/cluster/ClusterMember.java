@@ -112,6 +112,10 @@ public final class ClusterMember
 
     /**
      * Parse the details for a cluster members from a string.
+     * <p>
+     * <code>
+     *     0,client-facing:port,member-facing:port|1,client-facing:port,member-facing:port| ...
+     * </code>
      *
      * @param value of the string to be parsed.
      * @return An array of cluster members.

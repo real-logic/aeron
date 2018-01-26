@@ -15,13 +15,24 @@
  */
 package io.aeron.cluster;
 
-public class ClusterMember
+/**
+ * Represents a member of the cluster that participates in replication.
+ */
+public final class ClusterMember
 {
     private boolean isLeader;
     private final int id;
+    private long termPosition;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
 
+    /**
+     * Construct a new member of the cluster.
+     *
+     * @param id                   unique id for the member.
+     * @param clientFacingEndpoint address and port endpoint to which cluster clients connect.
+     * @param memberFacingEndpoint address and port endpoint to which other cluster members connect.
+     */
     public ClusterMember(final int id, final String clientFacingEndpoint, final String memberFacingEndpoint)
     {
         this.id = id;
@@ -29,31 +40,82 @@ public class ClusterMember
         this.memberFacingEndpoint = memberFacingEndpoint;
     }
 
+    /**
+     * Set if this member should be leader.
+     *
+     * @param isLeader value.
+     */
     public void isLeader(final boolean isLeader)
     {
         this.isLeader = isLeader;
     }
 
+    /**
+     * Is this member currently the leader?
+     *
+     * @return true if this member is currently the leader otherwise false.
+     */
     public boolean isLeader()
     {
         return isLeader;
     }
 
+    /**
+     * Unique identity for this member in the cluster.
+     *
+     * @return the unique identity for this member in the cluster.
+     */
     public int id()
     {
         return id;
     }
 
-    public String memberFacingEndpoint()
+    /**
+     * The log position this member has persisted within the current leadership term.
+     *
+     * @param termPosition in the log this member has persisted within the current leadership term.
+     */
+    public void termPosition(final long termPosition)
     {
-        return memberFacingEndpoint;
+        this.termPosition = termPosition;
     }
 
+    /**
+     * The log position this member has persisted within the current leadership term.
+     *
+     * @return the log position this member has persisted within the current leadership term.
+     */
+    public long termPosition()
+    {
+        return termPosition;
+    }
+
+    /**
+     * The address:port endpoint for this cluster member that clients will connect to.
+     *
+     * @return the address:port endpoint for this cluster member that clients will connect to.
+     */
     public String clientFacingEndpoint()
     {
         return clientFacingEndpoint;
     }
 
+    /**
+     * The address:port endpoint for this cluster member that other members connect to.
+     *
+     * @return the address:port endpoint for this cluster member that other members will connect to.
+     */
+    public String memberFacingEndpoint()
+    {
+        return memberFacingEndpoint;
+    }
+
+    /**
+     * Parse the details for a cluster members from a string.
+     *
+     * @param value of the string to be parsed.
+     * @return An array of cluster members.
+     */
     public static ClusterMember[] parse(final String value)
     {
         final String[] memberValues = value.split("\\|");
@@ -75,5 +137,50 @@ public class ClusterMember
         }
 
         return members;
+    }
+
+    /**
+     * The threshold of clusters members required to achieve quorum given a count of cluster members.
+     *
+     * @param memberCount for the cluster
+     * @return the threshold for achieving quorum.
+     */
+    public static int quorumThreshold(final int memberCount)
+    {
+        return (memberCount / 2) + 1;
+    }
+
+    /**
+     * Calculate the position reached by a quorum of cluster members.
+     *
+     * @param members         of the cluster.
+     * @param rankedPositions temp array to be used for sorting the positions to avoid allocation.
+     * @return the position reached by a quorum of cluster members.
+     */
+    public static long quorumPosition(final ClusterMember[] members, final long[] rankedPositions)
+    {
+        final int length = rankedPositions.length;
+        for (int i = 0; i < length; i++)
+        {
+            rankedPositions[i] = 0;
+        }
+
+        for (final ClusterMember member : members)
+        {
+            long newPosition = member.termPosition;
+
+            for (int i = 0; i < length; i++)
+            {
+                final long rankedPosition = rankedPositions[i];
+
+                if (newPosition > rankedPosition)
+                {
+                    rankedPositions[i] = newPosition;
+                    newPosition = rankedPosition;
+                }
+            }
+        }
+
+        return rankedPositions[length - 1];
     }
 }

@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import org.agrona.collections.MutableInteger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -29,7 +30,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -94,13 +94,13 @@ public class PongTest
             Thread.yield();
         }
 
-        final AtomicInteger fragmentsRead = new AtomicInteger();
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         SystemTestHelper.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead.addAndGet(pingSubscription.poll(this::pingHandler, 10));
+                fragmentsRead.value += pingSubscription.poll(this::pingHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -112,7 +112,7 @@ public class PongTest
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead.addAndGet(pongSubscription.poll(pongHandler, 10));
+                fragmentsRead.value += pongSubscription.poll(pongHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -136,13 +136,13 @@ public class PongTest
             Thread.yield();
         }
 
-        final AtomicInteger fragmentsRead = new AtomicInteger();
+        final MutableInteger fragmentsRead = new MutableInteger();
 
         SystemTestHelper.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead.addAndGet(pingSubscription.poll(this::pingHandler, 1));
+                fragmentsRead.value += pingSubscription.poll(this::pingHandler, 1);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -154,7 +154,7 @@ public class PongTest
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead.addAndGet(pongSubscription.poll(pongHandler, 1));
+                fragmentsRead.value += pongSubscription.poll(pongHandler, 1);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -185,7 +185,7 @@ public class PongTest
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead.addAndGet(pingSubscription.poll(this::pingHandler, 10));
+                fragmentsRead.value += pingSubscription.poll(this::pingHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -197,7 +197,7 @@ public class PongTest
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead.addAndGet(pongSubscription.poll(pongHandler, 10));
+                fragmentsRead.value += pongSubscription.poll(pongHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,

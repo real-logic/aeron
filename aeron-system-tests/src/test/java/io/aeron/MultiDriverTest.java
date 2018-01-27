@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableInteger;
 import org.junit.After;
 import org.junit.Test;
 import io.aeron.driver.ThreadingMode;
@@ -30,7 +31,7 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+
 
 import static org.mockito.Mockito.*;
 
@@ -136,12 +137,12 @@ public class MultiDriverTest
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
             SystemTestHelper.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.getAndAdd(subscriptionA.poll(fragmentHandlerA, 10));
+                    fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -160,12 +161,12 @@ public class MultiDriverTest
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
             SystemTestHelper.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscriptionA.poll(fragmentHandlerA, 10));
+                    fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -176,7 +177,7 @@ public class MultiDriverTest
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
+                    fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -224,12 +225,12 @@ public class MultiDriverTest
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
+            final MutableInteger fragmentsRead = new MutableInteger();
             SystemTestHelper.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscriptionA.poll(fragmentHandlerA, 10));
+                    fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -240,7 +241,7 @@ public class MultiDriverTest
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
+                    fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,

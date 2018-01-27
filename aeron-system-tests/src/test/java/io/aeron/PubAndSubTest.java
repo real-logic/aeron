@@ -42,7 +42,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -678,7 +678,6 @@ public class PubAndSubTest
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSendStageOne = numMessagesInTermBuffer / 2;
         final int numMessagesToSendStageTwo = numMessagesInTermBuffer;
-        final AtomicInteger stage = new AtomicInteger(1);
 
         context.publicationTermBufferLength(termBufferLength);
 
@@ -716,7 +715,7 @@ public class PubAndSubTest
         assertEquals(publication.position(), subscription.imageAtIndex(0).position());
 
         subscription.close();
-        stage.set(2);
+
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
 
         while (!subscription.isConnected())

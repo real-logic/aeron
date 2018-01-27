@@ -91,12 +91,8 @@ public class FlowControlStrategiesTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
-        publication.close();
-        subscriptionA.close();
-        subscriptionB.close();
-
         clientB.close();
         clientA.close();
         driverB.close();

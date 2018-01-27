@@ -30,7 +30,8 @@ final class LogAdapter implements FragmentHandler
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
 
-    private final int fragmentLimit;
+    private static final int FRAGMENT_LIMIT = 10;
+
     private final ImageFragmentAssembler fragmentAssembler = new ImageFragmentAssembler(this);
     private final Image image;
     private final SequencerAgent sequencerAgent;
@@ -41,16 +42,15 @@ final class LogAdapter implements FragmentHandler
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ServiceActionRequestDecoder actionRequestDecoder = new ServiceActionRequestDecoder();
 
-    LogAdapter(final Image image, final int fragmentLimit, final SequencerAgent sequencerAgent)
+    LogAdapter(final Image image, final SequencerAgent sequencerAgent)
     {
-        this.fragmentLimit = fragmentLimit;
         this.image = image;
         this.sequencerAgent = sequencerAgent;
     }
 
     int poll()
     {
-        return image.poll(fragmentAssembler, fragmentLimit);
+        return image.poll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

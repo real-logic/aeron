@@ -261,6 +261,28 @@ public class ConsensusModule implements AutoCloseable
         public static final String SESSION_REJECTED_MSG = "Session failed authentication";
 
         /**
+         * Channel to be used communicating cluster member status to each other. This can be used for default
+         * configuration with the endpoints replaced with those provided by {@link #CLUSTER_MEMBERS_PROP_NAME}.
+         */
+        public static final String MEMBER_STATUS_CHANNEL_PROP_NAME = "aeron.cluster.member.status.channel";
+
+        /**
+         * Channel to be used for communicating cluster member status to each other. This can be used for default
+         * configuration with the endpoints replaced with those provided by {@link #CLUSTER_MEMBERS_PROP_NAME}.
+         */
+        public static final String MEMBER_STATUS_CHANNEL_DEFAULT = "aeron:udp?term-length=65536";
+
+        /**
+         * Stream id within a channel for communicating cluster member status.
+         */
+        public static final String MEMBER_STATUS_STREAM_ID_PROP_NAME = "aeron.cluster.member.status.stream.id";
+
+        /**
+         * Stream id for the archived snapshots within a channel.
+         */
+        public static final int MEMBER_STATUS_STREAM_ID_DEFAULT = 8;
+
+        /**
          * Counter type id for the consensus module state.
          */
         public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;
@@ -458,6 +480,30 @@ public class ConsensusModule implements AutoCloseable
 
             return supplier;
         }
+
+        /**
+         * The value {@link #MEMBER_STATUS_CHANNEL_DEFAULT} or system property
+         * {@link #MEMBER_STATUS_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #MEMBER_STATUS_CHANNEL_DEFAULT} or system property
+         * {@link #MEMBER_STATUS_CHANNEL_PROP_NAME} if set.
+         */
+        public static String memberStatusChannel()
+        {
+            return System.getProperty(MEMBER_STATUS_CHANNEL_PROP_NAME, MEMBER_STATUS_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #MEMBER_STATUS_STREAM_ID_DEFAULT} or system property
+         * {@link #MEMBER_STATUS_STREAM_ID_PROP_NAME} if set.
+         *
+         * @return {@link #MEMBER_STATUS_STREAM_ID_DEFAULT} or system property
+         * {@link #MEMBER_STATUS_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int memberStatusStreamId()
+        {
+            return Integer.getInteger(MEMBER_STATUS_STREAM_ID_PROP_NAME, MEMBER_STATUS_STREAM_ID_DEFAULT);
+        }
     }
 
     public static class Context implements AutoCloseable
@@ -481,6 +527,8 @@ public class ConsensusModule implements AutoCloseable
         private int consensusModuleStreamId = ClusteredServiceContainer.Configuration.consensusModuleStreamId();
         private String snapshotChannel = Configuration.snapshotChannel();
         private int snapshotStreamId = Configuration.snapshotStreamId();
+        private String memberStatusChannel = Configuration.memberStatusChannel();
+        private int memberStatusStreamId = Configuration.memberStatusStreamId();
 
         private int serviceCount = Configuration.serviceCount();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
@@ -1003,6 +1051,54 @@ public class ConsensusModule implements AutoCloseable
         public int snapshotStreamId()
         {
             return snapshotStreamId;
+        }
+
+        /**
+         * Set the channel parameter for the member status communication channel.
+         *
+         * @param channel parameter for the member status communication channel.
+         * @return this for a fluent API.
+         * @see Configuration#MEMBER_STATUS_CHANNEL_PROP_NAME
+         */
+        public Context memberStatusChannel(final String channel)
+        {
+            memberStatusChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for the member status communication channel.
+         *
+         * @return the channel parameter for the member status communication channel.
+         * @see Configuration#MEMBER_STATUS_CHANNEL_PROP_NAME
+         */
+        public String memberStatusChannel()
+        {
+            return memberStatusChannel;
+        }
+
+        /**
+         * Set the stream id for the member status channel.
+         *
+         * @param streamId for the ingress channel.
+         * @return this for a fluent API
+         * @see Configuration#MEMBER_STATUS_STREAM_ID_PROP_NAME
+         */
+        public Context memberStatusStreamId(final int streamId)
+        {
+            memberStatusStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for the member status channel.
+         *
+         * @return the stream id for the member status channel.
+         * @see Configuration#MEMBER_STATUS_STREAM_ID_PROP_NAME
+         */
+        public int memberStatusStreamId()
+        {
+            return memberStatusStreamId;
         }
 
         /**

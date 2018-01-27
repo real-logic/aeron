@@ -261,7 +261,7 @@
         increasing state.
     -->
 
-    <sbe:message name="FollowerAppendPosition"
+    <sbe:message name="AppendedPosition"
                  id="50"
                  description="The highest position a follower has appended to their local log">
         <field name="termPosition"         id="1" type="int64"/>

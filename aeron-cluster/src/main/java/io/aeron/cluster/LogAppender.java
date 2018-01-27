@@ -22,12 +22,11 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 
-class LogAppender implements AutoCloseable
+class LogAppender
 {
     private static final int SEND_ATTEMPTS = 3;
 
@@ -40,11 +39,6 @@ class LogAppender implements AutoCloseable
     private final BufferClaim bufferClaim = new BufferClaim();
     private Publication publication;
     private String recordingChannel;
-
-    public void close()
-    {
-        CloseHelper.close(publication);
-    }
 
     public void connect(final Aeron aeron, final AeronArchive aeronArchive, final String channel, final int streamId)
     {
@@ -60,8 +54,11 @@ class LogAppender implements AutoCloseable
 
     public void disconnect()
     {
-        publication.close();
-        publication = null;
+        if (null != publication)
+        {
+            publication.close();
+            publication = null;
+        }
     }
 
     public int sessionId()

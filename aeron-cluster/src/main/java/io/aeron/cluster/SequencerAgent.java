@@ -115,7 +115,7 @@ class SequencerAgent implements Agent
                 session.close();
             }
 
-            CloseHelper.close(logAppender);
+            logAppender.disconnect();
             CloseHelper.close(ingressAdapter);
             CloseHelper.close(consensusModuleAdapter);
         }
@@ -616,7 +616,7 @@ class SequencerAgent implements Agent
 
     private void replayTerm(final Image image, final Counter consensusPos)
     {
-        final LogAdapter logAdapter = new LogAdapter(image, 10, this);
+        final LogAdapter logAdapter = new LogAdapter(image, this);
 
         while (true)
         {
@@ -960,5 +960,13 @@ class SequencerAgent implements Agent
     void onReplayServiceAction(final long timestamp, final ServiceAction action)
     {
         cachedEpochClock.update(timestamp);
+    }
+
+    void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
+    {
+    }
+
+    void onQuorumPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
+    {
     }
 }

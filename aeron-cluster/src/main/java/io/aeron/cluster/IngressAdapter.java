@@ -35,7 +35,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final SessionKeepAliveRequestDecoder keepAliveRequestDecoder = new SessionKeepAliveRequestDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
 
-    private final ControlledFragmentHandler fragmentAssembler = new ControlledFragmentAssembler(this);
+    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
     private final SequencerAgent sequencerAgent;
     private final AtomicCounter invalidRequests;
@@ -58,8 +58,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         return subscription.controlledPoll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
     }
 
-    public ControlledFragmentAssembler.Action onFragment(
-        final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 

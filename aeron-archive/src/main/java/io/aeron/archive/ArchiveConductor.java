@@ -588,7 +588,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         if (recordingSessionByIdMap.size() >= 2 * maxConcurrentRecordings)
         {
             throw new IllegalStateException(
-                "Too many recordings, can't record: " + originalChannel + ":" + image.subscription().streamId());
+                "Too many recordings, can't record: " + image.subscription().streamId() + ":" + originalChannel);
         }
 
         final int sessionId = image.sessionId();
@@ -670,7 +670,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         if (recordingSessionByIdMap.size() >= 2 * maxConcurrentRecordings)
         {
             throw new IllegalStateException(
-                "Too many recordings, can't record: " + originalChannel + ":" + image.subscription().streamId());
+                "Too many recordings, can't record: " + image.subscription().streamId()  + ":" + originalChannel);
         }
 
         validateImageForExtendRecording(image, originalRecordingSummary);
@@ -685,7 +685,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         final RecordingSession session = new RecordingSession(
             recordingId,
-            recordingSummary.startPosition,
+            originalRecordingSummary.startPosition,
             originalChannel,
             recordingEventsProxy,
             image,

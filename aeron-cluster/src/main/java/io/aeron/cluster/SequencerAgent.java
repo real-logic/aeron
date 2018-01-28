@@ -23,6 +23,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.status.ReadableCounter;
 import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -46,31 +47,36 @@ class SequencerAgent implements Agent
     private long nextSessionId = 1;
     private long leadershipTermBeginPosition = 0;
     private long leadershipTermId = 0;
+    private int leaderMemberId;
     private int serviceAckCount = 0;
     private final int clusterMemberId;
-    private final Aeron aeron;
+    private ReadableCounter logRecordingPosition;
+    private Counter quorumPosition;
+    private ConsensusModule.State state = ConsensusModule.State.INIT;
+    private ClusterMember[] clusterMembers;
+    private long[] rankedPositions;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock;
+    private final Counter moduleState;
+    private final Counter controlToggle;
     private final TimerService timerService;
     private final ConsensusModuleAdapter consensusModuleAdapter;
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
     private final LogAppender logAppender;
-    private final Counter moduleState;
-    private final Counter controlToggle;
+    private final MemberStatusAdapter memberStatusAdapter;
+    private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final Long2ObjectHashMap<ClusterSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
-    private final ConsensusModule.Context ctx;
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
+    private final Aeron aeron;
+    private final ConsensusModule.Context ctx;
     private final MutableDirectBuffer tempBuffer;
     private final IdleStrategy idleStrategy;
     private final LongArrayList failedTimerCancellations = new LongArrayList();
-    private ConsensusTracker consensusTracker;
-    private ConsensusModule.State state = ConsensusModule.State.INIT;
-    private ClusterMember[] clusterMembers;
 
     SequencerAgent(
         final ConsensusModule.Context ctx,
@@ -93,8 +99,15 @@ class SequencerAgent implements Agent
         this.sessionProxy = new SessionProxy(egressPublisher);
         this.clusterMemberId = ctx.clusterMemberId();
 
+        rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
         clusterMembers[clusterMemberId].isLeader(true);
         updateClusterMemberDetails(clusterMembers);
+
+        final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+        memberStatusUri.put(CommonContext.ENDPOINT_PARAM_NAME, clusterMembers[clusterMemberId].memberFacingEndpoint());
+
+        memberStatusAdapter = new MemberStatusAdapter(
+            aeron.addSubscription(memberStatusUri.toString(), ctx.memberStatusStreamId()), this);
 
         ingressAdapter = new IngressAdapter(
             aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
@@ -152,15 +165,11 @@ class SequencerAgent implements Agent
         final long timestamp = epochClock.time();
         cachedEpochClock.update(timestamp);
 
-        final long position = leadershipTermBeginPosition;
+        final long recordingId = findLogRecording(logAppender.sessionId());
+        ctx.recordingLog().appendTerm(recordingId, leadershipTermBeginPosition, leadershipTermId, timestamp);
 
-        consensusTracker = new ConsensusTracker(
-            aeron, ctx.tempBuffer(), position, leadershipTermId, logAppender.sessionId(), ctx.idleStrategy());
-
-        ctx.recordingLog().appendTerm(consensusTracker.recordingId(), position, leadershipTermId, timestamp);
-
+        leaderMemberId = clusterMemberId;
         clusterMembers[clusterMemberId].isLeader(true);
-        updateClusterMemberDetails(clusterMembers);
         ctx.moduleRole().set(Cluster.Role.LEADER.code());
     }
 
@@ -184,6 +193,7 @@ class SequencerAgent implements Agent
         }
 
         workCount += consensusModuleAdapter.poll();
+        workCount += memberStatusAdapter.poll();
 
         if (ConsensusModule.State.ACTIVE == state)
         {
@@ -191,9 +201,9 @@ class SequencerAgent implements Agent
             workCount += ingressAdapter.poll();
         }
 
-        if (null != consensusTracker)
+        if (null != quorumPosition)
         {
-            consensusTracker.updatePosition();
+            updateQuorumPosition();
         }
 
         processRejectedSessions(rejectedSessions, nowMs);
@@ -421,7 +431,7 @@ class SequencerAgent implements Agent
                 }
 
                 serviceAckCount = 0;
-                try (Counter counter = ConsensusPos.allocate(
+                try (Counter counter = QuorumPos.allocate(
                     aeron, tempBuffer, recordingId, logPosition, leadershipTermId, sessionId, i))
                 {
                     replayTerm(image, counter);
@@ -508,6 +518,46 @@ class SequencerAgent implements Agent
         }
 
         sessionProxy.memberEndpointsDetail(builder.toString());
+    }
+
+    private long findLogRecording(final int sessionId)
+    {
+        final CountersReader counters = aeron.countersReader();
+
+        idleStrategy.reset();
+        int recordingCounterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+        while (CountersReader.NULL_COUNTER_ID == recordingCounterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+
+            recordingCounterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+        }
+
+        logRecordingPosition = new ReadableCounter(counters, recordingCounterId);
+
+        final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
+        quorumPosition = QuorumPos.allocate(
+            aeron, tempBuffer, recordingId, leadershipTermBeginPosition, leadershipTermId, sessionId, -1);
+
+        return recordingId;
+    }
+
+    private void updateQuorumPosition()
+    {
+        clusterMembers[clusterMemberId].termPosition(logRecordingPosition.get());
+
+        // TODO: Fix when full members are in place.
+        for (final ClusterMember member : clusterMembers)
+        {
+            member.termPosition(logRecordingPosition.get());
+        }
+
+        final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
+        if (position > quorumPosition.getWeak())
+        {
+            quorumPosition.setOrdered(position);
+        }
     }
 
     private void idle()

@@ -28,34 +28,34 @@ import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
 import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 
 /**
- * Counter representing the consensus position on a stream for the current term.
+ * Counter representing the quorum position on a stream for the current leadership term.
  * <p>
  * Key layout as follows:
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                  Recording ID for the term                    |
+ *  |             Recording ID for the leadership term              |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |              Log Position at beginning of term                |
+ *  |         Log Position at beginning of leadership term          |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                     Leadership Term ID                        |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                         Session ID                            |
+ *  |                      Log Session ID                           |
  *  +---------------------------------------------------------------+
  *  |                       Recovery Step                           |
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class ConsensusPos
+public class QuorumPos
 {
     /**
-     * Type id of a consensus position counter.
+     * Type id of a quorum position counter.
      */
-    public static final int CONSENSUS_POSITION_TYPE_ID = 203;
+    public static final int QUORUM_POSITION_TYPE_ID = 203;
 
     /**
      * Represents a null value if the counter is not found.
@@ -65,7 +65,7 @@ public class ConsensusPos
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "con-pos: ";
+    public static final String NAME = "quorum-pos: ";
 
     public static final int RECORDING_ID_OFFSET = 0;
     public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
@@ -75,16 +75,16 @@ public class ConsensusPos
     public static final int KEY_LENGTH = REPLAY_STEP_OFFSET + SIZE_OF_INT;
 
     /**
-     * Allocate a counter to represent the consensus position on stream for the current leadership term.
+     * Allocate a counter to represent the quorum position on stream for the current leadership term.
      *
      * @param aeron            to allocate the counter.
      * @param tempBuffer       to use for building the key and label without allocation.
      * @param recordingId      for the current term.
-     * @param logPosition      of the log at the beginning of the term.
-     * @param leadershipTermId of the log at the beginning of the term.
-     * @param sessionId        of the stream for the current term.
+     * @param logPosition      of the log at the beginning of the leadership term.
+     * @param leadershipTermId of the log at the beginning of the leadership term.
+     * @param sessionId        of the active log for the current leadership term.
      * @param replayStep       during the recovery process or replaying term logs.
-     * @return the {@link Counter} for the consensus position.
+     * @return the {@link Counter} for the quorum position.
      */
     public static Counter allocate(
         final Aeron aeron,
@@ -108,7 +108,7 @@ public class ConsensusPos
         labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, replayStep);
 
         return aeron.addCounter(
-            CONSENSUS_POSITION_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, KEY_LENGTH, labelOffset);
+            QUORUM_POSITION_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, KEY_LENGTH, labelOffset);
     }
 
     /**
@@ -128,7 +128,7 @@ public class ConsensusPos
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID &&
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID &&
                     buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
                 {
                     return i;
@@ -156,7 +156,7 @@ public class ConsensusPos
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID &&
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID &&
                     buffer.getInt(recordOffset + KEY_OFFSET + REPLAY_STEP_OFFSET) == replayStep)
                 {
                     return i;
@@ -168,10 +168,10 @@ public class ConsensusPos
     }
 
     /**
-     * Get the recording id for the current term.
+     * Get the recording id for the current leadership term.
      *
      * @param counters  to search within.
-     * @param counterId for the active consensus position.
+     * @param counterId for the active quorum position.
      * @return the recording id if found otherwise {@link #NULL_VALUE}.
      */
     public static long getRecordingId(final CountersReader counters, final int counterId)
@@ -182,7 +182,7 @@ public class ConsensusPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET);
             }
@@ -192,13 +192,13 @@ public class ConsensusPos
     }
 
     /**
-     * Get the beginning log position for a term for a given active counter.
+     * Get the accumulated log position for the beginning of the leadership term associated with the recording.
      *
      * @param counters  to search within.
-     * @param counterId for the active consensus position.
+     * @param counterId for the active quorum position.
      * @return the beginning log position if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getBeginningLogPosition(final CountersReader counters, final int counterId)
+    public static long getTermBeginningLogPosition(final CountersReader counters, final int counterId)
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
@@ -206,7 +206,7 @@ public class ConsensusPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + LOG_POSITION_OFFSET);
             }
@@ -216,10 +216,10 @@ public class ConsensusPos
     }
 
     /**
-     * Get the leadership term id for the given consensus position.
+     * Get the leadership term id for the given quorum position.
      *
      * @param counters  to search within.
-     * @param counterId for the active consensus position.
+     * @param counterId for the active quorum position.
      * @return the beginning message index if found otherwise {@link #NULL_VALUE}.
      */
     public static long getLeadershipTermId(final CountersReader counters, final int counterId)
@@ -230,7 +230,7 @@ public class ConsensusPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + LEADERSHIP_TERM_ID_OFFSET);
             }
@@ -243,7 +243,7 @@ public class ConsensusPos
      * Get the replay step index for a given counter.
      *
      * @param counters  to search within.
-     * @param counterId for the active consensus position.
+     * @param counterId for the active quorum position.
      * @return the replay step value if found otherwise {@link #NULL_VALUE}.
      */
     public static int getReplayStep(final CountersReader counters, final int counterId)
@@ -254,7 +254,7 @@ public class ConsensusPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID)
             {
                 return buffer.getInt(recordOffset + KEY_OFFSET + REPLAY_STEP_OFFSET);
             }
@@ -268,11 +268,11 @@ public class ConsensusPos
      * null value so an exception will be thrown if the counter is not found.
      *
      * @param counters  to search within.
-     * @param counterId for the active consensus position.
+     * @param counterId for the active quorum position.
      * @return the session id if found other which throw {@link IllegalStateException}
      * @throws IllegalStateException if counter is not found.
      */
-    public static int getSessionId(final CountersReader counters, final int counterId)
+    public static int getLogSessionId(final CountersReader counters, final int counterId)
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
@@ -280,7 +280,7 @@ public class ConsensusPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID)
             {
                 return buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET);
             }
@@ -290,7 +290,7 @@ public class ConsensusPos
     }
 
     /**
-     * Is the counter still active and recording?
+     * Is the counter still active and log still recording?
      *
      * @param counters    to search within.
      * @param counterId   to search for.
@@ -306,7 +306,7 @@ public class ConsensusPos
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
             return
-                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_POSITION_TYPE_ID &&
+                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID &&
                     buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
         }
 

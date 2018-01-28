@@ -298,9 +298,9 @@ public class ConsensusModule implements AutoCloseable
         public static final int CONTROL_TOGGLE_TYPE_ID = ClusterControl.CONTROL_TOGGLE_TYPE_ID;
 
         /**
-         * Type id of a consensus position counter.
+         * Type id of a quorum position counter.
          */
-        public static final int CONSENSUS_POSITION_TYPE_ID = ConsensusPos.CONSENSUS_POSITION_TYPE_ID;
+        public static final int QUORUM_POSITION_TYPE_ID = QuorumPos.QUORUM_POSITION_TYPE_ID;
 
         /**
          * Type id of a recovery state counter.

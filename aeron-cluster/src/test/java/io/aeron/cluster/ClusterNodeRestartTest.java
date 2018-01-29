@@ -311,7 +311,6 @@ public class ClusterNodeRestartTest
             new MediaDriver.Context()
                 .warnIfDirectoryExists(initialLaunch)
                 .threadingMode(ThreadingMode.SHARED)
-                .spiesSimulateConnection(true)
                 .termBufferSparseFile(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true),

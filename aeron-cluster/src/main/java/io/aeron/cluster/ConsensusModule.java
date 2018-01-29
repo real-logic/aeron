@@ -352,6 +352,27 @@ public class ConsensusModule implements AutoCloseable
         public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
+         * Timeout for a leader if no heartbeat is received by an other member.
+         */
+        public static final String LEADER_HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.leader.heartbeat.timeout";
+
+        /**
+         * Timeout for a leader if no heartbeat is received by an other member. Default to 10 seconds in nanoseconds.
+         */
+        public static final long LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
+        /**
+         * Interval at which a leader will send heartbeats if the log is not progressing.
+         */
+        public static final String LEADER_HEARTBEAT_INTERVAL_PROP_NAME = "aeron.cluster.leader.heartbeat.interval";
+
+        /**
+         * Interval at which a leader will send heartbeats if the log is not progressing.
+         * Default to 500 milliseconds in nanoseconds.
+         */
+        public static final long LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(500);
+
+        /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.
          */
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.Authenticator.supplier";
@@ -456,6 +477,28 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Timeout for a leader if no heartbeat is received by an other member.
+         *
+         * @return timeout in nanoseconds to wait for heartbeat from a leader.
+         * @see #LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public static long leaderHeartbeatTimeoutNs()
+        {
+            return getDurationInNanos(LEADER_HEARTBEAT_TIMEOUT_PROP_NAME, LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Interval at which a leader will send a heartbeat if the log is not progressing.
+         *
+         * @return timeout in nanoseconds to for leader heartbeats when no log being appended.
+         * @see #LEADER_HEARTBEAT_INTERVAL_PROP_NAME
+         */
+        public static long leaderHeartbeatIntervalNs()
+        {
+            return getDurationInNanos(LEADER_HEARTBEAT_INTERVAL_PROP_NAME, LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS);
+        }
+
+        /**
          * The value {@link #AUTHENTICATOR_SUPPLIER_DEFAULT} or system property
          * {@link #AUTHENTICATOR_SUPPLIER_PROP_NAME} if set.
          *
@@ -532,6 +575,8 @@ public class ConsensusModule implements AutoCloseable
         private int serviceCount = Configuration.serviceCount();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
         private long sessionTimeoutNs = Configuration.sessionTimeoutNs();
+        private long leaderHeartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
+        private long leaderHeartbeatIntervalNs = Configuration.leaderHeartbeatIntervalNs();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -1170,6 +1215,54 @@ public class ConsensusModule implements AutoCloseable
         public long sessionTimeoutNs()
         {
             return sessionTimeoutNs;
+        }
+
+        /**
+         * Timeout for a leader if no heartbeat is received by an other member.
+         *
+         * @param leaderHeartbeatTimeoutNs to wait for heartbeat from a leader.
+         * @return this for a fluent API.
+         * @see Configuration#LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public Context leaderHeartbeatTimeoutNs(final long leaderHeartbeatTimeoutNs)
+        {
+            this.leaderHeartbeatTimeoutNs = leaderHeartbeatTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout for a leader if no heartbeat is received by an other member.
+         *
+         * @return the timeout for a leader if no heartbeat is received by an other member.
+         * @see Configuration#LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public long leaderHeartbeatTimeoutNs()
+        {
+            return leaderHeartbeatTimeoutNs;
+        }
+
+        /**
+         * Interval at which a leader will send heartbeats if the log is not progressing.
+         *
+         * @param leaderHeartbeatIntervalNs between leader heartbeats.
+         * @return this for a fluent API.
+         * @see Configuration#LEADER_HEARTBEAT_INTERVAL_PROP_NAME
+         */
+        public Context leaderHeartbeatIntervalNs(final long leaderHeartbeatIntervalNs)
+        {
+            this.leaderHeartbeatIntervalNs = leaderHeartbeatIntervalNs;
+            return this;
+        }
+
+        /**
+         * Interval at which a leader will send heartbeats if the log is not progressing.
+         *
+         * @return the interval at which a leader will send heartbeats if the log is not progressing.
+         * @see Configuration#LEADER_HEARTBEAT_INTERVAL_PROP_NAME
+         */
+        public long leaderHeartbeatIntervalNs()
+        {
+            return leaderHeartbeatIntervalNs;
         }
 
         /**

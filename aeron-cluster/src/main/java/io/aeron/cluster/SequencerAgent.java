@@ -555,24 +555,31 @@ class SequencerAgent implements Agent
     private void updateMemberPosition(final long nowMs)
     {
         final long recordingPosition = logRecordingPosition.get();
-        if (Cluster.Role.LEADER == role)
-        {
-            clusterMembers[clusterMemberId].termPosition(recordingPosition);
 
-            final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
-            if (position > quorumPosition.getWeak())
-            {
-                quorumPosition.setOrdered(position);
-            }
-        }
-        else if (Cluster.Role.FOLLOWER == role)
+        switch (role)
         {
-            if (recordingPosition != lastRecordingPosition)
+            case LEADER:
             {
-                if (memberStatusPublisher.appendedPosition(recordingPosition, leadershipTermId, clusterMemberId))
+                clusterMembers[clusterMemberId].termPosition(recordingPosition);
+
+                final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
+                if (position > quorumPosition.getWeak())
                 {
-                    lastRecordingPosition = recordingPosition;
+                    quorumPosition.setOrdered(position);
                 }
+                break;
+            }
+
+            case FOLLOWER:
+            {
+                if (recordingPosition != lastRecordingPosition)
+                {
+                    if (memberStatusPublisher.appendedPosition(recordingPosition, leadershipTermId, clusterMemberId))
+                    {
+                        lastRecordingPosition = recordingPosition;
+                    }
+                }
+                break;
             }
         }
     }

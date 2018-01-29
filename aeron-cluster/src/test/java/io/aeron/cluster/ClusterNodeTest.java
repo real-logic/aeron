@@ -44,8 +44,6 @@ import static org.junit.Assert.assertTrue;
 public class ClusterNodeTest
 {
     private static final int FRAGMENT_LIMIT = 1;
-    public static final String MEMBERS =
-        "0,localhost:9001,localhost:9001|1,localhost:9002,localhost:9002|2,localhost:9003,localhost:9003";
 
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
@@ -64,9 +62,6 @@ public class ClusterNodeTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
-                .ingressChannel("aeron:udp?endpoint=localhost:9002")
-                .clusterMemberId(1)
-                .clusterMembers(MEMBERS)
                 .deleteDirOnStart(true));
     }
 
@@ -278,8 +273,8 @@ public class ClusterNodeTest
     {
         return AeronCluster.connect(
             new AeronCluster.Context()
-                .ingressChannel("aeron:udp?endpoint=localhost:54325")
-                .clusterMemberEndpoints("localhost:9001", "localhost:9002", "localhost:9003")
+                .ingressChannel("aeron:udp")
+                .clusterMemberEndpoints("localhost:9010", "localhost:9011", "localhost:9012")
                 .lock(new NoOpLock()));
     }
 }

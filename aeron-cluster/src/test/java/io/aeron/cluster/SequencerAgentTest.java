@@ -55,10 +55,11 @@ public class SequencerAgentTest
     private final Subscription mockConsensusModuleSubscription = mock(Subscription.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
-        .errorCounter(mock(AtomicCounter.class))
         .errorHandler(Throwable::printStackTrace)
-        .moduleState(mock(Counter.class))
-        .controlToggle(mock(Counter.class))
+        .errorCounter(mock(AtomicCounter.class))
+        .moduleStateCounter(mock(Counter.class))
+        .controlToggleCounter(mock(Counter.class))
+        .clusterNodeCounter(mock(Counter.class))
         .idleStrategySupplier(NoOpIdleStrategy::new)
         .aeron(mockAeron)
         .clusterMembers(MEMBERS)
@@ -159,8 +160,8 @@ public class SequencerAgentTest
             })
             .when(mockControlToggle).set(anyLong());
 
-        ctx.moduleState(mockState);
-        ctx.controlToggle(mockControlToggle);
+        ctx.moduleStateCounter(mockState);
+        ctx.controlToggleCounter(mockControlToggle);
         ctx.epochClock(clock);
 
         final SequencerAgent agent = newSequencerAgent();

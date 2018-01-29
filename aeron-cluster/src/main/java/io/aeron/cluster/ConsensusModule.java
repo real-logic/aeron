@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
-import static io.aeron.cluster.service.ClusterNodeRole.CLUSTER_NODE_ROLE_TYPE_ID;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
@@ -45,7 +44,7 @@ public class ConsensusModule implements AutoCloseable
     public static final long SNAPSHOT_TYPE_ID = 1;
 
     /**
-     * Possible states for the consensus module. These will be reflected in the {@link Context#moduleState()} counter.
+     * Possible states for the consensus module. These will be reflected in the {@link Context#moduleStateCounter()} counter.
      */
     public enum State
     {
@@ -233,7 +232,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Default property for the list of cluster member endpoints.
          */
-        public static final String CLUSTER_MEMBERS_DEFAULT = "0,localhost:9001,localhost:9001";
+        public static final String CLUSTER_MEMBERS_DEFAULT = "0,localhost:9010,localhost:8001";
 
         /**
          * Channel to be used for archiving snapshots.
@@ -288,9 +287,9 @@ public class ConsensusModule implements AutoCloseable
         public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;
 
         /**
-         * Counter type id for the consensus module role.
+         * Counter type id for the cluster node role.
          */
-        public static final int CONSENSUS_MODULE_ROLE_TYPE_ID = CLUSTER_NODE_ROLE_TYPE_ID;
+        public static final int CLUSTER_NODE_ROLE_TYPE_ID = ClusterNodeRole.CLUSTER_NODE_ROLE_TYPE_ID;
 
         /**
          * Counter type id for the control toggle.
@@ -545,7 +544,7 @@ public class ConsensusModule implements AutoCloseable
         private CountedErrorHandler countedErrorHandler;
 
         private Counter moduleState;
-        private Counter moduleRole;
+        private Counter clusterNodeRole;
         private Counter controlToggle;
         private Counter snapshotCounter;
         private Counter invalidRequestCounter;
@@ -637,9 +636,9 @@ public class ConsensusModule implements AutoCloseable
                 moduleState = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus module state");
             }
 
-            if (null == moduleRole)
+            if (null == clusterNodeRole)
             {
-                moduleRole = aeron.addCounter(CONSENSUS_MODULE_ROLE_TYPE_ID, "Consensus module role");
+                clusterNodeRole = aeron.addCounter(Configuration.CLUSTER_NODE_ROLE_TYPE_ID, "Cluster node role");
             }
 
             if (null == controlToggle)
@@ -1355,7 +1354,7 @@ public class ConsensusModule implements AutoCloseable
          * @return the counter for the current state of the consensus module.
          * @see State
          */
-        public Counter moduleState()
+        public Counter moduleStateCounter()
         {
             return moduleState;
         }
@@ -1367,33 +1366,33 @@ public class ConsensusModule implements AutoCloseable
          * @return this for a fluent API.
          * @see State
          */
-        public Context moduleState(final Counter moduleState)
+        public Context moduleStateCounter(final Counter moduleState)
         {
             this.moduleState = moduleState;
             return this;
         }
 
         /**
-         * Get the counter for representing the current {@link Cluster.Role} of the consensus module.
+         * Get the counter for representing the current {@link Cluster.Role} of the consensus module node.
          *
-         * @return the counter for representing the current {@link Cluster.Role} of the consensus module.
+         * @return the counter for representing the current {@link Cluster.Role} of the cluster node.
          * @see Cluster.Role
          */
-        public Counter moduleRole()
+        public Counter clusterNodeCounter()
         {
-            return moduleRole;
+            return clusterNodeRole;
         }
 
         /**
-         * Set the counter for representing the current {@link Cluster.Role} of the consensus module.
+         * Set the counter for representing the current {@link Cluster.Role} of the cluster node.
          *
-         * @param moduleRole the counter for representing the current {@link Cluster.Role} of the consensus module.
+         * @param moduleRole the counter for representing the current {@link Cluster.Role} of the cluster node.
          * @return this for a fluent API.
          * @see Cluster.Role
          */
-        public Context moduleRole(final Counter moduleRole)
+        public Context clusterNodeCounter(final Counter moduleRole)
         {
-            this.moduleRole = moduleRole;
+            this.clusterNodeRole = moduleRole;
             return this;
         }
 
@@ -1403,7 +1402,7 @@ public class ConsensusModule implements AutoCloseable
          * @return the counter for triggering cluster node actions.
          * @see ClusterControl
          */
-        public Counter controlToggle()
+        public Counter controlToggleCounter()
         {
             return controlToggle;
         }
@@ -1415,7 +1414,7 @@ public class ConsensusModule implements AutoCloseable
          * @return this for a fluent API.
          * @see ClusterControl
          */
-        public Context controlToggle(final Counter controlToggle)
+        public Context controlToggleCounter(final Counter controlToggle)
         {
             this.controlToggle = controlToggle;
             return this;
@@ -1633,7 +1632,7 @@ public class ConsensusModule implements AutoCloseable
             else
             {
                 CloseHelper.close(moduleState);
-                CloseHelper.close(moduleRole);
+                CloseHelper.close(clusterNodeRole);
                 CloseHelper.close(controlToggle);
                 CloseHelper.close(snapshotCounter);
             }

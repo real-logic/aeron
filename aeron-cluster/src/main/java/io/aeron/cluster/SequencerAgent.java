@@ -47,14 +47,17 @@ class SequencerAgent implements Agent
     private long nextSessionId = 1;
     private long leadershipTermBeginPosition = 0;
     private long leadershipTermId = 0;
+    private long lastRecordingPosition = 0;
     private int leaderMemberId;
     private int serviceAckCount = 0;
     private final int clusterMemberId;
     private ReadableCounter logRecordingPosition;
     private Counter quorumPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
+    private Cluster.Role role;
     private ClusterMember[] clusterMembers;
     private long[] rankedPositions;
+    private final Counter clusterRoleCounter;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock;
@@ -89,8 +92,8 @@ class SequencerAgent implements Agent
         this.cachedEpochClock = ctx.cachedEpochClock();
         this.sessionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.sessionTimeoutNs());
         this.egressPublisher = egressPublisher;
-        this.moduleState = ctx.moduleState();
-        this.controlToggle = ctx.controlToggle();
+        this.moduleState = ctx.moduleStateCounter();
+        this.controlToggle = ctx.controlToggleCounter();
         this.logAppender = logAppender;
         this.tempBuffer = ctx.tempBuffer();
         this.idleStrategy = ctx.idleStrategy();
@@ -98,8 +101,11 @@ class SequencerAgent implements Agent
         this.clusterMembers = ClusterMember.parse(ctx.clusterMembers());
         this.sessionProxy = new SessionProxy(egressPublisher);
         this.clusterMemberId = ctx.clusterMemberId();
+        this.clusterRoleCounter = ctx.clusterNodeCounter();
 
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
+        role = Cluster.Role.LEADER;
+        clusterRoleCounter.setOrdered(Cluster.Role.LEADER.code());
         clusterMembers[clusterMemberId].isLeader(true);
         updateClusterMemberDetails(clusterMembers);
 
@@ -109,8 +115,11 @@ class SequencerAgent implements Agent
         memberStatusAdapter = new MemberStatusAdapter(
             aeron.addSubscription(memberStatusUri.toString(), ctx.memberStatusStreamId()), this);
 
+        final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
+        ingressUri.put(CommonContext.ENDPOINT_PARAM_NAME, clusterMembers[clusterMemberId].clientFacingEndpoint());
+
         ingressAdapter = new IngressAdapter(
-            aeron.addSubscription(ctx.ingressChannel(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
+            aeron.addSubscription(ingressUri.toString(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
 
         consensusModuleAdapter = new ConsensusModuleAdapter(
             aeron.addSubscription(ctx.consensusModuleChannel(), ctx.consensusModuleStreamId()), this);
@@ -170,7 +179,7 @@ class SequencerAgent implements Agent
 
         leaderMemberId = clusterMemberId;
         clusterMembers[clusterMemberId].isLeader(true);
-        ctx.moduleRole().set(Cluster.Role.LEADER.code());
+        clusterRoleCounter.set(Cluster.Role.LEADER.code());
     }
 
     public int doWork()
@@ -203,7 +212,7 @@ class SequencerAgent implements Agent
 
         if (null != quorumPosition)
         {
-            updateQuorumPosition();
+            updateMemberPosition(nowMs);
         }
 
         processRejectedSessions(rejectedSessions, nowMs);
@@ -543,20 +552,28 @@ class SequencerAgent implements Agent
         return recordingId;
     }
 
-    private void updateQuorumPosition()
+    private void updateMemberPosition(final long nowMs)
     {
-        clusterMembers[clusterMemberId].termPosition(logRecordingPosition.get());
-
-        // TODO: Fix when full members are in place.
-        for (final ClusterMember member : clusterMembers)
+        final long recordingPosition = logRecordingPosition.get();
+        if (Cluster.Role.LEADER == role)
         {
-            member.termPosition(logRecordingPosition.get());
+            clusterMembers[clusterMemberId].termPosition(recordingPosition);
+
+            final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
+            if (position > quorumPosition.getWeak())
+            {
+                quorumPosition.setOrdered(position);
+            }
         }
-
-        final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
-        if (position > quorumPosition.getWeak())
+        else if (Cluster.Role.FOLLOWER == role)
         {
-            quorumPosition.setOrdered(position);
+            if (recordingPosition != lastRecordingPosition)
+            {
+                if (memberStatusPublisher.appendedPosition(recordingPosition, leadershipTermId, clusterMemberId))
+                {
+                    lastRecordingPosition = recordingPosition;
+                }
+            }
         }
     }
 
@@ -1014,9 +1031,29 @@ class SequencerAgent implements Agent
 
     void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
     {
+        if (leadershipTermId != this.leadershipTermId)
+        {
+            throw new IllegalStateException("Append position not for current leadership term: expected=" +
+                this.leadershipTermId + " received=" + leadershipTermId);
+        }
+
+        clusterMembers[followerMemberId].termPosition(termPosition);
     }
 
     void onQuorumPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
     {
+        if (leadershipTermId != this.leadershipTermId)
+        {
+            throw new IllegalStateException("Quorum position not for current leadership term: expected=" +
+                this.leadershipTermId + " received=" + leadershipTermId);
+        }
+
+        if (leaderMemberId != this.leaderMemberId)
+        {
+            throw new IllegalStateException("Quorum position not for current leader: expected=" +
+                this.leaderMemberId + " received=" + leaderMemberId);
+        }
+
+        quorumPosition.setOrdered(termPosition);
     }
 }

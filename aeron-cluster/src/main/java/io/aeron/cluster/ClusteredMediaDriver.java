@@ -79,7 +79,8 @@ public class ClusteredMediaDriver implements AutoCloseable
         final Archive.Context archiveCtx,
         final ConsensusModule.Context consensusModuleCtx)
     {
-        final MediaDriver driver = MediaDriver.launch(driverCtx);
+        final MediaDriver driver = MediaDriver.launch(driverCtx
+            .spiesSimulateConnection(true));
 
         final Archive archive = Archive.launch(archiveCtx
             .mediaDriverAgentInvoker(driver.sharedAgentInvoker())

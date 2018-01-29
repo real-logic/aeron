@@ -634,12 +634,12 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == moduleState)
             {
-                moduleState = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus Module State");
+                moduleState = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus module state");
             }
 
             if (null == moduleRole)
             {
-                moduleRole = aeron.addCounter(CONSENSUS_MODULE_ROLE_TYPE_ID, "Cluster Module Role");
+                moduleRole = aeron.addCounter(CONSENSUS_MODULE_ROLE_TYPE_ID, "Consensus module role");
             }
 
             if (null == controlToggle)
@@ -654,7 +654,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == invalidRequestCounter)
             {
-                invalidRequestCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Invalid Cluster Request");
+                invalidRequestCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Invalid cluster request count");
             }
 
             if (null == threadFactory)

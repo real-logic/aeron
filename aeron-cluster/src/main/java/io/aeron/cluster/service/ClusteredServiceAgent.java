@@ -143,12 +143,12 @@ final class ClusteredServiceAgent implements Agent, Cluster
         {
             if (logAdapter.image().isClosed())
             {
-                throw new IllegalStateException("Image closed unexpectedly");
+                throw new AgentTerminationException("Image closed unexpectedly");
             }
 
             if (!QuorumPos.isActive(aeron.countersReader(), quorumPosition.counterId(), currentRecordingId))
             {
-                throw new IllegalStateException("Consensus position is not active");
+                throw new AgentTerminationException("Consensus position is not active");
             }
         }
 

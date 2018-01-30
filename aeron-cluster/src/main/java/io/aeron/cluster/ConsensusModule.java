@@ -835,6 +835,9 @@ public class ConsensusModule implements AutoCloseable
          * <code>
          *     0,client-facing:port,member-facing:port|1,client-facing:port,member-facing:port| ...
          * </code>
+         * <p>
+         * The client facing endpoints will be used as the endpoint in {@link #ingressChannel()} if the endpoint is
+         * not provided in that when it is not multicast.
          *
          * @param clusterMembers which are all candidates to be leader.
          * @return this for a fluent API.
@@ -848,6 +851,9 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * The endpoints representing members of the cluster which are all candidates to be leader.
+         * <p>
+         * The client facing endpoints will be used as the endpoint in {@link #ingressChannel()} if the endpoint is
+         * not provided in that when it is not multicast.
          *
          * @return members of the cluster which are all candidates to be leader.
          * @see Configuration#CLUSTER_MEMBERS_PROP_NAME

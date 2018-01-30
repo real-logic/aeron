@@ -529,8 +529,8 @@ public final class AeronCluster implements AutoCloseable
         public static final String CLUSTER_MEMBER_ENDPOINTS_DEFAULT = null;
 
         /**
-         * Channel for sending messages to a cluster. Ideally this will be a multicast address or manual control mode
-         * MDC (multi-destination-cast) as a second choice.
+         * Channel for sending messages to a cluster. Ideally this will be a multicast address otherwise unicast will
+         * be required and the {@link #CLUSTER_MEMBER_ENDPOINTS_PROP_NAME} is used to substitute the endpoints.
          */
         public static final String INGRESS_CHANNEL_PROP_NAME = "aeron.cluster.ingress.channel";
 

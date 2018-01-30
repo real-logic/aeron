@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
@@ -104,19 +105,24 @@ class SequencerAgent implements Agent
         this.clusterRoleCounter = ctx.clusterNodeCounter();
 
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
-        role = Cluster.Role.LEADER;
-        clusterRoleCounter.setOrdered(Cluster.Role.LEADER.code());
-        clusterMembers[clusterMemberId].isLeader(true);
         updateClusterMemberDetails(clusterMembers);
+        if (clusterMembers.length == 1)
+        {
+            role(Cluster.Role.LEADER);
+            clusterMembers[clusterMemberId].isLeader(true);
+        }
 
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
-        memberStatusUri.put(CommonContext.ENDPOINT_PARAM_NAME, clusterMembers[clusterMemberId].memberFacingEndpoint());
+        memberStatusUri.put(ENDPOINT_PARAM_NAME, clusterMembers[clusterMemberId].memberFacingEndpoint());
 
         memberStatusAdapter = new MemberStatusAdapter(
             aeron.addSubscription(memberStatusUri.toString(), ctx.memberStatusStreamId()), this);
 
         final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
-        ingressUri.put(CommonContext.ENDPOINT_PARAM_NAME, clusterMembers[clusterMemberId].clientFacingEndpoint());
+        if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
+        {
+            ingressUri.put(ENDPOINT_PARAM_NAME, clusterMembers[clusterMemberId].clientFacingEndpoint());
+        }
 
         ingressAdapter = new IngressAdapter(
             aeron.addSubscription(ingressUri.toString(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
@@ -179,7 +185,7 @@ class SequencerAgent implements Agent
 
         leaderMemberId = clusterMemberId;
         clusterMembers[clusterMemberId].isLeader(true);
-        clusterRoleCounter.set(Cluster.Role.LEADER.code());
+        role(Cluster.Role.LEADER);
     }
 
     public int doWork()
@@ -720,6 +726,12 @@ class SequencerAgent implements Agent
     {
         this.state = state;
         moduleState.set(state.code());
+    }
+
+    void role(final Cluster.Role role)
+    {
+        this.role = role;
+        clusterRoleCounter.setOrdered(role.code());
     }
 
     private int checkControlToggle(final long nowMs)

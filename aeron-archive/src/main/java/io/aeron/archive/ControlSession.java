@@ -259,6 +259,11 @@ class ControlSession implements Session
         }
     }
 
+    void attemptErrorResponse(final long correlationId, final String errorMessage, final ControlResponseProxy proxy)
+    {
+        proxy.attemptErrorResponse(controlSessionId, correlationId, errorMessage, controlPublication);
+    }
+
     int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer, final ControlResponseProxy proxy)
     {
         return proxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, controlPublication);

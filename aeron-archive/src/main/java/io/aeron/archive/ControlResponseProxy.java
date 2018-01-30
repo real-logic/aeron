@@ -93,6 +93,32 @@ class ControlResponseProxy
         return send(controlPublication, buffer, HEADER_LENGTH + responseEncoder.encodedLength());
     }
 
+    void attemptErrorResponse(
+        final long controlSessionId,
+        final long correlationId,
+        final String errorMessage,
+        final Publication controlPublication)
+    {
+        responseEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .relevantId(0)
+            .code(ControlResponseCode.ERROR)
+            .errorMessage(null == errorMessage ? "" : errorMessage);
+
+        final int length = HEADER_LENGTH + responseEncoder.encodedLength();
+
+        for (int i = 0; i < 3; i++)
+        {
+            final long result = controlPublication.offer(buffer, 0, length);
+            if (result > 0)
+            {
+                break;
+            }
+        }
+    }
+
     private boolean send(final Publication controlPublication, final DirectBuffer buffer, final int length)
     {
         for (int i = 0; i < 3; i++)

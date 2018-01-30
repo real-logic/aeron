@@ -20,12 +20,15 @@ import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import io.aeron.cluster.codecs.CloseReason;
+import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.EventCode;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 import java.util.concurrent.TimeUnit;
 
@@ -73,6 +76,7 @@ public class SequencerAgentTest
     {
         when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
         when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(TRUE);
+        when(mockLogAppender.appendClusterAction(any(), anyLong(), anyLong(), anyLong())).thenReturn(TRUE);
         when(mockAeron.addExclusivePublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
         when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mockConsensusModuleSubscription);
         when(mockResponsePublication.isConnected()).thenReturn(TRUE);
@@ -183,6 +187,10 @@ public class SequencerAgentTest
 
         assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
         assertThat((int)controlValue.get(), is(NEUTRAL.code()));
+
+        final InOrder inOrder = Mockito.inOrder(mockLogAppender);
+        inOrder.verify(mockLogAppender).appendClusterAction(eq(ClusterAction.SUSPEND), anyLong(), anyLong(), anyLong());
+        inOrder.verify(mockLogAppender).appendClusterAction(eq(ClusterAction.RESUME), anyLong(), anyLong(), anyLong());
     }
 
     private SequencerAgent newSequencerAgent()

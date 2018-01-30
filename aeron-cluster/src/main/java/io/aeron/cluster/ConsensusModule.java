@@ -18,7 +18,7 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.codecs.ServiceAction;
+import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -51,12 +51,12 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Starting up.
          */
-        INIT(0, ServiceAction.INIT),
+        INIT(0, ClusterAction.INIT),
 
         /**
          * Replaying any logs since the beginning or last snapshot.
          */
-        REPLAY(1, ServiceAction.REPLAY),
+        REPLAY(1, ClusterAction.REPLAY),
 
         /**
          * Active state with ingress and expired timers appended to the log.
@@ -66,22 +66,22 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Suspended processing of ingress and expired timers.
          */
-        SUSPENDED(3, null),
+        SUSPENDED(3, ClusterAction.SUSPEND),
 
         /**
          * In the process of taking a snapshot.
          */
-        SNAPSHOT(4, ServiceAction.SNAPSHOT),
+        SNAPSHOT(4, ClusterAction.SNAPSHOT),
 
         /**
          * In the process of doing an orderly shutdown taking a snapshot first.
          */
-        SHUTDOWN(5, ServiceAction.SHUTDOWN),
+        SHUTDOWN(5, ClusterAction.SHUTDOWN),
 
         /**
          * Aborting processing and shutting down as soon as services ack without taking a snapshot.
          */
-        ABORT(6, ServiceAction.ABORT),
+        ABORT(6, ClusterAction.ABORT),
 
         /**
          * Terminal state.
@@ -107,12 +107,12 @@ public class ConsensusModule implements AutoCloseable
         }
 
         private final int code;
-        private final ServiceAction validServiceAction;
+        private final ClusterAction validClusterAction;
 
-        State(final int code, final ServiceAction serviceAction)
+        State(final int code, final ClusterAction clusterAction)
         {
             this.code = code;
-            this.validServiceAction = serviceAction;
+            this.validClusterAction = clusterAction;
         }
 
         public final int code()
@@ -121,14 +121,14 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Is the {@link ServiceAction} valid for the current state?
+         * Is the {@link ClusterAction} valid for the current state?
          *
          * @param action to check if valid.
          * @return true if the action is valid for the current state otherwise false.
          */
-        public final boolean isValid(final ServiceAction action)
+        public final boolean isValid(final ClusterAction action)
         {
-            return action == validServiceAction;
+            return action == validClusterAction;
         }
 
         /**

@@ -226,7 +226,7 @@ class SequencerAgent implements Agent
     }
 
     public void onServiceActionAck(
-        final long serviceId, final long logPosition, final long leadershipTermId, final ServiceAction action)
+        final long serviceId, final long logPosition, final long leadershipTermId, final ClusterAction action)
     {
         validateServiceAck(serviceId, logPosition, leadershipTermId, action);
 
@@ -486,7 +486,7 @@ class SequencerAgent implements Agent
     }
 
     private void validateServiceAck(
-        final long serviceId, final long logPosition, final long leadershipTermId, final ServiceAction action)
+        final long serviceId, final long logPosition, final long leadershipTermId, final ClusterAction action)
     {
         final long currentLogPosition = leadershipTermBeginPosition + logAppender.position();
         if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)
@@ -730,7 +730,7 @@ class SequencerAgent implements Agent
         switch (toggleState)
         {
             case SUSPEND:
-                if (ConsensusModule.State.ACTIVE == state)
+                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SUSPEND, nowMs))
                 {
                     state(ConsensusModule.State.SUSPENDED);
                     ClusterControl.ToggleState.reset(controlToggle);
@@ -739,7 +739,7 @@ class SequencerAgent implements Agent
                 break;
 
             case RESUME:
-                if (ConsensusModule.State.SUSPENDED == state)
+                if (ConsensusModule.State.SUSPENDED == state && appendAction(ClusterAction.RESUME, nowMs))
                 {
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
@@ -749,7 +749,7 @@ class SequencerAgent implements Agent
 
             case SNAPSHOT:
                 serviceAckCount = 0;
-                if (ConsensusModule.State.ACTIVE == state && appendSnapshot(nowMs))
+                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT, nowMs))
                 {
                     state(ConsensusModule.State.SNAPSHOT);
                     takeSnapshot(nowMs);
@@ -759,7 +759,7 @@ class SequencerAgent implements Agent
 
             case SHUTDOWN:
                 serviceAckCount = 0;
-                if (ConsensusModule.State.ACTIVE == state && appendShutdown(nowMs))
+                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SHUTDOWN, nowMs))
                 {
                     state(ConsensusModule.State.SHUTDOWN);
                     takeSnapshot(nowMs);
@@ -769,7 +769,7 @@ class SequencerAgent implements Agent
 
             case ABORT:
                 serviceAckCount = 0;
-                if (ConsensusModule.State.ACTIVE == state && appendAbort(nowMs))
+                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.ABORT, nowMs))
                 {
                     state(ConsensusModule.State.ABORT);
                     workCount = 1;
@@ -780,33 +780,14 @@ class SequencerAgent implements Agent
         return workCount;
     }
 
-    private boolean appendSnapshot(final long nowMs)
+    private boolean appendAction(final ClusterAction action, final long nowMs)
     {
-        final long position = resultingServiceActionPosition();
-
-        return logAppender.appendActionRequest(ServiceAction.SNAPSHOT, leadershipTermId, position, nowMs);
-    }
-
-    private boolean appendShutdown(final long nowMs)
-    {
-        final long position = resultingServiceActionPosition();
-
-        return logAppender.appendActionRequest(ServiceAction.SHUTDOWN, leadershipTermId, position, nowMs);
-    }
-
-    private boolean appendAbort(final long nowMs)
-    {
-        final long position = resultingServiceActionPosition();
-
-        return logAppender.appendActionRequest(ServiceAction.ABORT, leadershipTermId, position, nowMs);
-    }
-
-    private long resultingServiceActionPosition()
-    {
-        return leadershipTermBeginPosition +
+        final long position = leadershipTermBeginPosition +
             logAppender.position() +
             MessageHeaderEncoder.ENCODED_LENGTH +
-            ServiceActionRequestEncoder.BLOCK_LENGTH;
+            ClusterActionRequestEncoder.BLOCK_LENGTH;
+
+        return logAppender.appendClusterAction(action, leadershipTermId, position, nowMs);
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
@@ -1031,29 +1012,35 @@ class SequencerAgent implements Agent
     }
 
     @SuppressWarnings("unused")
-    void onReplayServiceAction(final long timestamp, final ServiceAction action)
+    void onReplayClusterAction(
+        final long logPosition, final long leadershipTermId, final long timestamp, final ClusterAction action)
     {
+        validateLeadershipTerm(leadershipTermId, "Cluster action not for current leadership term: expected=");
+
         cachedEpochClock.update(timestamp);
+
+        switch (action)
+        {
+            case SUSPEND:
+                state(ConsensusModule.State.SUSPENDED);
+                break;
+
+            case RESUME:
+                state(ConsensusModule.State.ACTIVE);
+                break;
+        }
     }
 
     void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
     {
-        if (leadershipTermId != this.leadershipTermId)
-        {
-            throw new IllegalStateException("Append position not for current leadership term: expected=" +
-                this.leadershipTermId + " received=" + leadershipTermId);
-        }
+        validateLeadershipTerm(leadershipTermId, "Append position not for current leadership term: expected=");
 
         clusterMembers[followerMemberId].termPosition(termPosition);
     }
 
     void onQuorumPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
     {
-        if (leadershipTermId != this.leadershipTermId)
-        {
-            throw new IllegalStateException("Quorum position not for current leadership term: expected=" +
-                this.leadershipTermId + " received=" + leadershipTermId);
-        }
+        validateLeadershipTerm(leadershipTermId, "Quorum position not for current leadership term: expected=");
 
         if (leaderMemberId != this.leaderMemberId)
         {
@@ -1062,5 +1049,13 @@ class SequencerAgent implements Agent
         }
 
         quorumPosition.setOrdered(termPosition);
+    }
+
+    private void validateLeadershipTerm(final long leadershipTermId, final String msg)
+    {
+        if (leadershipTermId != this.leadershipTermId)
+        {
+            throw new IllegalStateException(msg + this.leadershipTermId + " received=" + leadershipTermId);
+        }
     }
 }

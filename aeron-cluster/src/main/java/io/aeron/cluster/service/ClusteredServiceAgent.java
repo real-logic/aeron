@@ -257,7 +257,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         service.onSessionClose(session, timestampMs, closeReason);
     }
 
-    void onServiceAction(final long resultingPosition, final long timestampMs, final ServiceAction action)
+    void onServiceAction(final long resultingPosition, final long timestampMs, final ClusterAction action)
     {
         this.timestampMs = timestampMs;
 
@@ -307,7 +307,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         if (0 == replayTermCount)
         {
             consensusModule.sendAcknowledgment(
-                ServiceAction.INIT, leadershipTermBeginPosition, leadershipTermId, timestampMs);
+                ClusterAction.INIT, leadershipTermBeginPosition, leadershipTermId, timestampMs);
 
             return;
         }
@@ -317,7 +317,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         try (Subscription subscription = aeron.addSubscription(ctx.replayChannel(), ctx.replayStreamId()))
         {
             consensusModule.sendAcknowledgment(
-                ServiceAction.INIT, leadershipTermBeginPosition, leadershipTermId, timestampMs);
+                ClusterAction.INIT, leadershipTermBeginPosition, leadershipTermId, timestampMs);
 
             for (int i = 0; i < replayTermCount; i++)
             {
@@ -358,7 +358,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
                 }
 
                 consensusModule.sendAcknowledgment(
-                    ServiceAction.REPLAY, leadershipTermBeginPosition, leadershipTermId, timestampMs);
+                    ClusterAction.REPLAY, leadershipTermBeginPosition, leadershipTermId, timestampMs);
             }
         }
     }
@@ -551,7 +551,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         snapshotTaker.markEnd(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
-    private void executeAction(final ServiceAction action, final long position)
+    private void executeAction(final ClusterAction action, final long position)
     {
         if (State.ACTIVE != state)
         {
@@ -562,18 +562,18 @@ final class ClusteredServiceAgent implements Agent, Cluster
         {
             case SNAPSHOT:
                 onTakeSnapshot(position);
-                consensusModule.sendAcknowledgment(ServiceAction.SNAPSHOT, position, leadershipTermId, timestampMs);
+                consensusModule.sendAcknowledgment(action, position, leadershipTermId, timestampMs);
                 break;
 
             case SHUTDOWN:
                 onTakeSnapshot(position);
-                consensusModule.sendAcknowledgment(ServiceAction.SHUTDOWN, position, leadershipTermId, timestampMs);
+                consensusModule.sendAcknowledgment(action, position, leadershipTermId, timestampMs);
                 state = State.CLOSED;
                 ctx.terminationHook().run();
                 break;
 
             case ABORT:
-                consensusModule.sendAcknowledgment(ServiceAction.ABORT, position, leadershipTermId, timestampMs);
+                consensusModule.sendAcknowledgment(action, position, leadershipTermId, timestampMs);
                 state = State.CLOSED;
                 ctx.terminationHook().run();
                 break;

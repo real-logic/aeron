@@ -38,7 +38,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler
     private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
-    private final ServiceActionRequestDecoder actionRequestDecoder = new ServiceActionRequestDecoder();
+    private final ClusterActionRequestDecoder actionRequestDecoder = new ClusterActionRequestDecoder();
 
     private final Image image;
     private final ReadableCounter limit;
@@ -135,7 +135,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler
                 break;
             }
 
-            case ServiceActionRequestDecoder.TEMPLATE_ID:
+            case ClusterActionRequestDecoder.TEMPLATE_ID:
             {
                 actionRequestDecoder.wrap(
                     buffer,

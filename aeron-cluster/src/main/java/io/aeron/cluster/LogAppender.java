@@ -34,7 +34,7 @@ class LogAppender
     private final SessionOpenEventEncoder connectEventEncoder = new SessionOpenEventEncoder();
     private final SessionCloseEventEncoder closeEventEncoder = new SessionCloseEventEncoder();
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
-    private final ServiceActionRequestEncoder actionRequestEncoder = new ServiceActionRequestEncoder();
+    private final ClusterActionRequestEncoder actionRequestEncoder = new ClusterActionRequestEncoder();
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
     private Publication publication;
@@ -191,10 +191,10 @@ class LogAppender
         return false;
     }
 
-    public boolean appendActionRequest(
-        final ServiceAction action, final long logPosition, final long leadershipTermId, final long nowMs)
+    public boolean appendClusterAction(
+        final ClusterAction action, final long logPosition, final long leadershipTermId, final long nowMs)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionRequestEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionRequestEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do

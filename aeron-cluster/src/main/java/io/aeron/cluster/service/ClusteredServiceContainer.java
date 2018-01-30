@@ -1025,7 +1025,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
         /**
          * Set the {@link Runnable} that is called when processing a
-         * {@link io.aeron.cluster.codecs.ServiceAction#SHUTDOWN} or {@link io.aeron.cluster.codecs.ServiceAction#ABORT}
+         * {@link io.aeron.cluster.codecs.ClusterAction#SHUTDOWN} or {@link io.aeron.cluster.codecs.ClusterAction#ABORT}
          *
          * @param terminationHook that can be used to terminate a service container.
          * @return this for a fluent API.
@@ -1038,7 +1038,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
         /**
          * Get the {@link Runnable} that is called when processing a
-         * {@link io.aeron.cluster.codecs.ServiceAction#SHUTDOWN} or {@link io.aeron.cluster.codecs.ServiceAction#ABORT}
+         * {@link io.aeron.cluster.codecs.ClusterAction#SHUTDOWN} or {@link io.aeron.cluster.codecs.ClusterAction#ABORT}
          * <p>
          * The default action is to call signal on the {@link #shutdownSignalBarrier()}.
 

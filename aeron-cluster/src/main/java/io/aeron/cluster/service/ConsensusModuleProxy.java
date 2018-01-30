@@ -47,7 +47,7 @@ class ConsensusModuleProxy implements AutoCloseable
     }
 
     public void sendAcknowledgment(
-        final ServiceAction action, final long logPosition, final long leadershipTermId, final long timestamp)
+        final ClusterAction action, final long logPosition, final long leadershipTermId, final long timestamp)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionAckEncoder.BLOCK_LENGTH;
 

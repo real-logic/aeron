@@ -40,7 +40,7 @@ final class LogAdapter implements FragmentHandler
     private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
-    private final ServiceActionRequestDecoder actionRequestDecoder = new ServiceActionRequestDecoder();
+    private final ClusterActionRequestDecoder actionRequestDecoder = new ClusterActionRequestDecoder();
 
     LogAdapter(final Image image, final SequencerAgent sequencerAgent)
     {
@@ -61,7 +61,6 @@ final class LogAdapter implements FragmentHandler
         switch (templateId)
         {
             case SessionHeaderDecoder.TEMPLATE_ID:
-            {
                 sessionHeaderDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -77,10 +76,8 @@ final class LogAdapter implements FragmentHandler
                     length - SESSION_HEADER_LENGTH,
                     header);
                 break;
-            }
 
             case TimerEventDecoder.TEMPLATE_ID:
-            {
                 timerEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -91,10 +88,8 @@ final class LogAdapter implements FragmentHandler
                     timerEventDecoder.correlationId(),
                     timerEventDecoder.timestamp());
                 break;
-            }
 
             case SessionOpenEventDecoder.TEMPLATE_ID:
-            {
                 openEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -108,10 +103,8 @@ final class LogAdapter implements FragmentHandler
                     openEventDecoder.responseStreamId(),
                     openEventDecoder.responseChannel());
                 break;
-            }
 
             case SessionCloseEventDecoder.TEMPLATE_ID:
-            {
                 closeEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -124,21 +117,20 @@ final class LogAdapter implements FragmentHandler
                     closeEventDecoder.timestamp(),
                     closeEventDecoder.closeReason());
                 break;
-            }
 
-            case ServiceActionRequestDecoder.TEMPLATE_ID:
-            {
+            case ClusterActionRequestDecoder.TEMPLATE_ID:
                 actionRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onReplayServiceAction(
+                sequencerAgent.onReplayClusterAction(
+                    actionRequestDecoder.logPosition(),
+                    actionRequestDecoder.leadershipTermId(),
                     actionRequestDecoder.timestamp(),
                     actionRequestDecoder.action());
                 break;
-            }
         }
     }
 }

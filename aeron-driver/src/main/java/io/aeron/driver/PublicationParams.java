@@ -20,6 +20,7 @@ import io.aeron.driver.buffer.RawLog;
 import io.aeron.ChannelUri;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.SystemUtil;
 
 import static io.aeron.CommonContext.*;
 
@@ -36,11 +37,11 @@ class PublicationParams
 
     static int getTermBufferLength(final ChannelUri channelUri, final int defaultTermLength)
     {
-        final String termLengthParam = channelUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
+        final String termLengthParam = channelUri.get(TERM_LENGTH_PARAM_NAME);
         int termLength = defaultTermLength;
         if (null != termLengthParam)
         {
-            termLength = Integer.parseInt(termLengthParam);
+            termLength = (int)SystemUtil.parseSize(TERM_OFFSET_PARAM_NAME, termLengthParam);
             LogBufferDescriptor.checkTermLength(termLength);
         }
 
@@ -50,10 +51,10 @@ class PublicationParams
     static int getMtuLength(final ChannelUri channelUri, final int defaultMtuLength)
     {
         int mtuLength = defaultMtuLength;
-        final String mtu = channelUri.get(CommonContext.MTU_LENGTH_PARAM_NAME);
-        if (null != mtu)
+        final String mtuParam = channelUri.get(MTU_LENGTH_PARAM_NAME);
+        if (null != mtuParam)
         {
-            mtuLength = Integer.parseInt(mtu);
+            mtuLength = (int)SystemUtil.parseSize(MTU_LENGTH_PARAM_NAME, mtuParam);
             Configuration.validateMtuLength(mtuLength);
         }
 

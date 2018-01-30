@@ -269,7 +269,7 @@ public class ConsensusModule implements AutoCloseable
          * Channel to be used for communicating cluster member status to each other. This can be used for default
          * configuration with the endpoints replaced with those provided by {@link #CLUSTER_MEMBERS_PROP_NAME}.
          */
-        public static final String MEMBER_STATUS_CHANNEL_DEFAULT = "aeron:udp?term-length=65536";
+        public static final String MEMBER_STATUS_CHANNEL_DEFAULT = "aeron:udp?term-length=64k";
 
         /**
          * Stream id within a channel for communicating cluster member status.

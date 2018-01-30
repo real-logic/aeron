@@ -319,8 +319,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
 
         catalog.recordingSummary(recordingId, recordingSummary);
+        long replayPosition = recordingSummary.startPosition;
 
-        final long replayPosition;
         if (position != NULL_POSITION)
         {
             if (!validateReplayPosition(correlationId, controlSession, position, recordingSummary))
@@ -330,10 +330,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
             replayPosition = position;
         }
-        else
-        {
-            replayPosition = recordingSummary.startPosition;
-        }
+
+        final ExclusivePublication replayPublication = newReplayPublication(
+            correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
 
         final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
         final ReplaySession replaySession = new ReplaySession(
@@ -345,7 +344,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             controlResponseProxy,
             correlationId,
             epochClock,
-            newReplayPublication(replayChannel, replayStreamId, replayPosition, recordingSummary),
+            replayPublication,
             recordingSummary,
             null == recordingSession ? null : recordingSession.recordingPosition());
 
@@ -657,6 +656,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     }
 
     private ExclusivePublication newReplayPublication(
+        final long correlationId,
+        final ControlSession controlSession,
         final String replayChannel,
         final int replayStreamId,
         final long position,
@@ -677,7 +678,16 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             .termOffset(termOffset)
             .build();
 
-        return aeron.addExclusivePublication(channel, replayStreamId);
+        try
+        {
+            return aeron.addExclusivePublication(channel, replayStreamId);
+        }
+        catch (final Exception ex)
+        {
+            final String msg = "Failed to create replay publication - " + ex;
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
+            throw ex;
+        }
     }
 
     private void validateMaxConcurrentRecordings(

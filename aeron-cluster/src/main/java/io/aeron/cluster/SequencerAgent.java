@@ -183,13 +183,7 @@ class SequencerAgent implements Agent
         final long recordingId = findLogRecording(logAppender.sessionId());
         ctx.recordingLog().appendTerm(recordingId, leadershipTermBeginPosition, leadershipTermId, timestamp);
 
-        leaderMemberId = clusterMemberId;
-        clusterMembers[clusterMemberId].isLeader(true);
-        role(Cluster.Role.LEADER);
-        for (final ClusterSession session : sessionByIdMap.values())
-        {
-            session.connect(aeron);
-        }
+        becomeLeader(timestamp);
     }
 
     public int doWork()
@@ -370,6 +364,375 @@ class SequencerAgent implements Agent
     public void onCancelTimer(final long correlationId)
     {
         timerService.cancelTimer(correlationId);
+    }
+
+    void state(final ConsensusModule.State state)
+    {
+        this.state = state;
+        moduleState.set(state.code());
+    }
+
+    void role(final Cluster.Role role)
+    {
+        this.role = role;
+        clusterRoleCounter.setOrdered(role.code());
+    }
+
+    @SuppressWarnings("unused")
+    void onReplaySessionMessage(
+        final long correlationId,
+        final long clusterSessionId,
+        final long timestamp,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
+    {
+        cachedEpochClock.update(timestamp);
+        sessionByIdMap.get(clusterSessionId).lastActivity(timestamp, correlationId);
+    }
+
+    void onReplayTimerEvent(final long correlationId, final long timestamp)
+    {
+        cachedEpochClock.update(timestamp);
+
+        if (!timerService.cancelTimer(correlationId))
+        {
+            failedTimerCancellations.addLong(correlationId);
+        }
+    }
+
+    void onReplaySessionOpen(
+        final long termPosition,
+        final long correlationId,
+        final long clusterSessionId,
+        final long timestamp,
+        final int responseStreamId,
+        final String responseChannel)
+    {
+        cachedEpochClock.update(timestamp);
+
+        addOpenSession(termPosition, clusterSessionId, correlationId, timestamp, responseStreamId, responseChannel);
+    }
+
+    void addOpenSession(
+        final long openedTermPosition,
+        final long clusterSessionId,
+        final long correlationId,
+        final long timestamp,
+        final int responseStreamId,
+        final String responseChannel)
+    {
+        final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
+        session.open(openedTermPosition);
+        session.lastActivity(timestamp, correlationId);
+
+        sessionByIdMap.put(clusterSessionId, session);
+    }
+
+    @SuppressWarnings("unused")
+    void onReplaySessionClose(
+        final long correlationId,
+        final long clusterSessionId,
+        final long timestamp,
+        final CloseReason closeReason)
+    {
+        cachedEpochClock.update(timestamp);
+        sessionByIdMap.remove(clusterSessionId).close();
+    }
+
+    @SuppressWarnings("unused")
+    void onReplayClusterAction(
+        final long logPosition, final long leadershipTermId, final long timestamp, final ClusterAction action)
+    {
+        validateLeadershipTerm(leadershipTermId, "Cluster action not for current leadership term: expected=");
+
+        cachedEpochClock.update(timestamp);
+
+        switch (action)
+        {
+            case SUSPEND:
+                state(ConsensusModule.State.SUSPENDED);
+                break;
+
+            case RESUME:
+                state(ConsensusModule.State.ACTIVE);
+                break;
+        }
+    }
+
+    void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
+    {
+        validateLeadershipTerm(leadershipTermId, "Append position not for current leadership term: expected=");
+
+        clusterMembers[followerMemberId].termPosition(termPosition);
+    }
+
+    void onQuorumPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
+    {
+        validateLeadershipTerm(leadershipTermId, "Quorum position not for current leadership term: expected=");
+
+        if (leaderMemberId != this.leaderMemberId)
+        {
+            throw new IllegalStateException("Quorum position not for current leader: expected=" +
+                this.leaderMemberId + " received=" + leaderMemberId);
+        }
+
+        quorumPosition.setOrdered(termPosition);
+    }
+
+    private int checkControlToggle(final long nowMs)
+    {
+        int workCount = 0;
+        final ClusterControl.ToggleState toggleState = ClusterControl.ToggleState.get(controlToggle);
+
+        switch (toggleState)
+        {
+            case SUSPEND:
+                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SUSPEND, nowMs))
+                {
+                    state(ConsensusModule.State.SUSPENDED);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    workCount = 1;
+                }
+                break;
+
+            case RESUME:
+                if (ConsensusModule.State.SUSPENDED == state && appendAction(ClusterAction.RESUME, nowMs))
+                {
+                    state(ConsensusModule.State.ACTIVE);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    workCount = 1;
+                }
+                break;
+
+            case SNAPSHOT:
+                serviceAckCount = 0;
+                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT, nowMs))
+                {
+                    state(ConsensusModule.State.SNAPSHOT);
+                    takeSnapshot(nowMs);
+                    workCount = 1;
+                }
+                break;
+
+            case SHUTDOWN:
+                serviceAckCount = 0;
+                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SHUTDOWN, nowMs))
+                {
+                    state(ConsensusModule.State.SHUTDOWN);
+                    takeSnapshot(nowMs);
+                    workCount = 1;
+                }
+                break;
+
+            case ABORT:
+                serviceAckCount = 0;
+                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.ABORT, nowMs))
+                {
+                    state(ConsensusModule.State.ABORT);
+                    workCount = 1;
+                }
+                break;
+        }
+
+        return workCount;
+    }
+
+    private boolean appendAction(final ClusterAction action, final long nowMs)
+    {
+        final long position = leadershipTermBeginPosition +
+            logAppender.position() +
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            ClusterActionRequestEncoder.BLOCK_LENGTH;
+
+        return logAppender.appendClusterAction(action, leadershipTermId, position, nowMs);
+    }
+
+    private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
+    {
+        int workCount = 0;
+
+        for (int lastIndex = pendingSessions.size() - 1, i = lastIndex; i >= 0; i--)
+        {
+            final ClusterSession session = pendingSessions.get(i);
+
+            if (session.state() == INIT || session.state() == CONNECTED)
+            {
+                if (session.responsePublication().isConnected())
+                {
+                    session.state(CONNECTED);
+                    authenticator.onProcessConnectedSession(sessionProxy.session(session), nowMs);
+                }
+            }
+
+            if (session.state() == CHALLENGED)
+            {
+                if (session.responsePublication().isConnected())
+                {
+                    authenticator.onProcessChallengedSession(sessionProxy.session(session), nowMs);
+                }
+            }
+
+            if (session.state() == AUTHENTICATED)
+            {
+                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
+                lastIndex--;
+
+                session.timeOfLastActivityMs(nowMs);
+                sessionByIdMap.put(session.id(), session);
+
+                appendConnectedSession(session, nowMs);
+
+                workCount += 1;
+            }
+            else if (session.state() == REJECTED)
+            {
+                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
+                lastIndex--;
+
+                rejectedSessions.add(session);
+            }
+            else if (nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
+            {
+                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
+                lastIndex--;
+
+                session.close();
+            }
+        }
+
+        return workCount;
+    }
+
+    private void processRejectedSessions(final ArrayList<ClusterSession> rejectedSessions, final long nowMs)
+    {
+        for (int lastIndex = rejectedSessions.size() - 1, i = lastIndex; i >= 0; i--)
+        {
+            final ClusterSession session = rejectedSessions.get(i);
+            String detail = ConsensusModule.Configuration.SESSION_LIMIT_MSG;
+            EventCode eventCode = EventCode.ERROR;
+
+            if (session.state() == REJECTED)
+            {
+                detail = ConsensusModule.Configuration.SESSION_REJECTED_MSG;
+                eventCode = EventCode.AUTHENTICATION_REJECTED;
+            }
+
+            if (egressPublisher.sendEvent(session, eventCode, detail) ||
+                nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
+            {
+                ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex);
+                lastIndex--;
+
+                session.close();
+            }
+        }
+    }
+
+    private int checkSessions(final Long2ObjectHashMap<ClusterSession> sessionByIdMap, final long nowMs)
+    {
+        int workCount = 0;
+
+        final Iterator<ClusterSession> iter = sessionByIdMap.values().iterator();
+        while (iter.hasNext())
+        {
+            final ClusterSession session = iter.next();
+
+            final ClusterSession.State state = session.state();
+            if (nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
+            {
+                switch (state)
+                {
+                    case OPEN:
+                        egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_TIMEOUT_MSG);
+                        if (appendClosedSession(session, CloseReason.TIMEOUT, nowMs))
+                        {
+                            iter.remove();
+                            workCount += 1;
+                        }
+                        else
+                        {
+                            session.state(TIMED_OUT);
+                        }
+                        break;
+
+                    case TIMED_OUT:
+                    case CLOSED:
+                        final CloseReason reason = state == TIMED_OUT ? CloseReason.TIMEOUT : CloseReason.USER_ACTION;
+                        if (appendClosedSession(session, reason, nowMs))
+                        {
+                            iter.remove();
+                            workCount += 1;
+                        }
+                        break;
+
+                    default:
+                        session.close();
+                        iter.remove();
+                }
+            }
+            else if (state == CONNECTED)
+            {
+                if (appendConnectedSession(session, nowMs))
+                {
+                    workCount += 1;
+                }
+            }
+        }
+
+        return workCount;
+    }
+
+    private boolean appendConnectedSession(final ClusterSession session, final long nowMs)
+    {
+        final long resultingPosition = logAppender.appendConnectedSession(session, nowMs);
+        if (resultingPosition > 0)
+        {
+            session.open(resultingPosition);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean appendClosedSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)
+    {
+        if (logAppender.appendClosedSession(session, closeReason, nowMs))
+        {
+            session.close();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private void validateLeadershipTerm(final long leadershipTermId, final String msg)
+    {
+        if (leadershipTermId != this.leadershipTermId)
+        {
+            throw new IllegalStateException(msg + this.leadershipTermId + " received=" + leadershipTermId);
+        }
+    }
+
+    private void becomeLeader(final long timestamp)
+    {
+        leaderMemberId = clusterMemberId;
+
+        for (final ClusterMember clusterMember : clusterMembers)
+        {
+            clusterMember.isLeader(clusterMember.id() == clusterMemberId);
+        }
+
+        role(Cluster.Role.LEADER);
+
+        for (final ClusterSession session : sessionByIdMap.values())
+        {
+            session.connect(aeron);
+            session.timeOfLastActivityMs(timestamp);
+        }
     }
 
     private void recoverFromSnapshot(final RecordingLog.ReplayStep snapshotStep, final AeronArchive archive)
@@ -723,357 +1086,6 @@ class SequencerAgent implements Agent
             }
 
             idle(fragments);
-        }
-    }
-
-    void state(final ConsensusModule.State state)
-    {
-        this.state = state;
-        moduleState.set(state.code());
-    }
-
-    void role(final Cluster.Role role)
-    {
-        this.role = role;
-        clusterRoleCounter.setOrdered(role.code());
-    }
-
-    private int checkControlToggle(final long nowMs)
-    {
-        int workCount = 0;
-        final ClusterControl.ToggleState toggleState = ClusterControl.ToggleState.get(controlToggle);
-
-        switch (toggleState)
-        {
-            case SUSPEND:
-                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SUSPEND, nowMs))
-                {
-                    state(ConsensusModule.State.SUSPENDED);
-                    ClusterControl.ToggleState.reset(controlToggle);
-                    workCount = 1;
-                }
-                break;
-
-            case RESUME:
-                if (ConsensusModule.State.SUSPENDED == state && appendAction(ClusterAction.RESUME, nowMs))
-                {
-                    state(ConsensusModule.State.ACTIVE);
-                    ClusterControl.ToggleState.reset(controlToggle);
-                    workCount = 1;
-                }
-                break;
-
-            case SNAPSHOT:
-                serviceAckCount = 0;
-                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT, nowMs))
-                {
-                    state(ConsensusModule.State.SNAPSHOT);
-                    takeSnapshot(nowMs);
-                    workCount = 1;
-                }
-                break;
-
-            case SHUTDOWN:
-                serviceAckCount = 0;
-                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SHUTDOWN, nowMs))
-                {
-                    state(ConsensusModule.State.SHUTDOWN);
-                    takeSnapshot(nowMs);
-                    workCount = 1;
-                }
-                break;
-
-            case ABORT:
-                serviceAckCount = 0;
-                if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.ABORT, nowMs))
-                {
-                    state(ConsensusModule.State.ABORT);
-                    workCount = 1;
-                }
-                break;
-        }
-
-        return workCount;
-    }
-
-    private boolean appendAction(final ClusterAction action, final long nowMs)
-    {
-        final long position = leadershipTermBeginPosition +
-            logAppender.position() +
-            MessageHeaderEncoder.ENCODED_LENGTH +
-            ClusterActionRequestEncoder.BLOCK_LENGTH;
-
-        return logAppender.appendClusterAction(action, leadershipTermId, position, nowMs);
-    }
-
-    private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
-    {
-        int workCount = 0;
-
-        for (int lastIndex = pendingSessions.size() - 1, i = lastIndex; i >= 0; i--)
-        {
-            final ClusterSession session = pendingSessions.get(i);
-
-            if (session.state() == INIT || session.state() == CONNECTED)
-            {
-                if (session.responsePublication().isConnected())
-                {
-                    session.state(CONNECTED);
-                    authenticator.onProcessConnectedSession(sessionProxy.session(session), nowMs);
-                }
-            }
-
-            if (session.state() == CHALLENGED)
-            {
-                if (session.responsePublication().isConnected())
-                {
-                    authenticator.onProcessChallengedSession(sessionProxy.session(session), nowMs);
-                }
-            }
-
-            if (session.state() == AUTHENTICATED)
-            {
-                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
-                lastIndex--;
-
-                session.timeOfLastActivityMs(nowMs);
-                sessionByIdMap.put(session.id(), session);
-
-                appendConnectedSession(session, nowMs);
-
-                workCount += 1;
-            }
-            else if (session.state() == REJECTED)
-            {
-                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
-                lastIndex--;
-
-                rejectedSessions.add(session);
-            }
-            else if (nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
-            {
-                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
-                lastIndex--;
-
-                session.close();
-            }
-        }
-
-        return workCount;
-    }
-
-    private void processRejectedSessions(final ArrayList<ClusterSession> rejectedSessions, final long nowMs)
-    {
-        for (int lastIndex = rejectedSessions.size() - 1, i = lastIndex; i >= 0; i--)
-        {
-            final ClusterSession session = rejectedSessions.get(i);
-            String detail = ConsensusModule.Configuration.SESSION_LIMIT_MSG;
-            EventCode eventCode = EventCode.ERROR;
-
-            if (session.state() == REJECTED)
-            {
-                detail = ConsensusModule.Configuration.SESSION_REJECTED_MSG;
-                eventCode = EventCode.AUTHENTICATION_REJECTED;
-            }
-
-            if (egressPublisher.sendEvent(session, eventCode, detail) ||
-                nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
-            {
-                ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex);
-                lastIndex--;
-
-                session.close();
-            }
-        }
-    }
-
-    private int checkSessions(final Long2ObjectHashMap<ClusterSession> sessionByIdMap, final long nowMs)
-    {
-        int workCount = 0;
-
-        final Iterator<ClusterSession> iter = sessionByIdMap.values().iterator();
-        while (iter.hasNext())
-        {
-            final ClusterSession session = iter.next();
-
-            final ClusterSession.State state = session.state();
-            if (nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
-            {
-                switch (state)
-                {
-                    case OPEN:
-                        egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_TIMEOUT_MSG);
-                        if (appendClosedSession(session, CloseReason.TIMEOUT, nowMs))
-                        {
-                            iter.remove();
-                            workCount += 1;
-                        }
-                        else
-                        {
-                            session.state(TIMED_OUT);
-                        }
-                        break;
-
-                    case TIMED_OUT:
-                    case CLOSED:
-                        final CloseReason reason = state == TIMED_OUT ? CloseReason.TIMEOUT : CloseReason.USER_ACTION;
-                        if (appendClosedSession(session, reason, nowMs))
-                        {
-                            iter.remove();
-                            workCount += 1;
-                        }
-                        break;
-
-                    default:
-                        session.close();
-                        iter.remove();
-                }
-            }
-            else if (state == CONNECTED)
-            {
-                if (appendConnectedSession(session, nowMs))
-                {
-                    workCount += 1;
-                }
-            }
-        }
-
-        return workCount;
-    }
-
-    private boolean appendConnectedSession(final ClusterSession session, final long nowMs)
-    {
-        final long resultingPosition = logAppender.appendConnectedSession(session, nowMs);
-        if (resultingPosition > 0)
-        {
-            session.open(resultingPosition);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private boolean appendClosedSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)
-    {
-        if (logAppender.appendClosedSession(session, closeReason, nowMs))
-        {
-            session.close();
-
-            return true;
-        }
-
-        return false;
-    }
-
-    @SuppressWarnings("unused")
-    void onReplaySessionMessage(
-        final long correlationId,
-        final long clusterSessionId,
-        final long timestamp,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        final Header header)
-    {
-        cachedEpochClock.update(timestamp);
-        sessionByIdMap.get(clusterSessionId).lastActivity(timestamp, correlationId);
-    }
-
-    void onReplayTimerEvent(final long correlationId, final long timestamp)
-    {
-        cachedEpochClock.update(timestamp);
-
-        if (!timerService.cancelTimer(correlationId))
-        {
-            failedTimerCancellations.addLong(correlationId);
-        }
-    }
-
-    void onReplaySessionOpen(
-        final long termPosition,
-        final long correlationId,
-        final long clusterSessionId,
-        final long timestamp,
-        final int responseStreamId,
-        final String responseChannel)
-    {
-        cachedEpochClock.update(timestamp);
-
-        addOpenSession(termPosition, clusterSessionId, correlationId, timestamp, responseStreamId, responseChannel);
-    }
-
-    void addOpenSession(
-        final long openedTermPosition,
-        final long clusterSessionId,
-        final long correlationId,
-        final long timestamp,
-        final int responseStreamId,
-        final String responseChannel)
-    {
-        final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
-        session.open(openedTermPosition);
-        session.lastActivity(timestamp, correlationId);
-
-        sessionByIdMap.put(clusterSessionId, session);
-    }
-
-    @SuppressWarnings("unused")
-    void onReplaySessionClose(
-        final long correlationId,
-        final long clusterSessionId,
-        final long timestamp,
-        final CloseReason closeReason)
-    {
-        cachedEpochClock.update(timestamp);
-        sessionByIdMap.remove(clusterSessionId).close();
-    }
-
-    @SuppressWarnings("unused")
-    void onReplayClusterAction(
-        final long logPosition, final long leadershipTermId, final long timestamp, final ClusterAction action)
-    {
-        validateLeadershipTerm(leadershipTermId, "Cluster action not for current leadership term: expected=");
-
-        cachedEpochClock.update(timestamp);
-
-        switch (action)
-        {
-            case SUSPEND:
-                state(ConsensusModule.State.SUSPENDED);
-                break;
-
-            case RESUME:
-                state(ConsensusModule.State.ACTIVE);
-                break;
-        }
-    }
-
-    void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
-    {
-        validateLeadershipTerm(leadershipTermId, "Append position not for current leadership term: expected=");
-
-        clusterMembers[followerMemberId].termPosition(termPosition);
-    }
-
-    void onQuorumPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
-    {
-        validateLeadershipTerm(leadershipTermId, "Quorum position not for current leadership term: expected=");
-
-        if (leaderMemberId != this.leaderMemberId)
-        {
-            throw new IllegalStateException("Quorum position not for current leader: expected=" +
-                this.leaderMemberId + " received=" + leaderMemberId);
-        }
-
-        quorumPosition.setOrdered(termPosition);
-    }
-
-    private void validateLeadershipTerm(final long leadershipTermId, final String msg)
-    {
-        if (leadershipTermId != this.leadershipTermId)
-        {
-            throw new IllegalStateException(msg + this.leadershipTermId + " received=" + leadershipTermId);
         }
     }
 }

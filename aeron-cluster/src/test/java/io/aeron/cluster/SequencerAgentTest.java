@@ -45,7 +45,6 @@ public class SequencerAgentTest
 {
     private static final String RESPONSE_CHANNEL_ONE = "responseChannelOne";
     private static final String RESPONSE_CHANNEL_TWO = "responseChannelTwo";
-    private static final String MEMBER_ENDPOINTS = "address.one:1111,address.two:2222,address.three:3333";
     private static final String MEMBERS =
         "0,address.one:1111,address.one:111|" +
         "1,address.two:2222,address.two:222|" +
@@ -95,7 +94,6 @@ public class SequencerAgentTest
         agent.doWork();
 
         verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), anyLong());
-        verify(mockEgressPublisher).sendEvent(any(ClusterSession.class), eq(EventCode.OK), eq(MEMBER_ENDPOINTS));
 
         final long correlationIdTwo = 2L;
         agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO, new byte[0]);

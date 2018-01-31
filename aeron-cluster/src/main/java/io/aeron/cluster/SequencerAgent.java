@@ -105,12 +105,7 @@ class SequencerAgent implements Agent
         this.clusterRoleCounter = ctx.clusterNodeCounter();
 
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
-        updateClusterMemberDetails(clusterMembers);
-        if (clusterMembers.length == 1)
-        {
-            role(Cluster.Role.LEADER);
-            clusterMembers[clusterMemberId].isLeader(true);
-        }
+        role(Cluster.Role.CANDIDATE);
 
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
         memberStatusUri.put(ENDPOINT_PARAM_NAME, clusterMembers[clusterMemberId].memberFacingEndpoint());
@@ -177,13 +172,13 @@ class SequencerAgent implements Agent
             logAppender.connect(aeron, archive, ctx.logChannel(), ctx.logStreamId());
         }
 
-        final long timestamp = epochClock.time();
-        cachedEpochClock.update(timestamp);
+        final long nowMs = epochClock.time();
+        cachedEpochClock.update(nowMs);
 
-        final long recordingId = findLogRecording(logAppender.sessionId());
-        ctx.recordingLog().appendTerm(recordingId, leadershipTermBeginPosition, leadershipTermId, timestamp);
+        becomeLeader(nowMs);
 
-        becomeLeader(timestamp);
+        final long recordingId = setupLogRecordingTracking(logAppender.sessionId());
+        ctx.recordingLog().appendTerm(recordingId, leadershipTermBeginPosition, leadershipTermId, nowMs);
     }
 
     public int doWork()
@@ -214,10 +209,7 @@ class SequencerAgent implements Agent
             workCount += ingressAdapter.poll();
         }
 
-        if (null != quorumPosition)
-        {
-            updateMemberPosition(nowMs);
-        }
+        workCount += updateMemberPosition(nowMs);
 
         processRejectedSessions(rejectedSessions, nowMs);
 
@@ -717,7 +709,7 @@ class SequencerAgent implements Agent
         }
     }
 
-    private void becomeLeader(final long timestamp)
+    private void becomeLeader(final long nowMs)
     {
         leaderMemberId = clusterMemberId;
 
@@ -726,12 +718,13 @@ class SequencerAgent implements Agent
             clusterMember.isLeader(clusterMember.id() == clusterMemberId);
         }
 
+        updateClusterMemberDetails(clusterMembers);
         role(Cluster.Role.LEADER);
 
         for (final ClusterSession session : sessionByIdMap.values())
         {
             session.connect(aeron);
-            session.timeOfLastActivityMs(timestamp);
+            session.timeOfLastActivityMs(nowMs);
         }
     }
 
@@ -902,7 +895,7 @@ class SequencerAgent implements Agent
         sessionProxy.memberEndpointsDetail(builder.toString());
     }
 
-    private long findLogRecording(final int sessionId)
+    private long setupLogRecordingTracking(final int sessionId)
     {
         final CountersReader counters = aeron.countersReader();
 
@@ -916,45 +909,51 @@ class SequencerAgent implements Agent
             recordingCounterId = RecordingPos.findCounterIdBySession(counters, sessionId);
         }
 
-        logRecordingPosition = new ReadableCounter(counters, recordingCounterId);
-
         final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
+
+        logRecordingPosition = new ReadableCounter(counters, recordingCounterId);
         quorumPosition = QuorumPos.allocate(
             aeron, tempBuffer, recordingId, leadershipTermBeginPosition, leadershipTermId, sessionId, -1);
 
         return recordingId;
     }
 
-    private void updateMemberPosition(final long nowMs)
+    private int updateMemberPosition(final long nowMs)
     {
-        final long recordingPosition = logRecordingPosition.get();
+        int workCount = 0;
 
         switch (role)
         {
             case LEADER:
             {
-                clusterMembers[clusterMemberId].termPosition(recordingPosition);
+                clusterMembers[clusterMemberId].termPosition(logRecordingPosition.get());
 
                 final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
                 if (position > quorumPosition.getWeak())
                 {
                     quorumPosition.setOrdered(position);
+                    workCount = 1;
                 }
                 break;
             }
 
             case FOLLOWER:
             {
+                final long recordingPosition = logRecordingPosition.get();
                 if (recordingPosition != lastRecordingPosition)
                 {
                     if (memberStatusPublisher.appendedPosition(recordingPosition, leadershipTermId, clusterMemberId))
                     {
                         lastRecordingPosition = recordingPosition;
                     }
+
+                    workCount = 1;
                 }
                 break;
             }
         }
+
+        return workCount;
     }
 
     private void idle()

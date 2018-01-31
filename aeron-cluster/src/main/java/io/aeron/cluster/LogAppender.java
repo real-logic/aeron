@@ -104,8 +104,9 @@ class LogAppender
         return false;
     }
 
-    public boolean appendConnectedSession(final ClusterSession session, final long nowMs)
+    public long appendConnectedSession(final ClusterSession session, final long nowMs)
     {
+        long result = -1;
         final byte[] sessionPrincipalData = session.principalData();
         final String channel = session.responseChannel();
 
@@ -123,17 +124,17 @@ class LogAppender
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.offer(expandableArrayBuffer, 0, length);
+            result = publication.offer(expandableArrayBuffer, 0, length);
             if (result > 0)
             {
-                return true;
+                return result;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        return false;
+        return result;
     }
 
     public boolean appendClosedSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)

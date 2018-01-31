@@ -34,6 +34,7 @@ class ClusterSession implements AutoCloseable
 
     private long timeOfLastActivityMs;
     private long lastCorrelationId;
+    private long openedTermPosition = Long.MAX_VALUE;
     private final long id;
     private final int responseStreamId;
     private final String responseChannel;
@@ -110,8 +111,9 @@ class ClusterSession implements AutoCloseable
         this.state = State.AUTHENTICATED;
     }
 
-    void open()
+    void open(final long openedTermPosition)
     {
+        this.openedTermPosition = openedTermPosition;
         this.state = State.OPEN;
         principalData = null;
     }
@@ -142,6 +144,11 @@ class ClusterSession implements AutoCloseable
         return lastCorrelationId;
     }
 
+    long openedTermPosition()
+    {
+        return openedTermPosition;
+    }
+
     static void checkPrincipalDataLength(final byte[] principalData)
     {
         if (null != principalData && principalData.length > MAX_PRINCIPAL_DATA_LENGTH)
@@ -154,13 +161,13 @@ class ClusterSession implements AutoCloseable
         }
     }
 
-
     public String toString()
     {
         return "ClusterSession{" +
             "id=" + id +
             ", timeOfLastActivityMs=" + timeOfLastActivityMs +
             ", lastCorrelationId=" + lastCorrelationId +
+            ", openedTermPosition=" + openedTermPosition +
             ", responseStreamId=" + responseStreamId +
             ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +

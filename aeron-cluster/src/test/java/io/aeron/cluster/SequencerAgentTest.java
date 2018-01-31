@@ -75,7 +75,7 @@ public class SequencerAgentTest
     public void before()
     {
         when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
-        when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(TRUE);
+        when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(128L);
         when(mockLogAppender.appendClusterAction(any(), anyLong(), anyLong(), anyLong())).thenReturn(TRUE);
         when(mockAeron.addExclusivePublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
         when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mockConsensusModuleSubscription);

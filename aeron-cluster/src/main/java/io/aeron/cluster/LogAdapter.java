@@ -97,6 +97,7 @@ final class LogAdapter implements FragmentHandler
                     messageHeaderDecoder.version());
 
                 sequencerAgent.onReplaySessionOpen(
+                    header.position(),
                     openEventDecoder.correlationId(),
                     openEventDecoder.clusterSessionId(),
                     openEventDecoder.timestamp(),

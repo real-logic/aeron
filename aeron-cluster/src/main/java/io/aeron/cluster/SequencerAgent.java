@@ -186,6 +186,10 @@ class SequencerAgent implements Agent
         leaderMemberId = clusterMemberId;
         clusterMembers[clusterMemberId].isLeader(true);
         role(Cluster.Role.LEADER);
+        for (final ClusterSession session : sessionByIdMap.values())
+        {
+            session.connect(aeron);
+        }
     }
 
     public int doWork()
@@ -939,9 +943,10 @@ class SequencerAgent implements Agent
 
     private boolean appendConnectedSession(final ClusterSession session, final long nowMs)
     {
-        if (logAppender.appendConnectedSession(session, nowMs))
+        final long resultingPosition = logAppender.appendConnectedSession(session, nowMs);
+        if (resultingPosition > 0)
         {
-            session.open();
+            session.open(resultingPosition);
 
             return true;
         }
@@ -986,6 +991,7 @@ class SequencerAgent implements Agent
     }
 
     void onReplaySessionOpen(
+        final long termPosition,
         final long correlationId,
         final long clusterSessionId,
         final long timestamp,
@@ -994,20 +1000,20 @@ class SequencerAgent implements Agent
     {
         cachedEpochClock.update(timestamp);
 
-        addOpenSession(correlationId, clusterSessionId, timestamp, responseStreamId, responseChannel);
+        addOpenSession(termPosition, clusterSessionId, correlationId, timestamp, responseStreamId, responseChannel);
     }
 
     void addOpenSession(
-        final long correlationId,
+        final long openedTermPosition,
         final long clusterSessionId,
+        final long correlationId,
         final long timestamp,
         final int responseStreamId,
         final String responseChannel)
     {
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
-        session.connect(aeron);
+        session.open(openedTermPosition);
         session.lastActivity(timestamp, correlationId);
-        session.state(OPEN);
 
         sessionByIdMap.put(clusterSessionId, session);
     }

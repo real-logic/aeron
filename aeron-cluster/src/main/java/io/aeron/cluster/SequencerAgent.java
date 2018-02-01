@@ -1060,7 +1060,7 @@ class SequencerAgent implements Agent
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
-    private void replayTerm(final Image image, final Counter consensusPos)
+    private void replayTerm(final Image image, final Counter quorumPosition)
     {
         final LogAdapter logAdapter = new LogAdapter(image, this);
 
@@ -1081,7 +1081,7 @@ class SequencerAgent implements Agent
             }
             else
             {
-                consensusPos.setOrdered(image.position());
+                quorumPosition.setOrdered(image.position());
             }
 
             idle(fragments);

@@ -278,10 +278,9 @@ class SequencerAgent implements Agent
         session.connect(aeron);
         session.lastActivity(nowMs, correlationId);
 
-        authenticator.onConnectRequest(sessionId, credentialData, nowMs);
-
         if (pendingSessions.size() + sessionByIdMap.size() < ctx.maxConcurrentSessions())
         {
+            authenticator.onConnectRequest(sessionId, credentialData, nowMs);
             pendingSessions.add(session);
         }
         else

@@ -46,8 +46,8 @@ class MemberStatusPublisher
 
     public boolean newLeadershipTerm(
         final long leadershipTermId,
-        final long lastTermLength,
-        final long termBeginPosition,
+        final long lastTermPosition,
+        final long logPosition,
         final int leaderMemberId,
         final int logSessionId)
     {
@@ -62,8 +62,8 @@ class MemberStatusPublisher
                 newLeadershipTermEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
-                    .lastTermLength(lastTermLength)
-                    .termBeginPosition(termBeginPosition)
+                    .lastTermPosition(lastTermPosition)
+                    .logPosition(logPosition)
                     .leaderMemberId(leaderMemberId)
                     .logSessionId(logSessionId);
 

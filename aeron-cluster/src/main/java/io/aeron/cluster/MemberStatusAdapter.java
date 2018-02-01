@@ -68,8 +68,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 sequencerAgent.onNewLeadershipTerm(
                     newLeadershipTermDecoder.leadershipTermId(),
-                    newLeadershipTermDecoder.lastTermLength(),
-                    newLeadershipTermDecoder.termBeginPosition(),
+                    newLeadershipTermDecoder.lastTermPosition(),
+                    newLeadershipTermDecoder.logPosition(),
                     newLeadershipTermDecoder.leaderMemberId(),
                     newLeadershipTermDecoder.logSessionId());
                 break;

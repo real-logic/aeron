@@ -253,7 +253,7 @@
         The leader replicates a log stream to all followers for its term as leader. Leadership term ids are monotonic.
 
         The followers persist the replicated log locally and send updates to the leader of the highest position they
-        have persisted in the current term. Each term as a position starting at zero with the total position the log
+        have persisted in the current term. Each term as a position starting at zero with the total log position
         has reached being an accumulation of the term positions across all leadership terms.
 
         The leader gathers the positions reached by the followers, plus its own locally persisted log, and publishes
@@ -268,8 +268,8 @@
                  id="50"
                  description="Event to indicate a new leadership term has begun">
         <field name="leadershipTermId"     id="1" type="int64"/>
-        <field name="lastTermLength"       id="2" type="int64"/>
-        <field name="termBeginPosition"    id="3" type="int64"/>
+        <field name="lastTermPosition"     id="2" type="int64"/>
+        <field name="logPosition"          id="3" type="int64"/>
         <field name="leaderMemberId"       id="4" type="int32"/>
         <field name="logSessionId"         id="5" type="int32"/>
     </sbe:message>

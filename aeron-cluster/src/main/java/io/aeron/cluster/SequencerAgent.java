@@ -491,8 +491,8 @@ class SequencerAgent implements Agent
 
     void onNewLeadershipTerm(
         final long leadershipTermId,
-        final long lastTermLength,
-        final long termBeginPosition,
+        final long lastTermPosition,
+        final long logPosition,
         final int leaderMemberId,
         final int logSessionId)
     {

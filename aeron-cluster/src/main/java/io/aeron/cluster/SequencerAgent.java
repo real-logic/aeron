@@ -198,25 +198,12 @@ class SequencerAgent implements Agent
     {
         int workCount = 0;
 
+        boolean isSlowTickCycle = false;
         final long nowMs = epochClock.time();
         if (cachedEpochClock.time() != nowMs)
         {
+            isSlowTickCycle = true;
             cachedEpochClock.update(nowMs);
-            workCount += invokeAeronClient();
-            workCount += consensusModuleAdapter.poll();
-
-            if (Cluster.Role.LEADER == role)
-            {
-                workCount += checkControlToggle(nowMs);
-
-                if (ConsensusModule.State.ACTIVE == state)
-                {
-                    workCount += processPendingSessions(pendingSessions, nowMs);
-                    workCount += checkSessions(sessionByIdMap, nowMs);
-                    workCount += processRejectedSessions(rejectedSessions, nowMs);
-                    workCount += timerService.poll(nowMs);
-                }
-            }
         }
 
         if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
@@ -226,6 +213,11 @@ class SequencerAgent implements Agent
 
         workCount += memberStatusAdapter.poll();
         workCount += updateMemberPosition(nowMs);
+
+        if (isSlowTickCycle)
+        {
+            workCount += slowTickCycle(nowMs);
+        }
 
         return workCount;
     }
@@ -499,6 +491,29 @@ class SequencerAgent implements Agent
 
         timeOfLastLeaderUpdateMs = cachedEpochClock.time();
         quorumPosition.setOrdered(termPosition);
+    }
+
+    private int slowTickCycle(final long nowMs)
+    {
+        int workCount = 0;
+
+        workCount += invokeAeronClient();
+        workCount += consensusModuleAdapter.poll();
+
+        if (Cluster.Role.LEADER == role)
+        {
+            workCount += checkControlToggle(nowMs);
+
+            if (ConsensusModule.State.ACTIVE == state)
+            {
+                workCount += processPendingSessions(pendingSessions, nowMs);
+                workCount += checkSessions(sessionByIdMap, nowMs);
+                workCount += processRejectedSessions(rejectedSessions, nowMs);
+                workCount += timerService.poll(nowMs);
+            }
+        }
+
+        return workCount;
     }
 
     private int checkControlToggle(final long nowMs)

@@ -203,6 +203,7 @@ class SequencerAgent implements Agent
         {
             cachedEpochClock.update(nowMs);
             workCount += invokeAeronClient();
+            workCount += consensusModuleAdapter.poll();
 
             if (Cluster.Role.LEADER == role)
             {
@@ -223,7 +224,6 @@ class SequencerAgent implements Agent
             workCount += ingressAdapter.poll();
         }
 
-        workCount += consensusModuleAdapter.poll();
         workCount += memberStatusAdapter.poll();
         workCount += updateMemberPosition(nowMs);
 

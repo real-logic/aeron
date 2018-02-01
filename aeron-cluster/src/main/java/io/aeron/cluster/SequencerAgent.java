@@ -248,7 +248,12 @@ class SequencerAgent implements Agent
                     ctx.snapshotCounter().incrementOrdered();
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
-                    // TODO: Should session timestamps be reset in case of timeout
+
+                    final long nowNs = epochClock.time();
+                    for (final ClusterSession session : sessionByIdMap.values())
+                    {
+                        session.timeOfLastActivityMs(nowNs);
+                    }
                     break;
 
                 case SHUTDOWN:
@@ -348,9 +353,7 @@ class SequencerAgent implements Agent
             if (session.id() == clusterSessionId && session.state() == CHALLENGED)
             {
                 final long nowMs = cachedEpochClock.time();
-
                 session.lastActivity(nowMs, correlationId);
-
                 authenticator.onChallengeResponse(clusterSessionId, credentialData, nowMs);
                 break;
             }

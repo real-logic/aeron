@@ -30,6 +30,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
     private final QuorumPositionDecoder quorumPositionDecoder = new QuorumPositionDecoder();
+    private final NewLeadershipTermDecoder newLeadershipTermDecoder = new NewLeadershipTermDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -58,6 +59,21 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
+            case NewLeadershipTermDecoder.TEMPLATE_ID:
+                newLeadershipTermDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onNewLeadershipTerm(
+                    newLeadershipTermDecoder.leadershipTermId(),
+                    newLeadershipTermDecoder.lastTermLength(),
+                    newLeadershipTermDecoder.termBeginPosition(),
+                    newLeadershipTermDecoder.leaderMemberId(),
+                    newLeadershipTermDecoder.logSessionId());
+                break;
+
             case AppendedPositionDecoder.TEMPLATE_ID:
                 appendedPositionDecoder.wrap(
                     buffer,

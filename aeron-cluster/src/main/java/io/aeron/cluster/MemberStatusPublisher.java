@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.AppendedPositionEncoder;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
+import io.aeron.cluster.codecs.NewLeadershipTermEncoder;
 import io.aeron.cluster.codecs.QuorumPositionEncoder;
 import io.aeron.logbuffer.BufferClaim;
 
@@ -29,6 +30,7 @@ class MemberStatusPublisher
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
     private final QuorumPositionEncoder quorumPositionEncoder = new QuorumPositionEncoder();
+    private final NewLeadershipTermEncoder newLeadershipTermEncoder = new NewLeadershipTermEncoder();
 
     private Publication publication;
 
@@ -40,6 +42,41 @@ class MemberStatusPublisher
     public void publication(final Publication publication)
     {
         this.publication = publication;
+    }
+
+    public boolean newLeadershipTerm(
+        final long leadershipTermId,
+        final long lastTermLength,
+        final long termBeginPosition,
+        final int leaderMemberId,
+        final int logSessionId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                newLeadershipTermEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
+                    .lastTermLength(lastTermLength)
+                    .termBeginPosition(termBeginPosition)
+                    .leaderMemberId(leaderMemberId)
+                    .logSessionId(logSessionId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
     }
 
     public boolean appendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)

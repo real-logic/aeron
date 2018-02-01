@@ -264,8 +264,18 @@
         increasing state.
     -->
 
-    <sbe:message name="AppendedPosition"
+    <sbe:message name="NewLeadershipTerm"
                  id="50"
+                 description="Event to indicate a new leadership term has begun">
+        <field name="leadershipTermId"     id="1" type="int64"/>
+        <field name="lastTermLength"       id="2" type="int64"/>
+        <field name="termBeginPosition"    id="3" type="int64"/>
+        <field name="leaderMemberId"       id="4" type="int32"/>
+        <field name="logSessionId"         id="5" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="AppendedPosition"
+                 id="51"
                  description="The highest position a follower has appended to their local log">
         <field name="termPosition"         id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>
@@ -273,7 +283,7 @@
     </sbe:message>
 
     <sbe:message name="QuorumPosition"
-                 id="51"
+                 id="52"
                  description="The highest position reached by quorum of the cluster as determined by the leader">
         <field name="termPosition"         id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>

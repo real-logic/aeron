@@ -489,6 +489,15 @@ class SequencerAgent implements Agent
         }
     }
 
+    void onNewLeadershipTerm(
+        final long leadershipTermId,
+        final long lastTermLength,
+        final long termBeginPosition,
+        final int leaderMemberId,
+        final int logSessionId)
+    {
+    }
+
     void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
     {
         validateLeadershipTerm(leadershipTermId, "Append position not for current leadership term: expected=");

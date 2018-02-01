@@ -45,10 +45,12 @@ import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 class SequencerAgent implements Agent
 {
     private final long sessionTimeoutMs;
+    private final long leaderHeartbeatInteralMs;
     private long nextSessionId = 1;
     private long leadershipTermBeginPosition = 0;
     private long leadershipTermId = 0;
     private long lastRecordingPosition = 0;
+    private long timeOfLastLeaderUpdate = 0;
     private int leaderMemberId;
     private int serviceAckCount = 0;
     private final int clusterMemberId;
@@ -92,6 +94,7 @@ class SequencerAgent implements Agent
         this.epochClock = ctx.epochClock();
         this.cachedEpochClock = ctx.cachedEpochClock();
         this.sessionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.sessionTimeoutNs());
+        this.leaderHeartbeatInteralMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
         this.egressPublisher = egressPublisher;
         this.moduleState = ctx.moduleStateCounter();
         this.controlToggle = ctx.controlToggleCounter();
@@ -139,6 +142,9 @@ class SequencerAgent implements Agent
             }
 
             logAppender.disconnect();
+            CloseHelper.close(memberStatusPublisher.publication());
+            CloseHelper.close(memberStatusAdapter);
+
             CloseHelper.close(ingressAdapter);
             CloseHelper.close(consensusModuleAdapter);
         }
@@ -929,9 +935,15 @@ class SequencerAgent implements Agent
                 clusterMembers[clusterMemberId].termPosition(logRecordingPosition.get());
 
                 final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
-                if (position > quorumPosition.getWeak())
+                if (position > quorumPosition.getWeak() ||
+                    nowMs >= (timeOfLastLeaderUpdate + leaderHeartbeatInteralMs))
                 {
-                    quorumPosition.setOrdered(position);
+                    if (memberStatusPublisher.quorumPosition(position, leadershipTermId, clusterMemberId))
+                    {
+                        quorumPosition.setOrdered(position);
+                        timeOfLastLeaderUpdate = nowMs;
+                    }
+
                     workCount = 1;
                 }
                 break;

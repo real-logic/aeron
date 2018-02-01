@@ -72,6 +72,11 @@ class MemberStatusPublisher
 
     public boolean quorumPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
     {
+        if (null == publication)
+        {
+            return true;
+        }
+
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + QuorumPositionEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;

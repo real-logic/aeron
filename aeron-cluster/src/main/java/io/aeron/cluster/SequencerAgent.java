@@ -180,6 +180,7 @@ class SequencerAgent implements Agent
 
         final long nowMs = epochClock.time();
         cachedEpochClock.update(nowMs);
+        timeOfLastLeaderUpdateMs = nowMs;
 
         becomeLeader(nowMs);
 
@@ -476,6 +477,7 @@ class SequencerAgent implements Agent
                 this.leaderMemberId + " received=" + leaderMemberId);
         }
 
+        timeOfLastLeaderUpdateMs = cachedEpochClock.time();
         quorumPosition.setOrdered(termPosition);
     }
 
@@ -960,6 +962,11 @@ class SequencerAgent implements Agent
                     }
 
                     workCount = 1;
+                }
+
+                if (nowMs >= (timeOfLastLeaderUpdateMs + leaderHeartbeatIntervalMs))
+                {
+                    throw new AgentTerminationException("No heartbeat detected from cluster leader");
                 }
                 break;
             }

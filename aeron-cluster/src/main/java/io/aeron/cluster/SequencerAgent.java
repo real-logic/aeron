@@ -936,9 +936,7 @@ class SequencerAgent implements Agent
         int recordingCounterId = RecordingPos.findCounterIdBySession(counters, sessionId);
         while (CountersReader.NULL_COUNTER_ID == recordingCounterId)
         {
-            checkInterruptedStatus();
-            idleStrategy.idle();
-
+            idle();
             recordingCounterId = RecordingPos.findCounterIdBySession(counters, sessionId);
         }
 
@@ -1039,12 +1037,11 @@ class SequencerAgent implements Agent
             Publication publication = aeron.addExclusivePublication(channel, streamId))
         {
             final String recordingChannel = ChannelUri.addSessionId(channel, publication.sessionId());
-
             archive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
-            idleStrategy.reset();
 
             try
             {
+                idleStrategy.reset();
                 final CountersReader counters = aeron.countersReader();
                 int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
                 while (CountersReader.NULL_COUNTER_ID == counterId)

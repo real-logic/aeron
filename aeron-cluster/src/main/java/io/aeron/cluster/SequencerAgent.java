@@ -182,9 +182,15 @@ class SequencerAgent implements Agent
         cachedEpochClock.update(nowMs);
         timeOfLastLeaderUpdateMs = nowMs;
 
+        final int sessionId = logAppender.sessionId();
+        logRecordingPosition = findLogRecording(sessionId);
+        final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), logRecordingPosition.counterId());
+
         becomeLeader(nowMs);
 
-        final long recordingId = setupLogRecordingTracking(logAppender.sessionId());
+        quorumPosition = QuorumPos.allocate(
+            aeron, tempBuffer, recordingId, leadershipTermBeginPosition, leadershipTermId, sessionId, -1);
+
         ctx.recordingLog().appendTerm(recordingId, leadershipTermBeginPosition, leadershipTermId, nowMs);
     }
 
@@ -193,32 +199,33 @@ class SequencerAgent implements Agent
         int workCount = 0;
 
         final long nowMs = epochClock.time();
-
         if (cachedEpochClock.time() != nowMs)
         {
             cachedEpochClock.update(nowMs);
             workCount += invokeAeronClient();
-            workCount += checkControlToggle(nowMs);
 
-            if (ConsensusModule.State.ACTIVE == state)
+            if (Cluster.Role.LEADER == role)
             {
-                workCount += processPendingSessions(pendingSessions, nowMs);
-                workCount += checkSessions(sessionByIdMap, nowMs);
+                workCount += checkControlToggle(nowMs);
+
+                if (ConsensusModule.State.ACTIVE == state)
+                {
+                    workCount += processPendingSessions(pendingSessions, nowMs);
+                    workCount += checkSessions(sessionByIdMap, nowMs);
+                    workCount += processRejectedSessions(rejectedSessions, nowMs);
+                    workCount += timerService.poll(nowMs);
+                }
             }
+        }
+
+        if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
+        {
+            workCount += ingressAdapter.poll();
         }
 
         workCount += consensusModuleAdapter.poll();
         workCount += memberStatusAdapter.poll();
-
-        if (ConsensusModule.State.ACTIVE == state)
-        {
-            workCount += timerService.poll(nowMs);
-            workCount += ingressAdapter.poll();
-        }
-
         workCount += updateMemberPosition(nowMs);
-
-        processRejectedSessions(rejectedSessions, nowMs);
 
         return workCount;
     }
@@ -375,6 +382,16 @@ class SequencerAgent implements Agent
     {
         this.role = role;
         clusterRoleCounter.setOrdered(role.code());
+    }
+
+    void logRecordingPosition(final ReadableCounter logRecordingPosition)
+    {
+        this.logRecordingPosition = logRecordingPosition;
+    }
+
+    void quorumPosition(final Counter quorumPosition)
+    {
+        this.quorumPosition = quorumPosition;
     }
 
     @SuppressWarnings("unused")
@@ -605,8 +622,10 @@ class SequencerAgent implements Agent
         return workCount;
     }
 
-    private void processRejectedSessions(final ArrayList<ClusterSession> rejectedSessions, final long nowMs)
+    private int processRejectedSessions(final ArrayList<ClusterSession> rejectedSessions, final long nowMs)
     {
+        int workCount = 0;
+
         for (int lastIndex = rejectedSessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final ClusterSession session = rejectedSessions.get(i);
@@ -626,8 +645,11 @@ class SequencerAgent implements Agent
                 lastIndex--;
 
                 session.close();
+                workCount++;
             }
         }
+
+        return workCount;
     }
 
     private int checkSessions(final Long2ObjectHashMap<ClusterSession> sessionByIdMap, final long nowMs)
@@ -903,7 +925,7 @@ class SequencerAgent implements Agent
         sessionProxy.memberEndpointsDetail(builder.toString());
     }
 
-    private long setupLogRecordingTracking(final int sessionId)
+    private ReadableCounter findLogRecording(final int sessionId)
     {
         final CountersReader counters = aeron.countersReader();
 
@@ -917,13 +939,7 @@ class SequencerAgent implements Agent
             recordingCounterId = RecordingPos.findCounterIdBySession(counters, sessionId);
         }
 
-        final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
-
-        logRecordingPosition = new ReadableCounter(counters, recordingCounterId);
-        quorumPosition = QuorumPos.allocate(
-            aeron, tempBuffer, recordingId, leadershipTermBeginPosition, leadershipTermId, sessionId, -1);
-
-        return recordingId;
+        return new ReadableCounter(counters, recordingCounterId);
     }
 
     private int updateMemberPosition(final long nowMs)

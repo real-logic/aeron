@@ -22,6 +22,8 @@ import io.aeron.Subscription;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.EventCode;
+import io.aeron.cluster.service.Cluster;
+import io.aeron.status.ReadableCounter;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -84,19 +86,27 @@ public class SequencerAgentTest
     @Test
     public void shouldLimitActiveSessions()
     {
+        final CachedEpochClock clock = new CachedEpochClock();
         ctx.maxConcurrentSessions(1);
+        ctx.epochClock(clock);
 
         final SequencerAgent agent = newSequencerAgent();
 
         final long correlationIdOne = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
+        agent.role(Cluster.Role.LEADER);
+        agent.quorumPosition(mock(Counter.class));
+        agent.logRecordingPosition(mock(ReadableCounter.class));
         agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
+
+        clock.update(1);
         agent.doWork();
 
         verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), anyLong());
 
         final long correlationIdTwo = 2L;
         agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO, new byte[0]);
+        clock.update(2);
         agent.doWork();
 
         verify(mockEgressPublisher).sendEvent(
@@ -116,8 +126,11 @@ public class SequencerAgentTest
 
         final long correlationId = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
-
+        agent.role(Cluster.Role.LEADER);
+        agent.quorumPosition(mock(Counter.class));
+        agent.logRecordingPosition(mock(ReadableCounter.class));
         agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
+
         agent.doWork();
 
         verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), eq(startMs));
@@ -167,9 +180,13 @@ public class SequencerAgentTest
         ctx.epochClock(clock);
 
         final SequencerAgent agent = newSequencerAgent();
+        agent.quorumPosition(mock(Counter.class));
+        agent.logRecordingPosition(mock(ReadableCounter.class));
+
         assertThat((int)stateValue.get(), is(ConsensusModule.State.INIT.code()));
 
         agent.state(ConsensusModule.State.ACTIVE);
+        agent.role(Cluster.Role.LEADER);
         assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
 
         controlValue.value = SUSPEND.code();

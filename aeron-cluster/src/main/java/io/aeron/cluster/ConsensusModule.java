@@ -225,6 +225,18 @@ public class ConsensusModule implements AutoCloseable
         public static final int CLUSTER_MEMBER_ID_DEFAULT = 0;
 
         /**
+         * Property name for the identity of the appointed leader. This is when automated leader elections are
+         * not employed.
+         */
+        public static final String APPOINTED_LEADER_ID_PROP_NAME = "aeron.cluster.appointed.leader.id";
+
+        /**
+         * Default property for the appointed cluster leader id. A value of -1 means no leader has been appointed
+         * and thus an automated leader election should occur.
+         */
+        public static final int APPOINTED_LEADER_ID_DEFAULT = -1;
+
+        /**
          * Property name for the comma separated list of cluster member endpoints.
          */
         public static final String CLUSTER_MEMBERS_PROP_NAME = "aeron.cluster.members";
@@ -396,6 +408,18 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * The value {@link #APPOINTED_LEADER_ID_DEFAULT} or system property
+         * {@link #APPOINTED_LEADER_ID_PROP_NAME} if set.
+         *
+         * @return {@link #APPOINTED_LEADER_ID_DEFAULT} or system property
+         * {@link #APPOINTED_LEADER_ID_PROP_NAME} if set.
+         */
+        public static int appointedLeaderId()
+        {
+            return Integer.getInteger(APPOINTED_LEADER_ID_PROP_NAME, APPOINTED_LEADER_ID_DEFAULT);
+        }
+
+        /**
          * The value {@link #CLUSTER_MEMBERS_DEFAULT} or system property
          * {@link #CLUSTER_MEMBERS_PROP_NAME} if set.
          *
@@ -558,6 +582,7 @@ public class ConsensusModule implements AutoCloseable
         private RecordingLog recordingLog;
 
         private int clusterMemberId = Configuration.clusterMemberId();
+        private int appointedLeaderId = Configuration.appointedLeaderId();
         private String clusterMembers = Configuration.clusterMembers();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
@@ -827,6 +852,34 @@ public class ConsensusModule implements AutoCloseable
         public int clusterMemberId()
         {
             return clusterMemberId;
+        }
+
+        /**
+         * The cluster member id of the appointed cluster leader.
+         * <p>
+         * -1 means no leader has been appointed and an automated leader election should occur.
+         *
+         * @param appointedLeaderId for the cluster.
+         * @return this for a fluent API.
+         * @see Configuration#APPOINTED_LEADER_ID_PROP_NAME
+         */
+        public Context appointedLeaderId(final int appointedLeaderId)
+        {
+            this.appointedLeaderId = appointedLeaderId;
+            return this;
+        }
+
+        /**
+         * The cluster member id of the appointed cluster leader.
+         * <p>
+         * -1 means no leader has been appointed and an automated leader election should occur.
+         *
+         * @return cluster member id of the appointed cluster leader.
+         * @see Configuration#APPOINTED_LEADER_ID_PROP_NAME
+         */
+        public int appointedLeaderId()
+        {
+            return appointedLeaderId;
         }
 
         /**

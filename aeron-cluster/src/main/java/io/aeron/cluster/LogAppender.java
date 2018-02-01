@@ -40,7 +40,7 @@ class LogAppender
     private Publication publication;
     private String recordingChannel;
 
-    public void connect(final Aeron aeron, final AeronArchive aeronArchive, final String channel, final int streamId)
+    public int connect(final Aeron aeron, final AeronArchive aeronArchive, final String channel, final int streamId)
     {
         if (null != publication)
         {
@@ -48,8 +48,11 @@ class LogAppender
         }
 
         publication = aeron.addExclusivePublication(channel, streamId);
-        recordingChannel = ChannelUri.addSessionId(channel, publication.sessionId());
+        final int sessionId = publication.sessionId();
+        recordingChannel = ChannelUri.addSessionId(channel, sessionId);
         aeronArchive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
+
+        return sessionId;
     }
 
     public void disconnect()

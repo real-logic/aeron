@@ -45,12 +45,12 @@ import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 class SequencerAgent implements Agent
 {
     private final long sessionTimeoutMs;
-    private final long leaderHeartbeatInteralMs;
+    private final long leaderHeartbeatIntervalMs;
     private long nextSessionId = 1;
     private long leadershipTermBeginPosition = 0;
     private long leadershipTermId = 0;
     private long lastRecordingPosition = 0;
-    private long timeOfLastLeaderUpdate = 0;
+    private long timeOfLastLeaderUpdateMs = 0;
     private int leaderMemberId;
     private int serviceAckCount = 0;
     private final int clusterMemberId;
@@ -94,7 +94,7 @@ class SequencerAgent implements Agent
         this.epochClock = ctx.epochClock();
         this.cachedEpochClock = ctx.cachedEpochClock();
         this.sessionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.sessionTimeoutNs());
-        this.leaderHeartbeatInteralMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
+        this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
         this.egressPublisher = egressPublisher;
         this.moduleState = ctx.moduleStateCounter();
         this.controlToggle = ctx.controlToggleCounter();
@@ -936,12 +936,12 @@ class SequencerAgent implements Agent
 
                 final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
                 if (position > quorumPosition.getWeak() ||
-                    nowMs >= (timeOfLastLeaderUpdate + leaderHeartbeatInteralMs))
+                    nowMs >= (timeOfLastLeaderUpdateMs + leaderHeartbeatIntervalMs))
                 {
                     if (memberStatusPublisher.quorumPosition(position, leadershipTermId, clusterMemberId))
                     {
                         quorumPosition.setOrdered(position);
-                        timeOfLastLeaderUpdate = nowMs;
+                        timeOfLastLeaderUpdateMs = nowMs;
                     }
 
                     workCount = 1;

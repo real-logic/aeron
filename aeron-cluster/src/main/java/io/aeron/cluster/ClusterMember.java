@@ -25,6 +25,7 @@ public final class ClusterMember
     private long termPosition;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
+    private final String logEndpoint;
 
     /**
      * Construct a new member of the cluster.
@@ -32,12 +33,18 @@ public final class ClusterMember
      * @param id                   unique id for the member.
      * @param clientFacingEndpoint address and port endpoint to which cluster clients connect.
      * @param memberFacingEndpoint address and port endpoint to which other cluster members connect.
+     * @param logEndpoint          address and port endpoint to which the log is replicated.
      */
-    public ClusterMember(final int id, final String clientFacingEndpoint, final String memberFacingEndpoint)
+    public ClusterMember(
+        final int id,
+        final String clientFacingEndpoint,
+        final String memberFacingEndpoint,
+        final String logEndpoint)
     {
         this.id = id;
         this.clientFacingEndpoint = clientFacingEndpoint;
         this.memberFacingEndpoint = memberFacingEndpoint;
+        this.logEndpoint = logEndpoint;
     }
 
     /**
@@ -111,10 +118,20 @@ public final class ClusterMember
     }
 
     /**
+     * The address:port endpoint for this cluster member that the log is replicated to.
+     *
+     * @return the address:port endpoint for this cluster member that the log is replicated to.
+     */
+    public String logEndpoint()
+    {
+        return logEndpoint;
+    }
+
+    /**
      * Parse the details for a cluster members from a string.
      * <p>
      * <code>
-     *     0,client-facing:port,member-facing:port|1,client-facing:port,member-facing:port| ...
+     *     0,client-facing:port,member-facing:port,log:port|1,client-facing:port,member-facing:port,log:port| ...
      * </code>
      *
      * @param value of the string to be parsed.
@@ -129,7 +146,7 @@ public final class ClusterMember
         for (int i = 0; i < length; i++)
         {
             final String[] memberAttributes = memberValues[i].split(",");
-            if (memberAttributes.length != 3)
+            if (memberAttributes.length != 4)
             {
                 throw new IllegalStateException("Invalid member value: " + memberValues[i]);
             }
@@ -137,7 +154,8 @@ public final class ClusterMember
             members[i] = new ClusterMember(
                 Integer.parseInt(memberAttributes[0]),
                 memberAttributes[1],
-                memberAttributes[2]);
+                memberAttributes[2],
+                memberAttributes[3]);
         }
 
         return members;

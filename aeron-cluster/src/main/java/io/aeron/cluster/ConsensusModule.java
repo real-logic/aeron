@@ -54,39 +54,44 @@ public class ConsensusModule implements AutoCloseable
         INIT(0, ClusterAction.INIT),
 
         /**
+         * Synchronise the log history with other cluster members.
+         */
+        SYNCHRONISE(1, null),
+
+        /**
          * Replaying any logs since the beginning or last snapshot.
          */
-        REPLAY(1, ClusterAction.REPLAY),
+        REPLAY(2, ClusterAction.REPLAY),
 
         /**
          * Active state with ingress and expired timers appended to the log.
          */
-        ACTIVE(2, null),
+        ACTIVE(3, null),
 
         /**
          * Suspended processing of ingress and expired timers.
          */
-        SUSPENDED(3, ClusterAction.SUSPEND),
+        SUSPENDED(4, ClusterAction.SUSPEND),
 
         /**
          * In the process of taking a snapshot.
          */
-        SNAPSHOT(4, ClusterAction.SNAPSHOT),
+        SNAPSHOT(5, ClusterAction.SNAPSHOT),
 
         /**
          * In the process of doing an orderly shutdown taking a snapshot first.
          */
-        SHUTDOWN(5, ClusterAction.SHUTDOWN),
+        SHUTDOWN(6, ClusterAction.SHUTDOWN),
 
         /**
          * Aborting processing and shutting down as soon as services ack without taking a snapshot.
          */
-        ABORT(6, ClusterAction.ABORT),
+        ABORT(7, ClusterAction.ABORT),
 
         /**
          * Terminal state.
          */
-        CLOSED(7, null);
+        CLOSED(8, null);
 
         static final State[] STATES;
 
@@ -244,7 +249,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Default property for the list of cluster member endpoints.
          */
-        public static final String CLUSTER_MEMBERS_DEFAULT = "0,localhost:9010,localhost:8001";
+        public static final String CLUSTER_MEMBERS_DEFAULT = "0,localhost:9010,localhost:8001,localhost:7001";
 
         /**
          * Channel to be used for archiving snapshots.
@@ -886,7 +891,7 @@ public class ConsensusModule implements AutoCloseable
          * String representing the cluster members.
          * <p>
          * <code>
-         *     0,client-facing:port,member-facing:port|1,client-facing:port,member-facing:port| ...
+         *     0,client-facing:port,member-facing:port,log:port|1,client-facing:port,member-facing:port,log:port| ...
          * </code>
          * <p>
          * The client facing endpoints will be used as the endpoint in {@link #ingressChannel()} if the endpoint is

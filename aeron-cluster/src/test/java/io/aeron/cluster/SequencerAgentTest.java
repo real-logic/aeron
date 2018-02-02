@@ -48,9 +48,9 @@ public class SequencerAgentTest
     private static final String RESPONSE_CHANNEL_ONE = "responseChannelOne";
     private static final String RESPONSE_CHANNEL_TWO = "responseChannelTwo";
     private static final String MEMBERS =
-        "0,address.one:1111,address.one:111|" +
-        "1,address.two:2222,address.two:222|" +
-        "2,address.three:3333,address.three:333";
+        "0,address.one:1111,address.one:111,address.one:11|" +
+        "1,address.two:2222,address.two:222,adress.two:22|" +
+        "2,address.three:3333,address.three:333,address.three:33";
 
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogAppender mockLogAppender = mock(LogAppender.class);

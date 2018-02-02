@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.CncFile;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
@@ -107,6 +108,7 @@ class Catalog implements AutoCloseable
     private final MappedByteBuffer indexMappedBBuffer;
     private final UnsafeBuffer indexUBuffer;
     private final UnsafeBuffer fieldAccessBuffer;
+    private final CncFile cncFile;
 
     private final int recordLength;
     private final int maxDescriptorStringsCombinedLength;
@@ -144,6 +146,11 @@ class Catalog implements AutoCloseable
             indexUBuffer = new UnsafeBuffer(indexMappedBBuffer);
             fieldAccessBuffer = new UnsafeBuffer(indexMappedBBuffer);
 
+            cncFile = new CncFile(
+                indexUBuffer,
+                CatalogHeaderEncoder.versionEncodingOffset(),
+                CatalogHeaderEncoder.timestampMsEncodingOffset());
+
             if (!indexPreExists && archiveDirChannel != null && fileSyncLevel > 0)
             {
                 archiveDirChannel.force(fileSyncLevel > 1);
@@ -173,11 +180,14 @@ class Catalog implements AutoCloseable
             {
                 new CatalogHeaderEncoder()
                     .wrap(indexUBuffer, 0)
-                    .version(CatalogHeaderEncoder.SCHEMA_VERSION)
                     .entryLength(DEFAULT_RECORD_LENGTH);
+
+                cncFile.signalCncReady(CatalogHeaderEncoder.SCHEMA_VERSION);
 
                 recordLength = DEFAULT_RECORD_LENGTH;
             }
+
+            cncFile.timestampOrdered(epochClock.time());
 
             maxDescriptorStringsCombinedLength =
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
@@ -195,6 +205,11 @@ class Catalog implements AutoCloseable
     public void close()
     {
         IoUtil.unmap(indexMappedBBuffer);
+    }
+
+    public void updateTimestamp(final long nowMs)
+    {
+        cncFile.timestampOrdered(nowMs);
     }
 
     long addNewRecording(

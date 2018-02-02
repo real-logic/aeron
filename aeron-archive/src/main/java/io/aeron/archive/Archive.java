@@ -307,6 +307,7 @@ public class Archive implements AutoCloseable
 
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
+        private NanoClock nanoClock;
 
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
@@ -329,6 +330,11 @@ public class Archive implements AutoCloseable
             if (null == epochClock)
             {
                 epochClock = new SystemEpochClock();
+            }
+
+            if (null == nanoClock)
+            {
+                nanoClock = new SystemNanoClock();
             }
 
             if (null == aeron)
@@ -641,6 +647,28 @@ public class Archive implements AutoCloseable
         public EpochClock epochClock()
         {
             return epochClock;
+        }
+
+        /**
+         * Set the {@link NanoClock} to be used.
+         *
+         * @param clock {@link NanoClock} to be used.
+         * @return this for a fluent API.
+         */
+        public Context nanoCLock(final NanoClock clock)
+        {
+            this.nanoClock = clock;
+            return this;
+        }
+
+        /**
+         * Get the {@link NanoClock} to usede.
+         *
+         * @return the {@link NanoClock} to used.
+         */
+        public NanoClock nanoClock()
+        {
+            return nanoClock;
         }
 
         /**

@@ -26,6 +26,7 @@ import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -59,6 +60,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final AgentInvoker aeronAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
     private final EpochClock epochClock;
+    private final NanoClock nanoClock;
     private final File archiveDir;
     private final FileChannel archiveDirChannel;
     private final Subscription controlSubscription;
@@ -75,6 +77,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     protected SessionWorker<RecordingSession> recorder;
 
     private long nextControlSessionId = ThreadLocalRandom.current().nextInt();
+    private long clockUpdateDeadlineNs;
 
     ArchiveConductor(final Aeron aeron, final Archive.Context ctx)
     {
@@ -86,6 +89,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         aeronAgentInvoker = ctx.ownsAeronClient() ? aeron.conductorAgentInvoker() : null;
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
         epochClock = ctx.epochClock();
+        nanoClock = ctx.nanoClock();
         archiveDir = ctx.archiveDir();
         archiveDirChannel = channelForDirectorySync(archiveDir, ctx.fileSyncLevel());
         controlResponseProxy = new ControlResponseProxy();
@@ -147,6 +151,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         workCount += null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
         workCount += null != aeronAgentInvoker ? aeronAgentInvoker.invoke() : 0;
+
+        updateClockAndCatalogTimestamp(nanoClock.nanoTime());
 
         return workCount;
     }
@@ -762,5 +768,16 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private static String makeKey(final int streamId, final String strippedChannel)
     {
         return streamId + ":" + strippedChannel;
+    }
+
+    private void updateClockAndCatalogTimestamp(final long nowNs)
+    {
+        if (nowNs >= clockUpdateDeadlineNs)
+        {
+            clockUpdateDeadlineNs = nowNs + 1_000_000;
+            // TODO: update cached epochClock
+            // TODO: update cached nanoClock
+            catalog.updateTimestamp(epochClock.time());
+        }
     }
 }

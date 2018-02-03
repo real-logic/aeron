@@ -28,7 +28,7 @@ class SnapshotLoader implements ControlledFragmentHandler
     private static final int FRAGMENT_LIMIT = 10;
 
     private boolean inSnapshot = false;
-    private boolean inProgress = true;
+    private boolean isDone = false;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
     private final ClusterSessionDecoder clusterSessionDecoder = new ClusterSessionDecoder();
@@ -42,9 +42,9 @@ class SnapshotLoader implements ControlledFragmentHandler
         this.sequencerAgent = agent;
     }
 
-    public boolean inProgress()
+    public boolean isDone()
     {
-        return inProgress;
+        return isDone;
     }
 
     public int poll()
@@ -87,7 +87,7 @@ class SnapshotLoader implements ControlledFragmentHandler
                         {
                             throw new IllegalStateException("Missing begin snapshot");
                         }
-                        inProgress = false;
+                        isDone = true;
                         return Action.BREAK;
                 }
                 break;

@@ -877,12 +877,17 @@ class SequencerAgent implements Agent
             }
 
             final SnapshotLoader snapshotLoader = new SnapshotLoader(image, this);
-            while (snapshotLoader.inProgress())
+            while (true)
             {
                 final int fragments = snapshotLoader.poll();
                 if (fragments == 0)
                 {
-                    if (image.isClosed() && snapshotLoader.inProgress())
+                    if (snapshotLoader.isDone())
+                    {
+                        break;
+                    }
+
+                    if (image.isClosed())
                     {
                         throw new IllegalStateException("Snapshot ended unexpectedly");
                     }

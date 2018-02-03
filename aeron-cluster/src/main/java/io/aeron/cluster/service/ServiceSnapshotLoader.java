@@ -28,7 +28,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
     private static final int FRAGMENT_LIMIT = 10;
 
     private boolean inSnapshot = false;
-    private boolean inProgress = true;
+    private boolean isDone = false;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
     private final ClientSessionDecoder clientSessionDecoder = new ClientSessionDecoder();
@@ -41,9 +41,9 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
         this.agent = agent;
     }
 
-    public boolean inProgress()
+    public boolean isDone()
     {
-        return inProgress;
+        return isDone;
     }
 
     public int poll()
@@ -86,7 +86,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
                         {
                             throw new IllegalStateException("Missing begin snapshot");
                         }
-                        inProgress = false;
+                        isDone = true;
                         return Action.BREAK;
                 }
                 break;
@@ -110,6 +110,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
                 break;
 
             default:
+                System.out.println("offset = " + offset);
                 throw new IllegalStateException("Unknown template id: " + templateId);
         }
 

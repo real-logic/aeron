@@ -452,14 +452,19 @@ final class ClusteredServiceAgent implements Agent, Cluster
     private void loadState(final Image image)
     {
         final ServiceSnapshotLoader snapshotLoader = new ServiceSnapshotLoader(image, this);
-        while (snapshotLoader.inProgress())
+        while (true)
         {
             final int fragments = snapshotLoader.poll();
+            if (snapshotLoader.isDone())
+            {
+                break;
+            }
+
             if (fragments == 0)
             {
                 checkInterruptedStatus();
 
-                if (image.isClosed() && snapshotLoader.inProgress())
+                if (image.isClosed())
                 {
                     throw new IllegalStateException("Snapshot ended unexpectedly");
                 }

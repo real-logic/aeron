@@ -930,7 +930,8 @@ class SequencerAgent implements Agent
                 try (Counter counter = QuorumPos.allocate(
                     aeron, tempBuffer, recordingId, logPosition, leadershipTermId, sessionId, i))
                 {
-                    replayTerm(image, counter);
+                    counter.setOrdered(stopPosition);
+                    replayTerm(image);
                     waitForServiceAcks();
 
                     baseLogPosition += image.position();
@@ -1183,7 +1184,7 @@ class SequencerAgent implements Agent
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
-    private void replayTerm(final Image image, final Counter quorumPosition)
+    private void replayTerm(final Image image)
     {
         final LogAdapter logAdapter = new LogAdapter(image, this);
 
@@ -1201,10 +1202,6 @@ class SequencerAgent implements Agent
 
                     break;
                 }
-            }
-            else
-            {
-                quorumPosition.setOrdered(image.position());
             }
 
             idle(fragments);

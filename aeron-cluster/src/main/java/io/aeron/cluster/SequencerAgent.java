@@ -171,10 +171,9 @@ class SequencerAgent implements Agent
                 {
                     recoverFromLog(recoveryPlan.termSteps, archive);
                 }
-
-                state(ConsensusModule.State.ACTIVE);
             }
 
+            state(ConsensusModule.State.ACTIVE);
             final long nowMs = epochClock.time();
             cachedEpochClock.update(nowMs);
             timeOfLastLeaderUpdateMs = nowMs;

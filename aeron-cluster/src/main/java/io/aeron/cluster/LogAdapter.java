@@ -16,13 +16,13 @@
 package io.aeron.cluster;
 
 import io.aeron.Image;
-import io.aeron.ImageFragmentAssembler;
+import io.aeron.ImageControlledFragmentAssembler;
 import io.aeron.cluster.codecs.*;
-import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
-final class LogAdapter implements FragmentHandler
+final class LogAdapter implements ControlledFragmentHandler
 {
     /**
      * Length of the session header that will precede application protocol message.
@@ -32,7 +32,7 @@ final class LogAdapter implements FragmentHandler
 
     private static final int FRAGMENT_LIMIT = 10;
 
-    private final ImageFragmentAssembler fragmentAssembler = new ImageFragmentAssembler(this);
+    private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);
     private final Image image;
     private final SequencerAgent sequencerAgent;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -50,10 +50,10 @@ final class LogAdapter implements FragmentHandler
 
     int poll()
     {
-        return image.poll(fragmentAssembler, FRAGMENT_LIMIT);
+        return image.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
@@ -131,7 +131,9 @@ final class LogAdapter implements FragmentHandler
                     actionRequestDecoder.leadershipTermId(),
                     actionRequestDecoder.timestamp(),
                     actionRequestDecoder.action());
-                break;
+                return Action.BREAK;
         }
+
+        return Action.CONTINUE;
     }
 }

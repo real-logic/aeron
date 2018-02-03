@@ -224,7 +224,10 @@ class SequencerAgent implements Agent
                 break;
 
             case FOLLOWER:
-                workCount += logAdapter.poll();
+                if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
+                {
+                    workCount += logAdapter.poll();
+                }
                 break;
         }
 
@@ -399,12 +402,12 @@ class SequencerAgent implements Agent
         clusterRoleCounter.setOrdered(role.code());
     }
 
-    void logRecordingPosition(final ReadableCounter logRecordingPosition)
+    void logRecordingPositionCounter(final ReadableCounter logRecordingPosition)
     {
         this.logRecordingPosition = logRecordingPosition;
     }
 
-    void quorumPosition(final Counter quorumPosition)
+    void quorumPositionCounter(final Counter quorumPosition)
     {
         this.quorumPosition = quorumPosition;
     }
@@ -492,32 +495,26 @@ class SequencerAgent implements Agent
             case SNAPSHOT:
                 if (Cluster.Role.FOLLOWER == role)
                 {
+                    serviceAckCount = 0;
                     state(ConsensusModule.State.SNAPSHOT);
                     takeSnapshot(timestamp, termPosition);
-                    ctx.snapshotCounter().incrementOrdered();
-                    state(ConsensusModule.State.ACTIVE);
                 }
                 break;
 
             case SHUTDOWN:
                 if (Cluster.Role.FOLLOWER == role)
                 {
+                    serviceAckCount = 0;
                     state(ConsensusModule.State.SHUTDOWN);
                     takeSnapshot(timestamp, termPosition);
-                    ctx.snapshotCounter().incrementOrdered();
-                    ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.terminationHook().run();
                 }
                 break;
 
             case ABORT:
                 if (Cluster.Role.FOLLOWER == role)
                 {
+                    serviceAckCount = 0;
                     state(ConsensusModule.State.ABORT);
-                    ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.terminationHook().run();
                 }
                 break;
         }

@@ -95,8 +95,8 @@ public class SequencerAgentTest
         final long correlationIdOne = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
-        agent.quorumPosition(mock(Counter.class));
-        agent.logRecordingPosition(mock(ReadableCounter.class));
+        agent.quorumPositionCounter(mock(Counter.class));
+        agent.logRecordingPositionCounter(mock(ReadableCounter.class));
         agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         clock.update(1);
@@ -127,8 +127,8 @@ public class SequencerAgentTest
         final long correlationId = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
-        agent.quorumPosition(mock(Counter.class));
-        agent.logRecordingPosition(mock(ReadableCounter.class));
+        agent.quorumPositionCounter(mock(Counter.class));
+        agent.logRecordingPositionCounter(mock(ReadableCounter.class));
         agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         agent.doWork();
@@ -180,8 +180,8 @@ public class SequencerAgentTest
         ctx.epochClock(clock);
 
         final SequencerAgent agent = newSequencerAgent();
-        agent.quorumPosition(mock(Counter.class));
-        agent.logRecordingPosition(mock(ReadableCounter.class));
+        agent.quorumPositionCounter(mock(Counter.class));
+        agent.logRecordingPositionCounter(mock(ReadableCounter.class));
 
         assertThat((int)stateValue.get(), is(ConsensusModule.State.INIT.code()));
 

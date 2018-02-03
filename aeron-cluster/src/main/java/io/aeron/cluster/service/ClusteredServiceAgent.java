@@ -547,29 +547,21 @@ final class ClusteredServiceAgent implements Agent, Cluster
         {
             case SNAPSHOT:
                 onTakeSnapshot(termPosition);
-                sendServiceAck(action, logPosition);
+                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
                 break;
 
             case SHUTDOWN:
                 onTakeSnapshot(termPosition);
                 ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
-                sendServiceAck(action, logPosition);
+                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
                 ctx.terminationHook().run();
                 break;
 
             case ABORT:
                 ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
-                sendServiceAck(action, logPosition);
+                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
                 ctx.terminationHook().run();
                 break;
-        }
-    }
-
-    private void sendServiceAck(final ClusterAction action, final long logPosition)
-    {
-        if (Role.LEADER == role)
-        {
-            consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
         }
     }
 

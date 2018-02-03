@@ -34,11 +34,6 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 final class ClusteredServiceAgent implements Agent, Cluster
 {
-    enum State
-    {
-        INIT, REPLAY, ACTIVE, SNAPSHOT, CLOSED
-    }
-
     private final boolean shouldCloseResources;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
@@ -57,7 +52,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
     private BoundedLogAdapter logAdapter;
     private ReadableCounter quorumPosition;
     private ReadableCounter roleCounter;
-    private State state = State.INIT;
     private Role role = Role.CANDIDATE;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
@@ -111,7 +105,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
         }
 
         role = Role.get((int)roleValue);
-        state = State.ACTIVE;
 
         if (Role.LEADER == role)
         {
@@ -124,8 +117,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     public void onClose()
     {
-        state = State.CLOSED;
-
         if (shouldCloseResources)
         {
             CloseHelper.close(logSubscription);
@@ -169,7 +160,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     public boolean isReplay()
     {
-        return State.REPLAY == state;
+        return Role.CANDIDATE == role;
     }
 
     public Aeron aeron()
@@ -310,8 +301,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
             return;
         }
 
-        state = State.REPLAY;
-
         try (Subscription subscription = aeron.addSubscription(ctx.replayChannel(), ctx.replayStreamId()))
         {
             consensusModule.sendAcknowledgment(ClusterAction.INIT, baseLogPosition, leadershipTermId, timestampMs);
@@ -355,8 +344,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
                     idleStrategy.idle(workCount);
                 }
 
-                consensusModule.sendAcknowledgment(
-                    ClusterAction.REPLAY, baseLogPosition, leadershipTermId, timestampMs);
+                consensusModule.sendAcknowledgment(ClusterAction.INIT, baseLogPosition, leadershipTermId, timestampMs);
             }
         }
     }
@@ -484,7 +472,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     private void onTakeSnapshot(final long termPosition)
     {
-        state = State.SNAPSHOT;
         final long recordingId;
         final String channel = ctx.snapshotChannel();
         final int streamId = ctx.snapshotStreamId();
@@ -531,7 +518,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
         }
 
         recordingLog.appendSnapshot(recordingId, baseLogPosition, leadershipTermId, termPosition, timestampMs);
-        state = State.ACTIVE;
     }
 
     private void snapshotState(final Publication publication, final long logPosition)
@@ -550,7 +536,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     private void executeAction(final ClusterAction action, final long termPosition)
     {
-        if (State.ACTIVE != state)
+        if (Role.CANDIDATE == role)
         {
             return;
         }
@@ -561,23 +547,29 @@ final class ClusteredServiceAgent implements Agent, Cluster
         {
             case SNAPSHOT:
                 onTakeSnapshot(termPosition);
-                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
+                sendServiceAck(action, logPosition);
                 break;
 
             case SHUTDOWN:
                 onTakeSnapshot(termPosition);
                 ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
-                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
-                state = State.CLOSED;
+                sendServiceAck(action, logPosition);
                 ctx.terminationHook().run();
                 break;
 
             case ABORT:
                 ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
-                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
-                state = State.CLOSED;
+                sendServiceAck(action, logPosition);
                 ctx.terminationHook().run();
                 break;
+        }
+    }
+
+    private void sendServiceAck(final ClusterAction action, final long logPosition)
+    {
+        if (Role.LEADER == role)
+        {
+            consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
         }
     }
 

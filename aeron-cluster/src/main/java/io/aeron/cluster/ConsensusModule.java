@@ -54,44 +54,34 @@ public class ConsensusModule implements AutoCloseable
         INIT(0, ClusterAction.INIT),
 
         /**
-         * Synchronise the log history with other cluster members.
-         */
-        SYNCHRONISE(1, null),
-
-        /**
-         * Replaying any logs since the beginning or last snapshot.
-         */
-        REPLAY(2, ClusterAction.REPLAY),
-
-        /**
          * Active state with ingress and expired timers appended to the log.
          */
-        ACTIVE(3, null),
+        ACTIVE(1, null),
 
         /**
          * Suspended processing of ingress and expired timers.
          */
-        SUSPENDED(4, ClusterAction.SUSPEND),
+        SUSPENDED(2, ClusterAction.SUSPEND),
 
         /**
          * In the process of taking a snapshot.
          */
-        SNAPSHOT(5, ClusterAction.SNAPSHOT),
+        SNAPSHOT(3, ClusterAction.SNAPSHOT),
 
         /**
          * In the process of doing an orderly shutdown taking a snapshot first.
          */
-        SHUTDOWN(6, ClusterAction.SHUTDOWN),
+        SHUTDOWN(4, ClusterAction.SHUTDOWN),
 
         /**
          * Aborting processing and shutting down as soon as services ack without taking a snapshot.
          */
-        ABORT(7, ClusterAction.ABORT),
+        ABORT(5, ClusterAction.ABORT),
 
         /**
          * Terminal state.
          */
-        CLOSED(8, null);
+        CLOSED(6, null);
 
         static final State[] STATES;
 

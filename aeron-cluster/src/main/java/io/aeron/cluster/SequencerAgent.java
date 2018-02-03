@@ -169,7 +169,6 @@ class SequencerAgent implements Agent
 
                 if (recoveryPlan.termSteps.size() > 0)
                 {
-                    state(ConsensusModule.State.REPLAY);
                     recoverFromLog(recoveryPlan.termSteps, archive);
                 }
 
@@ -478,9 +477,8 @@ class SequencerAgent implements Agent
     void onReplayClusterAction(
         final long logPosition, final long leadershipTermId, final long timestamp, final ClusterAction action)
     {
-        validateLeadershipTerm(leadershipTermId, "Cluster action not for current leadership term: expected=");
-
         cachedEpochClock.update(timestamp);
+        final long termPosition = logPosition - baseLogPosition;
 
         switch (action)
         {
@@ -490,6 +488,38 @@ class SequencerAgent implements Agent
 
             case RESUME:
                 state(ConsensusModule.State.ACTIVE);
+                break;
+
+            case SNAPSHOT:
+                if (Cluster.Role.FOLLOWER == role)
+                {
+                    state(ConsensusModule.State.SNAPSHOT);
+                    takeSnapshot(timestamp, termPosition);
+                    ctx.snapshotCounter().incrementOrdered();
+                    state(ConsensusModule.State.ACTIVE);
+                }
+                break;
+
+            case SHUTDOWN:
+                if (Cluster.Role.FOLLOWER == role)
+                {
+                    state(ConsensusModule.State.SHUTDOWN);
+                    takeSnapshot(timestamp, termPosition);
+                    ctx.snapshotCounter().incrementOrdered();
+                    ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.terminationHook().run();
+                }
+                break;
+
+            case ABORT:
+                if (Cluster.Role.FOLLOWER == role)
+                {
+                    state(ConsensusModule.State.ABORT);
+                    ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.terminationHook().run();
+                }
                 break;
         }
     }
@@ -577,7 +607,7 @@ class SequencerAgent implements Agent
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT, nowMs))
                 {
                     state(ConsensusModule.State.SNAPSHOT);
-                    takeSnapshot(nowMs);
+                    takeSnapshot(nowMs, logAppender.position());
                     workCount = 1;
                 }
                 break;
@@ -587,7 +617,7 @@ class SequencerAgent implements Agent
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SHUTDOWN, nowMs))
                 {
                     state(ConsensusModule.State.SHUTDOWN);
-                    takeSnapshot(nowMs);
+                    takeSnapshot(nowMs, logAppender.position());
                     workCount = 1;
                 }
                 break;
@@ -1088,10 +1118,9 @@ class SequencerAgent implements Agent
         return workCount;
     }
 
-    private void takeSnapshot(final long timestampMs)
+    private void takeSnapshot(final long timestampMs, final long termPosition)
     {
         final long recordingId;
-        final long termPosition = logAppender.position();
         final long logPosition = baseLogPosition + termPosition;
         final String channel = ctx.snapshotChannel();
         final int streamId = ctx.snapshotStreamId();

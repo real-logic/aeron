@@ -37,12 +37,11 @@
         </enum>
         <enum name="ClusterAction" encodingType="int32" description="Action to be taken by a cluster nodes">
             <validValue name="INIT">0</validValue>
-            <validValue name="REPLAY">1</validValue>
-            <validValue name="SNAPSHOT">2</validValue>
-            <validValue name="SUSPEND">3</validValue>
-            <validValue name="RESUME">4</validValue>
-            <validValue name="SHUTDOWN">5</validValue>
-            <validValue name="ABORT">6</validValue>
+            <validValue name="SNAPSHOT">1</validValue>
+            <validValue name="SUSPEND">2</validValue>
+            <validValue name="RESUME">3</validValue>
+            <validValue name="SHUTDOWN">4</validValue>
+            <validValue name="ABORT">5</validValue>
         </enum>
         <enum name="SnapshotMark" encodingType="int32" description="Mark within a snapshot">
             <validValue name="BEGIN">0</validValue>

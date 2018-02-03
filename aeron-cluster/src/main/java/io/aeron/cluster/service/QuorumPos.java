@@ -38,7 +38,7 @@ import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
  *  |             Recording ID for the leadership term              |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |         Log Position at beginning of leadership term          |
+ *  |            Log Position at base of leadership term            |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                     Leadership Term ID                        |
@@ -65,7 +65,7 @@ public class QuorumPos
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "quorum-pos: ";
+    public static final String NAME = "quorum-pos: leadershipTermId=";
 
     public static final int RECORDING_ID_OFFSET = 0;
     public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
@@ -103,8 +103,10 @@ public class QuorumPos
 
         int labelOffset = 0;
         labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, NAME);
+        labelOffset += tempBuffer.putLongAscii(KEY_LENGTH + labelOffset, leadershipTermId);
+        labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, " logSessionId=");
         labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, sessionId);
-        labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, " ");
+        labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, " replayStep=");
         labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, replayStep);
 
         return aeron.addCounter(
@@ -192,13 +194,13 @@ public class QuorumPos
     }
 
     /**
-     * Get the accumulated log position for the beginning of the leadership term associated with the recording.
+     * Get the accumulated log position as a base for this leadership term.
      *
      * @param counters  to search within.
      * @param counterId for the active quorum position.
      * @return the beginning log position if found otherwise {@link #NULL_VALUE}.
      */
-    public static long getTermBeginningLogPosition(final CountersReader counters, final int counterId)
+    public static long getBaseLogPosition(final CountersReader counters, final int counterId)
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 

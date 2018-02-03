@@ -22,6 +22,7 @@ import org.junit.Test;
 import java.io.File;
 
 import static io.aeron.cluster.service.RecordingLog.ENTRY_TYPE_SNAPSHOT;
+import static io.aeron.cluster.service.RecordingLog.ENTRY_TYPE_TERM;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -47,15 +48,30 @@ public class RecordingLogTest
     public void shouldAppendAndThenReloadLatestSnapshot()
     {
         final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
+        final RecordingLog.Entry entry = new RecordingLog.Entry(1, 2, 3, 4, 777, ENTRY_TYPE_SNAPSHOT);
 
-        final RecordingLog.Entry entry = new RecordingLog.Entry(1, 2, 3, 4, ENTRY_TYPE_SNAPSHOT);
-
-        recordingLog.appendSnapshot(entry.recordingId, entry.logPosition, entry.leadershipTermId, entry.timestamp);
+        recordingLog.appendSnapshot(entry.recordingId, entry.logPosition, entry.leadershipTermId, 777, entry.timestamp);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
         assertThat(recordingLogTwo.entries().size(), is(1));
 
         final RecordingLog.Entry snapshot = recordingLogTwo.getLatestSnapshot();
         assertEquals(entry.toString(), snapshot.toString());
+    }
+
+    @Test
+    public void shouldAppendAndThenCommitTermPosition()
+    {
+        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
+        final RecordingLog.Entry entry = new RecordingLog.Entry(1, 2, 3, 4, 777, ENTRY_TYPE_TERM);
+
+        recordingLog.appendTerm(entry.recordingId, entry.logPosition, entry.leadershipTermId, entry.timestamp);
+        recordingLog.commitLeadershipTermPosition(entry.leadershipTermId, 777);
+
+        final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
+        assertThat(recordingLogTwo.entries().size(), is(1));
+
+        final RecordingLog.Entry actualEntry = recordingLogTwo.entries().get(0);
+        assertEquals(entry.toString(), actualEntry.toString());
     }
 }

@@ -47,8 +47,8 @@ class SequencerAgent implements Agent
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
     private long nextSessionId = 1;
-    private long leadershipTermBeginPosition = 0;
-    private long leadershipTermId = 0;
+    private long baseLogPosition = 0;
+    private long leadershipTermId = -1;
     private long lastRecordingPosition = 0;
     private long timeOfLastLeaderUpdateMs = 0;
     private int serviceAckCount = 0;
@@ -183,6 +183,7 @@ class SequencerAgent implements Agent
             final int sessionId;
             if (clusterMemberId == ctx.appointedLeaderId() || clusterMembers.length == 1)
             {
+                leadershipTermId++;
                 sessionId = logAppender.connect(aeron, archive, ctx.logChannel(), ctx.logStreamId());
                 becomeLeader(nowMs);
             }
@@ -197,9 +198,9 @@ class SequencerAgent implements Agent
             final long recordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
 
             quorumPosition = QuorumPos.allocate(
-                aeron, tempBuffer, recordingId, leadershipTermBeginPosition, leadershipTermId, sessionId, -1);
+                aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, sessionId, -1);
 
-            ctx.recordingLog().appendTerm(recordingId, leadershipTermBeginPosition, leadershipTermId, nowMs);
+            ctx.recordingLog().appendTerm(recordingId, baseLogPosition, leadershipTermId, nowMs);
         }
     }
 
@@ -252,6 +253,8 @@ class SequencerAgent implements Agent
 
         if (++serviceAckCount == ctx.serviceCount())
         {
+            final long termPosition = logPosition - baseLogPosition;
+
             switch (action)
             {
                 case SNAPSHOT:
@@ -268,11 +271,13 @@ class SequencerAgent implements Agent
 
                 case SHUTDOWN:
                     ctx.snapshotCounter().incrementOrdered();
+                    ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
                     break;
 
                 case ABORT:
+                    ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
                     break;
@@ -602,7 +607,7 @@ class SequencerAgent implements Agent
 
     private boolean appendAction(final ClusterAction action, final long nowMs)
     {
-        final long position = leadershipTermBeginPosition +
+        final long position = baseLogPosition +
             logAppender.position() +
             MessageHeaderEncoder.ENCODED_LENGTH +
             ClusterActionRequestEncoder.BLOCK_LENGTH;
@@ -820,7 +825,7 @@ class SequencerAgent implements Agent
         final RecordingLog.Entry snapshot = snapshotStep.entry;
 
         cachedEpochClock.update(snapshot.timestamp);
-        leadershipTermBeginPosition = snapshot.logPosition;
+        baseLogPosition = snapshot.logPosition;
         leadershipTermId = snapshot.leadershipTermId;
 
         final long recordingId = snapshot.recordingId;
@@ -837,7 +842,6 @@ class SequencerAgent implements Agent
         final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
 
         final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, sessionId);
-
         try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
         {
             Image image;
@@ -880,7 +884,11 @@ class SequencerAgent implements Agent
                 final long length = NULL_POSITION == stopPosition ? Long.MAX_VALUE : stopPosition - startPosition;
                 final long logPosition = entry.logPosition;
 
-                leadershipTermBeginPosition = logPosition;
+                if (logPosition != baseLogPosition)
+                {
+                    throw new IllegalStateException("base position for log not as expected: expected " +
+                        baseLogPosition + " actual " + logPosition);
+                }
                 leadershipTermId = entry.leadershipTermId;
 
                 final int sessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, streamId);
@@ -898,6 +906,8 @@ class SequencerAgent implements Agent
                 {
                     replayTerm(image, counter);
                     waitForServiceAcks();
+
+                    baseLogPosition += image.position();
 
                     failedTimerCancellations.forEachOrderedLong(timerService::cancelTimer);
                     failedTimerCancellations.clear();
@@ -918,10 +928,10 @@ class SequencerAgent implements Agent
             final RecordingLog.Entry snapshot = snapshotStep.entry;
 
             return RecoveryState.allocate(
-                aeron, tempBuffer, snapshot.logPosition, snapshot.leadershipTermId, snapshot.timestamp, termCount);
+                aeron, tempBuffer, snapshot.leadershipTermId, snapshot.termPosition, snapshot.timestamp, termCount);
         }
 
-        return RecoveryState.allocate(aeron, tempBuffer, 0, leadershipTermId, 0, termCount);
+        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, NULL_POSITION, 0, termCount);
     }
 
     private void waitForServiceAcks()
@@ -941,7 +951,7 @@ class SequencerAgent implements Agent
     private void validateServiceAck(
         final long serviceId, final long logPosition, final long leadershipTermId, final ClusterAction action)
     {
-        final long currentLogPosition = leadershipTermBeginPosition + logAppender.position();
+        final long currentLogPosition = baseLogPosition + logAppender.position();
         if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)
         {
             throw new IllegalStateException("Invalid log state:" +
@@ -1081,7 +1091,8 @@ class SequencerAgent implements Agent
     private void takeSnapshot(final long timestampMs)
     {
         final long recordingId;
-        final long logPosition = leadershipTermBeginPosition + logAppender.position();
+        final long termPosition = logAppender.position();
+        final long logPosition = baseLogPosition + termPosition;
         final String channel = ctx.snapshotChannel();
         final int streamId = ctx.snapshotStreamId();
 
@@ -1122,7 +1133,7 @@ class SequencerAgent implements Agent
             }
         }
 
-        ctx.recordingLog().appendSnapshot(recordingId, logPosition, leadershipTermId, timestampMs);
+        ctx.recordingLog().appendSnapshot(recordingId, baseLogPosition, leadershipTermId, termPosition, timestampMs);
     }
 
     private void snapshotState(final Publication publication, final long logPosition, final long leadershipTermId)

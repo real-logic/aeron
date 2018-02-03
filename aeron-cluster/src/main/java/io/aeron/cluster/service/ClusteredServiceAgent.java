@@ -30,6 +30,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.CommonContext.SPY_PREFIX;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 final class ClusteredServiceAgent implements Agent, Cluster
 {
@@ -49,7 +50,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
 
-    private long leadershipTermBeginPosition = 0;
+    private long baseLogPosition;
     private long leadershipTermId;
     private long currentRecordingId;
     private long timestampMs;
@@ -93,6 +94,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
         findQuorumPositionCounter(counters, logSubscription);
 
+        leadershipTermId = QuorumPos.getLeadershipTermId(counters, quorumPosition.counterId());
         final int sessionId = QuorumPos.getLogSessionId(counters, quorumPosition.counterId());
         final Image image = logSubscription.imageBySessionId(sessionId);
         logAdapter = new BoundedLogAdapter(image, quorumPosition, this);
@@ -257,11 +259,11 @@ final class ClusteredServiceAgent implements Agent, Cluster
         service.onSessionClose(session, timestampMs, closeReason);
     }
 
-    void onServiceAction(final long resultingPosition, final long timestampMs, final ClusterAction action)
+    void onServiceAction(final long termPosition, final long timestampMs, final ClusterAction action)
     {
         this.timestampMs = timestampMs;
 
-        executeAction(action, leadershipTermBeginPosition + resultingPosition);
+        executeAction(action, termPosition);
     }
 
     void addSession(
@@ -282,21 +284,19 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
     {
-        final long logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
+        final long termPosition = RecoveryState.getTermPosition(counters, recoveryCounterId);
+        leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
+        timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
 
-        if (logPosition > 0)
+        if (NULL_POSITION != termPosition)
         {
-            final RecordingLog.Entry snapshotEntry = recordingLog.getSnapshotByPosition(logPosition);
+            final RecordingLog.Entry snapshotEntry = recordingLog.getSnapshot(leadershipTermId, termPosition);
             if (null == snapshotEntry)
             {
-                throw new IllegalStateException("No snapshot available for position: " + logPosition);
+                throw new IllegalStateException("No snapshot available for term: " + termPosition);
             }
 
-            leadershipTermBeginPosition = logPosition;
-            leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
-            timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
-
-            snapshotEntry.confirmMatch(logPosition, leadershipTermId, timestampMs);
+            baseLogPosition = snapshotEntry.logPosition;
             loadSnapshot(snapshotEntry.recordingId);
         }
     }
@@ -306,9 +306,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         final long replayTermCount = RecoveryState.getReplayTermCount(counters, recoveryCounterId);
         if (0 == replayTermCount)
         {
-            consensusModule.sendAcknowledgment(
-                ClusterAction.INIT, leadershipTermBeginPosition, leadershipTermId, timestampMs);
-
+            consensusModule.sendAcknowledgment(ClusterAction.INIT, baseLogPosition, leadershipTermId, timestampMs);
             return;
         }
 
@@ -316,14 +314,14 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
         try (Subscription subscription = aeron.addSubscription(ctx.replayChannel(), ctx.replayStreamId()))
         {
-            consensusModule.sendAcknowledgment(
-                ClusterAction.INIT, leadershipTermBeginPosition, leadershipTermId, timestampMs);
+            consensusModule.sendAcknowledgment(ClusterAction.INIT, baseLogPosition, leadershipTermId, timestampMs);
 
             for (int i = 0; i < replayTermCount; i++)
             {
                 final int counterId = findReplayQuorumCounterId(counters, i);
                 final int sessionId = QuorumPos.getLogSessionId(counters, counterId);
-                leadershipTermBeginPosition = QuorumPos.getTermBeginningLogPosition(counters, counterId);
+                baseLogPosition = QuorumPos.getBaseLogPosition(counters, counterId);
+                leadershipTermId = QuorumPos.getLeadershipTermId(counters, counterId);
 
                 idleStrategy.reset();
                 Image image;
@@ -358,7 +356,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
                 }
 
                 consensusModule.sendAcknowledgment(
-                    ClusterAction.REPLAY, leadershipTermBeginPosition, leadershipTermId, timestampMs);
+                    ClusterAction.REPLAY, baseLogPosition, leadershipTermId, timestampMs);
             }
         }
     }
@@ -449,7 +447,6 @@ final class ClusteredServiceAgent implements Agent, Cluster
             final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
 
             final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, sessionId);
-
             try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
             {
                 Image image;
@@ -485,7 +482,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         }
     }
 
-    private void onTakeSnapshot(final long logPosition)
+    private void onTakeSnapshot(final long termPosition)
     {
         state = State.SNAPSHOT;
         final long recordingId;
@@ -512,7 +509,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
                 }
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
-                snapshotState(publication, logPosition);
+                snapshotState(publication, baseLogPosition + termPosition);
                 service.onTakeSnapshot(publication);
 
                 do
@@ -533,7 +530,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
             }
         }
 
-        recordingLog.appendSnapshot(recordingId, logPosition, leadershipTermId, timestampMs);
+        recordingLog.appendSnapshot(recordingId, baseLogPosition, leadershipTermId, termPosition, timestampMs);
         state = State.ACTIVE;
     }
 
@@ -551,29 +548,33 @@ final class ClusteredServiceAgent implements Agent, Cluster
         snapshotTaker.markEnd(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
-    private void executeAction(final ClusterAction action, final long position)
+    private void executeAction(final ClusterAction action, final long termPosition)
     {
         if (State.ACTIVE != state)
         {
             return;
         }
 
+        final long logPosition = baseLogPosition + termPosition;
+
         switch (action)
         {
             case SNAPSHOT:
-                onTakeSnapshot(position);
-                consensusModule.sendAcknowledgment(action, position, leadershipTermId, timestampMs);
+                onTakeSnapshot(termPosition);
+                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
                 break;
 
             case SHUTDOWN:
-                onTakeSnapshot(position);
-                consensusModule.sendAcknowledgment(action, position, leadershipTermId, timestampMs);
+                onTakeSnapshot(termPosition);
+                ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
+                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
                 state = State.CLOSED;
                 ctx.terminationHook().run();
                 break;
 
             case ABORT:
-                consensusModule.sendAcknowledgment(action, position, leadershipTermId, timestampMs);
+                ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
+                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
                 state = State.CLOSED;
                 ctx.terminationHook().run();
                 break;

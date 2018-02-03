@@ -23,7 +23,7 @@ import org.agrona.DirectBuffer;
 
 import static io.aeron.cluster.service.ClusteredServiceContainer.SNAPSHOT_TYPE_ID;
 
-class SnapshotLoader implements ControlledFragmentHandler
+class ServiceSnapshotLoader implements ControlledFragmentHandler
 {
     private static final int FRAGMENT_LIMIT = 10;
 
@@ -35,7 +35,7 @@ class SnapshotLoader implements ControlledFragmentHandler
     private final Image image;
     private final ClusteredServiceAgent agent;
 
-    SnapshotLoader(final Image image, final ClusteredServiceAgent agent)
+    ServiceSnapshotLoader(final Image image, final ClusteredServiceAgent agent)
     {
         this.image = image;
         this.agent = agent;

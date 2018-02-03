@@ -451,7 +451,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     private void loadState(final Image image)
     {
-        final SnapshotLoader snapshotLoader = new SnapshotLoader(image, this);
+        final ServiceSnapshotLoader snapshotLoader = new ServiceSnapshotLoader(image, this);
         while (snapshotLoader.inProgress())
         {
             final int fragments = snapshotLoader.poll();

@@ -44,17 +44,18 @@ import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 
 class SequencerAgent implements Agent
 {
+    private final int clusterMemberId;
+    private int leaderMemberId;
+    private int serviceAckCount = 0;
     private final long sessionTimeoutMs;
-    private final long leaderHeartbeatIntervalMs;
+    private final long heartbeatIntervalMs;
+    private final long heartbeatTimeoutMs;
     private long nextSessionId = 1;
     private long baseLogPosition = 0;
     private long leadershipTermId = -1;
     private long lastRecordingPosition = 0;
-    private long timeOfLastLeaderUpdateMs = 0;
+    private long timeOfLastLogUpdateMs = 0;
     private long followerQuorumPosition = 0;
-    private int serviceAckCount = 0;
-    private int leaderMemberId;
-    private final int clusterMemberId;
     private ReadableCounter logRecordingPosition;
     private Counter quorumPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -96,7 +97,8 @@ class SequencerAgent implements Agent
         this.epochClock = ctx.epochClock();
         this.cachedEpochClock = ctx.cachedEpochClock();
         this.sessionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.sessionTimeoutNs());
-        this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
+        this.heartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.heartbeatIntervalNs());
+        this.heartbeatTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.heartbeatTimeoutNs());
         this.egressPublisher = egressPublisher;
         this.moduleState = ctx.moduleStateCounter();
         this.controlToggle = ctx.controlToggleCounter();
@@ -177,7 +179,7 @@ class SequencerAgent implements Agent
             state(ConsensusModule.State.ACTIVE);
             final long nowMs = epochClock.time();
             cachedEpochClock.update(nowMs);
-            timeOfLastLeaderUpdateMs = nowMs;
+            timeOfLastLogUpdateMs = nowMs;
 
             final int sessionId;
             if (clusterMemberId == ctx.appointedLeaderId() || clusterMembers.length == 1)
@@ -188,6 +190,7 @@ class SequencerAgent implements Agent
             }
             else
             {
+                // TODO: record remote log
                 sessionId = connectLogAdapter(aeron, ctx.logChannel(), ctx.logStreamId());
                 becomeFollower(nowMs, leaderMemberId);
             }
@@ -547,7 +550,7 @@ class SequencerAgent implements Agent
                 this.leaderMemberId + " received=" + leaderMemberId);
         }
 
-        timeOfLastLeaderUpdateMs = cachedEpochClock.time();
+        timeOfLastLogUpdateMs = cachedEpochClock.time();
         followerQuorumPosition = termPosition;
     }
 
@@ -1050,12 +1053,12 @@ class SequencerAgent implements Agent
 
                 final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
                 if (position > quorumPosition.getWeak() ||
-                    nowMs >= (timeOfLastLeaderUpdateMs + leaderHeartbeatIntervalMs))
+                    nowMs >= (timeOfLastLogUpdateMs + heartbeatIntervalMs))
                 {
                     if (memberStatusPublisher.quorumPosition(position, leadershipTermId, clusterMemberId))
                     {
                         quorumPosition.setOrdered(position);
-                        timeOfLastLeaderUpdateMs = nowMs;
+                        timeOfLastLogUpdateMs = nowMs;
                     }
 
                     workCount = 1;
@@ -1078,7 +1081,7 @@ class SequencerAgent implements Agent
 
                 quorumPosition.proposeMaxOrdered(logAdapter.position());
 
-                if (nowMs >= (timeOfLastLeaderUpdateMs + leaderHeartbeatIntervalMs))
+                if (nowMs >= (timeOfLastLogUpdateMs + heartbeatTimeoutMs))
                 {
                     throw new AgentTerminationException("No heartbeat detected from cluster leader");
                 }

@@ -51,6 +51,7 @@ class SequencerAgent implements Agent
     private long leadershipTermId = -1;
     private long lastRecordingPosition = 0;
     private long timeOfLastLeaderUpdateMs = 0;
+    private long followerQuorumPosition = 0;
     private int serviceAckCount = 0;
     private int leaderMemberId;
     private final int clusterMemberId;
@@ -226,7 +227,7 @@ class SequencerAgent implements Agent
             case FOLLOWER:
                 if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
                 {
-                    workCount += logAdapter.poll();
+                    workCount += logAdapter.poll(followerQuorumPosition);
                 }
                 break;
         }
@@ -547,7 +548,7 @@ class SequencerAgent implements Agent
         }
 
         timeOfLastLeaderUpdateMs = cachedEpochClock.time();
-        quorumPosition.setOrdered(termPosition);
+        followerQuorumPosition = termPosition;
     }
 
     private int slowTickCycle(final long nowMs)
@@ -936,7 +937,7 @@ class SequencerAgent implements Agent
                     aeron, tempBuffer, recordingId, logPosition, leadershipTermId, sessionId, i))
                 {
                     counter.setOrdered(stopPosition);
-                    replayTerm(image);
+                    replayTerm(image, stopPosition);
                     waitForServiceAcks();
 
                     baseLogPosition += image.position();
@@ -1075,6 +1076,8 @@ class SequencerAgent implements Agent
                     workCount = 1;
                 }
 
+                quorumPosition.proposeMaxOrdered(logAdapter.position());
+
                 if (nowMs >= (timeOfLastLeaderUpdateMs + leaderHeartbeatIntervalMs))
                 {
                     throw new AgentTerminationException("No heartbeat detected from cluster leader");
@@ -1189,13 +1192,13 @@ class SequencerAgent implements Agent
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
-    private void replayTerm(final Image image)
+    private void replayTerm(final Image image, final long termLimit)
     {
         final LogAdapter logAdapter = new LogAdapter(image, this);
 
         while (true)
         {
-            final int fragments = logAdapter.poll();
+            final int fragments = logAdapter.poll(termLimit);
             if (fragments == 0)
             {
                 if (image.isClosed())

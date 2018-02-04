@@ -48,9 +48,14 @@ final class LogAdapter implements ControlledFragmentHandler
         this.sequencerAgent = sequencerAgent;
     }
 
-    int poll()
+    long position()
     {
-        return image.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
+        return image.position();
+    }
+
+    int poll(final long boundPosition)
+    {
+        return image.boundedControlledPoll(fragmentAssembler, boundPosition, FRAGMENT_LIMIT);
     }
 
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

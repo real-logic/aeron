@@ -251,9 +251,10 @@
 
         The leader replicates a log stream to all followers for its term as leader. Leadership term ids are monotonic.
 
-        The followers persist the replicated log locally and send updates to the leader of the highest position they
-        have persisted in the current term. Each term as a position starting at zero with the total log position
-        has reached being an accumulation of the term positions across all leadership terms.
+        The followers persist the replicated log locally and sends updates to the leader with the highest position they
+        have persisted in the current term. Each term has a position starting at zero with the total log position
+        reached being an accumulation of the term positions across all leadership terms. Each leadership term starts
+        with base log position for the accumulated term positions.
 
         The leader gathers the positions reached by the followers, plus its own locally persisted log, and publishes
         the highest position for a quorum of the member nodes including itself. If the quorum position does not

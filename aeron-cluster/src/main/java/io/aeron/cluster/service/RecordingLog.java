@@ -24,6 +24,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -224,7 +225,7 @@ public class RecordingLog
 
     private final File parentDir;
     private final File indexFile;
-    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
+    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(ByteOrder.LITTLE_ENDIAN);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
     private final ArrayList<Entry> entries = new ArrayList<>();
 

@@ -28,9 +28,10 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final NewLeadershipTermDecoder newLeadershipTermDecoder = new NewLeadershipTermDecoder();
+    private final CommittedPositionDecoder committedPositionDecoder = new CommittedPositionDecoder();
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
     private final QuorumPositionDecoder quorumPositionDecoder = new QuorumPositionDecoder();
-    private final NewLeadershipTermDecoder newLeadershipTermDecoder = new NewLeadershipTermDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -74,6 +75,19 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     newLeadershipTermDecoder.logSessionId());
                 break;
 
+            case CommittedPositionDecoder.TEMPLATE_ID:
+                committedPositionDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onCommittedPosition(
+                    committedPositionDecoder.termPosition(),
+                    committedPositionDecoder.leadershipTermId(),
+                    committedPositionDecoder.memberId());
+                break;
+
             case AppendedPositionDecoder.TEMPLATE_ID:
                 appendedPositionDecoder.wrap(
                     buffer,
@@ -84,7 +98,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                 sequencerAgent.onAppendedPosition(
                     appendedPositionDecoder.termPosition(),
                     appendedPositionDecoder.leadershipTermId(),
-                    appendedPositionDecoder.followerMemberId());
+                    appendedPositionDecoder.memberId());
                 break;
 
             case QuorumPositionDecoder.TEMPLATE_ID:

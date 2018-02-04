@@ -16,10 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Publication;
-import io.aeron.cluster.codecs.AppendedPositionEncoder;
-import io.aeron.cluster.codecs.MessageHeaderEncoder;
-import io.aeron.cluster.codecs.NewLeadershipTermEncoder;
-import io.aeron.cluster.codecs.QuorumPositionEncoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 
 class MemberStatusPublisher
@@ -28,9 +25,10 @@ class MemberStatusPublisher
 
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    private final NewLeadershipTermEncoder newLeadershipTermEncoder = new NewLeadershipTermEncoder();
+    private final CommittedPositionEncoder committedPositionEncoder = new CommittedPositionEncoder();
     private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
     private final QuorumPositionEncoder quorumPositionEncoder = new QuorumPositionEncoder();
-    private final NewLeadershipTermEncoder newLeadershipTermEncoder = new NewLeadershipTermEncoder();
 
     private Publication publication;
 
@@ -79,7 +77,35 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean appendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
+    public boolean committedPosition(final long termPosition, final long leadershipTermId, final int memberId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + CommittedPositionEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                committedPositionEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .termPosition(termPosition)
+                    .leadershipTermId(leadershipTermId)
+                    .memberId(memberId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean appendedPosition(final long termPosition, final long leadershipTermId, final int memberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
 
@@ -93,7 +119,7 @@ class MemberStatusPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .termPosition(termPosition)
                     .leadershipTermId(leadershipTermId)
-                    .followerMemberId(followerMemberId);
+                    .memberId(memberId);
 
                 bufferClaim.commit();
 

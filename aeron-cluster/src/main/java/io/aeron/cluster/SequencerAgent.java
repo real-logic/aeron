@@ -533,11 +533,11 @@ class SequencerAgent implements Agent
     {
     }
 
-    void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
+    void onAppendedPosition(final long termPosition, final long leadershipTermId, final int memberId)
     {
         validateLeadershipTerm(leadershipTermId, "Append position not for current leadership term: expected=");
 
-        clusterMembers[followerMemberId].termPosition(termPosition);
+        clusterMembers[memberId].termPosition(termPosition);
     }
 
     void onQuorumPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
@@ -552,6 +552,10 @@ class SequencerAgent implements Agent
 
         timeOfLastLogUpdateMs = cachedEpochClock.time();
         followerQuorumPosition = termPosition;
+    }
+
+    void onCommittedPosition(final long termPosition, final long leadershipTermId, final int memberId)
+    {
     }
 
     private int slowTickCycle(final long nowMs)

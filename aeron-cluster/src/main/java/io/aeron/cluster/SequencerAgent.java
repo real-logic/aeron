@@ -209,7 +209,7 @@ class SequencerAgent implements Agent
             commitPosition = CommitPos.allocate(
                 aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, logSessionId, -1);
 
-            ctx.recordingLog().appendTerm(recordingId, baseLogPosition, leadershipTermId, nowMs);
+            ctx.recordingLog().appendTerm(recordingId, leadershipTermId, baseLogPosition, nowMs);
         }
     }
 
@@ -1172,7 +1172,7 @@ class SequencerAgent implements Agent
             }
         }
 
-        ctx.recordingLog().appendSnapshot(recordingId, baseLogPosition, leadershipTermId, termPosition, timestampMs);
+        ctx.recordingLog().appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
     }
 
     private void snapshotState(final Publication publication, final long logPosition, final long leadershipTermId)

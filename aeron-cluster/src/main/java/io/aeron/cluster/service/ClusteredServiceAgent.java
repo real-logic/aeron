@@ -508,7 +508,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
             }
         }
 
-        recordingLog.appendSnapshot(recordingId, baseLogPosition, leadershipTermId, termPosition, timestampMs);
+        recordingLog.appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
     }
 
     private void snapshotState(final Publication publication, final long logPosition)

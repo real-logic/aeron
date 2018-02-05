@@ -34,7 +34,7 @@ import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.*;
 
 /**
- * An log of recordings that make up the history of a Raft log. Entries are in chronological order.
+ * A log of recordings that make up the history of a Raft log. Entries are in order.
  * <p>
  * The log is made up of entries of log terms or snapshots to roll up state as of a log position and leadership term.
  * <p>
@@ -50,16 +50,16 @@ import static org.agrona.BitUtil.*;
  *  |                        Recording ID                           |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |         Log Position at beginning of term or snapshot         |
- *  |                                                               |
- *  +---------------------------------------------------------------+
  *  |                     Leadership Term ID                        |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |   Timestamp at beginning of term or when snapshot was taken   |
+ *  |             Log Position at beginning of term                 |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                    Term Position/Length                       |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |   Timestamp at beginning of term or when snapshot was taken   |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                 Entry Type (Log or Snapshot)                  |
@@ -79,35 +79,35 @@ public class RecordingLog
     public static final class Entry
     {
         public final long recordingId;
-        public final long logPosition;
         public final long leadershipTermId;
-        public final long timestamp;
+        public final long logPosition;
         public final long termPosition;
+        public final long timestamp;
         public final int type;
 
         /**
          * A new entry in the recording log.
          *
          * @param recordingId      of the entry in an archive.
-         * @param logPosition      accumulated position of the log over leadership terms.
          * @param leadershipTermId of this entry.
-         * @param timestamp        of this entry.
+         * @param logPosition      accumulated position of the log over leadership terms for the beginning of the term.
          * @param termPosition     position reached within the current leadership term, same at leadership term length.
+         * @param timestamp        of this entry.
          * @param type             of the entry as a log of a term or a snapshot.
          */
         public Entry(
             final long recordingId,
-            final long logPosition,
             final long leadershipTermId,
-            final long timestamp,
+            final long logPosition,
             final long termPosition,
+            final long timestamp,
             final int type)
         {
             this.recordingId = recordingId;
-            this.logPosition = logPosition;
             this.leadershipTermId = leadershipTermId;
-            this.timestamp = timestamp;
+            this.logPosition = logPosition;
             this.termPosition = termPosition;
+            this.timestamp = timestamp;
             this.type = type;
         }
 
@@ -115,10 +115,10 @@ public class RecordingLog
         {
             return "Entry{" +
                 "recordingId=" + recordingId +
-                ", logPosition=" + logPosition +
                 ", leadershipTermId=" + leadershipTermId +
-                ", timestamp=" + timestamp +
+                ", logPosition=" + logPosition +
                 ", termPosition=" + termPosition +
+                ", timestamp=" + timestamp +
                 ", type=" + type +
                 '}';
         }
@@ -155,11 +155,25 @@ public class RecordingLog
      */
     public static class RecoveryPlan
     {
+        public final long lastLeadershipTermId;
+        public final long lastLogPosition;
+        public final long lastTermPositionCommitted;
+        public final long lastTermPositionAppended;
         public final ReplayStep snapshotStep;
         public final ArrayList<ReplayStep> termSteps;
 
-        public RecoveryPlan(final ReplayStep snapshotStep, final ArrayList<ReplayStep> termSteps)
+        public RecoveryPlan(
+            final long lastLeadershipTermId,
+            final long lastLogPosition,
+            final long lastTermPositionCommitted,
+            final long lastTermPositionAppended,
+            final ReplayStep snapshotStep,
+            final ArrayList<ReplayStep> termSteps)
         {
+            this.lastLeadershipTermId = lastLeadershipTermId;
+            this.lastLogPosition = lastLogPosition;
+            this.lastTermPositionCommitted = lastTermPositionCommitted;
+            this.lastTermPositionAppended = lastTermPositionAppended;
             this.snapshotStep = snapshotStep;
             this.termSteps = termSteps;
         }
@@ -167,7 +181,11 @@ public class RecordingLog
         public String toString()
         {
             return "RecoveryPlan{" +
-                "snapshotStep=" + snapshotStep +
+                "lastLeadershipTermId=" + lastLeadershipTermId +
+                ", lastLogPosition=" + lastLogPosition +
+                ", lastTermPositionCommitted=" + lastTermPositionCommitted +
+                ", lastTermPositionAppended=" + lastTermPositionAppended +
+                ", snapshotStep=" + snapshotStep +
                 ", termSteps=" + termSteps +
                 '}';
         }
@@ -194,29 +212,29 @@ public class RecordingLog
     public static final int RECORDING_ID_OFFSET = 0;
 
     /**
-     * The offset at which the absolute log position for the entry is stored.
-     */
-    public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
-
-    /**
      * The offset at which the leadership term id for the entry is stored.
      */
-    public static final int LEADERSHIP_TERM_ID_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
+    public static final int LEADERSHIP_TERM_ID_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
 
     /**
-     * The offset at which the timestamp for the entry is stored.
+     * The offset at which the absolute log position for the entry is stored.
      */
-    public static final int TIMESTAMP_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
+    public static final int LOG_POSITION_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
 
     /**
      * The offset at which the term position is stored.
      */
-    public static final int TERM_POSITION_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+    public static final int TERM_POSITION_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
+
+    /**
+     * The offset at which the timestamp for the entry is stored.
+     */
+    public static final int TIMESTAMP_OFFSET = TERM_POSITION_OFFSET + SIZE_OF_LONG;
 
     /**
      * The offset at which the type of the entry is stored.
      */
-    public static final int ENTRY_TYPE_OFFSET = TERM_POSITION_OFFSET + SIZE_OF_LONG;
+    public static final int ENTRY_TYPE_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
 
     /**
      * The length of each entry.
@@ -335,8 +353,39 @@ public class RecordingLog
     public RecoveryPlan createRecoveryPlan(final AeronArchive archive)
     {
         final ArrayList<ReplayStep> steps = new ArrayList<>();
+        final ReplayStep snapshotStep = planRecovery(steps, entries, archive);
+        long lastLeadershipTermId = -1;
+        long lastLogPosition = 0;
+        long lastTermPositionCommitted = -1;
+        long lastTermPositionAppended = 0;
 
-        return new RecoveryPlan(planRecovery(steps, entries, archive), steps);
+        if (null != snapshotStep)
+        {
+            lastLeadershipTermId = snapshotStep.entry.leadershipTermId;
+            lastLogPosition = snapshotStep.entry.logPosition;
+            lastTermPositionCommitted = snapshotStep.entry.termPosition;
+            lastTermPositionAppended = lastTermPositionCommitted;
+        }
+
+        final int size = steps.size();
+        if (size > 0)
+        {
+            final ReplayStep replayStep = steps.get(size - 1);
+            final Entry entry = replayStep.entry;
+
+            lastLeadershipTermId = entry.leadershipTermId;
+            lastLogPosition = entry.logPosition;
+            lastTermPositionCommitted = entry.termPosition;
+            lastTermPositionAppended = replayStep.recordingStopPosition;
+        }
+
+        return new RecoveryPlan(
+            lastLeadershipTermId,
+            lastLogPosition,
+            lastTermPositionCommitted,
+            lastTermPositionAppended,
+            snapshotStep,
+            steps);
     }
 
     static ReplayStep planRecovery(
@@ -430,12 +479,12 @@ public class RecordingLog
      * Append an index entry for a Raft term.
      *
      * @param recordingId      in the archive for the term.
-     * @param logPosition      reached at the beginning of the term.
      * @param leadershipTermId for the current term.
+     * @param logPosition      reached at the beginning of the term.
      * @param timestamp        at the beginning of the term.
      */
     public void appendTerm(
-        final long recordingId, final long logPosition, final long leadershipTermId, final long timestamp)
+        final long recordingId, final long leadershipTermId, final long logPosition, final long timestamp)
     {
         final int size = entries.size();
         final long expectedTermId = leadershipTermId - 1;
@@ -445,26 +494,26 @@ public class RecordingLog
                 entries.get(size - 1).leadershipTermId + " this " + leadershipTermId);
         }
 
-        append(ENTRY_TYPE_TERM, recordingId, logPosition, leadershipTermId, NULL_POSITION, timestamp);
+        append(ENTRY_TYPE_TERM, recordingId, leadershipTermId, logPosition, NULL_POSITION, timestamp);
     }
 
     /**
      * Append an index entry for a snapshot.
      *
      * @param recordingId      in the archive for the snapshot.
-     * @param logPosition      at the beginning of the leadership term.
      * @param leadershipTermId for the current term
-     * @param termPosition     for the position in the current term of length so far for that term.
+     * @param logPosition      at the beginning of the leadership term.
+     * @param termPosition     for the position in the current term or length so far for that term.
      * @param timestamp        at which the snapshot was taken.
      */
     public void appendSnapshot(
         final long recordingId,
-        final long logPosition,
         final long leadershipTermId,
+        final long logPosition,
         final long termPosition,
         final long timestamp)
     {
-        append(ENTRY_TYPE_SNAPSHOT, recordingId, logPosition, leadershipTermId, termPosition, timestamp);
+        append(ENTRY_TYPE_SNAPSHOT, recordingId, leadershipTermId, logPosition, termPosition, timestamp);
     }
 
     /**
@@ -511,8 +560,8 @@ public class RecordingLog
     private void append(
         final int entryType,
         final long recordingId,
-        final long logPosition,
         final long leadershipTermId,
+        final long logPosition,
         final long termPosition,
         final long timestamp)
     {
@@ -537,7 +586,7 @@ public class RecordingLog
             LangUtil.rethrowUnchecked(ex);
         }
 
-        entries.add(new Entry(recordingId, logPosition, leadershipTermId, timestamp, NULL_POSITION, entryType));
+        entries.add(new Entry(recordingId, leadershipTermId, logPosition, NULL_POSITION, timestamp, entryType));
     }
 
     private static void captureEntriesFromBuffer(
@@ -547,10 +596,8 @@ public class RecordingLog
         {
             entries.add(new Entry(
                 buffer.getLong(i + RECORDING_ID_OFFSET),
-                buffer.getLong(i + LOG_POSITION_OFFSET),
-                buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET),
-                buffer.getLong(i + TIMESTAMP_OFFSET),
-                buffer.getLong(i + TERM_POSITION_OFFSET),
+                buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET), buffer.getLong(i + LOG_POSITION_OFFSET),
+                buffer.getLong(i + TERM_POSITION_OFFSET), buffer.getLong(i + TIMESTAMP_OFFSET),
                 buffer.getInt(i + ENTRY_TYPE_OFFSET)));
         }
     }

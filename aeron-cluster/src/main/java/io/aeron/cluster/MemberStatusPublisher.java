@@ -97,7 +97,8 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean commitPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
+    public boolean commitPosition(
+        final long termPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
     {
         if (null == publication)
         {
@@ -116,7 +117,8 @@ class MemberStatusPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .termPosition(termPosition)
                     .leadershipTermId(leadershipTermId)
-                    .leaderMemberId(leaderMemberId);
+                    .leaderMemberId(leaderMemberId)
+                    .logSessionId(logSessionId);
 
                 bufferClaim.commit();
 

@@ -47,6 +47,7 @@ class SequencerAgent implements Agent
     private final int clusterMemberId;
     private int leaderMemberId;
     private int serviceAckCount = 0;
+    private int logSessionId;
     private final long sessionTimeoutMs;
     private final long heartbeatIntervalMs;
     private final long heartbeatTimeoutMs;
@@ -181,26 +182,25 @@ class SequencerAgent implements Agent
             cachedEpochClock.update(nowMs);
             timeOfLastLogUpdateMs = nowMs;
 
-            final int sessionId;
             if (clusterMemberId == ctx.appointedLeaderId() || clusterMembers.length == 1)
             {
                 leadershipTermId++;
-                sessionId = logAppender.connect(aeron, archive, ctx.logChannel(), ctx.logStreamId());
+                logSessionId = logAppender.connect(aeron, archive, ctx.logChannel(), ctx.logStreamId());
                 becomeLeader(nowMs);
             }
             else
             {
                 // TODO: record remote log
-                sessionId = connectLogAdapter(aeron, ctx.logChannel(), ctx.logStreamId());
+                logSessionId = connectLogAdapter(aeron, ctx.logChannel(), ctx.logStreamId());
                 becomeFollower(nowMs, leaderMemberId);
             }
 
             final CountersReader counters = aeron.countersReader();
-            logRecordingPosition = findLogRecording(sessionId, counters);
+            logRecordingPosition = findLogRecording(logSessionId, counters);
             final long recordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
 
             commitPosition = CommitPos.allocate(
-                aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, sessionId, -1);
+                aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, logSessionId, -1);
 
             ctx.recordingLog().appendTerm(recordingId, baseLogPosition, leadershipTermId, nowMs);
         }
@@ -524,15 +524,6 @@ class SequencerAgent implements Agent
         }
     }
 
-    void onNewLeadershipTerm(
-        final long leadershipTermId,
-        final long lastTermPosition,
-        final long logPosition,
-        final int leaderMemberId,
-        final int logSessionId)
-    {
-    }
-
     void onAppendedPosition(final long termPosition, final long leadershipTermId, final int memberId)
     {
         validateLeadershipTerm(leadershipTermId, "Append position not for current leadership term: expected=");
@@ -540,7 +531,8 @@ class SequencerAgent implements Agent
         clusterMembers[memberId].termPosition(termPosition);
     }
 
-    void onCommitPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
+    void onCommitPosition(
+        final long termPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
     {
         validateLeadershipTerm(leadershipTermId, "Quorum position not for current leadership term: expected=");
 
@@ -1056,10 +1048,9 @@ class SequencerAgent implements Agent
                 clusterMembers[clusterMemberId].termPosition(logRecordingPosition.get());
 
                 final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
-                if (position > commitPosition.getWeak() ||
-                    nowMs >= (timeOfLastLogUpdateMs + heartbeatIntervalMs))
+                if (position > commitPosition.getWeak() || nowMs >= (timeOfLastLogUpdateMs + heartbeatIntervalMs))
                 {
-                    if (memberStatusPublisher.commitPosition(position, leadershipTermId, clusterMemberId))
+                    if (memberStatusPublisher.commitPosition(position, leadershipTermId, clusterMemberId, logSessionId))
                     {
                         commitPosition.setOrdered(position);
                         timeOfLastLogUpdateMs = nowMs;

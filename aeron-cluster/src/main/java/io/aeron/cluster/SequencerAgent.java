@@ -554,7 +554,7 @@ class SequencerAgent implements Agent
         followerQuorumPosition = termPosition;
     }
 
-    void onCommittedPosition(final long termPosition, final long leadershipTermId, final int memberId)
+    void onAppliedPosition(final long termPosition, final long leadershipTermId, final int memberId)
     {
     }
 

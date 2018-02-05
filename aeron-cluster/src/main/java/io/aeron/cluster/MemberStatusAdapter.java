@@ -29,7 +29,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final NewLeadershipTermDecoder newLeadershipTermDecoder = new NewLeadershipTermDecoder();
-    private final CommittedPositionDecoder committedPositionDecoder = new CommittedPositionDecoder();
+    private final AppliedPositionDecoder appliedPositionDecoder = new AppliedPositionDecoder();
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
     private final QuorumPositionDecoder quorumPositionDecoder = new QuorumPositionDecoder();
 
@@ -75,17 +75,17 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     newLeadershipTermDecoder.logSessionId());
                 break;
 
-            case CommittedPositionDecoder.TEMPLATE_ID:
-                committedPositionDecoder.wrap(
+            case AppliedPositionDecoder.TEMPLATE_ID:
+                appliedPositionDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onCommittedPosition(
-                    committedPositionDecoder.termPosition(),
-                    committedPositionDecoder.leadershipTermId(),
-                    committedPositionDecoder.memberId());
+                sequencerAgent.onAppliedPosition(
+                    appliedPositionDecoder.termPosition(),
+                    appliedPositionDecoder.leadershipTermId(),
+                    appliedPositionDecoder.memberId());
                 break;
 
             case AppendedPositionDecoder.TEMPLATE_ID:

@@ -44,6 +44,7 @@ import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 
 class SequencerAgent implements Agent
 {
+    private boolean isRecovering;
     private final int clusterMemberId;
     private int leaderMemberId;
     private int serviceAckCount = 0;
@@ -113,7 +114,7 @@ class SequencerAgent implements Agent
         this.clusterRoleCounter = ctx.clusterNodeCounter();
 
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
-        role(Cluster.Role.CANDIDATE);
+        role(Cluster.Role.FOLLOWER);
 
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
         memberStatusUri.put(ENDPOINT_PARAM_NAME, clusterMembers[clusterMemberId].memberFacingEndpoint());
@@ -164,6 +165,8 @@ class SequencerAgent implements Agent
             serviceAckCount = 0;
             try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
             {
+                isRecovering = true;
+
                 if (null != recoveryPlan.snapshotStep)
                 {
                     recoverFromSnapshot(recoveryPlan.snapshotStep, archive);
@@ -175,9 +178,13 @@ class SequencerAgent implements Agent
                 {
                     recoverFromLog(recoveryPlan.termSteps, archive);
                 }
+
+                isRecovering = false;
             }
 
+            // TODO: handle suspended case
             state(ConsensusModule.State.ACTIVE);
+
             final long nowMs = epochClock.time();
             cachedEpochClock.update(nowMs);
             timeOfLastLogUpdateMs = nowMs;
@@ -497,7 +504,7 @@ class SequencerAgent implements Agent
                 break;
 
             case SNAPSHOT:
-                if (Cluster.Role.FOLLOWER == role)
+                if (!isRecovering)
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.SNAPSHOT);
@@ -506,7 +513,7 @@ class SequencerAgent implements Agent
                 break;
 
             case SHUTDOWN:
-                if (Cluster.Role.FOLLOWER == role)
+                if (!isRecovering)
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.SHUTDOWN);
@@ -515,7 +522,7 @@ class SequencerAgent implements Agent
                 break;
 
             case ABORT:
-                if (Cluster.Role.FOLLOWER == role)
+                if (!isRecovering)
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.ABORT);

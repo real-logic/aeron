@@ -34,6 +34,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 final class ClusteredServiceAgent implements Agent, Cluster
 {
+    private boolean isRecovering = true;
     private final boolean shouldCloseResources;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
@@ -52,7 +53,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
     private BoundedLogAdapter logAdapter;
     private ReadableCounter commitPosition;
     private ReadableCounter roleCounter;
-    private Role role = Role.CANDIDATE;
+    private Role role = Role.FOLLOWER;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
@@ -86,6 +87,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         checkForSnapshot(counters, recoveryCounterId);
         checkForReplay(counters, recoveryCounterId);
 
+        isRecovering = false;
         findCommitPositionCounter(counters, logSubscription);
 
         leadershipTermId = CommitPos.getLeadershipTermId(counters, commitPosition.counterId());
@@ -94,17 +96,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         logAdapter = new BoundedLogAdapter(image, commitPosition, this);
 
         findClusterRoleCounter(counters);
-
-        idleStrategy.reset();
-        long roleValue = roleCounter.get();
-        while (roleValue == Role.CANDIDATE.code())
-        {
-            checkInterruptedStatus();
-            idleStrategy.idle();
-            roleValue = roleCounter.get();
-        }
-
-        role = Role.get((int)roleValue);
+        role = Role.get((int)roleCounter.get());
 
         if (Role.LEADER == role)
         {
@@ -535,7 +527,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     private void executeAction(final ClusterAction action, final long termPosition)
     {
-        if (Role.CANDIDATE == role)
+        if (isRecovering)
         {
             return;
         }

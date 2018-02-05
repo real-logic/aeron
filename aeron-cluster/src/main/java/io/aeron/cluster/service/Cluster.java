@@ -25,19 +25,19 @@ public interface Cluster
     enum Role
     {
         /**
-         * The cluster node is a candidate in a cluster election.
+         * The cluster node is a follower of the current leader.
          */
-        CANDIDATE(0),
+        FOLLOWER(0),
+
+        /**
+         * The cluster node is a candidate to become a leader in an election.
+         */
+        CANDIDATE(1),
 
         /**
          * The cluster node is the leader of the current leadership term.
          */
-        LEADER(1),
-
-        /**
-         * The cluster node is a follower of the current leader.
-         */
-        FOLLOWER(2);
+        LEADER(2);
 
         static final Role[] ROLES;
 

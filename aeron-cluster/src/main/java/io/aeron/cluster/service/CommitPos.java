@@ -28,7 +28,8 @@ import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
 import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 
 /**
- * Counter representing the quorum position on a stream for the current leadership term.
+ * Counter representing the commit position that can consumed by a state machine on a stream for the current
+ * leadership term.
  * <p>
  * Key layout as follows:
  * <pre>
@@ -50,12 +51,12 @@ import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class QuorumPos
+public class CommitPos
 {
     /**
-     * Type id of a quorum position counter.
+     * Type id of a commit position counter.
      */
-    public static final int QUORUM_POSITION_TYPE_ID = 203;
+    public static final int COMMIT_POSITION_TYPE_ID = 203;
 
     /**
      * Represents a null value if the counter is not found.
@@ -65,7 +66,7 @@ public class QuorumPos
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "quorum-pos: leadershipTermId=";
+    public static final String NAME = "commit-pos: leadershipTermId=";
 
     public static final int RECORDING_ID_OFFSET = 0;
     public static final int LOG_POSITION_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
@@ -75,7 +76,7 @@ public class QuorumPos
     public static final int KEY_LENGTH = REPLAY_STEP_OFFSET + SIZE_OF_INT;
 
     /**
-     * Allocate a counter to represent the quorum position on stream for the current leadership term.
+     * Allocate a counter to represent the commit position on stream for the current leadership term.
      *
      * @param aeron            to allocate the counter.
      * @param tempBuffer       to use for building the key and label without allocation.
@@ -84,7 +85,7 @@ public class QuorumPos
      * @param leadershipTermId of the log at the beginning of the leadership term.
      * @param sessionId        of the active log for the current leadership term.
      * @param replayStep       during the recovery process or replaying term logs.
-     * @return the {@link Counter} for the quorum position.
+     * @return the {@link Counter} for the commit position.
      */
     public static Counter allocate(
         final Aeron aeron,
@@ -110,7 +111,7 @@ public class QuorumPos
         labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, replayStep);
 
         return aeron.addCounter(
-            QUORUM_POSITION_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, KEY_LENGTH, labelOffset);
+            COMMIT_POSITION_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, KEY_LENGTH, labelOffset);
     }
 
     /**
@@ -130,7 +131,7 @@ public class QuorumPos
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID &&
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID &&
                     buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
                 {
                     return i;
@@ -158,7 +159,7 @@ public class QuorumPos
             {
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID &&
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID &&
                     buffer.getInt(recordOffset + KEY_OFFSET + REPLAY_STEP_OFFSET) == replayStep)
                 {
                     return i;
@@ -173,7 +174,7 @@ public class QuorumPos
      * Get the recording id for the current leadership term.
      *
      * @param counters  to search within.
-     * @param counterId for the active quorum position.
+     * @param counterId for the active commit position.
      * @return the recording id if found otherwise {@link #NULL_VALUE}.
      */
     public static long getRecordingId(final CountersReader counters, final int counterId)
@@ -184,7 +185,7 @@ public class QuorumPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET);
             }
@@ -197,8 +198,8 @@ public class QuorumPos
      * Get the accumulated log position as a base for this leadership term.
      *
      * @param counters  to search within.
-     * @param counterId for the active quorum position.
-     * @return the beginning log position if found otherwise {@link #NULL_VALUE}.
+     * @param counterId for the active commit position.
+     * @return the base log position if found otherwise {@link #NULL_VALUE}.
      */
     public static long getBaseLogPosition(final CountersReader counters, final int counterId)
     {
@@ -208,7 +209,7 @@ public class QuorumPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + LOG_POSITION_OFFSET);
             }
@@ -218,11 +219,11 @@ public class QuorumPos
     }
 
     /**
-     * Get the leadership term id for the given quorum position.
+     * Get the leadership term id for the given commit position.
      *
      * @param counters  to search within.
-     * @param counterId for the active quorum position.
-     * @return the beginning message index if found otherwise {@link #NULL_VALUE}.
+     * @param counterId for the active commit position.
+     * @return the leadership term id if found otherwise {@link #NULL_VALUE}.
      */
     public static long getLeadershipTermId(final CountersReader counters, final int counterId)
     {
@@ -232,7 +233,7 @@ public class QuorumPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID)
             {
                 return buffer.getLong(recordOffset + KEY_OFFSET + LEADERSHIP_TERM_ID_OFFSET);
             }
@@ -245,7 +246,7 @@ public class QuorumPos
      * Get the replay step index for a given counter.
      *
      * @param counters  to search within.
-     * @param counterId for the active quorum position.
+     * @param counterId for the active commit position.
      * @return the replay step value if found otherwise {@link #NULL_VALUE}.
      */
     public static int getReplayStep(final CountersReader counters, final int counterId)
@@ -256,7 +257,7 @@ public class QuorumPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID)
             {
                 return buffer.getInt(recordOffset + KEY_OFFSET + REPLAY_STEP_OFFSET);
             }
@@ -270,7 +271,7 @@ public class QuorumPos
      * null value so an exception will be thrown if the counter is not found.
      *
      * @param counters  to search within.
-     * @param counterId for the active quorum position.
+     * @param counterId for the active commit position.
      * @return the session id if found other which throw {@link IllegalStateException}
      * @throws IllegalStateException if counter is not found.
      */
@@ -282,7 +283,7 @@ public class QuorumPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID)
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID)
             {
                 return buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET);
             }
@@ -307,9 +308,8 @@ public class QuorumPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            return
-                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == QUORUM_POSITION_TYPE_ID &&
-                    buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
+            return buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID &&
+                buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
         }
 
         return false;

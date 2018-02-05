@@ -257,25 +257,16 @@
         with base log position for the accumulated term positions.
 
         The leader gathers the positions reached by the followers, plus its own locally persisted log, and publishes
-        the highest position for a quorum of the member nodes including itself. If the quorum position does not
-        progress within a timeout then the latest position will be re-transmitted as a heartbeat from the leader.
+        the highest position for a quorum of the member nodes including itself which can be committed to the state
+        machines. If the quorum position does not progress within a timeout then the latest position will be
+        re-transmitted as a heartbeat from the leader.
 
         Messages are only valid within the context of a leadership term and all updates are applied as monotonically
         increasing state.
     -->
 
-    <sbe:message name="NewLeadershipTerm"
-                 id="50"
-                 description="Event to indicate a new leadership term has begun">
-        <field name="leadershipTermId"     id="1" type="int64"/>
-        <field name="lastTermPosition"     id="2" type="int64"/>
-        <field name="logPosition"          id="3" type="int64"/>
-        <field name="leaderMemberId"       id="4" type="int32"/>
-        <field name="logSessionId"         id="5" type="int32"/>
-    </sbe:message>
-
     <sbe:message name="AppliedPosition"
-                 id="51"
+                 id="50"
                  description="The highest position a member has applied to their state machine">
         <field name="termPosition"         id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>
@@ -283,19 +274,20 @@
     </sbe:message>
 
     <sbe:message name="AppendedPosition"
-                 id="52"
+                 id="51"
                  description="The highest position a follower has appended to their local log">
         <field name="termPosition"         id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>
         <field name="memberId"             id="3" type="int32"/>
     </sbe:message>
 
-    <sbe:message name="QuorumPosition"
-                 id="53"
+    <sbe:message name="CommitPosition"
+                 id="52"
                  description="The highest position reached by quorum of the cluster as determined by the leader">
         <field name="termPosition"         id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>
         <field name="leaderMemberId"       id="3" type="int32"/>
+        <field name="logSessionId"         id="5" type="int32"/>
     </sbe:message>
 
     <!-- Snapshot serialisation -->

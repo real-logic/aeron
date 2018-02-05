@@ -50,7 +50,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
     private long currentRecordingId;
     private long timestampMs;
     private BoundedLogAdapter logAdapter;
-    private ReadableCounter quorumPosition;
+    private ReadableCounter commitPosition;
     private ReadableCounter roleCounter;
     private Role role = Role.CANDIDATE;
 
@@ -86,12 +86,12 @@ final class ClusteredServiceAgent implements Agent, Cluster
         checkForSnapshot(counters, recoveryCounterId);
         checkForReplay(counters, recoveryCounterId);
 
-        findQuorumPositionCounter(counters, logSubscription);
+        findCommitPositionCounter(counters, logSubscription);
 
-        leadershipTermId = QuorumPos.getLeadershipTermId(counters, quorumPosition.counterId());
-        final int sessionId = QuorumPos.getLogSessionId(counters, quorumPosition.counterId());
+        leadershipTermId = CommitPos.getLeadershipTermId(counters, commitPosition.counterId());
+        final int sessionId = CommitPos.getLogSessionId(counters, commitPosition.counterId());
         final Image image = logSubscription.imageBySessionId(sessionId);
-        logAdapter = new BoundedLogAdapter(image, quorumPosition, this);
+        logAdapter = new BoundedLogAdapter(image, commitPosition, this);
 
         findClusterRoleCounter(counters);
 
@@ -139,9 +139,9 @@ final class ClusteredServiceAgent implements Agent, Cluster
                 throw new AgentTerminationException("Image closed unexpectedly");
             }
 
-            if (!QuorumPos.isActive(aeron.countersReader(), quorumPosition.counterId(), currentRecordingId))
+            if (!CommitPos.isActive(aeron.countersReader(), commitPosition.counterId(), currentRecordingId))
             {
-                throw new AgentTerminationException("Consensus position is not active");
+                throw new AgentTerminationException("Commit position is not active");
             }
         }
 
@@ -301,10 +301,10 @@ final class ClusteredServiceAgent implements Agent, Cluster
         {
             for (int i = 0; i < replayTermCount; i++)
             {
-                final int counterId = findReplayQuorumCounterId(counters, i);
-                final int sessionId = QuorumPos.getLogSessionId(counters, counterId);
-                baseLogPosition = QuorumPos.getBaseLogPosition(counters, counterId);
-                leadershipTermId = QuorumPos.getLeadershipTermId(counters, counterId);
+                final int counterId = findReplayCommitPositionCounterId(counters, i);
+                final int sessionId = CommitPos.getLogSessionId(counters, counterId);
+                baseLogPosition = CommitPos.getBaseLogPosition(counters, counterId);
+                leadershipTermId = CommitPos.getLeadershipTermId(counters, counterId);
 
                 idleStrategy.reset();
                 Image image;
@@ -358,22 +358,22 @@ final class ClusteredServiceAgent implements Agent, Cluster
         return counterId;
     }
 
-    private int findReplayQuorumCounterId(final CountersReader counters, final int replayStep)
+    private int findReplayCommitPositionCounterId(final CountersReader counters, final int replayStep)
     {
-        int counterId = QuorumPos.findCounterIdByReplayStep(counters, replayStep);
+        int counterId = CommitPos.findCounterIdByReplayStep(counters, replayStep);
 
         while (CountersReader.NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
 
-            counterId = QuorumPos.findCounterIdByReplayStep(counters, replayStep);
+            counterId = CommitPos.findCounterIdByReplayStep(counters, replayStep);
         }
 
         return counterId;
     }
 
-    private void findQuorumPositionCounter(final CountersReader counters, final Subscription logSubscription)
+    private void findCommitPositionCounter(final CountersReader counters, final Subscription logSubscription)
     {
         idleStrategy.reset();
         while (!logSubscription.isConnected())
@@ -384,17 +384,17 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
         final int sessionId = logSubscription.imageAtIndex(0).sessionId();
 
-        int counterId = QuorumPos.findCounterIdBySession(counters, sessionId);
+        int counterId = CommitPos.findCounterIdBySession(counters, sessionId);
         while (CountersReader.NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
 
-            counterId = QuorumPos.findCounterIdBySession(counters, sessionId);
+            counterId = CommitPos.findCounterIdBySession(counters, sessionId);
         }
 
-        currentRecordingId = QuorumPos.getRecordingId(counters, counterId);
-        quorumPosition = new ReadableCounter(counters, counterId);
+        currentRecordingId = CommitPos.getRecordingId(counters, counterId);
+        commitPosition = new ReadableCounter(counters, counterId);
     }
 
     private void findClusterRoleCounter(final CountersReader counters)

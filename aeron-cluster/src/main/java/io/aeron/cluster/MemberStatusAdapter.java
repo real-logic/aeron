@@ -28,10 +28,9 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final NewLeadershipTermDecoder newLeadershipTermDecoder = new NewLeadershipTermDecoder();
     private final AppliedPositionDecoder appliedPositionDecoder = new AppliedPositionDecoder();
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
-    private final QuorumPositionDecoder quorumPositionDecoder = new QuorumPositionDecoder();
+    private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -60,21 +59,6 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
-            case NewLeadershipTermDecoder.TEMPLATE_ID:
-                newLeadershipTermDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                sequencerAgent.onNewLeadershipTerm(
-                    newLeadershipTermDecoder.leadershipTermId(),
-                    newLeadershipTermDecoder.lastTermPosition(),
-                    newLeadershipTermDecoder.logPosition(),
-                    newLeadershipTermDecoder.leaderMemberId(),
-                    newLeadershipTermDecoder.logSessionId());
-                break;
-
             case AppliedPositionDecoder.TEMPLATE_ID:
                 appliedPositionDecoder.wrap(
                     buffer,
@@ -101,17 +85,17 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     appendedPositionDecoder.memberId());
                 break;
 
-            case QuorumPositionDecoder.TEMPLATE_ID:
-                quorumPositionDecoder.wrap(
+            case CommitPositionDecoder.TEMPLATE_ID:
+                commitPositionDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onQuorumPosition(
-                    quorumPositionDecoder.termPosition(),
-                    quorumPositionDecoder.leadershipTermId(),
-                    quorumPositionDecoder.leaderMemberId());
+                sequencerAgent.onCommitPosition(
+                    commitPositionDecoder.termPosition(),
+                    commitPositionDecoder.leadershipTermId(),
+                    commitPositionDecoder.leaderMemberId());
                 break;
 
             default:

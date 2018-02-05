@@ -55,9 +55,9 @@ class SequencerAgent implements Agent
     private long leadershipTermId = -1;
     private long lastRecordingPosition = 0;
     private long timeOfLastLogUpdateMs = 0;
-    private long followerQuorumPosition = 0;
+    private long followerCommitPosition = 0;
     private ReadableCounter logRecordingPosition;
-    private Counter quorumPosition;
+    private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
     private Cluster.Role role;
     private ClusterMember[] clusterMembers;
@@ -199,7 +199,7 @@ class SequencerAgent implements Agent
             logRecordingPosition = findLogRecording(sessionId, counters);
             final long recordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
 
-            quorumPosition = QuorumPos.allocate(
+            commitPosition = CommitPos.allocate(
                 aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, sessionId, -1);
 
             ctx.recordingLog().appendTerm(recordingId, baseLogPosition, leadershipTermId, nowMs);
@@ -230,7 +230,7 @@ class SequencerAgent implements Agent
             case FOLLOWER:
                 if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
                 {
-                    workCount += logAdapter.poll(followerQuorumPosition);
+                    workCount += logAdapter.poll(followerCommitPosition);
                 }
                 break;
         }
@@ -411,9 +411,9 @@ class SequencerAgent implements Agent
         this.logRecordingPosition = logRecordingPosition;
     }
 
-    void quorumPositionCounter(final Counter quorumPosition)
+    void commitPositionCounter(final Counter commitPosition)
     {
-        this.quorumPosition = quorumPosition;
+        this.commitPosition = commitPosition;
     }
 
     @SuppressWarnings("unused")
@@ -540,18 +540,18 @@ class SequencerAgent implements Agent
         clusterMembers[memberId].termPosition(termPosition);
     }
 
-    void onQuorumPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
+    void onCommitPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
     {
         validateLeadershipTerm(leadershipTermId, "Quorum position not for current leadership term: expected=");
 
         if (leaderMemberId != this.leaderMemberId)
         {
-            throw new IllegalStateException("Quorum position not for current leader: expected=" +
+            throw new IllegalStateException("Commit position not for current leader: expected=" +
                 this.leaderMemberId + " received=" + leaderMemberId);
         }
 
         timeOfLastLogUpdateMs = cachedEpochClock.time();
-        followerQuorumPosition = termPosition;
+        followerCommitPosition = termPosition;
     }
 
     void onAppliedPosition(final long termPosition, final long leadershipTermId, final int memberId)
@@ -940,7 +940,7 @@ class SequencerAgent implements Agent
                 }
 
                 serviceAckCount = 0;
-                try (Counter counter = QuorumPos.allocate(
+                try (Counter counter = CommitPos.allocate(
                     aeron, tempBuffer, recordingId, logPosition, leadershipTermId, sessionId, i))
                 {
                     counter.setOrdered(stopPosition);
@@ -1056,12 +1056,12 @@ class SequencerAgent implements Agent
                 clusterMembers[clusterMemberId].termPosition(logRecordingPosition.get());
 
                 final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
-                if (position > quorumPosition.getWeak() ||
+                if (position > commitPosition.getWeak() ||
                     nowMs >= (timeOfLastLogUpdateMs + heartbeatIntervalMs))
                 {
-                    if (memberStatusPublisher.quorumPosition(position, leadershipTermId, clusterMemberId))
+                    if (memberStatusPublisher.commitPosition(position, leadershipTermId, clusterMemberId))
                     {
-                        quorumPosition.setOrdered(position);
+                        commitPosition.setOrdered(position);
                         timeOfLastLogUpdateMs = nowMs;
                     }
 
@@ -1083,7 +1083,7 @@ class SequencerAgent implements Agent
                     workCount = 1;
                 }
 
-                quorumPosition.proposeMaxOrdered(logAdapter.position());
+                commitPosition.proposeMaxOrdered(logAdapter.position());
 
                 if (nowMs >= (timeOfLastLogUpdateMs + heartbeatTimeoutMs))
                 {

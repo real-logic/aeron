@@ -62,6 +62,8 @@ import static org.agrona.BitUtil.*;
  *  |   Timestamp at beginning of term or when snapshot was taken   |
  *  |                                                               |
  *  +---------------------------------------------------------------+
+ *  |                       Member ID vote                          |
+ *  +---------------------------------------------------------------+
  *  |                 Entry Type (Log or Snapshot)                  |
  *  +---------------------------------------------------------------+
  *  |                                                               |
@@ -83,7 +85,9 @@ public class RecordingLog
         public final long logPosition;
         public final long termPosition;
         public final long timestamp;
+        public final int memberIdVote;
         public final int type;
+        public final int logIndex;
 
         /**
          * A new entry in the recording log.
@@ -93,7 +97,9 @@ public class RecordingLog
          * @param logPosition      accumulated position of the log over leadership terms for the beginning of the term.
          * @param termPosition     position reached within the current leadership term, same at leadership term length.
          * @param timestamp        of this entry.
+         * @param memberIdVote     which member this node voted for in the election.
          * @param type             of the entry as a log of a term or a snapshot.
+         * @param logIndex         of the entry on disk.
          */
         public Entry(
             final long recordingId,
@@ -101,14 +107,18 @@ public class RecordingLog
             final long logPosition,
             final long termPosition,
             final long timestamp,
-            final int type)
+            final int memberIdVote,
+            final int type,
+            final int logIndex)
         {
             this.recordingId = recordingId;
             this.leadershipTermId = leadershipTermId;
             this.logPosition = logPosition;
             this.termPosition = termPosition;
             this.timestamp = timestamp;
+            this.memberIdVote = memberIdVote;
             this.type = type;
+            this.logIndex = logIndex;
         }
 
         public String toString()
@@ -119,7 +129,9 @@ public class RecordingLog
                 ", logPosition=" + logPosition +
                 ", termPosition=" + termPosition +
                 ", timestamp=" + timestamp +
+                ", memberIdVote=" + memberIdVote +
                 ", type=" + type +
+                ", logIndex=" + logIndex +
                 '}';
         }
     }
@@ -197,6 +209,11 @@ public class RecordingLog
     public static final String RECORDING_INDEX_FILE_NAME = "recording-index.log";
 
     /**
+     * Represents a value that is not set or invalid.
+     */
+    public static final int NULL_VALUE = -1;
+
+    /**
      * The index entry is for a recording of messages within a term to the consensus log.
      */
     public static final int ENTRY_TYPE_TERM = 0;
@@ -232,15 +249,21 @@ public class RecordingLog
     public static final int TIMESTAMP_OFFSET = TERM_POSITION_OFFSET + SIZE_OF_LONG;
 
     /**
+     * The offset at which the voted for member id is recorded.
+     */
+    public static final int MEMBER_ID_VOTE_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+
+    /**
      * The offset at which the type of the entry is stored.
      */
-    public static final int ENTRY_TYPE_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+    public static final int ENTRY_TYPE_OFFSET = MEMBER_ID_VOTE_OFFSET + SIZE_OF_INT;
 
     /**
      * The length of each entry.
      */
     private static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
 
+    private int nextLogIndex;
     private final File parentDir;
     private final File indexFile;
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(ByteOrder.LITTLE_ENDIAN);
@@ -289,6 +312,7 @@ public class RecordingLog
                 return;
             }
 
+            nextLogIndex = 0;
             byteBuffer.clear();
             while (true)
             {
@@ -482,19 +506,29 @@ public class RecordingLog
      * @param leadershipTermId for the current term.
      * @param logPosition      reached at the beginning of the term.
      * @param timestamp        at the beginning of the term.
+     * @param memberIdVote     in the leader election.
      */
     public void appendTerm(
-        final long recordingId, final long leadershipTermId, final long logPosition, final long timestamp)
+        final long recordingId,
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestamp,
+        final int memberIdVote)
     {
         final int size = entries.size();
-        final long expectedTermId = leadershipTermId - 1;
-        if (size > 0 && entries.get(size - 1).leadershipTermId != expectedTermId)
+        if (size > 0)
         {
-            throw new IllegalStateException("leadershipTermId out of sequence: previous " +
-                entries.get(size - 1).leadershipTermId + " this " + leadershipTermId);
+            final long expectedTermId = leadershipTermId - 1;
+            final Entry entry = entries.get(size - 1);
+
+            if (entry.type != NULL_VALUE && entry.leadershipTermId != expectedTermId)
+            {
+                throw new IllegalStateException("leadershipTermId out of sequence: previous " +
+                    entry.leadershipTermId + " this " + leadershipTermId);
+            }
         }
 
-        append(ENTRY_TYPE_TERM, recordingId, leadershipTermId, logPosition, NULL_POSITION, timestamp);
+        append(ENTRY_TYPE_TERM, recordingId, leadershipTermId, logPosition, NULL_POSITION, timestamp, memberIdVote);
     }
 
     /**
@@ -513,7 +547,19 @@ public class RecordingLog
         final long termPosition,
         final long timestamp)
     {
-        append(ENTRY_TYPE_SNAPSHOT, recordingId, leadershipTermId, logPosition, termPosition, timestamp);
+        final int size = entries.size();
+        if (size > 0)
+        {
+            final Entry entry = entries.get(size - 1);
+
+            if (entry.leadershipTermId != leadershipTermId)
+            {
+                throw new IllegalStateException("leadershipTermId out of sequence: previous " +
+                    entry.leadershipTermId + " this " + leadershipTermId);
+            }
+        }
+
+        append(ENTRY_TYPE_SNAPSHOT, recordingId, leadershipTermId, logPosition, termPosition, timestamp, NULL_VALUE);
     }
 
     /**
@@ -530,7 +576,7 @@ public class RecordingLog
             final Entry entry = entries.get(i);
             if (entry.leadershipTermId == leadershipTermId && entry.type == ENTRY_TYPE_TERM)
             {
-                index = i;
+                index = entry.logIndex;
                 break;
             }
         }
@@ -563,13 +609,15 @@ public class RecordingLog
         final long leadershipTermId,
         final long logPosition,
         final long termPosition,
-        final long timestamp)
+        final long timestamp,
+        final int memberIdVote)
     {
         buffer.putLong(RECORDING_ID_OFFSET, recordingId);
         buffer.putLong(LOG_POSITION_OFFSET, logPosition);
         buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
         buffer.putLong(TIMESTAMP_OFFSET, timestamp);
         buffer.putLong(TERM_POSITION_OFFSET, termPosition);
+        buffer.putInt(MEMBER_ID_VOTE_OFFSET, memberIdVote);
         buffer.putInt(ENTRY_TYPE_OFFSET, entryType);
 
         byteBuffer.limit(ENTRY_LENGTH).position(0);
@@ -586,19 +634,38 @@ public class RecordingLog
             LangUtil.rethrowUnchecked(ex);
         }
 
-        entries.add(new Entry(recordingId, leadershipTermId, logPosition, NULL_POSITION, timestamp, entryType));
+        entries.add(new Entry(
+            recordingId,
+            leadershipTermId,
+            logPosition,
+            NULL_POSITION,
+            timestamp,
+            memberIdVote,
+            entryType,
+            nextLogIndex++));
     }
 
-    private static void captureEntriesFromBuffer(
+    private void captureEntriesFromBuffer(
         final ByteBuffer byteBuffer, final UnsafeBuffer buffer, final ArrayList<Entry> entries)
     {
         for (int i = 0, length = byteBuffer.limit(); i < length; i += ENTRY_LENGTH)
         {
-            entries.add(new Entry(
-                buffer.getLong(i + RECORDING_ID_OFFSET),
-                buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET), buffer.getLong(i + LOG_POSITION_OFFSET),
-                buffer.getLong(i + TERM_POSITION_OFFSET), buffer.getLong(i + TIMESTAMP_OFFSET),
-                buffer.getInt(i + ENTRY_TYPE_OFFSET)));
+            final int entryType = buffer.getInt(i + ENTRY_TYPE_OFFSET);
+
+            if (NULL_VALUE != entryType)
+            {
+                entries.add(new Entry(
+                    buffer.getLong(i + RECORDING_ID_OFFSET),
+                    buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET),
+                    buffer.getLong(i + LOG_POSITION_OFFSET),
+                    buffer.getLong(i + TERM_POSITION_OFFSET),
+                    buffer.getLong(i + TIMESTAMP_OFFSET),
+                    buffer.getInt(i + MEMBER_ID_VOTE_OFFSET),
+                    entryType,
+                    nextLogIndex));
+            }
+
+            ++nextLogIndex;
         }
     }
 

@@ -209,7 +209,7 @@ class SequencerAgent implements Agent
             commitPosition = CommitPos.allocate(
                 aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, logSessionId, -1);
 
-            ctx.recordingLog().appendTerm(recordingId, leadershipTermId, baseLogPosition, nowMs);
+            ctx.recordingLog().appendTerm(recordingId, leadershipTermId, baseLogPosition, nowMs, leaderMemberId);
         }
     }
 

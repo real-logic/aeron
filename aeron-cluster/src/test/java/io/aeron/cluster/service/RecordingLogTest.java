@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.service.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 import static io.aeron.cluster.service.RecordingLog.ENTRY_TYPE_TERM;
 import static io.aeron.cluster.service.RecordingLog.NULL_VALUE;
@@ -75,5 +76,32 @@ public class RecordingLogTest
 
         final RecordingLog.Entry actualEntry = recordingLogTwo.entries().get(0);
         assertEquals(entry.toString(), actualEntry.toString());
+    }
+
+    @Test
+    public void shouldTombstoneEntry()
+    {
+        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
+
+        final RecordingLog.Entry entryOne = new RecordingLog.Entry(1, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, 0);
+        recordingLog.appendTerm(
+            entryOne.recordingId,
+            entryOne.leadershipTermId,
+            entryOne.logPosition,
+            entryOne.timestamp,
+            entryOne.memberIdVote);
+
+        final RecordingLog.Entry entryTwo = new RecordingLog.Entry(2, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
+        recordingLog.appendTerm(
+            entryTwo.recordingId,
+            entryTwo.leadershipTermId,
+            entryTwo.logPosition,
+            entryTwo.timestamp,
+            entryTwo.memberIdVote);
+
+        recordingLog.tombstoneEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
+        final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
+        assertThat(recordingLogTwo.entries().size(), is(1));
+        assertThat(recordingLogTwo.nextEntryIndex(), is(2));
     }
 }

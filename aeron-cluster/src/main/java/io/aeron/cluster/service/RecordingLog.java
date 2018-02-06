@@ -87,7 +87,7 @@ public class RecordingLog
         public final long timestamp;
         public final int memberIdVote;
         public final int type;
-        public final int logIndex;
+        public final int entryIndex;
 
         /**
          * A new entry in the recording log.
@@ -99,7 +99,7 @@ public class RecordingLog
          * @param timestamp        of this entry.
          * @param memberIdVote     which member this node voted for in the election.
          * @param type             of the entry as a log of a term or a snapshot.
-         * @param logIndex         of the entry on disk.
+         * @param entryIndex       of the entry on disk.
          */
         public Entry(
             final long recordingId,
@@ -109,7 +109,7 @@ public class RecordingLog
             final long timestamp,
             final int memberIdVote,
             final int type,
-            final int logIndex)
+            final int entryIndex)
         {
             this.recordingId = recordingId;
             this.leadershipTermId = leadershipTermId;
@@ -118,7 +118,7 @@ public class RecordingLog
             this.timestamp = timestamp;
             this.memberIdVote = memberIdVote;
             this.type = type;
-            this.logIndex = logIndex;
+            this.entryIndex = entryIndex;
         }
 
         public String toString()
@@ -131,7 +131,7 @@ public class RecordingLog
                 ", timestamp=" + timestamp +
                 ", memberIdVote=" + memberIdVote +
                 ", type=" + type +
-                ", logIndex=" + logIndex +
+                ", entryIndex=" + entryIndex +
                 '}';
         }
     }
@@ -263,7 +263,7 @@ public class RecordingLog
      */
     private static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
 
-    private int nextLogIndex;
+    private int nextEntryIndex;
     private final File parentDir;
     private final File indexFile;
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(ByteOrder.LITTLE_ENDIAN);
@@ -294,6 +294,16 @@ public class RecordingLog
     }
 
     /**
+     * Get the next index to be used when appending an entry to the log.
+     *
+     * @return the next index to be used when appending an entry to the log.
+     */
+    public int nextEntryIndex()
+    {
+        return nextEntryIndex;
+    }
+
+    /**
      * Reload the index from disk.
      */
     public void reload()
@@ -312,7 +322,7 @@ public class RecordingLog
                 return;
             }
 
-            nextLogIndex = 0;
+            nextEntryIndex = 0;
             byteBuffer.clear();
             while (true)
             {
@@ -576,7 +586,7 @@ public class RecordingLog
             final Entry entry = entries.get(i);
             if (entry.leadershipTermId == leadershipTermId && entry.type == ENTRY_TYPE_TERM)
             {
-                index = entry.logIndex;
+                index = entry.entryIndex;
                 break;
             }
         }
@@ -593,6 +603,47 @@ public class RecordingLog
         try (FileChannel fileChannel = FileChannel.open(indexFile.toPath(), WRITE, SYNC))
         {
             if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
+            {
+                throw new IllegalStateException("failed to write field atomically");
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    /**
+     * Tombstone an entry in the log so it is no longer valid.
+     *
+     * @param leadershipTermId to match for validation.
+     * @param entryIndex       reached in the leadership term.
+     */
+    public void tombstoneEntry(final long leadershipTermId, final int entryIndex)
+    {
+        int index = -1;
+        for (int i = 0, size = entries.size(); i < size; i++)
+        {
+            final Entry entry = entries.get(i);
+            if (entry.leadershipTermId == leadershipTermId && entry.entryIndex == entryIndex)
+            {
+                index = entry.entryIndex;
+                break;
+            }
+        }
+
+        if (-1 == index)
+        {
+            throw new IllegalArgumentException("Unknown entry index: " + entryIndex);
+        }
+
+        buffer.putInt(0, NULL_VALUE);
+        byteBuffer.limit(SIZE_OF_INT).position(0);
+        final long filePosition = (index * ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
+
+        try (FileChannel fileChannel = FileChannel.open(indexFile.toPath(), WRITE, SYNC))
+        {
+            if (SIZE_OF_INT != fileChannel.write(byteBuffer, filePosition))
             {
                 throw new IllegalStateException("failed to write field atomically");
             }
@@ -642,7 +693,7 @@ public class RecordingLog
             timestamp,
             memberIdVote,
             entryType,
-            nextLogIndex++));
+            nextEntryIndex++));
     }
 
     private void captureEntriesFromBuffer(
@@ -662,10 +713,10 @@ public class RecordingLog
                     buffer.getLong(i + TIMESTAMP_OFFSET),
                     buffer.getInt(i + MEMBER_ID_VOTE_OFFSET),
                     entryType,
-                    nextLogIndex));
+                    nextEntryIndex));
             }
 
-            ++nextLogIndex;
+            ++nextEntryIndex;
         }
     }
 

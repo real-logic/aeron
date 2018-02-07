@@ -61,7 +61,7 @@ abstract class MultiDestination
         catch (final IOException ex)
         {
             throw new RuntimeException(
-                "Failed to send packet of length " + bytesToSend + " to " + destination, ex);
+                "Failed to send packet of " + bytesToSend + " bytes to " + destination, ex);
         }
 
         return bytesSent;

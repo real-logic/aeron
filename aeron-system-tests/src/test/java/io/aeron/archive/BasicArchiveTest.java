@@ -103,7 +103,7 @@ public class BasicArchiveTest
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
-        final long length;
+        final long stopPosition;
 
         aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
         final long recordingIdFromCounter;
@@ -119,21 +119,27 @@ public class BasicArchiveTest
 
             consume(subscription, messageCount, messagePrefix);
 
-            length = publication.position();
+            stopPosition = publication.position();
+
+            while (counters.getCounterValue(counterId) < stopPosition)
+            {
+                Thread.yield();
+            }
         }
 
         aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
 
-        final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, length);
+        final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, stopPosition);
         assertEquals(recordingIdFromCounter, recordingId);
 
         final long fromPosition = 0L;
+        final long lenght = stopPosition - fromPosition;
 
         try (Subscription subscription = aeronArchive.replay(
-            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+            recordingId, fromPosition, lenght, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
             consume(subscription, messageCount, messagePrefix);
-            assertEquals(length, subscription.imageAtIndex(0).position());
+            assertEquals(stopPosition, subscription.imageAtIndex(0).position());
         }
     }
 
@@ -141,7 +147,7 @@ public class BasicArchiveTest
     public void shouldRecordReplayAndCancelReplayEarly()
     {
         final String messagePrefix = "Message-Prefix-";
-        final long length;
+        final long stopPosition;
         final int messageCount = 10;
         final int sessionId;
 
@@ -151,17 +157,27 @@ public class BasicArchiveTest
             sessionId = publication.sessionId();
 
             offer(publication, messageCount, messagePrefix);
+
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+
             consume(subscription, messageCount, messagePrefix);
 
-            length = publication.position();
+            stopPosition = publication.position();
+
+            while (counters.getCounterValue(counterId) < stopPosition)
+            {
+                Thread.yield();
+            }
         }
 
         final String recordingChannelWithSessionId = ChannelUri.addSessionId(RECORDING_CHANNEL, sessionId);
 
         aeronArchive.stopRecording(recordingChannelWithSessionId, RECORDING_STREAM_ID);
 
-        final long recordingId = findRecordingId(recordingChannelWithSessionId, RECORDING_STREAM_ID, length);
+        final long recordingId = findRecordingId(recordingChannelWithSessionId, RECORDING_STREAM_ID, stopPosition);
         final long fromPosition = 0L;
+        final long length = stopPosition - fromPosition;
 
         final long replaySessionId = aeronArchive.startReplay(
             recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID);

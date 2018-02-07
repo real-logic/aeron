@@ -81,7 +81,7 @@ public class ExtendRecordingTest
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
-        final long length;
+        final long firstStopPosition;
 
         final long recordingId;
         final int sessionId;
@@ -105,7 +105,11 @@ public class ExtendRecordingTest
 
                 consume(subscription, 0, messageCount, messagePrefix);
 
-                length = publication.position();
+                firstStopPosition = publication.position();
+                while (counters.getCounterValue(counterId) < firstStopPosition)
+                {
+                    Thread.yield();
+                }
             }
             finally
             {
@@ -123,8 +127,9 @@ public class ExtendRecordingTest
             .sessionId(sessionId)
             .initialTermId(initialTermId)
             .mtu(MTU_LENGTH)
-            .termOffset((int)(length & (TERM_BUFFER_LENGTH - 1)))
-            .termId(LogBufferDescriptor.computeTermIdFromPosition(length, POSITION_BITS_TO_SHIFT, initialTermId))
+            .termOffset((int)(firstStopPosition & (TERM_BUFFER_LENGTH - 1)))
+            .termId(LogBufferDescriptor.computeTermIdFromPosition(
+            firstStopPosition, POSITION_BITS_TO_SHIFT, initialTermId))
             .build();
 
         final String subscriptionExtendRecordingChannel = new ChannelUriStringBuilder()
@@ -133,7 +138,7 @@ public class ExtendRecordingTest
             .sessionId(sessionId)
             .build();
 
-        final long totalLength;
+        final long secondStopPosition;
 
         try (Publication publication = aeron.addExclusivePublication(
             publicationExtendRecordingChannel, RECORDING_STREAM_ID);
@@ -145,9 +150,17 @@ public class ExtendRecordingTest
             try
             {
                 offer(publication, messageCount, messageCount, messagePrefix);
+
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+
                 consume(subscription, messageCount, messageCount, messagePrefix);
 
-                totalLength = publication.position();
+                secondStopPosition = publication.position();
+                while (counters.getCounterValue(counterId) < secondStopPosition)
+                {
+                    Thread.yield();
+                }
             }
             finally
             {
@@ -156,12 +169,13 @@ public class ExtendRecordingTest
         }
 
         final long fromPosition = 0L;
+        final long length = secondStopPosition - fromPosition;
 
         try (Subscription subscription = aeronArchive.replay(
-            recordingId, fromPosition, totalLength, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
             consume(subscription, 0, messageCount * 2, messagePrefix);
-            assertEquals(totalLength, subscription.imageAtIndex(0).position());
+            assertEquals(secondStopPosition, subscription.imageAtIndex(0).position());
         }
     }
 

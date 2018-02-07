@@ -62,14 +62,14 @@ class PublicationParams
         return mtuLength;
     }
 
-    static long getLingerTimeoutNs(final ChannelUri channelUri, final long defaultLingerTImeoutNs)
+    static long getLingerTimeoutNs(final ChannelUri channelUri, final long driverLingerTImeoutNs)
     {
-        long lingerTimeoutNs = defaultLingerTImeoutNs;
+        long lingerTimeoutNs = driverLingerTImeoutNs;
         final String lingerParam = channelUri.get(LINGER_PARAM_NAME);
         if (null != lingerParam)
         {
             lingerTimeoutNs = SystemUtil.parseDuration(LINGER_PARAM_NAME, lingerParam);
-            Configuration.validatePublicationLingerTimeoutNs(lingerTimeoutNs, defaultLingerTImeoutNs);
+            Configuration.validatePublicationLingerTimeoutNs(lingerTimeoutNs, driverLingerTImeoutNs);
         }
 
         return lingerTimeoutNs;

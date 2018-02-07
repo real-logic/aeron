@@ -1064,7 +1064,7 @@ public class Configuration
     /**
      * Validate the publication linger timeout is an appropriate value.
      *
-     * @param timeoutNs to be validate.
+     * @param timeoutNs to be validated.
      * @param driverLingerTimeoutNs set for the driver operation.
      */
     static void validatePublicationLingerTimeoutNs(final long timeoutNs, final long driverLingerTimeoutNs)

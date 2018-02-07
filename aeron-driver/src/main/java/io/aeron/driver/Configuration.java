@@ -45,9 +45,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MIN_SIZE;
 import static java.lang.Integer.getInteger;
 import static java.lang.System.getProperty;
 import static org.agrona.BitUtil.fromHex;
-import static org.agrona.SystemUtil.getDurationInNanos;
-import static org.agrona.SystemUtil.getSizeAsInt;
-import static org.agrona.SystemUtil.getSizeAsLong;
+import static org.agrona.SystemUtil.*;
 
 /**
  * Configuration options for the {@link MediaDriver}.
@@ -1042,7 +1040,7 @@ public class Configuration
     }
 
     /**
-     * Validate the the MTU is an appropriate length. MTU lengths must be a multiple of
+     * Validate that the MTU is an appropriate length. MTU lengths must be a multiple of
      * {@link FrameDescriptor#FRAME_ALIGNMENT}.
      *
      * @param mtuLength to be validated.
@@ -1059,6 +1057,21 @@ public class Configuration
         if ((mtuLength & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
         {
             throw new ConfigurationException("mtuLength must be a multiple of FRAME_ALIGNMENT: " + mtuLength);
+        }
+    }
+
+    /**
+     * Validate the publication linger timeout is an appropriate value.
+     *
+     * @param timeoutNs to be validate.
+     * @param driverLingerTimeoutNs set for the driver operation.
+     */
+    static void validatePublicationLingerTimeoutNs(final long timeoutNs, final long driverLingerTimeoutNs)
+    {
+        if (timeoutNs < driverLingerTimeoutNs)
+        {
+            throw new ConfigurationException(
+                "linger must be greater than or equal to driver linger timeout: " + timeoutNs);
         }
     }
 

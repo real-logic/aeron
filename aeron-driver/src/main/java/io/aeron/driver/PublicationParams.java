@@ -26,6 +26,7 @@ import static io.aeron.CommonContext.*;
 
 class PublicationParams
 {
+    long lingerTimeoutNs = 0;
     int termLength = 0;
     int mtuLength = 0;
     int initialTermId = 0;
@@ -59,6 +60,19 @@ class PublicationParams
         }
 
         return mtuLength;
+    }
+
+    static long getLingerTimeoutNs(final ChannelUri channelUri, final long defaultLingerTImeoutNs)
+    {
+        long lingerTimeoutNs = defaultLingerTImeoutNs;
+        final String lingerParam = channelUri.get(LINGER_PARAM_NAME);
+        if (null != lingerParam)
+        {
+            lingerTimeoutNs = SystemUtil.parseDuration(LINGER_PARAM_NAME, lingerParam);
+            Configuration.validatePublicationLingerTimeoutNs(lingerTimeoutNs, defaultLingerTImeoutNs);
+        }
+
+        return lingerTimeoutNs;
     }
 
     static void validateMtuForMaxMessage(final PublicationParams params, final boolean isExclusive)
@@ -111,6 +125,8 @@ class PublicationParams
             channelUri, isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength());
 
         params.mtuLength = getMtuLength(channelUri, isIpc ? context.ipcMtuLength() : context.mtuLength());
+
+        params.lingerTimeoutNs = getLingerTimeoutNs(channelUri, context.publicationLingerTimeoutNs());
 
         final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
         if (null != sessionIdStr)

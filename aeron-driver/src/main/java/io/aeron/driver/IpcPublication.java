@@ -25,7 +25,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
 
-import static io.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_PUBLICATIONS;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
@@ -43,6 +42,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     private final long registrationId;
     private final long unblockTimeoutNs;
+    private final long lingerTimeoutNs;
     private final int sessionId;
     private final int streamId;
     private final int tripGain;
@@ -74,6 +74,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         final Position publisherLimit,
         final RawLog rawLog,
         final long unblockTimeoutNs,
+        final long lingerTimeoutNs,
         final long nowNs,
         final SystemCounters systemCounters,
         final boolean isExclusive)
@@ -93,6 +94,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         this.publisherLimit = publisherLimit;
         this.rawLog = rawLog;
         this.unblockTimeoutNs = unblockTimeoutNs;
+        this.lingerTimeoutNs = lingerTimeoutNs;
         this.unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
         this.metaDataBuffer = rawLog.metaData();
 
@@ -260,7 +262,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
                 break;
 
             case LINGER:
-                if (timeNs > (timeOfLastStateChangeNs + PUBLICATION_LINGER_NS))
+                if (timeNs > (timeOfLastStateChangeNs + lingerTimeoutNs))
                 {
                     reachedEndOfLife = true;
                     conductor.cleanupIpcPublication(this);

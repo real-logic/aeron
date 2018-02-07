@@ -187,7 +187,10 @@ class Catalog implements AutoCloseable
                 recordLength = DEFAULT_RECORD_LENGTH;
             }
 
-            cncFile.timestampOrdered(epochClock.time());
+            if (fixOnRefresh)
+            {
+                cncFile.timestampOrdered(epochClock.time());
+            }
 
             maxDescriptorStringsCombinedLength =
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);

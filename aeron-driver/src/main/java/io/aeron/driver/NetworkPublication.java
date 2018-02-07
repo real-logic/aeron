@@ -34,7 +34,8 @@ import org.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static io.aeron.driver.Configuration.*;
+import static io.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
+import static io.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermScanner.*;
@@ -92,6 +93,7 @@ public class NetworkPublication
     private final long registrationId;
     private final long unblockTimeoutNs;
     private final long connectionTimeoutNs;
+    private final long lingerTimeoutNs;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termBufferLength;
@@ -150,12 +152,14 @@ public class NetworkPublication
         final NetworkPublicationThreadLocals threadLocals,
         final long unblockTimeoutNs,
         final long connectionTimeoutNs,
+        final long lingerTimeoutNs,
         final boolean isExclusive,
         final boolean spiesSimulateConnection)
     {
         this.registrationId = registrationId;
         this.unblockTimeoutNs = unblockTimeoutNs;
         this.connectionTimeoutNs = connectionTimeoutNs;
+        this.lingerTimeoutNs = lingerTimeoutNs;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.nanoClock = nanoClock;
@@ -722,7 +726,7 @@ public class NetworkPublication
                 break;
 
             case LINGER:
-                if (timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
+                if (timeNs > (timeOfLastActivityNs + lingerTimeoutNs))
                 {
                     conductor.cleanupPublication(this);
                     state = State.CLOSING;

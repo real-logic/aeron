@@ -933,6 +933,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             networkPublicationThreadLocals,
             publicationUnblockTimeoutNs,
             context.publicationConnectionTimeoutNs(),
+            params.lingerTimeoutNs,
             isExclusive,
             context.spiesSimulateConnection());
 
@@ -1264,6 +1265,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             PublisherLimit.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
             rawLog,
             publicationUnblockTimeoutNs,
+            params.lingerTimeoutNs,
             cachedNanoClock.nanoTime(),
             context.systemCounters(),
             isExclusive);

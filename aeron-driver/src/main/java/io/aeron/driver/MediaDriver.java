@@ -395,6 +395,7 @@ public final class MediaDriver implements AutoCloseable
         private long imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
         private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
         private long publicationConnectionTimeoutNs = Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS;
+        private long publicationLingerTimeoutNs = Configuration.PUBLICATION_LINGER_NS;
         private long statusMessageTimeoutNs = Configuration.statusMessageTimeout();
         private long counterFreeToReuseTimeoutNs = Configuration.counterFreeToReuseTimeout();
         private int publicationTermBufferLength = Configuration.termBufferLength();
@@ -728,6 +729,28 @@ public final class MediaDriver implements AutoCloseable
         public Context imageLivenessTimeoutNs(final long timeout)
         {
             this.imageLivenessTimeoutNs = timeout;
+            return this;
+        }
+
+        /**
+         * Time in nanoseconds a publication will linger once it is drained.
+         *
+         * @return nanoseconds that a publication will linger once it is drained.
+         */
+        public long publicationLingerTimeoutNs()
+        {
+            return publicationLingerTimeoutNs;
+        }
+
+        /**
+         * Time in nanoseconds a publication will linger once it is drained.
+         *
+         * @param timeoutNs for keeping a publication once it is drained.
+         * @return this for a fluent API.
+         */
+        public Context publicationLingerTimeoutNs(final long timeoutNs)
+        {
+            this.publicationLingerTimeoutNs = timeoutNs;
             return this;
         }
 

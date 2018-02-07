@@ -203,7 +203,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 }
                 catch (final IOException ex)
                 {
-                    throw new RuntimeException("Failed to send packet of length: " + bytesToSend, ex);
+                    throw new RuntimeException(
+                        "Failed to send packet of length " + bytesToSend + " to " + connectAddress, ex);
                 }
             }
             else

@@ -39,6 +39,33 @@ abstract class MultiDestination
     abstract void addDestination(InetSocketAddress address);
 
     abstract void removeDestination(InetSocketAddress address);
+
+    static int send(final DatagramChannel datagramChannel,
+        final ByteBuffer buffer,
+        final SendChannelEndpoint channelEndpoint,
+        final int bytesToSend,
+        final int position,
+        final InetSocketAddress destination)
+    {
+        int bytesSent = 0;
+        try
+        {
+            channelEndpoint.presend(buffer, destination);
+
+            buffer.position(position);
+            bytesSent = datagramChannel.send(buffer, destination);
+        }
+        catch (final PortUnreachableException | ClosedChannelException ignore)
+        {
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(
+                "Failed to send packet of length " + bytesToSend + " to " + destination, ex);
+        }
+
+        return bytesSent;
+    }
 }
 
 class DynamicMultiDestination extends MultiDestination
@@ -105,23 +132,9 @@ class DynamicMultiDestination extends MultiDestination
             }
             else
             {
-                int bytesSent = 0;
-                try
-                {
-                    channelEndpoint.presend(buffer, destination.address);
-
-                    buffer.position(position);
-                    bytesSent = datagramChannel.send(buffer, destination.address);
-                }
-                catch (final PortUnreachableException | ClosedChannelException ignore)
-                {
-                }
-                catch (final IOException ex)
-                {
-                    throw new RuntimeException("Failed to send packet of length: " + bytesToSend, ex);
-                }
-
-                minBytesSent = Math.min(minBytesSent, bytesSent);
+                minBytesSent = Math.min(
+                    minBytesSent,
+                    send(datagramChannel, buffer, channelEndpoint, bytesToSend, position, destination.address));
             }
         }
 
@@ -179,23 +192,9 @@ class ManualMultiDestination extends MultiDestination
 
         for (final InetSocketAddress destination : destinations)
         {
-            int bytesSent = 0;
-            try
-            {
-                channelEndpoint.presend(buffer, destination);
-
-                buffer.position(position);
-                bytesSent = datagramChannel.send(buffer, destination);
-            }
-            catch (final PortUnreachableException | ClosedChannelException ignore)
-            {
-            }
-            catch (final IOException ex)
-            {
-                throw new RuntimeException("Failed to send: " + bytesToSend, ex);
-            }
-
-            minBytesSent = Math.min(minBytesSent, bytesSent);
+            minBytesSent = Math.min(
+                minBytesSent,
+                send(datagramChannel, buffer, channelEndpoint, bytesToSend, position, destination));
         }
 
         return minBytesSent;

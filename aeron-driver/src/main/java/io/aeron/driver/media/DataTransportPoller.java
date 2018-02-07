@@ -108,8 +108,8 @@ public class DataTransportPoller extends UdpTransportPoller
         SelectionKey key = null;
         try
         {
-            transports = ArrayUtil.add(transports, transport);
             key = transport.receiveDatagramChannel().register(selector, SelectionKey.OP_READ, transport);
+            transports = ArrayUtil.add(transports, transport);
         }
         catch (final ClosedChannelException ex)
         {

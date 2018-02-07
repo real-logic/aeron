@@ -92,7 +92,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 if (0 != udpChannel.multicastTtl())
                 {
                     sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, udpChannel.multicastTtl());
-                    multicastTtl = getOption(StandardSocketOptions.IP_MULTICAST_TTL);
+                    multicastTtl = sendDatagramChannel.getOption(StandardSocketOptions.IP_MULTICAST_TTL);
                 }
             }
             else
@@ -272,27 +272,5 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
 
         return address;
-    }
-
-    /**
-     * Return socket option value
-     *
-     * @param socketOption of the socket option
-     * @param <T>          type of option
-     * @return option value
-     */
-    protected <T> T getOption(final SocketOption<T> socketOption)
-    {
-        T option = null;
-        try
-        {
-            option = sendDatagramChannel.getOption(socketOption);
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return option;
     }
 }

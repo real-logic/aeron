@@ -733,7 +733,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Time in nanoseconds a publication will linger once it is drained.
+         * Time in nanoseconds a publication will linger once it is drained to recover potential tail loss.
          *
          * @return nanoseconds that a publication will linger once it is drained.
          */
@@ -743,7 +743,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Time in nanoseconds a publication will linger once it is drained.
+         * Time in nanoseconds a publication will linger once it is drained to recover potential tail loss.
          *
          * @param timeoutNs for keeping a publication once it is drained.
          * @return this for a fluent API.

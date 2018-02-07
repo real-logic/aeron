@@ -47,6 +47,7 @@ public class ChannelUriStringBuilder
     private Integer termId;
     private Integer termOffset;
     private Integer sessionId;
+    private Integer linger;
 
     /**
      * Clear out all the values thus setting back to the initial state.
@@ -509,6 +510,37 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set the time a publication will linger in nanoseconds after being drained. This time is so that tail loss
+     * can be recovered.
+     *
+     * @param lingerNs time for the publication after it is drained.
+     * @return this for a fluent API.
+     * @see CommonContext#LINGER_PARAM_NAME
+     */
+    public ChannelUriStringBuilder linger(final Integer lingerNs)
+    {
+        if (null != lingerNs && lingerNs < 0)
+        {
+            throw new IllegalArgumentException("Linger value cannot be negative: " + lingerNs);
+        }
+
+        this.linger = lingerNs;
+        return this;
+    }
+
+    /**
+     * Get the time a publication will linger in nanoseconds after being drained. This time is so that tail loss
+     * can be recovered.
+     *
+     * @return the linger time in nanoseconds a publication will wait around after being drained.
+     * @see CommonContext#LINGER_PARAM_NAME
+     */
+    public Integer linger()
+    {
+        return linger;
+    }
+
+    /**
      * Build a channel URI String for the given parameters.
      *
      * @return a channel URI String for the given parameters.
@@ -582,6 +614,11 @@ public class ChannelUriStringBuilder
         if (null != sessionId)
         {
             sb.append(SESSION_ID_PARAM_NAME).append('=').append(sessionId.intValue()).append('|');
+        }
+
+        if (null != linger)
+        {
+            sb.append(LINGER_PARAM_NAME).append('=').append(linger.intValue()).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

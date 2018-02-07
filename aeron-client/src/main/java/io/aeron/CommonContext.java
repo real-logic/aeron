@@ -144,7 +144,7 @@ public class CommonContext implements AutoCloseable
     public static final String SESSION_ID_PARAM_NAME = "session-id";
 
     /**
-     * Key for the linger for a publication.
+     * Key for the linger timeout for a publication to wait around after draining in nanoseconds.
      */
     public static final String LINGER_PARAM_NAME = "linger";
 

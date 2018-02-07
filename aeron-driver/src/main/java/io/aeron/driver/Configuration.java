@@ -339,7 +339,7 @@ public class Configuration
         SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
 
     /**
-     * Property name for linger timeout on {@link Publication}s.
+     * Property name for linger timeout after draining on {@link Publication}s.
      */
     public static final String PUBLICATION_LINGER_PROP_NAME = "aeron.publication.linger.timeout";
 
@@ -349,7 +349,8 @@ public class Configuration
     public static final long PUBLICATION_LINGER_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
     /**
-     * Time for {@link Publication}s to linger before cleanup in nanoseconds.
+     * Time for {@link Publication}s to linger before cleanup in nanoseconds. This is the time a publication will
+     * wait around after draining to the network so that tail loss can be recovered.
      */
     public static final long PUBLICATION_LINGER_NS = getDurationInNanos(
         PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);

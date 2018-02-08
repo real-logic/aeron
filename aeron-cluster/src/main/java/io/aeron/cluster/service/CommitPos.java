@@ -297,10 +297,9 @@ public class CommitPos
      *
      * @param counters    to search within.
      * @param counterId   to search for.
-     * @param recordingId to match against.
      * @return true if the counter is still active otherwise false.
      */
-    public static boolean isActive(final CountersReader counters, final int counterId, final long recordingId)
+    public static boolean isActive(final CountersReader counters, final int counterId)
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
@@ -308,8 +307,7 @@ public class CommitPos
         {
             final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-            return buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID &&
-                buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
+            return buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID;
         }
 
         return false;

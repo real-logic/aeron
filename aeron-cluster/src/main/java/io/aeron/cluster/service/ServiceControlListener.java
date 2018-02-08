@@ -54,4 +54,18 @@ public interface ServiceControlListener
     default void onServiceActionAck(long logPosition, long leadershipTermId, int serviceId, ClusterAction action)
     {
     }
+
+    /**
+     * Request that the services connect to a log for replay or live stream.
+     *
+     * @param leadershipTermId for the log.
+     * @param commitPositionId for counter that gives the bound for consumption of the log.
+     * @param logSessionId     for the log to confirm subscription.
+     * @param logStreamId      to subscribe to for the log.
+     * @param logChannel       to subscribe to for the log.
+     */
+    default void onConnectLog(
+        long leadershipTermId, int commitPositionId, int logSessionId, int logStreamId, String logChannel)
+    {
+    }
 }

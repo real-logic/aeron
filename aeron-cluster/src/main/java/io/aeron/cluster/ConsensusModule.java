@@ -49,14 +49,14 @@ public class ConsensusModule implements AutoCloseable
     public enum State
     {
         /**
-         * Starting up.
+         * Starting up and recovering state.
          */
-        INIT(0, ClusterAction.INIT),
+        INIT(0, ClusterAction.INIT, ClusterAction.READY, ClusterAction.REPLAY),
 
         /**
          * Active state with ingress and expired timers appended to the log.
          */
-        ACTIVE(1, null),
+        ACTIVE(1),
 
         /**
          * Suspended processing of ingress and expired timers.
@@ -81,7 +81,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Terminal state.
          */
-        CLOSED(6, null);
+        CLOSED(6);
 
         static final State[] STATES;
 
@@ -102,12 +102,12 @@ public class ConsensusModule implements AutoCloseable
         }
 
         private final int code;
-        private final ClusterAction validClusterAction;
+        private final ClusterAction[] validClusterActions;
 
-        State(final int code, final ClusterAction clusterAction)
+        State(final int code, final ClusterAction... clusterActions)
         {
             this.code = code;
-            this.validClusterAction = clusterAction;
+            this.validClusterActions = clusterActions;
         }
 
         public final int code()
@@ -123,7 +123,15 @@ public class ConsensusModule implements AutoCloseable
          */
         public final boolean isValid(final ClusterAction action)
         {
-            return action == validClusterAction;
+            for (final ClusterAction validAction : validClusterActions)
+            {
+                if (action == validAction)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /**

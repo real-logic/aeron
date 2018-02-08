@@ -31,6 +31,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
     private final ScheduleTimerRequestDecoder scheduleTimerRequestDecoder = new ScheduleTimerRequestDecoder();
     private final CancelTimerRequestDecoder cancelTimerRequestDecoder = new CancelTimerRequestDecoder();
     private final ServiceActionAckDecoder serviceActionAckDecoder = new ServiceActionAckDecoder();
+    private final ConnectLogRequestDecoder connectLogRequestDecoder = new ConnectLogRequestDecoder();
 
     public ServiceControlAdapter(final Subscription subscription, final ServiceControlListener serviceControlListener)
     {
@@ -89,6 +90,21 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                     serviceActionAckDecoder.leadershipTermId(),
                     serviceActionAckDecoder.serviceId(),
                     serviceActionAckDecoder.action());
+                break;
+
+            case ConnectLogRequestDecoder.TEMPLATE_ID:
+                connectLogRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                serviceControlListener.onConnectLog(
+                    connectLogRequestDecoder.leadershipTermId(),
+                    connectLogRequestDecoder.commitPositionId(),
+                    connectLogRequestDecoder.logSessionId(),
+                    connectLogRequestDecoder.logStreamId(),
+                    connectLogRequestDecoder.logChannel());
                 break;
 
             default:

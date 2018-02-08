@@ -216,7 +216,7 @@
     </sbe:message>
 
 
-    <!-- Messages from a clustered service to the Consensus Module -->
+    <!-- Messages for service control between clustered services and the Consensus Module -->
 
     <sbe:message name="ScheduleTimerRequest"
                  id="30"

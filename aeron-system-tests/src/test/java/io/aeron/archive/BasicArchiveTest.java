@@ -133,10 +133,10 @@ public class BasicArchiveTest
         assertEquals(recordingIdFromCounter, recordingId);
 
         final long fromPosition = 0L;
-        final long lenght = stopPosition - fromPosition;
+        final long length = stopPosition - fromPosition;
 
         try (Subscription subscription = aeronArchive.replay(
-            recordingId, fromPosition, lenght, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
             consume(subscription, messageCount, messagePrefix);
             assertEquals(stopPosition, subscription.imageAtIndex(0).position());

@@ -704,6 +704,40 @@ public class Configuration
         CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultCongestionControlSupplier");
 
     /**
+     * Property name for low end of reserved publication sessionId range
+     */
+    public static final String PUBLICATION_SESSION_ID_RESERVED_LOW_PROP_NAME =
+        "aeron.publication.sessionId.reserved.low";
+
+    /**
+     * Low end of reserved publication sessionId range.
+     */
+    public static final int PUBLICATION_SESSION_ID_RESERVED_LOW_DEFAULT = 0;
+
+    /**
+     * Low end of reserved publication sessionId range.
+     */
+    public static final int PUBLICATION_SESSION_ID_RESERVED_LOW = getInteger(
+        PUBLICATION_SESSION_ID_RESERVED_LOW_PROP_NAME, PUBLICATION_SESSION_ID_RESERVED_LOW_DEFAULT);
+
+    /**
+     * Property name for high end of reserved publication sessionId range
+     */
+    public static final String PUBLICATION_SESSION_ID_RESERVED_HIGH_PROP_NAME =
+        "aeron.publication.sessionId.reserved.high";
+
+    /**
+     * High end of reserved publication sessionId range.
+     */
+    public static final int PUBLICATION_SESSION_ID_RESERVED_HIGH_DEFAULT = 1000;
+
+    /**
+     * High end of reserved publication sessionId range.
+     */
+    public static final int PUBLICATION_SESSION_ID_RESERVED_HIGH = getInteger(
+        PUBLICATION_SESSION_ID_RESERVED_HIGH_PROP_NAME, PUBLICATION_SESSION_ID_RESERVED_HIGH_DEFAULT);
+
+    /**
      * Limit for the number of commands drained in one operation.
      */
     public static final int COMMAND_DRAIN_LIMIT = 10;

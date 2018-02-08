@@ -404,6 +404,8 @@ public final class MediaDriver implements AutoCloseable
         private int mtuLength = Configuration.MTU_LENGTH;
         private int ipcMtuLength = Configuration.IPC_MTU_LENGTH;
         private int filePageSize = Configuration.FILE_PAGE_SIZE;
+        private int publicationReservedSessionIdLow = Configuration.PUBLICATION_SESSION_ID_RESERVED_LOW;
+        private int publicationReservedSessionIdHigh = Configuration.PUBLICATION_SESSION_ID_RESERVED_HIGH;
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -1701,6 +1703,50 @@ public final class MediaDriver implements AutoCloseable
         public Context lossReport(final LossReport lossReport)
         {
             this.lossReport = lossReport;
+            return this;
+        }
+
+        /**
+         * High end of the reserved sessionId range for publications.
+         *
+         * @return high end of the reserved sessionId range for publications.
+         */
+        public int publicationReservedSessionIdHigh()
+        {
+            return publicationReservedSessionIdHigh;
+        }
+
+        /**
+         * High end of the reserved sessionId range for publications.
+         *
+         * @param sessionId to use for high end of the reserved sessionId range for publications.
+         * @return this for fluent API.
+         */
+        public Context publicationReservedSessionIdHigh(final int sessionId)
+        {
+            publicationReservedSessionIdHigh = sessionId;
+            return this;
+        }
+
+        /**
+         * Low end of the reserved sessionId range for publications.
+         *
+         * @return low end of the reserved sessionId range for publications.
+         */
+        public int publicationReservedSessionIdLow()
+        {
+            return publicationReservedSessionIdLow;
+        }
+
+        /**
+         * Low end of the reserved sessionId range for publications.
+         *
+         * @param sessionId to use for low end of the reserved sessionId range for publications.
+         * @return this for fluent API.
+         */
+        public Context publicationReservedSessionIdLow(final int sessionId)
+        {
+            publicationReservedSessionIdLow = sessionId;
             return this;
         }
 

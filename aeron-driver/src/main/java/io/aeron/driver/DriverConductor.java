@@ -1345,7 +1345,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         while (true)
         {
             final int sessionId = nextSessionId++;
-            if (!activeSessionIds.contains(sessionId))
+            final boolean inReservedRange =
+                sessionId <= context.publicationReservedSessionIdHigh() &&
+                sessionId >= context.publicationReservedSessionIdLow();
+            if (!inReservedRange && !activeSessionIds.contains(sessionId))
             {
                 return sessionId;
             }

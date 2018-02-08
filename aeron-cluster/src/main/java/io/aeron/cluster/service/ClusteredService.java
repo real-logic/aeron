@@ -100,4 +100,17 @@ public interface ClusteredService
      * @param snapshotImage to which the service should store its state.
      */
     void onLoadSnapshot(Image snapshotImage);
+
+    /**
+     * Notify the service that a replay of existing logs is about to begin.
+     */
+    void onReplayBegin();
+
+    /**
+     * Notify the service that a replay of existing logs has ended so that it can check external state is consistent.
+     * <p>
+     * If the service is in an invalid state and wished to terminate operation it can throw a
+     * {@link org.agrona.concurrent.AgentTerminationException}.
+     */
+    void onReplayEnd();
 }

@@ -289,6 +289,8 @@ final class ClusteredServiceAgent implements Agent, Cluster
             return;
         }
 
+        service.onReplayBegin();
+
         try (Subscription subscription = aeron.addSubscription(ctx.replayChannel(), ctx.replayStreamId()))
         {
             for (int i = 0; i < replayTermCount; i++)
@@ -333,6 +335,8 @@ final class ClusteredServiceAgent implements Agent, Cluster
                 consensusModule.sendAcknowledgment(ClusterAction.INIT, baseLogPosition, leadershipTermId, timestampMs);
             }
         }
+
+        service.onReplayEnd();
     }
 
     private int findRecoveryCounterId(final CountersReader counters)

@@ -63,4 +63,12 @@ public class StubClusteredService implements ClusteredService
     public void onLoadSnapshot(final Image snapshotImage)
     {
     }
+
+    public void onReplayBegin()
+    {
+    }
+
+    public void onReplayEnd()
+    {
+    }
 }

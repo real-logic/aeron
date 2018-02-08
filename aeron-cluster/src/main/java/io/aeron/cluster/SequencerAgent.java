@@ -42,7 +42,7 @@ import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 
-class SequencerAgent implements Agent
+class SequencerAgent implements Agent, ServiceControlListener
 {
     private boolean isRecovering;
     private final int clusterMemberId;
@@ -71,7 +71,7 @@ class SequencerAgent implements Agent
     private final Counter moduleState;
     private final Counter controlToggle;
     private final TimerService timerService;
-    private final ConsensusModuleAdapter consensusModuleAdapter;
+    private final ServiceControlAdapter serviceControlAdapter;
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
     private final LogAppender logAppender;
@@ -131,8 +131,8 @@ class SequencerAgent implements Agent
         ingressAdapter = new IngressAdapter(
             aeron.addSubscription(ingressUri.toString(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
 
-        consensusModuleAdapter = new ConsensusModuleAdapter(
-            aeron.addSubscription(ctx.consensusModuleChannel(), ctx.consensusModuleStreamId()), this);
+        serviceControlAdapter = new ServiceControlAdapter(
+            aeron.addSubscription(ctx.serviceControlChannel(), ctx.serviceControlStreamId()), this);
 
         authenticator = ctx.authenticatorSupplier().newAuthenticator(ctx);
         aeronClientInvoker = ctx.ownsAeronClient() ? ctx.aeron().conductorAgentInvoker() : null;
@@ -152,7 +152,7 @@ class SequencerAgent implements Agent
             CloseHelper.close(memberStatusAdapter);
 
             CloseHelper.close(ingressAdapter);
-            CloseHelper.close(consensusModuleAdapter);
+            CloseHelper.close(serviceControlAdapter);
         }
     }
 
@@ -259,9 +259,9 @@ class SequencerAgent implements Agent
     }
 
     public void onServiceActionAck(
-        final long serviceId, final long logPosition, final long leadershipTermId, final ClusterAction action)
+        final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
-        validateServiceAck(serviceId, logPosition, leadershipTermId, action);
+        validateServiceAck(logPosition, leadershipTermId, serviceId, action);
 
         if (++serviceAckCount == ctx.serviceCount())
         {
@@ -562,7 +562,7 @@ class SequencerAgent implements Agent
         int workCount = 0;
 
         workCount += invokeAeronClient();
-        workCount += consensusModuleAdapter.poll();
+        workCount += serviceControlAdapter.poll();
 
         if (Cluster.Role.LEADER == role)
         {
@@ -977,7 +977,7 @@ class SequencerAgent implements Agent
     {
         while (true)
         {
-            final int fragmentsRead = consensusModuleAdapter.poll();
+            final int fragmentsRead = serviceControlAdapter.poll();
             if (serviceAckCount >= ctx.serviceCount())
             {
                 break;
@@ -988,7 +988,7 @@ class SequencerAgent implements Agent
     }
 
     private void validateServiceAck(
-        final long serviceId, final long logPosition, final long leadershipTermId, final ClusterAction action)
+        final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
         final long currentLogPosition = baseLogPosition + logAppender.position();
         if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)

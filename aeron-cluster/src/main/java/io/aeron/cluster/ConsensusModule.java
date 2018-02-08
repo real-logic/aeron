@@ -585,8 +585,8 @@ public class ConsensusModule implements AutoCloseable
         private int logStreamId = ClusteredServiceContainer.Configuration.logStreamId();
         private String replayChannel = ClusteredServiceContainer.Configuration.replayChannel();
         private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
-        private String consensusModuleChannel = ClusteredServiceContainer.Configuration.consensusModuleChannel();
-        private int consensusModuleStreamId = ClusteredServiceContainer.Configuration.consensusModuleStreamId();
+        private String serviceControlChannel = ClusteredServiceContainer.Configuration.serviceControlChannel();
+        private int serviceControlStreamId = ClusteredServiceContainer.Configuration.serviceControlStreamId();
         private String snapshotChannel = Configuration.snapshotChannel();
         private int snapshotStreamId = Configuration.snapshotStreamId();
         private String memberStatusChannel = Configuration.memberStatusChannel();
@@ -1056,51 +1056,51 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for sending messages to the Consensus Module.
+         * Set the channel parameter for bi-directional communications between the consensus module and services.
          *
-         * @param channel parameter for sending messages to the Consensus Module.
+         * @param channel parameter for bi-directional communications between the consensus module and services.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_CHANNEL_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
          */
-        public Context consensusModuleChannel(final String channel)
+        public Context serviceControlChannel(final String channel)
         {
-            consensusModuleChannel = channel;
+            serviceControlChannel = channel;
             return this;
         }
 
         /**
-         * Get the channel parameter for sending messages to the Consensus Module.
+         * Get the channel parameter for bi-directional communications between the consensus module and services.
          *
-         * @return the channel parameter for sending messages to the Consensus Module.
-         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_CHANNEL_PROP_NAME
+         * @return the channel parameter for bi-directional communications between the consensus module and services.
+         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
          */
-        public String consensusModuleChannel()
+        public String serviceControlChannel()
         {
-            return consensusModuleChannel;
+            return serviceControlChannel;
         }
 
         /**
-         * Set the stream id for sending messages to the Consensus Module.
+         * Set the stream id for bi-directional communications between the consensus module and services.
          *
-         * @param streamId for sending messages to the Consensus Module.
+         * @param streamId for bi-directional communications between the consensus module and services.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_STREAM_ID_PROP_NAME
          */
-        public Context consensusModuleStreamId(final int streamId)
+        public Context serviceControlStreamId(final int streamId)
         {
-            consensusModuleStreamId = streamId;
+            serviceControlStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for sending messages to the Consensus Module.
+         * Get the stream id for bi-directional communications between the consensus module and services.
          *
          * @return the stream id for the scheduling timer events channel.
-         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_STREAM_ID_PROP_NAME
          */
-        public int consensusModuleStreamId()
+        public int serviceControlStreamId()
         {
-            return consensusModuleStreamId;
+            return serviceControlStreamId;
         }
 
         /**

@@ -124,7 +124,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Identity for a clustered service. Default to 0.
          */
-        public static final long SERVICE_ID_DEFAULT = 0;
+        public static final int SERVICE_ID_DEFAULT = 0;
 
         /**
          * Channel for the clustered log.
@@ -167,22 +167,23 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final int REPLAY_STREAM_ID_DEFAULT = 4;
 
         /**
-         * Channel for sending messages to the Consensus Module.
+         * Channel for bi-directional communications between the consensus module and services.
          */
-        public static final String CONSENSUS_MODULE_CHANNEL_PROP_NAME = "aeron.consensus.module.channel";
+        public static final String SERVICE_CONTROL_CHANNEL_PROP_NAME = "aeron.cluster.service.control.channel";
 
         /**
-         * Channel for for sending messages to the Consensus Module. This should be IPC.
+         * Channel for for bi-directional communications between the consensus module and services. This should be IPC.
          */
-        public static final String CONSENSUS_MODULE_CHANNEL_DEFAULT = "aeron:ipc?term-length=64k";
+        public static final String SERVICE_CONTROL_CHANNEL_DEFAULT = "aeron:ipc?term-length=64k";
 
         /**
-         * Stream id within a channel for sending messages to the Consensus Module.
+         * Stream id within a channel for bi-directional communications between the consensus module and services.
          */
-        public static final String CONSENSUS_MODULE_STREAM_ID_PROP_NAME = "aeron.consensus.module.stream.id";
+        public static final String SERVICE_CONTROL_STREAM_ID_PROP_NAME = "aeron.cluster.service.control.stream.id";
 
         /**
-         * Stream id within a channel for sending messages to the Consensus Module. Default to stream id of 5.
+         * Stream id within a channel for bi-directional communications between the consensus module and services.
+         * Default to stream id of 5.
          */
         public static final int CONSENSUS_MODULE_STREAM_ID_DEFAULT = 5;
 
@@ -221,9 +222,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @return {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
          */
-        public static long serviceId()
+        public static int serviceId()
         {
-            return Long.getLong(SERVICE_ID_PROP_NAME, SERVICE_ID_DEFAULT);
+            return Integer.getInteger(SERVICE_ID_PROP_NAME, SERVICE_ID_DEFAULT);
         }
 
         /**
@@ -269,27 +270,27 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The value {@link #CONSENSUS_MODULE_CHANNEL_DEFAULT} or system property
-         * {@link #CONSENSUS_MODULE_CHANNEL_PROP_NAME} if set.
+         * The value {@link #SERVICE_CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #SERVICE_CONTROL_CHANNEL_PROP_NAME} if set.
          *
-         * @return {@link #CONSENSUS_MODULE_CHANNEL_DEFAULT} or system property
-         * {@link #CONSENSUS_MODULE_CHANNEL_PROP_NAME} if set.
+         * @return {@link #SERVICE_CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #SERVICE_CONTROL_CHANNEL_PROP_NAME} if set.
          */
-        public static String consensusModuleChannel()
+        public static String serviceControlChannel()
         {
-            return System.getProperty(CONSENSUS_MODULE_CHANNEL_PROP_NAME, CONSENSUS_MODULE_CHANNEL_DEFAULT);
+            return System.getProperty(SERVICE_CONTROL_CHANNEL_PROP_NAME, SERVICE_CONTROL_CHANNEL_DEFAULT);
         }
 
         /**
          * The value {@link #CONSENSUS_MODULE_STREAM_ID_DEFAULT} or system property
-         * {@link #CONSENSUS_MODULE_STREAM_ID_PROP_NAME} if set.
+         * {@link #SERVICE_CONTROL_STREAM_ID_PROP_NAME} if set.
          *
          * @return {@link #CONSENSUS_MODULE_STREAM_ID_DEFAULT} or system property
-         * {@link #CONSENSUS_MODULE_STREAM_ID_PROP_NAME} if set.
+         * {@link #SERVICE_CONTROL_STREAM_ID_PROP_NAME} if set.
          */
-        public static int consensusModuleStreamId()
+        public static int serviceControlStreamId()
         {
-            return Integer.getInteger(CONSENSUS_MODULE_STREAM_ID_PROP_NAME, CONSENSUS_MODULE_STREAM_ID_DEFAULT);
+            return Integer.getInteger(SERVICE_CONTROL_STREAM_ID_PROP_NAME, CONSENSUS_MODULE_STREAM_ID_DEFAULT);
         }
 
         /**
@@ -344,13 +345,13 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
     public static class Context implements AutoCloseable
     {
-        private long serviceId = Configuration.serviceId();
+        private int serviceId = Configuration.serviceId();
         private String logChannel = Configuration.logChannel();
         private int logStreamId = Configuration.logStreamId();
         private String replayChannel = Configuration.replayChannel();
         private int replayStreamId = Configuration.replayStreamId();
-        private String consensusModuleChannel = Configuration.consensusModuleChannel();
-        private int consensusModuleStreamId = Configuration.consensusModuleStreamId();
+        private String serviceControlChannel = Configuration.serviceControlChannel();
+        private int serviceControlStreamId = Configuration.serviceControlStreamId();
         private String snapshotChannel = Configuration.snapshotChannel();
         private int snapshotStreamId = Configuration.snapshotStreamId();
         private boolean deleteDirOnStart = false;
@@ -480,7 +481,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return this for a fluent API
          * @see ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
          */
-        public Context serviceId(final long serviceId)
+        public Context serviceId(final int serviceId)
         {
             this.serviceId = serviceId;
             return this;
@@ -492,7 +493,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * @return the id for this clustered service.
          * @see ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
          */
-        public long serviceId()
+        public int serviceId()
         {
             return serviceId;
         }
@@ -594,51 +595,51 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for sending messages to the Consensus Module.
+         * Set the channel parameter for bi-directional communications between the consensus module and services.
          *
          * @param channel parameter for sending messages to the Consensus Module.
          * @return this for a fluent API.
-         * @see Configuration#CONSENSUS_MODULE_CHANNEL_PROP_NAME
+         * @see Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
          */
-        public Context consensusModuleChannel(final String channel)
+        public Context serviceControlChannel(final String channel)
         {
-            consensusModuleChannel = channel;
+            serviceControlChannel = channel;
             return this;
         }
 
         /**
-         * Get the channel parameter for sending messages to the Consensus Module.
+         * Get the channel parameter for bi-directional communications between the consensus module and services.
          *
          * @return the channel parameter for sending messages to the Consensus Module.
-         * @see Configuration#CONSENSUS_MODULE_CHANNEL_PROP_NAME
+         * @see Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
          */
-        public String consensusModuleChannel()
+        public String serviceControlChannel()
         {
-            return consensusModuleChannel;
+            return serviceControlChannel;
         }
 
         /**
-         * Set the stream id for sending messages to the Consensus Module.
+         * Set the stream id for bi-directional communications between the consensus module and services.
          *
-         * @param streamId for sending messages to the Consensus Module.
+         * @param streamId for bi-directional communications between the consensus module and services.
          * @return this for a fluent API
-         * @see Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
+         * @see Configuration#SERVICE_CONTROL_STREAM_ID_PROP_NAME
          */
-        public Context consensusModuleStreamId(final int streamId)
+        public Context serviceControlStreamId(final int streamId)
         {
-            consensusModuleStreamId = streamId;
+            serviceControlStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for sending messages to the Consensus Module.
+         * Get the stream id for bi-directional communications between the consensus module and services.
          *
-         * @return the stream id for sending messages to the Consensus Module.
-         * @see Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
+         * @return the stream id for bi-directional communications between the consensus module and services.
+         * @see Configuration#SERVICE_CONTROL_STREAM_ID_PROP_NAME
          */
-        public int consensusModuleStreamId()
+        public int serviceControlStreamId()
         {
-            return consensusModuleStreamId;
+            return serviceControlStreamId;
         }
 
         /**

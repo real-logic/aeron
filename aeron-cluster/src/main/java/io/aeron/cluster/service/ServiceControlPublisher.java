@@ -19,26 +19,21 @@ import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.IdleStrategy;
 
-class ConsensusModuleProxy implements AutoCloseable
+class ServiceControlPublisher implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
 
-    private final long serviceId;
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ScheduleTimerRequestEncoder scheduleTimerRequestEncoder = new ScheduleTimerRequestEncoder();
     private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
     private final ServiceActionAckEncoder serviceActionAckEncoder = new ServiceActionAckEncoder();
     private final Publication publication;
-    private final IdleStrategy idleStrategy;
 
-    ConsensusModuleProxy(final long serviceId, final Publication publication, final IdleStrategy idleStrategy)
+    ServiceControlPublisher(final Publication publication)
     {
-        this.serviceId = serviceId;
         this.publication = publication;
-        this.idleStrategy = idleStrategy;
     }
 
     public void close()
@@ -47,11 +42,10 @@ class ConsensusModuleProxy implements AutoCloseable
     }
 
     public void sendAcknowledgment(
-        final ClusterAction action, final long logPosition, final long leadershipTermId, final long timestamp)
+        final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionAckEncoder.BLOCK_LENGTH;
 
-        idleStrategy.reset();
         int attempts = SEND_ATTEMPTS;
         do
         {
@@ -60,10 +54,9 @@ class ConsensusModuleProxy implements AutoCloseable
             {
                 serviceActionAckEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .serviceId(serviceId)
                     .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
-                    .timestamp(timestamp)
+                    .serviceId(serviceId)
                     .action(action);
 
                 bufferClaim.commit();
@@ -72,7 +65,6 @@ class ConsensusModuleProxy implements AutoCloseable
             }
 
             checkResult(result);
-            idleStrategy.idle();
         }
         while (--attempts > 0);
 
@@ -83,7 +75,6 @@ class ConsensusModuleProxy implements AutoCloseable
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerRequestEncoder.BLOCK_LENGTH;
 
-        idleStrategy.reset();
         int attempts = SEND_ATTEMPTS;
         do
         {
@@ -92,7 +83,6 @@ class ConsensusModuleProxy implements AutoCloseable
             {
                 scheduleTimerRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .serviceId(serviceId)
                     .correlationId(correlationId)
                     .deadline(deadlineMs);
 
@@ -102,7 +92,6 @@ class ConsensusModuleProxy implements AutoCloseable
             }
 
             checkResult(result);
-            idleStrategy.idle();
         }
         while (--attempts > 0);
 
@@ -113,7 +102,6 @@ class ConsensusModuleProxy implements AutoCloseable
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerRequestEncoder.BLOCK_LENGTH;
 
-        idleStrategy.reset();
         int attempts = SEND_ATTEMPTS;
         do
         {
@@ -122,7 +110,6 @@ class ConsensusModuleProxy implements AutoCloseable
             {
                 cancelTimerRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .serviceId(serviceId)
                     .correlationId(correlationId);
 
                 bufferClaim.commit();
@@ -131,7 +118,6 @@ class ConsensusModuleProxy implements AutoCloseable
             }
 
             checkResult(result);
-            idleStrategy.idle();
         }
         while (--attempts > 0);
 

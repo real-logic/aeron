@@ -34,6 +34,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 final class ClusteredServiceAgent implements Agent, Cluster
 {
+    private final int serviceId;
     private boolean isRecovering = true;
     private final boolean shouldCloseResources;
     private final AeronArchive.Context archiveCtx;
@@ -42,7 +43,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
     private final Subscription logSubscription;
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final ClusteredService service;
-    private final ConsensusModuleProxy consensusModule;
+    private final ServiceControlPublisher serviceControlPublisher;
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
 
@@ -65,16 +66,15 @@ final class ClusteredServiceAgent implements Agent, Cluster
         service = ctx.clusteredService();
         recordingLog = ctx.recordingLog();
         idleStrategy = ctx.idleStrategy();
+        serviceId = ctx.serviceId();
 
         String logChannel = ctx.logChannel();
         logChannel = logChannel.contains(IPC_CHANNEL) ? logChannel : SPY_PREFIX + logChannel;
 
         logSubscription = aeron.addSubscription(logChannel, ctx.logStreamId());
 
-        consensusModule = new ConsensusModuleProxy(
-            ctx.serviceId(),
-            aeron.addExclusivePublication(ctx.consensusModuleChannel(), ctx.consensusModuleStreamId()),
-            idleStrategy);
+        final Publication publication = aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceControlStreamId());
+        serviceControlPublisher = new ServiceControlPublisher(publication);
     }
 
     public void onStart()
@@ -112,7 +112,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
         if (shouldCloseResources)
         {
             CloseHelper.close(logSubscription);
-            CloseHelper.close(consensusModule);
+            CloseHelper.close(serviceControlPublisher);
 
             for (final ClientSession session : sessionByIdMap.values())
             {
@@ -167,12 +167,12 @@ final class ClusteredServiceAgent implements Agent, Cluster
 
     public void scheduleTimer(final long correlationId, final long deadlineMs)
     {
-        consensusModule.scheduleTimer(correlationId, deadlineMs);
+        serviceControlPublisher.scheduleTimer(correlationId, deadlineMs);
     }
 
     public void cancelTimer(final long correlationId)
     {
-        consensusModule.cancelTimer(correlationId);
+        serviceControlPublisher.cancelTimer(correlationId);
     }
 
     void onSessionMessage(
@@ -278,7 +278,7 @@ final class ClusteredServiceAgent implements Agent, Cluster
             loadSnapshot(snapshotEntry.recordingId);
         }
 
-        consensusModule.sendAcknowledgment(ClusterAction.INIT, baseLogPosition, leadershipTermId, timestampMs);
+        serviceControlPublisher.sendAcknowledgment(baseLogPosition, leadershipTermId, serviceId, ClusterAction.INIT);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
@@ -332,7 +332,8 @@ final class ClusteredServiceAgent implements Agent, Cluster
                     idleStrategy.idle(workCount);
                 }
 
-                consensusModule.sendAcknowledgment(ClusterAction.INIT, baseLogPosition, leadershipTermId, timestampMs);
+                serviceControlPublisher.sendAcknowledgment(
+                    baseLogPosition, leadershipTermId, serviceId, ClusterAction.INIT);
             }
         }
 
@@ -542,19 +543,19 @@ final class ClusteredServiceAgent implements Agent, Cluster
         {
             case SNAPSHOT:
                 onTakeSnapshot(termPosition);
-                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
+                serviceControlPublisher.sendAcknowledgment(logPosition, leadershipTermId, serviceId, action);
                 break;
 
             case SHUTDOWN:
                 onTakeSnapshot(termPosition);
                 ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
-                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
+                serviceControlPublisher.sendAcknowledgment(logPosition, leadershipTermId, serviceId, action);
                 ctx.terminationHook().run();
                 break;
 
             case ABORT:
                 ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
-                consensusModule.sendAcknowledgment(action, logPosition, leadershipTermId, timestampMs);
+                serviceControlPublisher.sendAcknowledgment(logPosition, leadershipTermId, serviceId, action);
                 ctx.terminationHook().run();
                 break;
         }

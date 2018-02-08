@@ -149,17 +149,16 @@ public class BasicArchiveTest
         final String messagePrefix = "Message-Prefix-";
         final long stopPosition;
         final int messageCount = 10;
-        final int sessionId;
+        final long recordingId;
 
         try (Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
             Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
-            sessionId = publication.sessionId();
-
             offer(publication, messageCount, messagePrefix);
 
             final CountersReader counters = aeron.countersReader();
             final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+            recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             consume(subscription, messageCount, messagePrefix);
 
@@ -169,13 +168,10 @@ public class BasicArchiveTest
             {
                 Thread.yield();
             }
+
+            aeronArchive.stopRecording(publication);
         }
 
-        final String recordingChannelWithSessionId = ChannelUri.addSessionId(RECORDING_CHANNEL, sessionId);
-
-        aeronArchive.stopRecording(recordingChannelWithSessionId, RECORDING_STREAM_ID);
-
-        final long recordingId = findRecordingId(recordingChannelWithSessionId, RECORDING_STREAM_ID, stopPosition);
         final long fromPosition = 0L;
         final long length = stopPosition - fromPosition;
 

@@ -27,9 +27,11 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.Catalog.*;
+import static io.aeron.archive.Catalog.PAGE_SIZE;
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -38,17 +40,19 @@ import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class CatalogTest
 {
+    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(1);
     private static final int TERM_BUFFER_LENGTH = 2 * Catalog.PAGE_SIZE;
     private static final int SEGMENT_FILE_SIZE = 2 * TERM_BUFFER_LENGTH;
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final File archiveDir = TestUtil.makeTempDir();
-    private final EpochClock clock = mock(EpochClock.class);
+
+    private long currentTimeMs = 1;
+    private final EpochClock clock = () -> currentTimeMs;
+
     private long recordingOneId;
     private long recordingTwoId;
     private long recordingThreeId;
@@ -56,7 +60,7 @@ public class CatalogTest
     @Before
     public void before()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, TIMEOUT_MS))
         {
             recordingOneId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
@@ -73,10 +77,10 @@ public class CatalogTest
         IoUtil.delete(archiveDir, false);
     }
 
-    @Test
+    @Test(timeout = 10_000)
     public void shouldReloadExistingIndex()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, clock, TIMEOUT_MS))
         {
             verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
             verifyRecordingForId(catalog, recordingTwoId, 7, 2, "channelH", "sourceV");
@@ -104,54 +108,54 @@ public class CatalogTest
         assertEquals(sourceIdentity, recordingDescriptorDecoder.sourceIdentity());
     }
 
-    @Test
+    @Test(timeout = 10_000)
     public void shouldAppendToExistingIndex()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, () -> 3L, 0))
         {
             newRecordingId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, clock, TIMEOUT_MS))
         {
             verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
             verifyRecordingForId(catalog, newRecordingId, 9, 4, "channelJ", "sourceN");
         }
     }
 
-    @Test
+    @Test(timeout = 10_000)
     public void shouldAllowMultipleInstancesForSameStream()
     {
-        try (Catalog ignore = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog ignore = new Catalog(archiveDir, clock, TIMEOUT_MS))
         {
             final long newRecordingId = newRecording();
             assertNotEquals(recordingOneId, newRecordingId);
         }
     }
 
-    @Test
+    @Test(timeout = 10_000)
     public void shouldFixTimestampForEmptyRecordingAfterFailure()
     {
         final long newRecordingId = newRecording();
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        try (Catalog catalog = new Catalog(archiveDir, clock, TIMEOUT_MS))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) -> assertThat(decoder.stopTimestamp(), is(NULL_TIMESTAMP)), newRecordingId);
         }
 
-        when(clock.time()).thenReturn(42L);
+        currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, 0))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) -> assertThat(decoder.stopTimestamp(), is(42L)), newRecordingId);
         }
     }
 
-    @Test
+    @Test(timeout = 10_000)
     public void shouldFixTimestampAndPositionAfterFailureSamePage() throws Exception
     {
         final long newRecordingId = newRecording();
@@ -174,7 +178,7 @@ public class CatalogTest
             log.write(bb, 1024 + 128);
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        try (Catalog catalog = new Catalog(archiveDir, clock, TIMEOUT_MS))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) ->
@@ -185,9 +189,9 @@ public class CatalogTest
                 newRecordingId);
         }
 
-        when(clock.time()).thenReturn(42L);
+        currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, 0))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) ->
@@ -199,7 +203,7 @@ public class CatalogTest
         }
     }
 
-    @Test
+    @Test(timeout = 10_000)
     public void shouldFixTimestampAndPositionAfterFailurePageStraddle() throws Exception
     {
         final long newRecordingId = newRecording();
@@ -219,7 +223,7 @@ public class CatalogTest
             log.write(bb, PAGE_SIZE - 32 + 128);
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        try (Catalog catalog = new Catalog(archiveDir, clock, TIMEOUT_MS))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) ->
@@ -230,9 +234,9 @@ public class CatalogTest
                 newRecordingId);
         }
 
-        when(clock.time()).thenReturn(42L);
+        currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, 0))
         {
             assertTrue(catalog.forEntry(
                 (he, hd, e, decoder) ->
@@ -247,7 +251,7 @@ public class CatalogTest
     private long newRecording()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, 0))
         {
             newRecordingId = catalog.addNewRecording(
                 0L,
@@ -266,7 +270,7 @@ public class CatalogTest
         return newRecordingId;
     }
 
-    @Test
+    @Test(timeout = 10_000)
     public void shouldFixTimestampAndPositionAfterFailureFullSegment() throws Exception
     {
         final long newRecordingId = newRecording();
@@ -289,7 +293,7 @@ public class CatalogTest
             log.truncate(SEGMENT_FILE_SIZE);
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        try (Catalog catalog = new Catalog(archiveDir, clock, TIMEOUT_MS))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) ->
@@ -300,8 +304,9 @@ public class CatalogTest
                 newRecordingId);
         }
 
-        when(clock.time()).thenReturn(42L);
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        currentTimeMs = 42L;
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, 0))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) ->

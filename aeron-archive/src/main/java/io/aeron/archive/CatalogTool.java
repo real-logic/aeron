@@ -12,6 +12,9 @@ import org.agrona.BufferUtil;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
 import static io.aeron.archive.Archive.segmentFileName;
@@ -45,28 +48,36 @@ public class CatalogTool
 
         if (args.length == 2 && args[1].equals("describe"))
         {
-            try (Catalog catalog = openCatalog())
+            try (Catalog catalog = openCatalog(System.out::println))
             {
+                printHeader(catalog);
                 catalog.forEach((he, hd, e, d) -> System.out.println(d));
+            }
+        }
+        else if (args.length == 2 && args[1].equals("pid"))
+        {
+            try (Catalog catalog = openCatalog(null))
+            {
+                System.out.println(catalog.catalogHeaderDecoder().pid());
             }
         }
         else if (args.length == 3 && args[1].equals("describe"))
         {
-            try (Catalog catalog = openCatalog())
+            try (Catalog catalog = openCatalog(System.out::println))
             {
                 catalog.forEntry((he, hd, e, d) -> System.out.println(d), Long.valueOf(args[2]));
             }
         }
         else if (args.length == 2 && args[1].equals("verify"))
         {
-            try (Catalog catalog = openCatalog())
+            try (Catalog catalog = openCatalog(System.out::println))
             {
                 catalog.forEach(CatalogTool::verify);
             }
         }
         else if (args.length == 3 && args[1].equals("verify"))
         {
-            try (Catalog catalog = openCatalog())
+            try (Catalog catalog = openCatalog(System.out::println))
             {
                 catalog.forEntry(CatalogTool::verify, Long.valueOf(args[2]));
             }
@@ -74,9 +85,16 @@ public class CatalogTool
         // TODO: add a manual override tool to force mark entries as unusable
     }
 
-    private static Catalog openCatalog()
+    private static Catalog openCatalog(final Consumer<String> logger)
     {
-        return new Catalog(archiveDir, null, 0, System::currentTimeMillis, false);
+        return new Catalog(archiveDir, System::currentTimeMillis, TimeUnit.SECONDS.toMillis(5), logger);
+    }
+
+    private static void printHeader(final Catalog catalog)
+    {
+        System.out.format(
+            "%1$tH:%1$tM:%1$tS (Catalog: %2$tH:%2$tM:%2$tS)%n", new Date(), new Date(catalog.timestampMsVolatile()));
+        System.out.println(catalog.catalogHeaderDecoder());
     }
 
     private static void verify(
@@ -240,6 +258,7 @@ public class CatalogTool
         System.out.println("Usage: <archive-dir> <command> <optional recordingId>");
         System.out.println("  describe: prints out all descriptors in the file. Optionally specify a recording id" +
             " to describe a single recording.");
+        System.out.println("  pid: prints just PID of archive.");
         System.out.println("  verify: verifies all descriptors in the file, checking recording files availability %n" +
             "and contents. Faulty entries are marked as unusable. Optionally specify a recording id%n" +
             "to verify a single recording.");

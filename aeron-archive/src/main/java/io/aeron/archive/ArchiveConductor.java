@@ -106,7 +106,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             ctx.idleStrategy(),
             aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
-        catalog = new Catalog(archiveDir, archiveDirChannel, ctx.fileSyncLevel(), epochClock);
+        catalog = new Catalog(archiveDir, archiveDirChannel, ctx.fileSyncLevel(), epochClock, 0);
     }
 
     public void onStart()
@@ -777,7 +777,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             clockUpdateDeadlineNs = nowNs + 1_000_000;
             // TODO: update cached epochClock
             // TODO: update cached nanoClock
-            catalog.updateTimestamp(epochClock.time());
+            catalog.updateTimestampMs(epochClock.time());
         }
     }
 }

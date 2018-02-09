@@ -36,7 +36,7 @@ public class ListRecordingsForUriSessionTest
     @Before
     public void before()
     {
-        catalog = new Catalog(archiveDir, null, 0, clock);
+        catalog = new Catalog(archiveDir, null, 0, clock, 0);
         matchingRecordingIds[0] = catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channel", "channelA?tag=f", "sourceA");
         catalog.addNewRecording(

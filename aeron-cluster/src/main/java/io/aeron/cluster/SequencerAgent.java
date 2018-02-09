@@ -211,7 +211,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             final long recordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
 
             commitPosition = CommitPos.allocate(
-                aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, logSessionId, -1);
+                aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, logSessionId);
 
             ctx.recordingLog().appendTerm(recordingId, leadershipTermId, baseLogPosition, nowMs, leaderMemberId);
         }
@@ -936,7 +936,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             final String channel = channelUri.toString();
 
             try (Counter counter = CommitPos.allocate(
-                aeron, tempBuffer, recordingId, logPosition, leadershipTermId, i, i);
+                aeron, tempBuffer, recordingId, logPosition, leadershipTermId, i);
                 Subscription subscription = aeron.addSubscription(channel, streamId))
             {
                 counter.setOrdered(stopPosition);

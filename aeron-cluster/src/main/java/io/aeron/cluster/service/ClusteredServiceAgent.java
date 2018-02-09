@@ -53,9 +53,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     private long leadershipTermId;
     private long timestampMs;
     private BoundedLogAdapter logAdapter;
+    private ActiveLog activeLog;
     private ReadableCounter roleCounter;
     private Role role = Role.FOLLOWER;
-    private ActiveLog activeLog;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {

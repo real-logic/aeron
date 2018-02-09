@@ -312,6 +312,18 @@ class Catalog implements AutoCloseable
         return catalogHeaderDecoder;
     }
 
+    public static void validateCatalogHeaderDataLengths(final int entryLength, final int totalDataLength)
+    {
+        final int headerDataLengthAllowed = entryLength -
+            (CatalogHeaderEncoder.BLOCK_LENGTH + (4 * VarAsciiEncodingEncoder.lengthEncodingLength()));
+
+        if (totalDataLength > headerDataLengthAllowed)
+        {
+            throw new IllegalArgumentException("Combined length of channels and Aeron directory for catalog header:" +
+                totalDataLength + " exceeds max allowed:" + headerDataLengthAllowed);
+        }
+    }
+
     long addNewRecording(
         final long startPosition,
         final long startTimestamp,

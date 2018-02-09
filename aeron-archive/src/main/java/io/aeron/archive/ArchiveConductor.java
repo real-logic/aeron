@@ -106,7 +106,33 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             ctx.idleStrategy(),
             aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
-        catalog = new Catalog(archiveDir, archiveDirChannel, ctx.fileSyncLevel(), epochClock, 0);
+        catalog = new Catalog(
+            archiveDir,
+            archiveDirChannel,
+            ctx.fileSyncLevel(),
+            epochClock,
+            0,
+            (encoder, decoder) ->
+            {
+                final String aeronDirectoryName = aeron.context().aeronDirectoryName();
+
+                Catalog.validateCatalogHeaderDataLengths(
+                    decoder.entryLength(),
+                    ctx.controlChannel().length() +
+                    ctx.localControlChannel().length() +
+                    ctx.recordingEventsChannel().length() +
+                    aeronDirectoryName.length());
+
+                encoder
+                    .controlStreamId(ctx.controlStreamId())
+                    .localControlStreamId(ctx.localControlStreamId())
+                    .eventsStreamId(ctx.recordingEventsStreamId())
+                    .controlChannel(ctx.controlChannel())
+                    .localControlChannel(ctx.localControlChannel())
+                    .eventsChannel(ctx.recordingEventsChannel())
+                    .aeronDir(aeronDirectoryName);
+            },
+            null);
     }
 
     public void onStart()

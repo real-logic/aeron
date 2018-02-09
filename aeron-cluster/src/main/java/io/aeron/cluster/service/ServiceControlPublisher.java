@@ -95,7 +95,7 @@ public class ServiceControlPublisher implements AutoCloseable
         throw new IllegalStateException("Failed to cancel timer");
     }
 
-    public void sendAcknowledgment(
+    public void ackAction(
         final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionAckEncoder.BLOCK_LENGTH;

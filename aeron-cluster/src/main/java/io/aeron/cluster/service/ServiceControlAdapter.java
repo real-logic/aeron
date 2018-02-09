@@ -85,7 +85,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                serviceControlListener.onServiceActionAck(
+                serviceControlListener.onActionAck(
                     serviceActionAckDecoder.logPosition(),
                     serviceActionAckDecoder.leadershipTermId(),
                     serviceActionAckDecoder.serviceId(),

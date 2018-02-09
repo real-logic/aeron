@@ -269,7 +269,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         return "sequencer";
     }
 
-    public void onServiceActionAck(
+    public void onActionAck(
         final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
         validateServiceAck(logPosition, leadershipTermId, serviceId, action);

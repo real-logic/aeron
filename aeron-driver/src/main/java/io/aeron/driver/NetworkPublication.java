@@ -39,6 +39,8 @@ import static io.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermScanner.*;
+import static io.aeron.protocol.DataHeaderFlyweight.BEGIN_AND_END_FLAGS;
+import static io.aeron.protocol.DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS;
 
 class NetworkPublicationPadding1
 {
@@ -557,23 +559,13 @@ public class NetworkPublication
 
         if (nowNs > (timeOfLastSendOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
-            timeOfLastSendOrHeartbeatNs = nowNs;
-
             heartbeatBuffer.clear();
             heartbeatDataHeader
                 .sessionId(sessionId)
                 .streamId(streamId)
                 .termId(activeTermId)
-                .termOffset(termOffset);
-
-            if (isEndOfStream)
-            {
-                heartbeatDataHeader.flags((byte)DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS);
-            }
-            else
-            {
-                heartbeatDataHeader.flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
-            }
+                .termOffset(termOffset)
+                .flags((byte)(isEndOfStream ? BEGIN_END_AND_EOS_FLAGS : BEGIN_AND_END_FLAGS));
 
             bytesSent = channelEndpoint.send(heartbeatBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
@@ -581,6 +573,7 @@ public class NetworkPublication
                 shortSends.increment();
             }
 
+            timeOfLastSendOrHeartbeatNs = nowNs;
             heartbeatsSent.incrementOrdered();
         }
 

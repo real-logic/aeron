@@ -318,13 +318,14 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         {
             publication = findPublication(networkPublications, streamId, channelEndpoint);
         }
-        else if (params.hasSessionId)
-        {
-            confirmSessionIdNotInUse(params.sessionId);
-        }
 
         if (null == publication)
         {
+            if (params.hasSessionId)
+            {
+                confirmSessionIdNotInUse(params.sessionId);
+            }
+
             publication = newNetworkPublication(
                 correlationId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
         }
@@ -1229,13 +1230,14 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         {
             publication = findSharedIpcPublication(ipcPublications, streamId);
         }
-        else if (params.hasSessionId)
-        {
-            confirmSessionIdNotInUse(params.sessionId);
-        }
 
         if (null == publication)
         {
+            if (params.hasSessionId)
+            {
+                confirmSessionIdNotInUse(params.sessionId);
+            }
+
             validateMtuForMaxMessage(params, isExclusive);
             publication = addIpcPublication(correlationId, streamId, channel, isExclusive, params);
         }
@@ -1344,11 +1346,15 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         while (true)
         {
-            final int sessionId = nextSessionId++;
-            final boolean inReservedRange =
-                sessionId <= context.publicationReservedSessionIdHigh() &&
-                sessionId >= context.publicationReservedSessionIdLow();
-            if (!inReservedRange && !activeSessionIds.contains(sessionId))
+            int sessionId = nextSessionId++;
+
+            if (context.reservedSessionIdLow() <= sessionId && sessionId <= context.reservedSessionIdHigh())
+            {
+                nextSessionId = context.reservedSessionIdHigh() + 1;
+                sessionId = nextSessionId++;
+            }
+
+            if (!activeSessionIds.contains(sessionId))
             {
                 return sessionId;
             }

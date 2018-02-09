@@ -404,8 +404,8 @@ public final class MediaDriver implements AutoCloseable
         private int mtuLength = Configuration.MTU_LENGTH;
         private int ipcMtuLength = Configuration.IPC_MTU_LENGTH;
         private int filePageSize = Configuration.FILE_PAGE_SIZE;
-        private int publicationReservedSessionIdLow = Configuration.PUBLICATION_SESSION_ID_RESERVED_LOW;
-        private int publicationReservedSessionIdHigh = Configuration.PUBLICATION_SESSION_ID_RESERVED_HIGH;
+        private int reservedSessionIdLow = Configuration.RESERVED_SESSION_ID_LOW;
+        private int reservedSessionIdHigh = Configuration.RESERVED_SESSION_ID_HIGH;
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -1707,46 +1707,54 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * High end of the reserved sessionId range for publications.
+         * Low end of the reserved session id range which will not be automatically assigned.
          *
-         * @return high end of the reserved sessionId range for publications.
+         * @return low end of the reserved session id range which will not be automatically assigned.
+         * @see #reservedSessionIdHigh()
+         * @see Configuration#RESERVED_SESSION_ID_LOW_PROP_NAME
          */
-        public int publicationReservedSessionIdHigh()
+        public int reservedSessionIdLow()
         {
-            return publicationReservedSessionIdHigh;
+            return reservedSessionIdLow;
         }
 
         /**
-         * High end of the reserved sessionId range for publications.
+         * Low end of the reserved session id range which will not be automatically assigned.
          *
-         * @param sessionId to use for high end of the reserved sessionId range for publications.
+         * @param sessionId for low end of the reserved session id range which will not be automatically assigned.
          * @return this for fluent API.
+         * @see #reservedSessionIdHigh(int)
+         * @see Configuration#RESERVED_SESSION_ID_LOW_PROP_NAME
          */
-        public Context publicationReservedSessionIdHigh(final int sessionId)
+        public Context reservedSessionIdLow(final int sessionId)
         {
-            publicationReservedSessionIdHigh = sessionId;
+            reservedSessionIdLow = sessionId;
             return this;
         }
 
         /**
-         * Low end of the reserved sessionId range for publications.
+         * High end of the reserved session id range which will not be automatically assigned.
          *
-         * @return low end of the reserved sessionId range for publications.
+         * @return high end of the reserved session id range which will not be automatically assigned.
+         * @see #reservedSessionIdLow()
+         * @see Configuration#RESERVED_SESSION_ID_HIGH_PROP_NAME
          */
-        public int publicationReservedSessionIdLow()
+        public int reservedSessionIdHigh()
         {
-            return publicationReservedSessionIdLow;
+            return reservedSessionIdHigh;
         }
 
         /**
-         * Low end of the reserved sessionId range for publications.
+         * High end of the reserved session id range which will not be automatically assigned.
          *
-         * @param sessionId to use for low end of the reserved sessionId range for publications.
+         * @param sessionId for high end of the reserved session id range which will not be automatically assigned.
          * @return this for fluent API.
+         * @see #reservedSessionIdLow(int)
+         * @see Configuration#RESERVED_SESSION_ID_HIGH_PROP_NAME
          */
-        public Context publicationReservedSessionIdLow(final int sessionId)
+        public Context reservedSessionIdHigh(final int sessionId)
         {
-            publicationReservedSessionIdLow = sessionId;
+            reservedSessionIdHigh = sessionId;
             return this;
         }
 

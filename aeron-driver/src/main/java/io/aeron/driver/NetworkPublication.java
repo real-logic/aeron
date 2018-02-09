@@ -524,6 +524,9 @@ public class NetworkPublication
     {
         if (nowNs > (timeOfLastSetupNs + PUBLICATION_SETUP_TIMEOUT_NS))
         {
+            timeOfLastSetupNs = nowNs;
+            timeOfLastSendOrHeartbeatNs = nowNs;
+
             setupBuffer.clear();
             setupHeader
                 .activeTermId(activeTermId)
@@ -535,14 +538,10 @@ public class NetworkPublication
                 .mtuLength(mtuLength)
                 .ttl(channelEndpoint.multicastTtl());
 
-            final int bytesSent = channelEndpoint.send(setupBuffer);
-            if (SetupFlyweight.HEADER_LENGTH != bytesSent)
+            if (SetupFlyweight.HEADER_LENGTH != channelEndpoint.send(setupBuffer))
             {
                 shortSends.increment();
             }
-
-            timeOfLastSetupNs = nowNs;
-            timeOfLastSendOrHeartbeatNs = nowNs;
 
             if (hasReceivers)
             {
@@ -558,6 +557,8 @@ public class NetworkPublication
 
         if (nowNs > (timeOfLastSendOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
+            timeOfLastSendOrHeartbeatNs = nowNs;
+
             heartbeatBuffer.clear();
             heartbeatDataHeader
                 .sessionId(sessionId)
@@ -581,7 +582,6 @@ public class NetworkPublication
             }
 
             heartbeatsSent.incrementOrdered();
-            timeOfLastSendOrHeartbeatNs = nowNs;
         }
 
         return bytesSent;

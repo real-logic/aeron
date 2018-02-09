@@ -17,6 +17,8 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 
+import java.util.Collection;
+
 /**
  * Interface for a {@link ClusteredService} to interact with cluster hosting it.
  */
@@ -112,6 +114,13 @@ public interface Cluster
      * @return the {@link ClientSession} that matches the clusterSessionId.
      */
     ClientSession getClientSession(long clusterSessionId);
+
+    /**
+     * Get the current collection of cluster client sessions.
+     *
+     * @return the current collection of cluster client sessions.
+     */
+    Collection<ClientSession> clientSessions();
 
     /**
      * Current Epoch time in milliseconds.

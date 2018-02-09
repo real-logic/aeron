@@ -28,6 +28,8 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
+import java.util.Collection;
+
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -172,6 +174,11 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     public ClientSession getClientSession(final long clusterSessionId)
     {
         return sessionByIdMap.get(clusterSessionId);
+    }
+
+    public Collection<ClientSession> clientSessions()
+    {
+        return sessionByIdMap.values();
     }
 
     public long timeMs()

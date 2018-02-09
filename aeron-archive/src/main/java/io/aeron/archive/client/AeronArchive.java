@@ -1111,7 +1111,7 @@ public class AeronArchive implements AutoCloseable
         private int controlMtuLength = Configuration.controlMtuLength();
         private IdleStrategy idleStrategy;
         private Lock lock;
-        private String aeronDirectoryName = CommonContext.AERON_DIR_PROP_DEFAULT;
+        private String aeronDirectoryName;
         private Aeron aeron;
         private boolean ownsAeronClient = false;
 
@@ -1122,8 +1122,14 @@ public class AeronArchive implements AutoCloseable
         {
             if (null == aeron)
             {
-                aeron = Aeron.connect(new Aeron.Context()
-                    .aeronDirectoryName(aeronDirectoryName));
+                final Aeron.Context ctx = new Aeron.Context();
+
+                if (null != aeronDirectoryName)
+                {
+                    ctx.aeronDirectoryName(aeronDirectoryName);
+                }
+
+                aeron = Aeron.connect(ctx);
 
                 ownsAeronClient = true;
             }

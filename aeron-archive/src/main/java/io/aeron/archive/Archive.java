@@ -16,7 +16,6 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
-import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.exceptions.ConfigurationException;
@@ -287,7 +286,7 @@ public class Archive implements AutoCloseable
     {
         private boolean deleteArchiveOnStart = false;
         private boolean ownsAeronClient = false;
-        private String aeronDirectoryName = CommonContext.AERON_DIR_PROP_DEFAULT;
+        private String aeronDirectoryName;
         private Aeron aeron;
         private File archiveDir;
 
@@ -341,14 +340,19 @@ public class Archive implements AutoCloseable
             {
                 ownsAeronClient = true;
 
-                aeron = Aeron.connect(
-                    new Aeron.Context()
-                        .aeronDirectoryName(aeronDirectoryName)
-                        .errorHandler(errorHandler)
-                        .epochClock(epochClock)
-                        .driverAgentInvoker(mediaDriverAgentInvoker)
-                        .useConductorAgentInvoker(true)
-                        .clientLock(new NoOpLock()));
+                final Aeron.Context ctx = new Aeron.Context()
+                    .errorHandler(errorHandler)
+                    .epochClock(epochClock)
+                    .driverAgentInvoker(mediaDriverAgentInvoker)
+                    .useConductorAgentInvoker(true)
+                    .clientLock(new NoOpLock());
+
+                if (null != aeronDirectoryName)
+                {
+                    ctx.aeronDirectoryName(aeronDirectoryName);
+                }
+
+                aeron = Aeron.connect(ctx);
 
                 if (null == errorCounter)
                 {

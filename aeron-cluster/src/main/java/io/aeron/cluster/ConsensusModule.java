@@ -56,7 +56,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Active state with ingress and expired timers appended to the log.
          */
-        ACTIVE(1),
+        ACTIVE(1, ClusterAction.READY),
 
         /**
          * Suspended processing of ingress and expired timers.
@@ -250,6 +250,26 @@ public class ConsensusModule implements AutoCloseable
         public static final String CLUSTER_MEMBERS_DEFAULT = "0,localhost:9010,localhost:8001,localhost:7001";
 
         /**
+         * Channel for the clustered log.
+         */
+        public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
+
+        /**
+         * Channel for the clustered log. Default to localhost:9030.
+         */
+        public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030";
+
+        /**
+         * Stream id within a channel for the clustered log.
+         */
+        public static final String LOG_STREAM_ID_PROP_NAME = "aeron.cluster.log.stream.id";
+
+        /**
+         * Stream id within a channel for the clustered log. Default to stream id of 3.
+         */
+        public static final int LOG_STREAM_ID_DEFAULT = 3;
+
+        /**
          * Channel to be used for archiving snapshots.
          */
         public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
@@ -435,6 +455,26 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * The value {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
+         */
+        public static String logChannel()
+        {
+            return System.getProperty(LOG_CHANNEL_PROP_NAME, LOG_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #LOG_STREAM_ID_DEFAULT} or system property {@link #LOG_STREAM_ID_PROP_NAME} if set.
+         *
+         * @return {@link #LOG_STREAM_ID_DEFAULT} or system property {@link #LOG_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int logStreamId()
+        {
+            return Integer.getInteger(LOG_STREAM_ID_PROP_NAME, LOG_STREAM_ID_DEFAULT);
+        }
+
+        /**
          * The value {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property
          * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME} if set.
          *
@@ -589,8 +629,8 @@ public class ConsensusModule implements AutoCloseable
         private String clusterMembers = Configuration.clusterMembers();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
-        private String logChannel = ClusteredServiceContainer.Configuration.logChannel();
-        private int logStreamId = ClusteredServiceContainer.Configuration.logStreamId();
+        private String logChannel = Configuration.logChannel();
+        private int logStreamId = Configuration.logStreamId();
         private String replayChannel = ClusteredServiceContainer.Configuration.replayChannel();
         private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
         private String serviceControlChannel = ClusteredServiceContainer.Configuration.serviceControlChannel();
@@ -972,7 +1012,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param channel parameter for the cluster log channel.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#LOG_CHANNEL_PROP_NAME
+         * @see Configuration#LOG_CHANNEL_PROP_NAME
          */
         public Context logChannel(final String channel)
         {
@@ -984,7 +1024,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the channel parameter for the cluster log channel.
          *
          * @return the channel parameter for the cluster channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_CHANNEL_PROP_NAME
+         * @see Configuration#LOG_CHANNEL_PROP_NAME
          */
         public String logChannel()
         {
@@ -996,7 +1036,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param streamId for the cluster log channel.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#LOG_STREAM_ID_PROP_NAME
+         * @see Configuration#LOG_STREAM_ID_PROP_NAME
          */
         public Context logStreamId(final int streamId)
         {
@@ -1008,7 +1048,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the stream id for the cluster log channel.
          *
          * @return the stream id for the cluster log channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_STREAM_ID_PROP_NAME
+         * @see Configuration#LOG_STREAM_ID_PROP_NAME
          */
         public int logStreamId()
         {

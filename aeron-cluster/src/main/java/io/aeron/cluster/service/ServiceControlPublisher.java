@@ -29,7 +29,7 @@ public class ServiceControlPublisher implements AutoCloseable
     private final ScheduleTimerRequestEncoder scheduleTimerRequestEncoder = new ScheduleTimerRequestEncoder();
     private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
     private final ServiceActionAckEncoder serviceActionAckEncoder = new ServiceActionAckEncoder();
-    private final ConnectLogRequestEncoder connectLogRequestEncoder = new ConnectLogRequestEncoder();
+    private final JoinLogRequestEncoder joinLogRequestEncoder = new JoinLogRequestEncoder();
     private final Publication publication;
 
     public ServiceControlPublisher(final Publication publication)
@@ -125,15 +125,15 @@ public class ServiceControlPublisher implements AutoCloseable
         throw new IllegalStateException("Failed to send ACK");
     }
 
-    public void connectLog(
+    public void joinLog(
         final long leadershipTermId,
         final int commitPositionId,
         final int logSessionId,
         final int logStreamId,
         final String channel)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ConnectLogRequestEncoder.BLOCK_LENGTH +
-            ConnectLogRequestEncoder.logChannelHeaderLength() + channel.length();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinLogRequestEncoder.BLOCK_LENGTH +
+            JoinLogRequestEncoder.logChannelHeaderLength() + channel.length();
 
         int attempts = SEND_ATTEMPTS * 2;
         do
@@ -141,7 +141,7 @@ public class ServiceControlPublisher implements AutoCloseable
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                connectLogRequestEncoder
+                joinLogRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .commitPositionId(commitPositionId)

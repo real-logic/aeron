@@ -21,12 +21,13 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
 /**
  * Adapter for reading a log with a limit applied beyond which the consumer cannot progress.
  */
-final class BoundedLogAdapter implements ControlledFragmentHandler
+final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseable
 {
     private static final int FRAGMENT_LIMIT = 10;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
@@ -51,9 +52,19 @@ final class BoundedLogAdapter implements ControlledFragmentHandler
         this.agent = agent;
     }
 
+    public void close()
+    {
+        CloseHelper.close(image.subscription());
+    }
+
     public Image image()
     {
         return image;
+    }
+
+    public int limitCounterId()
+    {
+        return limit.counterId();
     }
 
     public int poll()

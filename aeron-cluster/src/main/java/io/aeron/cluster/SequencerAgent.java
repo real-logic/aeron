@@ -193,16 +193,19 @@ class SequencerAgent implements Agent, ServiceControlListener
             cachedEpochClock.update(nowMs);
             timeOfLastLogUpdateMs = nowMs;
 
+            final String channel = ctx.logChannel();
+            final int streamId = ctx.logStreamId();
+
             if (clusterMemberId == ctx.appointedLeaderId() || clusterMembers.length == 1)
             {
                 leadershipTermId++;
-                logSessionId = logAppender.connect(aeron, archive, ctx.logChannel(), ctx.logStreamId());
+                logSessionId = logAppender.connect(aeron, archive, channel, streamId);
                 becomeLeader(nowMs);
             }
             else
             {
                 // TODO: record remote log
-                logSessionId = connectLogAdapter(aeron, ctx.logChannel(), ctx.logStreamId());
+                logSessionId = connectLogAdapter(aeron, channel, streamId);
                 becomeFollower(nowMs, leaderMemberId);
             }
 
@@ -214,6 +217,10 @@ class SequencerAgent implements Agent, ServiceControlListener
                 aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, logSessionId);
 
             ctx.recordingLog().appendTerm(recordingId, leadershipTermId, baseLogPosition, nowMs, leaderMemberId);
+
+            serviceAckCount = 0;
+            serviceControlPublisher.joinLog(leadershipTermId, commitPosition.id(), logSessionId, streamId, channel);
+            waitForServiceAcks();
         }
     }
 
@@ -942,7 +949,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 counter.setOrdered(stopPosition);
 
                 serviceAckCount = 0;
-                serviceControlPublisher.connectLog(leadershipTermId, counter.id(), i, streamId, channel);
+                serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, channel);
                 waitForServiceAcks();
 
                 final int sessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, streamId);

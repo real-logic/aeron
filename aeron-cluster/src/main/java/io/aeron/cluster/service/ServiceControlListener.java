@@ -56,7 +56,7 @@ public interface ServiceControlListener
     }
 
     /**
-     * Request that the services connect to a log for replay or live stream.
+     * Request that the services join to a log for replay or live stream.
      *
      * @param leadershipTermId for the log.
      * @param commitPositionId for counter that gives the bound for consumption of the log.
@@ -64,7 +64,7 @@ public interface ServiceControlListener
      * @param logStreamId      to subscribe to for the log.
      * @param logChannel       to subscribe to for the log.
      */
-    default void onConnectLog(
+    default void onJoinLog(
         long leadershipTermId, int commitPositionId, int logSessionId, int logStreamId, String logChannel)
     {
     }

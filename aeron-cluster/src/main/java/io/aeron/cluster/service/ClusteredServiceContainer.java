@@ -137,26 +137,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String SERVICE_NAME_DEFAULT = "clustered-service";
 
         /**
-         * Channel for the clustered log.
-         */
-        public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
-
-        /**
-         * Channel for the clustered log. Default to localhost:9030.
-         */
-        public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030";
-
-        /**
-         * Stream id within a channel for the clustered log.
-         */
-        public static final String LOG_STREAM_ID_PROP_NAME = "aeron.cluster.log.stream.id";
-
-        /**
-         * Stream id within a channel for the clustered log. Default to stream id of 3.
-         */
-        public static final int LOG_STREAM_ID_DEFAULT = 3;
-
-        /**
          * Channel to be used for log or snapshot replay on startup.
          */
         public static final String REPLAY_CHANNEL_PROP_NAME = "aeron.cluster.replay.channel";
@@ -245,26 +225,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static String serviceName()
         {
             return System.getProperty(SERVICE_NAME_PROP_NAME, SERVICE_NAME_DEFAULT);
-        }
-
-        /**
-         * The value {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
-         *
-         * @return {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
-         */
-        public static String logChannel()
-        {
-            return System.getProperty(LOG_CHANNEL_PROP_NAME, LOG_CHANNEL_DEFAULT);
-        }
-
-        /**
-         * The value {@link #LOG_STREAM_ID_DEFAULT} or system property {@link #LOG_STREAM_ID_PROP_NAME} if set.
-         *
-         * @return {@link #LOG_STREAM_ID_DEFAULT} or system property {@link #LOG_STREAM_ID_PROP_NAME} if set.
-         */
-        public static int logStreamId()
-        {
-            return Integer.getInteger(LOG_STREAM_ID_PROP_NAME, LOG_STREAM_ID_DEFAULT);
         }
 
         /**
@@ -367,8 +327,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
     {
         private int serviceId = Configuration.serviceId();
         private String serviceName = Configuration.serviceName();
-        private String logChannel = Configuration.logChannel();
-        private int logStreamId = Configuration.logStreamId();
         private String replayChannel = Configuration.replayChannel();
         private int replayStreamId = Configuration.replayStreamId();
         private String serviceControlChannel = Configuration.serviceControlChannel();
@@ -541,54 +499,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public String serviceName()
         {
             return serviceName;
-        }
-
-        /**
-         * Set the channel parameter for the cluster log channel.
-         *
-         * @param channel parameter for the cluster log channel.
-         * @return this for a fluent API.
-         * @see Configuration#LOG_CHANNEL_PROP_NAME
-         */
-        public Context logChannel(final String channel)
-        {
-            logChannel = channel;
-            return this;
-        }
-
-        /**
-         * Get the channel parameter for the cluster log channel.
-         *
-         * @return the channel parameter for the cluster channel.
-         * @see Configuration#LOG_CHANNEL_PROP_NAME
-         */
-        public String logChannel()
-        {
-            return logChannel;
-        }
-
-        /**
-         * Set the stream id for the cluster log channel.
-         *
-         * @param streamId for the cluster log channel.
-         * @return this for a fluent API
-         * @see Configuration#LOG_STREAM_ID_PROP_NAME
-         */
-        public Context logStreamId(final int streamId)
-        {
-            logStreamId = streamId;
-            return this;
-        }
-
-        /**
-         * Get the stream id for the cluster log channel.
-         *
-         * @return the stream id for the cluster log channel.
-         * @see Configuration#LOG_STREAM_ID_PROP_NAME
-         */
-        public int logStreamId()
-        {
-            return logStreamId;
         }
 
         /**

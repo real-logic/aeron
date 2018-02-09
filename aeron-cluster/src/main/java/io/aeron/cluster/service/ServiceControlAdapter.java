@@ -31,7 +31,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
     private final ScheduleTimerRequestDecoder scheduleTimerRequestDecoder = new ScheduleTimerRequestDecoder();
     private final CancelTimerRequestDecoder cancelTimerRequestDecoder = new CancelTimerRequestDecoder();
     private final ServiceActionAckDecoder serviceActionAckDecoder = new ServiceActionAckDecoder();
-    private final ConnectLogRequestDecoder connectLogRequestDecoder = new ConnectLogRequestDecoder();
+    private final JoinLogRequestDecoder joinLogRequestDecoder = new JoinLogRequestDecoder();
 
     public ServiceControlAdapter(final Subscription subscription, final ServiceControlListener serviceControlListener)
     {
@@ -92,19 +92,19 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                     serviceActionAckDecoder.action());
                 break;
 
-            case ConnectLogRequestDecoder.TEMPLATE_ID:
-                connectLogRequestDecoder.wrap(
+            case JoinLogRequestDecoder.TEMPLATE_ID:
+                joinLogRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                serviceControlListener.onConnectLog(
-                    connectLogRequestDecoder.leadershipTermId(),
-                    connectLogRequestDecoder.commitPositionId(),
-                    connectLogRequestDecoder.logSessionId(),
-                    connectLogRequestDecoder.logStreamId(),
-                    connectLogRequestDecoder.logChannel());
+                serviceControlListener.onJoinLog(
+                    joinLogRequestDecoder.leadershipTermId(),
+                    joinLogRequestDecoder.commitPositionId(),
+                    joinLogRequestDecoder.logSessionId(),
+                    joinLogRequestDecoder.logStreamId(),
+                    joinLogRequestDecoder.logChannel());
                 break;
 
             default:

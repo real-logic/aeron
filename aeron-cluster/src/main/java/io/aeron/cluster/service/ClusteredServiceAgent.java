@@ -370,8 +370,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
                     idleStrategy.idle(workCount);
                 }
 
-                serviceControlPublisher.ackAction(
-                    baseLogPosition, leadershipTermId, serviceId, ClusterAction.REPLAY);
+                serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.REPLAY);
             }
         }
 

@@ -33,6 +33,7 @@ import java.util.Collection;
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static java.util.Collections.unmodifiableCollection;
 
 final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 {
@@ -44,6 +45,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     private final Aeron aeron;
     private final Subscription logSubscription;
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
+    private final Collection<ClientSession> readOnlyClientSessions = unmodifiableCollection(sessionByIdMap.values());
     private final ClusteredService service;
     private final ServiceControlPublisher serviceControlPublisher;
     private final ServiceControlAdapter serviceControlAdapter;
@@ -178,7 +180,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
     public Collection<ClientSession> clientSessions()
     {
-        return sessionByIdMap.values();
+        return readOnlyClientSessions;
     }
 
     public long timeMs()

@@ -156,7 +156,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
     public String roleName()
     {
-        return "clustered-service";
+        return ctx.serviceName();
     }
 
     public Cluster.Role role()

@@ -127,6 +127,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final int SERVICE_ID_DEFAULT = 0;
 
         /**
+         * Name for a clustered service to be the role of the {@link Agent}.
+         */
+        public static final String SERVICE_NAME_PROP_NAME = "aeron.cluster.service.name";
+
+        /**
+         * Name for a clustered service to be the role of the {@link Agent}. Default to "clustered-service".
+         */
+        public static final String SERVICE_NAME_DEFAULT = "clustered-service";
+
+        /**
          * Channel for the clustered log.
          */
         public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
@@ -225,6 +235,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static int serviceId()
         {
             return Integer.getInteger(SERVICE_ID_PROP_NAME, SERVICE_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #SERVICE_NAME_DEFAULT} or system property {@link #SERVICE_NAME_PROP_NAME} if set.
+         *
+         * @return {@link #SERVICE_NAME_DEFAULT} or system property {@link #SERVICE_NAME_PROP_NAME} if set.
+         */
+        public static String serviceName()
+        {
+            return System.getProperty(SERVICE_NAME_PROP_NAME, SERVICE_NAME_DEFAULT);
         }
 
         /**
@@ -346,6 +366,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
     public static class Context implements AutoCloseable
     {
         private int serviceId = Configuration.serviceId();
+        private String serviceName = Configuration.serviceName();
         private String logChannel = Configuration.logChannel();
         private int logStreamId = Configuration.logStreamId();
         private String replayChannel = Configuration.replayChannel();
@@ -479,7 +500,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @param serviceId for this clustered service.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
+         * @see Configuration#SERVICE_ID_PROP_NAME
          */
         public Context serviceId(final int serviceId)
         {
@@ -491,7 +512,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Get the id for this clustered service.
          *
          * @return the id for this clustered service.
-         * @see ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
+         * @see Configuration#SERVICE_ID_PROP_NAME
          */
         public int serviceId()
         {
@@ -499,11 +520,35 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
+         * Set the name for a clustered service to be the role of the {@link Agent}.
+         *
+         * @param serviceName for a clustered service to be the role of the {@link Agent}.
+         * @return this for a fluent API.
+         * @see Configuration#SERVICE_NAME_PROP_NAME
+         */
+        public Context serviceName(final String serviceName)
+        {
+            this.serviceName = serviceName;
+            return this;
+        }
+
+        /**
+         * Get the name for a clustered service to be the role of the {@link Agent}.
+         *
+         * @return the name for a clustered service to be the role of the {@link Agent}.
+         * @see Configuration#SERVICE_NAME_PROP_NAME
+         */
+        public String serviceName()
+        {
+            return serviceName;
+        }
+
+        /**
          * Set the channel parameter for the cluster log channel.
          *
          * @param channel parameter for the cluster log channel.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#LOG_CHANNEL_PROP_NAME
+         * @see Configuration#LOG_CHANNEL_PROP_NAME
          */
         public Context logChannel(final String channel)
         {
@@ -515,7 +560,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Get the channel parameter for the cluster log channel.
          *
          * @return the channel parameter for the cluster channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_CHANNEL_PROP_NAME
+         * @see Configuration#LOG_CHANNEL_PROP_NAME
          */
         public String logChannel()
         {
@@ -527,7 +572,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @param streamId for the cluster log channel.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#LOG_STREAM_ID_PROP_NAME
+         * @see Configuration#LOG_STREAM_ID_PROP_NAME
          */
         public Context logStreamId(final int streamId)
         {
@@ -539,7 +584,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Get the stream id for the cluster log channel.
          *
          * @return the stream id for the cluster log channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_STREAM_ID_PROP_NAME
+         * @see Configuration#LOG_STREAM_ID_PROP_NAME
          */
         public int logStreamId()
         {
@@ -551,7 +596,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @param channel parameter for the cluster log replay channel.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
+         * @see Configuration#REPLAY_CHANNEL_PROP_NAME
          */
         public Context replayChannel(final String channel)
         {
@@ -563,7 +608,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Get the channel parameter for the cluster log and snapshot replay channel.
          *
          * @return the channel parameter for the cluster replay channel.
-         * @see ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
+         * @see Configuration#REPLAY_CHANNEL_PROP_NAME
          */
         public String replayChannel()
         {
@@ -575,7 +620,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          *
          * @param streamId for the cluster log replay channel.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
+         * @see Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
         public Context replayStreamId(final int streamId)
         {
@@ -587,7 +632,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Get the stream id for the cluster log and snapshot replay channel.
          *
          * @return the stream id for the cluster log replay channel.
-         * @see ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
+         * @see Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
         public int replayStreamId()
         {

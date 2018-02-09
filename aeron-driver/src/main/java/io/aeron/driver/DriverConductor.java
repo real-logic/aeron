@@ -1348,9 +1348,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         {
             int sessionId = nextSessionId++;
 
-            if (context.reservedSessionIdLow() <= sessionId && sessionId <= context.reservedSessionIdHigh())
+            if (context.publicationReservedSessionIdLow() <= sessionId &&
+                sessionId <= context.publicationReservedSessionIdHigh())
             {
-                nextSessionId = context.reservedSessionIdHigh() + 1;
+                nextSessionId = context.publicationReservedSessionIdHigh() + 1;
                 sessionId = nextSessionId++;
             }
 

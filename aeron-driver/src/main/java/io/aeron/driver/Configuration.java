@@ -704,36 +704,38 @@ public class Configuration
         CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultCongestionControlSupplier");
 
     /**
-     * Property name for low end of low end of the reserved session id range which will not be automatically assigned.
+     * Property name for low end of the publication reserved session id range which will not be automatically assigned.
      */
-    public static final String RESERVED_SESSION_ID_LOW_PROP_NAME = "aeron.reserved.session.id.low";
+    public static final String PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME =
+        "aeron.publication.reserved.session.id.low";
 
     /**
-     * Low end of low end of the reserved session id range which will not be automatically assigned.
+     * Low end of the publication reserved session id range which will not be automatically assigned.
      */
-    public static final int RESERVED_SESSION_ID_LOW_DEFAULT = 0;
+    public static final int PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT = 0;
 
     /**
-     * Low end of low end of the reserved session id range which will not be automatically assigned.
+     * Low end of the publication reserved session id range which will not be automatically assigned.
      */
-    public static final int RESERVED_SESSION_ID_LOW = getInteger(
-        RESERVED_SESSION_ID_LOW_PROP_NAME, RESERVED_SESSION_ID_LOW_DEFAULT);
+    public static final int PUBLICATION_RESERVED_SESSION_ID_LOW = getInteger(
+        PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME, PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT);
 
     /**
-     * Property name for high end of low end of the reserved session id range which will not be automatically assigned.
+     * Property name for high end of the publication reserved session id range which will not be automatically assigned.
      */
-    public static final String RESERVED_SESSION_ID_HIGH_PROP_NAME = "aeron.reserved.session.id.high";
+    public static final String PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME =
+        "aeron.publication.reserved.session.id.high";
 
     /**
-     * High end of low end of the reserved session id range which will not be automatically assigned.
+     * High end of the publication reserved session id range which will not be automatically assigned.
      */
-    public static final int RESERVED_SESSION_ID_HIGH_DEFAULT = 1000;
+    public static final int PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT = 1000;
 
     /**
-     * High end of low end of the reserved session id range which will not be automatically assigned.
+     * High end of the publication reserved session id range which will not be automatically assigned.
      */
-    public static final int RESERVED_SESSION_ID_HIGH = getInteger(
-        RESERVED_SESSION_ID_HIGH_PROP_NAME, RESERVED_SESSION_ID_HIGH_DEFAULT);
+    public static final int PUBLICATION_RESERVED_SESSION_ID_HIGH = getInteger(
+        PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME, PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT);
 
     /**
      * Limit for the number of commands drained in one operation.

@@ -404,8 +404,8 @@ public final class MediaDriver implements AutoCloseable
         private int mtuLength = Configuration.MTU_LENGTH;
         private int ipcMtuLength = Configuration.IPC_MTU_LENGTH;
         private int filePageSize = Configuration.FILE_PAGE_SIZE;
-        private int reservedSessionIdLow = Configuration.RESERVED_SESSION_ID_LOW;
-        private int reservedSessionIdHigh = Configuration.RESERVED_SESSION_ID_HIGH;
+        private int publicationReservedSessionIdLow = Configuration.PUBLICATION_RESERVED_SESSION_ID_LOW;
+        private int publicationReservedSessionIdHigh = Configuration.PUBLICATION_RESERVED_SESSION_ID_HIGH;
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -1707,54 +1707,56 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Low end of the reserved session id range which will not be automatically assigned.
+         * Low end of the publication reserved session id range which will not be automatically assigned.
          *
-         * @return low end of the reserved session id range which will not be automatically assigned.
-         * @see #reservedSessionIdHigh()
-         * @see Configuration#RESERVED_SESSION_ID_LOW_PROP_NAME
+         * @return low end of the publication reserved session id range which will not be automatically assigned.
+         * @see #publicationReservedSessionIdHigh()
+         * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME
          */
-        public int reservedSessionIdLow()
+        public int publicationReservedSessionIdLow()
         {
-            return reservedSessionIdLow;
+            return publicationReservedSessionIdLow;
         }
 
         /**
-         * Low end of the reserved session id range which will not be automatically assigned.
+         * Low end of the publication reserved session id range which will not be automatically assigned.
          *
-         * @param sessionId for low end of the reserved session id range which will not be automatically assigned.
+         * @param sessionId for low end of the publication reserved session id range which will not be automatically
+         *                 assigned.
          * @return this for fluent API.
-         * @see #reservedSessionIdHigh(int)
-         * @see Configuration#RESERVED_SESSION_ID_LOW_PROP_NAME
+         * @see #publicationReservedSessionIdHigh(int)
+         * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME
          */
-        public Context reservedSessionIdLow(final int sessionId)
+        public Context publicationReservedSessionIdLow(final int sessionId)
         {
-            reservedSessionIdLow = sessionId;
+            publicationReservedSessionIdLow = sessionId;
             return this;
         }
 
         /**
-         * High end of the reserved session id range which will not be automatically assigned.
+         * High end of the publication reserved session id range which will not be automatically assigned.
          *
-         * @return high end of the reserved session id range which will not be automatically assigned.
-         * @see #reservedSessionIdLow()
-         * @see Configuration#RESERVED_SESSION_ID_HIGH_PROP_NAME
+         * @return high end of the publication reserved session id range which will not be automatically assigned.
+         * @see #publicationReservedSessionIdLow()
+         * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME
          */
-        public int reservedSessionIdHigh()
+        public int publicationReservedSessionIdHigh()
         {
-            return reservedSessionIdHigh;
+            return publicationReservedSessionIdHigh;
         }
 
         /**
-         * High end of the reserved session id range which will not be automatically assigned.
+         * High end of the publication reserved session id range which will not be automatically assigned.
          *
-         * @param sessionId for high end of the reserved session id range which will not be automatically assigned.
+         * @param sessionId for high end of the publication reserved session id range which will not be automatically
+         *                 assigned.
          * @return this for fluent API.
-         * @see #reservedSessionIdLow(int)
-         * @see Configuration#RESERVED_SESSION_ID_HIGH_PROP_NAME
+         * @see #publicationReservedSessionIdLow(int)
+         * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME
          */
-        public Context reservedSessionIdHigh(final int sessionId)
+        public Context publicationReservedSessionIdHigh(final int sessionId)
         {
-            reservedSessionIdHigh = sessionId;
+            publicationReservedSessionIdHigh = sessionId;
             return this;
         }
 

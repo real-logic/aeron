@@ -17,7 +17,6 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
@@ -270,7 +269,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         return "sequencer";
     }
 
-    public void onActionAck(
+    public void onServiceAck(
         final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
         validateServiceAck(logPosition, leadershipTermId, serviceId, action);
@@ -1168,11 +1167,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         final String channel = ctx.snapshotChannel();
         final int streamId = ctx.snapshotStreamId();
 
-        try (Publication publication = aeron.addExclusivePublication(channel, streamId))
+        try (Publication publication = archive.addRecordedExclusivePublication(channel, streamId))
         {
-            final String recordingChannel = ChannelUri.addSessionId(channel, publication.sessionId());
-            archive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
-
             try
             {
                 idleStrategy.reset();
@@ -1200,7 +1196,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             }
             finally
             {
-                archive.stopRecording(recordingChannel, streamId);
+                archive.stopRecording(publication);
             }
         }
 

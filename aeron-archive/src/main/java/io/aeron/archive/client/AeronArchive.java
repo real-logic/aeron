@@ -255,26 +255,30 @@ public class AeronArchive implements AutoCloseable
      */
     public Publication addRecordedPublication(final String channel, final int streamId)
     {
+        Publication publication = null;
         lock.lock();
         try
         {
-            final Publication publication = aeron.addPublication(channel, streamId);
+            publication = aeron.addPublication(channel, streamId);
             if (!publication.isOriginal())
             {
-                publication.close();
-
                 throw new IllegalStateException(
                     "Publication already added for channel=" + channel + " streamId=" + streamId);
             }
 
             startRecording(ChannelUri.addSessionId(channel, publication.sessionId()), streamId, SourceLocation.LOCAL);
-
-            return publication;
+        }
+        catch (final RuntimeException ex)
+        {
+            CloseHelper.quietClose(publication);
+            throw ex;
         }
         finally
         {
             lock.unlock();
         }
+
+        return publication;
     }
 
     /**
@@ -288,19 +292,25 @@ public class AeronArchive implements AutoCloseable
      */
     public ExclusivePublication addRecordedExclusivePublication(final String channel, final int streamId)
     {
+        ExclusivePublication publication = null;
         lock.lock();
         try
         {
-            final ExclusivePublication publication = aeron.addExclusivePublication(channel, streamId);
+            publication = aeron.addExclusivePublication(channel, streamId);
 
             startRecording(ChannelUri.addSessionId(channel, publication.sessionId()), streamId, SourceLocation.LOCAL);
-
-            return publication;
+        }
+        catch (final RuntimeException ex)
+        {
+            CloseHelper.quietClose(publication);
+            throw ex;
         }
         finally
         {
             lock.unlock();
         }
+
+        return publication;
     }
 
     /**

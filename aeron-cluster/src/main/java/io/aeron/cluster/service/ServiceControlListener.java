@@ -51,7 +51,7 @@ public interface ServiceControlListener
      * @param serviceId        that has undertaken the action.
      * @param action           undertaken.
      */
-    default void onActionAck(long logPosition, long leadershipTermId, int serviceId, ClusterAction action)
+    default void onServiceAck(long logPosition, long leadershipTermId, int serviceId, ClusterAction action)
     {
     }
 

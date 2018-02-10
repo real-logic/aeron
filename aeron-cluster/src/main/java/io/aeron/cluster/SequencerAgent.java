@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
@@ -35,6 +36,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterSession.State.*;
@@ -112,6 +114,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.clusterMembers = ClusterMember.parse(ctx.clusterMembers());
         this.sessionProxy = new SessionProxy(egressPublisher);
         this.clusterMemberId = ctx.clusterMemberId();
+        this.leaderMemberId = ctx.appointedLeaderId();
         this.clusterRoleCounter = ctx.clusterNodeCounter();
 
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
@@ -194,19 +197,22 @@ class SequencerAgent implements Agent, ServiceControlListener
         cachedEpochClock.update(nowMs);
         timeOfLastLogUpdateMs = nowMs;
 
-        final String channel = ctx.logChannel();
         final int streamId = ctx.logStreamId();
+        final String logChannel = ctx.logChannel();
+        final ChannelUri channelUri = ChannelUri.parse(logChannel);
+        boolean isLeader = false;
 
-        if (clusterMemberId == ctx.appointedLeaderId() || clusterMembers.length == 1)
+        if (clusterMemberId == leaderMemberId || clusterMembers.length == 1)
         {
-            leadershipTermId++;
-            logSessionId = logAppender.connect(aeron, archive, channel, streamId);
-            becomeLeader(nowMs);
+            becomeLeader(nowMs, logChannel, streamId, channelUri);
+            isLeader = true;
         }
         else
         {
-            // TODO: record remote log
-            logSessionId = connectLogAdapter(aeron, channel, streamId);
+            logSessionId = connectLogAdapter(aeron, logChannel, streamId);
+            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+            final String recordingChannel = channelUri.toString();
+            archive.startRecording(recordingChannel, streamId, SourceLocation.REMOTE);
             becomeFollower(nowMs, leaderMemberId);
         }
 
@@ -220,6 +226,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         ctx.recordingLog().appendTerm(recordingId, leadershipTermId, baseLogPosition, nowMs, leaderMemberId);
 
         serviceAckCount = 0;
+        final String channel = isLeader ? channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
         serviceControlPublisher.joinLog(leadershipTermId, commitPosition.id(), logSessionId, streamId, channel);
         waitForServiceAcks();
     }
@@ -841,12 +848,34 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-    private void becomeLeader(final long nowMs)
+    private void becomeLeader(final long nowMs, final String channel, final int streamId, final ChannelUri channelUri)
     {
         leaderMemberId = clusterMemberId;
 
         updateMemberDetails(leaderMemberId);
         role(Cluster.Role.LEADER);
+
+        leadershipTermId++;
+
+        final Publication publication = aeron.addExclusivePublication(channel, streamId);
+        if (!channelUri.containsKey(CommonContext.ENDPOINT_PARAM_NAME))
+        {
+            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");
+            for (final ClusterMember member : clusterMembers)
+            {
+                if (member.id() != clusterMemberId)
+                {
+                    publication.addDestination(builder.endpoint(member.logEndpoint()).build());
+                }
+            }
+        }
+
+        logAppender.connect(publication);
+        logSessionId = publication.sessionId();
+
+        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+        final String recordingChannel = channelUri.toString();
+        archive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
 
         for (final ClusterSession session : sessionByIdMap.values())
         {

@@ -15,11 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUri;
 import io.aeron.Publication;
-import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
@@ -38,21 +34,10 @@ class LogAppender
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
     private Publication publication;
-    private String recordingChannel;
 
-    public int connect(final Aeron aeron, final AeronArchive aeronArchive, final String channel, final int streamId)
+    public void connect(final Publication publication)
     {
-        if (null != publication)
-        {
-            throw new IllegalStateException("Publication already exists");
-        }
-
-        publication = aeron.addExclusivePublication(channel, streamId);
-        final int sessionId = publication.sessionId();
-        recordingChannel = ChannelUri.addSessionId(channel, sessionId);
-        aeronArchive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
-
-        return sessionId;
+        this.publication = publication;
     }
 
     public void disconnect()
@@ -62,16 +47,6 @@ class LogAppender
             publication.close();
             publication = null;
         }
-    }
-
-    public int sessionId()
-    {
-        return publication.sessionId();
-    }
-
-    public String recordingChannel()
-    {
-        return recordingChannel;
     }
 
     public long position()

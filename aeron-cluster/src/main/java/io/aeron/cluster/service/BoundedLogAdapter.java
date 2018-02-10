@@ -25,7 +25,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
 /**
- * Adapter for reading a log with a limit applied beyond which the consumer cannot progress.
+ * Adapter for reading a log with a upper bound applied beyond which the consumer cannot progress.
  */
 final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseable
 {
@@ -42,13 +42,13 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
     private final ClusterActionRequestDecoder actionRequestDecoder = new ClusterActionRequestDecoder();
 
     private final Image image;
-    private final ReadableCounter limit;
+    private final ReadableCounter upperBound;
     private final ClusteredServiceAgent agent;
 
-    BoundedLogAdapter(final Image image, final ReadableCounter limit, final ClusteredServiceAgent agent)
+    BoundedLogAdapter(final Image image, final ReadableCounter upperBound, final ClusteredServiceAgent agent)
     {
         this.image = image;
-        this.limit = limit;
+        this.upperBound = upperBound;
         this.agent = agent;
     }
 
@@ -62,14 +62,14 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         return image;
     }
 
-    public int limitCounterId()
+    public int upperBoundCounterId()
     {
-        return limit.counterId();
+        return upperBound.counterId();
     }
 
     public int poll()
     {
-        return image.boundedControlledPoll(fragmentAssembler, limit.get(), FRAGMENT_LIMIT);
+        return image.boundedControlledPoll(fragmentAssembler, upperBound.get(), FRAGMENT_LIMIT);
     }
 
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

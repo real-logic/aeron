@@ -127,7 +127,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
                 throw new AgentTerminationException("Image closed unexpectedly");
             }
 
-            if (!CommitPos.isActive(aeron.countersReader(), logAdapter.limitCounterId()))
+            if (!CommitPos.isActive(aeron.countersReader(), logAdapter.upperBoundCounterId()))
             {
                 throw new AgentTerminationException("Commit position is not active");
             }

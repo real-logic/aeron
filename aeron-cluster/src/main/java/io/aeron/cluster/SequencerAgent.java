@@ -1168,8 +1168,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final String channel = ctx.snapshotChannel();
         final int streamId = ctx.snapshotStreamId();
 
-        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext());
-            Publication publication = aeron.addExclusivePublication(channel, streamId))
+        try (Publication publication = aeron.addExclusivePublication(channel, streamId))
         {
             final String recordingChannel = ChannelUri.addSessionId(channel, publication.sessionId());
             archive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);

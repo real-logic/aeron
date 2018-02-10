@@ -85,6 +85,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
     private final Aeron aeron;
+    private AeronArchive archive;
     private final ConsensusModule.Context ctx;
     private final MutableDirectBuffer tempBuffer;
     private final IdleStrategy idleStrategy;
@@ -143,6 +144,8 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public void onClose()
     {
+        CloseHelper.close(archive);
+
         if (!ctx.ownsAeronClient())
         {
             for (final ClusterSession session : sessionByIdMap.values())
@@ -162,66 +165,64 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public void onStart()
     {
-        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
+        archive = AeronArchive.connect(ctx.archiveContext());
+        final RecordingLog.RecoveryPlan recoveryPlan = ctx.recordingLog().createRecoveryPlan(archive);
+
+        serviceAckCount = 0;
+        try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
-            final RecordingLog.RecoveryPlan recoveryPlan = ctx.recordingLog().createRecoveryPlan(archive);
+            isRecovering = true;
 
-            serviceAckCount = 0;
-            try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
+            if (null != recoveryPlan.snapshotStep)
             {
-                isRecovering = true;
-
-                if (null != recoveryPlan.snapshotStep)
-                {
-                    recoverFromSnapshot(recoveryPlan.snapshotStep, archive);
-                }
-
-                waitForServiceAcks();
-
-                if (recoveryPlan.termSteps.size() > 0)
-                {
-                    recoverFromLog(recoveryPlan.termSteps, archive);
-                }
-
-                isRecovering = false;
+                recoverFromSnapshot(recoveryPlan.snapshotStep, archive);
             }
 
-            // TODO: handle suspended case
-            state(ConsensusModule.State.ACTIVE);
-
-            final long nowMs = epochClock.time();
-            cachedEpochClock.update(nowMs);
-            timeOfLastLogUpdateMs = nowMs;
-
-            final String channel = ctx.logChannel();
-            final int streamId = ctx.logStreamId();
-
-            if (clusterMemberId == ctx.appointedLeaderId() || clusterMembers.length == 1)
-            {
-                leadershipTermId++;
-                logSessionId = logAppender.connect(aeron, archive, channel, streamId);
-                becomeLeader(nowMs);
-            }
-            else
-            {
-                // TODO: record remote log
-                logSessionId = connectLogAdapter(aeron, channel, streamId);
-                becomeFollower(nowMs, leaderMemberId);
-            }
-
-            final CountersReader counters = aeron.countersReader();
-            logRecordingPosition = findLogRecording(logSessionId, counters);
-            final long recordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
-
-            commitPosition = CommitPos.allocate(
-                aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, logSessionId);
-
-            ctx.recordingLog().appendTerm(recordingId, leadershipTermId, baseLogPosition, nowMs, leaderMemberId);
-
-            serviceAckCount = 0;
-            serviceControlPublisher.joinLog(leadershipTermId, commitPosition.id(), logSessionId, streamId, channel);
             waitForServiceAcks();
+
+            if (recoveryPlan.termSteps.size() > 0)
+            {
+                recoverFromLog(recoveryPlan.termSteps, archive);
+            }
+
+            isRecovering = false;
         }
+
+        // TODO: handle suspended case
+        state(ConsensusModule.State.ACTIVE);
+
+        final long nowMs = epochClock.time();
+        cachedEpochClock.update(nowMs);
+        timeOfLastLogUpdateMs = nowMs;
+
+        final String channel = ctx.logChannel();
+        final int streamId = ctx.logStreamId();
+
+        if (clusterMemberId == ctx.appointedLeaderId() || clusterMembers.length == 1)
+        {
+            leadershipTermId++;
+            logSessionId = logAppender.connect(aeron, archive, channel, streamId);
+            becomeLeader(nowMs);
+        }
+        else
+        {
+            // TODO: record remote log
+            logSessionId = connectLogAdapter(aeron, channel, streamId);
+            becomeFollower(nowMs, leaderMemberId);
+        }
+
+        final CountersReader counters = aeron.countersReader();
+        logRecordingPosition = findLogRecording(logSessionId, counters);
+        final long recordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
+
+        commitPosition = CommitPos.allocate(
+            aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, logSessionId);
+
+        ctx.recordingLog().appendTerm(recordingId, leadershipTermId, baseLogPosition, nowMs, leaderMemberId);
+
+        serviceAckCount = 0;
+        serviceControlPublisher.joinLog(leadershipTermId, commitPosition.id(), logSessionId, streamId, channel);
+        waitForServiceAcks();
     }
 
     public int doWork()
@@ -585,6 +586,15 @@ class SequencerAgent implements Agent, ServiceControlListener
                 workCount += checkSessions(sessionByIdMap, nowMs);
                 workCount += processRejectedSessions(rejectedSessions, nowMs);
                 workCount += timerService.poll(nowMs);
+            }
+        }
+
+        if (null != archive)
+        {
+            final String errorMessage = archive.pollForErrorResponse();
+            if (null != errorMessage)
+            {
+                throw new IllegalStateException("Archive error: " + errorMessage);
             }
         }
 

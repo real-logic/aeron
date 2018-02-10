@@ -109,7 +109,7 @@ class LogAppender
 
     public long appendConnectedSession(final ClusterSession session, final long nowMs)
     {
-        long result = -1;
+        long result;
         final byte[] sessionPrincipalData = session.principalData();
         final String channel = session.responseChannel();
 

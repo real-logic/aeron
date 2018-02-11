@@ -21,6 +21,9 @@ import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.ClusterAction;
+import io.aeron.cluster.codecs.CncHeaderEncoder;
+import io.aeron.cluster.codecs.CncType;
+import io.aeron.cluster.codecs.VarAsciiEncodingEncoder;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -625,6 +628,7 @@ public class ConsensusModule implements AutoCloseable
         private boolean deleteDirOnStart = false;
         private File clusterDir;
         private RecordingLog recordingLog;
+        private ClusterCncFile cncFile;
 
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
@@ -799,6 +803,8 @@ public class ConsensusModule implements AutoCloseable
             {
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
+
+            concludeCncFile();
         }
 
         /**
@@ -1777,6 +1783,28 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Set the {@link ClusterCncFile} in use.
+         *
+         * @param cncFile to use.
+         * @return this for a fluent API.
+         */
+        public Context clusterCncFile(final ClusterCncFile cncFile)
+        {
+            this.cncFile = cncFile;
+            return this;
+        }
+
+        /**
+         * The {@link ClusterCncFile} in use.
+         *
+         * @return CnC file in use.
+         */
+        public ClusterCncFile clusterCncFile()
+        {
+            return cncFile;
+        }
+
+        /**
          * Delete the cluster directory.
          */
         public void deleteDirectory()
@@ -1794,6 +1822,8 @@ public class ConsensusModule implements AutoCloseable
          */
         public void close()
         {
+            CloseHelper.quietClose(cncFile);
+
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
@@ -1804,6 +1834,48 @@ public class ConsensusModule implements AutoCloseable
                 CloseHelper.close(clusterNodeRole);
                 CloseHelper.close(controlToggle);
                 CloseHelper.close(snapshotCounter);
+            }
+        }
+
+        private void concludeCncFile()
+        {
+            if (null == cncFile)
+            {
+                final int totalCncFileLength =
+                    CncHeaderEncoder.BLOCK_LENGTH +
+                    (6 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
+                    aeron.context().aeronDirectoryName().length() +
+                    archiveContext.controlRequestChannel().length() +
+                    serviceControlChannel().length() +
+                    ingressChannel.length() +
+                    // serviceName not used for ConsensusModule (so set length to 0)
+                    authenticatorSupplier.getClass().toString().length();
+
+                final int alignedTotalCncFileLength = BitUtil.align(totalCncFileLength, ClusterCncFile.ALIGNMENT);
+
+                cncFile = new ClusterCncFile(
+                    new File(clusterDir, ClusterCncFile.FILENAME),
+                    CncType.CLUSTER,
+                    alignedTotalCncFileLength,
+                    epochClock,
+                    0);
+
+                final CncHeaderEncoder cncEncoder = cncFile.encoder();
+
+                cncEncoder
+                    .archiveStreamId(archiveContext.controlRequestStreamId())
+                    .serviceControlStreamId(serviceControlStreamId)
+                    .ingressStreamId(ingressStreamId)
+                    .serviceId(0)
+                    .aeronDir(aeron.context().aeronDirectoryName())
+                    .archiveChannel(archiveContext.controlRequestChannel())
+                    .serviceControlChannel(serviceControlChannel)
+                    .ingressChannel(ingressChannel)
+                    .serviceName("")
+                    .authenticator(authenticatorSupplier.getClass().toString());
+
+                cncFile.signalCncReady();
+                cncFile.updateActivityTimestamp(epochClock.time());
             }
         }
     }

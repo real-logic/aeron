@@ -91,6 +91,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final MutableDirectBuffer tempBuffer;
     private final IdleStrategy idleStrategy;
     private final LongArrayList failedTimerCancellations = new LongArrayList();
+    private final ClusterCncFile cncFile;
 
     SequencerAgent(
         final ConsensusModule.Context ctx,
@@ -115,6 +116,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.clusterMemberId = ctx.clusterMemberId();
         this.leaderMemberId = ctx.appointedLeaderId();
         this.clusterRoleCounter = ctx.clusterNodeCounter();
+        this.cncFile = ctx.clusterCncFile();
 
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
         role(Cluster.Role.FOLLOWER);
@@ -239,6 +241,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         if (cachedEpochClock.time() != nowMs)
         {
             isSlowTickCycle = true;
+            cncFile.updateActivityTimestamp(nowMs);
             cachedEpochClock.update(nowMs);
         }
 

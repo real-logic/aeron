@@ -57,6 +57,7 @@ public class SequencerAgentTest
     private final Aeron mockAeron = mock(Aeron.class);
     private final ExclusivePublication mockResponsePublication = mock(ExclusivePublication.class);
     private final Subscription mockConsensusModuleSubscription = mock(Subscription.class);
+    private final ClusterCncFile mockCncFile = mock(ClusterCncFile.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .errorHandler(Throwable::printStackTrace)
@@ -69,7 +70,8 @@ public class SequencerAgentTest
         .clusterMembers(MEMBERS)
         .clusterMemberId(0)
         .epochClock(new SystemEpochClock())
-        .authenticatorSupplier(new DefaultAuthenticatorSupplier());
+        .authenticatorSupplier(new DefaultAuthenticatorSupplier())
+        .clusterCncFile(mockCncFile);
 
     @Before
     public void before()

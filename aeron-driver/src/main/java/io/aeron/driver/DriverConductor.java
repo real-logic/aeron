@@ -160,7 +160,11 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
-            publicationImages.get(i).trackRebuild(nowNs, statusMessageTimeoutNs);
+            final PublicationImage image = publicationImages.get(i);
+            if (image.isTrackingLoss())
+            {
+                image.trackRebuild(nowNs, statusMessageTimeoutNs);
+            }
         }
 
         final ArrayList<NetworkPublication> networkPublications = this.networkPublications;

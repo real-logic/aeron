@@ -240,7 +240,7 @@ public class NetworkPublication
         return isExclusive;
     }
 
-    public int send(final long nowNs)
+    public final int send(final long nowNs)
     {
         final long senderPosition = this.senderPosition.get();
         final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
@@ -470,7 +470,7 @@ public class NetworkPublication
         return hasSpies;
     }
 
-    void updateHasReceivers(final long timeNs)
+    final void updateHasReceivers(final long timeNs)
     {
         if (timeNs > statusMessageDeadlineNs && hasReceivers)
         {

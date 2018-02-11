@@ -111,7 +111,7 @@ public class PublicationImage
     private final int initialTermId;
     private final boolean isReliable;
 
-    private boolean noLongerActive;
+    private boolean isTrackingLoss = true;
     private volatile State state = State.INIT;
 
     private final NanoClock nanoClock;
@@ -381,13 +381,8 @@ public class PublicationImage
      * @param nowNs                  in nanoseconds
      * @param statusMessageTimeoutNs for sending of Status Messages.
      */
-    void trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
+    final void trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
     {
-        if (noLongerActive)
-        {
-            return;
-        }
-
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
 
@@ -444,6 +439,11 @@ public class PublicationImage
         {
             state(State.INACTIVE);
         }
+    }
+
+    final boolean isTrackingLoss()
+    {
+        return isTrackingLoss;
     }
 
     /**
@@ -658,7 +658,7 @@ public class PublicationImage
                     timeOfLastStateChangeNs = timeNs;
                     conductor.transitionToLinger(this);
                 }
-                noLongerActive = true;
+                isTrackingLoss = false;
                 break;
 
             case LINGER:

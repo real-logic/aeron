@@ -651,7 +651,6 @@ public class ConsensusModule implements AutoCloseable
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
-        private CachedEpochClock cachedEpochClock;
         private MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
 
         private ErrorHandler errorHandler;
@@ -708,11 +707,6 @@ public class ConsensusModule implements AutoCloseable
             if (null == epochClock)
             {
                 epochClock = new SystemEpochClock();
-            }
-
-            if (null == cachedEpochClock)
-            {
-                cachedEpochClock = new CachedEpochClock();
             }
 
             if (null == aeron)
@@ -1433,28 +1427,6 @@ public class ConsensusModule implements AutoCloseable
         public EpochClock epochClock()
         {
             return epochClock;
-        }
-
-        /**
-         * Set the {@link CachedEpochClock} to be used for tracking wall clock time.
-         *
-         * @param clock {@link CachedEpochClock} to be used for tracking wall clock time.
-         * @return this for a fluent API.
-         */
-        public Context cachedEpochClock(final CachedEpochClock clock)
-        {
-            this.cachedEpochClock = clock;
-            return this;
-        }
-
-        /**
-         * Get the {@link CachedEpochClock} to used for tracking wall clock time.
-         *
-         * @return the {@link CachedEpochClock} to used for tracking wall clock time.
-         */
-        public CachedEpochClock cachedEpochClock()
-        {
-            return cachedEpochClock;
         }
 
         /**

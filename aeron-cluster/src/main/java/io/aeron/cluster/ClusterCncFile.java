@@ -37,7 +37,7 @@ public class ClusterCncFile implements AutoCloseable
     private final CncFile cncFile;
     private final UnsafeBuffer cncBuffer;
 
-    ClusterCncFile(
+    public ClusterCncFile(
         final File file,
         final CncType type,
         final int totalFileLength,
@@ -82,7 +82,7 @@ public class ClusterCncFile implements AutoCloseable
         cncHeaderEncoder.pid(SystemUtil.getpid());
     }
 
-    ClusterCncFile(
+    public ClusterCncFile(
         final File directory,
         final String filename,
         final EpochClock epochClock,

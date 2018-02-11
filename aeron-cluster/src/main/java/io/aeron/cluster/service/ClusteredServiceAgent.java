@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.ClusterCncFile;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
@@ -48,6 +49,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     private final ServiceControlAdapter serviceControlAdapter;
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
+    private final EpochClock epochClock;
+    private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
+    private final ClusterCncFile cncFile;
 
     private long baseLogPosition;
     private long leadershipTermId;
@@ -68,6 +72,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         recordingLog = ctx.recordingLog();
         idleStrategy = ctx.idleStrategy();
         serviceId = ctx.serviceId();
+        epochClock = ctx.epochClock();
+        cncFile = ctx.clusterCncFile();
 
         serviceControlPublisher = new ServiceControlPublisher(
             aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceControlStreamId()));
@@ -119,6 +125,13 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
     public int doWork()
     {
+        final long nowMs = epochClock.time();
+        if (cachedEpochClock.time() != nowMs)
+        {
+            cncFile.updateActivityTimestamp(nowMs);
+            cachedEpochClock.update(nowMs);
+        }
+
         int workCount = logAdapter.poll();
         if (0 == workCount)
         {

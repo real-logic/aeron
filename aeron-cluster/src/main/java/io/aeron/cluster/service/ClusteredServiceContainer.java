@@ -18,6 +18,11 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.ClusterCncFile;
+import io.aeron.cluster.codecs.CncHeaderEncoder;
+import io.aeron.cluster.codecs.CncType;
+import io.aeron.cluster.codecs.VarAsciiEncodingEncoder;
+import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -351,7 +356,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private RecordingLog recordingLog;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
+        private ClusterCncFile cncFile;
 
+        @SuppressWarnings("MethodLength")
         public void conclude()
         {
             if (null == threadFactory)
@@ -451,6 +458,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
             {
                 terminationHook = () -> shutdownSignalBarrier.signal();
             }
+
+            concludeCncFile();
         }
 
         /**
@@ -1006,6 +1015,28 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
+         * Set the {@link ClusterCncFile} in use.
+         *
+         * @param cncFile to use.
+         * @return this for a fluent API.
+         */
+        public Context clusterCncFile(final ClusterCncFile cncFile)
+        {
+            this.cncFile = cncFile;
+            return this;
+        }
+
+        /**
+         * The {@link ClusterCncFile} in use.
+         *
+         * @return CnC file in use.
+         */
+        public ClusterCncFile clusterCncFile()
+        {
+            return cncFile;
+        }
+
+        /**
          * Delete the cluster container directory.
          */
         public void deleteDirectory()
@@ -1023,9 +1054,53 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public void close()
         {
+            CloseHelper.quietClose(cncFile);
+
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
+            }
+        }
+
+        private void concludeCncFile()
+        {
+            if (null == cncFile)
+            {
+                final int totalCncFileLength =
+                    CncHeaderEncoder.BLOCK_LENGTH +
+                    (6 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
+                    aeron.context().aeronDirectoryName().length() +
+                    archiveContext.controlRequestChannel().length() +
+                    serviceControlChannel().length() +
+                    // ingressChannel not used (so set length to 0)
+                    serviceName.length();
+                    // authenticator not used (so set length to 0)
+
+                final int alignedTotalCncFileLength = BitUtil.align(totalCncFileLength, ClusterCncFile.ALIGNMENT);
+
+                cncFile = new ClusterCncFile(
+                    new File(clusteredServiceDir, ClusterCncFile.FILENAME),
+                    CncType.CONTAINER,
+                    alignedTotalCncFileLength,
+                    epochClock,
+                    0);
+
+                final CncHeaderEncoder cncEncoder = cncFile.encoder();
+
+                cncEncoder
+                    .archiveStreamId(archiveContext.controlRequestStreamId())
+                    .serviceControlStreamId(serviceControlStreamId)
+                    .ingressStreamId(0)
+                    .serviceId(serviceId)
+                    .aeronDir(aeron.context().aeronDirectoryName())
+                    .archiveChannel(archiveContext.controlRequestChannel())
+                    .serviceControlChannel(serviceControlChannel)
+                    .ingressChannel("")
+                    .serviceName(serviceName)
+                    .authenticator("");
+
+                cncFile.signalCncReady();
+                cncFile.updateActivityTimestamp(epochClock.time());
             }
         }
     }

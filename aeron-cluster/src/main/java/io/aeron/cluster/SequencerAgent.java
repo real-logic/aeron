@@ -68,7 +68,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final Counter clusterRoleCounter;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
-    private final CachedEpochClock cachedEpochClock;
+    private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private final Counter moduleState;
     private final Counter controlToggle;
     private final TimerService timerService;
@@ -100,7 +100,6 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.ctx = ctx;
         this.aeron = ctx.aeron();
         this.epochClock = ctx.epochClock();
-        this.cachedEpochClock = ctx.cachedEpochClock();
         this.sessionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.sessionTimeoutNs());
         this.heartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.heartbeatIntervalNs());
         this.heartbeatTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.heartbeatTimeoutNs());

@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.codecs.CncHeaderDecoder;
+import io.aeron.cluster.codecs.CncType;
 
 import java.io.File;
 import java.util.Date;
@@ -50,7 +51,7 @@ public class ClusterTool
             {
                 final CncHeaderDecoder decoder = cncFile.decoder();
 
-                printActivityTimestamp(decoder.activityTimestamp());
+                printTypeAndActivityTimestamp(decoder.fileType(), decoder.activityTimestamp());
                 System.out.println(decoder);
             }
         }
@@ -68,10 +69,11 @@ public class ClusterTool
         return new ClusterCncFile(clusterDir, ClusterCncFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
 
-    private static void printActivityTimestamp(final long activityTimestamp)
+    private static void printTypeAndActivityTimestamp(final CncType cncType, final long activityTimestamp)
     {
+        System.out.print("Type: " + cncType);
         System.out.format(
-            "%1$tH:%1$tM:%1$tS (Catalog: %2$tH:%2$tM:%2$tS)%n", new Date(), new Date(activityTimestamp));
+            " %1$tH:%1$tM:%1$tS (activity: %2$tH:%2$tM:%2$tS)%n", new Date(), new Date(activityTimestamp));
     }
 
     private static void printHelp()

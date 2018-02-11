@@ -25,8 +25,8 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -60,7 +60,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final AgentInvoker aeronAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
     private final EpochClock epochClock;
-    private final NanoClock nanoClock;
+    private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private final File archiveDir;
     private final FileChannel archiveDirChannel;
     private final Subscription controlSubscription;
@@ -77,7 +77,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     protected SessionWorker<RecordingSession> recorder;
 
     private long nextControlSessionId = ThreadLocalRandom.current().nextInt();
-    private long clockUpdateDeadlineNs;
+    private long clockUpdateDeadlineMs;
 
     ArchiveConductor(final Aeron aeron, final Archive.Context ctx)
     {
@@ -89,7 +89,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         aeronAgentInvoker = ctx.ownsAeronClient() ? aeron.conductorAgentInvoker() : null;
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
         epochClock = ctx.epochClock();
-        nanoClock = ctx.nanoClock();
         archiveDir = ctx.archiveDir();
         archiveDirChannel = channelForDirectorySync(archiveDir, ctx.fileSyncLevel());
         controlResponseProxy = new ControlResponseProxy();
@@ -106,11 +105,13 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             ctx.idleStrategy(),
             aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
+        cachedEpochClock.update(epochClock.time());
+
         catalog = new Catalog(
             archiveDir,
             archiveDirChannel,
             ctx.fileSyncLevel(),
-            epochClock,
+            cachedEpochClock,
             0,
             (encoder, decoder) ->
             {
@@ -175,10 +176,16 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     {
         int workCount = 0;
 
+        final long nowMs = epochClock.time();
+        if (cachedEpochClock.time() != nowMs)
+        {
+            cachedEpochClock.update(nowMs);
+        }
+
         workCount += null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
         workCount += null != aeronAgentInvoker ? aeronAgentInvoker.invoke() : 0;
 
-        updateClockAndCatalogTimestamp(nanoClock.nanoTime());
+        updateClockAndCatalogTimestamp(nowMs);
 
         return workCount;
     }
@@ -375,7 +382,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             archiveDir,
             controlResponseProxy,
             correlationId,
-            epochClock,
+            cachedEpochClock,
             replayPublication,
             recordingSummary,
             null == recordingSession ? null : recordingSession.recordingPosition());
@@ -560,7 +567,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             demuxer,
             publication,
             this,
-            epochClock,
+            cachedEpochClock,
             controlResponseProxy);
         addSession(controlSession);
 
@@ -590,7 +597,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long sessionId = session.sessionId();
 
         recordingSessionByIdMap.remove(sessionId);
-        catalog.recordingStopped(sessionId, session.recordingPosition().get(), epochClock.time());
+        catalog.recordingStopped(sessionId, session.recordingPosition().get(), cachedEpochClock.time());
 
         closeSession(session);
     }
@@ -620,7 +627,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         final long recordingId = catalog.addNewRecording(
             startPosition,
-            epochClock.time(),
+            cachedEpochClock.time(),
             initialTermId,
             ctx.segmentFileLength(),
             termBufferLength,
@@ -796,14 +803,12 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         return streamId + ":" + strippedChannel;
     }
 
-    private void updateClockAndCatalogTimestamp(final long nowNs)
+    private void updateClockAndCatalogTimestamp(final long nowMs)
     {
-        if (nowNs >= clockUpdateDeadlineNs)
+        if (nowMs >= clockUpdateDeadlineMs)
         {
-            clockUpdateDeadlineNs = nowNs + 1_000_000;
-            // TODO: update cached epochClock
-            // TODO: update cached nanoClock
-            catalog.updateTimestampMs(epochClock.time());
+            clockUpdateDeadlineMs = nowMs + 1_000_000;
+            catalog.updateTimestampMs(nowMs);
         }
     }
 }

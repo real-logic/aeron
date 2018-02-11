@@ -166,13 +166,21 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final ArrayList<NetworkPublication> networkPublications = this.networkPublications;
         for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
-            workCount += networkPublications.get(i).updatePublisherLimit();
+            final NetworkPublication publication = networkPublications.get(i);
+            if (publication.state() == NetworkPublication.State.ACTIVE)
+            {
+                workCount += publication.updatePublisherLimit();
+            }
         }
 
         final ArrayList<IpcPublication> ipcPublications = this.ipcPublications;
         for (int i = 0, size = ipcPublications.size(); i < size; i++)
         {
-            workCount += ipcPublications.get(i).updatePublishersLimit();
+            final IpcPublication publication = ipcPublications.get(i);
+            if (publication.state() == IpcPublication.State.ACTIVE)
+            {
+                workCount += publication.updatePublisherLimit();
+            }
         }
 
         return workCount;

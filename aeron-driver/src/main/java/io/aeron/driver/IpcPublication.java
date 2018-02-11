@@ -31,7 +31,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 /**
  * Encapsulation of a LogBuffer used directly between publishers and subscribers for IPC.
  */
-public class IpcPublication implements DriverManagedResource, Subscribable
+public final class IpcPublication implements DriverManagedResource, Subscribable
 {
     enum State
     {
@@ -164,13 +164,8 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         }
     }
 
-    int updatePublishersLimit()
+    int updatePublisherLimit()
     {
-        if (State.ACTIVE != state)
-        {
-            return 0;
-        }
-
         int workCount = 0;
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = consumerPosition;

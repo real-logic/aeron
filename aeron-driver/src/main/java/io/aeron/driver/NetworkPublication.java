@@ -437,13 +437,8 @@ public class NetworkPublication
      *
      * @return 1 if the limit has been updated otherwise 0.
      */
-    int updatePublisherLimit()
+    final int updatePublisherLimit()
     {
-        if (State.ACTIVE != state)
-        {
-            return 0;
-        }
-
         int workCount = 0;
 
         final long senderPosition = this.senderPosition.getVolatile();
@@ -755,7 +750,7 @@ public class NetworkPublication
         ++refCount;
     }
 
-    State state()
+    final State state()
     {
         return state;
     }

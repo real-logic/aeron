@@ -77,7 +77,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     protected SessionWorker<RecordingSession> recorder;
 
     private long nextControlSessionId = ThreadLocalRandom.current().nextInt();
-    private long clockUpdateDeadlineMs;
 
     ArchiveConductor(final Aeron aeron, final Archive.Context ctx)
     {
@@ -180,12 +179,11 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         if (cachedEpochClock.time() != nowMs)
         {
             cachedEpochClock.update(nowMs);
+            catalog.updateTimestampMs(nowMs);
         }
 
         workCount += null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
         workCount += null != aeronAgentInvoker ? aeronAgentInvoker.invoke() : 0;
-
-        updateClockAndCatalogTimestamp(nowMs);
 
         return workCount;
     }
@@ -801,14 +799,5 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private static String makeKey(final int streamId, final String strippedChannel)
     {
         return streamId + ":" + strippedChannel;
-    }
-
-    private void updateClockAndCatalogTimestamp(final long nowMs)
-    {
-        if (nowMs >= clockUpdateDeadlineMs)
-        {
-            clockUpdateDeadlineMs = nowMs + 1_000_000;
-            catalog.updateTimestampMs(nowMs);
-        }
     }
 }

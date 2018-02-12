@@ -241,7 +241,6 @@ class SequencerAgent implements Agent, ServiceControlListener
         if (cachedEpochClock.time() != nowMs)
         {
             isSlowTickCycle = true;
-            cncFile.updateActivityTimestamp(nowMs);
             cachedEpochClock.update(nowMs);
         }
 
@@ -581,6 +580,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         int workCount = 0;
 
+        cncFile.updateActivityTimestamp(nowMs);
         workCount += invokeAeronClient();
         workCount += serviceControlAdapter.poll();
 

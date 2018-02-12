@@ -118,6 +118,9 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.clusterRoleCounter = ctx.clusterNodeCounter();
         this.cncFile = ctx.clusterCncFile();
 
+        aeronClientInvoker = ctx.ownsAeronClient() ? ctx.aeron().conductorAgentInvoker() : null;
+        invokeAeronClient();
+
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
         role(Cluster.Role.FOLLOWER);
 
@@ -142,7 +145,6 @@ class SequencerAgent implements Agent, ServiceControlListener
             aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceControlStreamId()));
 
         authenticator = ctx.authenticatorSupplier().newAuthenticator(ctx);
-        aeronClientInvoker = ctx.ownsAeronClient() ? ctx.aeron().conductorAgentInvoker() : null;
     }
 
     public void onClose()

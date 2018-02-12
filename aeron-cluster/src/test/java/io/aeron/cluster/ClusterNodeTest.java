@@ -110,6 +110,7 @@ public class ClusterNodeTest
 
         while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -139,6 +140,7 @@ public class ClusterNodeTest
         {
             if (adapter.poll() <= 0)
             {
+                TestUtil.checkInterruptedStatus();
                 Thread.yield();
             }
         }
@@ -161,6 +163,7 @@ public class ClusterNodeTest
 
         while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -190,6 +193,7 @@ public class ClusterNodeTest
         {
             if (adapter.poll() <= 0)
             {
+                TestUtil.checkInterruptedStatus();
                 Thread.yield();
             }
         }
@@ -257,6 +261,7 @@ public class ClusterNodeTest
 
                 while (clientSession.offer(correlationId, buffer, 0, responseMsg.length()) < 0)
                 {
+                    TestUtil.checkInterruptedStatus();
                     Thread.yield();
                 }
             }

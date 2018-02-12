@@ -30,7 +30,6 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
@@ -97,6 +96,7 @@ public class ClusterNodeRestartTest
 
         while (serviceMsgCounter.get() == 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -109,6 +109,7 @@ public class ClusterNodeRestartTest
 
         while (restartServiceMsgCounter.get() == 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
     }
@@ -127,6 +128,7 @@ public class ClusterNodeRestartTest
 
         while (serviceMsgCounter.get() == 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -143,6 +145,7 @@ public class ClusterNodeRestartTest
 
         while (restartServiceMsgCounter.get() == 1)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
     }
@@ -173,6 +176,7 @@ public class ClusterNodeRestartTest
 
         while (snapshotCount.get() == 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.sleep(1);
         }
 
@@ -180,6 +184,7 @@ public class ClusterNodeRestartTest
 
         while (serviceMsgCounter.get() < 3)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -193,6 +198,7 @@ public class ClusterNodeRestartTest
 
         while (null == serviceState.get())
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -214,6 +220,7 @@ public class ClusterNodeRestartTest
             }
 
             checkResult(result);
+            TestUtil.checkInterruptedStatus();
 
             Thread.yield();
         }
@@ -273,11 +280,7 @@ public class ClusterNodeRestartTest
                             break;
                         }
 
-                        if (Thread.currentThread().isInterrupted())
-                        {
-                            throw new AgentTerminationException("Unexpected interrupt during operation");
-                        }
-
+                        TestUtil.checkInterruptedStatus();
                         Thread.yield();
                     }
                 }

@@ -131,6 +131,7 @@ public class AuthenticationTest
         sendCountedMessageIntoCluster(0);
         while (serviceMsgCounter.get() == 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -195,6 +196,7 @@ public class AuthenticationTest
         sendCountedMessageIntoCluster(0);
         while (serviceMsgCounter.get() == 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -267,6 +269,7 @@ public class AuthenticationTest
         sendCountedMessageIntoCluster(0);
         while (serviceMsgCounter.get() == 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -421,6 +424,7 @@ public class AuthenticationTest
 
         while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, SIZE_OF_INT) < 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
     }

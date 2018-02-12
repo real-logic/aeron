@@ -360,7 +360,7 @@
         <data  name="serviceControlChannel"  id="11" type="varAsciiEncoding"/>
         <data  name="ingressChannel"         id="12" type="varAsciiEncoding"/>
         <data  name="serviceName"            id="13" type="varAsciiEncoding"/>
-        <data  name="authenticator"            id="14" type="varAsciiEncoding"/>
+        <data  name="authenticator"          id="14" type="varAsciiEncoding"/>
     </sbe:message>
 
 </sbe:messageSchema>

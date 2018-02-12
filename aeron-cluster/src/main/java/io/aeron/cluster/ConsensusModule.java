@@ -410,7 +410,7 @@ public class ConsensusModule implements AutoCloseable
          * Interval at which a leader will send heartbeats if the log is not progressing.
          * Default to 500 milliseconds in nanoseconds.
          */
-        public static final long HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(500);
+        public static final long HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
         /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.

@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Publication;
+
 /**
  * Represents a member of the cluster that participates in replication.
  */
@@ -26,6 +28,7 @@ public final class ClusterMember
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
+    private Publication publication;
 
     /**
      * Construct a new member of the cluster.
@@ -125,6 +128,26 @@ public final class ClusterMember
     public String logEndpoint()
     {
         return logEndpoint;
+    }
+
+    /**
+     * The {@link Publication} used for send status updates to the member.
+     *
+     * @return {@link Publication} used for send status updates to the member.
+     */
+    public Publication publication()
+    {
+        return publication;
+    }
+
+    /**
+     * {@link Publication} used for send status updates to the member.
+     *
+     * @param publication used for send status updates to the member.
+     */
+    public void publication(final Publication publication)
+    {
+        this.publication = publication;
     }
 
     /**

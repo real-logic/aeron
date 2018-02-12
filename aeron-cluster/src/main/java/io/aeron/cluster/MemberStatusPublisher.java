@@ -29,19 +29,8 @@ class MemberStatusPublisher
     private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
 
-    private Publication publication;
-
-    public Publication publication()
-    {
-        return publication;
-    }
-
-    public void publication(final Publication publication)
-    {
-        this.publication = publication;
-    }
-
-    public boolean appliedPosition(final long termPosition, final long leadershipTermId, final int memberId)
+    public boolean appliedPosition(
+        final Publication publication, final long termPosition, final long leadershipTermId, final int memberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppliedPositionEncoder.BLOCK_LENGTH;
 
@@ -69,7 +58,8 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean appendedPosition(final long termPosition, final long leadershipTermId, final int memberId)
+    public boolean appendedPosition(
+        final Publication publication, final long termPosition, final long leadershipTermId, final int memberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
 
@@ -98,13 +88,12 @@ class MemberStatusPublisher
     }
 
     public boolean commitPosition(
-        final long termPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
+        final Publication publication,
+        final long termPosition,
+        final long leadershipTermId,
+        final int leaderMemberId,
+        final int logSessionId)
     {
-        if (null == publication)
-        {
-            return true;
-        }
-
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CommitPositionEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;

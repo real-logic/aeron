@@ -21,8 +21,8 @@ import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.ClusterAction;
+import io.aeron.cluster.codecs.ClusterComponentType;
 import io.aeron.cluster.codecs.CncHeaderEncoder;
-import io.aeron.cluster.codecs.CncType;
 import io.aeron.cluster.codecs.VarAsciiEncodingEncoder;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
@@ -1855,7 +1855,7 @@ public class ConsensusModule implements AutoCloseable
 
                 cncFile = new ClusterCncFile(
                     new File(clusterDir, ClusterCncFile.FILENAME),
-                    CncType.CLUSTER,
+                    ClusterComponentType.CONSENSUS_MODULE,
                     alignedTotalCncFileLength,
                     epochClock,
                     0);
@@ -1866,7 +1866,8 @@ public class ConsensusModule implements AutoCloseable
                     .archiveStreamId(archiveContext.controlRequestStreamId())
                     .serviceControlStreamId(serviceControlStreamId)
                     .ingressStreamId(ingressStreamId)
-                    .serviceId(0)
+                    .memberId(clusterMemberId)
+                    .serviceId(-1)
                     .aeronDir(aeron.context().aeronDirectoryName())
                     .archiveChannel(archiveContext.controlRequestChannel())
                     .serviceControlChannel(serviceControlChannel)

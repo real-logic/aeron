@@ -15,9 +15,9 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.codecs.ClusterComponentType;
 import io.aeron.cluster.codecs.CncHeaderDecoder;
 import io.aeron.cluster.codecs.CncHeaderEncoder;
-import io.aeron.cluster.codecs.CncType;
 import org.agrona.CloseHelper;
 import org.agrona.CncFile;
 import org.agrona.SystemUtil;
@@ -39,7 +39,7 @@ public class ClusterCncFile implements AutoCloseable
 
     public ClusterCncFile(
         final File file,
-        final CncType type,
+        final ClusterComponentType type,
         final int totalFileLength,
         final EpochClock epochClock,
         final long timeoutMs)
@@ -70,9 +70,9 @@ public class ClusterCncFile implements AutoCloseable
         cncHeaderEncoder.wrap(cncBuffer, 0);
         cncHeaderDecoder.wrap(cncBuffer, 0, CncHeaderDecoder.BLOCK_LENGTH, CncHeaderDecoder.SCHEMA_VERSION);
 
-        final CncType existingType = cncHeaderDecoder.fileType();
+        final ClusterComponentType existingType = cncHeaderDecoder.fileType();
 
-        if (existingType != CncType.NOT_SET && existingType != type)
+        if (existingType != ClusterComponentType.NULL && existingType != type)
         {
             throw new IllegalStateException(
                 "existing CnC file type " + existingType + " not same as required type " + type);

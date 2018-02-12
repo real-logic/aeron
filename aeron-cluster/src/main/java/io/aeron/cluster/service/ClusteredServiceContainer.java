@@ -19,8 +19,8 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ClusterCncFile;
+import io.aeron.cluster.codecs.ClusterComponentType;
 import io.aeron.cluster.codecs.CncHeaderEncoder;
-import io.aeron.cluster.codecs.CncType;
 import io.aeron.cluster.codecs.VarAsciiEncodingEncoder;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -1080,7 +1080,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
                 cncFile = new ClusterCncFile(
                     new File(clusteredServiceDir, ClusterCncFile.FILENAME),
-                    CncType.CONTAINER,
+                    ClusterComponentType.CONTAINER,
                     alignedTotalCncFileLength,
                     epochClock,
                     0);
@@ -1091,6 +1091,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     .archiveStreamId(archiveContext.controlRequestStreamId())
                     .serviceControlStreamId(serviceControlStreamId)
                     .ingressStreamId(0)
+                    .memberId(-1)
                     .serviceId(serviceId)
                     .aeronDir(aeron.context().aeronDirectoryName())
                     .archiveChannel(archiveContext.controlRequestChannel())

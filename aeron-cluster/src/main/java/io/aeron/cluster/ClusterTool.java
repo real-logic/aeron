@@ -15,8 +15,8 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.codecs.ClusterComponentType;
 import io.aeron.cluster.codecs.CncHeaderDecoder;
-import io.aeron.cluster.codecs.CncType;
 
 import java.io.File;
 import java.util.Date;
@@ -69,9 +69,9 @@ public class ClusterTool
         return new ClusterCncFile(clusterDir, ClusterCncFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
 
-    private static void printTypeAndActivityTimestamp(final CncType cncType, final long activityTimestamp)
+    private static void printTypeAndActivityTimestamp(final ClusterComponentType type, final long activityTimestamp)
     {
-        System.out.print("Type: " + cncType);
+        System.out.print("Type: " + type);
         System.out.format(
             " %1$tH:%1$tM:%1$tS (activity: %2$tH:%2$tM:%2$tS)%n", new Date(), new Date(activityTimestamp));
     }
@@ -81,6 +81,6 @@ public class ClusterTool
         System.out.println("Usage: <cluster-dir> <command> <optional args>");
         System.out.println("  describe: prints out all descriptors in the file. Optionally specify a recording id" +
             " to describe a single recording.");
-        System.out.println("  pid: prints just PID of cluster.");
+        System.out.println("  pid: prints PID of cluster component.");
     }
 }

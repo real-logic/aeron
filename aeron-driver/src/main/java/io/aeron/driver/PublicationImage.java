@@ -111,7 +111,7 @@ public class PublicationImage
     private final int initialTermId;
     private final boolean isReliable;
 
-    private boolean isTrackingLoss = true;
+    private boolean isTrackingRebuild = true;
     private volatile State state = State.INIT;
 
     private final NanoClock nanoClock;
@@ -441,9 +441,9 @@ public class PublicationImage
         }
     }
 
-    final boolean isTrackingLoss()
+    final boolean isTrackingRebuild()
     {
-        return isTrackingLoss;
+        return isTrackingRebuild;
     }
 
     /**
@@ -658,7 +658,7 @@ public class PublicationImage
                     timeOfLastStateChangeNs = timeNs;
                     conductor.transitionToLinger(this);
                 }
-                isTrackingLoss = false;
+                isTrackingRebuild = false;
                 break;
 
             case LINGER:

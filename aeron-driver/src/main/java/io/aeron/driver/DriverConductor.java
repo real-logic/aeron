@@ -161,7 +161,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
             final PublicationImage image = publicationImages.get(i);
-            if (image.isTrackingLoss())
+            if (image.isTrackingRebuild())
             {
                 image.trackRebuild(nowNs, statusMessageTimeoutNs);
             }

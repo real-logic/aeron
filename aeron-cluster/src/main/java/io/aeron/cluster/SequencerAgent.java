@@ -170,6 +170,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public void onStart()
     {
+        invokeAeronClient();
         archive = AeronArchive.connect(ctx.archiveContext());
         final RecordingLog.RecoveryPlan recoveryPlan = ctx.recordingLog().createRecoveryPlan(archive);
 
@@ -1162,15 +1163,15 @@ class SequencerAgent implements Agent, ServiceControlListener
     private void idle()
     {
         checkInterruptedStatus();
-        idleStrategy.idle();
         invokeAeronClient();
+        idleStrategy.idle();
     }
 
     private void idle(final int workCount)
     {
         checkInterruptedStatus();
-        idleStrategy.idle(workCount);
         invokeAeronClient();
+        idleStrategy.idle(workCount);
     }
 
     private static void checkInterruptedStatus()

@@ -60,16 +60,19 @@ public class MultiSubscriberTest
 
             while (publication.offer(srcBuffer) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             while (subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT) == 0)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             while (subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT) == 0)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 

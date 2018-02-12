@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.collections.MutableBoolean;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -68,6 +69,7 @@ public class BufferClaimMessageTest
 
             while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -82,6 +84,7 @@ public class BufferClaimMessageTest
                 final int fragments = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
 
@@ -112,6 +115,7 @@ public class BufferClaimMessageTest
         {
             while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -119,18 +123,24 @@ public class BufferClaimMessageTest
             bufferClaim.reservedValue(reservedValue);
             bufferClaim.commit();
 
-            final boolean[] done = new boolean[1];
-            while (!done[0])
+            final MutableBoolean done = new MutableBoolean();
+            while (!done.get())
             {
-                subscription.poll(
+                final int fragments = subscription.poll(
                     (buffer, offset, length, header) ->
                     {
                         assertThat(length, is(MESSAGE_LENGTH));
                         assertThat(header.reservedValue(), is(reservedValue));
 
-                        done[0] = true;
+                        done.value = true;
                     },
                     FRAGMENT_COUNT_LIMIT);
+
+                if (0 == fragments)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
             }
         }
         finally
@@ -143,6 +153,7 @@ public class BufferClaimMessageTest
     {
         while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }

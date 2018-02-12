@@ -26,7 +26,7 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
-import static io.aeron.SystemTestHelper.spyForChannel;
+import static io.aeron.SystemTest.spyForChannel;
 import static org.mockito.Mockito.*;
 
 @RunWith(Theories.class)
@@ -69,6 +69,7 @@ public class SpySubscriptionTest
             {
                 while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
             }
@@ -77,6 +78,8 @@ public class SpySubscriptionTest
             int numSpyFragments = 0;
             do
             {
+                SystemTest.checkInterruptedStatus();
+
                 numFragments += subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
                 numSpyFragments += spy.poll(mockSpyFragmentHandler, FRAGMENT_COUNT_LIMIT);
             }

@@ -91,16 +91,17 @@ public class PongTest
 
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead.value += pingSubscription.poll(this::pingHandler, 10);
+                fragmentsRead.value += pingSubscription.poll(this::echoPingHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -108,7 +109,7 @@ public class PongTest
 
         fragmentsRead.set(0);
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -133,16 +134,17 @@ public class PongTest
 
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead.value += pingSubscription.poll(this::pingHandler, 1);
+                fragmentsRead.value += pingSubscription.poll(this::echoPingHandler, 1);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -150,7 +152,7 @@ public class PongTest
 
         fragmentsRead.set(0);
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -167,6 +169,7 @@ public class PongTest
         // wait for disconnect to ensure we stay in lock step
         while (pingPublication.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.sleep(100);
         }
 
@@ -178,14 +181,15 @@ public class PongTest
 
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
-                fragmentsRead.value += pingSubscription.poll(this::pingHandler, 10);
+                fragmentsRead.value += pingSubscription.poll(this::echoPingHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -193,7 +197,7 @@ public class PongTest
 
         fragmentsRead.set(0);
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -210,12 +214,12 @@ public class PongTest
             any(Header.class));
     }
 
-    public void pingHandler(
+    public void echoPingHandler(
         final DirectBuffer buffer, final int offset, final int length, @SuppressWarnings("unused") final Header header)
     {
-        // echoes back the ping
         while (pongPublication.offer(buffer, offset, length) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }

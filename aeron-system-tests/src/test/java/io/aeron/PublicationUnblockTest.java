@@ -69,6 +69,7 @@ public class PublicationUnblockTest
 
             while (publicationA.tryClaim(length, bufferClaim) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -77,11 +78,13 @@ public class PublicationUnblockTest
 
             while (publicationB.offer(srcBuffer, 0, length) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             while (publicationA.tryClaim(length, bufferClaim) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -89,6 +92,7 @@ public class PublicationUnblockTest
 
             while (publicationB.offer(srcBuffer, 0, length) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -99,6 +103,7 @@ public class PublicationUnblockTest
                 final int fragments = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
                 if (numFragments == 0)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
 

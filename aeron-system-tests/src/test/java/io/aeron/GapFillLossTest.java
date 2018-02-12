@@ -90,6 +90,7 @@ public class GapFillLossTest
 
                 while ((position = publication.offer(srcBuffer)) < 0L)
                 {
+                    SystemTest.checkInterruptedStatus();
                     idleStrategy.idle();
                 }
             }
@@ -122,6 +123,7 @@ public class GapFillLossTest
 
             while (!subscription.isConnected())
             {
+                SystemTest.checkInterruptedStatus();
                 idleStrategy.idle();
             }
 
@@ -129,7 +131,12 @@ public class GapFillLossTest
 
             while (image.position() < FINAL_POSITION.get())
             {
-                idleStrategy.idle(subscription.poll(this, FRAGMENT_COUNT_LIMIT));
+                final int fragments = subscription.poll(this, FRAGMENT_COUNT_LIMIT);
+                if (0 == fragments)
+                {
+                    SystemTest.checkInterruptedStatus();
+                }
+                idleStrategy.idle(fragments);
             }
         }
 

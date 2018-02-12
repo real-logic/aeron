@@ -35,7 +35,7 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.SystemTestHelper.spyForChannel;
+import static io.aeron.SystemTest.spyForChannel;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -108,6 +108,7 @@ public class SpySimulatedConnectionTest
 
         while (!spy.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -132,6 +133,7 @@ public class SpySimulatedConnectionTest
 
         while (!spy.isConnected() || !publication.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -139,11 +141,12 @@ public class SpySimulatedConnectionTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -187,6 +190,7 @@ public class SpySimulatedConnectionTest
 
         while (!spy.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -200,6 +204,7 @@ public class SpySimulatedConnectionTest
                 }
             }
 
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
 
             fragmentsFromSpy += spy.poll(fragmentHandlerSpy, 10);
@@ -247,6 +252,7 @@ public class SpySimulatedConnectionTest
 
         while (!spy.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -257,6 +263,10 @@ public class SpySimulatedConnectionTest
                 if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
                 {
                     messagesLeftToSend--;
+                }
+                else
+                {
+                    SystemTest.checkInterruptedStatus();
                 }
             }
 

@@ -123,6 +123,7 @@ public class BasicArchiveTest
 
             while (counters.getCounterValue(counterId) < stopPosition)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
         }
@@ -166,6 +167,7 @@ public class BasicArchiveTest
 
             while (counters.getCounterValue(counterId) < stopPosition)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -233,6 +235,7 @@ public class BasicArchiveTest
 
             while (publication.offer(buffer, 0, length) <= 0)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
         }
@@ -257,6 +260,7 @@ public class BasicArchiveTest
         {
             if (0 == subscription.poll(fragmentHandler, FRAGMENT_LIMIT))
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
         }

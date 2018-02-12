@@ -128,6 +128,7 @@ public class ChannelEndpointStatusTest
 
         while (subscription.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -141,6 +142,7 @@ public class ChannelEndpointStatusTest
 
         while (publication.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -154,6 +156,7 @@ public class ChannelEndpointStatusTest
 
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -183,6 +186,7 @@ public class ChannelEndpointStatusTest
 
         while (publicationA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -212,6 +216,7 @@ public class ChannelEndpointStatusTest
 
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -221,6 +226,7 @@ public class ChannelEndpointStatusTest
         while (subscriptionB.channelStatus() == ChannelEndpointStatus.INITIALIZING ||
             subscriptionC.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 

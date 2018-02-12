@@ -105,7 +105,7 @@ public class MultiDriverTest
     }
 
     @Test(timeout = 10000)
-    public void shouldSpinUpAndShutdown() throws Exception
+    public void shouldSpinUpAndShutdown()
     {
         launch();
 
@@ -115,7 +115,8 @@ public class MultiDriverTest
 
         while (!subscriptionA.isConnected() && !subscriptionB.isConnected())
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
         }
     }
 
@@ -134,11 +135,12 @@ public class MultiDriverTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -158,11 +160,12 @@ public class MultiDriverTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -173,7 +176,7 @@ public class MultiDriverTest
                 TimeUnit.MILLISECONDS.toNanos(500));
 
             fragmentsRead.set(0);
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -210,6 +213,7 @@ public class MultiDriverTest
 
         while (!publication.isConnected() && !subscriptionA.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -222,11 +226,12 @@ public class MultiDriverTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -237,7 +242,7 @@ public class MultiDriverTest
                 TimeUnit.MILLISECONDS.toNanos(500));
 
             fragmentsRead.set(0);
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {

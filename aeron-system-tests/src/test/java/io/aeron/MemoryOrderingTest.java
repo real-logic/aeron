@@ -74,6 +74,7 @@ public class MemoryOrderingTest
                         fail(failedMessage);
                     }
 
+                    SystemTest.checkInterruptedStatus();
                     idleStrategy.idle();
                 }
 
@@ -127,6 +128,7 @@ public class MemoryOrderingTest
 
                 while (publication.offer(srcBuffer) < 0L)
                 {
+                    SystemTest.checkInterruptedStatus();
                     if (null != failedMessage)
                     {
                         fail(failedMessage);

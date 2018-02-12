@@ -56,6 +56,7 @@ public class ControlledMessageTest
             {
                 while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
             }
@@ -64,7 +65,13 @@ public class ControlledMessageTest
             int numFragments = 0;
             do
             {
-                numFragments += subscription.controlledPoll(fragmentCollector, FRAGMENT_COUNT_LIMIT);
+                final int fragments = subscription.controlledPoll(fragmentCollector, FRAGMENT_COUNT_LIMIT);
+                if (0 == fragments)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
+                numFragments += fragments;
             }
             while (numFragments < 4);
 

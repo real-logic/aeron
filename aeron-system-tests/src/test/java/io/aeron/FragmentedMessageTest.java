@@ -76,6 +76,7 @@ public class FragmentedMessageTest
 
             while (publication.offer(srcBuffer, offset, srcBuffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -83,7 +84,13 @@ public class FragmentedMessageTest
             int numFragments = 0;
             do
             {
-                numFragments += subscription.poll(assembler, FRAGMENT_COUNT_LIMIT);
+                final int fragments = subscription.poll(assembler, FRAGMENT_COUNT_LIMIT);
+                if (0 == fragments)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
+                numFragments += fragments;
             }
             while (numFragments < expectedFragmentsBecauseOfHeader);
 

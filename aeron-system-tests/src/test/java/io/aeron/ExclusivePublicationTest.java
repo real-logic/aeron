@@ -86,6 +86,7 @@ public class ExclusivePublicationTest
                 final int fragmentsRead = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragmentsRead)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
 
@@ -108,6 +109,7 @@ public class ExclusivePublicationTest
     {
         while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }

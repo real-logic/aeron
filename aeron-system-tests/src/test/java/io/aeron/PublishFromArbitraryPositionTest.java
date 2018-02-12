@@ -86,6 +86,7 @@ public class PublishFromArbitraryPositionTest
         {
             while (!publication.isConnected())
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -131,6 +132,7 @@ public class PublishFromArbitraryPositionTest
     {
         while (publication.offer(buffer, 0, 1 + rnd.nextInt(MAX_MESSAGE_LENGTH - 1)) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }

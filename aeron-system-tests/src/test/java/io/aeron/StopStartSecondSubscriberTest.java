@@ -115,17 +115,19 @@ public class StopStartSecondSubscriberTest
 
         while (publicationOne.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
         while (publicationTwo.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
         final MutableInteger fragmentsRead1 = new MutableInteger();
         final MutableInteger fragmentsRead2 = new MutableInteger();
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead1.get() >= messagesPerPublication && fragmentsRead2.get() >= messagesPerPublication,
             (i) ->
             {
@@ -195,7 +197,7 @@ public class StopStartSecondSubscriberTest
 
         final MutableInteger fragmentsReadOne = new MutableInteger();
         final MutableInteger fragmentsReadTwo = new MutableInteger();
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages,
             (i) ->
             {
@@ -216,7 +218,7 @@ public class StopStartSecondSubscriberTest
 
         subscriptionTwo = subscriberTwo.addSubscription(channelTwo, streamTwo);
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages,
             (i) ->
             {

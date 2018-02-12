@@ -112,6 +112,7 @@ public class FlowControlStrategiesTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.sleep(1);
         }
     }
@@ -139,6 +140,7 @@ public class FlowControlStrategiesTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -151,7 +153,7 @@ public class FlowControlStrategiesTest
 
             // A keeps up
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -166,7 +168,7 @@ public class FlowControlStrategiesTest
             // B receives slowly and eventually can't keep up
             if (i % 10 == 0)
             {
-                SystemTestHelper.executeUntil(
+                SystemTest.executeUntil(
                     () -> fragmentsRead.get() > 0,
                     (j) ->
                     {
@@ -227,6 +229,7 @@ public class FlowControlStrategiesTest
                 }
             }
 
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
 
             // A keeps up
@@ -273,6 +276,7 @@ public class FlowControlStrategiesTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -329,6 +333,7 @@ public class FlowControlStrategiesTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -342,6 +347,7 @@ public class FlowControlStrategiesTest
                 }
             }
 
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
 
             // A keeps up
@@ -387,6 +393,7 @@ public class FlowControlStrategiesTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -400,6 +407,7 @@ public class FlowControlStrategiesTest
                 }
             }
 
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
 
             // A keeps up
@@ -446,6 +454,7 @@ public class FlowControlStrategiesTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 

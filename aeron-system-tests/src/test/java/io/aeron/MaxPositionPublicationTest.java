@@ -58,6 +58,7 @@ public class MaxPositionPublicationTest
             long resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
             while (resultingPosition < 0)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
                 resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
             }

@@ -153,8 +153,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     protected final void preSessionsClose()
     {
         closeSessionWorkers();
-        recordingSubscriptionMap.values().forEach(Subscription::close);
-        recordingSubscriptionMap.clear();
     }
 
     protected abstract void closeSessionWorkers();
@@ -163,6 +161,10 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     {
         if (!ctx.ownsAeronClient())
         {
+            for (final Subscription subscription : recordingSubscriptionMap.values())
+            {
+                subscription.close();
+            }
             CloseHelper.close(localControlSubscription);
             CloseHelper.close(controlSubscription);
         }

@@ -77,7 +77,7 @@ public class CatalogTest
         IoUtil.delete(archiveDir, false);
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldReloadExistingIndex()
     {
         try (Catalog catalog = new Catalog(archiveDir, clock, TIMEOUT_MS))
@@ -108,7 +108,7 @@ public class CatalogTest
         assertEquals(sourceIdentity, recordingDescriptorDecoder.sourceIdentity());
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldAppendToExistingIndex()
     {
         final long newRecordingId;
@@ -125,7 +125,7 @@ public class CatalogTest
         }
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldAllowMultipleInstancesForSameStream()
     {
         try (Catalog ignore = new Catalog(archiveDir, clock, TIMEOUT_MS))
@@ -135,7 +135,7 @@ public class CatalogTest
         }
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldFixTimestampForEmptyRecordingAfterFailure()
     {
         final long newRecordingId = newRecording();
@@ -155,7 +155,7 @@ public class CatalogTest
         }
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldFixTimestampAndPositionAfterFailureSamePage() throws Exception
     {
         final long newRecordingId = newRecording();
@@ -203,7 +203,7 @@ public class CatalogTest
         }
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldFixTimestampAndPositionAfterFailurePageStraddle() throws Exception
     {
         final long newRecordingId = newRecording();
@@ -270,7 +270,7 @@ public class CatalogTest
         return newRecordingId;
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldFixTimestampAndPositionAfterFailureFullSegment() throws Exception
     {
         final long newRecordingId = newRecording();
@@ -279,7 +279,6 @@ public class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-
             final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength((int)expectedLastFrame);

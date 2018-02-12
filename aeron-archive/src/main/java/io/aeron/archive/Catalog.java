@@ -183,10 +183,9 @@ class Catalog implements AutoCloseable
 
             final UnsafeBuffer catalogHeaderBuffer = new UnsafeBuffer(indexByteBuffer);
 
-            catalogHeaderDecoder
-                .wrap(catalogHeaderBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
-            catalogHeaderEncoder
-                .wrap(catalogHeaderBuffer, 0);
+            catalogHeaderDecoder.wrap(
+                catalogHeaderBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
+            catalogHeaderEncoder.wrap(catalogHeaderBuffer, 0);
 
             if (catalogPreExists)
             {
@@ -270,8 +269,8 @@ class Catalog implements AutoCloseable
 
             final UnsafeBuffer catalogHeaderBuffer = new UnsafeBuffer(indexByteBuffer);
 
-            catalogHeaderDecoder
-                .wrap(catalogHeaderBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
+            catalogHeaderDecoder.wrap(
+                catalogHeaderBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
 
             recordLength = catalogHeaderDecoder.entryLength();
             maxDescriptorStringsCombinedLength =

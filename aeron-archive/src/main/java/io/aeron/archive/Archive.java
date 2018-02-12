@@ -18,6 +18,8 @@ package io.aeron.archive;
 import io.aeron.Aeron;
 import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.CatalogHeaderDecoder;
+import io.aeron.archive.codecs.CatalogHeaderEncoder;
 import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.BitUtil;
@@ -29,6 +31,9 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
@@ -39,9 +44,7 @@ import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 /**
- * The Aeron Archive which allows for the archival of {@link io.aeron.Publication}s and
- * {@link io.aeron.ExclusivePublication}s. It expects to be launched in the same process as a Java
- * {@link io.aeron.driver.MediaDriver}.
+ * The Aeron Archive which allows for the recording and replay of local and remote {@link io.aeron.Publication}s .
  */
 public class Archive implements AutoCloseable
 {
@@ -282,13 +285,15 @@ public class Archive implements AutoCloseable
     /**
      * Overrides for the defaults and system properties.
      */
-    public static class Context implements AutoCloseable
+    public static class Context implements AutoCloseable, Catalog.CatalogHeaderProcessor
     {
         private boolean deleteArchiveOnStart = false;
         private boolean ownsAeronClient = false;
         private String aeronDirectoryName;
         private Aeron aeron;
         private File archiveDir;
+        private FileChannel archiveDirChannel;
+        private Catalog catalog;
 
         private String controlChannel = AeronArchive.Configuration.controlChannel();
         private int controlStreamId = AeronArchive.Configuration.controlStreamId();
@@ -320,10 +325,7 @@ public class Archive implements AutoCloseable
          */
         public void conclude()
         {
-            if (null == errorHandler)
-            {
-                throw new IllegalStateException("Error handler must be supplied");
-            }
+            Objects.requireNonNull(errorHandler, "Error handler must be supplied");
 
             if (null == epochClock)
             {
@@ -354,10 +356,7 @@ public class Archive implements AutoCloseable
                 }
             }
 
-            if (null == errorCounter)
-            {
-                throw new IllegalStateException("Error counter must be supplied if aeron client is");
-            }
+            Objects.requireNonNull(errorCounter, "Error counter must be supplied if aeron client is");
 
             if (null == countedErrorHandler)
             {
@@ -395,6 +394,11 @@ public class Archive implements AutoCloseable
                 archiveDir = new File(Configuration.archiveDirName());
             }
 
+            if (null == archiveDirChannel)
+            {
+                archiveDirChannel = channelForDirectorySync(archiveDir, fileSyncLevel);
+            }
+
             if (!archiveDir.exists() && !archiveDir.mkdirs())
             {
                 throw new IllegalArgumentException(
@@ -409,6 +413,33 @@ public class Archive implements AutoCloseable
             {
                 throw new ConfigurationException("Segment file length not in valid range: " + segmentFileLength);
             }
+
+            if (null == catalog)
+            {
+                catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, epochClock, 0, this, null);
+            }
+        }
+
+        public void accept(final CatalogHeaderEncoder encoder, final CatalogHeaderDecoder decoder)
+        {
+            final String aeronDirectoryName = aeron.context().aeronDirectoryName();
+
+            final int totalDataLength =
+                controlChannel.length() +
+                localControlChannel.length() +
+                recordingEventsChannel.length() +
+                aeronDirectoryName.length();
+
+            Catalog.validateCatalogHeaderDataLengths(decoder.entryLength(), totalDataLength);
+
+            encoder
+                .controlStreamId(controlStreamId)
+                .localControlStreamId(localControlStreamId)
+                .eventsStreamId(recordingEventsStreamId)
+                .controlChannel(controlChannel)
+                .localControlChannel(localControlChannel)
+                .eventsChannel(recordingEventsChannel)
+                .aeronDir(aeronDirectoryName);
         }
 
         /**
@@ -444,14 +475,38 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Set the directory in which the Archive will store recordings/index/counters etc.
+         * Set the the directory in which the Archive will store recordings and the {@link Catalog}.
          *
-         * @param archiveDir the directory in which the Archive will store recordings/index/counters etc
+         * @param archiveDir the directory in which the Archive will store recordings and the {@link Catalog}.
          * @return this for a fluent API.
          */
         public Context archiveDir(final File archiveDir)
         {
             this.archiveDir = archiveDir;
+            return this;
+        }
+
+        /**
+         * Get the {@link FileChannel} for the directory in which the Archive will store recordings and the
+         * {@link Catalog}. This can be used for sync'ing the directory.
+         *
+         * @return the directory in which the Archive will store recordings and the {@link Catalog}.
+         */
+        public FileChannel archiveDirChannel()
+        {
+            return archiveDirChannel;
+        }
+
+        /**
+         * Get the {@link FileChannel} for the directory in which the Archive will store recordings and the
+         * {@link Catalog}. This can be used for sync'ing the directory.
+         *
+         * @param archiveDirChannel the directory in which the Archive will store recordings and the {@link Catalog}.
+         * @return this for a fluent API.
+         */
+        public Context archiveDirChannel(final FileChannel archiveDirChannel)
+        {
+            this.archiveDirChannel = archiveDirChannel;
             return this;
         }
 
@@ -965,6 +1020,28 @@ public class Archive implements AutoCloseable
         }
 
         /**
+         * The {@link Catalog} describing the contents of the Archive.
+         *
+         * @param catalog {@link Catalog} describing the contents of the Archive.
+         * @return this for a fluent API.
+         */
+        public Context catalog(final Catalog catalog)
+        {
+            this.catalog = catalog;
+            return this;
+        }
+
+        /**
+         * The {@link Catalog} describing the contents of the Archive.
+         *
+         * @return the {@link Catalog} describing the contents of the Archive.
+         */
+        public Catalog catalog()
+        {
+            return catalog;
+        }
+
+        /**
          * Close the context and free applicable resources.
          * <p>
          * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
@@ -975,6 +1052,9 @@ public class Archive implements AutoCloseable
             {
                 CloseHelper.close(aeron);
             }
+
+            CloseHelper.quietClose(catalog);
+            CloseHelper.quietClose(archiveDirChannel);
         }
     }
 
@@ -986,5 +1066,21 @@ public class Archive implements AutoCloseable
     static String segmentFileName(final long recordingId, final int segmentIndex)
     {
         return recordingId + "-" + segmentIndex + Configuration.RECORDING_SEGMENT_POSTFIX;
+    }
+
+    static FileChannel channelForDirectorySync(final File directory, final int fileSyncLevel)
+    {
+        if (fileSyncLevel > 0)
+        {
+            try
+            {
+                return FileChannel.open(directory.toPath());
+            }
+            catch (final IOException ignore)
+            {
+            }
+        }
+
+        return null;
     }
 }

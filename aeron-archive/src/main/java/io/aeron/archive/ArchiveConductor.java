@@ -30,7 +30,6 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
@@ -89,7 +88,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
         epochClock = ctx.epochClock();
         archiveDir = ctx.archiveDir();
-        archiveDirChannel = channelForDirectorySync(archiveDir, ctx.fileSyncLevel());
+        archiveDirChannel = ctx.archiveDirChannel();
         controlResponseProxy = new ControlResponseProxy();
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
@@ -105,34 +104,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
         cachedEpochClock.update(epochClock.time());
-
-        catalog = new Catalog(
-            archiveDir,
-            archiveDirChannel,
-            ctx.fileSyncLevel(),
-            cachedEpochClock,
-            0,
-            (encoder, decoder) ->
-            {
-                final String aeronDirectoryName = aeron.context().aeronDirectoryName();
-
-                Catalog.validateCatalogHeaderDataLengths(
-                    decoder.entryLength(),
-                    ctx.controlChannel().length() +
-                    ctx.localControlChannel().length() +
-                    ctx.recordingEventsChannel().length() +
-                    aeronDirectoryName.length());
-
-                encoder
-                    .controlStreamId(ctx.controlStreamId())
-                    .localControlStreamId(ctx.localControlStreamId())
-                    .eventsStreamId(ctx.recordingEventsStreamId())
-                    .controlChannel(ctx.controlChannel())
-                    .localControlChannel(ctx.localControlChannel())
-                    .eventsChannel(ctx.recordingEventsChannel())
-                    .aeronDir(aeronDirectoryName);
-            },
-            null);
+        catalog = ctx.catalog();
     }
 
     public void onStart()
@@ -168,9 +140,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             CloseHelper.close(localControlSubscription);
             CloseHelper.close(controlSubscription);
         }
-
-        CloseHelper.quietClose(catalog);
-        CloseHelper.quietClose(archiveDirChannel);
     }
 
     protected int preWork()
@@ -780,22 +749,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
             throw new IllegalStateException(msg);
         }
-    }
-
-    private static FileChannel channelForDirectorySync(final File directory, final int fileSyncLevel)
-    {
-        if (fileSyncLevel > 0)
-        {
-            try
-            {
-                return FileChannel.open(directory.toPath());
-            }
-            catch (final IOException ignore)
-            {
-            }
-        }
-
-        return null;
     }
 
     private static String makeKey(final int streamId, final String strippedChannel)

@@ -28,7 +28,6 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final AppliedPositionDecoder appliedPositionDecoder = new AppliedPositionDecoder();
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
     private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
 
@@ -59,19 +58,6 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
-            case AppliedPositionDecoder.TEMPLATE_ID:
-                appliedPositionDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                sequencerAgent.onAppliedPosition(
-                    appliedPositionDecoder.termPosition(),
-                    appliedPositionDecoder.leadershipTermId(),
-                    appliedPositionDecoder.memberId());
-                break;
-
             case AppendedPositionDecoder.TEMPLATE_ID:
                 appendedPositionDecoder.wrap(
                     buffer,

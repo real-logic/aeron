@@ -25,38 +25,8 @@ class MemberStatusPublisher
 
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final AppliedPositionEncoder appliedPositionEncoder = new AppliedPositionEncoder();
     private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
-
-    public boolean appliedPosition(
-        final Publication publication, final long termPosition, final long leadershipTermId, final int memberId)
-    {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppliedPositionEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                appliedPositionEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .termPosition(termPosition)
-                    .leadershipTermId(leadershipTermId)
-                    .memberId(memberId);
-
-                bufferClaim.commit();
-
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
-    }
 
     public boolean appendedPosition(
         final Publication publication, final long termPosition, final long leadershipTermId, final int memberId)

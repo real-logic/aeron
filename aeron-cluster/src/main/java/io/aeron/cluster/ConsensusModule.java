@@ -23,7 +23,6 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.ClusterComponentType;
 import io.aeron.cluster.codecs.CncHeaderEncoder;
-import io.aeron.cluster.codecs.VarAsciiEncodingEncoder;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -1841,17 +1840,14 @@ public class ConsensusModule implements AutoCloseable
         {
             if (null == cncFile)
             {
-                final int totalCncFileLength =
-                    CncHeaderEncoder.BLOCK_LENGTH +
-                    (6 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
-                    aeron.context().aeronDirectoryName().length() +
-                    archiveContext.controlRequestChannel().length() +
-                    serviceControlChannel().length() +
-                    ingressChannel.length() +
-                    // serviceName not used for ConsensusModule (so set length to 0)
-                    authenticatorSupplier.getClass().toString().length();
-
-                final int alignedTotalCncFileLength = BitUtil.align(totalCncFileLength, ClusterCncFile.ALIGNMENT);
+                final int alignedTotalCncFileLength = ClusterCncFile.alignedTotalFileLength(
+                    ClusterCncFile.ALIGNMENT,
+                    aeron.context().aeronDirectoryName(),
+                    archiveContext.controlRequestChannel(),
+                    serviceControlChannel(),
+                    ingressChannel,
+                    null,
+                    authenticatorSupplier.getClass().toString());
 
                 cncFile = new ClusterCncFile(
                     new File(clusterDir, ClusterCncFile.FILENAME),
@@ -1868,7 +1864,7 @@ public class ConsensusModule implements AutoCloseable
                     .ingressStreamId(ingressStreamId)
                     .memberId(clusterMemberId)
                     .serviceId(-1)
-                    .aeronDir(aeron.context().aeronDirectoryName())
+                    .aeronDirectory(aeron.context().aeronDirectoryName())
                     .archiveChannel(archiveContext.controlRequestChannel())
                     .serviceControlChannel(serviceControlChannel)
                     .ingressChannel(ingressChannel)

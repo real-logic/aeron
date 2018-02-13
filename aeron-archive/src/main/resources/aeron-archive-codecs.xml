@@ -220,4 +220,22 @@
         <field name="stopPosition"         id="3" type="int64"/>
     </sbe:message>
 
+    <!-- CnC file -->
+
+    <sbe:message name="CncHeader"
+                 id="200"
+                 blockLength="128"
+                 description="CnC file header">
+        <field name="version"              id="1"  type="int32"/>
+        <field name="pid"                  id="4"  type="int32"/>
+        <field name="activityTimestamp"    id="3"  type="time_t"/>
+        <field name="controlStreamId"      id="5"  type="int32"/>
+        <field name="localControlStreamId" id="6"  type="int32"/>
+        <field name="eventsStreamId"       id="7"  type="int32"/>
+        <data  name="controlChannel"       id="8"  type="varAsciiEncoding"/>
+        <data  name="localControlChannel"  id="9"  type="varAsciiEncoding"/>
+        <data  name="eventsChannel"        id="10" type="varAsciiEncoding"/>
+        <data  name="aeronDirectory"       id="11" type="varAsciiEncoding"/>
+    </sbe:message>
+
 </sbe:messageSchema>

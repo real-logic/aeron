@@ -21,8 +21,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ClusterCncFile;
 import io.aeron.cluster.codecs.ClusterComponentType;
 import io.aeron.cluster.codecs.CncHeaderEncoder;
-import io.aeron.cluster.codecs.VarAsciiEncodingEncoder;
-import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -1066,17 +1064,14 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             if (null == cncFile)
             {
-                final int totalCncFileLength =
-                    CncHeaderEncoder.BLOCK_LENGTH +
-                    (6 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
-                    aeron.context().aeronDirectoryName().length() +
-                    archiveContext.controlRequestChannel().length() +
-                    serviceControlChannel().length() +
-                    // ingressChannel not used (so set length to 0)
-                    serviceName.length();
-                    // authenticator not used (so set length to 0)
-
-                final int alignedTotalCncFileLength = BitUtil.align(totalCncFileLength, ClusterCncFile.ALIGNMENT);
+                final int alignedTotalCncFileLength = ClusterCncFile.alignedTotalFileLength(
+                    ClusterCncFile.ALIGNMENT,
+                    aeron.context().aeronDirectoryName(),
+                    archiveContext.controlRequestChannel(),
+                    serviceControlChannel(),
+                    null,
+                    serviceName,
+                    null);
 
                 cncFile = new ClusterCncFile(
                     new File(clusteredServiceDir, ClusterCncFile.FILENAME),
@@ -1093,7 +1088,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     .ingressStreamId(0)
                     .memberId(-1)
                     .serviceId(serviceId)
-                    .aeronDir(aeron.context().aeronDirectoryName())
+                    .aeronDirectory(aeron.context().aeronDirectoryName())
                     .archiveChannel(archiveContext.controlRequestChannel())
                     .serviceControlChannel(serviceControlChannel)
                     .ingressChannel("")

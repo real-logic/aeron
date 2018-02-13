@@ -99,7 +99,7 @@ public class ArchiveRecordingLoadTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .fileSyncLevel(2)
+                .fileSyncLevel(0)
                 .archiveDir(TestUtil.makeTempDir())
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))

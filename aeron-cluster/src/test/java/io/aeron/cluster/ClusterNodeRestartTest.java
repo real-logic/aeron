@@ -76,10 +76,17 @@ public class ClusterNodeRestartTest
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
-        container.context().deleteDirectory();
-        clusteredMediaDriver.consensusModule().context().deleteDirectory();
-        clusteredMediaDriver.archive().context().deleteArchiveDirectory();
-        clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
+        if (null != container)
+        {
+            container.context().deleteDirectory();
+        }
+
+        if (null != clusteredMediaDriver)
+        {
+            clusteredMediaDriver.consensusModule().context().deleteDirectory();
+            clusteredMediaDriver.archive().context().deleteArchiveDirectory();
+            clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
+        }
     }
 
     @Test(timeout = 10_000)
@@ -88,7 +95,7 @@ public class ClusterNodeRestartTest
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
         final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
 
-        container = launchService(true, serviceMsgCounter);
+        launchService(true, serviceMsgCounter);
 
         connectClient();
 
@@ -105,7 +112,7 @@ public class ClusterNodeRestartTest
         clusteredMediaDriver.close();
 
         launchClusteredMediaDriver(false);
-        container = launchService(false, restartServiceMsgCounter);
+        launchService(false, restartServiceMsgCounter);
 
         while (restartServiceMsgCounter.get() == 0)
         {
@@ -120,7 +127,7 @@ public class ClusterNodeRestartTest
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
         final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
 
-        container = launchService(true, serviceMsgCounter);
+        launchService(true, serviceMsgCounter);
 
         connectClient();
 
@@ -137,7 +144,7 @@ public class ClusterNodeRestartTest
         clusteredMediaDriver.close();
 
         launchClusteredMediaDriver(false);
-        container = launchService(false, restartServiceMsgCounter);
+        launchService(false, restartServiceMsgCounter);
 
         connectClient();
 
@@ -155,7 +162,7 @@ public class ClusterNodeRestartTest
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
-        container = launchService(true, serviceMsgCounter);
+        launchService(true, serviceMsgCounter);
 
         connectClient();
 
@@ -194,7 +201,7 @@ public class ClusterNodeRestartTest
 
         serviceState.set(null);
         launchClusteredMediaDriver(false);
-        container = launchService(false, serviceMsgCounter);
+        launchService(false, serviceMsgCounter);
 
         while (null == serviceState.get())
         {
@@ -226,7 +233,7 @@ public class ClusterNodeRestartTest
         }
     }
 
-    private ClusteredServiceContainer launchService(final boolean initialLaunch, final AtomicLong msgCounter)
+    private void launchService(final boolean initialLaunch, final AtomicLong msgCounter)
     {
         final ClusteredService service =
             new StubClusteredService()
@@ -286,7 +293,9 @@ public class ClusterNodeRestartTest
                 }
             };
 
-        return ClusteredServiceContainer.launch(
+        container = null;
+
+        container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
                 .terminationHook(() -> {})
@@ -303,6 +312,8 @@ public class ClusterNodeRestartTest
 
     private void connectClient()
     {
+        aeronCluster = null;
+
         aeronCluster = connectToCluster();
         sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         publication = aeronCluster.ingressPublication();
@@ -310,6 +321,8 @@ public class ClusterNodeRestartTest
 
     private void launchClusteredMediaDriver(final boolean initialLaunch)
     {
+        clusteredMediaDriver = null;
+
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
                 .warnIfDirectoryExists(initialLaunch)

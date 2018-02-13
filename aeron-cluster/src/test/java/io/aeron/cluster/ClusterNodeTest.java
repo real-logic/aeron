@@ -77,9 +77,12 @@ public class ClusterNodeTest
             container.context().deleteDirectory();
         }
 
-        clusteredMediaDriver.consensusModule().context().deleteDirectory();
-        clusteredMediaDriver.archive().context().deleteArchiveDirectory();
-        clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
+        if (null != clusteredMediaDriver)
+        {
+            clusteredMediaDriver.consensusModule().context().deleteDirectory();
+            clusteredMediaDriver.archive().context().deleteArchiveDirectory();
+            clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
+        }
     }
 
     @Test

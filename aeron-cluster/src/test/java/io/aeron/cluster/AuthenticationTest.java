@@ -69,10 +69,17 @@ public class AuthenticationTest
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
-        container.context().deleteDirectory();
-        clusteredMediaDriver.consensusModule().context().deleteDirectory();
-        clusteredMediaDriver.archive().context().deleteArchiveDirectory();
-        clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
+        if (null != container)
+        {
+            container.context().deleteDirectory();
+        }
+
+        if (null != clusteredMediaDriver)
+        {
+            clusteredMediaDriver.consensusModule().context().deleteDirectory();
+            clusteredMediaDriver.archive().context().deleteArchiveDirectory();
+            clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
+        }
     }
 
     @Test(timeout = 10_000)
@@ -460,6 +467,8 @@ public class AuthenticationTest
                 }
             };
 
+        container = null;
+
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
@@ -477,6 +486,8 @@ public class AuthenticationTest
 
     private void connectClient(final CredentialsSupplier credentialsSupplier)
     {
+        aeronCluster = null;
+
         aeronCluster = connectToCluster(credentialsSupplier);
         sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         publication = aeronCluster.ingressPublication();
@@ -484,6 +495,8 @@ public class AuthenticationTest
 
     private void launchClusteredMediaDriver(final AuthenticatorSupplier authenticatorSupplier)
     {
+        clusteredMediaDriver = null;
+
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
                 .warnIfDirectoryExists(true)

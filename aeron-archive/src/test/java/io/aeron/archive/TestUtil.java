@@ -20,6 +20,7 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.TestWatcher;
@@ -27,17 +28,14 @@ import org.junit.runner.Description;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.locks.LockSupport;
+
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-
-import static org.junit.Assert.fail;
 
 public class TestUtil
 {
     public static final int TIMEOUT_MS = 5000;
     static final boolean DEBUG = false;
-    private static final int SLEEP_TIME_NS = 5000;
 
     public static File makeTempDir()
     {
@@ -216,10 +214,15 @@ public class TestUtil
         final long deadlineMs = System.currentTimeMillis() + TIMEOUT_MS;
         while (!conditionSupplier.getAsBoolean())
         {
-            LockSupport.parkNanos(SLEEP_TIME_NS);
+            if (Thread.currentThread().isInterrupted())
+            {
+                throw new IllegalStateException("Unexpected interrupt in test");
+            }
+
+            Thread.yield();
             if (deadlineMs < System.currentTimeMillis())
             {
-                fail();
+                throw new TimeoutException();
             }
         }
     }

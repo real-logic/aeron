@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.archive;
 
-import io.aeron.cluster.codecs.ClusterComponentType;
-import io.aeron.cluster.codecs.CncHeaderDecoder;
-import io.aeron.cluster.codecs.CncHeaderEncoder;
-import io.aeron.cluster.codecs.VarAsciiEncodingEncoder;
+import io.aeron.archive.codecs.CncHeaderDecoder;
+import io.aeron.archive.codecs.CncHeaderEncoder;
+import io.aeron.archive.codecs.VarAsciiEncodingEncoder;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.CncFile;
@@ -27,10 +26,9 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
-import java.util.Objects;
 import java.util.function.Consumer;
 
-public class ClusterCncFile implements AutoCloseable
+public class ArchiveCncFile
 {
     public static final String FILENAME = "cnc.dat";
     public static final int ALIGNMENT = 1024;
@@ -40,9 +38,8 @@ public class ClusterCncFile implements AutoCloseable
     private final CncFile cncFile;
     private final UnsafeBuffer cncBuffer;
 
-    public ClusterCncFile(
+    public ArchiveCncFile(
         final File file,
-        final ClusterComponentType type,
         final int totalFileLength,
         final EpochClock epochClock,
         final long timeoutMs)
@@ -73,19 +70,10 @@ public class ClusterCncFile implements AutoCloseable
         cncHeaderEncoder.wrap(cncBuffer, 0);
         cncHeaderDecoder.wrap(cncBuffer, 0, CncHeaderDecoder.BLOCK_LENGTH, CncHeaderDecoder.SCHEMA_VERSION);
 
-        final ClusterComponentType existingType = cncHeaderDecoder.fileType();
-
-        if (existingType != ClusterComponentType.NULL && existingType != type)
-        {
-            throw new IllegalStateException(
-                "existing CnC file type " + existingType + " not same as required type " + type);
-        }
-
-        cncHeaderEncoder.fileType(type);
         cncHeaderEncoder.pid(SystemUtil.getpid());
     }
 
-    public ClusterCncFile(
+    public ArchiveCncFile(
         final File directory,
         final String filename,
         final EpochClock epochClock,
@@ -144,25 +132,17 @@ public class ClusterCncFile implements AutoCloseable
 
     public static int alignedTotalFileLength(
         final int alignment,
-        final String aeronDirectory,
-        final String archiveChannel,
-        final String serviceControlChannel,
-        final String ingressChannel,
-        final String serviceName,
-        final String authenticator)
+        final String controlChannel,
+        final String localControlChannel,
+        final String eventsChannel,
+        final String aeronDirectory)
     {
-        Objects.requireNonNull(aeronDirectory);
-        Objects.requireNonNull(archiveChannel);
-        Objects.requireNonNull(serviceControlChannel);
-
         return BitUtil.align(
             CncHeaderEncoder.BLOCK_LENGTH +
-                (6 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
-                aeronDirectory.length() +
-                archiveChannel.length() +
-                serviceControlChannel.length() +
-                ((null == ingressChannel) ? 0 : ingressChannel.length()) +
-                ((null == serviceName) ? 0 : serviceName.length()) +
-                ((null == authenticator) ? 0 : authenticator.length()), alignment);
+            (4 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
+            controlChannel.length() +
+            localControlChannel.length() +
+            eventsChannel.length() +
+            aeronDirectory.length(), alignment);
     }
 }

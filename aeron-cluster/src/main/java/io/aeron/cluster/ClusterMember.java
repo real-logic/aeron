@@ -15,7 +15,12 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
+import io.aeron.ChannelUri;
 import io.aeron.Publication;
+import org.agrona.CloseHelper;
+
+import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 
 /**
  * Represents a member of the cluster that participates in replication.
@@ -185,6 +190,46 @@ public final class ClusterMember
     }
 
     /**
+     * Add the publications for sending status messages to the other members of the cluster.
+     *
+     * @param members    of the cluster.
+     * @param exclude    this member when adding publications.
+     * @param channelUri for the publication.
+     * @param streamId   for the publication.
+     * @param aeron      to add the publications to.
+     */
+    public static void addMemberStatusPublications(
+        final ClusterMember[] members,
+        final ClusterMember exclude,
+        final ChannelUri channelUri,
+        final int streamId,
+        final Aeron aeron)
+    {
+        for (final ClusterMember member : members)
+        {
+            if (member != exclude)
+            {
+                channelUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
+                final String channel = channelUri.toString();
+                member.publication(aeron.addExclusivePublication(channel, streamId));
+            }
+        }
+    }
+
+    /**
+     * Close the publications associated with members of the cluster.
+     *
+     * @param clusterMembers to close the publications for.
+     */
+    public static void closeMemberPublications(final ClusterMember[] clusterMembers)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            CloseHelper.close(member.publication());
+        }
+    }
+
+    /**
      * The threshold of clusters members required to achieve quorum given a count of cluster members.
      *
      * @param memberCount for the cluster
@@ -227,5 +272,39 @@ public final class ClusterMember
         }
 
         return rankedPositions[length - 1];
+    }
+
+    /**
+     * Reset the term position of all the members to the provided value.
+     *
+     * @param clusterMembers to be reset.
+     * @param termPosition   to set for them all.
+     */
+    public static void resetTermPositions(final ClusterMember[] clusterMembers, final long termPosition)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            member.termPosition(termPosition);
+        }
+    }
+
+    /**
+     * Has the members of the cluster all reached the provided position in their log.
+     *
+     * @param clusterMembers to check.
+     * @param position       to compare the {@link #termPosition()} against.
+     * @return true if all members have reached this position otherwise false.
+     */
+    public static boolean hasReachedPosition(final ClusterMember[] clusterMembers, final int position)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member.termPosition() < position)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

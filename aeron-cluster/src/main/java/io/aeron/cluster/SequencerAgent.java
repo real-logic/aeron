@@ -45,7 +45,7 @@ import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 
 class SequencerAgent implements Agent, ServiceControlListener
 {
-    private boolean isRecovering;
+    private boolean isRecovered;
     private final int memberId;
     private int leaderMemberId;
     private int serviceAckCount = 0;
@@ -59,6 +59,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private long lastRecordingPosition = 0;
     private long timeOfLastLogUpdateMs = 0;
     private long followerCommitPosition = 0;
+    private long logRecordingId;
     private ReadableCounter logRecordingPosition;
     private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -130,10 +131,11 @@ class SequencerAgent implements Agent, ServiceControlListener
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
         memberStatusUri.put(ENDPOINT_PARAM_NAME, thisMember.memberFacingEndpoint());
 
+        final int statusStreamId = ctx.memberStatusStreamId();
         memberStatusAdapter = new MemberStatusAdapter(
-            aeron.addSubscription(memberStatusUri.toString(), ctx.memberStatusStreamId()), this);
+            aeron.addSubscription(memberStatusUri.toString(), statusStreamId), this);
 
-        addMemberStatusPublications(memberStatusUri);
+        ClusterMember.addMemberStatusPublications(clusterMembers, thisMember, memberStatusUri, statusStreamId, aeron);
 
         final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
         if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
@@ -163,9 +165,10 @@ class SequencerAgent implements Agent, ServiceControlListener
                 session.close();
             }
 
-            logAppender.disconnect();
             CloseHelper.close(memberStatusAdapter);
+            ClusterMember.closeMemberPublications(clusterMembers);
 
+            logAppender.disconnect();
             CloseHelper.close(ingressAdapter);
             CloseHelper.close(serviceControlPublisher);
             CloseHelper.close(serviceControlAdapter);
@@ -174,15 +177,12 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public void onStart()
     {
-        invokeAeronClient();
         archive = AeronArchive.connect(ctx.archiveContext());
         final RecordingLog.RecoveryPlan recoveryPlan = ctx.recordingLog().createRecoveryPlan(archive);
 
         serviceAckCount = 0;
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
-            isRecovering = true;
-
             if (null != recoveryPlan.snapshotStep)
             {
                 recoverFromSnapshot(recoveryPlan.snapshotStep, archive);
@@ -195,48 +195,27 @@ class SequencerAgent implements Agent, ServiceControlListener
                 recoverFromLog(recoveryPlan.termSteps, archive);
             }
 
-            isRecovering = false;
+            isRecovered = true;
         }
 
-        // TODO: handle suspended case
-        state(ConsensusModule.State.ACTIVE);
+        state(ConsensusModule.State.ACTIVE); // TODO: handle suspended case
+
+        leadershipTermId++;
+
+        if (memberId == leaderMemberId || clusterMembers.length == 1)
+        {
+            becomeLeader();
+        }
+        else
+        {
+            becomeFollower();
+        }
 
         final long nowMs = epochClock.time();
         cachedEpochClock.update(nowMs);
         timeOfLastLogUpdateMs = nowMs;
 
-        final int streamId = ctx.logStreamId();
-        final String logChannel = ctx.logChannel();
-        final ChannelUri channelUri = ChannelUri.parse(logChannel);
-        boolean isLeader = false;
-
-        if (memberId == leaderMemberId || clusterMembers.length == 1)
-        {
-            becomeLeader(nowMs, logChannel, streamId, channelUri);
-            isLeader = true;
-        }
-        else
-        {
-            logSessionId = connectLogAdapter(aeron, logChannel, streamId);
-            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-            final String recordingChannel = channelUri.toString();
-            archive.startRecording(recordingChannel, streamId, SourceLocation.REMOTE);
-            becomeFollower(nowMs, leaderMemberId);
-        }
-
-        final CountersReader counters = aeron.countersReader();
-        logRecordingPosition = findLogRecording(logSessionId, counters);
-        final long recordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
-
-        commitPosition = CommitPos.allocate(
-            aeron, tempBuffer, recordingId, baseLogPosition, leadershipTermId, logSessionId);
-
-        ctx.recordingLog().appendTerm(recordingId, leadershipTermId, baseLogPosition, nowMs, leaderMemberId);
-
-        serviceAckCount = 0;
-        final String channel = isLeader ? channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
-        serviceControlPublisher.joinLog(leadershipTermId, commitPosition.id(), logSessionId, streamId, channel);
-        waitForServiceAcks();
+        ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, baseLogPosition, nowMs, leaderMemberId);
     }
 
     public int doWork()
@@ -529,7 +508,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 break;
 
             case SNAPSHOT:
-                if (!isRecovering)
+                if (isRecovered)
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.SNAPSHOT);
@@ -538,7 +517,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 break;
 
             case SHUTDOWN:
-                if (!isRecovering)
+                if (isRecovered)
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.SHUTDOWN);
@@ -547,7 +526,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 break;
 
             case ABORT:
-                if (!isRecovering)
+                if (isRecovered)
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.ABORT);
@@ -576,23 +555,6 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         timeOfLastLogUpdateMs = cachedEpochClock.time();
         followerCommitPosition = termPosition;
-    }
-
-    void onAppliedPosition(final long termPosition, final long leadershipTermId, final int memberId)
-    {
-    }
-
-    private void addMemberStatusPublications(final ChannelUri memberStatusUri)
-    {
-        for (final ClusterMember member : clusterMembers)
-        {
-            if (member != thisMember)
-            {
-                memberStatusUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
-                final String channel = memberStatusUri.toString();
-                member.publication(aeron.addExclusivePublication(channel, ctx.memberStatusStreamId()));
-            }
-        }
     }
 
     private int slowTickCycle(final long nowMs)
@@ -867,7 +829,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-    private void becomeLeader(final long nowMs, final String channel, final int streamId, final ChannelUri channelUri)
+    private void becomeLeader()
     {
         leaderMemberId = memberId;
         leaderMember = thisMember;
@@ -875,9 +837,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         updateMemberDetails(leaderMemberId);
         role(Cluster.Role.LEADER);
 
-        leadershipTermId++;
-
-        final Publication publication = aeron.addExclusivePublication(channel, streamId);
+        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
+        final Publication publication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
         if (!channelUri.containsKey(CommonContext.ENDPOINT_PARAM_NAME))
         {
             final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");
@@ -895,8 +856,14 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         final String recordingChannel = channelUri.toString();
-        archive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
+        archive.startRecording(recordingChannel, ctx.logStreamId(), SourceLocation.LOCAL);
 
+        createPositionCounters();
+
+        awaitServicesReady(channelUri, true);
+        awaitFollowersReady();
+
+        final long nowMs = epochClock.time();
         for (final ClusterSession session : sessionByIdMap.values())
         {
             session.connect(aeron);
@@ -904,13 +871,75 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-    private void becomeFollower(final long nowMs, final int leaderMemberId)
+    private void becomeFollower()
     {
-        this.leaderMemberId = leaderMemberId;
         leaderMember = clusterMembers[leaderMemberId];
 
         updateMemberDetails(leaderMemberId);
         role(Cluster.Role.FOLLOWER);
+
+        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
+        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
+        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+        final String recordingChannel = channelUri.toString();
+
+        //connectLogAdapter(aeron, recordingChannel, streamId);
+        archive.startRecording(recordingChannel, ctx.logStreamId(), SourceLocation.REMOTE);
+
+        createPositionCounters();
+        awaitServicesReady(channelUri, false);
+    }
+
+    private void awaitFollowersReady()
+    {
+        ClusterMember.resetTermPositions(clusterMembers, -1);
+        clusterMembers[memberId].termPosition(logRecordingPosition.get());
+
+        while (true)
+        {
+            final long nowMs = epochClock.time();
+            if (nowMs > (timeOfLastLogUpdateMs + heartbeatIntervalMs))
+            {
+                timeOfLastLogUpdateMs = nowMs;
+
+                for (final ClusterMember member : clusterMembers)
+                {
+                    if (member != thisMember)
+                    {
+                        memberStatusPublisher.commitPosition(
+                            member.publication(), baseLogPosition, leadershipTermId, memberId, logSessionId);
+                    }
+                }
+            }
+
+            idle(memberStatusAdapter.poll());
+
+            if (ClusterMember.hasReachedPosition(clusterMembers, 0))
+            {
+                break;
+            }
+        }
+    }
+
+    private void createPositionCounters()
+    {
+        final CountersReader counters = aeron.countersReader();
+        logRecordingPosition = findLogRecording(logSessionId, counters);
+        logRecordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
+
+        commitPosition = CommitPos.allocate(
+            aeron, tempBuffer, logRecordingId, baseLogPosition, leadershipTermId, logSessionId);
+    }
+
+    private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader)
+    {
+        serviceAckCount = 0;
+
+        final String channel = isLeader ? channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
+        serviceControlPublisher.joinLog(
+            leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), channel);
+
+        waitForServiceAcks();
     }
 
     private void updateMemberDetails(final int leaderMemberId)
@@ -1305,10 +1334,5 @@ class SequencerAgent implements Agent, ServiceControlListener
 
             idle(fragments);
         }
-    }
-
-    private int connectLogAdapter(final Aeron aeron, final String logChannel, final int logStreamId)
-    {
-        return 0;
     }
 }

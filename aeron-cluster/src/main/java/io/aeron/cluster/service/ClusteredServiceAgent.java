@@ -302,7 +302,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             final RecordingLog.Entry snapshotEntry = recordingLog.getSnapshot(leadershipTermId, termPosition);
             if (null == snapshotEntry)
             {
-                throw new IllegalStateException("No snapshot available for term: " + termPosition);
+                throw new IllegalStateException("No snapshot available for term position: " + termPosition);
             }
 
             baseLogPosition = snapshotEntry.logPosition;

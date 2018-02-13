@@ -17,9 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
-import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
@@ -28,11 +26,9 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.*;
 
 @RunWith(Theories.class)
 public class ExclusivePublicationTest
@@ -50,28 +46,28 @@ public class ExclusivePublicationTest
     public static final int FRAGMENT_COUNT_LIMIT = 10;
     public static final int MESSAGE_LENGTH = 200;
 
-    private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
     @Theory
     @Test(timeout = 10000)
     public void shouldPublishFromIndependentExclusivePublications(final String channel)
     {
-        final AtomicInteger imageCounter = new AtomicInteger();
-        final AvailableImageHandler availableImageHandler = (image) -> imageCounter.getAndIncrement();
-
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED);
 
-        final Aeron.Context clientCtx = new Aeron.Context().availableImageHandler(availableImageHandler);
-
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);
-            Aeron aeron = Aeron.connect(clientCtx);
+            Aeron aeron = Aeron.connect();
+            Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
-            ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+            ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID))
         {
+            while (subscription.imageCount() < 2)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
             final int expectedNumberOfFragments = 778;
 
             for (int i = 0; i < expectedNumberOfFragments; i += 2)
@@ -80,10 +76,18 @@ public class ExclusivePublicationTest
                 publishMessage(srcBuffer, publicationTwo);
             }
 
+            final MutableInteger messageCount = new MutableInteger();
             int totalFragmentsRead = 0;
             do
             {
-                final int fragmentsRead = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                final int fragmentsRead = subscription.poll(
+                    (buffer, offset, length, header) ->
+                    {
+                        assertThat(length, is(MESSAGE_LENGTH));
+                        messageCount.value++;
+                    },
+                    FRAGMENT_COUNT_LIMIT);
+
                 if (0 == fragmentsRead)
                 {
                     SystemTest.checkInterruptedStatus();
@@ -94,10 +98,7 @@ public class ExclusivePublicationTest
             }
             while (totalFragmentsRead < expectedNumberOfFragments);
 
-            verify(mockFragmentHandler, times(expectedNumberOfFragments)).onFragment(
-                any(DirectBuffer.class), anyInt(), eq(MESSAGE_LENGTH), any(Header.class));
-
-            assertThat(imageCounter.get(), is(2));
+            assertThat(messageCount.value, is(expectedNumberOfFragments));
         }
         finally
         {

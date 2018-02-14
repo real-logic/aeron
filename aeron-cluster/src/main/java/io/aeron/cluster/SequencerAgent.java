@@ -1255,18 +1255,9 @@ class SequencerAgent implements Agent, ServiceControlListener
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
+
                 snapshotState(publication, logPosition, leadershipTermId);
-
-                do
-                {
-                    idle();
-
-                    if (!RecordingPos.isActive(counters, counterId, recordingId))
-                    {
-                        throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
-                    }
-                }
-                while (counters.getCounterValue(counterId) < publication.position());
+                awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
             }
             finally
             {
@@ -1275,6 +1266,22 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
 
         ctx.recordingLog().appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
+    }
+
+    private void awaitRecordingComplete(
+        final long recordingId, final long completePosition, final CountersReader counters, final int counterId)
+    {
+        idleStrategy.reset();
+        do
+        {
+            idle();
+
+            if (!RecordingPos.isActive(counters, counterId, recordingId))
+            {
+                throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
+            }
+        }
+        while (counters.getCounterValue(counterId) < completePosition);
     }
 
     private int awaitRecordingCounter(final CountersReader counters, final int sessionId)
@@ -1306,19 +1313,17 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
 
         invokeAeronClient();
-
         timerService.snapshot(snapshotTaker);
-
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
-    private void replayTerm(final Image image, final long termLimit)
+    private void replayTerm(final Image image, final long finalTermPosition)
     {
         final LogAdapter logAdapter = new LogAdapter(image, this);
 
         while (true)
         {
-            final int fragments = logAdapter.poll(termLimit);
+            final int fragments = logAdapter.poll(finalTermPosition);
             if (fragments == 0)
             {
                 if (image.isClosed())

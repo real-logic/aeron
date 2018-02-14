@@ -188,7 +188,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 recoverFromSnapshot(recoveryPlan.snapshotStep, archive);
             }
 
-            waitForServiceAcks();
+            awaitServiceAcks();
 
             if (recoveryPlan.termSteps.size() > 0)
             {
@@ -884,7 +884,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final String logChannel = channelUri.toString();
 
         final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, ctx.logStreamId()));
-        logAdapter = new LogAdapter(image,this);
+        logAdapter = new LogAdapter(image, this);
 
         archive.startRecording(logChannel, ctx.logStreamId(), SourceLocation.REMOTE);
 
@@ -926,7 +926,9 @@ class SequencerAgent implements Agent, ServiceControlListener
     private void createPositionCounters()
     {
         final CountersReader counters = aeron.countersReader();
-        logRecordingPosition = findLogRecording(logSessionId, counters);
+        final int recordingCounterId = awaitRecordingCounter(counters, logSessionId);
+
+        logRecordingPosition = new ReadableCounter(counters, recordingCounterId);
         logRecordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
 
         commitPosition = CommitPos.allocate(
@@ -941,7 +943,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         serviceControlPublisher.joinLog(
             leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), channel);
 
-        waitForServiceAcks();
+        awaitServiceAcks();
     }
 
     private void updateMemberDetails(final int leaderMemberId)
@@ -1048,7 +1050,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
                 serviceAckCount = 0;
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, channel);
-                waitForServiceAcks();
+                awaitServiceAcks();
 
                 final int sessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, streamId);
 
@@ -1061,7 +1063,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
                 serviceAckCount = 0;
                 replayTerm(image, stopPosition);
-                waitForServiceAcks();
+                awaitServiceAcks();
 
                 baseLogPosition += image.position();
 
@@ -1089,7 +1091,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, NULL_POSITION, 0, termCount);
     }
 
-    private void waitForServiceAcks()
+    private void awaitServiceAcks()
     {
         while (true)
         {
@@ -1145,19 +1147,6 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
 
         sessionProxy.memberEndpointsDetail(builder.toString());
-    }
-
-    private ReadableCounter findLogRecording(final int sessionId, final CountersReader counters)
-    {
-        idleStrategy.reset();
-        int recordingCounterId = RecordingPos.findCounterIdBySession(counters, sessionId);
-        while (CountersReader.NULL_COUNTER_ID == recordingCounterId)
-        {
-            idle();
-            recordingCounterId = RecordingPos.findCounterIdBySession(counters, sessionId);
-        }
-
-        return new ReadableCounter(counters, recordingCounterId);
     }
 
     private int updateMemberPosition(final long nowMs)
@@ -1263,15 +1252,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         {
             try
             {
-                idleStrategy.reset();
                 final CountersReader counters = aeron.countersReader();
-                int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-                while (CountersReader.NULL_COUNTER_ID == counterId)
-                {
-                    idle();
-                    counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-                }
-
+                final int counterId = awaitRecordingCounter(counters, publication.sessionId());
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
                 snapshotState(publication, logPosition, leadershipTermId);
 
@@ -1293,6 +1275,19 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
 
         ctx.recordingLog().appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
+    }
+
+    private int awaitRecordingCounter(final CountersReader counters, final int sessionId)
+    {
+        idleStrategy.reset();
+        int counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+        while (CountersReader.NULL_COUNTER_ID == counterId)
+        {
+            idle();
+            counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+        }
+
+        return counterId;
     }
 
     private void snapshotState(final Publication publication, final long logPosition, final long leadershipTermId)

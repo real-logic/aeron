@@ -47,6 +47,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 {
     private boolean isRecovered;
     private final int memberId;
+    private int votedForMemberId = ClusterMember.NULL_MEMBER_ID;
     private int leaderMemberId;
     private int serviceAckCount = 0;
     private int logSessionId;
@@ -69,6 +70,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final ClusterMember thisMember;
     private long[] rankedPositions;
     private final Counter clusterRoleCounter;
+    private final ClusterCncFile cncFile;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
@@ -94,7 +96,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final MutableDirectBuffer tempBuffer;
     private final IdleStrategy idleStrategy;
     private final LongArrayList failedTimerCancellations = new LongArrayList();
-    private final ClusterCncFile cncFile;
+    private RecordingLog.RecoveryPlan recoveryPlan;
 
     SequencerAgent(
         final ConsensusModule.Context ctx,
@@ -178,7 +180,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext());
-        final RecordingLog.RecoveryPlan recoveryPlan = ctx.recordingLog().createRecoveryPlan(archive);
+        recoveryPlan = ctx.recordingLog().createRecoveryPlan(archive);
 
         serviceAckCount = 0;
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
@@ -199,8 +201,12 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
 
         state(ConsensusModule.State.ACTIVE); // TODO: handle suspended case
-
         leadershipTermId++;
+
+        if (clusterMembers.length > 1)
+        {
+            electLeader();
+        }
 
         if (memberId == leaderMemberId || clusterMembers.length == 1)
         {
@@ -535,6 +541,80 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
+    void onRequestVote(
+        final long candidateTermId,
+        final long lastBaseLogPosition,
+        final long lastTermPosition,
+        final int candidateMemberId)
+    {
+        if (Cluster.Role.FOLLOWER == role &&
+            candidateTermId == leadershipTermId &&
+            lastBaseLogPosition == recoveryPlan.lastLogPosition)
+        {
+            if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
+            {
+                // TODO: need to catch up with leader
+            }
+
+            final boolean potentialLeader = lastTermPosition >= recoveryPlan.lastTermPositionAppended;
+
+            memberStatusPublisher.vote(
+                clusterMembers[candidateMemberId].publication(),
+                candidateTermId,
+                lastBaseLogPosition,
+                lastTermPosition,
+                candidateMemberId,
+                memberId,
+                potentialLeader);
+
+            if (!potentialLeader)
+            {
+                // TODO: become candidate in new election
+                throw new IllegalStateException("Invalid member for cluster leader: " + candidateMemberId);
+            }
+            else
+            {
+                votedForMemberId = candidateMemberId;
+            }
+        }
+        else
+        {
+            memberStatusPublisher.vote(
+                clusterMembers[candidateMemberId].publication(),
+                candidateTermId,
+                lastBaseLogPosition,
+                lastTermPosition,
+                candidateMemberId,
+                memberId,
+                false);
+        }
+    }
+
+    void onVote(
+        final long candidateTermId,
+        final long lastBaseLogPosition,
+        final long lastTermPosition,
+        final int candidateMemberId,
+        final int followerMemberId,
+        final boolean vote)
+    {
+        if (Cluster.Role.FOLLOWER == role &&
+            candidateTermId == leadershipTermId &&
+            lastBaseLogPosition == recoveryPlan.lastLogPosition &&
+            lastTermPosition == recoveryPlan.lastTermPositionAppended &&
+            candidateMemberId == memberId)
+        {
+            if (vote)
+            {
+                clusterMembers[followerMemberId].votedForId(candidateMemberId);
+            }
+            else
+            {
+                throw new IllegalStateException("Invalid member for cluster leader: " + candidateMemberId);
+            }
+        }
+    }
+
     void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
     {
         if (leadershipTermId == this.leadershipTermId)
@@ -554,7 +634,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                     this.leaderMemberId + " received=" + leaderMemberId);
             }
 
-            if (0 == termPosition && this.logSessionId != logSessionId)
+            if (0 == termPosition && leaderMemberId == votedForMemberId && this.logSessionId != logSessionId)
             {
                 this.logSessionId = logSessionId;
             }
@@ -828,11 +908,65 @@ class SequencerAgent implements Agent, ServiceControlListener
         return false;
     }
 
+    private void electLeader()
+    {
+        awaitConnectedMembers();
+
+        if (ctx.appointedLeaderId() == memberId)
+        {
+            role(Cluster.Role.CANDIDATE);
+            ClusterMember.becomeCandidate(clusterMembers, memberId);
+            votedForMemberId = memberId;
+
+            for (final ClusterMember member : clusterMembers)
+            {
+                if (!memberStatusPublisher.requestVote(
+                    member.publication(),
+                    leadershipTermId,
+                    recoveryPlan.lastLogPosition,
+                    recoveryPlan.lastTermPositionAppended,
+                    memberId))
+                {
+                    throw new IllegalStateException("failed to request vote");
+                }
+            }
+
+            do
+            {
+                idle(memberStatusAdapter.poll());
+            }
+            while (ClusterMember.awaitingVotes(clusterMembers));
+
+            leaderMemberId = memberId;
+            leaderMember = thisMember;
+        }
+        else
+        {
+            votedForMemberId = ClusterMember.NULL_MEMBER_ID;
+
+            do
+            {
+                idle(memberStatusAdapter.poll());
+            }
+            while (ClusterMember.NULL_MEMBER_ID == leaderMemberId);
+        }
+    }
+
+    private void awaitConnectedMembers()
+    {
+        idleStrategy.reset();
+        while (true)
+        {
+            if (ClusterMember.arePublicationsConnected(clusterMembers))
+            {
+                break;
+            }
+            idle();
+        }
+    }
+
     private void becomeLeader()
     {
-        leaderMemberId = memberId;
-        leaderMember = thisMember;
-
         updateMemberDetails(leaderMemberId);
         role(Cluster.Role.LEADER);
 
@@ -902,7 +1036,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         ClusterMember.resetTermPositions(clusterMembers, -1);
         clusterMembers[memberId].termPosition(logRecordingPosition.get());
 
-        while (true)
+        do
         {
             final long nowMs = epochClock.time();
             if (nowMs > (timeOfLastLogUpdateMs + heartbeatIntervalMs))
@@ -920,12 +1054,8 @@ class SequencerAgent implements Agent, ServiceControlListener
             }
 
             idle(memberStatusAdapter.poll());
-
-            if (ClusterMember.hasReachedPosition(clusterMembers, 0))
-            {
-                break;
-            }
         }
+        while (!ClusterMember.hasReachedPosition(clusterMembers, 0));
     }
 
     private void createPositionCounters()

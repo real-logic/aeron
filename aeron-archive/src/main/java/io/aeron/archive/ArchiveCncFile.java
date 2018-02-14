@@ -28,7 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.File;
 import java.util.function.Consumer;
 
-public class ArchiveCncFile
+public class ArchiveCncFile implements AutoCloseable
 {
     public static final String FILENAME = "cnc.dat";
     public static final int ALIGNMENT = 1024;
@@ -37,6 +37,15 @@ public class ArchiveCncFile
     private final CncHeaderEncoder cncHeaderEncoder;
     private final CncFile cncFile;
     private final UnsafeBuffer cncBuffer;
+
+    public ArchiveCncFile(final Archive.Context ctx)
+    {
+        this(new File(ctx.archiveDir(), FILENAME), alignedTotalFileLength(ctx), ctx.epochClock(), 0);
+
+        encode(ctx);
+        signalCncReady();
+        updateActivityTimestamp(ctx.epochClock().time());
+    }
 
     public ArchiveCncFile(
         final File file,
@@ -120,6 +129,11 @@ public class ArchiveCncFile
         cncFile.timestampOrdered(nowMs);
     }
 
+    public long activityTimestampVolatile()
+    {
+        return cncFile.timestampVolatile();
+    }
+
     public CncHeaderEncoder encoder()
     {
         return cncHeaderEncoder;
@@ -130,7 +144,29 @@ public class ArchiveCncFile
         return cncHeaderDecoder;
     }
 
-    public static int alignedTotalFileLength(
+    public void encode(final Archive.Context ctx)
+    {
+        cncHeaderEncoder
+            .controlStreamId(ctx.controlStreamId())
+            .localControlStreamId(ctx.localControlStreamId())
+            .eventsStreamId(ctx.recordingEventsStreamId())
+            .controlChannel(ctx.controlChannel())
+            .localControlChannel(ctx.localControlChannel())
+            .eventsChannel(ctx.recordingEventsChannel())
+            .aeronDirectory(ctx.aeron().context().aeronDirectoryName());
+    }
+
+    public static int alignedTotalFileLength(final Archive.Context ctx)
+    {
+        return alignedTotalFileLength(
+            ALIGNMENT,
+            ctx.controlChannel(),
+            ctx.localControlChannel(),
+            ctx.recordingEventsChannel(),
+            ctx.aeron().context().aeronDirectoryName());
+    }
+
+    private static int alignedTotalFileLength(
         final int alignment,
         final String controlChannel,
         final String localControlChannel,

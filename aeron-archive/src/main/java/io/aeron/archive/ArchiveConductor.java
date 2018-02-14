@@ -66,6 +66,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final Subscription localControlSubscription;
 
     private final Catalog catalog;
+    private final ArchiveCncFile cncFile;
     private final RecordingEventsProxy recordingEventsProxy;
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
@@ -105,6 +106,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         cachedEpochClock.update(epochClock.time());
         catalog = ctx.catalog();
+        cncFile = ctx.archiveCncFile();
     }
 
     public void onStart()
@@ -150,7 +152,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         if (cachedEpochClock.time() != nowMs)
         {
             cachedEpochClock.update(nowMs);
-            catalog.updateTimestampMs(nowMs);
+            cncFile.updateActivityTimestamp(nowMs);
         }
 
         workCount += null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;

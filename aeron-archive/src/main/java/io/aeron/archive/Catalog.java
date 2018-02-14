@@ -17,10 +17,8 @@ package io.aeron.archive;
 
 import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.CloseHelper;
-import org.agrona.CncFile;
+import org.agrona.IoUtil;
 import org.agrona.LangUtil;
-import org.agrona.SystemUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -29,7 +27,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.function.Consumer;
 
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -39,7 +36,7 @@ import static io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder.BYTE_ORDE
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.align;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 
@@ -93,14 +90,6 @@ class Catalog implements AutoCloseable
             RecordingDescriptorDecoder descriptorDecoder);
     }
 
-    @FunctionalInterface
-    interface CatalogHeaderProcessor
-    {
-        void accept(
-            CatalogHeaderEncoder headerEncoder,
-            CatalogHeaderDecoder headerDecoder);
-    }
-
     static final int PAGE_SIZE = 4096;
     static final int NULL_RECORD_ID = -1;
 
@@ -121,7 +110,6 @@ class Catalog implements AutoCloseable
     private final MappedByteBuffer indexByteBuffer;
     private final UnsafeBuffer indexBuffer;
     private final UnsafeBuffer fieldAccessBuffer;
-    private final CncFile cncFile;
 
     private final int recordLength;
     private final int maxDescriptorStringsCombinedLength;
@@ -135,20 +123,7 @@ class Catalog implements AutoCloseable
         final File archiveDir,
         final FileChannel archiveDirChannel,
         final int fileSyncLevel,
-        final EpochClock epochClock,
-        final long timeoutMs)
-    {
-        this(archiveDir, archiveDirChannel, fileSyncLevel, epochClock, timeoutMs, null, null);
-    }
-
-    Catalog(
-        final File archiveDir,
-        final FileChannel archiveDirChannel,
-        final int fileSyncLevel,
-        final EpochClock epochClock,
-        final long timeoutMs,
-        final CatalogHeaderProcessor processor,
-        final Consumer<String> logger)
+        final EpochClock epochClock)
     {
         this.archiveDir = archiveDir;
         this.fileSyncLevel = fileSyncLevel;
@@ -158,26 +133,23 @@ class Catalog implements AutoCloseable
         {
             final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
             final boolean catalogPreExists = catalogFile.exists();
+            MappedByteBuffer catalogMappedByteBuffer = null;
 
-            cncFile = new CncFile(
-                catalogFile,
-                catalogPreExists,
-                CatalogHeaderEncoder.versionEncodingOffset(),
-                CatalogHeaderEncoder.timestampMsEncodingOffset(),
-                Integer.MAX_VALUE,
-                timeoutMs,
-                epochClock,
-                (version) ->
+            try (FileChannel channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE))
+            {
+                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, Integer.MAX_VALUE);
+            }
+            catch (final Exception ex)
+            {
+                if (null != catalogMappedByteBuffer)
                 {
-                    if (version != CatalogHeaderDecoder.SCHEMA_VERSION)
-                    {
-                        throw new IllegalArgumentException("Catalog file version " + version +
-                            " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
-                    }
-                },
-                logger);
+                    IoUtil.unmap(catalogMappedByteBuffer);
+                }
 
-            indexByteBuffer = cncFile.mappedByteBuffer();
+                throw new RuntimeException(ex);
+            }
+
+            indexByteBuffer = catalogMappedByteBuffer;
             indexBuffer = new UnsafeBuffer(indexByteBuffer);
             fieldAccessBuffer = new UnsafeBuffer(indexByteBuffer);
 
@@ -189,6 +161,12 @@ class Catalog implements AutoCloseable
 
             if (catalogPreExists)
             {
+                if (catalogHeaderDecoder.version() != CatalogHeaderDecoder.SCHEMA_VERSION)
+                {
+                    throw new IllegalArgumentException("Catalog file version " + catalogHeaderDecoder.version() +
+                        " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
+                }
+
                 recordLength = catalogHeaderDecoder.entryLength();
             }
             else
@@ -206,19 +184,10 @@ class Catalog implements AutoCloseable
                 }
 
                 catalogHeaderEncoder.entryLength(DEFAULT_RECORD_LENGTH);
+                catalogHeaderEncoder.version(CatalogHeaderEncoder.SCHEMA_VERSION);
 
                 recordLength = DEFAULT_RECORD_LENGTH;
             }
-
-            catalogHeaderEncoder.pid(SystemUtil.getpid());
-
-            if (null != processor)
-            {
-                processor.accept(catalogHeaderEncoder, catalogHeaderDecoder);
-            }
-
-            cncFile.signalCncReady(CatalogHeaderEncoder.SCHEMA_VERSION);
-            cncFile.timestampOrdered(epochClock.time());
 
             maxDescriptorStringsCombinedLength =
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
@@ -233,12 +202,7 @@ class Catalog implements AutoCloseable
         }
     }
 
-    Catalog(final File archiveDir, final EpochClock epochClock, final long timeoutMs)
-    {
-        this(archiveDir, epochClock, timeoutMs, null);
-    }
-
-    Catalog(final File archiveDir, final EpochClock epochClock, final long timeoutMs, final Consumer<String> logger)
+    Catalog(final File archiveDir, final EpochClock epochClock)
     {
         this.archiveDir = archiveDir;
         this.fileSyncLevel = 0;
@@ -246,24 +210,24 @@ class Catalog implements AutoCloseable
 
         try
         {
-            cncFile = new CncFile(
-                archiveDir,
-                Archive.Configuration.CATALOG_FILE_NAME,
-                CatalogHeaderEncoder.versionEncodingOffset(),
-                CatalogHeaderEncoder.timestampMsEncodingOffset(),
-                timeoutMs,
-                epochClock,
-                (version) ->
-                {
-                    if (version != CatalogHeaderDecoder.SCHEMA_VERSION)
-                    {
-                        throw new IllegalArgumentException("Catalog file version " + version +
-                            " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
-                    }
-                },
-                logger);
+            final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
+            MappedByteBuffer catalogMappedByteBuffer = null;
 
-            indexByteBuffer = cncFile.mappedByteBuffer();
+            try (FileChannel channel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE))
+            {
+                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
+            }
+            catch (final Exception ex)
+            {
+                if (null != catalogMappedByteBuffer)
+                {
+                    IoUtil.unmap(catalogMappedByteBuffer);
+                }
+
+                throw new RuntimeException(ex);
+            }
+
+            indexByteBuffer = catalogMappedByteBuffer;
             indexBuffer = new UnsafeBuffer(indexByteBuffer);
             fieldAccessBuffer = new UnsafeBuffer(indexByteBuffer);
 
@@ -271,6 +235,12 @@ class Catalog implements AutoCloseable
 
             catalogHeaderDecoder.wrap(
                 catalogHeaderBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
+
+            if (catalogHeaderDecoder.version() != CatalogHeaderDecoder.SCHEMA_VERSION)
+            {
+                throw new IllegalArgumentException("Catalog file version " + catalogHeaderDecoder.version() +
+                    " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
+            }
 
             recordLength = catalogHeaderDecoder.entryLength();
             maxDescriptorStringsCombinedLength =
@@ -288,22 +258,7 @@ class Catalog implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.quietClose(cncFile);
-    }
-
-    public void updateTimestampMs(final long nowMs)
-    {
-        cncFile.timestampOrdered(nowMs);
-    }
-
-    public int versionVolatile()
-    {
-        return cncFile.versionVolatile();
-    }
-
-    public long timestampMsVolatile()
-    {
-        return cncFile.timestampVolatile();
+        IoUtil.unmap(indexByteBuffer);
     }
 
     public CatalogHeaderDecoder catalogHeaderDecoder()

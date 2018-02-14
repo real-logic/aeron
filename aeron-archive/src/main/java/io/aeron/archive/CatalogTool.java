@@ -48,36 +48,37 @@ public class CatalogTool
 
         if (args.length == 2 && args[1].equals("describe"))
         {
-            try (Catalog catalog = openCatalog(System.out::println))
+            try (Catalog catalog = openCatalog();
+                ArchiveCncFile cncFile = openCncFile(System.out::println))
             {
-                printHeader(catalog);
+                printCncInformation(cncFile);
                 catalog.forEach((he, hd, e, d) -> System.out.println(d));
             }
         }
         else if (args.length == 2 && args[1].equals("pid"))
         {
-            try (Catalog catalog = openCatalog(null))
+            try (ArchiveCncFile cncFile = openCncFile(null))
             {
-                System.out.println(catalog.catalogHeaderDecoder().pid());
+                System.out.println(cncFile.decoder().pid());
             }
         }
         else if (args.length == 3 && args[1].equals("describe"))
         {
-            try (Catalog catalog = openCatalog(System.out::println))
+            try (Catalog catalog = openCatalog())
             {
                 catalog.forEntry((he, hd, e, d) -> System.out.println(d), Long.valueOf(args[2]));
             }
         }
         else if (args.length == 2 && args[1].equals("verify"))
         {
-            try (Catalog catalog = openCatalog(System.out::println))
+            try (Catalog catalog = openCatalog())
             {
                 catalog.forEach(CatalogTool::verify);
             }
         }
         else if (args.length == 3 && args[1].equals("verify"))
         {
-            try (Catalog catalog = openCatalog(System.out::println))
+            try (Catalog catalog = openCatalog())
             {
                 catalog.forEntry(CatalogTool::verify, Long.valueOf(args[2]));
             }
@@ -85,16 +86,24 @@ public class CatalogTool
         // TODO: add a manual override tool to force mark entries as unusable
     }
 
-    private static Catalog openCatalog(final Consumer<String> logger)
+    private static ArchiveCncFile openCncFile(final Consumer<String> logger)
     {
-        return new Catalog(archiveDir, System::currentTimeMillis, TimeUnit.SECONDS.toMillis(5), logger);
+        return new ArchiveCncFile(
+            archiveDir, ArchiveCncFile.FILENAME, System::currentTimeMillis, TimeUnit.SECONDS.toMillis(5), logger);
     }
 
-    private static void printHeader(final Catalog catalog)
+    private static Catalog openCatalog()
+    {
+        return new Catalog(archiveDir, System::currentTimeMillis);
+    }
+
+    private static void printCncInformation(final ArchiveCncFile cncFile)
     {
         System.out.format(
-            "%1$tH:%1$tM:%1$tS (Catalog: %2$tH:%2$tM:%2$tS)%n", new Date(), new Date(catalog.timestampMsVolatile()));
-        System.out.println(catalog.catalogHeaderDecoder());
+            "%1$tH:%1$tM:%1$tS (activity: %2$tH:%2$tM:%2$tS)%n",
+            new Date(),
+            new Date(cncFile.activityTimestampVolatile()));
+        System.out.println(cncFile.decoder());
     }
 
     private static void verify(

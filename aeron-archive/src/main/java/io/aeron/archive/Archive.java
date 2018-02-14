@@ -18,8 +18,6 @@ package io.aeron.archive;
 import io.aeron.Aeron;
 import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.codecs.CatalogHeaderDecoder;
-import io.aeron.archive.codecs.CatalogHeaderEncoder;
 import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.BitUtil;
@@ -285,7 +283,7 @@ public class Archive implements AutoCloseable
     /**
      * Overrides for the defaults and system properties.
      */
-    public static class Context implements AutoCloseable, Catalog.CatalogHeaderProcessor
+    public static class Context implements AutoCloseable
     {
         private boolean deleteArchiveOnStart = false;
         private boolean ownsAeronClient = false;
@@ -294,6 +292,7 @@ public class Archive implements AutoCloseable
         private File archiveDir;
         private FileChannel archiveDirChannel;
         private Catalog catalog;
+        private ArchiveCncFile cncFile;
 
         private String controlChannel = AeronArchive.Configuration.controlChannel();
         private int controlStreamId = AeronArchive.Configuration.controlStreamId();
@@ -414,32 +413,15 @@ public class Archive implements AutoCloseable
                 throw new ConfigurationException("Segment file length not in valid range: " + segmentFileLength);
             }
 
+            if (null == cncFile)
+            {
+                cncFile = new ArchiveCncFile(this);
+            }
+
             if (null == catalog)
             {
-                catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, epochClock, 0, this, null);
+                catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, epochClock);
             }
-        }
-
-        public void accept(final CatalogHeaderEncoder encoder, final CatalogHeaderDecoder decoder)
-        {
-            final String aeronDirectoryName = aeron.context().aeronDirectoryName();
-
-            final int totalDataLength =
-                controlChannel.length() +
-                localControlChannel.length() +
-                recordingEventsChannel.length() +
-                aeronDirectoryName.length();
-
-            Catalog.validateCatalogHeaderDataLengths(decoder.entryLength(), totalDataLength);
-
-            encoder
-                .controlStreamId(controlStreamId)
-                .localControlStreamId(localControlStreamId)
-                .eventsStreamId(recordingEventsStreamId)
-                .controlChannel(controlChannel)
-                .localControlChannel(localControlChannel)
-                .eventsChannel(recordingEventsChannel)
-                .aeronDir(aeronDirectoryName);
         }
 
         /**
@@ -1042,6 +1024,28 @@ public class Archive implements AutoCloseable
         }
 
         /**
+         * The {@link ArchiveCncFile} for the Archive.
+         *
+         * @param archiveCncFile {@link ArchiveCncFile} for the Archive.
+         * @return this for a fluent API.
+         */
+        public Context archiveCncFile(final ArchiveCncFile archiveCncFile)
+        {
+            this.cncFile = archiveCncFile;
+            return this;
+        }
+
+        /**
+         * The {@link ArchiveCncFile} for the Archive.
+         *
+         * @return {@link ArchiveCncFile} for the Archive.
+         */
+        public ArchiveCncFile archiveCncFile()
+        {
+            return cncFile;
+        }
+
+        /**
          * Close the context and free applicable resources.
          * <p>
          * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
@@ -1054,6 +1058,7 @@ public class Archive implements AutoCloseable
             }
 
             CloseHelper.quietClose(catalog);
+            CloseHelper.quietClose(cncFile);
             CloseHelper.quietClose(archiveDirChannel);
         }
     }

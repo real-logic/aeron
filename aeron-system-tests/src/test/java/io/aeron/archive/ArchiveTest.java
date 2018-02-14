@@ -580,7 +580,7 @@ public class ArchiveTest
         remaining = totalDataLength;
         final File archiveDir = archive.context().archiveDir();
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis, 0))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis))
         {
             final RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
                 catalog,

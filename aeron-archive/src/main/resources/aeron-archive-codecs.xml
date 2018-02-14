@@ -149,15 +149,6 @@
                  description="Used as first element in Catalog to set the version and length of entries">
         <field name="version"              id="1"  type="int32"/>
         <field name="entryLength"          id="2"  type="int32"/>
-        <field name="timestampMs"          id="3"  type="time_t"/>
-        <field name="pid"                  id="4"  type="int32"/>
-        <field name="controlStreamId"      id="5"  type="int32"/>
-        <field name="localControlStreamId" id="6"  type="int32"/>
-        <field name="eventsStreamId"       id="7"  type="int32"/>
-        <data  name="controlChannel"       id="8"  type="varAsciiEncoding"/>
-        <data  name="localControlChannel"  id="9"  type="varAsciiEncoding"/>
-        <data  name="eventsChannel"        id="10" type="varAsciiEncoding"/>
-        <data  name="aeronDir"             id="11" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="RecordingDescriptorHeader"

@@ -68,7 +68,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                 sequencerAgent.onAppendedPosition(
                     appendedPositionDecoder.termPosition(),
                     appendedPositionDecoder.leadershipTermId(),
-                    appendedPositionDecoder.memberId());
+                    appendedPositionDecoder.followerMemberId());
                 break;
 
             case CommitPositionDecoder.TEMPLATE_ID:

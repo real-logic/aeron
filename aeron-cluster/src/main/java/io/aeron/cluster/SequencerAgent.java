@@ -535,11 +535,11 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-    void onAppendedPosition(final long termPosition, final long leadershipTermId, final int memberId)
+    void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
     {
         if (leadershipTermId == this.leadershipTermId)
         {
-            clusterMembers[memberId].termPosition(termPosition);
+            clusterMembers[followerMemberId].termPosition(termPosition);
         }
     }
 

@@ -263,7 +263,7 @@
 
         The leader replicates a log stream to all followers for its term as leader. Leadership term ids are monotonic.
 
-        The followers persist the replicated log locally and sends updates to the leader with the highest position they
+        The followers persist the replicated log locally and send updates to the leader with the highest position they
         have persisted in the current term. Each term has a position starting at zero with the total log position
         reached being an accumulation of the term positions across all leadership terms. Each leadership term starts
         with base log position for the accumulated term positions.
@@ -277,16 +277,39 @@
         increasing state.
     -->
 
-    <sbe:message name="AppendedPosition"
+    <sbe:message name="RequestVote"
                  id="50"
+                 description="Request the vote from another member to become the cluster leader">
+        <field name="candidateTermId"      id="1" type="int64"/>
+        <field name="lastLeadershipTermId" id="2" type="int64"/>
+        <field name="lastBaseLogPosition"  id="3" type="int64"/>
+        <field name="lastTermPosition"     id="4" type="int64"/>
+        <field name="lastLogSessionId"     id="5" type="int32"/>
+        <field name="candidateMemberId"    id="6" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="Vote"
+                 id="51"
+                 description="Vote for a candidate to become leader">
+        <field name="candidateTermId"      id="1" type="int64"/>
+        <field name="lastLeadershipTermId" id="2" type="int64"/>
+        <field name="lastBaseLogPosition"  id="3" type="int64"/>
+        <field name="lastTermPosition"     id="4" type="int64"/>
+        <field name="lastLogSessionId"     id="5" type="int32"/>
+        <field name="candidateMemberId"    id="6" type="int32"/>
+        <field name="followerMemberId"     id="7" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="AppendedPosition"
+                 id="52"
                  description="The highest position a follower has appended to their local log">
         <field name="termPosition"         id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>
-        <field name="memberId"             id="3" type="int32"/>
+        <field name="followerMemberId"     id="3" type="int32"/>
     </sbe:message>
 
     <sbe:message name="CommitPosition"
-                 id="51"
+                 id="53"
                  description="The highest position reached by quorum of the cluster as determined by the leader">
         <field name="termPosition"         id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>

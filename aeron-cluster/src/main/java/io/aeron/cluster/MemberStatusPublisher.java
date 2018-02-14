@@ -29,7 +29,7 @@ class MemberStatusPublisher
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
 
     public boolean appendedPosition(
-        final Publication publication, final long termPosition, final long leadershipTermId, final int memberId)
+        final Publication publication, final long termPosition, final long leadershipTermId, final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
 
@@ -43,7 +43,7 @@ class MemberStatusPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .termPosition(termPosition)
                     .leadershipTermId(leadershipTermId)
-                    .memberId(memberId);
+                    .followerMemberId(followerMemberId);
 
                 bufferClaim.commit();
 

@@ -324,26 +324,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
         for (int i = 0; i < replayTermCount; i++)
         {
-            activeLog = null;
-            while (true)
-            {
-                final int fragments = serviceControlAdapter.poll();
-                if (activeLog != null)
-                {
-                    break;
-                }
-
-                checkInterruptedStatus();
-                idleStrategy.idle(fragments);
-            }
+            awaitActiveLog();
 
             final int counterId = activeLog.commitPositionId;
-
-            if (!CommitPos.isActive(counters, counterId))
-            {
-                throw new IllegalStateException("CommitPos counter not active: " + counterId);
-            }
-
             baseLogPosition = CommitPos.getBaseLogPosition(counters, counterId);
             leadershipTermId = CommitPos.getLeadershipTermId(counters, counterId);
 
@@ -351,43 +334,57 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             {
                 serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.READY);
 
-                idleStrategy.reset();
-                Image image;
-                while ((image = subscription.imageBySessionId(activeLog.sessionId)) == null)
-                {
-                    checkInterruptedStatus();
-                    idleStrategy.idle();
-                }
-
+                final Image image = awaitImage(activeLog.sessionId, subscription);
                 final ReadableCounter limit = new ReadableCounter(counters, counterId);
                 final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
 
-                while (true)
-                {
-                    final int workCount = adapter.poll();
-                    if (workCount == 0)
-                    {
-                        if (image.isClosed())
-                        {
-                            if (!image.isEndOfStream())
-                            {
-                                throw new IllegalStateException("Unexpected close of replay");
-                            }
-
-                            break;
-                        }
-
-                        checkInterruptedStatus();
-                    }
-
-                    idleStrategy.idle(workCount);
-                }
+                consumeImage(image, adapter);
 
                 serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.REPLAY);
             }
         }
 
         service.onReplayEnd();
+    }
+
+    private void awaitActiveLog()
+    {
+        activeLog = null;
+        while (true)
+        {
+            final int fragments = serviceControlAdapter.poll();
+            if (activeLog != null)
+            {
+                break;
+            }
+
+            checkInterruptedStatus();
+            idleStrategy.idle(fragments);
+        }
+    }
+
+    private void consumeImage(final Image image, final BoundedLogAdapter adapter)
+    {
+        while (true)
+        {
+            final int workCount = adapter.poll();
+            if (workCount == 0)
+            {
+                if (image.isClosed())
+                {
+                    if (!image.isEndOfStream())
+                    {
+                        throw new IllegalStateException("Unexpected close of replay");
+                    }
+
+                    break;
+                }
+
+                checkInterruptedStatus();
+            }
+
+            idleStrategy.idle(workCount);
+        }
     }
 
     private int findRecoveryCounterId(final CountersReader counters)
@@ -407,18 +404,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
     private void joinActiveLog(final CountersReader counters)
     {
-        activeLog = null;
-        while (true)
-        {
-            final int fragments = serviceControlAdapter.poll();
-            if (activeLog != null)
-            {
-                break;
-            }
-
-            checkInterruptedStatus();
-            idleStrategy.idle(fragments);
-        }
+        awaitActiveLog();
 
         final int commitPositionId = activeLog.commitPositionId;
         if (!CommitPos.isActive(counters, commitPositionId))
@@ -431,19 +417,25 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         baseLogPosition = CommitPos.getBaseLogPosition(counters, commitPositionId);
 
         final Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
-
-        idleStrategy.reset();
-        Image image;
-        while ((image = logSubscription.imageBySessionId(logSessionId)) == null)
-        {
-            checkInterruptedStatus();
-            idleStrategy.idle();
-        }
+        final Image image = awaitImage(logSessionId, logSubscription);
 
         serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.READY);
 
         logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, commitPositionId), this);
         activeLog = null;
+    }
+
+    private Image awaitImage(final int sessionId, final Subscription subscription)
+    {
+        idleStrategy.reset();
+        Image image;
+        while ((image = subscription.imageBySessionId(sessionId)) == null)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+        }
+
+        return image;
     }
 
     private void findClusterRoleCounter(final CountersReader counters)
@@ -477,16 +469,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             final long length = recordingExtent.stopPosition - recordingExtent.startPosition;
             final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
 
-            final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, sessionId);
-            try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
+            final String replaySessionChannel = ChannelUri.addSessionId(channel, sessionId);
+            try (Subscription subscription = aeron.addSubscription(replaySessionChannel, streamId))
             {
-                Image image;
-                while ((image = subscription.imageBySessionId(sessionId)) == null)
-                {
-                    checkInterruptedStatus();
-                    idleStrategy.idle();
-                }
-
+                final Image image = awaitImage(sessionId, subscription);
                 loadState(image);
                 service.onLoadSnapshot(image);
             }
@@ -528,20 +514,13 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             Publication publication = aeron.addExclusivePublication(channel, streamId))
         {
             final String recordingChannel = ChannelUri.addSessionId(channel, publication.sessionId());
-
             archive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
             idleStrategy.reset();
 
             try
             {
                 final CountersReader counters = aeron.countersReader();
-                int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-                while (CountersReader.NULL_COUNTER_ID == counterId)
-                {
-                    checkInterruptedStatus();
-                    idleStrategy.idle();
-                    counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-                }
+                final int counterId = awaitRecordingCounter(publication, counters);
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
                 snapshotState(publication, baseLogPosition + termPosition);
@@ -611,6 +590,19 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
                 ctx.terminationHook().run();
                 break;
         }
+    }
+
+    private int awaitRecordingCounter(final Publication publication, final CountersReader counters)
+    {
+        int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+        while (CountersReader.NULL_COUNTER_ID == counterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+            counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+        }
+
+        return counterId;
     }
 
     private static void checkInterruptedStatus()

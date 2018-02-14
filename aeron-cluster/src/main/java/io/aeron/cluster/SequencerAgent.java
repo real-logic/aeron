@@ -881,10 +881,12 @@ class SequencerAgent implements Agent, ServiceControlListener
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        final String recordingChannel = channelUri.toString();
+        final String logChannel = channelUri.toString();
 
-        //connectLogAdapter(aeron, recordingChannel, streamId);
-        archive.startRecording(recordingChannel, ctx.logStreamId(), SourceLocation.REMOTE);
+        final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, ctx.logStreamId()));
+        logAdapter = new LogAdapter(image,this);
+
+        archive.startRecording(logChannel, ctx.logStreamId(), SourceLocation.REMOTE);
 
         createPositionCounters();
         awaitServicesReady(channelUri, false);
@@ -976,11 +978,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, sessionId);
         try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
         {
-            Image image;
-            while ((image = subscription.imageBySessionId(sessionId)) == null)
-            {
-                idle();
-            }
+            final Image image = awaitImage(sessionId, subscription);
 
             final SnapshotLoader snapshotLoader = new SnapshotLoader(image, this);
             while (true)
@@ -1002,6 +1000,18 @@ class SequencerAgent implements Agent, ServiceControlListener
                 idle(fragments);
             }
         }
+    }
+
+    private Image awaitImage(final int sessionId, final Subscription subscription)
+    {
+        idleStrategy.reset();
+        Image image;
+        while ((image = subscription.imageBySessionId(sessionId)) == null)
+        {
+            idle();
+        }
+
+        return image;
     }
 
     private void recoverFromLog(final List<RecordingLog.ReplayStep> steps, final AeronArchive archive)
@@ -1047,12 +1057,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                     throw new IllegalStateException("Session id not for iteration: " + sessionId);
                 }
 
-                idleStrategy.reset();
-                Image image;
-                while ((image = subscription.imageBySessionId(sessionId)) == null)
-                {
-                    idle();
-                }
+                final Image image = awaitImage(sessionId, subscription);
 
                 serviceAckCount = 0;
                 replayTerm(image, stopPosition);

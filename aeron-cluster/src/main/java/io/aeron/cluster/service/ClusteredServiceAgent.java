@@ -17,7 +17,6 @@ package io.aeron.cluster.service;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.ClusterCncFile;
 import io.aeron.cluster.codecs.*;
@@ -511,12 +510,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         final int streamId = ctx.snapshotStreamId();
 
         try (AeronArchive archive = AeronArchive.connect(archiveCtx);
-            Publication publication = aeron.addExclusivePublication(channel, streamId))
+            Publication publication = archive.addRecordedExclusivePublication(channel, streamId))
         {
-            final String recordingChannel = ChannelUri.addSessionId(channel, publication.sessionId());
-            archive.startRecording(recordingChannel, streamId, SourceLocation.LOCAL);
-            idleStrategy.reset();
-
             try
             {
                 final CountersReader counters = aeron.countersReader();
@@ -526,25 +521,32 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
                 snapshotState(publication, baseLogPosition + termPosition);
                 service.onTakeSnapshot(publication);
 
-                do
-                {
-                    idleStrategy.idle();
-                    checkInterruptedStatus();
-
-                    if (!RecordingPos.isActive(counters, counterId, recordingId))
-                    {
-                        throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
-                    }
-                }
-                while (counters.getCounterValue(counterId) < publication.position());
+                awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
             }
             finally
             {
-                archive.stopRecording(recordingChannel, streamId);
+                archive.stopRecording(publication);
             }
         }
 
         recordingLog.appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
+    }
+
+    private void awaitRecordingComplete(
+        final long recordingId, final long completePosition, final CountersReader counters, final int counterId)
+    {
+        idleStrategy.reset();
+        do
+        {
+            idleStrategy.idle();
+            checkInterruptedStatus();
+
+            if (!RecordingPos.isActive(counters, counterId, recordingId))
+            {
+                throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
+            }
+        }
+        while (counters.getCounterValue(counterId) < completePosition);
     }
 
     private void snapshotState(final Publication publication, final long logPosition)
@@ -594,6 +596,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
     private int awaitRecordingCounter(final Publication publication, final CountersReader counters)
     {
+        idleStrategy.reset();
+
         int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
         while (CountersReader.NULL_COUNTER_ID == counterId)
         {

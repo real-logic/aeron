@@ -537,24 +537,31 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     void onAppendedPosition(final long termPosition, final long leadershipTermId, final int memberId)
     {
-        validateLeadershipTerm(leadershipTermId, "Append position not for current leadership term: expected=");
-
-        clusterMembers[memberId].termPosition(termPosition);
+        if (leadershipTermId == this.leadershipTermId)
+        {
+            clusterMembers[memberId].termPosition(termPosition);
+        }
     }
 
     void onCommitPosition(
         final long termPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
     {
-        validateLeadershipTerm(leadershipTermId, "Quorum position not for current leadership term: expected=");
-
-        if (leaderMemberId != this.leaderMemberId)
+        if (leadershipTermId == this.leadershipTermId)
         {
-            throw new IllegalStateException("Commit position not for current leader: expected=" +
-                this.leaderMemberId + " received=" + leaderMemberId);
-        }
+            if (leaderMemberId != this.leaderMemberId)
+            {
+                throw new IllegalStateException("Commit position not for current leader: expected=" +
+                    this.leaderMemberId + " received=" + leaderMemberId);
+            }
 
-        timeOfLastLogUpdateMs = cachedEpochClock.time();
-        followerCommitPosition = termPosition;
+            if (0 == termPosition && this.logSessionId != logSessionId)
+            {
+                this.logSessionId = logSessionId;
+            }
+
+            timeOfLastLogUpdateMs = cachedEpochClock.time();
+            followerCommitPosition = termPosition;
+        }
     }
 
     private int slowTickCycle(final long nowMs)
@@ -821,14 +828,6 @@ class SequencerAgent implements Agent, ServiceControlListener
         return false;
     }
 
-    private void validateLeadershipTerm(final long leadershipTermId, final String msg)
-    {
-        if (leadershipTermId != this.leadershipTermId)
-        {
-            throw new IllegalStateException(msg + this.leadershipTermId + " received=" + leadershipTermId);
-        }
-    }
-
     private void becomeLeader()
     {
         leaderMemberId = memberId;
@@ -874,19 +873,25 @@ class SequencerAgent implements Agent, ServiceControlListener
     private void becomeFollower()
     {
         leaderMember = clusterMembers[leaderMemberId];
+        followerCommitPosition = NULL_POSITION;
 
         updateMemberDetails(leaderMemberId);
         role(Cluster.Role.FOLLOWER);
+
+        while (NULL_POSITION == followerCommitPosition)
+        {
+            final int fragments = memberStatusAdapter.poll();
+            idle(fragments);
+        }
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         final String logChannel = channelUri.toString();
 
-        final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, ctx.logStreamId()));
-        logAdapter = new LogAdapter(image, this);
-
-        archive.startRecording(logChannel, ctx.logStreamId(), SourceLocation.REMOTE);
+        final int streamId = ctx.logStreamId();
+        archive.startRecording(logChannel, streamId, SourceLocation.REMOTE);
+        logAdapter = new LogAdapter(awaitImage(logSessionId, aeron.addSubscription(logChannel, streamId)), this);
 
         createPositionCounters();
         awaitServicesReady(channelUri, false);

@@ -53,7 +53,11 @@ final class SharedModeArchiveConductor extends ArchiveConductor
 
     protected int preWork()
     {
-        return super.preWork() + replayerAgentInvoker.invoke() + recorderAgentInvoker.invoke();
+        return super.preWork() +
+            replayerAgentInvoker.invoke() +
+            invokeDriverConductor() +
+            recorderAgentInvoker.invoke() +
+            invokeDriverConductor();
     }
 
     protected void closeSessionWorkers()

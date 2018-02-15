@@ -155,10 +155,20 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             cncFile.updateActivityTimestamp(nowMs);
         }
 
-        workCount += null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
-        workCount += null != aeronAgentInvoker ? aeronAgentInvoker.invoke() : 0;
+        workCount += invokeDriverConductor();
+        workCount += invokeClientConductor();
 
         return workCount;
+    }
+
+    protected int invokeDriverConductor()
+    {
+        return null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
+    }
+
+    private int invokeClientConductor()
+    {
+        return null != aeronAgentInvoker ? aeronAgentInvoker.invoke() : 0;
     }
 
     Catalog catalog()

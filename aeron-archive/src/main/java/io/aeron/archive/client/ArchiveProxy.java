@@ -74,11 +74,11 @@ public class ArchiveProxy
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
      *
-     * @param publication        publication for sending control messages to an archive.
-     * @param retryIdleStrategy  for what should happen between retry attempts at offering messages.
-     * @param nanoClock          to be used for calculating checking deadlines.
-     * @param connectTimeoutNs   for for connection requests.
-     * @param retryAttempts      for offering control messages before giving up.
+     * @param publication       publication for sending control messages to an archive.
+     * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
+     * @param nanoClock         to be used for calculating checking deadlines.
+     * @param connectTimeoutNs  for for connection requests.
+     * @param retryAttempts     for offering control messages before giving up.
      */
     public ArchiveProxy(
         final Publication publication,
@@ -384,8 +384,8 @@ public class ArchiveProxy
         int attempts = retryAttempts;
         while (true)
         {
-            final long result;
-            if ((result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length)) > 0)
+            final long result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
+            if (result > 0)
             {
                 return true;
             }
@@ -421,15 +421,10 @@ public class ArchiveProxy
         final long deadlineNs = nanoClock.nanoTime() + connectTimeoutNs;
         while (true)
         {
-            final long result;
-            if ((result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length)) > 0)
+            final long result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
+            if (result > 0)
             {
                 return true;
-            }
-
-            if (null != aeronClientInvoker)
-            {
-                aeronClientInvoker.invoke();
             }
 
             if (result == Publication.CLOSED)
@@ -447,6 +442,10 @@ public class ArchiveProxy
                 return false;
             }
 
+            if (null != aeronClientInvoker)
+            {
+                aeronClientInvoker.invoke();
+            }
             retryIdleStrategy.idle();
         }
     }

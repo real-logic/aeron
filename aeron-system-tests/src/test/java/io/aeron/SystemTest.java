@@ -15,6 +15,8 @@
  */
 package io.aeron;
 
+import org.agrona.LangUtil;
+
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 
@@ -71,6 +73,23 @@ public class SystemTest
         if (Thread.currentThread().isInterrupted())
         {
             fail("Unexpected interrupt - Test likely to have timed out");
+        }
+    }
+
+    /**
+     * Same as {@link Thread#sleep(long)} but without the checked exception.
+     *
+     * @param durationMs to sleep.
+     */
+    public static void sleep(final long durationMs)
+    {
+        try
+        {
+            Thread.sleep(durationMs);
+        }
+        catch (final InterruptedException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 }

@@ -243,6 +243,21 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Check if an error has been returned for the control session and throw a {@link ArchiveException} if necessary.
+     * To check for an error response without raising an exception then try {@link #pollForErrorResponse()}.
+     *
+     * @see #pollForErrorResponse()
+     */
+    public void checkForErrorResponse()
+    {
+        final String errorMessage = pollForErrorResponse();
+        if (null != errorMessage)
+        {
+            throw new ArchiveException(errorMessage);
+        }
+    }
+
+    /**
      * Add a {@link Publication} and set it up to be recorded. If this is not the first,
      * i.e. {@link Publication#isOriginal()} is true,  then an {@link IllegalStateException}
      * will be thrown and the recording not initiated.

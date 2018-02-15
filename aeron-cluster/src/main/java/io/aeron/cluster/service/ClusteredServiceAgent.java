@@ -521,7 +521,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
                 snapshotState(publication, baseLogPosition + termPosition);
                 service.onTakeSnapshot(publication);
 
-                awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
+                awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
             }
             finally
             {
@@ -533,7 +533,11 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     }
 
     private void awaitRecordingComplete(
-        final long recordingId, final long completePosition, final CountersReader counters, final int counterId)
+        final long recordingId,
+        final long completePosition,
+        final CountersReader counters,
+        final int counterId,
+        final AeronArchive archive)
     {
         idleStrategy.reset();
         do
@@ -545,6 +549,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             {
                 throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
             }
+
+            archive.checkForErrorResponse();
         }
         while (counters.getCounterValue(counterId) < completePosition);
     }

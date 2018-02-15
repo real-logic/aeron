@@ -667,11 +667,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         if (null != archive)
         {
-            final String errorMessage = archive.pollForErrorResponse();
-            if (null != errorMessage)
-            {
-                throw new IllegalStateException("Archive error: " + errorMessage);
-            }
+            archive.checkForErrorResponse();
         }
 
         return workCount;

@@ -15,10 +15,10 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.cluster.codecs.ClusterComponentType;
-import io.aeron.cluster.codecs.CncHeaderDecoder;
-import io.aeron.cluster.codecs.CncHeaderEncoder;
-import io.aeron.cluster.codecs.VarAsciiEncodingEncoder;
+import io.aeron.cluster.codecs.cnc.ClusterComponentType;
+import io.aeron.cluster.codecs.cnc.CncHeaderDecoder;
+import io.aeron.cluster.codecs.cnc.CncHeaderEncoder;
+import io.aeron.cluster.codecs.cnc.VarAsciiEncodingEncoder;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.CncFile;

@@ -597,7 +597,8 @@ project(':aeron-cluster') {
             'sbe.target.language': 'Java',
             'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
             'sbe.validation.stop.on.error': 'true')
-        args = ['src/main/resources/aeron-cluster-codecs.xml']
+        args = ['src/main/resources/aeron-cluster-codecs.xml',
+                'src/main/resources/aeron-cluster-cnc-codecs.xml']
     }
 
     test {

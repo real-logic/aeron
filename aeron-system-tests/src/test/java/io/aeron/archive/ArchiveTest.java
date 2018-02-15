@@ -121,6 +121,7 @@ public class ArchiveTest
         final int mtu = 1 << (10 + rnd.nextInt(3)); // 1024 to 8096
         final int requestedStartTermOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
         final int requestedStartTermId = requestedInitialTermId + rnd.nextInt(1000);
+        final int segmentFileLength = termLength << rnd.nextInt(4);
 
         final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder()
             .endpoint("127.0.0.1:54325")
@@ -151,7 +152,7 @@ public class ArchiveTest
                 .fileSyncLevel(SYNC_LEVEL)
                 .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
                 .archiveDir(TestUtil.makeTempDir())
-                .segmentFileLength(termLength << rnd.nextInt(4))
+                .segmentFileLength(segmentFileLength)
                 .threadingMode(archiveThreadingMode)
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
@@ -170,7 +171,7 @@ public class ArchiveTest
         driver.context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 20_000)
     public void recordAndReplayExclusivePublication() throws IOException
     {
         final String controlChannel = archive.context().localControlChannel();
@@ -211,7 +212,7 @@ public class ArchiveTest
             messageCount);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 20_000)
     public void replayExclusivePublicationWhileRecording()
     {
         final String controlChannel = archive.context().localControlChannel();
@@ -256,7 +257,7 @@ public class ArchiveTest
         await(waitForData);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 20_000)
     public void recordAndReplayRegularPublication() throws IOException
     {
         final String controlChannel = archive.context().localControlChannel();

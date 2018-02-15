@@ -15,9 +15,9 @@
  */
 package io.aeron.archive;
 
-import io.aeron.archive.codecs.CncHeaderDecoder;
-import io.aeron.archive.codecs.CncHeaderEncoder;
-import io.aeron.archive.codecs.VarAsciiEncodingEncoder;
+import io.aeron.archive.codecs.cnc.CncHeaderDecoder;
+import io.aeron.archive.codecs.cnc.CncHeaderEncoder;
+import io.aeron.archive.codecs.cnc.VarAsciiEncodingEncoder;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.CncFile;

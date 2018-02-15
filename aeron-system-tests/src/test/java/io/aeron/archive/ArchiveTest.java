@@ -138,25 +138,24 @@ public class ArchiveTest
         requestedStartPosition = ((requestedStartTermId - requestedInitialTermId) * (long)termLength) +
             requestedStartTermOffset;
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .termBufferSparseFile(true)
-            .threadingMode(threadingMode)
-            .spiesSimulateConnection(true)
-            .errorHandler(Throwable::printStackTrace)
-            .dirDeleteOnStart(true);
+        driver = MediaDriver.launch(
+            new MediaDriver.Context()
+                .termBufferSparseFile(true)
+                .threadingMode(threadingMode)
+                .spiesSimulateConnection(true)
+                .errorHandler(Throwable::printStackTrace)
+                .dirDeleteOnStart(true));
 
-        driver = MediaDriver.launch(driverCtx);
+        archive = Archive.launch(
+            new Archive.Context()
+                .fileSyncLevel(SYNC_LEVEL)
+                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+                .archiveDir(TestUtil.makeTempDir())
+                .segmentFileLength(termLength << rnd.nextInt(4))
+                .threadingMode(archiveThreadingMode)
+                .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
+                .errorHandler(driver.context().errorHandler()));
 
-        final Archive.Context archiverCtx = new Archive.Context()
-            .fileSyncLevel(SYNC_LEVEL)
-            .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-            .archiveDir(TestUtil.makeTempDir())
-            .segmentFileLength(termLength << rnd.nextInt(4))
-            .threadingMode(archiveThreadingMode)
-            .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS))
-            .errorHandler(driverCtx.errorHandler());
-
-        archive = Archive.launch(archiverCtx);
         publishingClient = Aeron.connect();
     }
 
@@ -174,8 +173,8 @@ public class ArchiveTest
     @Test(timeout = 10000)
     public void recordAndReplayExclusivePublication() throws IOException
     {
-        final String controlChannel = archive.context().controlChannel();
-        final int controlStreamId = archive.context().controlStreamId();
+        final String controlChannel = archive.context().localControlChannel();
+        final int controlStreamId = archive.context().localControlStreamId();
 
         final String recordingChannel = archive.context().recordingEventsChannel();
         final int recordingStreamId = archive.context().recordingEventsStreamId();
@@ -215,8 +214,8 @@ public class ArchiveTest
     @Test(timeout = 10000)
     public void replayExclusivePublicationWhileRecording()
     {
-        final String controlChannel = archive.context().controlChannel();
-        final int controlStreamId = archive.context().controlStreamId();
+        final String controlChannel = archive.context().localControlChannel();
+        final int controlStreamId = archive.context().localControlStreamId();
 
         final String recordingChannel = archive.context().recordingEventsChannel();
         final int recordingStreamId = archive.context().recordingEventsStreamId();
@@ -260,8 +259,8 @@ public class ArchiveTest
     @Test(timeout = 10000)
     public void recordAndReplayRegularPublication() throws IOException
     {
-        final String controlChannel = archive.context().controlChannel();
-        final int controlStreamId = archive.context().controlStreamId();
+        final String controlChannel = archive.context().localControlChannel();
+        final int controlStreamId = archive.context().localControlStreamId();
 
         final String recordingChannel = archive.context().recordingEventsChannel();
         final int recordingStreamId = archive.context().recordingEventsStreamId();

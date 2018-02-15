@@ -86,7 +86,9 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                 final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;
 
                 System.out.println("Performance inclusive of replay request and connection setup:");
-                System.out.printf("Replayed %.02f MB @ %.02f MB/s - %,d msg/sec%n", recordingMb, dataRate, msgRate);
+                System.out.printf(
+                    "Replayed %.02f MB @ %.02f MB/s - %,d msg/sec - %d byte message + 32 byte header%n",
+                    recordingMb, dataRate, msgRate, MESSAGE_LENGTH);
             }
             while (barrier.await());
         }

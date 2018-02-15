@@ -161,7 +161,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         return workCount;
     }
 
-    protected int invokeDriverConductor()
+    protected final int invokeDriverConductor()
     {
         return null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
     }

@@ -519,7 +519,7 @@ public class ArchiveTest
 
                 if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
                 {
-                    throw new IllegalStateException("Publication unexpected not connected");
+                    throw new IllegalStateException("Publication not connected: result=" + result);
                 }
 
                 SystemTest.checkInterruptedStatus();

@@ -1158,7 +1158,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         for (int i = 0, size = steps.size(); i < size; i++)
         {
-            final RecordingLog.ReplayStep step = steps.get(0);
+            final RecordingLog.ReplayStep step = steps.get(i);
             final RecordingLog.Entry entry = step.entry;
             final long recordingId = entry.recordingId;
             final long startPosition = step.recordingStartPosition;
@@ -1169,7 +1169,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             if (logPosition != baseLogPosition)
             {
                 throw new IllegalStateException("base position for log not as expected: expected " +
-                    baseLogPosition + " actual is " + logPosition);
+                    baseLogPosition + " actual is " + logPosition + ", " + step);
             }
 
             leadershipTermId = entry.leadershipTermId;
@@ -1200,7 +1200,13 @@ class SequencerAgent implements Agent, ServiceControlListener
                 replayTerm(image, stopPosition);
                 awaitServiceAcks();
 
-                baseLogPosition += image.position();
+                final long termPosition = image.position();
+                if (step.entry.termPosition < termPosition)
+                {
+                    ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
+                }
+
+                baseLogPosition += termPosition;
 
                 failedTimerCancellations.forEachOrderedLong(timerService::cancelTimer);
                 failedTimerCancellations.clear();

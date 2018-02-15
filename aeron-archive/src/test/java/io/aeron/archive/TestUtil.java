@@ -15,14 +15,11 @@
  */
 package io.aeron.archive;
 
-import io.aeron.ExclusivePublication;
-import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
@@ -31,7 +28,7 @@ import java.io.IOException;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 public class TestUtil
 {
@@ -74,7 +71,7 @@ public class TestUtil
     public static void awaitConnectedReply(
         final Subscription controlResponse,
         final long expectedCorrelationId,
-        final Consumer<Long> receiveSessionId)
+        final LongConsumer receiveSessionId)
     {
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
@@ -172,44 +169,6 @@ public class TestUtil
         await(() -> subscription.poll(handler, 1) > 0);
     }
 
-    public static void offer(final Publication publication, final UnsafeBuffer buffer, final int length)
-    {
-        await(
-            () ->
-            {
-                final long result = publication.offer(buffer, 0, length);
-                if (result > 0)
-                {
-                    return true;
-                }
-                else if (result == Publication.ADMIN_ACTION || result == Publication.BACK_PRESSURED)
-                {
-                    return false;
-                }
-
-                throw new IllegalStateException("Unexpected return code: " + result);
-            });
-    }
-
-    static void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)
-    {
-        await(
-            () ->
-            {
-                final long result = publication.offer(buffer, 0, length);
-                if (result > 0)
-                {
-                    return true;
-                }
-                else if (result == Publication.ADMIN_ACTION || result == Publication.BACK_PRESSURED)
-                {
-                    return false;
-                }
-
-                throw new IllegalStateException("Unexpected return code: " + result);
-            });
-    }
-
     public static void await(final BooleanSupplier conditionSupplier)
     {
         final long deadlineNs = System.nanoTime() + TIMEOUT_NS;
@@ -220,11 +179,12 @@ public class TestUtil
                 throw new IllegalStateException("Unexpected interrupt in test");
             }
 
-            Thread.yield();
             if (System.nanoTime() > deadlineNs)
             {
                 throw new TimeoutException();
             }
+
+            Thread.yield();
         }
     }
 

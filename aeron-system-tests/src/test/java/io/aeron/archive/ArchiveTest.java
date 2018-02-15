@@ -253,7 +253,7 @@ public class ArchiveTest
             messageCount,
             waitForData);
 
-        publishDataToRecorded(recordedPublication, messageCount);
+        publishDataToBeRecorded(recordedPublication, messageCount);
         await(waitForData);
     }
 
@@ -453,7 +453,7 @@ public class ArchiveTest
         final int messageCount = MESSAGE_COUNT;
         final CountDownLatch waitForData = new CountDownLatch(1);
         prepMessagesAndListener(recordingEvents, messageCount, waitForData);
-        publishDataToRecorded(publication, messageCount);
+        publishDataToBeRecorded(publication, messageCount);
         await(waitForData);
 
         return messageCount;
@@ -464,7 +464,7 @@ public class ArchiveTest
         final int messageCount = MESSAGE_COUNT;
         final CountDownLatch waitForData = new CountDownLatch(1);
         prepMessagesAndListener(recordingEvents, messageCount, waitForData);
-        publishDataToRecorded(publication, messageCount);
+        publishDataToBeRecorded(publication, messageCount);
         await(waitForData);
 
         return messageCount;
@@ -496,7 +496,7 @@ public class ArchiveTest
         trackRecordingProgress(recordingEvents, waitForData);
     }
 
-    private void publishDataToRecorded(final Publication publication, final int messageCount)
+    private void publishDataToBeRecorded(final Publication publication, final int messageCount)
     {
         startPosition = publication.position();
 
@@ -507,26 +507,23 @@ public class ArchiveTest
         {
             final int dataLength = messageLengths[i] - HEADER_LENGTH;
             buffer.putInt(0, i);
-            TestUtil.offer(publication, buffer, dataLength);
-        }
 
-        final long position = publication.position();
-        totalRecordingLength = position - startPosition;
-        stopPosition = position;
-    }
+            while (true)
+            {
+                final long result = publication.offer(buffer, 0, dataLength);
+                if (result > 0)
+                {
+                    break;
+                }
 
-    private void publishDataToRecorded(final ExclusivePublication publication, final int messageCount)
-    {
-        startPosition = publication.position();
+                if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
+                {
+                    throw new IllegalStateException("Publication unexpected not connected");
+                }
 
-        buffer.setMemory(0, 1024, (byte)'z');
-        buffer.putStringAscii(32, "TEST");
-
-        for (int i = 0; i < messageCount; i++)
-        {
-            final int dataLength = messageLengths[i] - HEADER_LENGTH;
-            buffer.putInt(0, i);
-            TestUtil.offer(publication, buffer, dataLength);
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
         }
 
         final long position = publication.position();

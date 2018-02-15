@@ -126,7 +126,8 @@ public class ArchiveReplayLoadTest
             new AeronArchive.Context()
                 .controlResponseChannel(CONTROL_RESPONSE_URI)
                 .controlResponseStreamId(CONTROL_RESPONSE_STREAM_ID)
-                .aeron(aeron));
+                .aeron(aeron)
+                .ownsAeronClient(true));
     }
 
     @After
@@ -193,12 +194,12 @@ public class ArchiveReplayLoadTest
         final CountDownLatch recordingStopped = new CountDownLatch(1);
 
         trackRecordingProgress(recordingEvents, recordingStopped);
-        publishDataToRecorded(publication, MESSAGE_COUNT);
+        publishDataToBeRecorded(publication, MESSAGE_COUNT);
 
         return recordingStopped;
     }
 
-    private void publishDataToRecorded(final Publication publication, final int messageCount)
+    private void publishDataToBeRecorded(final Publication publication, final int messageCount)
     {
         startPosition = publication.position();
         buffer.setMemory(0, 1024, (byte)'z');
@@ -211,7 +212,21 @@ public class ArchiveReplayLoadTest
             buffer.putInt(0, i, LITTLE_ENDIAN);
             buffer.putInt(messageLength - 4, i, LITTLE_ENDIAN);
 
-            offer(publication, buffer, messageLength);
+            while (true)
+            {
+                final long result = publication.offer(buffer, 0, messageLength);
+                if (result > 0)
+                {
+                    break;
+                }
+
+                if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
+                {
+                    throw new IllegalStateException("Publication unexpected not connected");
+                }
+
+                Thread.yield();
+            }
         }
 
         expectedRecordingLength = publication.position() - startPosition;
@@ -222,10 +237,7 @@ public class ArchiveReplayLoadTest
         try (Subscription replay = aeronArchive.replay(
             recordingId, startPosition, expectedRecordingLength, REPLAY_URI, iteration))
         {
-            while (!replay.isConnected())
-            {
-                Thread.yield();
-            }
+            TestUtil.await(replay::isConnected);
 
             fragmentCount = 0;
             remaining = totalPayloadLength;

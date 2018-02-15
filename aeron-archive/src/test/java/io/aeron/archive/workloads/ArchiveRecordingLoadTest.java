@@ -111,7 +111,8 @@ public class ArchiveRecordingLoadTest
             new AeronArchive.Context()
                 .controlResponseChannel(CONTROL_RESPONSE_URI)
                 .controlResponseStreamId(CONTROL_RESPONSE_STREAM_ID)
-                .aeron(aeron));
+                .aeron(aeron)
+                .ownsAeronClient(true));
     }
 
     @After

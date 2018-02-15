@@ -241,7 +241,7 @@ public class ConsensusModule implements AutoCloseable
          * Default property for the appointed cluster leader id. A value of -1 means no leader has been appointed
          * and thus an automated leader election should occur.
          */
-        public static final int APPOINTED_LEADER_ID_DEFAULT = -1;
+        public static final int APPOINTED_LEADER_ID_DEFAULT = ClusterMember.NULL_MEMBER_ID;
 
         /**
          * Property name for the comma separated list of cluster member endpoints.

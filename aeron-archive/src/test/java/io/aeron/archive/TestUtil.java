@@ -29,12 +29,13 @@ import org.junit.runner.Description;
 import java.io.File;
 import java.io.IOException;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 public class TestUtil
 {
-    public static final int TIMEOUT_MS = 5000;
+    public static final long TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
     static final boolean DEBUG = false;
 
     public static File makeTempDir()
@@ -211,7 +212,7 @@ public class TestUtil
 
     public static void await(final BooleanSupplier conditionSupplier)
     {
-        final long deadlineMs = System.currentTimeMillis() + TIMEOUT_MS;
+        final long deadlineNs = System.nanoTime() + TIMEOUT_NS;
         while (!conditionSupplier.getAsBoolean())
         {
             if (Thread.currentThread().isInterrupted())
@@ -220,7 +221,7 @@ public class TestUtil
             }
 
             Thread.yield();
-            if (deadlineMs < System.currentTimeMillis())
+            if (System.nanoTime() > deadlineNs)
             {
                 throw new TimeoutException();
             }

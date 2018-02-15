@@ -27,8 +27,11 @@ import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
  */
 public final class ClusterMember
 {
+    public static final int NULL_MEMBER_ID = -1;
+
     private boolean isLeader;
     private final int id;
+    private int votedForId = NULL_MEMBER_ID;
     private long termPosition;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
@@ -83,6 +86,26 @@ public final class ClusterMember
     public int id()
     {
         return id;
+    }
+
+    /**
+     * Set this member voted for in the election.
+     *
+     * @param votedForId in the election.
+     */
+    public void votedForId(final int votedForId)
+    {
+        this.votedForId = votedForId;
+    }
+
+    /**
+     * Who this member voted for in the last election.
+     *
+     * @return who this member voted for in the last election.
+     */
+    public int votedForId()
+    {
+        return votedForId;
     }
 
     /**
@@ -159,7 +182,7 @@ public final class ClusterMember
      * Parse the details for a cluster members from a string.
      * <p>
      * <code>
-     *     0,client-facing:port,member-facing:port,log:port|1,client-facing:port,member-facing:port,log:port| ...
+     * 0,client-facing:port,member-facing:port,log:port|1,client-facing:port,member-facing:port,log:port| ...
      * </code>
      *
      * @param value of the string to be parsed.
@@ -306,5 +329,57 @@ public final class ClusterMember
         }
 
         return true;
+    }
+
+    /**
+     * Are the publications connected if set? Null publications are ignored.
+     *
+     * @param clusterMembers to check for connected publications.
+     * @return true if all the publications are connected.
+     */
+    public static boolean arePublicationsConnected(final ClusterMember[] clusterMembers)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member.publication() != null && !member.publication.isConnected())
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Become a candidate by voting for yourself and resetting the other votes to {@link #NULL_MEMBER_ID}.
+     *
+     * @param clusterMembers    to reset the votes for.
+     * @param candidateMemberId for the election.
+     */
+    public static void becomeCandidate(final ClusterMember[] clusterMembers, final int candidateMemberId)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            member.votedForId(member.id == candidateMemberId ? candidateMemberId : NULL_MEMBER_ID);
+        }
+    }
+
+    /**
+     * Are we still awaiting votes from some cluster members?
+     *
+     * @param clusterMembers to check for votes.
+     * @return true if votes are outstanding.
+     */
+    public static boolean awaitingVotes(final ClusterMember[] clusterMembers)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member.votedForId() == NULL_MEMBER_ID)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

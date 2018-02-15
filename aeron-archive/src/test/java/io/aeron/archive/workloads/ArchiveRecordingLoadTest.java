@@ -281,7 +281,7 @@ public class ArchiveRecordingLoadTest
     {
         if (publication.offer(buffer, 0, length) < 0)
         {
-            final long deadlineNs = System.currentTimeMillis() + TestUtil.TIMEOUT_MS;
+            final long deadlineNs = System.nanoTime() + TestUtil.TIMEOUT_NS;
             slowOffer(publication, buffer, length, deadlineNs);
         }
     }
@@ -312,8 +312,8 @@ public class ArchiveRecordingLoadTest
 
         while (publication.offer(buffer, 0, length) < 0)
         {
-            LockSupport.parkNanos(TIMEOUT_MS);
-            if (System.currentTimeMillis() > deadlineNs)
+            LockSupport.parkNanos(1000);
+            if (System.nanoTime() > deadlineNs)
             {
                 fail("Offer has timed out");
             }

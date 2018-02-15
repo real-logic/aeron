@@ -25,8 +25,82 @@ class MemberStatusPublisher
 
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    private final RequestVoteEncoder requestVoteEncoder = new RequestVoteEncoder();
+    private final VoteEncoder voteEncoder = new VoteEncoder();
     private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
+
+    public boolean requestVote(
+        final Publication publication,
+        final long candidateTermId,
+        final long lastBaseLogPosition,
+        final long lastTermPosition,
+        final int candidateMemberId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                requestVoteEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .candidateTermId(candidateTermId)
+                    .lastBaseLogPosition(lastBaseLogPosition)
+                    .lastTermPosition(lastTermPosition)
+                    .candidateMemberId(candidateMemberId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean vote(
+        final Publication publication,
+        final long candidateTermId,
+        final long lastBaseLogPosition,
+        final long lastTermPosition,
+        final int candidateMemberId,
+        final int followerMemberId,
+        final boolean vote)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                voteEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .candidateTermId(candidateTermId)
+                    .lastBaseLogPosition(lastBaseLogPosition)
+                    .lastTermPosition(lastTermPosition)
+                    .candidateMemberId(candidateMemberId)
+                    .followerMemberId(followerMemberId)
+                    .vote(vote ? BooleanType.TRUE : BooleanType.FALSE);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
 
     public boolean appendedPosition(
         final Publication publication, final long termPosition, final long leadershipTermId, final int followerMemberId)

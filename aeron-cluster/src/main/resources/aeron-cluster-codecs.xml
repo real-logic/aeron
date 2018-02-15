@@ -25,6 +25,10 @@
             <type name="length"      primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData"     primitiveType="uint8" length="0"/>
         </composite>
+        <enum name="BooleanType" encodingType="int32">
+            <validValue name="FALSE">0</validValue>
+            <validValue name="TRUE">1</validValue>
+        </enum>
         <enum name="EventCode" encodingType="int32" description="Type of event for a response">
             <validValue name="OK">0</validValue>
             <validValue name="ERROR">1</validValue>
@@ -281,23 +285,20 @@
                  id="50"
                  description="Request the vote from another member to become the cluster leader">
         <field name="candidateTermId"      id="1" type="int64"/>
-        <field name="lastLeadershipTermId" id="2" type="int64"/>
-        <field name="lastBaseLogPosition"  id="3" type="int64"/>
-        <field name="lastTermPosition"     id="4" type="int64"/>
-        <field name="lastLogSessionId"     id="5" type="int32"/>
-        <field name="candidateMemberId"    id="6" type="int32"/>
+        <field name="lastBaseLogPosition"  id="2" type="int64"/>
+        <field name="lastTermPosition"     id="3" type="int64"/>
+        <field name="candidateMemberId"    id="4" type="int32"/>
     </sbe:message>
 
     <sbe:message name="Vote"
                  id="51"
-                 description="Vote for a candidate to become leader">
+                 description="Response to a vote request from a follower to the candidate">
         <field name="candidateTermId"      id="1" type="int64"/>
-        <field name="lastLeadershipTermId" id="2" type="int64"/>
-        <field name="lastBaseLogPosition"  id="3" type="int64"/>
-        <field name="lastTermPosition"     id="4" type="int64"/>
-        <field name="lastLogSessionId"     id="5" type="int32"/>
-        <field name="candidateMemberId"    id="6" type="int32"/>
-        <field name="followerMemberId"     id="7" type="int32"/>
+        <field name="lastBaseLogPosition"  id="2" type="int64"/>
+        <field name="lastTermPosition"     id="3" type="int64"/>
+        <field name="candidateMemberId"    id="4" type="int32"/>
+        <field name="followerMemberId"     id="5" type="int32"/>
+        <field name="vote"                 id="6" type="BooleanType"/>
     </sbe:message>
 
     <sbe:message name="AppendedPosition"

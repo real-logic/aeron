@@ -28,6 +28,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final RequestVoteDecoder requestVoteDecoder = new RequestVoteDecoder();
+    private final VoteDecoder voteDecoder = new VoteDecoder();
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
     private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
 
@@ -58,6 +60,36 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
+            case RequestVoteDecoder.TEMPLATE_ID:
+                requestVoteDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onRequestVote(
+                    requestVoteDecoder.candidateTermId(),
+                    requestVoteDecoder.lastBaseLogPosition(),
+                    requestVoteDecoder.lastTermPosition(),
+                    requestVoteDecoder.candidateMemberId());
+                break;
+
+            case VoteDecoder.TEMPLATE_ID:
+                voteDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onVote(
+                    voteDecoder.candidateTermId(),
+                    voteDecoder.lastBaseLogPosition(),
+                    voteDecoder.lastTermPosition(),
+                    voteDecoder.candidateMemberId(),
+                    voteDecoder.followerMemberId(),
+                    voteDecoder.vote() == BooleanType.TRUE);
+                break;
+
             case AppendedPositionDecoder.TEMPLATE_ID:
                 appendedPositionDecoder.wrap(
                     buffer,

@@ -551,11 +551,6 @@ class SequencerAgent implements Agent, ServiceControlListener
             candidateTermId == leadershipTermId &&
             lastBaseLogPosition == recoveryPlan.lastLogPosition)
         {
-            if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
-            {
-                // TODO: need to catch up with leader
-            }
-
             final boolean potentialLeader = lastTermPosition >= recoveryPlan.lastTermPositionAppended;
 
             memberStatusPublisher.vote(
@@ -575,6 +570,11 @@ class SequencerAgent implements Agent, ServiceControlListener
             else
             {
                 votedForMemberId = candidateMemberId;
+
+                if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
+                {
+                    // TODO: need to catch up with leader
+                }
             }
         }
         else

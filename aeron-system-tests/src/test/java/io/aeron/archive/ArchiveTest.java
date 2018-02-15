@@ -30,7 +30,9 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -140,6 +142,7 @@ public class ArchiveTest
             new MediaDriver.Context()
                 .termBufferSparseFile(true)
                 .threadingMode(threadingMode)
+                .sharedIdleStrategy(new YieldingIdleStrategy())
                 .spiesSimulateConnection(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true));
@@ -151,6 +154,7 @@ public class ArchiveTest
                 .archiveDir(TestUtil.makeTempDir())
                 .segmentFileLength(segmentFileLength)
                 .threadingMode(archiveThreadingMode)
+                .idleStrategySupplier(YieldingIdleStrategy::new)
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
 
@@ -169,7 +173,7 @@ public class ArchiveTest
         driver.context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 20_000)
+    @Test(timeout = 15_000)
     public void recordAndReplayExclusivePublication() throws IOException
     {
         final String controlChannel = archive.context().localControlChannel();
@@ -210,7 +214,7 @@ public class ArchiveTest
             messageCount);
     }
 
-    @Test(timeout = 20_000)
+    @Test(timeout = 15_000)
     public void replayExclusivePublicationWhileRecording()
     {
         final String controlChannel = archive.context().localControlChannel();
@@ -255,7 +259,7 @@ public class ArchiveTest
         await(waitForData);
     }
 
-    @Test(timeout = 20_000)
+    @Test(timeout = 15_000)
     public void recordAndReplayRegularPublication() throws IOException
     {
         final String controlChannel = archive.context().localControlChannel();
@@ -337,11 +341,10 @@ public class ArchiveTest
         assertNull(trackerError);
 
         final long requestStopCorrelationId = correlationId++;
-        TestUtil.await(() -> archiveProxy.stopRecording(
-            publishUri,
-            PUBLISH_STREAM_ID,
-            requestStopCorrelationId,
-            controlSessionId));
+        if (!archiveProxy.stopRecording(publishUri, PUBLISH_STREAM_ID, requestStopCorrelationId, controlSessionId))
+        {
+            throw new IllegalStateException("Failed to stop recording");
+        }
 
         TestUtil.awaitOk(controlResponse, requestStopCorrelationId);
 
@@ -359,15 +362,8 @@ public class ArchiveTest
         TestUtil.await(() -> recordingEventsAdapter.poll() != 0);
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
-
         validateArchiveFile(messageCount, recordingId);
-
-        validateReplay(
-            archiveProxy,
-            messageCount,
-            initialTermId,
-            maxPayloadLength,
-            termBufferLength);
+        validateReplay(archiveProxy, messageCount, initialTermId, maxPayloadLength, termBufferLength);
     }
 
     private void prePublicationActionsAndVerifications(
@@ -387,12 +383,15 @@ public class ArchiveTest
         verifyEmptyDescriptorList(archiveProxy);
 
         final long startRecordingCorrelationId = correlationId++;
-        TestUtil.await(() -> archiveProxy.startRecording(
+        if (!archiveProxy.startRecording(
             publishUri,
             PUBLISH_STREAM_ID,
             SourceLocation.LOCAL,
             startRecordingCorrelationId,
-            controlSessionId));
+            controlSessionId))
+        {
+            throw new IllegalStateException("Failed to start recording");
+        }
 
         TestUtil.awaitOk(controlResponse, startRecordingCorrelationId);
     }
@@ -408,7 +407,7 @@ public class ArchiveTest
         final ArchiveProxy archiveProxy, final int publicationTermBufferLength)
     {
         final long requestRecordingsCorrelationId = correlationId++;
-        archiveProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId, controlSessionId);
+        archiveProxy.listRecording(recordingId, requestRecordingsCorrelationId, controlSessionId);
 
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
@@ -443,7 +442,11 @@ public class ArchiveTest
             1
         );
 
-        TestUtil.await(() -> controlResponseAdapter.poll() != 0);
+        while (controlResponseAdapter.poll() == 0)
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
     }
 
     private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
@@ -476,7 +479,7 @@ public class ArchiveTest
         }
         catch (final InterruptedException ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
@@ -641,10 +644,7 @@ public class ArchiveTest
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
-                public void onProgress(
-                    final long recordingId0,
-                    final long startPosition,
-                    final long position)
+                public void onProgress(final long recordingId0, final long startPosition, final long position)
                 {
                     assertThat(recordingId0, is(recordingId));
                     recorded = position - startPosition;

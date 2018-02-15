@@ -20,6 +20,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -63,7 +64,7 @@ class RecordingFragmentReader
         final File archiveDir,
         final long position,
         final long length,
-        final Counter recordingPosition) throws IOException
+        final Counter recordingPosition)
     {
         this.catalog = catalog;
         this.archiveDir = archiveDir;
@@ -125,7 +126,6 @@ class RecordingFragmentReader
     }
 
     int controlledPoll(final SimpleFragmentHandler fragmentHandler, final int fragmentLimit)
-        throws IOException
     {
         if (isDone() || noAvailableData())
         {
@@ -206,7 +206,7 @@ class RecordingFragmentReader
         return false;
     }
 
-    private void nextTerm() throws IOException
+    private void nextTerm()
     {
         termStartSegmentOffset += termLength;
 
@@ -232,7 +232,7 @@ class RecordingFragmentReader
         mappedSegmentBuffer = null;
     }
 
-    private boolean openRecordingSegment() throws IOException
+    private boolean openRecordingSegment()
     {
         final String segmentFileName = segmentFileName(recordingId, segmentFileIndex);
         final File segmentFile = new File(archiveDir, segmentFileName);
@@ -252,6 +252,10 @@ class RecordingFragmentReader
         try (FileChannel channel = FileChannel.open(segmentFile.toPath(), READ))
         {
             mappedSegmentBuffer = channel.map(READ_ONLY, 0, segmentLength);
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
 
         return true;

@@ -42,7 +42,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
@@ -71,7 +70,7 @@ public class ArchiveTest
         return Arrays.asList(
             new Object[][]
             {
-                { ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED },
+            ///    { ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED },
                 { ThreadingMode.SHARED, ArchiveThreadingMode.SHARED },
                 { ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED },
             });
@@ -94,7 +93,7 @@ public class ArchiveTest
     public final TestWatcher testWatcher = TestUtil.newWatcher(this.getClass(), seed);
 
     private String publishUri;
-    private Aeron publishingClient;
+    private Aeron client;
     private Archive archive;
     private MediaDriver driver;
     private long recordingId;
@@ -158,14 +157,14 @@ public class ArchiveTest
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
 
-        publishingClient = Aeron.connect();
+        client = Aeron.connect();
         recorded = 0;
     }
 
     @After
     public void after()
     {
-        CloseHelper.close(publishingClient);
+        CloseHelper.close(client);
         CloseHelper.close(archive);
         CloseHelper.close(driver);
 
@@ -174,7 +173,7 @@ public class ArchiveTest
     }
 
     @Test(timeout = 15_000)
-    public void recordAndReplayExclusivePublication() throws IOException
+    public void recordAndReplayExclusivePublication()
     {
         final String controlChannel = archive.context().localControlChannel();
         final int controlStreamId = archive.context().localControlStreamId();
@@ -182,14 +181,14 @@ public class ArchiveTest
         final String recordingChannel = archive.context().recordingEventsChannel();
         final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-        final Publication controlPublication = publishingClient.addPublication(controlChannel, controlStreamId);
-        final Subscription recordingEvents = publishingClient.addSubscription(recordingChannel, recordingStreamId);
+        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
         final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
         prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
         final ExclusivePublication recordedPublication =
-            publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
+            client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
         final int sessionId = recordedPublication.sessionId();
         final int termBufferLength = recordedPublication.termBufferLength();
@@ -221,14 +220,14 @@ public class ArchiveTest
         final String recordingChannel = archive.context().recordingEventsChannel();
         final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-        final Publication controlPublication = publishingClient.addPublication(controlChannel, controlStreamId);
-        final Subscription recordingEvents = publishingClient.addSubscription(recordingChannel, recordingStreamId);
+        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
         final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
         prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
         final ExclusivePublication recordedPublication =
-            publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
+            client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
         final int sessionId = recordedPublication.sessionId();
         final int termBufferLength = recordedPublication.termBufferLength();
@@ -257,7 +256,7 @@ public class ArchiveTest
     }
 
     @Test(timeout = 15_000)
-    public void recordAndReplayRegularPublication() throws IOException
+    public void recordAndReplayRegularPublication()
     {
         final String controlChannel = archive.context().localControlChannel();
         final int controlStreamId = archive.context().localControlStreamId();
@@ -265,13 +264,13 @@ public class ArchiveTest
         final String recordingChannel = archive.context().recordingEventsChannel();
         final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-        final Publication controlPublication = publishingClient.addPublication(controlChannel, controlStreamId);
-        final Subscription recordingEvents = publishingClient.addSubscription(recordingChannel, recordingStreamId);
+        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
         final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
         prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
-        final Publication recordedPublication = publishingClient.addPublication(publishUri, PUBLISH_STREAM_ID);
+        final Publication recordedPublication = client.addPublication(publishUri, PUBLISH_STREAM_ID);
 
         final int sessionId = recordedPublication.sessionId();
         final int termBufferLength = recordedPublication.termBufferLength();
@@ -330,7 +329,7 @@ public class ArchiveTest
         final int termBufferLength,
         final int initialTermId,
         final int maxPayloadLength,
-        final int messageCount) throws IOException
+        final int messageCount)
     {
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
 
@@ -370,7 +369,7 @@ public class ArchiveTest
         TestUtil.await(controlPublication::isConnected);
         TestUtil.await(recordingEvents::isConnected);
 
-        controlResponse = publishingClient.addSubscription(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
+        controlResponse = client.addSubscription(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
         final long connectCorrelationId = correlationId++;
         assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
 
@@ -535,7 +534,7 @@ public class ArchiveTest
         final int maxPayloadLength,
         final int termBufferLength)
     {
-        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
+        try (Subscription replay = client.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
         {
             final long replayCorrelationId = correlationId++;
 
@@ -573,7 +572,7 @@ public class ArchiveTest
         }
     }
 
-    private void validateArchiveFile(final int messageCount, final long recordingId) throws IOException
+    private void validateArchiveFile(final int messageCount, final long recordingId)
     {
         remaining = totalDataLength;
         final File archiveDir = archive.context().archiveDir();
@@ -694,7 +693,7 @@ public class ArchiveTest
                     SystemTest.sleep(1);
                 }
 
-                try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
+                try (Subscription replay = client.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
                 {
                     final long replayCorrelationId = correlationId++;
 

@@ -29,7 +29,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.TestUtil.makeTempDir;
@@ -56,7 +55,7 @@ public class ReplaySessionTest
     private static final int FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
     private static final int STREAM_ID = 1;
-    public static final FileChannel ARCHIVE_DIR_CHANNEL = null;
+    private static final FileChannel ARCHIVE_DIR_CHANNEL = null;
 
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
     private final ControlSession mockControlSession = mock(ControlSession.class);
@@ -135,7 +134,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void verifyRecordingFile() throws IOException
+    public void verifyRecordingFile()
     {
         final RecordingFragmentReader reader = new RecordingFragmentReader(
             mockCatalog,

@@ -114,7 +114,7 @@ public class RecordingSessionTest
     }
 
     @Test
-    public void shouldRecordFragmentsFromImage() throws Exception
+    public void shouldRecordFragmentsFromImage()
     {
         final RecordingSession session = new RecordingSession(
             RECORDING_ID, START_POSITION, CHANNEL, recordingEventsProxy, image, position, ARCHIVE_CHANNEL, context);

@@ -191,8 +191,6 @@ public class ArchiveTest
         final ExclusivePublication recordedPublication =
             publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-        TestUtil.await(recordedPublication::isConnected);
-
         final int sessionId = recordedPublication.sessionId();
         final int termBufferLength = recordedPublication.termBufferLength();
         final int initialTermId = recordedPublication.initialTermId();
@@ -232,8 +230,6 @@ public class ArchiveTest
         final ExclusivePublication recordedPublication =
             publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-        TestUtil.await(recordedPublication::isConnected);
-
         final int sessionId = recordedPublication.sessionId();
         final int termBufferLength = recordedPublication.termBufferLength();
         final int initialTermId = recordedPublication.initialTermId();
@@ -246,6 +242,7 @@ public class ArchiveTest
 
         final int messageCount = MESSAGE_COUNT;
         final CountDownLatch waitForData = new CountDownLatch(2);
+
         prepMessagesAndListener(recordingEvents, messageCount, waitForData);
         validateActiveRecordingReplay(
             archiveProxy,
@@ -275,7 +272,6 @@ public class ArchiveTest
         prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
         final Publication recordedPublication = publishingClient.addPublication(publishUri, PUBLISH_STREAM_ID);
-        TestUtil.await(recordedPublication::isConnected);
 
         final int sessionId = recordedPublication.sessionId();
         final int termBufferLength = recordedPublication.termBufferLength();

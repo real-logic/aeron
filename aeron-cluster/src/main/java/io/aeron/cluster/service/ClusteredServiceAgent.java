@@ -581,13 +581,11 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
             case SHUTDOWN:
                 onTakeSnapshot(termPosition);
-                ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
                 serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, action);
                 ctx.terminationHook().run();
                 break;
 
             case ABORT:
-                ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
                 serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, action);
                 ctx.terminationHook().run();
                 break;

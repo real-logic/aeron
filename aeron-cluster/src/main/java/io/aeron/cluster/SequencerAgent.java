@@ -673,9 +673,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private int checkControlToggle(final long nowMs)
     {
-        final ClusterControl.ToggleState toggleState = ClusterControl.ToggleState.get(controlToggle);
-
-        switch (toggleState)
+        switch (ClusterControl.ToggleState.get(controlToggle))
         {
             case SUSPEND:
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SUSPEND, nowMs))
@@ -962,6 +960,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             }
         }
 
+        logAdapter = null;
         logAppender.connect(publication);
         logSessionId = publication.sessionId();
 
@@ -1227,7 +1226,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private void validateServiceAck(
         final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
-        final long currentLogPosition = baseLogPosition + logAppender.position();
+        final long currentLogPosition = baseLogPosition + currentTermPosition();
         if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)
         {
             throw new IllegalStateException("Invalid log state:" +
@@ -1240,6 +1239,11 @@ class SequencerAgent implements Agent, ServiceControlListener
         {
             throw new IllegalStateException("Invalid action ack for state " + state + " action " + action);
         }
+    }
+
+    private long currentTermPosition()
+    {
+        return null != logAdapter ? logAdapter.position() : logAppender.position();
     }
 
     private void updateClusterMemberDetails(final ClusterMember[] members)
@@ -1441,7 +1445,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private void replayTerm(final Image image, final long finalTermPosition)
     {
-        final LogAdapter logAdapter = new LogAdapter(image, this);
+        logAdapter = new LogAdapter(image, this);
 
         while (true)
         {

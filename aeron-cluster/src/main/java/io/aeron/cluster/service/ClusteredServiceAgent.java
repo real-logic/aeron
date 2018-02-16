@@ -339,7 +339,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
                 consumeImage(image, adapter);
 
-                serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.REPLAY);
+                final long logPosition = baseLogPosition + image.position();
+                serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, ClusterAction.REPLAY);
             }
         }
 

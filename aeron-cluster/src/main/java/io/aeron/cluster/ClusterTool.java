@@ -64,7 +64,7 @@ public class ClusterTool
                 System.out.println(cncFile.decoder().pid());
             }
         }
-        else if (args.length == 2 && args[1].equals("recover"))
+        else if (args.length == 2 && args[1].equals("recovery"))
         {
             final RecordingLog recordingLog = new RecordingLog(clusterDir);
             try (AeronArchive archive = AeronArchive.connect())

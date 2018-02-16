@@ -15,8 +15,10 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.cnc.ClusterComponentType;
 import io.aeron.cluster.codecs.cnc.CncHeaderDecoder;
+import io.aeron.cluster.service.RecordingLog;
 
 import java.io.File;
 import java.util.Date;
@@ -62,6 +64,14 @@ public class ClusterTool
                 System.out.println(cncFile.decoder().pid());
             }
         }
+        else if (args.length == 2 && args[1].equals("recover"))
+        {
+            final RecordingLog recordingLog = new RecordingLog(clusterDir);
+            try (AeronArchive archive = AeronArchive.connect())
+            {
+                System.out.println(recordingLog.createRecoveryPlan(archive).toString());
+            }
+        }
     }
 
     private static ClusterCncFile openCncFile(final Consumer<String> logger)
@@ -82,5 +92,6 @@ public class ClusterTool
         System.out.println("  describe: prints out all descriptors in the file. Optionally specify a recording id" +
             " to describe a single recording.");
         System.out.println("  pid: prints PID of cluster component.");
+        System.out.println("  recovery: prints recovery plan of cluster component.");
     }
 }

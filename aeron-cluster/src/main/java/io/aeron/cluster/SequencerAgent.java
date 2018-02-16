@@ -675,7 +675,6 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private int checkControlToggle(final long nowMs)
     {
-        int workCount = 0;
         final ClusterControl.ToggleState toggleState = ClusterControl.ToggleState.get(controlToggle);
 
         switch (toggleState)
@@ -685,7 +684,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 {
                     state(ConsensusModule.State.SUSPENDED);
                     ClusterControl.ToggleState.reset(controlToggle);
-                    workCount = 1;
                 }
                 break;
 
@@ -694,7 +692,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 {
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
-                    workCount = 1;
                 }
                 break;
 
@@ -704,7 +701,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 {
                     state(ConsensusModule.State.SNAPSHOT);
                     takeSnapshot(nowMs, logAppender.position());
-                    workCount = 1;
                 }
                 break;
 
@@ -714,7 +710,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 {
                     state(ConsensusModule.State.SHUTDOWN);
                     takeSnapshot(nowMs, logAppender.position());
-                    workCount = 1;
                 }
                 break;
 
@@ -723,12 +718,14 @@ class SequencerAgent implements Agent, ServiceControlListener
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.ABORT, nowMs))
                 {
                     state(ConsensusModule.State.ABORT);
-                    workCount = 1;
                 }
                 break;
+
+            default:
+                return 0;
         }
 
-        return workCount;
+        return 1;
     }
 
     private boolean appendAction(final ClusterAction action, final long nowMs)

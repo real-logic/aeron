@@ -751,7 +751,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
             if (session.state() == INIT || session.state() == CONNECTED)
             {
-                if (session.responsePublication().isConnected())
+                if (session.isResponsePublicationConnected())
                 {
                     session.state(CONNECTED);
                     authenticator.onProcessConnectedSession(sessionProxy.session(session), nowMs);
@@ -760,7 +760,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
             if (session.state() == CHALLENGED)
             {
-                if (session.responsePublication().isConnected())
+                if (session.isResponsePublicationConnected())
                 {
                     authenticator.onProcessChallengedSession(sessionProxy.session(session), nowMs);
                 }
@@ -768,28 +768,21 @@ class SequencerAgent implements Agent, ServiceControlListener
 
             if (session.state() == AUTHENTICATED)
             {
-                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
-                lastIndex--;
-
+                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                 session.timeOfLastActivityMs(nowMs);
                 sessionByIdMap.put(session.id(), session);
-
                 appendConnectedSession(session, nowMs);
 
                 workCount += 1;
             }
             else if (session.state() == REJECTED)
             {
-                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
-                lastIndex--;
-
+                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                 rejectedSessions.add(session);
             }
             else if (nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
-                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex);
-                lastIndex--;
-
+                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                 session.close();
             }
         }
@@ -816,9 +809,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             if (egressPublisher.sendEvent(session, eventCode, detail) ||
                 nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
-                ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex);
-                lastIndex--;
-
+                ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex--);
                 session.close();
                 workCount++;
             }
@@ -831,12 +822,11 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         int workCount = 0;
 
-        final Iterator<ClusterSession> iter = sessionByIdMap.values().iterator();
-        while (iter.hasNext())
+        for (final Iterator<ClusterSession> i = sessionByIdMap.values().iterator(); i.hasNext();)
         {
-            final ClusterSession session = iter.next();
-
+            final ClusterSession session = i.next();
             final ClusterSession.State state = session.state();
+
             if (nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
                 switch (state)
@@ -845,8 +835,8 @@ class SequencerAgent implements Agent, ServiceControlListener
                         egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_TIMEOUT_MSG);
                         if (appendClosedSession(session, CloseReason.TIMEOUT, nowMs))
                         {
-                            iter.remove();
-                            workCount += 1;
+                            session.close();
+                            i.remove();
                         }
                         else
                         {
@@ -859,38 +849,35 @@ class SequencerAgent implements Agent, ServiceControlListener
                         final CloseReason reason = state == TIMED_OUT ? CloseReason.TIMEOUT : CloseReason.USER_ACTION;
                         if (appendClosedSession(session, reason, nowMs))
                         {
-                            iter.remove();
-                            workCount += 1;
+                            session.close();
+                            i.remove();
                         }
                         break;
 
                     default:
                         session.close();
-                        iter.remove();
+                        i.remove();
                 }
+
+                workCount += 1;
             }
             else if (state == CONNECTED)
             {
-                if (appendConnectedSession(session, nowMs))
-                {
-                    workCount += 1;
-                }
+                appendConnectedSession(session, nowMs);
+                workCount += 1;
             }
         }
 
         return workCount;
     }
 
-    private boolean appendConnectedSession(final ClusterSession session, final long nowMs)
+    private void appendConnectedSession(final ClusterSession session, final long nowMs)
     {
         final long resultingPosition = logAppender.appendConnectedSession(session, nowMs);
         if (resultingPosition > 0)
         {
             session.open(resultingPosition);
-            return true;
         }
-
-        return false;
     }
 
     private boolean appendClosedSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)

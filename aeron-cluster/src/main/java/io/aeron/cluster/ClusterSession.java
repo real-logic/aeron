@@ -52,6 +52,7 @@ class ClusterSession implements AutoCloseable
     public void close()
     {
         CloseHelper.close(responsePublication);
+        responsePublication = null;
         state = State.CLOSED;
     }
 
@@ -80,15 +81,14 @@ class ClusterSession implements AutoCloseable
         responsePublication = aeron.addExclusivePublication(responseChannel, responseStreamId);
     }
 
-    void disconnect()
-    {
-        CloseHelper.close(responsePublication);
-        responsePublication = null;
-    }
-
     Publication responsePublication()
     {
         return responsePublication;
+    }
+
+    boolean isResponsePublicationConnected()
+    {
+        return null != responsePublication && responsePublication.isConnected();
     }
 
     State state()

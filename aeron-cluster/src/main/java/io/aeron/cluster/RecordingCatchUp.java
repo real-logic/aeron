@@ -29,7 +29,7 @@ public class RecordingCatchUp
     private final CountersReader countersReader;
     private final long caughtUpPosition;
     private final long replaySessionId;
-    private final int counterId;
+    private int counterId;
 
     private final String replayChannel;
     private final int replayStreamId;
@@ -57,8 +57,12 @@ public class RecordingCatchUp
         replaySessionId = replayArchive.startReplay(
             recordingIdToReplay, fromPosition, toPosition - fromPosition, replayChannel, replayStreamId);
 
-        // TODO: loop waiting to find
         counterId = RecordingPos.findCounterIdByRecording(targetCounters, recordingIdToExtend);
+        while (CountersReader.NULL_COUNTER_ID == counterId)
+        {
+            Thread.yield();
+            counterId = RecordingPos.findCounterIdByRecording(targetCounters, recordingIdToExtend);
+        }
     }
 
     public void cancel()
@@ -70,11 +74,6 @@ public class RecordingCatchUp
     public boolean isCaughtUp()
     {
         return currentPosition() >= caughtUpPosition;
-    }
-
-    public boolean isPossiblyStalled(final long stallTimeoutNs)
-    {
-        return false;
     }
 
     public long currentPosition()

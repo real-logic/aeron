@@ -396,6 +396,39 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
+    public void onAdminQuery(final long correlationId, final long clusterSessionId, final AdminQueryType queryType)
+    {
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null != session && session.state() == OPEN)
+        {
+            switch (queryType)
+            {
+                case ENDPOINTS:
+                    final ChannelUri archiveChannelUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
+
+                    final String endpointsDetail =
+                        "id=" + Long.toString(thisMember.id()) +
+                        ",memberStatus=" + thisMember.memberFacingEndpoint() +
+                        ",log=" + thisMember.memberFacingEndpoint() +
+                        ",archive=" + archiveChannelUri.get(ENDPOINT_PARAM_NAME);
+
+                    final long nowMs = cachedEpochClock.time();
+                    session.lastActivity(nowMs, correlationId);
+                    session.adminQueryResponseDetail(endpointsDetail);
+
+                    if (egressPublisher.sendEvent(session, EventCode.OK, session.adminQueryResponseDetail()))
+                    {
+                        session.adminQueryResponseDetail(null);
+                    }
+                    break;
+
+                case RECORDING_LOG: // TODO: or should this really be recoveryPlan?
+                    // TODO: send recordingLog as a byte[]
+                    break;
+            }
+        }
+    }
+
     public boolean onTimerEvent(final long correlationId, final long nowMs)
     {
         return logAppender.appendTimerEvent(correlationId, nowMs);
@@ -858,6 +891,13 @@ class SequencerAgent implements Agent, ServiceControlListener
             {
                 appendConnectedSession(session, nowMs);
                 workCount += 1;
+            }
+            else if (state == OPEN && session.adminQueryResponseDetail() != null)
+            {
+                if (egressPublisher.sendEvent(session, EventCode.OK, session.adminQueryResponseDetail()))
+                {
+                    session.adminQueryResponseDetail(null);
+                }
             }
         }
 

@@ -54,6 +54,10 @@
             <validValue name="SECTION">1</validValue>
             <validValue name="END">2</validValue>
         </enum>
+        <enum name="AdminQueryType" encodingType="int32" description="Type of admin qery">
+            <validValue name="ENDPOINTS">0</validValue>
+            <validValue name="RECORDING_LOG">1</validValue>
+        </enum>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
     </types>
 
@@ -181,6 +185,14 @@
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
         <data  name="credentialData"       id="3" type="varDataEncoding"/>
+    </sbe:message>
+
+    <sbe:message name="AdminQuery"
+                 id="9"
+                 description="Query the cluster member for admin information">
+        <field name="correlationId"        id="1" type="int64"/>
+        <field name="clusterSessionId"     id="2" type="int64"/>
+        <field name="queryType"            id="3" type="AdminQueryType"/>
     </sbe:message>
 
     <!-- Events from the Consensus Module to the clustered services which get appended to the log  -->

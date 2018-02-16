@@ -26,6 +26,7 @@ class ClusterSession implements AutoCloseable
 {
     public static final byte[] NULL_PRINCIPAL_DATA = ArrayUtil.EMPTY_BYTE_ARRAY;
     public static final int MAX_PRINCIPAL_DATA_LENGTH = 4 * 1024;
+    public static final int MAX_ADMIN_QUERY_RESPONSE_DETAIL_LENGTH = 4 * 1024;
 
     enum State
     {
@@ -41,6 +42,7 @@ class ClusterSession implements AutoCloseable
     private Publication responsePublication;
     private State state = State.INIT;
     private byte[] principalData = NULL_PRINCIPAL_DATA;
+    private String adminQueryResponseDetail;
 
     ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
     {
@@ -149,6 +151,16 @@ class ClusterSession implements AutoCloseable
         return openedTermPosition;
     }
 
+    void adminQueryResponseDetail(final String adminQueryResponseDetail)
+    {
+        this.adminQueryResponseDetail = adminQueryResponseDetail;
+    }
+
+    String adminQueryResponseDetail()
+    {
+        return adminQueryResponseDetail;
+    }
+
     static void checkPrincipalDataLength(final byte[] principalData)
     {
         if (null != principalData && principalData.length > MAX_PRINCIPAL_DATA_LENGTH)
@@ -158,6 +170,19 @@ class ClusterSession implements AutoCloseable
                     MAX_PRINCIPAL_DATA_LENGTH +
                 " exceeded: length=" +
                 principalData.length);
+        }
+    }
+
+    static void checkAdminQueryDetailLength(final byte[] adminQueryResponseDetail)
+    {
+        if (null != adminQueryResponseDetail &&
+            adminQueryResponseDetail.length > MAX_ADMIN_QUERY_RESPONSE_DETAIL_LENGTH)
+        {
+            throw new IllegalArgumentException(
+                "Admin Query response detail max length " +
+                MAX_ADMIN_QUERY_RESPONSE_DETAIL_LENGTH +
+                " exceeded: length=" +
+                adminQueryResponseDetail.length);
         }
     }
 

@@ -53,6 +53,7 @@ public final class AeronCluster implements AutoCloseable
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionKeepAliveRequestEncoder keepAliveRequestEncoder = new SessionKeepAliveRequestEncoder();
+    private final AdminQueryEncoder adminQueryEncoder = new AdminQueryEncoder();
 
     /**
      * Connect to the cluster using default configuration.
@@ -226,6 +227,78 @@ public final class AeronCluster implements AutoCloseable
             }
 
             return false;
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Query cluster member for endpoint information.
+     * <p>
+     * <code>
+     * id=num,memberStatus=member-facing:port,log=log:port,archive=archive:port
+     * </code>
+     *
+     * @return result of query or null if query was not sent successfully.
+     */
+    public String queryForEndpoints()
+    {
+        lock.lock();
+        try
+        {
+            idleStrategy.reset();
+            final long correlationId = aeron.nextCorrelationId();
+            final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
+            final int length = MessageHeaderEncoder.ENCODED_LENGTH + AdminQueryEncoder.BLOCK_LENGTH;
+            int attempts = SEND_ATTEMPTS;
+
+            while (true)
+            {
+                final long result = publication.tryClaim(length, bufferClaim);
+
+                if (result > 0)
+                {
+                    adminQueryEncoder
+                        .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                        .correlationId(correlationId)
+                        .clusterSessionId(clusterSessionId)
+                        .queryType(AdminQueryType.ENDPOINTS);
+
+                    bufferClaim.commit();
+
+                    final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
+
+                    while (true)
+                    {
+                        pollNextResponse(deadlineNs, correlationId, poller);
+
+                        if (poller.correlationId() == correlationId)
+                        {
+                            switch (poller.eventCode())
+                            {
+                                case OK:
+                                    return poller.detail();
+
+                                case ERROR:
+                                    throw new IllegalStateException(poller.detail());
+                            }
+                        }
+                    }
+                }
+
+                checkResult(result);
+
+                if (--attempts <= 0)
+                {
+                    break;
+                }
+
+                idleStrategy.idle();
+            }
+
+            return null;
         }
         finally
         {

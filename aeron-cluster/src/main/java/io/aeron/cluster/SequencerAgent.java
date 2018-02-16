@@ -466,6 +466,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final String responseChannel)
     {
         cachedEpochClock.update(timestamp);
+        nextSessionId = clusterSessionId + 1;
 
         addOpenSession(termPosition, clusterSessionId, correlationId, timestamp, responseStreamId, responseChannel);
     }
@@ -1117,6 +1118,14 @@ class SequencerAgent implements Agent, ServiceControlListener
                 idle(fragments);
             }
         }
+
+        long maxSessionId = nextSessionId;
+        for (final ClusterSession session : sessionByIdMap.values())
+        {
+            maxSessionId = Math.max(session.id(), maxSessionId);
+        }
+
+        nextSessionId = maxSessionId + 1;
     }
 
     private Image awaitImage(final int sessionId, final Subscription subscription)
@@ -1434,7 +1443,9 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
 
         invokeAeronClient();
+
         timerService.snapshot(snapshotTaker);
+
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 

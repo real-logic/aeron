@@ -33,6 +33,7 @@ class SnapshotLoader implements ControlledFragmentHandler
     private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
     private final ClusterSessionDecoder clusterSessionDecoder = new ClusterSessionDecoder();
     private final TimerDecoder timerDecoder = new TimerDecoder();
+    private final SequencerDecoder sequencerDecoder = new SequencerDecoder();
     private final Image image;
     private final SequencerAgent sequencerAgent;
 
@@ -99,7 +100,7 @@ class SnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.addOpenSession(
+                sequencerAgent.onReplaySessionOpen(
                     clusterSessionDecoder.openedTermPosition(),
                     clusterSessionDecoder.clusterSessionId(),
                     clusterSessionDecoder.lastCorrelationId(),
@@ -116,6 +117,16 @@ class SnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.version());
 
                 sequencerAgent.onScheduleTimer(timerDecoder.correlationId(), timerDecoder.deadline());
+                break;
+
+            case SequencerDecoder.TEMPLATE_ID:
+                sequencerDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onReloadState(sequencerDecoder.nextSessionId());
                 break;
 
             default:

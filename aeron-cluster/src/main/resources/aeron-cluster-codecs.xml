@@ -352,4 +352,10 @@
         <field name="deadline"             id="2" type="time_t"/>
     </sbe:message>
 
+    <sbe:message name="Sequencer"
+                 id="105"
+                 description="Serialised state of the sequencer">
+        <field name="nextSessionId"        id="1" type="int64"/>
+    </sbe:message>
+
 </sbe:messageSchema>

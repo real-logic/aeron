@@ -466,24 +466,16 @@ class SequencerAgent implements Agent, ServiceControlListener
         final String responseChannel)
     {
         cachedEpochClock.update(timestamp);
-        nextSessionId = clusterSessionId + 1;
 
-        addOpenSession(termPosition, clusterSessionId, correlationId, timestamp, responseStreamId, responseChannel);
-    }
-
-    void addOpenSession(
-        final long openedTermPosition,
-        final long clusterSessionId,
-        final long correlationId,
-        final long timestamp,
-        final int responseStreamId,
-        final String responseChannel)
-    {
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
-        session.open(openedTermPosition);
+        session.open(termPosition);
         session.lastActivity(timestamp, correlationId);
 
         sessionByIdMap.put(clusterSessionId, session);
+        if (clusterSessionId >= nextSessionId)
+        {
+            nextSessionId = clusterSessionId + 1;
+        }
     }
 
     @SuppressWarnings("unused")
@@ -540,6 +532,11 @@ class SequencerAgent implements Agent, ServiceControlListener
                 }
                 break;
         }
+    }
+
+    void onReloadState(final long nextSessionId)
+    {
+        this.nextSessionId = nextSessionId;
     }
 
     void onRequestVote(
@@ -820,7 +817,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         int workCount = 0;
 
-        for (final Iterator<ClusterSession> i = sessionByIdMap.values().iterator(); i.hasNext();)
+        for (final Iterator<ClusterSession> i = sessionByIdMap.values().iterator(); i.hasNext(); )
         {
             final ClusterSession session = i.next();
             final ClusterSession.State state = session.state();
@@ -1118,14 +1115,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 idle(fragments);
             }
         }
-
-        long maxSessionId = nextSessionId;
-        for (final ClusterSession session : sessionByIdMap.values())
-        {
-            maxSessionId = Math.max(session.id(), maxSessionId);
-        }
-
-        nextSessionId = maxSessionId + 1;
     }
 
     private Image awaitImage(final int sessionId, final Subscription subscription)
@@ -1445,6 +1434,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         invokeAeronClient();
 
         timerService.snapshot(snapshotTaker);
+        snapshotTaker.sequencerState(nextSessionId);
 
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }

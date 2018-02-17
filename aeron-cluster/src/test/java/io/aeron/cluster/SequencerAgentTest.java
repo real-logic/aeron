@@ -15,10 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.Counter;
-import io.aeron.ExclusivePublication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.EventCode;
@@ -51,7 +48,7 @@ public class SequencerAgentTest
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogAppender mockLogAppender = mock(LogAppender.class);
     private final Aeron mockAeron = mock(Aeron.class);
-    private final ExclusivePublication mockResponsePublication = mock(ExclusivePublication.class);
+    private final ConcurrentPublication mockResponsePublication = mock(ConcurrentPublication.class);
     private final Subscription mockConsensusModuleSubscription = mock(Subscription.class);
     private final ClusterCncFile mockCncFile = mock(ClusterCncFile.class);
 
@@ -74,7 +71,7 @@ public class SequencerAgentTest
         when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
         when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(128L);
         when(mockLogAppender.appendClusterAction(any(), anyLong(), anyLong(), anyLong())).thenReturn(TRUE);
-        when(mockAeron.addExclusivePublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
+        when(mockAeron.addPublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
         when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mockConsensusModuleSubscription);
         when(mockResponsePublication.isConnected()).thenReturn(TRUE);
     }

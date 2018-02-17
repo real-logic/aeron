@@ -86,7 +86,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         service.onStart(this);
 
         final CountersReader counters = aeron.countersReader();
-        final int recoveryCounterId = findRecoveryCounterId(counters);
+        final int recoveryCounterId = awaitRecoveryCounter(counters);
 
         isRecovering = true;
         checkForSnapshot(counters, recoveryCounterId);
@@ -95,7 +95,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
         joinActiveLog(counters);
 
-        findClusterRoleCounter(counters);
+        roleCounter = awaitClusterRoleCounter(counters);
         role = Role.get((int)roleCounter.get());
 
         if (Role.LEADER == role)
@@ -350,6 +350,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     private void awaitActiveLog()
     {
         activeLog = null;
+        idleStrategy.reset();
         while (true)
         {
             final int fragments = serviceControlAdapter.poll();
@@ -387,10 +388,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         }
     }
 
-    private int findRecoveryCounterId(final CountersReader counters)
+    private int awaitRecoveryCounter(final CountersReader counters)
     {
+        idleStrategy.reset();
         int counterId = RecoveryState.findCounterId(counters);
-
         while (CountersReader.NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
@@ -438,10 +439,9 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         return image;
     }
 
-    private void findClusterRoleCounter(final CountersReader counters)
+    private ReadableCounter awaitClusterRoleCounter(final CountersReader counters)
     {
         idleStrategy.reset();
-
         int counterId = ClusterNodeRole.findCounterId(counters);
         while (CountersReader.NULL_COUNTER_ID == counterId)
         {
@@ -450,7 +450,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             counterId = ClusterNodeRole.findCounterId(counters);
         }
 
-        roleCounter = new ReadableCounter(counters, counterId);
+        return new ReadableCounter(counters, counterId);
     }
 
     private void loadSnapshot(final long recordingId)
@@ -602,7 +602,6 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     private int awaitRecordingCounter(final Publication publication, final CountersReader counters)
     {
         idleStrategy.reset();
-
         int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
         while (CountersReader.NULL_COUNTER_ID == counterId)
         {

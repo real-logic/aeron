@@ -143,7 +143,7 @@ public class ClientSession
             throw new IllegalStateException("Response publication already present");
         }
 
-        responsePublication = aeron.addExclusivePublication(responseChannel, responseStreamId);
+        responsePublication = aeron.addPublication(responseChannel, responseStreamId);
     }
 
     void disconnect()

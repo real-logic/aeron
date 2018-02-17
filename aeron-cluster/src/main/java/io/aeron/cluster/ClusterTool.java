@@ -29,17 +29,15 @@ public class ClusterTool
 {
     private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
-    private static File clusterDir;
-
     public static void main(final String[] args)
     {
-        if (args.length == 0 || args.length > 3)
+        if (args.length == 0 || args.length > 2)
         {
             printHelp();
             System.exit(-1);
         }
 
-        clusterDir = new File(args[0]);
+        final File clusterDir = new File(args[0]);
         if (!clusterDir.exists())
         {
             System.err.println("ERR: cluster folder not found: " + clusterDir.getAbsolutePath());
@@ -47,34 +45,38 @@ public class ClusterTool
             System.exit(-1);
         }
 
-        if (args.length == 2 && args[1].equals("describe"))
+        if (args.length == 2)
         {
-            try (ClusterCncFile cncFile = openCncFile(System.out::println))
+            switch (args[1])
             {
-                final CncHeaderDecoder decoder = cncFile.decoder();
+                case "describe":
+                    try (ClusterCncFile cncFile = openCncFile(clusterDir, System.out::println))
+                    {
+                        final CncHeaderDecoder decoder = cncFile.decoder();
+                        printTypeAndActivityTimestamp(decoder.fileType(), decoder.activityTimestamp());
+                        System.out.println(decoder);
+                    }
+                    break;
 
-                printTypeAndActivityTimestamp(decoder.fileType(), decoder.activityTimestamp());
-                System.out.println(decoder);
-            }
-        }
-        else if (args.length == 2 && args[1].equals("pid"))
-        {
-            try (ClusterCncFile cncFile = openCncFile(null))
-            {
-                System.out.println(cncFile.decoder().pid());
-            }
-        }
-        else if (args.length == 2 && args[1].equals("recovery"))
-        {
-            final RecordingLog recordingLog = new RecordingLog(clusterDir);
-            try (AeronArchive archive = AeronArchive.connect())
-            {
-                System.out.println(recordingLog.createRecoveryPlan(archive).toString());
+                case "pid":
+                    try (ClusterCncFile cncFile = openCncFile(clusterDir, null))
+                    {
+                        System.out.println(cncFile.decoder().pid());
+                    }
+                    break;
+
+                case "recovery":
+                    try (AeronArchive archive = AeronArchive.connect())
+                    {
+                        final RecordingLog recordingLog = new RecordingLog(clusterDir);
+                        System.out.println(recordingLog.createRecoveryPlan(archive));
+                    }
+                    break;
             }
         }
     }
 
-    private static ClusterCncFile openCncFile(final Consumer<String> logger)
+    private static ClusterCncFile openCncFile(final File clusterDir, final Consumer<String> logger)
     {
         return new ClusterCncFile(clusterDir, ClusterCncFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
@@ -88,7 +90,7 @@ public class ClusterTool
 
     private static void printHelp()
     {
-        System.out.println("Usage: <cluster-dir> <command> <optional args>");
+        System.out.println("Usage: <cluster-dir> <command>");
         System.out.println("  describe: prints out all descriptors in the file. Optionally specify a recording id" +
             " to describe a single recording.");
         System.out.println("  pid: prints PID of cluster component.");

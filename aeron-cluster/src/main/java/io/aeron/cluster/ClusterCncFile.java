@@ -73,7 +73,7 @@ public class ClusterCncFile implements AutoCloseable
         cncHeaderEncoder.wrap(cncBuffer, 0);
         cncHeaderDecoder.wrap(cncBuffer, 0, CncHeaderDecoder.BLOCK_LENGTH, CncHeaderDecoder.SCHEMA_VERSION);
 
-        final ClusterComponentType existingType = cncHeaderDecoder.fileType();
+        final ClusterComponentType existingType = cncHeaderDecoder.componentType();
 
         if (existingType != ClusterComponentType.NULL && existingType != type)
         {
@@ -81,8 +81,8 @@ public class ClusterCncFile implements AutoCloseable
                 "existing CnC file type " + existingType + " not same as required type " + type);
         }
 
-        cncHeaderEncoder.fileType(type);
-        cncHeaderEncoder.pid(SystemUtil.getpid());
+        cncHeaderEncoder.componentType(type);
+        cncHeaderEncoder.pid(SystemUtil.getPid());
     }
 
     public ClusterCncFile(
@@ -161,8 +161,8 @@ public class ClusterCncFile implements AutoCloseable
                 aeronDirectory.length() +
                 archiveChannel.length() +
                 serviceControlChannel.length() +
-                ((null == ingressChannel) ? 0 : ingressChannel.length()) +
-                ((null == serviceName) ? 0 : serviceName.length()) +
-                ((null == authenticator) ? 0 : authenticator.length()), alignment);
+                (null == ingressChannel ? 0 : ingressChannel.length()) +
+                (null == serviceName ? 0 : serviceName.length()) +
+                (null == authenticator ? 0 : authenticator.length()), alignment);
     }
 }

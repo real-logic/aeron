@@ -36,9 +36,9 @@
                  blockLength="128"
                  description="Header of Consensus Module and Container CnC file">
         <field name="version"                id="1"  type="int32"/>
-        <field name="fileType"               id="2"  type="ClusterComponentType"/>
+        <field name="componentType"          id="2"  type="ClusterComponentType"/>
         <field name="activityTimestamp"      id="3"  type="time_t"/>
-        <field name="pid"                    id="4"  type="int32"/>
+        <field name="pid"                    id="4"  type="int64"/>
         <field name="archiveStreamId"        id="5"  type="int32"/>
         <field name="serviceControlStreamId" id="6"  type="int32"/>
         <field name="ingressStreamId"        id="7"  type="int32"/>

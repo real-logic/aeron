@@ -31,7 +31,7 @@ public class ClusterTool
 
     public static void main(final String[] args)
     {
-        if (args.length == 0 || args.length > 2)
+        if (args.length != 2)
         {
             printHelp();
             System.exit(-1);
@@ -45,34 +45,31 @@ public class ClusterTool
             System.exit(-1);
         }
 
-        if (args.length == 2)
+        switch (args[1])
         {
-            switch (args[1])
-            {
-                case "describe":
-                    try (ClusterCncFile cncFile = openCncFile(clusterDir, System.out::println))
-                    {
-                        final CncHeaderDecoder decoder = cncFile.decoder();
-                        printTypeAndActivityTimestamp(decoder.fileType(), decoder.activityTimestamp());
-                        System.out.println(decoder);
-                    }
-                    break;
+            case "describe":
+                try (ClusterCncFile cncFile = openCncFile(clusterDir, System.out::println))
+                {
+                    final CncHeaderDecoder decoder = cncFile.decoder();
+                    printTypeAndActivityTimestamp(decoder.componentType(), decoder.activityTimestamp());
+                    System.out.println(decoder);
+                }
+                break;
 
-                case "pid":
-                    try (ClusterCncFile cncFile = openCncFile(clusterDir, null))
-                    {
-                        System.out.println(cncFile.decoder().pid());
-                    }
-                    break;
+            case "pid":
+                try (ClusterCncFile cncFile = openCncFile(clusterDir, null))
+                {
+                    System.out.println(cncFile.decoder().pid());
+                }
+                break;
 
-                case "recovery":
-                    try (AeronArchive archive = AeronArchive.connect())
-                    {
-                        final RecordingLog recordingLog = new RecordingLog(clusterDir);
-                        System.out.println(recordingLog.createRecoveryPlan(archive));
-                    }
-                    break;
-            }
+            case "recovery":
+                try (AeronArchive archive = AeronArchive.connect())
+                {
+                    final RecordingLog recordingLog = new RecordingLog(clusterDir);
+                    System.out.println(recordingLog.createRecoveryPlan(archive));
+                }
+                break;
         }
     }
 
@@ -91,8 +88,7 @@ public class ClusterTool
     private static void printHelp()
     {
         System.out.println("Usage: <cluster-dir> <command>");
-        System.out.println("  describe: prints out all descriptors in the file. Optionally specify a recording id" +
-            " to describe a single recording.");
+        System.out.println("  describe: prints out all descriptors in the file.");
         System.out.println("  pid: prints PID of cluster component.");
         System.out.println("  recovery: prints recovery plan of cluster component.");
     }

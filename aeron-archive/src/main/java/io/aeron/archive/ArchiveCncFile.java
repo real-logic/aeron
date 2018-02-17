@@ -79,7 +79,7 @@ public class ArchiveCncFile implements AutoCloseable
         cncHeaderEncoder.wrap(cncBuffer, 0);
         cncHeaderDecoder.wrap(cncBuffer, 0, CncHeaderDecoder.BLOCK_LENGTH, CncHeaderDecoder.SCHEMA_VERSION);
 
-        cncHeaderEncoder.pid(SystemUtil.getpid());
+        cncHeaderEncoder.pid(SystemUtil.getPid());
     }
 
     public ArchiveCncFile(

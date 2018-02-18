@@ -48,7 +48,8 @@ public class ConsensusModule implements AutoCloseable
     public static final long SNAPSHOT_TYPE_ID = 1;
 
     /**
-     * Possible states for the consensus module. These will be reflected in the {@link Context#moduleStateCounter()} counter.
+     * Possible states for the {@link ConsensusModule}.
+     * These will be reflected in the {@link Context#moduleStateCounter()} counter.
      */
     public enum State
     {

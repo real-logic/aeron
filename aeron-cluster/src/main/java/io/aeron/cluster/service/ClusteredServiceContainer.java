@@ -316,9 +316,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The value {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
+         * The value {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property
+         * {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
          *
-         * @return {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
+         * @return {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property
+         * {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
          */
         public static String clusteredServiceDirName()
         {

@@ -89,7 +89,6 @@ public class ClusterNodeTest
     public void shouldConnectAndSendKeepAlive()
     {
         container = launchEchoService();
-
         aeronCluster = connectToCluster();
 
         assertTrue(aeronCluster.sendKeepAlive());
@@ -99,10 +98,9 @@ public class ClusterNodeTest
     public void shouldEchoMessageViaService()
     {
         container = launchEchoService();
-
         aeronCluster = connectToCluster();
-        final Aeron aeron = aeronCluster.context().aeron();
 
+        final Aeron aeron = aeronCluster.context().aeron();
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         final Publication publication = aeronCluster.ingressPublication();
 
@@ -152,10 +150,10 @@ public class ClusterNodeTest
     @Test(timeout = 10_000)
     public void shouldScheduleEventInService()
     {
-        container = launchScheduledService();
+        container = launchTimedService();
         aeronCluster = connectToCluster();
-        final Aeron aeron = aeronCluster.context().aeron();
 
+        final Aeron aeron = aeronCluster.context().aeron();
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         final Publication publication = aeronCluster.ingressPublication();
 
@@ -219,6 +217,7 @@ public class ClusterNodeTest
 
                 while (session.offer(correlationId, buffer, offset, length) < 0)
                 {
+                    TestUtil.checkInterruptedStatus();
                     Thread.yield();
                 }
             }
@@ -231,9 +230,9 @@ public class ClusterNodeTest
                 .deleteDirOnStart(true));
     }
 
-    private ClusteredServiceContainer launchScheduledService()
+    private ClusteredServiceContainer launchTimedService()
     {
-        final ClusteredService echoScheduledService = new StubClusteredService()
+        final ClusteredService timedService = new StubClusteredService()
         {
             long clusterSessionId;
             long correlationId;
@@ -272,7 +271,7 @@ public class ClusterNodeTest
 
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
-                .clusteredService(echoScheduledService)
+                .clusteredService(timedService)
                 .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(true));
     }

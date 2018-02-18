@@ -354,6 +354,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
         private AeronArchive.Context archiveContext;
+        private String clusteredServiceDirectoryName = Configuration.clusteredServiceDirName();
         private File clusteredServiceDir;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
@@ -442,7 +443,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == clusteredServiceDir)
             {
-                clusteredServiceDir = new File(Configuration.clusteredServiceDirName());
+                clusteredServiceDir = new File(clusteredServiceDirectoryName);
             }
 
             if (!clusteredServiceDir.exists() && !clusteredServiceDir.mkdirs())
@@ -944,6 +945,30 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public boolean deleteDirOnStart()
         {
             return deleteDirOnStart;
+        }
+
+        /**
+         * Set the directory name to use for the clustered service container.
+         *
+         * @param clusteredServiceDirectoryName to use.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
+         */
+        public Context clusteredServiceDirectoryName(final String clusteredServiceDirectoryName)
+        {
+            this.clusteredServiceDirectoryName = clusteredServiceDirectoryName;
+            return this;
+        }
+
+        /**
+         * The directory name used for the clustered service container.
+         *
+         * @return directory for the cluster container.
+         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
+         */
+        public String clusteredServiceDirectoryName()
+        {
+            return clusteredServiceDirectoryName;
         }
 
         /**

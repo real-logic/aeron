@@ -291,6 +291,7 @@ public class Archive implements AutoCloseable
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private File archiveDir;
+        private String archiveDirectoryName = Configuration.archiveDirName();
         private FileChannel archiveDirChannel;
         private Catalog catalog;
         private ArchiveCncFile cncFile;
@@ -386,12 +387,7 @@ public class Archive implements AutoCloseable
 
             if (null == archiveDir)
             {
-                archiveDir = new File(Configuration.archiveDirName());
-            }
-
-            if (null == archiveDirChannel)
-            {
-                archiveDirChannel = channelForDirectorySync(archiveDir, fileSyncLevel);
+                archiveDir = new File(archiveDirectoryName);
             }
 
             if (!archiveDir.exists() && !archiveDir.mkdirs())
@@ -399,6 +395,8 @@ public class Archive implements AutoCloseable
                 throw new IllegalArgumentException(
                     "Failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
+
+            archiveDirChannel = channelForDirectorySync(archiveDir, fileSyncLevel);
 
             if (!BitUtil.isPowerOfTwo(segmentFileLength))
             {
@@ -443,6 +441,30 @@ public class Archive implements AutoCloseable
         }
 
         /**
+         * Set the directory name to be used for the archive to store recordings and the {@link Catalog}.
+         * This name is used if {@link #archiveDir(File)} is not set.
+         *
+         * @param archiveDirectoryName to store recordings and the {@link Catalog}.
+         * @return this for a fluent API.
+         * @see Configuration#ARCHIVE_DIR_PROP_NAME
+         */
+        public Context archiveDirectoryName(final String archiveDirectoryName)
+        {
+            this.archiveDirectoryName = archiveDirectoryName;
+            return this;
+        }
+
+        /**
+         * Get the directory name to be used to store recordings and the {@link Catalog}.
+         *
+         * @return the directory name to be used for the archive to store recordings and the {@link Catalog}.
+         */
+        public String archiveDirectoryName()
+        {
+            return archiveDirectoryName;
+        }
+
+        /**
          * Get the directory in which the Archive will store recordings and the {@link Catalog}.
          *
          * @return the directory in which the Archive will store recordings and the {@link Catalog}.
@@ -473,19 +495,6 @@ public class Archive implements AutoCloseable
         public FileChannel archiveDirChannel()
         {
             return archiveDirChannel;
-        }
-
-        /**
-         * Get the {@link FileChannel} for the directory in which the Archive will store recordings and the
-         * {@link Catalog}. This can be used for sync'ing the directory.
-         *
-         * @param archiveDirChannel the directory in which the Archive will store recordings and the {@link Catalog}.
-         * @return this for a fluent API.
-         */
-        public Context archiveDirChannel(final FileChannel archiveDirChannel)
-        {
-            this.archiveDirChannel = archiveDirChannel;
-            return this;
         }
 
         /**

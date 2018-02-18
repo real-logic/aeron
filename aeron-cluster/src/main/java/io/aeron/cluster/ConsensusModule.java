@@ -627,6 +627,7 @@ public class ConsensusModule implements AutoCloseable
         private Aeron aeron;
 
         private boolean deleteDirOnStart = false;
+        private String clusterDirectoryName = Configuration.clusterDirName();
         private File clusterDir;
         private RecordingLog recordingLog;
         private ClusterCncFile cncFile;
@@ -690,7 +691,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == clusterDir)
             {
-                clusterDir = new File(Configuration.clusterDirName());
+                clusterDir = new File(clusterDirectoryName);
             }
 
             if (!clusterDir.exists() && !clusterDir.mkdirs())
@@ -832,7 +833,31 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the directory to use for the clustered service container.
+         * Set the directory name to use for the consensus module directory.
+         *
+         * @param clusterDirectoryName to use.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public Context clusterDirectoryName(final String clusterDirectoryName)
+        {
+            this.clusterDirectoryName = clusterDirectoryName;
+            return this;
+        }
+
+        /**
+         * The directory name to use for the consensus module directory.
+         *
+         * @return directory name for the consensus module directory.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public String clusterDirectoryName()
+        {
+            return clusterDirectoryName;
+        }
+
+        /**
+         * Set the directory to use for the consensus module directory.
          *
          * @param clusterDir to use.
          * @return this for a fluent API.
@@ -845,9 +870,9 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The directory used for the clustered service container.
+         * The directory used for for the consensus module directory.
          *
-         * @return directory for the cluster container.
+         * @return directory for for the consensus module directory.
          * @see Configuration#CLUSTER_DIR_PROP_NAME
          */
         public File clusterDir()

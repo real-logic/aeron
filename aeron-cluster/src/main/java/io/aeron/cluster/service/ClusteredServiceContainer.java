@@ -24,6 +24,7 @@ import io.aeron.cluster.ClusterCncFile;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
@@ -138,6 +139,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
          * Name for a clustered service to be the role of the {@link Agent}. Default to "clustered-service".
          */
         public static final String SERVICE_NAME_DEFAULT = "clustered-service";
+
+        /**
+         * Class name for dynamically loading a {@link ClusteredService}. This is used if
+         * {@link Context#clusteredService()} is not set.
+         */
+        public static final String SERVICE_CLASS_NAME_PROP_NAME = "aeron.cluster.service.class.name";
 
         /**
          * Channel to be used for log or snapshot replay on startup.
@@ -462,6 +469,25 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null == terminationHook)
             {
                 terminationHook = () -> shutdownSignalBarrier.signal();
+            }
+
+            if (null == clusteredService)
+            {
+                final String className = System.getProperty(Configuration.SERVICE_CLASS_NAME_PROP_NAME);
+                if (null == className)
+                {
+                    throw new IllegalStateException(
+                        "Either a ClusteredService instance or class name for service must be provided");
+                }
+
+                try
+                {
+                    clusteredService = (ClusteredService)Class.forName(className).newInstance();
+                }
+                catch (final Exception ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                }
             }
 
             concludeCncFile();

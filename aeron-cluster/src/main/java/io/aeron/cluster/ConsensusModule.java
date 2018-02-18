@@ -623,6 +623,7 @@ public class ConsensusModule implements AutoCloseable
     public static class Context implements AutoCloseable
     {
         private boolean ownsAeronClient = false;
+        private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
 
         private boolean deleteDirOnStart = false;
@@ -719,6 +720,7 @@ public class ConsensusModule implements AutoCloseable
 
                 aeron = Aeron.connect(
                     new Aeron.Context()
+                        .aeronDirectoryName(aeronDirectoryName)
                         .errorHandler(errorHandler)
                         .epochClock(epochClock)
                         .useConductorAgentInvoker(true)
@@ -1666,6 +1668,28 @@ public class ConsensusModule implements AutoCloseable
         public Aeron aeron()
         {
             return aeron;
+        }
+
+        /**
+         * Set the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @param aeronDirectoryName the top level Aeron directory.
+         * @return this for a fluent API.
+         */
+        public Context aeronDirectoryName(final String aeronDirectoryName)
+        {
+            this.aeronDirectoryName = aeronDirectoryName;
+            return this;
+        }
+
+        /**
+         * Get the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @return The top level Aeron directory.
+         */
+        public String aeronDirectoryName()
+        {
+            return aeronDirectoryName;
         }
 
         /**

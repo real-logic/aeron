@@ -730,24 +730,18 @@ public final class AeronCluster implements AutoCloseable
         private int egressStreamId = Configuration.egressStreamId();
         private IdleStrategy idleStrategy;
         private Lock lock;
-        private String aeronDirectoryName;
+        private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private CredentialsSupplier credentialsSupplier;
-        private boolean ownsAeronClient = true;
+        private boolean ownsAeronClient = false;
         private boolean isIngressExclusive = true;
 
         public void conclude()
         {
             if (null == aeron)
             {
-                final Aeron.Context ctx = new Aeron.Context();
-
-                if (null != aeronDirectoryName)
-                {
-                    ctx.aeronDirectoryName(aeronDirectoryName);
-                }
-
-                aeron = Aeron.connect(ctx);
+                aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
+                ownsAeronClient = true;
             }
 
             if (null == idleStrategy)

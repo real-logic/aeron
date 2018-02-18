@@ -355,7 +355,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private CountedErrorHandler countedErrorHandler;
         private AeronArchive.Context archiveContext;
         private File clusteredServiceDir;
-        private String aeronDirectoryName;
+        private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private boolean ownsAeronClient;
 
@@ -390,16 +390,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == aeron)
             {
-                final Aeron.Context ctx = new Aeron.Context()
-                    .errorHandler(countedErrorHandler)
-                    .epochClock(epochClock);
-
-                if (null != aeronDirectoryName)
-                {
-                    ctx.aeronDirectoryName(aeronDirectoryName);
-                }
-
-                aeron = Aeron.connect(ctx);
+                aeron = Aeron.connect(
+                    new Aeron.Context()
+                        .aeronDirectoryName(aeronDirectoryName)
+                        .errorHandler(countedErrorHandler)
+                        .epochClock(epochClock));
 
                 if (null == errorCounter)
                 {

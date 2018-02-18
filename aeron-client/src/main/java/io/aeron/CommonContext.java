@@ -164,7 +164,7 @@ public class CommonContext implements AutoCloseable
     public static final String RELIABLE_STREAM_PARAM_NAME = "reliable";
 
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
-    private String aeronDirectoryName;
+    private String aeronDirectoryName = getAeronDirectoryName();
     private File aeronDirectory;
     private File cncFile;
     private UnsafeBuffer countersMetaDataBuffer;
@@ -193,6 +193,17 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
+     * Get the default directory name to be used if {@link #aeronDirectoryName(String)} is not set. This will take
+     * the {@link #AERON_DIR_PROP_NAME} if set and if not then {@link #AERON_DIR_PROP_DEFAULT}.
+     *
+     * @return the default directory name to be used if {@link #aeronDirectoryName(String)} is not set.
+     */
+    public static String getAeronDirectoryName()
+    {
+        return getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
+    }
+
+    /**
      * Convert the default Aeron directory name to be a random name for use with embedded drivers.
      *
      * @return random directory name with default directory name as base
@@ -200,14 +211,6 @@ public class CommonContext implements AutoCloseable
     public static String generateRandomDirName()
     {
         return AERON_DIR_PROP_DEFAULT + '-' + UUID.randomUUID().toString();
-    }
-
-    /**
-     * Create a new context with Aeron directory and delete on exit values based on the current system properties.
-     */
-    public CommonContext()
-    {
-        aeronDirectoryName = getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
     }
 
     /**

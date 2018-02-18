@@ -1136,7 +1136,7 @@ public class AeronArchive implements AutoCloseable
         private int controlMtuLength = Configuration.controlMtuLength();
         private IdleStrategy idleStrategy;
         private Lock lock;
-        private String aeronDirectoryName;
+        private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private boolean ownsAeronClient = false;
 
@@ -1147,15 +1147,7 @@ public class AeronArchive implements AutoCloseable
         {
             if (null == aeron)
             {
-                final Aeron.Context ctx = new Aeron.Context();
-
-                if (null != aeronDirectoryName)
-                {
-                    ctx.aeronDirectoryName(aeronDirectoryName);
-                }
-
-                aeron = Aeron.connect(ctx);
-
+                aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
                 ownsAeronClient = true;
             }
 

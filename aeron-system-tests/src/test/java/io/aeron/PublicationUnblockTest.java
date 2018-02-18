@@ -63,11 +63,16 @@ public class PublicationUnblockTest
             Publication publicationB = client.addPublication(channel, STREAM_ID);
             Subscription subscription = client.addSubscription(channel, STREAM_ID))
         {
+            final BufferClaim bufferClaim = new BufferClaim();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[ctx.mtuLength()]);
             final int length = 128;
-            final BufferClaim bufferClaim = new BufferClaim();
-
             srcBuffer.setMemory(0, length, (byte)66);
+
+            while (!publicationA.isConnected())
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
 
             while (publicationA.tryClaim(length, bufferClaim) < 0L)
             {

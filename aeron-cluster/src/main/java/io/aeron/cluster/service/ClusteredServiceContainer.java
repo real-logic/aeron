@@ -477,7 +477,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 if (null == className)
                 {
                     throw new IllegalStateException(
-                        "Either a ClusteredService instance or class name for service must be provided");
+                        "Either a ClusteredService instance or class name for the service must be provided");
                 }
 
                 try

@@ -55,7 +55,7 @@ public class PublicationUnblockTest
             .threadingMode(ThreadingMode.SHARED)
             .errorHandler(Throwable::printStackTrace)
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-            .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(10));
+            .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(100));
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
             Aeron client = Aeron.connect(new Aeron.Context());

@@ -56,9 +56,8 @@ class SessionWorker<T extends Session> implements Agent
             workDone += session.doWork();
             if (session.isDone())
             {
+                ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex--);
                 closeSession(session);
-                ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex);
-                lastIndex--;
             }
         }
 

@@ -82,9 +82,8 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             }
             else
             {
+                ArrayListUtil.fastUnorderedRemove(publicationImages, i, lastIndex--);
                 image.removeFromDispatcher();
-                ArrayListUtil.fastUnorderedRemove(publicationImages, i, lastIndex);
-                lastIndex--;
             }
         }
 
@@ -176,8 +175,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             {
                 if (!pending.isPeriodic())
                 {
-                    ArrayListUtil.fastUnorderedRemove(pendingSetupMessages, i, lastIndex);
-                    lastIndex--;
+                    ArrayListUtil.fastUnorderedRemove(pendingSetupMessages, i, lastIndex--);
                     pending.removeFromDataPacketDispatcher();
                 }
                 else if (pending.shouldElicitSetupMessage())

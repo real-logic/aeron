@@ -776,8 +776,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 final ManagedResource resource = lingeringResources.get(i);
                 if (nowNs > (resource.timeOfLastStateChange() + RESOURCE_LINGER_NS))
                 {
-                    ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex);
-                    lastIndex--;
+                    ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex--);
                     resource.delete();
                 }
             }

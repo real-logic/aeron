@@ -140,8 +140,7 @@ public class PreferredMulticastFlowControl implements FlowControl
             final Receiver receiver = receiverList.get(i);
             if (timeNs > (receiver.timeOfLastStatusMessageNs + RECEIVER_TIMEOUT))
             {
-                ArrayListUtil.fastUnorderedRemove(receiverList, i, lastIndex);
-                lastIndex--;
+                ArrayListUtil.fastUnorderedRemove(receiverList, i, lastIndex--);
             }
             else
             {

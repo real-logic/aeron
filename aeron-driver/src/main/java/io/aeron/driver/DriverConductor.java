@@ -510,13 +510,13 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         PublicationLink publicationLink = null;
         final ArrayList<PublicationLink> publicationLinks = this.publicationLinks;
-        for (int i = 0, size = publicationLinks.size(), lastIndex = size - 1; i < size; i++)
+        for (int i = 0, size = publicationLinks.size(); i < size; i++)
         {
             final PublicationLink publication = publicationLinks.get(i);
             if (registrationId == publication.registrationId())
             {
                 publicationLink = publication;
-                fastUnorderedRemove(publicationLinks, i, lastIndex);
+                fastUnorderedRemove(publicationLinks, i);
                 break;
             }
         }
@@ -774,13 +774,13 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         CounterLink counterLink = null;
         final ArrayList<CounterLink> counterLinks = this.counterLinks;
-        for (int i = 0, size = counterLinks.size(), lastIndex = size - 1; i < size; i++)
+        for (int i = 0, size = counterLinks.size(); i < size; i++)
         {
             final CounterLink link = counterLinks.get(i);
             if (registrationId == link.registrationId())
             {
                 counterLink = link;
-                fastUnorderedRemove(counterLinks, i, lastIndex);
+                fastUnorderedRemove(counterLinks, i);
                 break;
             }
         }
@@ -1312,13 +1312,13 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         SubscriptionLink subscriptionLink = null;
 
-        for (int i = 0, size = subscriptionLinks.size(), lastIndex = size - 1; i < size; i++)
+        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             final SubscriptionLink subscription = subscriptionLinks.get(i);
             if (subscription.registrationId() == registrationId)
             {
                 subscriptionLink = subscription;
-                fastUnorderedRemove(subscriptionLinks, i, lastIndex);
+                fastUnorderedRemove(subscriptionLinks, i);
                 break;
             }
         }
@@ -1385,8 +1385,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
             if (resource.hasReachedEndOfLife())
             {
-                fastUnorderedRemove(list, i, lastIndex);
-                lastIndex--;
+                fastUnorderedRemove(list, i, lastIndex--);
                 resource.close();
             }
         }

@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.collections.MutableInteger;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -30,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.mock;
 
 @RunWith(Theories.class)
 public class PublicationUnblockTest
@@ -48,7 +48,9 @@ public class PublicationUnblockTest
     @Test(timeout = 10000)
     public void shouldUnblockNonCommittedMessage(final String channel)
     {
-        final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
+        final MutableInteger fragmentCount = new MutableInteger();
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
             .errorHandler(Throwable::printStackTrace)
@@ -100,7 +102,7 @@ public class PublicationUnblockTest
             int numFragments = 0;
             do
             {
-                final int fragments = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
                 if (numFragments == 0)
                 {
                     SystemTest.checkInterruptedStatus();
@@ -111,7 +113,8 @@ public class PublicationUnblockTest
             }
             while (numFragments < expectedFragments);
 
-            assertThat(numFragments, is(3));
+            assertThat(numFragments, is(expectedFragments));
+            assertThat(fragmentCount.value, is(expectedFragments));
         }
         finally
         {

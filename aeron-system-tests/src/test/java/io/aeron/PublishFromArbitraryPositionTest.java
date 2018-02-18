@@ -76,9 +76,7 @@ public class PublishFromArbitraryPositionTest
         final int expectedNumberOfFragments = 10 + rnd.nextInt(10000);
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .errorHandler(Throwable::printStackTrace)
-            .termBufferSparseFile(true);
+            .errorHandler(Throwable::printStackTrace);
 
         try (MediaDriver ignore = MediaDriver.launch(driverCtx);
             Aeron aeron = Aeron.connect();

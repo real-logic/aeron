@@ -18,14 +18,11 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
@@ -36,11 +33,9 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.SystemTest.spyForChannel;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests that allow Spies to simulate connection
@@ -69,14 +64,17 @@ public class SpySimulatedConnectionTest
     private Subscription subscription;
     private Subscription spy;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private FragmentHandler fragmentHandlerSpy = mock(FragmentHandler.class);
-    private FragmentHandler fragmentHandlerSubscription = mock(FragmentHandler.class);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+
+    private final MutableInteger fragmentCountSpy = new MutableInteger();
+    private final FragmentHandler fragmentHandlerSpy = (buffer1, offset, length, header) -> fragmentCountSpy.value++;
+
+    private final MutableInteger fragmentCountSub = new MutableInteger();
+    private final FragmentHandler fragmentHandlerSub = (buffer1, offset, length, header) -> fragmentCountSub.value++;
 
     private void launch()
     {
         driverContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
-            .sharedIdleStrategy(new YieldingIdleStrategy())
             .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED);
 
@@ -161,11 +159,7 @@ public class SpySimulatedConnectionTest
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(fragmentHandlerSpy, times(messagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        assertThat(fragmentCountSpy.value, is(messagesToSend));
     }
 
     @Theory
@@ -212,21 +206,12 @@ public class SpySimulatedConnectionTest
             // subscription receives slowly
             if ((i % 2) == 0)
             {
-                fragmentsFromSubscription += subscription.poll(fragmentHandlerSubscription, 1);
+                fragmentsFromSubscription += subscription.poll(fragmentHandlerSub, 1);
             }
         }
 
-        verify(fragmentHandlerSpy, times(messagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerSubscription, times(messagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        assertThat(fragmentCountSpy.value, is(messagesToSend));
+        assertThat(fragmentCountSub.value, is(messagesToSend));
     }
 
     @Theory
@@ -275,7 +260,7 @@ public class SpySimulatedConnectionTest
             // subscription receives up to 1/8 of the messages, then stops
             if (fragmentsReadFromSubscription < (messagesToSend / 8))
             {
-                fragmentsReadFromSubscription += subscription.poll(fragmentHandlerSubscription, 10);
+                fragmentsReadFromSubscription += subscription.poll(fragmentHandlerSub, 10);
             }
             else if (!isSubscriptionClosed)
             {
@@ -284,10 +269,6 @@ public class SpySimulatedConnectionTest
             }
         }
 
-        verify(fragmentHandlerSpy, times(messagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        assertThat(fragmentCountSpy.value, is(messagesToSend));
     }
 }

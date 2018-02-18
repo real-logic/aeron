@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import org.agrona.collections.MutableBoolean;
+import org.agrona.collections.MutableInteger;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -25,15 +26,12 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.*;
 
 @RunWith(Theories.class)
 public class BufferClaimMessageTest
@@ -48,12 +46,13 @@ public class BufferClaimMessageTest
     public static final int FRAGMENT_COUNT_LIMIT = 10;
     public static final int MESSAGE_LENGTH = 200;
 
-    private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
-
     @Theory
     @Test(timeout = 10000)
     public void shouldReceivePublishedMessageWithInterleavedAbort(final String channel)
     {
+        final MutableInteger fragmentCount = new MutableInteger();
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;
+
         final BufferClaim bufferClaim = new BufferClaim();
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
         final MediaDriver.Context ctx = new MediaDriver.Context()
@@ -81,7 +80,7 @@ public class BufferClaimMessageTest
             int numFragments = 0;
             do
             {
-                final int fragments = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
                     SystemTest.checkInterruptedStatus();
@@ -92,8 +91,7 @@ public class BufferClaimMessageTest
             }
             while (numFragments < expectedNumberOfFragments);
 
-            verify(mockFragmentHandler, times(expectedNumberOfFragments)).onFragment(
-                any(DirectBuffer.class), anyInt(), eq(MESSAGE_LENGTH), any(Header.class));
+            assertThat(fragmentCount.value, is(expectedNumberOfFragments));
         }
         finally
         {
@@ -106,7 +104,7 @@ public class BufferClaimMessageTest
     public void shouldTransferReservedValue(final String channel)
     {
         final BufferClaim bufferClaim = new BufferClaim();
-        final MediaDriver.Context ctx = new MediaDriver.Context();
+        final MediaDriver.Context ctx = new MediaDriver.Context().dirDeleteOnStart(true);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
             Aeron aeron = Aeron.connect();

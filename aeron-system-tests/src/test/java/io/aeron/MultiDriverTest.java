@@ -16,13 +16,11 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.junit.After;
 import org.junit.Test;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,7 +31,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 
-import static org.mockito.Mockito.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests requiring multiple embedded drivers
@@ -60,9 +59,12 @@ public class MultiDriverTest
     private Subscription subscriptionA;
     private Subscription subscriptionB;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
-    private FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+
+    private final MutableInteger fragmentCountA = new MutableInteger();
+    private final FragmentHandler fragmentHandlerA = (buffer1, offset, length, header) -> fragmentCountA.value++;
+    private final MutableInteger fragmentCountB = new MutableInteger();
+    private final FragmentHandler fragmentHandlerB = (buffer1, offset, length, header) -> fragmentCountB.value++;
 
     private void launch()
     {
@@ -187,17 +189,8 @@ public class MultiDriverTest
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(fragmentHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerB, times(numMessagesToSendPostJoin)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        assertThat(fragmentCountA.value, is(numMessagesToSendPreJoin + numMessagesToSendPostJoin));
+        assertThat(fragmentCountB.value, is(numMessagesToSendPostJoin));
     }
 
     @Test(timeout = 10000)
@@ -253,16 +246,7 @@ public class MultiDriverTest
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(fragmentHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerB, times(numMessagesToSendPostJoin)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        assertThat(fragmentCountA.value, is(numMessagesToSendPreJoin + numMessagesToSendPostJoin));
+        assertThat(fragmentCountB.value, is(numMessagesToSendPostJoin));
     }
 }

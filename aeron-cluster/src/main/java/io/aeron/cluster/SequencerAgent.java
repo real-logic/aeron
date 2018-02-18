@@ -81,7 +81,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final ServiceControlPublisher serviceControlPublisher;
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
-    private final LogAppender logAppender;
+    private final LogPublisher logPublisher;
     private LogAdapter logAdapter;
     private final MemberStatusAdapter memberStatusAdapter;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
@@ -101,7 +101,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     SequencerAgent(
         final ConsensusModule.Context ctx,
         final EgressPublisher egressPublisher,
-        final LogAppender logAppender)
+        final LogPublisher logPublisher)
     {
         this.ctx = ctx;
         this.aeron = ctx.aeron();
@@ -112,7 +112,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.egressPublisher = egressPublisher;
         this.moduleState = ctx.moduleStateCounter();
         this.controlToggle = ctx.controlToggleCounter();
-        this.logAppender = logAppender;
+        this.logPublisher = logPublisher;
         this.tempBuffer = ctx.tempBuffer();
         this.idleStrategy = ctx.idleStrategy();
         this.timerService = new TimerService(this);
@@ -170,7 +170,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             CloseHelper.close(memberStatusAdapter);
             ClusterMember.closeMemberPublications(clusterMembers);
 
-            logAppender.disconnect();
+            logPublisher.disconnect();
             CloseHelper.close(ingressAdapter);
             CloseHelper.close(serviceControlPublisher);
             CloseHelper.close(serviceControlAdapter);
@@ -362,7 +362,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             return ControlledFragmentHandler.Action.CONTINUE;
         }
 
-        if (session.state() == OPEN && logAppender.appendMessage(buffer, offset, length, nowMs))
+        if (session.state() == OPEN && logPublisher.appendMessage(buffer, offset, length, nowMs))
         {
             session.lastActivity(nowMs, correlationId);
             return ControlledFragmentHandler.Action.CONTINUE;
@@ -431,7 +431,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public boolean onTimerEvent(final long correlationId, final long nowMs)
     {
-        return logAppender.appendTimerEvent(correlationId, nowMs);
+        return logPublisher.appendTimerEvent(correlationId, nowMs);
     }
 
     public void onScheduleTimer(final long correlationId, final long deadlineMs)
@@ -729,7 +729,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT, nowMs))
                 {
                     state(ConsensusModule.State.SNAPSHOT);
-                    takeSnapshot(nowMs, logAppender.position());
+                    takeSnapshot(nowMs, logPublisher.position());
                 }
                 break;
 
@@ -738,7 +738,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SHUTDOWN, nowMs))
                 {
                     state(ConsensusModule.State.SHUTDOWN);
-                    takeSnapshot(nowMs, logAppender.position());
+                    takeSnapshot(nowMs, logPublisher.position());
                 }
                 break;
 
@@ -760,11 +760,11 @@ class SequencerAgent implements Agent, ServiceControlListener
     private boolean appendAction(final ClusterAction action, final long nowMs)
     {
         final long position = baseLogPosition +
-            logAppender.position() +
+            logPublisher.position() +
             MessageHeaderEncoder.ENCODED_LENGTH +
             ClusterActionRequestEncoder.BLOCK_LENGTH;
 
-        return logAppender.appendClusterAction(action, leadershipTermId, position, nowMs);
+        return logPublisher.appendClusterAction(action, leadershipTermId, position, nowMs);
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
@@ -906,7 +906,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private void appendConnectedSession(final ClusterSession session, final long nowMs)
     {
-        final long resultingPosition = logAppender.appendConnectedSession(session, nowMs);
+        final long resultingPosition = logPublisher.appendConnectedSession(session, nowMs);
         if (resultingPosition > 0)
         {
             session.open(resultingPosition);
@@ -915,7 +915,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private boolean appendClosedSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)
     {
-        if (logAppender.appendClosedSession(session, closeReason, nowMs))
+        if (logPublisher.appendClosedSession(session, closeReason, nowMs))
         {
             session.close();
             return true;
@@ -1001,7 +1001,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
 
         logAdapter = null;
-        logAppender.connect(publication);
+        logPublisher.connect(publication);
         logSessionId = publication.sessionId();
 
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
@@ -1283,7 +1283,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private long currentTermPosition()
     {
-        return null != logAdapter ? logAdapter.position() : logAppender.position();
+        return null != logAdapter ? logAdapter.position() : logPublisher.position();
     }
 
     private void updateClusterMemberDetails(final ClusterMember[] members)

@@ -46,10 +46,9 @@ public class SequencerAgentTest
     private static final String RESPONSE_CHANNEL_TWO = "responseChannelTwo";
 
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
-    private final LogAppender mockLogAppender = mock(LogAppender.class);
+    private final LogPublisher mockLogPublisher = mock(LogPublisher.class);
     private final Aeron mockAeron = mock(Aeron.class);
     private final ConcurrentPublication mockResponsePublication = mock(ConcurrentPublication.class);
-    private final Subscription mockConsensusModuleSubscription = mock(Subscription.class);
     private final ClusterCncFile mockCncFile = mock(ClusterCncFile.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
@@ -69,10 +68,10 @@ public class SequencerAgentTest
     public void before()
     {
         when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
-        when(mockLogAppender.appendConnectedSession(any(), anyLong())).thenReturn(128L);
-        when(mockLogAppender.appendClusterAction(any(), anyLong(), anyLong(), anyLong())).thenReturn(TRUE);
+        when(mockLogPublisher.appendConnectedSession(any(), anyLong())).thenReturn(128L);
+        when(mockLogPublisher.appendClusterAction(any(), anyLong(), anyLong(), anyLong())).thenReturn(TRUE);
         when(mockAeron.addPublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
-        when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mockConsensusModuleSubscription);
+        when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mock(Subscription.class));
         when(mockResponsePublication.isConnected()).thenReturn(TRUE);
     }
 
@@ -95,7 +94,7 @@ public class SequencerAgentTest
         clock.update(1);
         agent.doWork();
 
-        verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), anyLong());
+        verify(mockLogPublisher).appendConnectedSession(any(ClusterSession.class), anyLong());
 
         final long correlationIdTwo = 2L;
         agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO, new byte[0]);
@@ -126,7 +125,7 @@ public class SequencerAgentTest
 
         agent.doWork();
 
-        verify(mockLogAppender).appendConnectedSession(any(ClusterSession.class), eq(startMs));
+        verify(mockLogPublisher).appendConnectedSession(any(ClusterSession.class), eq(startMs));
 
         final long timeMs = startMs + TimeUnit.NANOSECONDS.toMillis(ConsensusModule.Configuration.sessionTimeoutNs());
         clock.update(timeMs);
@@ -136,7 +135,7 @@ public class SequencerAgentTest
         clock.update(timeoutMs);
         agent.doWork();
 
-        verify(mockLogAppender).appendClosedSession(any(ClusterSession.class), eq(CloseReason.TIMEOUT), eq(timeoutMs));
+        verify(mockLogPublisher).appendClosedSession(any(ClusterSession.class), eq(CloseReason.TIMEOUT), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(
             any(ClusterSession.class), eq(EventCode.ERROR), eq(ConsensusModule.Configuration.SESSION_TIMEOUT_MSG));
     }
@@ -196,13 +195,15 @@ public class SequencerAgentTest
         assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
         assertThat((int)controlValue.get(), is(NEUTRAL.code()));
 
-        final InOrder inOrder = Mockito.inOrder(mockLogAppender);
-        inOrder.verify(mockLogAppender).appendClusterAction(eq(ClusterAction.SUSPEND), anyLong(), anyLong(), anyLong());
-        inOrder.verify(mockLogAppender).appendClusterAction(eq(ClusterAction.RESUME), anyLong(), anyLong(), anyLong());
+        final InOrder inOrder = Mockito.inOrder(mockLogPublisher);
+        inOrder.verify(mockLogPublisher).appendClusterAction(
+            eq(ClusterAction.SUSPEND), anyLong(), anyLong(), anyLong());
+        inOrder.verify(mockLogPublisher).appendClusterAction(
+            eq(ClusterAction.RESUME), anyLong(), anyLong(), anyLong());
     }
 
     private SequencerAgent newSequencerAgent()
     {
-        return new SequencerAgent(ctx, mockEgressPublisher, mockLogAppender);
+        return new SequencerAgent(ctx, mockEgressPublisher, mockLogPublisher);
     }
 }

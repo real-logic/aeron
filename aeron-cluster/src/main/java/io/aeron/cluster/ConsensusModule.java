@@ -166,7 +166,7 @@ public class ConsensusModule implements AutoCloseable
         this.ctx = ctx;
         ctx.conclude();
 
-        final SequencerAgent conductor = new SequencerAgent(ctx, new EgressPublisher(), new LogAppender());
+        final SequencerAgent conductor = new SequencerAgent(ctx, new EgressPublisher(), new LogPublisher());
 
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }

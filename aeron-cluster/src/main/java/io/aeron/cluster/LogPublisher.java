@@ -22,7 +22,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 
-class LogAppender
+class LogPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
 

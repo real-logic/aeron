@@ -372,19 +372,13 @@ public class NetworkPublication
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final long timeNs = nanoClock.nanoTime();
-        statusMessageDeadlineNs = timeNs + connectionTimeoutNs;
-
         if (!hasReceivers)
         {
             hasReceivers = true;
         }
 
-        if (!isConnected)
-        {
-            LogBufferDescriptor.isConnected(metaDataBuffer, true);
-            isConnected = true;
-        }
+        final long timeNs = nanoClock.nanoTime();
+        statusMessageDeadlineNs = timeNs + connectionTimeoutNs;
 
         final long limit = flowControl.onStatusMessage(
             msg,
@@ -395,6 +389,12 @@ public class NetworkPublication
             timeNs);
 
         senderLimit.setOrdered(limit);
+
+        if (!isConnected)
+        {
+            LogBufferDescriptor.isConnected(metaDataBuffer, true);
+            isConnected = true;
+        }
     }
 
     public void onRttMeasurement(

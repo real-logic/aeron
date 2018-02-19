@@ -54,7 +54,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final Long2LongCounterMap refCountByStreamIdAndSessionIdMap = new Long2LongCounterMap(0);
 
     private final long receiverId;
-    private boolean isClosed = false;
 
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
@@ -140,12 +139,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             statusIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
             statusIndicator.close();
         }
-    }
-
-    public void close()
-    {
-        super.close();
-        isClosed = true;
     }
 
     public void openChannel(final DriverConductorProxy conductorProxy)

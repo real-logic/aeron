@@ -48,6 +48,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected DatagramChannel sendDatagramChannel;
     protected DatagramChannel receiveDatagramChannel;
     protected int multicastTtl = 0;
+    protected boolean isClosed = false;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
@@ -182,32 +183,36 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public void close()
     {
-        try
+        if (!isClosed)
         {
-            if (null != selectionKey)
+            isClosed = true;
+            try
             {
-                selectionKey.cancel();
-            }
+                if (null != selectionKey)
+                {
+                    selectionKey.cancel();
+                }
 
-            if (null != transportPoller)
-            {
-                transportPoller.cancelRead(this);
-                transportPoller.selectNowWithoutProcessing();
-            }
+                if (null != transportPoller)
+                {
+                    transportPoller.cancelRead(this);
+                    transportPoller.selectNowWithoutProcessing();
+                }
 
-            if (null != sendDatagramChannel)
-            {
-                sendDatagramChannel.close();
-            }
+                if (null != sendDatagramChannel)
+                {
+                    sendDatagramChannel.close();
+                }
 
-            if (receiveDatagramChannel != sendDatagramChannel && null != receiveDatagramChannel)
-            {
-                receiveDatagramChannel.close();
+                if (receiveDatagramChannel != sendDatagramChannel && null != receiveDatagramChannel)
+                {
+                    receiveDatagramChannel.close();
+                }
             }
-        }
-        catch (final IOException ex)
-        {
-            errorLog.record(ex);
+            catch (final IOException ex)
+            {
+                errorLog.record(ex);
+            }
         }
     }
 

@@ -38,7 +38,6 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.S
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
-import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 public class ConsensusModule implements AutoCloseable
 {
@@ -657,7 +656,6 @@ public class ConsensusModule implements AutoCloseable
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
-        private MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
 
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
@@ -1460,28 +1458,6 @@ public class ConsensusModule implements AutoCloseable
         public EpochClock epochClock()
         {
             return epochClock;
-        }
-
-        /**
-         * The temporary buffer than can be used to build up counter labels to avoid allocation.
-         *
-         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
-         */
-        public MutableDirectBuffer tempBuffer()
-        {
-            return tempBuffer;
-        }
-
-        /**
-         * Set the temporary buffer than can be used to build up counter labels to avoid allocation.
-         *
-         * @param tempBuffer to be used to avoid allocation.
-         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
-         */
-        public Context tempBuffer(final MutableDirectBuffer tempBuffer)
-        {
-            this.tempBuffer = tempBuffer;
-            return this;
         }
 
         /**

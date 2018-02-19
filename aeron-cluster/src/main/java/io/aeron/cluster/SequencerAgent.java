@@ -42,6 +42,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
+import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 class SequencerAgent implements Agent, ServiceControlListener
 {
@@ -93,7 +94,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final Aeron aeron;
     private AeronArchive archive;
     private final ConsensusModule.Context ctx;
-    private final MutableDirectBuffer tempBuffer;
+    private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
     private final IdleStrategy idleStrategy;
     private final LongArrayList failedTimerCancellations = new LongArrayList();
     private RecordingLog.RecoveryPlan recoveryPlan;
@@ -113,7 +114,6 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.moduleState = ctx.moduleStateCounter();
         this.controlToggle = ctx.controlToggleCounter();
         this.logPublisher = logPublisher;
-        this.tempBuffer = ctx.tempBuffer();
         this.idleStrategy = ctx.idleStrategy();
         this.timerService = new TimerService(this);
         this.clusterMembers = ClusterMember.parse(ctx.clusterMembers());

@@ -124,6 +124,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             this);
 
         final long nowNs = nanoClock.nanoTime();
+        cachedNanoClock.update(nowNs);
+        cachedEpochClock.update(epochClock.time());
         timeOfLastTimerCheckNs = nowNs;
         timeOfLastToDriverPositionChangeNs = nowNs;
         lastConsumerCommandPosition = toDriverCommands.consumerPosition();

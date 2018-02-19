@@ -172,7 +172,12 @@ public class Aeron implements AutoCloseable
     public void printCounters()
     {
         final CountersReader counters = countersReader();
-        counters.forEach((id, label) -> System.out.println(counters.getCounterValue(id) + "\t: " + label));
+        counters.forEach(
+            (id, label) ->
+            {
+                final long value = counters.getCounterValue(id);
+                System.out.format("%3d: %,20d - %s%n", id, value, label);
+            });
     }
 
     /**

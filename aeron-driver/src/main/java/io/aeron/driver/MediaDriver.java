@@ -1937,12 +1937,17 @@ public final class MediaDriver implements AutoCloseable
                     countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                EpochClock counterEpochClock = () -> 0;
-                long freeToReuseTimeoutMs = 0;
+                final EpochClock counterEpochClock;
+                final long freeToReuseTimeoutMs;
                 if (counterFreeToReuseTimeoutNs > 0)
                 {
                     counterEpochClock = epochClock;
                     freeToReuseTimeoutMs = Math.min(TimeUnit.NANOSECONDS.toMillis(counterFreeToReuseTimeoutNs), 1);
+                }
+                else
+                {
+                    counterEpochClock = () -> 0;
+                    freeToReuseTimeoutMs = 0;
                 }
 
                 final UnsafeBuffer metaDataBuffer = countersMetaDataBuffer();

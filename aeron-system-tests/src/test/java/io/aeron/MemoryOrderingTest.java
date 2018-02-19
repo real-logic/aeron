@@ -16,10 +16,13 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.*;
+import org.junit.After;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -39,23 +42,34 @@ public class MemoryOrderingTest
 
     private static volatile String failedMessage = null;
 
-    @Test(timeout = 10000)
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
+        .threadingMode(ThreadingMode.SHARED)
+        .publicationTermBufferLength(TERM_BUFFER_LENGTH));
+
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
+
+    @Test(timeout = 10_000)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
-            .publicationTermBufferLength(TERM_BUFFER_LENGTH);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-            Aeron aeron = Aeron.connect();
-            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
+        try (Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
             final Thread subscriberThread = new Thread(new Subscriber(subscription));
+            subscriberThread.setDaemon(true);
             subscriberThread.start();
 
             for (int i = 0; i < NUM_MESSAGES; i++)
@@ -92,29 +106,21 @@ public class MemoryOrderingTest
 
             subscriberThread.join();
         }
-        finally
-        {
-            ctx.deleteAeronDirectory();
-        }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntactFromExclusivePublication() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
 
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .publicationTermBufferLength(TERM_BUFFER_LENGTH);
-
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-            Aeron aeron = Aeron.connect();
-            ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
+        try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
             final Thread subscriberThread = new Thread(new Subscriber(subscription));
+            subscriberThread.setDaemon(true);
             subscriberThread.start();
 
             for (int i = 0; i < NUM_MESSAGES; i++)
@@ -150,10 +156,6 @@ public class MemoryOrderingTest
             }
 
             subscriberThread.join();
-        }
-        finally
-        {
-            ctx.deleteAeronDirectory();
         }
     }
 

@@ -109,7 +109,7 @@ public class ChannelEndpointStatusTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
         CloseHelper.quietClose(clientC);
         CloseHelper.quietClose(clientB);

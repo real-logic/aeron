@@ -110,7 +110,7 @@ public class MultiDestinationCastTest
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSpinUpAndShutdownWithDynamic()
     {
         launch();
@@ -127,7 +127,7 @@ public class MultiDestinationCastTest
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSpinUpAndShutdownWithManual()
     {
         launch();
@@ -147,7 +147,7 @@ public class MultiDestinationCastTest
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSendToTwoPortsWithDynamic()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -188,7 +188,7 @@ public class MultiDestinationCastTest
         verifyFragments(fragmentHandlerC, numMessagesToSend);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -229,7 +229,7 @@ public class MultiDestinationCastTest
         verifyFragments(fragmentHandlerC, numMessagesToSend);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSendToTwoPortsWithManualSingleDriver()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -269,7 +269,7 @@ public class MultiDestinationCastTest
         verifyFragments(fragmentHandlerB, numMessagesToSend);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldManuallyRemovePortDuringActiveStream() throws Exception
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -330,7 +330,7 @@ public class MultiDestinationCastTest
         verifyFragments(fragmentHandlerB, numMessageForSub2);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldManuallyAddPortDuringActiveStream() throws Exception
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;

@@ -84,7 +84,7 @@ public class StopStartSecondSubscriberTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
         subscriberOne.close();
         publisherOne.close();
@@ -98,7 +98,7 @@ public class StopStartSecondSubscriberTest
         driverTwo.context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSpinUpAndShutdown()
     {
         launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
@@ -142,25 +142,25 @@ public class StopStartSecondSubscriberTest
         assertEquals(messagesPerPublication, subTwoCount.get());
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveMessagesAfterStopStartOnSameChannelSameStream()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID1);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveMessagesAfterStopStartOnSameChannelDifferentStreams()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID2);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsSameStream()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID1);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsDifferentStreams()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);

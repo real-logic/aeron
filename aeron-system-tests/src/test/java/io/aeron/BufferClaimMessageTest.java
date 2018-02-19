@@ -17,8 +17,10 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.CloseHelper;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -42,12 +44,26 @@ public class BufferClaimMessageTest
     @DataPoint
     public static final String IPC_CHANNEL = CommonContext.IPC_CHANNEL;
 
-    public static final int STREAM_ID = 1;
-    public static final int FRAGMENT_COUNT_LIMIT = 10;
-    public static final int MESSAGE_LENGTH = 200;
+    private static final int STREAM_ID = 1;
+    private static final int FRAGMENT_COUNT_LIMIT = 10;
+    private static final int MESSAGE_LENGTH = 200;
+
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
+        .threadingMode(ThreadingMode.SHARED));
+
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessageWithInterleavedAbort(final String channel)
     {
         final MutableInteger fragmentCount = new MutableInteger();
@@ -55,13 +71,8 @@ public class BufferClaimMessageTest
 
         final BufferClaim bufferClaim = new BufferClaim();
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
-            .threadingMode(ThreadingMode.SHARED);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-            Aeron aeron = Aeron.connect();
-            Publication publication = aeron.addPublication(channel, STREAM_ID);
+        try (Publication publication = aeron.addPublication(channel, STREAM_ID);
             Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
         {
             publishMessage(srcBuffer, publication);
@@ -93,22 +104,15 @@ public class BufferClaimMessageTest
 
             assertThat(fragmentCount.value, is(expectedNumberOfFragments));
         }
-        finally
-        {
-            ctx.deleteAeronDirectory();
-        }
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldTransferReservedValue(final String channel)
     {
         final BufferClaim bufferClaim = new BufferClaim();
-        final MediaDriver.Context ctx = new MediaDriver.Context().dirDeleteOnStart(true);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-            Aeron aeron = Aeron.connect();
-            Publication publication = aeron.addPublication(channel, STREAM_ID);
+        try (Publication publication = aeron.addPublication(channel, STREAM_ID);
             Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
         {
             while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
@@ -140,10 +144,6 @@ public class BufferClaimMessageTest
                     Thread.yield();
                 }
             }
-        }
-        finally
-        {
-            ctx.deleteAeronDirectory();
         }
     }
 

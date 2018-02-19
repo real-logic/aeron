@@ -98,7 +98,7 @@ public class BasicArchiveTest
         archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldRecordAndReplay()
     {
         final String messagePrefix = "Message-Prefix-";
@@ -144,7 +144,7 @@ public class BasicArchiveTest
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldRecordReplayAndCancelReplayEarly()
     {
         final String messagePrefix = "Message-Prefix-";

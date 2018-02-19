@@ -78,7 +78,7 @@ public class ExtendRecordingTest
         archivingMediaDriver.archive().context().deleteArchiveDirectory();
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldExtendRecordingAndReplay()
     {
         final int messageCount = 10;

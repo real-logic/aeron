@@ -23,7 +23,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.After;
 import org.junit.Test;
 
@@ -39,7 +38,7 @@ import static org.mockito.Mockito.*;
  */
 public class FlowControlStrategiesTest
 {
-    public static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
+    private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
 
     private static final int STREAM_ID = 1;
 
@@ -75,13 +74,11 @@ public class FlowControlStrategiesTest
         driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .errorHandler(Throwable::printStackTrace)
-            .sharedIdleStrategy(new YieldingIdleStrategy())
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .errorHandler(Throwable::printStackTrace)
-            .sharedIdleStrategy(new YieldingIdleStrategy())
             .threadingMode(ThreadingMode.SHARED);
 
         driverA = MediaDriver.launch(driverAContext);
@@ -101,8 +98,8 @@ public class FlowControlStrategiesTest
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 
-    @Test(timeout = 10000)
-    public void shouldSpinUpAndShutdown() throws Exception
+    @Test(timeout = 10_000)
+    public void shouldSpinUpAndShutdown()
     {
         launch();
 
@@ -113,11 +110,11 @@ public class FlowControlStrategiesTest
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
             SystemTest.checkInterruptedStatus();
-            Thread.sleep(1);
+            Thread.yield();
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldTimeoutImageWhenBehindForTooLongWithMaxMulticastFlowControlStrategy() throws Exception
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -196,7 +193,7 @@ public class FlowControlStrategiesTest
             any(Header.class));
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSlowDownWhenBehindWithMinMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -255,7 +252,7 @@ public class FlowControlStrategiesTest
             any(Header.class));
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldRemoveDeadReceiverWithMinMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -312,7 +309,7 @@ public class FlowControlStrategiesTest
             any(Header.class));
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSlowDownToSlowPreferredWithPreferredMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -373,7 +370,7 @@ public class FlowControlStrategiesTest
             any(Header.class));
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldKeepUpToFastPreferredWithPreferredMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -433,7 +430,7 @@ public class FlowControlStrategiesTest
             any(Header.class));
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldRemoveDeadPreferredReceiverWithPreferredMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;

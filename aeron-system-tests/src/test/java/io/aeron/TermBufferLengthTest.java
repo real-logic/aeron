@@ -42,7 +42,7 @@ public class TermBufferLengthTest
     public static final int STREAM_ID = 1;
 
     @Theory
-    @Test(timeout = 10000)
+    @Test
     public void shouldHaveCorrectTermBufferLength(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()

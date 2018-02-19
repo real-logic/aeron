@@ -16,9 +16,12 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -51,16 +54,24 @@ public class SessionSpecificSubscriptionTest
     private final FragmentHandler handlerSessionId2 =
         (buffer, offset, length, header) -> assertThat(header.sessionId(), is(SESSION_ID_2));
 
-    private final MediaDriver.Context driverCtx = new MediaDriver.Context()
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
-        .termBufferSparseFile(true);
+        .threadingMode(ThreadingMode.SHARED));
 
-    @Test(timeout = 10000)
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
+
+    @Test(timeout = 10_000)
     public void shouldSubscribeToSpecificSessionIdsAndWildcard()
     {
-        try (MediaDriver ignore = MediaDriver.launch(driverCtx);
-            Aeron aeron = Aeron.connect();
-            ExclusivePublication publication1 = aeron.addExclusivePublication(channelUriWithSessionId1, STREAM_ID);
+        try (ExclusivePublication publication1 = aeron.addExclusivePublication(channelUriWithSessionId1, STREAM_ID);
             ExclusivePublication publication2 = aeron.addExclusivePublication(channelUriWithSessionId2, STREAM_ID);
             Subscription subscription1 = aeron.addSubscription(channelUriWithSessionId1, STREAM_ID);
             Subscription subscription2 = aeron.addSubscription(channelUriWithSessionId2, STREAM_ID);
@@ -102,13 +113,9 @@ public class SessionSpecificSubscriptionTest
             }
             while (numFragments < (EXPECTED_NUMBER_OF_MESSAGES * 2));
         }
-        finally
-        {
-            driverCtx.deleteAeronDirectory();
-        }
     }
 
-    private static void publishMessage(final UnsafeBuffer buffer, final ExclusivePublication publication)
+    private static void publishMessage(final UnsafeBuffer buffer, final Publication publication)
     {
         while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
         {

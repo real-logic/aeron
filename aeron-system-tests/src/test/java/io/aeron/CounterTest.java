@@ -39,7 +39,6 @@ public class CounterTest
 
     private Aeron clientA;
     private Aeron clientB;
-    private MediaDriver.Context driverContext;
     private MediaDriver driver;
 
     private AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
@@ -53,12 +52,10 @@ public class CounterTest
     {
         labelBuffer.putStringWithoutLengthAscii(0, COUNTER_LABEL);
 
-        driverContext =
+        driver = MediaDriver.launch(
             new MediaDriver.Context()
                 .errorHandler(Throwable::printStackTrace)
-                .threadingMode(ThreadingMode.SHARED);
-
-        driver = MediaDriver.launch(driverContext);
+                .threadingMode(ThreadingMode.SHARED));
 
         clientA = Aeron.connect(
             new Aeron.Context()
@@ -72,14 +69,13 @@ public class CounterTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
         CloseHelper.quietClose(clientB);
         CloseHelper.quietClose(clientA);
 
-        driver.close();
-
-        driverContext.deleteAeronDirectory();
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
     }
 
     @Test(timeout = 2000)
@@ -105,7 +101,7 @@ public class CounterTest
     }
 
     @Test(timeout = 2000)
-    public void shouldBeAbleToAddReadableCounterWithinHandler() throws Exception
+    public void shouldBeAbleToAddReadableCounterWithinHandler()
     {
         availableCounterHandlerClientB = this::createReadableCounter;
 
@@ -123,7 +119,7 @@ public class CounterTest
         while (null == readableCounter)
         {
             SystemTest.checkInterruptedStatus();
-            Thread.sleep(1);
+            SystemTest.sleep(1);
         }
 
         assertThat(readableCounter.state(), is(CountersReader.RECORD_ALLOCATED));
@@ -132,7 +128,7 @@ public class CounterTest
     }
 
     @Test(timeout = 2000)
-    public void shouldCloseReadableCounterOnUnavailableCounter() throws Exception
+    public void shouldCloseReadableCounterOnUnavailableCounter()
     {
         availableCounterHandlerClientB = this::createReadableCounter;
         unavailableCounterHandlerClientB = this::unavailableCounterHandler;
@@ -151,7 +147,7 @@ public class CounterTest
         while (null == readableCounter)
         {
             SystemTest.checkInterruptedStatus();
-            Thread.sleep(1);
+            SystemTest.sleep(1);
         }
 
         assertTrue(!readableCounter.isClosed());
@@ -162,7 +158,7 @@ public class CounterTest
         while (!readableCounter.isClosed())
         {
             SystemTest.checkInterruptedStatus();
-            Thread.sleep(1);
+            SystemTest.sleep(1);
         }
     }
 

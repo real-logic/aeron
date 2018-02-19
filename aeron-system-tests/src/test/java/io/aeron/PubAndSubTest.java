@@ -97,7 +97,7 @@ public class PubAndSubTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
         CloseHelper.quietClose(subscribingClient);
         CloseHelper.quietClose(publishingClient);
@@ -110,7 +110,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessageViaPollFile(final String channel)
     {
         launch(channel);
@@ -160,7 +160,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldContinueAfterBufferRollover(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -205,7 +205,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -303,7 +303,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel)
     {
         if (IPC_URI.equals(channel))
@@ -368,7 +368,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel)
     {
         if (IPC_URI.equals(channel))
@@ -440,7 +440,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldContinueAfterBufferRolloverBatched(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -512,7 +512,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldContinueAfterBufferRolloverWithPadding(final String channel)
     {
         /*
@@ -562,7 +562,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
     {
         /*
@@ -617,7 +617,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
     {
         /*
@@ -682,7 +682,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -729,7 +729,6 @@ public class PubAndSubTest
         assertEquals(publication.position(), subscription.imageAtIndex(0).position());
 
         subscription.close();
-
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
 
         while (!subscription.isConnected())
@@ -775,7 +774,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldFragmentExactMessageLengthsCorrectly(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -824,7 +823,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldNoticeDroppedSubscriber(final String channel) throws Exception
     {
         launch(channel);

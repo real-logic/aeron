@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.junit.After;
 import org.junit.Before;
@@ -57,13 +58,13 @@ public class PongTest
     private FragmentHandler pongHandler = mock(FragmentHandler.class);
 
     @Before
-    public void setUp()
+    public void before()
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
-            .threadingMode(ThreadingMode.SHARED);
+        driver = MediaDriver.launch(
+            new MediaDriver.Context()
+                .errorHandler(Throwable::printStackTrace)
+                .threadingMode(ThreadingMode.SHARED));
 
-        driver = MediaDriver.launch(ctx);
         pingClient = Aeron.connect();
         pongClient = Aeron.connect();
 
@@ -75,11 +76,11 @@ public class PongTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
-        pongClient.close();
-        pingClient.close();
-        driver.close();
+        CloseHelper.close(pongClient);
+        CloseHelper.close(pingClient);
+        CloseHelper.close(driver);
 
         driver.context().deleteAeronDirectory();
     }

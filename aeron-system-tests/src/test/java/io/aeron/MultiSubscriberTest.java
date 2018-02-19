@@ -16,7 +16,10 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.junit.After;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import io.aeron.logbuffer.FragmentHandler;
@@ -29,28 +32,37 @@ import static org.mockito.Mockito.*;
 
 public class MultiSubscriberTest
 {
-    public static final String CHANNEL_1 = "aeron:udp?endpoint=localhost:54325|fruit=banana";
-    public static final String CHANNEL_2 = "aeron:udp?endpoint=localhost:54325|fruit=apple";
-    public static final int STREAM_ID = 1;
-    public static final int FRAGMENT_COUNT_LIMIT = 10;
+    private static final String CHANNEL_1 = "aeron:udp?endpoint=localhost:54325|fruit=banana";
+    private static final String CHANNEL_2 = "aeron:udp?endpoint=localhost:54325|fruit=apple";
+    private static final int STREAM_ID = 1;
+    private static final int FRAGMENT_COUNT_LIMIT = 10;
 
-    @Test(timeout = 10000)
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
+        .threadingMode(ThreadingMode.SHARED));
+
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
+
+    @Test(timeout = 10_000)
     public void shouldReceiveMessageOnSeparateSubscriptions()
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace);
-
         final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);
         final FragmentHandler mockFragmentHandlerTwo = mock(FragmentHandler.class);
 
         final FragmentAssembler adapterOne = new FragmentAssembler(mockFragmentHandlerOne);
         final FragmentAssembler adapterTwo = new FragmentAssembler(mockFragmentHandlerTwo);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-            Aeron client = Aeron.connect(new Aeron.Context());
-            Publication publication = client.addPublication(CHANNEL_1, STREAM_ID);
-            Subscription subscriptionOne = client.addSubscription(CHANNEL_1, STREAM_ID);
-            Subscription subscriptionTwo = client.addSubscription(CHANNEL_2, STREAM_ID))
+        try (Publication publication = aeron.addPublication(CHANNEL_1, STREAM_ID);
+            Subscription subscriptionOne = aeron.addSubscription(CHANNEL_1, STREAM_ID);
+            Subscription subscriptionTwo = aeron.addSubscription(CHANNEL_2, STREAM_ID))
         {
             final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);
@@ -78,10 +90,6 @@ public class MultiSubscriberTest
 
             verifyData(srcBuffer, mockFragmentHandlerOne);
             verifyData(srcBuffer, mockFragmentHandlerTwo);
-        }
-        finally
-        {
-            ctx.deleteAeronDirectory();
         }
     }
 

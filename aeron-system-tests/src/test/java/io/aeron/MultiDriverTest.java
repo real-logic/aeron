@@ -34,12 +34,9 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-/**
- * Tests requiring multiple embedded drivers
- */
 public class MultiDriverTest
 {
-    public static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
+    private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
 
     private static final int STREAM_ID = 1;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
@@ -92,7 +89,7 @@ public class MultiDriverTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
         publication.close();
         subscriptionA.close();
@@ -106,7 +103,7 @@ public class MultiDriverTest
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSpinUpAndShutdown()
     {
         launch();
@@ -122,7 +119,7 @@ public class MultiDriverTest
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldJoinExistingStreamWithLockStepSendingReceiving() throws Exception
     {
         final int numMessagesToSendPreJoin = NUM_MESSAGES_PER_TERM / 2;
@@ -193,7 +190,7 @@ public class MultiDriverTest
         assertThat(fragmentCountB.value, is(numMessagesToSendPostJoin));
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldJoinExistingIdleStreamWithLockStepSendingReceiving() throws Exception
     {
         final int numMessagesToSendPreJoin = 0;

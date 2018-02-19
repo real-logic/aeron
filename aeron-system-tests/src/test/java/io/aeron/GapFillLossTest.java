@@ -46,7 +46,7 @@ public class GapFillLossTest
 
     private static final AtomicLong FINAL_POSITION = new AtomicLong(Long.MAX_VALUE);
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldGapFillWhenLossOccurs() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_LENGTH));
@@ -77,10 +77,9 @@ public class GapFillLossTest
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
             Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID))
         {
-            final IdleStrategy idleStrategy = new YieldingIdleStrategy();
-
             final Subscriber subscriber = new Subscriber(subscription);
             final Thread subscriberThread = new Thread(subscriber);
+            subscriberThread.setDaemon(true);
             subscriberThread.start();
 
             long position = 0;
@@ -91,7 +90,7 @@ public class GapFillLossTest
                 while ((position = publication.offer(srcBuffer)) < 0L)
                 {
                     SystemTest.checkInterruptedStatus();
-                    idleStrategy.idle();
+                    Thread.yield();
                 }
             }
 
@@ -119,12 +118,10 @@ public class GapFillLossTest
 
         public void run()
         {
-            final IdleStrategy idleStrategy = new YieldingIdleStrategy();
-
             while (!subscription.isConnected())
             {
                 SystemTest.checkInterruptedStatus();
-                idleStrategy.idle();
+                Thread.yield();
             }
 
             final Image image = subscription.imageAtIndex(0);
@@ -135,8 +132,12 @@ public class GapFillLossTest
                 if (0 == fragments)
                 {
                     SystemTest.checkInterruptedStatus();
+                    if (subscription.isClosed())
+                    {
+                        return;
+                    }
                 }
-                idleStrategy.idle(fragments);
+                Thread.yield();
             }
         }
 

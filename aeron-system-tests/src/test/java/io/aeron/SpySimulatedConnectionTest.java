@@ -20,7 +20,6 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -37,9 +36,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
-/**
- * Tests that allow Spies to simulate connection
- */
 @RunWith(Theories.class)
 public class SpySimulatedConnectionTest
 {
@@ -79,7 +75,7 @@ public class SpySimulatedConnectionTest
             .threadingMode(ThreadingMode.SHARED);
 
         driver = MediaDriver.launch(driverContext);
-        client = Aeron.connect(new Aeron.Context());
+        client = Aeron.connect();
     }
 
     @After
@@ -92,11 +88,11 @@ public class SpySimulatedConnectionTest
         CloseHelper.quietClose(client);
         CloseHelper.quietClose(driver);
 
-        IoUtil.delete(driverContext.aeronDirectory(), true);
+        driver.context().deleteAeronDirectory();
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldNotSimulateConnectionWhenNotConfiguredTo(final String channel)
     {
         launch();
@@ -114,7 +110,7 @@ public class SpySimulatedConnectionTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSimulateConnectionWithNoNetworkSubscriptions(final String channel)
     {
         final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -163,7 +159,7 @@ public class SpySimulatedConnectionTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSimulateConnectionWithSlowNetworkSubscription(final String channel)
     {
         final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -215,7 +211,7 @@ public class SpySimulatedConnectionTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSimulateConnectionWithLeavingNetworkSubscription(final String channel)
     {
         final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;

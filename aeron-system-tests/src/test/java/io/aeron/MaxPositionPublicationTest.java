@@ -16,8 +16,11 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -27,13 +30,26 @@ import static org.junit.Assert.assertEquals;
 
 public class MaxPositionPublicationTest
 {
-    public static final int STREAM_ID = 7;
-    public static final int FRAGMENT_COUNT_LIMIT = 10;
-    public static final int MESSAGE_LENGTH = 32;
+    private static final int STREAM_ID = 7;
+    private static final int MESSAGE_LENGTH = 32;
 
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
 
-    @Test(timeout = 10000)
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
+        .threadingMode(ThreadingMode.SHARED));
+
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
+
+    @Test(timeout = 10_000)
     @SuppressWarnings("unused")
     public void shouldPublishFromIndependentExclusivePublications()
     {
@@ -47,12 +63,7 @@ public class MaxPositionPublicationTest
             .validate()
             .build();
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace);
-
-        try (MediaDriver ignore = MediaDriver.launch(driverCtx);
-            Aeron aeron = Aeron.connect();
-            ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
+        try (ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
             Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
         {
             long resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
@@ -66,10 +77,6 @@ public class MaxPositionPublicationTest
             assertEquals(publication.maxPossiblePosition(), resultingPosition);
             assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
             assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
-        }
-        finally
-        {
-            driverCtx.deleteAeronDirectory();
         }
     }
 }

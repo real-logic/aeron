@@ -17,8 +17,10 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -42,23 +44,31 @@ public class ExclusivePublicationTest
     @DataPoint
     public static final String IPC_CHANNEL = CommonContext.IPC_CHANNEL;
 
-    public static final int STREAM_ID = 7;
-    public static final int FRAGMENT_COUNT_LIMIT = 10;
-    public static final int MESSAGE_LENGTH = 200;
+    private static final int STREAM_ID = 7;
+    private static final int FRAGMENT_COUNT_LIMIT = 10;
+    private static final int MESSAGE_LENGTH = 200;
 
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
+        .threadingMode(ThreadingMode.SHARED));
+
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
+
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldPublishFromIndependentExclusivePublications(final String channel)
     {
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
-            .threadingMode(ThreadingMode.SHARED);
-
-        try (MediaDriver ignore = MediaDriver.launch(driverCtx);
-            Aeron aeron = Aeron.connect();
-            Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
             ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
             ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID))
         {
@@ -99,10 +109,6 @@ public class ExclusivePublicationTest
             while (totalFragmentsRead < expectedNumberOfFragments);
 
             assertThat(messageCount.value, is(expectedNumberOfFragments));
-        }
-        finally
-        {
-            driverCtx.deleteAeronDirectory();
         }
     }
 

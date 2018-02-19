@@ -70,6 +70,12 @@ public class MultiSubscriberTest
             assertThat(subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT), is(0));
             assertThat(subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT), is(0));
 
+            while (!subscriptionOne.isConnected() || !subscriptionTwo.isConnected())
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
             while (publication.offer(srcBuffer) < 0L)
             {
                 SystemTest.checkInterruptedStatus();

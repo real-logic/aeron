@@ -253,7 +253,7 @@ public class ArchiveReplayLoadTest
                             "Image position=" + receivedPosition + " expected=" + expectedRecordingLength);
                         System.out.println("Resulting error: " + aeronArchive.pollForErrorResponse());
 
-                        aeron.printCounters();
+                        aeron.printCounters(System.out);
                         break;
                     }
 

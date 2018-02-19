@@ -28,6 +28,7 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -167,16 +168,17 @@ public class Aeron implements AutoCloseable
     }
 
     /**
-     * Print out the values from {@link #countersReader()} to {@link System#out} which can be useful for debugging.
+     * Print out the values from {@link #countersReader()} which can be useful for debugging.
+     * @param out to where the counters get printed.
      */
-    public void printCounters()
+    public void printCounters(final PrintStream out)
     {
         final CountersReader counters = countersReader();
         counters.forEach(
             (id, label) ->
             {
                 final long value = counters.getCounterValue(id);
-                System.out.format("%3d: %,20d - %s%n", id, value, label);
+                out.format("%3d: %,20d - %s%n", id, value, label);
             });
     }
 

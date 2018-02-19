@@ -18,9 +18,9 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.codecs.cnc.CncHeaderEncoder;
-import io.aeron.cluster.codecs.cnc.ClusterComponentType;
-import io.aeron.cluster.ClusterCncFile;
+import io.aeron.cluster.codecs.mark.ClusterComponentType;
+import io.aeron.cluster.ClusterMarkFile;
+import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -364,7 +364,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private RecordingLog recordingLog;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
-        private ClusterCncFile cncFile;
+        private ClusterMarkFile markFile;
 
         @SuppressWarnings("MethodLength")
         public void conclude()
@@ -486,7 +486,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 }
             }
 
-            concludeCncFile();
+            concludeMarkFile();
         }
 
         /**
@@ -1066,25 +1066,25 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the {@link ClusterCncFile} in use.
+         * Set the {@link ClusterMarkFile} in use.
          *
-         * @param cncFile to use.
+         * @param markFile to use.
          * @return this for a fluent API.
          */
-        public Context clusterCncFile(final ClusterCncFile cncFile)
+        public Context clusterMarkFile(final ClusterMarkFile markFile)
         {
-            this.cncFile = cncFile;
+            this.markFile = markFile;
             return this;
         }
 
         /**
-         * The {@link ClusterCncFile} in use.
+         * The {@link ClusterMarkFile} in use.
          *
-         * @return CnC file in use.
+         * @return {@link ClusterMarkFile} in use.
          */
-        public ClusterCncFile clusterCncFile()
+        public ClusterMarkFile clusterMarkFile()
         {
-            return cncFile;
+            return markFile;
         }
 
         /**
@@ -1105,7 +1105,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public void close()
         {
-            CloseHelper.quietClose(cncFile);
+            CloseHelper.quietClose(markFile);
 
             if (ownsAeronClient)
             {
@@ -1113,12 +1113,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
             }
         }
 
-        private void concludeCncFile()
+        private void concludeMarkFile()
         {
-            if (null == cncFile)
+            if (null == markFile)
             {
-                final int alignedTotalCncFileLength = ClusterCncFile.alignedTotalFileLength(
-                    ClusterCncFile.ALIGNMENT,
+                final int alignedTotalFileLength = ClusterMarkFile.alignedTotalFileLength(
+                    ClusterMarkFile.ALIGNMENT,
                     aeron.context().aeronDirectoryName(),
                     archiveContext.controlRequestChannel(),
                     serviceControlChannel(),
@@ -1126,16 +1126,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     serviceName,
                     null);
 
-                cncFile = new ClusterCncFile(
-                    new File(clusteredServiceDir, ClusterCncFile.FILENAME),
+                markFile = new ClusterMarkFile(
+                    new File(clusteredServiceDir, ClusterMarkFile.FILENAME),
                     ClusterComponentType.CONTAINER,
-                    alignedTotalCncFileLength,
+                    alignedTotalFileLength,
                     epochClock,
                     0);
 
-                final CncHeaderEncoder cncEncoder = cncFile.encoder();
+                final MarkFileHeaderEncoder encoder = markFile.encoder();
 
-                cncEncoder
+                encoder
                     .archiveStreamId(archiveContext.controlRequestStreamId())
                     .serviceControlStreamId(serviceControlStreamId)
                     .ingressStreamId(0)
@@ -1148,8 +1148,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     .serviceName(serviceName)
                     .authenticator("");
 
-                cncFile.signalCncReady();
-                cncFile.updateActivityTimestamp(epochClock.time());
+                markFile.updateActivityTimestamp(epochClock.time());
+                markFile.signalReady();
             }
         }
     }

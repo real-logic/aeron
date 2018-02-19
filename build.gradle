@@ -509,7 +509,7 @@ project(':aeron-archive') {
             'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
             'sbe.validation.stop.on.error': 'true')
         args = ['src/main/resources/aeron-archive-codecs.xml',
-                'src/main/resources/aeron-archive-cnc-codecs.xml']
+                'src/main/resources/aeron-archive-mark-codecs.xml']
     }
 
     test {
@@ -600,7 +600,7 @@ project(':aeron-cluster') {
             'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
             'sbe.validation.stop.on.error': 'true')
         args = ['src/main/resources/aeron-cluster-codecs.xml',
-                'src/main/resources/aeron-cluster-cnc-codecs.xml']
+                'src/main/resources/aeron-cluster-mark-codecs.xml']
     }
 
     test {

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-                   package="io.aeron.archive.codecs.cnc"
+                   package="io.aeron.archive.codecs.mark"
                    id="1"
                    version="1"
                    semanticVersion="5.2"
-                   description="Message Codecs for CnC file of Aeron Archive"
+                   description="Codecs for Mark file of Aeron Archive"
                    byteOrder="littleEndian">
     <types>
         <composite name="messageHeader" description="Message identifiers and length of message root">
@@ -24,12 +24,12 @@
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
     </types>
 
-    <!-- CnC file -->
+    <!-- Mark file -->
 
-    <sbe:message name="CncHeader"
+    <sbe:message name="MarkFileHeader"
                  id="200"
                  blockLength="128"
-                 description="CnC file header">
+                 description="Mark file header">
         <field name="version"              id="1"  type="int32"/>
         <field name="activityTimestamp"    id="2"  type="time_t" offset="8"/>
         <field name="pid"                  id="3"  type="int64"/>

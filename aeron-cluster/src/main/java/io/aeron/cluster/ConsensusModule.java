@@ -19,10 +19,10 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.codecs.cnc.CncHeaderEncoder;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.ClusterAction;
-import io.aeron.cluster.codecs.cnc.ClusterComponentType;
+import io.aeron.cluster.codecs.mark.ClusterComponentType;
+import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -630,7 +630,7 @@ public class ConsensusModule implements AutoCloseable
         private String clusterDirectoryName = Configuration.clusterDirName();
         private File clusterDir;
         private RecordingLog recordingLog;
-        private ClusterCncFile cncFile;
+        private ClusterMarkFile markFile;
 
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
@@ -807,7 +807,7 @@ public class ConsensusModule implements AutoCloseable
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
 
-            concludeCncFile();
+            concludeMarkFile();
         }
 
         /**
@@ -1832,25 +1832,25 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the {@link ClusterCncFile} in use.
+         * Set the {@link ClusterMarkFile} in use.
          *
-         * @param cncFile to use.
+         * @param markFile to use.
          * @return this for a fluent API.
          */
-        public Context clusterCncFile(final ClusterCncFile cncFile)
+        public Context clusterMarkFile(final ClusterMarkFile markFile)
         {
-            this.cncFile = cncFile;
+            this.markFile = markFile;
             return this;
         }
 
         /**
-         * The {@link ClusterCncFile} in use.
+         * The {@link ClusterMarkFile} in use.
          *
-         * @return CnC file in use.
+         * @return {@link ClusterMarkFile} in use.
          */
-        public ClusterCncFile clusterCncFile()
+        public ClusterMarkFile clusterMarkFile()
         {
-            return cncFile;
+            return markFile;
         }
 
         /**
@@ -1871,7 +1871,7 @@ public class ConsensusModule implements AutoCloseable
          */
         public void close()
         {
-            CloseHelper.quietClose(cncFile);
+            CloseHelper.close(markFile);
 
             if (ownsAeronClient)
             {
@@ -1886,12 +1886,12 @@ public class ConsensusModule implements AutoCloseable
             }
         }
 
-        private void concludeCncFile()
+        private void concludeMarkFile()
         {
-            if (null == cncFile)
+            if (null == markFile)
             {
-                final int alignedTotalCncFileLength = ClusterCncFile.alignedTotalFileLength(
-                    ClusterCncFile.ALIGNMENT,
+                final int alignedTotalFileLength = ClusterMarkFile.alignedTotalFileLength(
+                    ClusterMarkFile.ALIGNMENT,
                     aeron.context().aeronDirectoryName(),
                     archiveContext.controlRequestChannel(),
                     serviceControlChannel(),
@@ -1899,16 +1899,16 @@ public class ConsensusModule implements AutoCloseable
                     null,
                     authenticatorSupplier.getClass().toString());
 
-                cncFile = new ClusterCncFile(
-                    new File(clusterDir, ClusterCncFile.FILENAME),
+                markFile = new ClusterMarkFile(
+                    new File(clusterDir, ClusterMarkFile.FILENAME),
                     ClusterComponentType.CONSENSUS_MODULE,
-                    alignedTotalCncFileLength,
+                    alignedTotalFileLength,
                     epochClock,
                     0);
 
-                final CncHeaderEncoder cncEncoder = cncFile.encoder();
+                final MarkFileHeaderEncoder encoder = markFile.encoder();
 
-                cncEncoder
+                encoder
                     .archiveStreamId(archiveContext.controlRequestStreamId())
                     .serviceControlStreamId(serviceControlStreamId)
                     .ingressStreamId(ingressStreamId)
@@ -1921,8 +1921,8 @@ public class ConsensusModule implements AutoCloseable
                     .serviceName("")
                     .authenticator(authenticatorSupplier.getClass().toString());
 
-                cncFile.signalCncReady();
-                cncFile.updateActivityTimestamp(epochClock.time());
+                markFile.updateActivityTimestamp(epochClock.time());
+                markFile.signalReady();
             }
         }
     }

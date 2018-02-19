@@ -18,7 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.ClusterCncFile;
+import io.aeron.cluster.ClusterMarkFile;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
@@ -50,7 +50,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     private final RecordingLog recordingLog;
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
-    private final ClusterCncFile cncFile;
+    private final ClusterMarkFile markFile;
 
     private long baseLogPosition;
     private long leadershipTermId;
@@ -72,7 +72,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         idleStrategy = ctx.idleStrategy();
         serviceId = ctx.serviceId();
         epochClock = ctx.epochClock();
-        cncFile = ctx.clusterCncFile();
+        markFile = ctx.clusterMarkFile();
 
         serviceControlPublisher = new ServiceControlPublisher(
             aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceControlStreamId()));
@@ -127,7 +127,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         final long nowMs = epochClock.time();
         if (cachedEpochClock.time() != nowMs)
         {
-            cncFile.updateActivityTimestamp(nowMs);
+            markFile.updateActivityTimestamp(nowMs);
             cachedEpochClock.update(nowMs);
         }
 

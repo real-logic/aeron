@@ -49,17 +49,17 @@ public class CatalogTool
         if (args.length == 2 && args[1].equals("describe"))
         {
             try (Catalog catalog = openCatalog();
-                ArchiveCncFile cncFile = openCncFile(System.out::println))
+                ArchiveMarkFile markFile = openMarkFile(System.out::println))
             {
-                printCncInformation(cncFile);
+                printMarkInformation(markFile);
                 catalog.forEach((he, hd, e, d) -> System.out.println(d));
             }
         }
         else if (args.length == 2 && args[1].equals("pid"))
         {
-            try (ArchiveCncFile cncFile = openCncFile(null))
+            try (ArchiveMarkFile markFile = openMarkFile(null))
             {
-                System.out.println(cncFile.decoder().pid());
+                System.out.println(markFile.decoder().pid());
             }
         }
         else if (args.length == 3 && args[1].equals("describe"))
@@ -86,10 +86,10 @@ public class CatalogTool
         // TODO: add a manual override tool to force mark entries as unusable
     }
 
-    private static ArchiveCncFile openCncFile(final Consumer<String> logger)
+    private static ArchiveMarkFile openMarkFile(final Consumer<String> logger)
     {
-        return new ArchiveCncFile(
-            archiveDir, ArchiveCncFile.FILENAME, System::currentTimeMillis, TimeUnit.SECONDS.toMillis(5), logger);
+        return new ArchiveMarkFile(
+            archiveDir, ArchiveMarkFile.FILENAME, System::currentTimeMillis, TimeUnit.SECONDS.toMillis(5), logger);
     }
 
     private static Catalog openCatalog()
@@ -97,13 +97,13 @@ public class CatalogTool
         return new Catalog(archiveDir, System::currentTimeMillis);
     }
 
-    private static void printCncInformation(final ArchiveCncFile cncFile)
+    private static void printMarkInformation(final ArchiveMarkFile markFile)
     {
         System.out.format(
             "%1$tH:%1$tM:%1$tS (activity: %2$tH:%2$tM:%2$tS)%n",
             new Date(),
-            new Date(cncFile.activityTimestampVolatile()));
-        System.out.println(cncFile.decoder());
+            new Date(markFile.activityTimestampVolatile()));
+        System.out.println(markFile.decoder());
     }
 
     private static void verify(

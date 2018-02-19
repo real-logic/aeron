@@ -15,12 +15,12 @@
  */
 package io.aeron.archive;
 
-import io.aeron.archive.codecs.cnc.CncHeaderDecoder;
-import io.aeron.archive.codecs.cnc.CncHeaderEncoder;
-import io.aeron.archive.codecs.cnc.VarAsciiEncodingEncoder;
+import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
+import io.aeron.archive.codecs.mark.MarkFileHeaderEncoder;
+import io.aeron.archive.codecs.mark.VarAsciiEncodingEncoder;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
-import org.agrona.CncFile;
+import org.agrona.MarkFile;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -28,125 +28,119 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.File;
 import java.util.function.Consumer;
 
-public class ArchiveCncFile implements AutoCloseable
+public class ArchiveMarkFile implements AutoCloseable
 {
-    public static final String FILENAME = "cnc.dat";
+    public static final String FILENAME = "mark.dat";
     public static final int ALIGNMENT = 1024;
 
-    private final CncHeaderDecoder cncHeaderDecoder;
-    private final CncHeaderEncoder cncHeaderEncoder;
-    private final CncFile cncFile;
-    private final UnsafeBuffer cncBuffer;
+    private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
+    private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();
+    private final MarkFile markFile;
+    private final UnsafeBuffer buffer;
 
-    public ArchiveCncFile(final Archive.Context ctx)
+    public ArchiveMarkFile(final Archive.Context ctx)
     {
         this(new File(ctx.archiveDir(), FILENAME), alignedTotalFileLength(ctx), ctx.epochClock(), 0);
 
         encode(ctx);
-        signalCncReady();
         updateActivityTimestamp(ctx.epochClock().time());
+        signalReady();
     }
 
-    public ArchiveCncFile(
+    public ArchiveMarkFile(
         final File file,
         final int totalFileLength,
         final EpochClock epochClock,
         final long timeoutMs)
     {
-        this.cncFile = new CncFile(
+        this.markFile = new MarkFile(
             file,
             file.exists(),
-            CncHeaderDecoder.versionEncodingOffset(),
-            CncHeaderDecoder.activityTimestampEncodingOffset(),
+            MarkFileHeaderDecoder.versionEncodingOffset(),
+            MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
             totalFileLength,
             timeoutMs,
             epochClock,
             (version) ->
             {
-                if (version != CncHeaderDecoder.SCHEMA_VERSION)
+                if (version != MarkFileHeaderDecoder.SCHEMA_VERSION)
                 {
-                    throw new IllegalArgumentException("CnC file version " + version +
-                        " does not match software:" + CncHeaderDecoder.SCHEMA_VERSION);
+                    throw new IllegalArgumentException("Mark file version " + version +
+                        " does not match software:" + MarkFileHeaderDecoder.SCHEMA_VERSION);
                 }
             },
             null);
 
-        this.cncBuffer = cncFile.buffer();
+        this.buffer = markFile.buffer();
 
-        cncHeaderDecoder = new CncHeaderDecoder();
-        cncHeaderEncoder = new CncHeaderEncoder();
+        headerEncoder.wrap(buffer, 0);
+        headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
 
-        cncHeaderEncoder.wrap(cncBuffer, 0);
-        cncHeaderDecoder.wrap(cncBuffer, 0, CncHeaderDecoder.BLOCK_LENGTH, CncHeaderDecoder.SCHEMA_VERSION);
-
-        cncHeaderEncoder.pid(SystemUtil.getPid());
+        headerEncoder.pid(SystemUtil.getPid());
     }
 
-    public ArchiveCncFile(
+    public ArchiveMarkFile(
         final File directory,
         final String filename,
         final EpochClock epochClock,
         final long timeoutMs,
         final Consumer<String> logger)
     {
-        cncFile = new CncFile(
+        markFile = new MarkFile(
             directory,
             filename,
-            CncHeaderDecoder.versionEncodingOffset(),
-            CncHeaderDecoder.activityTimestampEncodingOffset(),
+            MarkFileHeaderDecoder.versionEncodingOffset(),
+            MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
             timeoutMs,
             epochClock,
             (version) ->
             {
-                if (version != CncHeaderDecoder.SCHEMA_VERSION)
+                if (version != MarkFileHeaderDecoder.SCHEMA_VERSION)
                 {
-                    throw new IllegalArgumentException("CnC file version " + version +
-                        " does not match software:" + CncHeaderDecoder.SCHEMA_VERSION);
+                    throw new IllegalArgumentException("Mark file version " + version +
+                        " does not match software:" + MarkFileHeaderDecoder.SCHEMA_VERSION);
                 }
             },
             logger);
 
-        this.cncBuffer = cncFile.buffer();
+        this.buffer = markFile.buffer();
 
-        cncHeaderDecoder = new CncHeaderDecoder();
-        cncHeaderEncoder = null;
-
-        cncHeaderDecoder.wrap(cncBuffer, 0, CncHeaderDecoder.BLOCK_LENGTH, CncHeaderDecoder.SCHEMA_VERSION);
+        headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
     }
 
     public void close()
     {
-        CloseHelper.quietClose(cncFile);
+        CloseHelper.close(markFile);
     }
 
-    public void signalCncReady()
+    public void signalReady()
     {
-        cncFile.signalCncReady(CncHeaderEncoder.SCHEMA_VERSION);
+        markFile.signalReady(MarkFileHeaderEncoder.SCHEMA_VERSION);
     }
 
     public void updateActivityTimestamp(final long nowMs)
     {
-        cncFile.timestampOrdered(nowMs);
+        markFile.timestampOrdered(nowMs);
     }
 
     public long activityTimestampVolatile()
     {
-        return cncFile.timestampVolatile();
+        return markFile.timestampVolatile();
     }
 
-    public CncHeaderEncoder encoder()
+    public MarkFileHeaderEncoder encoder()
     {
-        return cncHeaderEncoder;
+        return headerEncoder;
     }
 
-    public CncHeaderDecoder decoder()
+    public MarkFileHeaderDecoder decoder()
     {
-        return cncHeaderDecoder;
+        return headerDecoder;
     }
 
     public void encode(final Archive.Context ctx)
     {
-        cncHeaderEncoder
+        headerEncoder
             .controlStreamId(ctx.controlStreamId())
             .localControlStreamId(ctx.localControlStreamId())
             .eventsStreamId(ctx.recordingEventsStreamId())
@@ -174,7 +168,7 @@ public class ArchiveCncFile implements AutoCloseable
         final String aeronDirectory)
     {
         return BitUtil.align(
-            CncHeaderEncoder.BLOCK_LENGTH +
+            MarkFileHeaderEncoder.BLOCK_LENGTH +
             (4 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
             controlChannel.length() +
             localControlChannel.length() +

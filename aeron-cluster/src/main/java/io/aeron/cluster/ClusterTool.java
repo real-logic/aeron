@@ -16,8 +16,8 @@
 package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.codecs.cnc.ClusterComponentType;
-import io.aeron.cluster.codecs.cnc.CncHeaderDecoder;
+import io.aeron.cluster.codecs.mark.ClusterComponentType;
+import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.service.RecordingLog;
 
 import java.io.File;
@@ -48,18 +48,18 @@ public class ClusterTool
         switch (args[1])
         {
             case "describe":
-                try (ClusterCncFile cncFile = openCncFile(clusterDir, System.out::println))
+                try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
                 {
-                    final CncHeaderDecoder decoder = cncFile.decoder();
+                    final MarkFileHeaderDecoder decoder = markFile.decoder();
                     printTypeAndActivityTimestamp(decoder.componentType(), decoder.activityTimestamp());
                     System.out.println(decoder);
                 }
                 break;
 
             case "pid":
-                try (ClusterCncFile cncFile = openCncFile(clusterDir, null))
+                try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
                 {
-                    System.out.println(cncFile.decoder().pid());
+                    System.out.println(markFile.decoder().pid());
                 }
                 break;
 
@@ -73,9 +73,9 @@ public class ClusterTool
         }
     }
 
-    private static ClusterCncFile openCncFile(final File clusterDir, final Consumer<String> logger)
+    private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
     {
-        return new ClusterCncFile(clusterDir, ClusterCncFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
+        return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
 
     private static void printTypeAndActivityTimestamp(final ClusterComponentType type, final long activityTimestamp)

@@ -70,7 +70,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final ClusterMember thisMember;
     private long[] rankedPositions;
     private final Counter clusterRoleCounter;
-    private final ClusterCncFile cncFile;
+    private final ClusterMarkFile markFile;
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
@@ -121,7 +121,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.memberId = ctx.clusterMemberId();
         this.leaderMemberId = ctx.appointedLeaderId();
         this.clusterRoleCounter = ctx.clusterNodeCounter();
-        this.cncFile = ctx.clusterCncFile();
+        this.markFile = ctx.clusterMarkFile();
 
         aeronClientInvoker = ctx.ownsAeronClient() ? ctx.aeron().conductorAgentInvoker() : null;
         invokeAeronClient();
@@ -679,7 +679,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         int workCount = 0;
 
-        cncFile.updateActivityTimestamp(nowMs);
+        markFile.updateActivityTimestamp(nowMs);
         workCount += invokeAeronClient();
         workCount += serviceControlAdapter.poll();
 

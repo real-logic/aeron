@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-                   package="io.aeron.cluster.codecs.cnc"
+                   package="io.aeron.cluster.codecs.mark"
                    id="1"
                    version="1"
                    semanticVersion="5.2"
-                   description="Message Codecs for CnC file of an Aeron Cluster"
+                   description="Codecs for Mark file of an Aeron Cluster"
                    byteOrder="littleEndian">
     <types>
         <composite name="messageHeader" description="Message identifiers and length of message root">
@@ -29,12 +29,12 @@
         </enum>
     </types>
 
-    <!-- Cluster Component CnC File -->
+    <!-- Cluster Component Mark File -->
 
-    <sbe:message name="CncHeader"
+    <sbe:message name="MarkFileHeader"
                  id="200"
                  blockLength="128"
-                 description="Header of Consensus Module and Container CnC file">
+                 description="Header of Consensus Module and Container Mark file">
         <field name="version"                id="1"  type="int32"/>
         <field name="componentType"          id="2"  type="ClusterComponentType"/>
         <field name="activityTimestamp"      id="3"  type="time_t"/>

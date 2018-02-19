@@ -294,7 +294,7 @@ public class Archive implements AutoCloseable
         private String archiveDirectoryName = Configuration.archiveDirName();
         private FileChannel archiveDirChannel;
         private Catalog catalog;
-        private ArchiveCncFile cncFile;
+        private ArchiveMarkFile markFile;
 
         private String controlChannel = AeronArchive.Configuration.controlChannel();
         private int controlStreamId = AeronArchive.Configuration.controlStreamId();
@@ -407,9 +407,9 @@ public class Archive implements AutoCloseable
                 throw new ConfigurationException("Segment file length not in valid range: " + segmentFileLength);
             }
 
-            if (null == cncFile)
+            if (null == markFile)
             {
-                cncFile = new ArchiveCncFile(this);
+                markFile = new ArchiveMarkFile(this);
             }
 
             if (null == catalog)
@@ -1029,25 +1029,25 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * The {@link ArchiveCncFile} for the Archive.
+         * The {@link ArchiveMarkFile} for the Archive.
          *
-         * @param archiveCncFile {@link ArchiveCncFile} for the Archive.
+         * @param archiveMarkFile {@link ArchiveMarkFile} for the Archive.
          * @return this for a fluent API.
          */
-        public Context archiveCncFile(final ArchiveCncFile archiveCncFile)
+        public Context archiveMarkFile(final ArchiveMarkFile archiveMarkFile)
         {
-            this.cncFile = archiveCncFile;
+            this.markFile = archiveMarkFile;
             return this;
         }
 
         /**
-         * The {@link ArchiveCncFile} for the Archive.
+         * The {@link ArchiveMarkFile} for the Archive.
          *
-         * @return {@link ArchiveCncFile} for the Archive.
+         * @return {@link ArchiveMarkFile} for the Archive.
          */
-        public ArchiveCncFile archiveCncFile()
+        public ArchiveMarkFile archiveMarkFile()
         {
-            return cncFile;
+            return markFile;
         }
 
         /**
@@ -1063,7 +1063,7 @@ public class Archive implements AutoCloseable
             }
 
             CloseHelper.quietClose(catalog);
-            CloseHelper.quietClose(cncFile);
+            CloseHelper.quietClose(markFile);
             CloseHelper.quietClose(archiveDirChannel);
         }
     }

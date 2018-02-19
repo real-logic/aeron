@@ -37,7 +37,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.CountersReader;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 
@@ -254,9 +253,7 @@ public class ArchiveReplayLoadTest
                             "Image position=" + receivedPosition + " expected=" + expectedRecordingLength);
                         System.out.println("Resulting error: " + aeronArchive.pollForErrorResponse());
 
-                        final CountersReader countersReader = aeron.countersReader();
-                        countersReader.forEach(
-                            (id, label) -> System.out.println(countersReader.getCounterValue(id) + "\t: " + label));
+                        aeron.printCounters();
                         break;
                     }
 

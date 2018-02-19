@@ -167,6 +167,15 @@ public class Aeron implements AutoCloseable
     }
 
     /**
+     * Print out the values from {@link #countersReader()} to {@link System#out} which can be useful for debugging.
+     */
+    public void printCounters()
+    {
+        final CountersReader counters = countersReader();
+        counters.forEach((id, label) -> System.out.println(counters.getCounterValue(id) + "\t: " + label));
+    }
+
+    /**
      * Has the client been closed? If not then the CnC file may not be unmapped.
      *
      * @return true if the client has been explicitly closed otherwise false.

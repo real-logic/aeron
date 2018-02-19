@@ -169,17 +169,13 @@ public class Aeron implements AutoCloseable
 
     /**
      * Print out the values from {@link #countersReader()} which can be useful for debugging.
-     * @param out to where the counters get printed.
+     *
+     *  @param out to where the counters get printed.
      */
     public void printCounters(final PrintStream out)
     {
         final CountersReader counters = countersReader();
-        counters.forEach(
-            (id, label) ->
-            {
-                final long value = counters.getCounterValue(id);
-                out.format("%3d: %,20d - %s%n", id, value, label);
-            });
+        counters.forEach((value, id, label) -> out.format("%3d: %,20d - %s%n", id, value, label));
     }
 
     /**

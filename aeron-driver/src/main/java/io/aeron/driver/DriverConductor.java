@@ -131,8 +131,14 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     public void onClose()
     {
-        networkPublications.forEach(NetworkPublication::close);
+        final long deadlineNs = nanoClock.nanoTime() + (timerIntervalNs * 3);
+        while (doWork() > 0 && nanoClock.nanoTime() < deadlineNs)
+        {
+            Thread.yield();
+        }
+
         publicationImages.forEach(PublicationImage::close);
+        networkPublications.forEach(NetworkPublication::close);
         ipcPublications.forEach(IpcPublication::close);
     }
 

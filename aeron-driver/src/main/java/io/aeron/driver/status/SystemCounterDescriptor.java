@@ -47,6 +47,7 @@ public enum SystemCounterDescriptor
     POSSIBLE_TTL_ASYMMETRY(21, "Possible TTL Asymmetry"),
     CONTROLLABLE_IDLE_STRATEGY(22, "ControllableIdleStrategy status"),
     LOSS_GAP_FILLS(23, "Loss gap fills");
+
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.
      */

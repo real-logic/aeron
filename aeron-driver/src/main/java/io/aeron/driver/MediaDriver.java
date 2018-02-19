@@ -1881,95 +1881,6 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        private void concludeDependantProperties()
-        {
-            clientProxy = new ClientProxy(new BroadcastTransmitter(
-                createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer)));
-
-            toDriverCommands = new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
-
-            if (null == errorLog)
-            {
-                errorLog = new DistinctErrorLog(createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock);
-            }
-
-            if (null == errorHandler)
-            {
-                errorHandler = new LoggingErrorHandler(errorLog);
-            }
-
-            receiverProxy = new ReceiverProxy(
-                threadingMode, receiverCommandQueue(), systemCounters.get(RECEIVER_PROXY_FAILS));
-            senderProxy = new SenderProxy(
-                threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS));
-            driverConductorProxy = new DriverConductorProxy(
-                threadingMode, driverCommandQueue(), systemCounters.get(CONDUCTOR_PROXY_FAILS));
-
-            if (null == rawLogFactory)
-            {
-                rawLogFactory = new RawLogFactory(
-                    aeronDirectoryName(),
-                    filePageSize,
-                    termBufferSparseFile,
-                    performStorageChecks,
-                    errorLog);
-            }
-
-            if (null == lossReport)
-            {
-                lossReportBuffer = mapLossReport(
-                    aeronDirectoryName(), align(Configuration.LOSS_REPORT_BUFFER_LENGTH, filePageSize));
-                lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
-            }
-        }
-
-        private void concludeCounters()
-        {
-            if (null == countersManager)
-            {
-                if (countersMetaDataBuffer() == null)
-                {
-                    countersMetaDataBuffer(createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
-                }
-
-                if (countersValuesBuffer() == null)
-                {
-                    countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
-                }
-
-                final EpochClock counterEpochClock;
-                final long freeToReuseTimeoutMs;
-                if (counterFreeToReuseTimeoutNs > 0)
-                {
-                    counterEpochClock = epochClock;
-                    freeToReuseTimeoutMs = Math.min(TimeUnit.NANOSECONDS.toMillis(counterFreeToReuseTimeoutNs), 1);
-                }
-                else
-                {
-                    counterEpochClock = () -> 0;
-                    freeToReuseTimeoutMs = 0;
-                }
-
-                final UnsafeBuffer metaDataBuffer = countersMetaDataBuffer();
-                final UnsafeBuffer valuesBuffer = countersValuesBuffer();
-                if (useConcurrentCountersManager)
-                {
-                    countersManager(new ConcurrentCountersManager(
-                        metaDataBuffer, valuesBuffer, US_ASCII, counterEpochClock, freeToReuseTimeoutMs));
-                }
-                else
-                {
-                    countersManager(new CountersManager(
-                        metaDataBuffer, valuesBuffer, US_ASCII, counterEpochClock, freeToReuseTimeoutMs));
-                }
-            }
-
-            if (null == systemCounters)
-            {
-                systemCounters = new SystemCounters(countersManager);
-            }
-        }
-
         @SuppressWarnings("MethodLength")
         private void concludeNullProperties()
         {
@@ -2071,6 +1982,93 @@ public final class MediaDriver implements AutoCloseable
             if (null == senderCommandQueue)
             {
                 senderCommandQueue = new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
+            }
+        }
+
+        private void concludeDependantProperties()
+        {
+            clientProxy = new ClientProxy(new BroadcastTransmitter(
+                createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer)));
+
+            toDriverCommands = new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+
+            if (null == errorLog)
+            {
+                errorLog = new DistinctErrorLog(createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock);
+            }
+
+            if (null == errorHandler)
+            {
+                errorHandler = new LoggingErrorHandler(errorLog);
+            }
+
+            receiverProxy = new ReceiverProxy(
+                threadingMode, receiverCommandQueue(), systemCounters.get(RECEIVER_PROXY_FAILS));
+            senderProxy = new SenderProxy(
+                threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS));
+            driverConductorProxy = new DriverConductorProxy(
+                threadingMode, driverCommandQueue(), systemCounters.get(CONDUCTOR_PROXY_FAILS));
+
+            if (null == rawLogFactory)
+            {
+                rawLogFactory = new RawLogFactory(
+                    aeronDirectoryName(),
+                    filePageSize,
+                    termBufferSparseFile,
+                    performStorageChecks,
+                    errorLog);
+            }
+
+            if (null == lossReport)
+            {
+                lossReportBuffer = mapLossReport(
+                    aeronDirectoryName(), align(Configuration.LOSS_REPORT_BUFFER_LENGTH, filePageSize));
+                lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
+            }
+        }
+
+        private void concludeCounters()
+        {
+            if (null == countersManager)
+            {
+                if (countersMetaDataBuffer() == null)
+                {
+                    countersMetaDataBuffer(createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
+                }
+
+                if (countersValuesBuffer() == null)
+                {
+                    countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+                }
+
+                final EpochClock clock;
+                final long reuseTimeoutMs;
+                if (counterFreeToReuseTimeoutNs > 0)
+                {
+                    clock = epochClock;
+                    reuseTimeoutMs = Math.min(TimeUnit.NANOSECONDS.toMillis(counterFreeToReuseTimeoutNs), 1);
+                }
+                else
+                {
+                    clock = () -> 0;
+                    reuseTimeoutMs = 0;
+                }
+
+                if (useConcurrentCountersManager)
+                {
+                    countersManager = new ConcurrentCountersManager(
+                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, clock, reuseTimeoutMs);
+                }
+                else
+                {
+                    countersManager = new CountersManager(
+                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, clock, reuseTimeoutMs);
+                }
+            }
+
+            if (null == systemCounters)
+            {
+                systemCounters = new SystemCounters(countersManager);
             }
         }
 

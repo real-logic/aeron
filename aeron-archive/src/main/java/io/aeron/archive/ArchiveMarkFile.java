@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 
 public class ArchiveMarkFile implements AutoCloseable
 {
-    public static final String FILENAME = "mark.dat";
+    public static final String FILENAME = "archive-mark.dat";
     public static final int ALIGNMENT = 1024;
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();

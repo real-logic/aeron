@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 
 public class ClusterMarkFile implements AutoCloseable
 {
-    public static final String FILENAME = "mark.dat";
+    public static final String FILENAME = "cluster-mark.dat";
     public static final int ALIGNMENT = 1024;
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();

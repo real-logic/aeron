@@ -576,31 +576,23 @@ class SequencerAgent implements Agent, ServiceControlListener
         final long candidateTermId,
         final long lastBaseLogPosition,
         final long lastTermPosition,
-        final int candidateMemberId)
+        final int candidateId)
     {
         if (Cluster.Role.FOLLOWER == role &&
             candidateTermId == leadershipTermId &&
             lastBaseLogPosition == recoveryPlan.lastLogPosition)
         {
-            final boolean potentialLeader = lastTermPosition >= recoveryPlan.lastTermPositionAppended;
+            final boolean vote = lastTermPosition >= recoveryPlan.lastTermPositionAppended;
+            sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, vote);
 
-            memberStatusPublisher.vote(
-                clusterMembers[candidateMemberId].publication(),
-                candidateTermId,
-                lastBaseLogPosition,
-                lastTermPosition,
-                candidateMemberId,
-                memberId,
-                potentialLeader);
-
-            if (!potentialLeader)
+            if (!vote)
             {
                 // TODO: become candidate in new election
-                throw new IllegalStateException("Invalid member for cluster leader: " + candidateMemberId);
+                throw new IllegalStateException("Invalid member for cluster leader: " + candidateId);
             }
             else
             {
-                votedForMemberId = candidateMemberId;
+                votedForMemberId = candidateId;
 
                 if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
                 {
@@ -610,14 +602,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
         else
         {
-            memberStatusPublisher.vote(
-                clusterMembers[candidateMemberId].publication(),
-                candidateTermId,
-                lastBaseLogPosition,
-                lastTermPosition,
-                candidateMemberId,
-                memberId,
-                false);
+            sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, false);
         }
     }
 
@@ -755,6 +740,28 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
 
         return 1;
+    }
+
+    private void sendVote(
+        final long candidateTermId,
+        final long lastBaseLogPosition,
+        final long lastTermPosition,
+        final int candidateId,
+        final boolean vote)
+    {
+        idleStrategy.reset();
+
+        while (!memberStatusPublisher.vote(
+            clusterMembers[candidateId].publication(),
+            candidateTermId,
+            lastBaseLogPosition,
+            lastTermPosition,
+            candidateId,
+            memberId,
+            vote))
+        {
+            idle();
+        }
     }
 
     private boolean appendAction(final ClusterAction action, final long nowMs)
@@ -936,14 +943,15 @@ class SequencerAgent implements Agent, ServiceControlListener
 
             for (final ClusterMember member : clusterMembers)
             {
-                if (!memberStatusPublisher.requestVote(
+                idleStrategy.reset();
+                while (!memberStatusPublisher.requestVote(
                     member.publication(),
                     leadershipTermId,
                     recoveryPlan.lastLogPosition,
                     recoveryPlan.lastTermPositionAppended,
                     memberId))
                 {
-                    throw new IllegalStateException("failed to request vote");
+                    idle();
                 }
             }
 

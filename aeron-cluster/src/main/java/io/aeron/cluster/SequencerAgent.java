@@ -438,7 +438,10 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public void onServiceCloseSession(final long clusterSessionId)
     {
-        closeSession(clusterSessionId, CloseReason.SERVICE_ACTION);
+        if (Cluster.Role.LEADER == role)
+        {
+            closeSession(clusterSessionId, CloseReason.SERVICE_ACTION);
+        }
     }
 
     void state(final ConsensusModule.State state)

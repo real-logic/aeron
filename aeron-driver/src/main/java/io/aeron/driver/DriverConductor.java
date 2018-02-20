@@ -152,12 +152,12 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         int workCount = 0;
 
-        workCount += clientCommandAdapter.receive();
-        workCount += driverCmdQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
-
         final long nowNs = nanoClock.nanoTime();
         updateClocks(nowNs);
         workCount += processTimers(nowNs);
+
+        workCount += clientCommandAdapter.receive();
+        workCount += driverCmdQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
 
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int i = 0, size = publicationImages.size(); i < size; i++)

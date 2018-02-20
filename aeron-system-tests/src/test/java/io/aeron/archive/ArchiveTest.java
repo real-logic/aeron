@@ -70,7 +70,7 @@ public class ArchiveTest
         return Arrays.asList(
             new Object[][]
             {
-            //    { ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED },
+                { ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED },
                 { ThreadingMode.SHARED, ArchiveThreadingMode.SHARED },
                 { ThreadingMode.DEDICATED, ArchiveThreadingMode.SHARED },
                 { ThreadingMode.SHARED, ArchiveThreadingMode.DEDICATED },

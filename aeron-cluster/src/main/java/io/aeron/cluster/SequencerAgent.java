@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.cluster.ClusterMember.NULL_MEMBER_ID;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
@@ -48,8 +49,8 @@ class SequencerAgent implements Agent, ServiceControlListener
 {
     private boolean isRecovered;
     private final int memberId;
-    private int votedForMemberId = ClusterMember.NULL_MEMBER_ID;
-    private int leaderMemberId;
+    private int votedForMemberId = NULL_MEMBER_ID;
+    private int leaderMemberId = NULL_MEMBER_ID;
     private int serviceAckCount = 0;
     private int logSessionId;
     private final long sessionTimeoutMs;
@@ -969,27 +970,13 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private void electLeader()
     {
-        awaitConnectedMembers();
-
         if (ctx.appointedLeaderId() == memberId)
         {
             role(Cluster.Role.CANDIDATE);
             ClusterMember.becomeCandidate(clusterMembers, memberId);
             votedForMemberId = memberId;
 
-            for (final ClusterMember member : clusterMembers)
-            {
-                idleStrategy.reset();
-                while (!memberStatusPublisher.requestVote(
-                    member.publication(),
-                    leadershipTermId,
-                    recoveryPlan.lastLogPosition,
-                    recoveryPlan.lastTermPositionAppended,
-                    memberId))
-                {
-                    idle();
-                }
-            }
+            requestVotes(clusterMembers, recoveryPlan.lastLogPosition, recoveryPlan.lastTermPositionAppended);
 
             do
             {
@@ -1002,26 +989,34 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
         else
         {
-            votedForMemberId = ClusterMember.NULL_MEMBER_ID;
+            votedForMemberId = NULL_MEMBER_ID;
+            leaderMemberId = NULL_MEMBER_ID;
 
-            do
+            while (NULL_MEMBER_ID == leaderMemberId)
             {
                 idle(memberStatusAdapter.poll());
             }
-            while (ClusterMember.NULL_MEMBER_ID == leaderMemberId);
         }
     }
 
-    private void awaitConnectedMembers()
+    private void requestVotes(
+        final ClusterMember[] clusterMembers, final long lastLogPosition, final long lastTermPosition)
     {
         idleStrategy.reset();
-        while (true)
+        for (final ClusterMember member : clusterMembers)
         {
-            if (ClusterMember.arePublicationsConnected(clusterMembers))
+            if (member != thisMember)
             {
-                break;
+                while (!memberStatusPublisher.requestVote(
+                    member.publication(),
+                    leadershipTermId,
+                    lastLogPosition,
+                    lastTermPosition,
+                    memberId))
+                {
+                    idle();
+                }
             }
-            idle();
         }
     }
 
@@ -1098,7 +1093,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private void awaitFollowersReady()
     {
         ClusterMember.resetTermPositions(clusterMembers, -1);
-        clusterMembers[memberId].termPosition(logRecordingPosition.get());
+        clusterMembers[memberId].termPosition(0);
 
         do
         {

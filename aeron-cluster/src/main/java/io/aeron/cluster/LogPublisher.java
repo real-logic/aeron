@@ -115,7 +115,7 @@ class LogPublisher
         return result;
     }
 
-    public boolean appendClosedSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)
+    public boolean appendClosedSession(final ClusterSession session, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseEventEncoder.BLOCK_LENGTH;
 
@@ -129,7 +129,7 @@ class LogPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .timestamp(nowMs)
-                    .closeReason(closeReason);
+                    .closeReason(session.closeReason());
 
                 bufferClaim.commit();
 

@@ -26,10 +26,11 @@ public class ServiceControlPublisher implements AutoCloseable
 
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final ScheduleTimerRequestEncoder scheduleTimerRequestEncoder = new ScheduleTimerRequestEncoder();
-    private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
-    private final ServiceActionAckEncoder serviceActionAckEncoder = new ServiceActionAckEncoder();
-    private final JoinLogRequestEncoder joinLogRequestEncoder = new JoinLogRequestEncoder();
+    private final ScheduleTimerEncoder scheduleTimerEncoder = new ScheduleTimerEncoder();
+    private final CancelTimerEncoder cancelTimerEncoder = new CancelTimerEncoder();
+    private final ClusterActionAckEncoder clusterActionAckEncoder = new ClusterActionAckEncoder();
+    private final JoinLogEncoder joinLogEncoder = new JoinLogEncoder();
+    private final CloseSessionEncoder closeSessionEncoder = new CloseSessionEncoder();
     private final Publication publication;
 
     public ServiceControlPublisher(final Publication publication)
@@ -44,7 +45,7 @@ public class ServiceControlPublisher implements AutoCloseable
 
     public void scheduleTimer(final long correlationId, final long deadlineMs)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerRequestEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -52,7 +53,7 @@ public class ServiceControlPublisher implements AutoCloseable
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                scheduleTimerRequestEncoder
+                scheduleTimerEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId)
                     .deadline(deadlineMs);
@@ -71,7 +72,7 @@ public class ServiceControlPublisher implements AutoCloseable
 
     public void cancelTimer(final long correlationId)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerRequestEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -79,7 +80,7 @@ public class ServiceControlPublisher implements AutoCloseable
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                cancelTimerRequestEncoder
+                cancelTimerEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId);
 
@@ -98,7 +99,7 @@ public class ServiceControlPublisher implements AutoCloseable
     public void ackAction(
         final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceActionAckEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionAckEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -106,7 +107,7 @@ public class ServiceControlPublisher implements AutoCloseable
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                serviceActionAckEncoder
+                clusterActionAckEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
@@ -132,8 +133,8 @@ public class ServiceControlPublisher implements AutoCloseable
         final int logStreamId,
         final String channel)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinLogRequestEncoder.BLOCK_LENGTH +
-            JoinLogRequestEncoder.logChannelHeaderLength() + channel.length();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinLogEncoder.BLOCK_LENGTH +
+            JoinLogEncoder.logChannelHeaderLength() + channel.length();
 
         int attempts = SEND_ATTEMPTS * 2;
         do
@@ -141,7 +142,7 @@ public class ServiceControlPublisher implements AutoCloseable
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                joinLogRequestEncoder
+                joinLogEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .commitPositionId(commitPositionId)
@@ -159,6 +160,32 @@ public class ServiceControlPublisher implements AutoCloseable
         while (--attempts > 0);
 
         throw new IllegalStateException("Failed to send log connect request");
+    }
+
+    public void closeSession(final long clusterSessionId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + CloseSessionEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                closeSessionEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .clusterSessionId(clusterSessionId);
+
+                bufferClaim.commit();
+
+                return;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        throw new IllegalStateException("Failed to schedule timer");
     }
 
     private static void checkResult(final long result)

@@ -180,6 +180,17 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         return readOnlyClientSessions;
     }
 
+    public boolean closeSession(final long clusterSessionId)
+    {
+        if (sessionByIdMap.containsKey(clusterSessionId))
+        {
+            serviceControlPublisher.closeSession(clusterSessionId);
+            return true;
+        }
+
+        return false;
+    }
+
     public long timeMs()
     {
         return timestampMs;

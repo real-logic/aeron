@@ -16,7 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
-import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.Cluster;
@@ -134,7 +133,7 @@ public class SequencerAgentTest
         clock.update(timeoutMs);
         agent.doWork();
 
-        verify(mockLogPublisher).appendClosedSession(any(ClusterSession.class), eq(CloseReason.TIMEOUT), eq(timeoutMs));
+        verify(mockLogPublisher).appendClosedSession(any(ClusterSession.class), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(
             any(ClusterSession.class), eq(EventCode.ERROR), eq(ConsensusModule.Configuration.SESSION_TIMEOUT_MSG));
     }

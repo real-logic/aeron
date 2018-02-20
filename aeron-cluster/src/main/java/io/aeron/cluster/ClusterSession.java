@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
+import io.aeron.cluster.codecs.CloseReason;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
 
@@ -30,7 +31,7 @@ class ClusterSession implements AutoCloseable
 
     enum State
     {
-        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, TIMED_OUT, CLOSED
+        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSED
     }
 
     private long timeOfLastActivityMs;
@@ -41,6 +42,7 @@ class ClusterSession implements AutoCloseable
     private final String responseChannel;
     private Publication responsePublication;
     private State state = State.INIT;
+    private CloseReason closeReason = CloseReason.NULL_VAL;
     private byte[] principalData = NULL_PRINCIPAL_DATA;
     private String adminQueryResponseDetail;
 
@@ -71,6 +73,16 @@ class ClusterSession implements AutoCloseable
     String responseChannel()
     {
         return responseChannel;
+    }
+
+    void closeReason(final CloseReason closeReason)
+    {
+        this.closeReason = closeReason;
+    }
+
+    CloseReason closeReason()
+    {
+        return closeReason;
     }
 
     void connect(final Aeron aeron)
@@ -167,7 +179,7 @@ class ClusterSession implements AutoCloseable
         {
             throw new IllegalArgumentException(
                 "Principal Data max length " +
-                    MAX_PRINCIPAL_DATA_LENGTH +
+                MAX_PRINCIPAL_DATA_LENGTH +
                 " exceeded: length=" +
                 principalData.length);
         }

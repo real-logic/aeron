@@ -337,15 +337,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public void onSessionClose(final long clusterSessionId)
     {
-        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session)
-        {
-            session.close();
-            if (appendClosedSession(session, CloseReason.USER_ACTION, cachedEpochClock.time()))
-            {
-                sessionByIdMap.remove(clusterSessionId);
-            }
-        }
+        closeSession(clusterSessionId, CloseReason.USER_ACTION);
     }
 
     public ControlledFragmentAssembler.Action onSessionMessage(
@@ -357,7 +349,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         final long nowMs = cachedEpochClock.time();
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null == session || (session.state() == TIMED_OUT || session.state() == CLOSED))
+        if (null == session || session.state() == CLOSED)
         {
             return ControlledFragmentHandler.Action.CONTINUE;
         }
@@ -371,7 +363,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         return ControlledFragmentHandler.Action.ABORT;
     }
 
-    public void onKeepAlive(final long clusterSessionId)
+    public void onSessionKeepAlive(final long clusterSessionId)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
@@ -444,6 +436,11 @@ class SequencerAgent implements Agent, ServiceControlListener
         timerService.cancelTimer(correlationId);
     }
 
+    public void onServiceCloseSession(final long clusterSessionId)
+    {
+        closeSession(clusterSessionId, CloseReason.SERVICE_ACTION);
+    }
+
     void state(final ConsensusModule.State state)
     {
         this.state = state;
@@ -503,6 +500,32 @@ class SequencerAgent implements Agent, ServiceControlListener
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
         session.open(termPosition);
         session.lastActivity(timestamp, correlationId);
+
+        sessionByIdMap.put(clusterSessionId, session);
+        if (clusterSessionId >= nextSessionId)
+        {
+            nextSessionId = clusterSessionId + 1;
+        }
+    }
+
+    void onLoadSession(
+        final long termPosition,
+        final long correlationId,
+        final long clusterSessionId,
+        final long timestamp,
+        final CloseReason closeReason,
+        final int responseStreamId,
+        final String responseChannel)
+    {
+        final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
+        session.closeReason(closeReason);
+        session.open(termPosition);
+        session.lastActivity(timestamp, correlationId);
+
+        if (CloseReason.NULL_VAL != closeReason)
+        {
+            session.close();
+        }
 
         sessionByIdMap.put(clusterSessionId, session);
         if (clusterSessionId >= nextSessionId)
@@ -657,6 +680,21 @@ class SequencerAgent implements Agent, ServiceControlListener
 
             timeOfLastLogUpdateMs = cachedEpochClock.time();
             followerCommitPosition = termPosition;
+        }
+    }
+
+    private void closeSession(final long clusterSessionId, final CloseReason closeReason)
+    {
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null != session)
+        {
+            session.closeReason(closeReason);
+            session.close();
+
+            if (appendClosedSession(session, cachedEpochClock.time()))
+            {
+                sessionByIdMap.remove(clusterSessionId);
+            }
         }
     }
 
@@ -866,21 +904,16 @@ class SequencerAgent implements Agent, ServiceControlListener
                 {
                     case OPEN:
                         egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_TIMEOUT_MSG);
-                        if (appendClosedSession(session, CloseReason.TIMEOUT, nowMs))
+                        session.closeReason(CloseReason.TIMEOUT);
+                        session.close();
+                        if (appendClosedSession(session, nowMs))
                         {
-                            session.close();
                             i.remove();
-                        }
-                        else
-                        {
-                            session.state(TIMED_OUT);
                         }
                         break;
 
-                    case TIMED_OUT:
                     case CLOSED:
-                        final CloseReason reason = state == TIMED_OUT ? CloseReason.TIMEOUT : CloseReason.USER_ACTION;
-                        if (appendClosedSession(session, reason, nowMs))
+                        if (appendClosedSession(session, nowMs))
                         {
                             session.close();
                             i.remove();
@@ -920,9 +953,9 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-    private boolean appendClosedSession(final ClusterSession session, final CloseReason closeReason, final long nowMs)
+    private boolean appendClosedSession(final ClusterSession session, final long nowMs)
     {
-        if (logPublisher.appendClosedSession(session, closeReason, nowMs))
+        if (logPublisher.appendClosedSession(session, nowMs))
         {
             session.close();
             return true;
@@ -1024,8 +1057,11 @@ class SequencerAgent implements Agent, ServiceControlListener
         final long nowMs = epochClock.time();
         for (final ClusterSession session : sessionByIdMap.values())
         {
-            session.connect(aeron);
-            session.timeOfLastActivityMs(nowMs);
+            if (session.state() != CLOSED)
+            {
+                session.connect(aeron);
+                session.timeOfLastActivityMs(nowMs);
+            }
         }
     }
 

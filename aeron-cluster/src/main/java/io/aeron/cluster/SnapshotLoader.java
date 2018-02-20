@@ -100,11 +100,12 @@ class SnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onReplaySessionOpen(
+                sequencerAgent.onLoadSession(
                     clusterSessionDecoder.openedTermPosition(),
                     clusterSessionDecoder.clusterSessionId(),
                     clusterSessionDecoder.lastCorrelationId(),
                     clusterSessionDecoder.timeOfLastActivity(),
+                    clusterSessionDecoder.closeReason(),
                     clusterSessionDecoder.responseStreamId(),
                     clusterSessionDecoder.responseChannel());
                 break;

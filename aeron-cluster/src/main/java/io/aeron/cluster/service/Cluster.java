@@ -123,6 +123,14 @@ public interface Cluster
     Collection<ClientSession> clientSessions();
 
     /**
+     * Close a cluster session.
+     *
+     * @param clusterSessionId to be closed.
+     * @return true if the instruction is successfully or false if the session id does not exist.
+     */
+    boolean closeSession(long clusterSessionId);
+
+    /**
      * Current Epoch time in milliseconds.
      *
      * @return Epoch time in milliseconds.

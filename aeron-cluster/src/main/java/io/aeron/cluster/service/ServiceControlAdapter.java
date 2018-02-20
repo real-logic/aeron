@@ -28,10 +28,11 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
     final ServiceControlListener serviceControlListener;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ScheduleTimerRequestDecoder scheduleTimerRequestDecoder = new ScheduleTimerRequestDecoder();
-    private final CancelTimerRequestDecoder cancelTimerRequestDecoder = new CancelTimerRequestDecoder();
-    private final ServiceActionAckDecoder serviceActionAckDecoder = new ServiceActionAckDecoder();
-    private final JoinLogRequestDecoder joinLogRequestDecoder = new JoinLogRequestDecoder();
+    private final ScheduleTimerDecoder scheduleTimerDecoder = new ScheduleTimerDecoder();
+    private final CancelTimerDecoder cancelTimerDecoder = new CancelTimerDecoder();
+    private final ClusterActionAckDecoder clusterActionAckDecoder = new ClusterActionAckDecoder();
+    private final JoinLogDecoder joinLogDecoder = new JoinLogDecoder();
+    private final CloseSessionDecoder closeSessionDecoder = new CloseSessionDecoder();
 
     public ServiceControlAdapter(final Subscription subscription, final ServiceControlListener serviceControlListener)
     {
@@ -56,55 +57,65 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
-            case ScheduleTimerRequestDecoder.TEMPLATE_ID:
-                scheduleTimerRequestDecoder.wrap(
+            case ScheduleTimerDecoder.TEMPLATE_ID:
+                scheduleTimerDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
                 serviceControlListener.onScheduleTimer(
-                    scheduleTimerRequestDecoder.correlationId(),
-                    scheduleTimerRequestDecoder.deadline());
+                    scheduleTimerDecoder.correlationId(),
+                    scheduleTimerDecoder.deadline());
                 break;
 
-            case CancelTimerRequestDecoder.TEMPLATE_ID:
-                cancelTimerRequestDecoder.wrap(
+            case CancelTimerDecoder.TEMPLATE_ID:
+                cancelTimerDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                serviceControlListener.onCancelTimer(scheduleTimerRequestDecoder.correlationId());
+                serviceControlListener.onCancelTimer(scheduleTimerDecoder.correlationId());
                 break;
 
-            case ServiceActionAckDecoder.TEMPLATE_ID:
-                serviceActionAckDecoder.wrap(
+            case ClusterActionAckDecoder.TEMPLATE_ID:
+                clusterActionAckDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
                 serviceControlListener.onServiceAck(
-                    serviceActionAckDecoder.logPosition(),
-                    serviceActionAckDecoder.leadershipTermId(),
-                    serviceActionAckDecoder.serviceId(),
-                    serviceActionAckDecoder.action());
+                    clusterActionAckDecoder.logPosition(),
+                    clusterActionAckDecoder.leadershipTermId(),
+                    clusterActionAckDecoder.serviceId(),
+                    clusterActionAckDecoder.action());
                 break;
 
-            case JoinLogRequestDecoder.TEMPLATE_ID:
-                joinLogRequestDecoder.wrap(
+            case JoinLogDecoder.TEMPLATE_ID:
+                joinLogDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
                 serviceControlListener.onJoinLog(
-                    joinLogRequestDecoder.leadershipTermId(),
-                    joinLogRequestDecoder.commitPositionId(),
-                    joinLogRequestDecoder.logSessionId(),
-                    joinLogRequestDecoder.logStreamId(),
-                    joinLogRequestDecoder.logChannel());
+                    joinLogDecoder.leadershipTermId(),
+                    joinLogDecoder.commitPositionId(),
+                    joinLogDecoder.logSessionId(),
+                    joinLogDecoder.logStreamId(),
+                    joinLogDecoder.logChannel());
+                break;
+
+            case CloseSessionDecoder.TEMPLATE_ID:
+                closeSessionDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                serviceControlListener.onServiceCloseSession(closeSessionDecoder.clusterSessionId());
                 break;
 
             default:

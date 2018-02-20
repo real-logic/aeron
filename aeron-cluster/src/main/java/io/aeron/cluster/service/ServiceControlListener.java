@@ -68,4 +68,13 @@ public interface ServiceControlListener
         long leadershipTermId, int commitPositionId, int logSessionId, int logStreamId, String logChannel)
     {
     }
+
+    /**
+     * Request that a cluster session be closed.
+     *
+     * @param clusterSessionId of the session to be closed.
+     */
+    default void onServiceCloseSession(long clusterSessionId)
+    {
+    }
 }

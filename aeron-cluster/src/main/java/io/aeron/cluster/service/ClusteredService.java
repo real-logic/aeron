@@ -113,4 +113,11 @@ public interface ClusteredService
      * {@link org.agrona.concurrent.AgentTerminationException}.
      */
     void onReplayEnd();
+
+    /**
+     * Notify that the cluster node has changed role.
+     *
+     * @param newRole that the node has assumed.
+     */
+    void onRoleChange(Cluster.Role newRole);
 }

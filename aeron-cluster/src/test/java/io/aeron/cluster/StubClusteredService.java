@@ -71,4 +71,8 @@ public class StubClusteredService implements ClusteredService
     public void onReplayEnd()
     {
     }
+
+    public void onRoleChange(final Cluster.Role newRole)
+    {
+    }
 }

@@ -96,7 +96,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         joinActiveLog(counters);
 
         roleCounter = awaitClusterRoleCounter(counters);
-        role = Role.get((int)roleCounter.get());
+        role(Role.get((int)roleCounter.get()));
 
         if (Role.LEADER == role)
         {
@@ -299,6 +299,15 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             ClusteredServiceAgent.this);
 
         sessionByIdMap.put(clusterSessionId, session);
+    }
+
+    private void role(final Role newRole)
+    {
+        if (newRole != role)
+        {
+            role = newRole;
+            service.onRoleChange(newRole);
+        }
     }
 
     private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)

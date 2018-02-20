@@ -1036,7 +1036,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");
             for (final ClusterMember member : clusterMembers)
             {
-                if (member.id() != memberId)
+                if (member != thisMember)
                 {
                     publication.addDestination(builder.endpoint(member.logEndpoint()).build());
                 }

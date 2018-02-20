@@ -50,7 +50,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private boolean isRecovered;
     private final int memberId;
     private int votedForMemberId = NULL_MEMBER_ID;
-    private int leaderMemberId = NULL_MEMBER_ID;
+    private int leaderMemberId;
     private int serviceAckCount = 0;
     private int logSessionId;
     private final long sessionTimeoutMs;
@@ -201,7 +201,11 @@ class SequencerAgent implements Agent, ServiceControlListener
             isRecovered = true;
         }
 
-        state(ConsensusModule.State.ACTIVE); // TODO: handle suspended case
+        if (ConsensusModule.State.SUSPENDED != state)
+        {
+            state(ConsensusModule.State.ACTIVE);
+        }
+
         leadershipTermId++;
 
         if (clusterMembers.length > 1)

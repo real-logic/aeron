@@ -36,7 +36,7 @@
             <validValue name="AUTHENTICATION_REJECTED">3</validValue>
         </enum>
         <enum name="CloseReason" encodingType="int32" description="Reason why a session was closed">
-            <validValue name="USER_ACTION">0</validValue>
+            <validValue name="CLIENT_ACTION">0</validValue>
             <validValue name="SERVICE_ACTION">1</validValue>
             <validValue name="TIMEOUT">2</validValue>
         </enum>

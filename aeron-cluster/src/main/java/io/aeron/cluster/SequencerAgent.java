@@ -342,7 +342,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public void onSessionClose(final long clusterSessionId)
     {
-        closeSession(clusterSessionId, CloseReason.USER_ACTION);
+        closeSession(clusterSessionId, CloseReason.CLIENT_ACTION);
     }
 
     public ControlledFragmentAssembler.Action onSessionMessage(

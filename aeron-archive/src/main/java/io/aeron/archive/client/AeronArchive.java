@@ -883,7 +883,7 @@ public class AeronArchive implements AutoCloseable
         public static final String MESSAGE_TIMEOUT_PROP_NAME = "aeron.archive.message.timeout";
 
         /**
-         * Timeout when waiting on a message to be sent or received. Default to 5 seconds in nanoseconds.
+         * Timeout when waiting on a message to be sent or received.
          */
         public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
@@ -893,7 +893,7 @@ public class AeronArchive implements AutoCloseable
         public static final String CONTROL_CHANNEL_PROP_NAME = "aeron.archive.control.channel";
 
         /**
-         * Channel for sending control messages to an archive. Default to localhost:8010.
+         * Channel for sending control messages to an archive.
          */
         public static final String CONTROL_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8010";
 
@@ -903,9 +903,9 @@ public class AeronArchive implements AutoCloseable
         public static final String CONTROL_STREAM_ID_PROP_NAME = "aeron.archive.control.stream.id";
 
         /**
-         * Stream id within a channel for sending control messages to an archive. Default to stream id of 0.
+         * Stream id within a channel for sending control messages to an archive.
          */
-        public static final int CONTROL_STREAM_ID_DEFAULT = 0;
+        public static final int CONTROL_STREAM_ID_DEFAULT = 10;
 
         /**
          * Channel for sending control messages to a driver local archive.
@@ -924,9 +924,8 @@ public class AeronArchive implements AutoCloseable
 
         /**
          * Stream id within a channel for sending control messages to a driver local archive.
-         * Default to stream id of 10.
          */
-        public static final int LOCAL_CONTROL_STREAM_ID_DEFAULT = 10;
+        public static final int LOCAL_CONTROL_STREAM_ID_DEFAULT = 11;
 
         /**
          * Channel for receiving control response messages from an archive.
@@ -934,7 +933,7 @@ public class AeronArchive implements AutoCloseable
         public static final String CONTROL_RESPONSE_CHANNEL_PROP_NAME = "aeron.archive.control.response.channel";
 
         /**
-         * Channel for receiving control response messages from an archive. Default to localhost:8020.
+         * Channel for receiving control response messages from an archive.
          */
         public static final String CONTROL_RESPONSE_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8020";
 
@@ -944,9 +943,9 @@ public class AeronArchive implements AutoCloseable
         public static final String CONTROL_RESPONSE_STREAM_ID_PROP_NAME = "aeron.archive.control.response.stream.id";
 
         /**
-         * Stream id within a channel for receiving control messages from an archive. Default to stream id of 0.
+         * Stream id within a channel for receiving control messages from an archive.
          */
-        public static final int CONTROL_RESPONSE_STREAM_ID_DEFAULT = 0;
+        public static final int CONTROL_RESPONSE_STREAM_ID_DEFAULT = 20;
 
         /**
          * Channel for receiving progress events of recordings from an archive.
@@ -954,11 +953,11 @@ public class AeronArchive implements AutoCloseable
         public static final String RECORDING_EVENTS_CHANNEL_PROP_NAME = "aeron.archive.recording.events.channel";
 
         /**
-         * Channel for receiving progress events of recordings from an archive. Defaults to localhost:8011.
+         * Channel for receiving progress events of recordings from an archive.
          * For production it is recommended that multicast or dynamic multi-destination-cast (MDC) is used to allow
          * for dynamic subscribers.
          */
-        public static final String RECORDING_EVENTS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8011";
+        public static final String RECORDING_EVENTS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8030";
 
         /**
          * Stream id within a channel for receiving progress of recordings from an archive.
@@ -966,9 +965,9 @@ public class AeronArchive implements AutoCloseable
         public static final String RECORDING_EVENTS_STREAM_ID_PROP_NAME = "aeron.archive.recording.events.stream.id";
 
         /**
-         * Stream id within a channel for receiving progress of recordings from an archive. Default to a stream id of 0.
+         * Stream id within a channel for receiving progress of recordings from an archive.
          */
-        public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 0;
+        public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 30;
 
         /**
          * Term length for control streams.

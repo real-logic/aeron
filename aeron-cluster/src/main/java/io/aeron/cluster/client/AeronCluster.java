@@ -597,7 +597,7 @@ public final class AeronCluster implements AutoCloseable
         public static final String CLUSTER_MEMBER_ENDPOINTS_PROP_NAME = "aeron.cluster.member.endpoints";
 
         /**
-         * Property name for the comma separated list of cluster member endpoints. Default of null is for multicast.
+         * Property name for the comma separated list of cluster member endpoints.
          */
         public static final String CLUSTER_MEMBER_ENDPOINTS_DEFAULT = null;
 
@@ -608,7 +608,7 @@ public final class AeronCluster implements AutoCloseable
         public static final String INGRESS_CHANNEL_PROP_NAME = "aeron.cluster.ingress.channel";
 
         /**
-         * Channel for sending messages to a cluster. Default to localhost:9010 for testing.
+         * Channel for sending messages to a cluster.
          */
         public static final String INGRESS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9010";
 
@@ -618,7 +618,7 @@ public final class AeronCluster implements AutoCloseable
         public static final String INGRESS_STREAM_ID_PROP_NAME = "aeron.cluster.ingress.stream.id";
 
         /**
-         * Stream id within a channel for sending messages to a cluster. Default to stream id of 1.
+         * Stream id within a channel for sending messages to a cluster.
          */
         public static final int INGRESS_STREAM_ID_DEFAULT = 1;
 
@@ -628,7 +628,7 @@ public final class AeronCluster implements AutoCloseable
         public static final String EGRESS_CHANNEL_PROP_NAME = "aeron.cluster.egress.channel";
 
         /**
-         * Channel for receiving response messages from a cluster. Default to localhost:9020 for testing.
+         * Channel for receiving response messages from a cluster.
          */
         public static final String EGRESS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9020";
 
@@ -638,7 +638,7 @@ public final class AeronCluster implements AutoCloseable
         public static final String EGRESS_STREAM_ID_PROP_NAME = "aeron.archive.control.response.stream.id";
 
         /**
-         * Stream id within a channel for receiving messages from a cluster. Default to stream id of 2.
+         * Stream id within a channel for receiving messages from a cluster.
          */
         public static final int EGRESS_STREAM_ID_DEFAULT = 2;
 

@@ -251,7 +251,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Default property for the list of cluster member endpoints.
          */
-        public static final String CLUSTER_MEMBERS_DEFAULT = "0,localhost:9010,localhost:8001,localhost:7001";
+        public static final String CLUSTER_MEMBERS_DEFAULT = "0,localhost:10000,localhost:20000,localhost:30000";
 
         /**
          * Channel for the clustered log.
@@ -259,7 +259,7 @@ public class ConsensusModule implements AutoCloseable
         public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
 
         /**
-         * Channel for the clustered log. Default to localhost:9030.
+         * Channel for the clustered log.
          */
         public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030";
 
@@ -269,7 +269,7 @@ public class ConsensusModule implements AutoCloseable
         public static final String LOG_STREAM_ID_PROP_NAME = "aeron.cluster.log.stream.id";
 
         /**
-         * Stream id within a channel for the clustered log. Default to stream id of 3.
+         * Stream id within a channel for the clustered log.
          */
         public static final int LOG_STREAM_ID_DEFAULT = 3;
 
@@ -366,7 +366,7 @@ public class ConsensusModule implements AutoCloseable
         public static final String SERVICE_COUNT_PROP_NAME = "aeron.cluster.service.count";
 
         /**
-         * The number of services in this cluster instance. Default to 1.
+         * The number of services in this cluster instance.
          */
         public static final int SERVICE_COUNT_DEFAULT = 1;
 
@@ -376,7 +376,7 @@ public class ConsensusModule implements AutoCloseable
         public static final String MAX_CONCURRENT_SESSIONS_PROP_NAME = "aeron.cluster.max.sessions";
 
         /**
-         * Maximum number of cluster sessions that can be active concurrently. Default to 10.
+         * Maximum number of cluster sessions that can be active concurrently.
          */
         public static final int MAX_CONCURRENT_SESSIONS_DEFAULT = 10;
 
@@ -396,7 +396,7 @@ public class ConsensusModule implements AutoCloseable
         public static final String HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.heartbeat.timeout";
 
         /**
-         * Timeout for a leader if no heartbeat is received by an other member. Default to 10 seconds in nanoseconds.
+         * Timeout for a leader if no heartbeat is received by an other member.
          */
         public static final long HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 

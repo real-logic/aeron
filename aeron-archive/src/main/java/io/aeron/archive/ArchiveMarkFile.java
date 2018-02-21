@@ -141,6 +141,7 @@ public class ArchiveMarkFile implements AutoCloseable
     public void encode(final Archive.Context ctx)
     {
         headerEncoder
+            .startTimestamp(ctx.epochClock().time())
             .controlStreamId(ctx.controlStreamId())
             .localControlStreamId(ctx.localControlStreamId())
             .eventsStreamId(ctx.recordingEventsStreamId())

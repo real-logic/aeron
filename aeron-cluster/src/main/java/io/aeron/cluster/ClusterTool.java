@@ -16,8 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.codecs.mark.ClusterComponentType;
-import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.service.RecordingLog;
 
 import java.io.File;
@@ -50,9 +48,8 @@ public class ClusterTool
             case "describe":
                 try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
                 {
-                    final MarkFileHeaderDecoder decoder = markFile.decoder();
-                    printTypeAndActivityTimestamp(decoder.componentType(), decoder.activityTimestamp());
-                    System.out.println(decoder);
+                    printTypeAndActivityTimestamp(markFile);
+                    System.out.println(markFile.decoder());
                 }
                 break;
 
@@ -78,11 +75,14 @@ public class ClusterTool
         return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
 
-    private static void printTypeAndActivityTimestamp(final ClusterComponentType type, final long activityTimestamp)
+    private static void printTypeAndActivityTimestamp(final ClusterMarkFile markFile)
     {
-        System.out.print("Type: " + type);
+        System.out.print("Type: " + markFile.decoder().componentType());
         System.out.format(
-            " %1$tH:%1$tM:%1$tS (activity: %2$tH:%2$tM:%2$tS)%n", new Date(), new Date(activityTimestamp));
+            "%1$tH:%1$tM:%1$tS (start: %2tF %2$tH:%2$tM:%2$tS, activity: %3tF %3$tH:%3$tM:%3$tS)%n",
+            new Date(),
+            new Date(markFile.decoder().startTimestamp()),
+            new Date(markFile.activityTimestampVolatile()));
     }
 
     private static void printHelp()

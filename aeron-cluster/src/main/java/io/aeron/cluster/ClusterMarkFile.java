@@ -125,6 +125,11 @@ public class ClusterMarkFile implements AutoCloseable
         markFile.timestampOrdered(nowMs);
     }
 
+    public long activityTimestampVolatile()
+    {
+        return markFile.timestampVolatile();
+    }
+
     public MarkFileHeaderEncoder encoder()
     {
         return headerEncoder;

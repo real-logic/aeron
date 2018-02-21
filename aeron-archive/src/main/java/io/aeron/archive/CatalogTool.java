@@ -100,8 +100,9 @@ public class CatalogTool
     private static void printMarkInformation(final ArchiveMarkFile markFile)
     {
         System.out.format(
-            "%1$tH:%1$tM:%1$tS (activity: %2$tH:%2$tM:%2$tS)%n",
+            "%1$tH:%1$tM:%1$tS (start: %2tF %2$tH:%2$tM:%2$tS, activity: %3tF %3$tH:%3$tM:%3$tS)%n",
             new Date(),
+            new Date(markFile.decoder().startTimestamp()),
             new Date(markFile.activityTimestampVolatile()));
         System.out.println(markFile.decoder());
     }

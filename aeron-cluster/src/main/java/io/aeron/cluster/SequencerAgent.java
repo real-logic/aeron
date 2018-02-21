@@ -409,7 +409,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                         final String endpointsDetail =
                             "id=" + Long.toString(thisMember.id()) +
                             ",memberStatus=" + thisMember.memberFacingEndpoint() +
-                            ",log=" + thisMember.memberFacingEndpoint() +
+                            ",log=" + thisMember.logEndpoint() +
                             ",archive=" + archiveChannelUri.get(ENDPOINT_PARAM_NAME);
 
                         final long nowMs = cachedEpochClock.time();

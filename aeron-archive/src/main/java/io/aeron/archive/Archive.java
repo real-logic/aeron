@@ -284,7 +284,7 @@ public class Archive implements AutoCloseable
     /**
      * Overrides for the defaults and system properties.
      */
-    public static class Context implements AutoCloseable
+    public static class Context implements AutoCloseable, Cloneable
     {
         private boolean deleteArchiveOnStart = false;
         private boolean ownsAeronClient = false;
@@ -320,6 +320,23 @@ public class Archive implements AutoCloseable
         private AgentInvoker mediaDriverAgentInvoker;
         private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
+
+        /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            try
+            {
+                return (Context)super.clone();
+            }
+            catch (final CloneNotSupportedException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
 
         /**
          * Conclude the configuration parameters by resolving dependencies and null values to use defaults.

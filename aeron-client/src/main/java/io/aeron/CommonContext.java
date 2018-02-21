@@ -48,7 +48,7 @@ import static java.lang.System.getProperty;
  * <li><code>aeron.dir</code>: Use value as directory name for Aeron buffers and status.</li>
  * </ul>
  */
-public class CommonContext implements AutoCloseable
+public class CommonContext implements AutoCloseable, Cloneable
 {
     /**
      * Property name for driver timeout after which the driver is considered inactive.
@@ -190,6 +190,23 @@ public class CommonContext implements AutoCloseable
         }
 
         AERON_DIR_PROP_DEFAULT = baseDirName + '-' + System.getProperty("user.name", "default");
+    }
+
+    /**
+     * Perform a shallow copy of the object.
+     *
+     * @return a shallow copy of the object.
+     */
+    public CommonContext clone()
+    {
+        try
+        {
+            return (CommonContext)super.clone();
+        }
+        catch (final CloneNotSupportedException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**

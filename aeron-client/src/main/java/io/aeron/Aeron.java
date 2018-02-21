@@ -419,6 +419,16 @@ public class Aeron implements AutoCloseable
         private ThreadFactory threadFactory = Thread::new;
 
         /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            return (Context)super.clone();
+        }
+
+        /**
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.
          * There is no need to call it from a client application. It is responsible for providing default
          * values for options that are not individually changed through field setters.

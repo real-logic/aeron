@@ -1122,7 +1122,7 @@ public class AeronArchive implements AutoCloseable
     /**
      * Specialised configuration options for communicating with an Aeron Archive.
      */
-    public static class Context implements AutoCloseable
+    public static class Context implements AutoCloseable, Cloneable
     {
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
         private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
@@ -1138,6 +1138,23 @@ public class AeronArchive implements AutoCloseable
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private boolean ownsAeronClient = false;
+
+        /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            try
+            {
+                return (Context)super.clone();
+            }
+            catch (final CloneNotSupportedException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
 
         /**
          * Conclude configuration by setting up defaults when specifics are not provided.

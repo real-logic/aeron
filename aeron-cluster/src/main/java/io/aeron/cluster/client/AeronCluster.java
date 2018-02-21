@@ -720,7 +720,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Context for cluster session and connection.
      */
-    public static class Context implements AutoCloseable
+    public static class Context implements AutoCloseable, Cloneable
     {
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
         private String[] clusterMemberEndpoints = Configuration.clusterMemberEndpoints();
@@ -735,6 +735,23 @@ public final class AeronCluster implements AutoCloseable
         private CredentialsSupplier credentialsSupplier;
         private boolean ownsAeronClient = false;
         private boolean isIngressExclusive = true;
+
+        /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            try
+            {
+                return (Context)super.clone();
+            }
+            catch (final CloneNotSupportedException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
 
         public void conclude()
         {

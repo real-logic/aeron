@@ -455,6 +455,16 @@ public final class MediaDriver implements AutoCloseable
         private UnsafeBuffer cncMetaDataBuffer;
 
         /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            return (Context)super.clone();
+        }
+
+        /**
          * Free up resources but don't delete files in case they are required for debugging.
          */
         public void close()

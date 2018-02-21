@@ -335,7 +335,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
     }
 
-    public static class Context implements AutoCloseable
+    public static class Context implements AutoCloseable, Cloneable
     {
         private int serviceId = Configuration.serviceId();
         private String serviceName = Configuration.serviceName();
@@ -365,6 +365,23 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
         private ClusterMarkFile markFile;
+
+        /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            try
+            {
+                return (Context)super.clone();
+            }
+            catch (final CloneNotSupportedException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
 
         @SuppressWarnings("MethodLength")
         public void conclude()
@@ -422,12 +439,15 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null == archiveContext)
             {
                 archiveContext = new AeronArchive.Context()
-                    .aeron(aeron)
-                    .ownsAeronClient(false)
                     .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
-                    .lock(new NoOpLock());
+                    .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
+                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
             }
+
+            archiveContext
+                .aeron(aeron)
+                .ownsAeronClient(false)
+                .lock(new NoOpLock());
 
             if (deleteDirOnStart)
             {

@@ -619,7 +619,7 @@ public class ConsensusModule implements AutoCloseable
         }
     }
 
-    public static class Context implements AutoCloseable
+    public static class Context implements AutoCloseable, Cloneable
     {
         private boolean ownsAeronClient = false;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
@@ -671,6 +671,23 @@ public class ConsensusModule implements AutoCloseable
 
         private AeronArchive.Context archiveContext;
         private AuthenticatorSupplier authenticatorSupplier;
+
+        /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            try
+            {
+                return (Context)super.clone();
+            }
+            catch (final CloneNotSupportedException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
 
         @SuppressWarnings("MethodLength")
         public void conclude()
@@ -783,12 +800,15 @@ public class ConsensusModule implements AutoCloseable
             if (null == archiveContext)
             {
                 archiveContext = new AeronArchive.Context()
-                    .aeron(aeron)
-                    .ownsAeronClient(false)
                     .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
-                    .lock(new NoOpLock());
+                    .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
+                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
             }
+
+            archiveContext
+                .aeron(aeron)
+                .ownsAeronClient(false)
+                .lock(new NoOpLock());
 
             if (null == shutdownSignalBarrier)
             {

@@ -17,7 +17,8 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.codecs.EventCode;
 
-import static io.aeron.cluster.ClusterSession.State.*;
+import static io.aeron.cluster.ClusterSession.State.CHALLENGED;
+import static io.aeron.cluster.ClusterSession.State.REJECTED;
 
 /**
  * Proxy for a session for authentication purposes. Used to inform system of client authentication status.
@@ -75,18 +76,31 @@ public class SessionProxy
     }
 
     /**
-     * Inform the system that the session is met authentication requirements and can continue.
+     * Inform the system that the session is met authentication requirements and can continue as a full access client.
      *
      * @param principalData to pass to the on session open cluster event.
      * @return true if success event was sent or false if success event could not be sent.
      */
     public final boolean authenticate(final byte[] principalData)
     {
+        return authenticate(principalData, ClusterSession.Capability.CLIENT_PLUS_QUERY);
+    }
+
+    /**
+     * Inform the system that the session is met authentication requirements and can continue with the given capability.
+     *
+     * @param principalData to pass to the on session open cluster event.
+     * @param capability for the client.
+     * @return true if success event was sent or false if success event could not be sent.
+     * @see ClusterSession.Capability
+     */
+    public final boolean authenticate(final byte[] principalData, final ClusterSession.Capability capability)
+    {
         ClusterSession.checkPrincipalDataLength(principalData);
 
         if (egressPublisher.sendEvent(clusterSession, EventCode.OK, memberEndpointsDetail))
         {
-            clusterSession.authenticate(principalData);
+            clusterSession.authenticate(principalData, capability);
             return true;
         }
 

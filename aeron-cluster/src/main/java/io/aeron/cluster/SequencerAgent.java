@@ -398,30 +398,38 @@ class SequencerAgent implements Agent, ServiceControlListener
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session && session.state() == OPEN)
         {
-            switch (queryType)
+            if (session.capability() == ClusterSession.Capability.CLIENT_PLUS_QUERY)
             {
-                case ENDPOINTS:
-                    final ChannelUri archiveChannelUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
+                switch (queryType)
+                {
+                    case ENDPOINTS:
+                        final ChannelUri archiveChannelUri =
+                            ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
 
-                    final String endpointsDetail =
-                        "id=" + Long.toString(thisMember.id()) +
-                        ",memberStatus=" + thisMember.memberFacingEndpoint() +
-                        ",log=" + thisMember.memberFacingEndpoint() +
-                        ",archive=" + archiveChannelUri.get(ENDPOINT_PARAM_NAME);
+                        final String endpointsDetail =
+                            "id=" + Long.toString(thisMember.id()) +
+                            ",memberStatus=" + thisMember.memberFacingEndpoint() +
+                            ",log=" + thisMember.memberFacingEndpoint() +
+                            ",archive=" + archiveChannelUri.get(ENDPOINT_PARAM_NAME);
 
-                    final long nowMs = cachedEpochClock.time();
-                    session.lastActivity(nowMs, correlationId);
-                    session.adminQueryResponseDetail(endpointsDetail);
+                        final long nowMs = cachedEpochClock.time();
+                        session.lastActivity(nowMs, correlationId);
+                        session.adminQueryResponseDetail(endpointsDetail);
 
-                    if (egressPublisher.sendEvent(session, EventCode.OK, session.adminQueryResponseDetail()))
-                    {
-                        session.adminQueryResponseDetail(null);
-                    }
-                    break;
+                        if (egressPublisher.sendEvent(session, EventCode.OK, session.adminQueryResponseDetail()))
+                        {
+                            session.adminQueryResponseDetail(null);
+                        }
+                        break;
 
-                case RECORDING_LOG: // TODO: or should this really be recoveryPlan?
-                    // TODO: send recordingLog as a byte[]
-                    break;
+                    case RECORDING_LOG: // TODO: or should this really be recoveryPlan?
+                        // TODO: send recordingLog as a byte[]
+                        break;
+                }
+            }
+            else
+            {
+                // TODO: error back, but leave client open.
             }
         }
     }

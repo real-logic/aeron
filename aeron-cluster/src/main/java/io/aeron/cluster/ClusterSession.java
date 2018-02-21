@@ -23,6 +23,8 @@ import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
 
+import static io.aeron.cluster.ClusterSession.Capability.NONE;
+
 class ClusterSession implements AutoCloseable
 {
     public static final byte[] NULL_PRINCIPAL_DATA = ArrayUtil.EMPTY_BYTE_ARRAY;
@@ -32,6 +34,29 @@ class ClusterSession implements AutoCloseable
     enum State
     {
         INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSED
+    }
+
+    /**
+     * What a client is capable of doing.
+     */
+    enum Capability
+    {
+        /**
+         * No capability.
+         */
+        NONE,
+
+        /**
+         * Client can send/receive to/from cluster and can act as a normal client. Can not query endpoints and
+         * recording log
+         */
+        CLIENT_ONLY,
+
+        /**
+         * Client can send/receive to/from cluster and can query cluster endpoints and recording log. Normally reserved
+         * for cluster members only.
+         */
+        CLIENT_PLUS_QUERY
     }
 
     private long timeOfLastActivityMs;
@@ -45,6 +70,7 @@ class ClusterSession implements AutoCloseable
     private CloseReason closeReason = CloseReason.NULL_VAL;
     private byte[] principalData = NULL_PRINCIPAL_DATA;
     private String adminQueryResponseDetail;
+    private Capability capability = NONE;
 
     ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
     {
@@ -115,7 +141,12 @@ class ClusterSession implements AutoCloseable
         this.state = state;
     }
 
-    void authenticate(final byte[] principalData)
+    Capability capability()
+    {
+        return capability;
+    }
+
+    void authenticate(final byte[] principalData, final Capability capability)
     {
         if (principalData != null)
         {

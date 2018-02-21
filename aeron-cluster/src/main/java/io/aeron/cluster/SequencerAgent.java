@@ -624,7 +624,6 @@ class SequencerAgent implements Agent, ServiceControlListener
             else
             {
                 votedForMemberId = candidateId;
-
                 if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
                 {
                     // TODO: need to catch up with leader
@@ -645,7 +644,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final int followerMemberId,
         final boolean vote)
     {
-        if (Cluster.Role.FOLLOWER == role &&
+        if (Cluster.Role.CANDIDATE == role &&
             candidateTermId == leadershipTermId &&
             lastBaseLogPosition == recoveryPlan.lastLogPosition &&
             lastTermPosition == recoveryPlan.lastTermPositionAppended &&
@@ -657,7 +656,8 @@ class SequencerAgent implements Agent, ServiceControlListener
             }
             else
             {
-                throw new IllegalStateException("Invalid member for cluster leader: " + candidateMemberId);
+                // TODO: Have to deal with failed candidacy
+                throw new IllegalStateException("Rejected vote from: " + followerMemberId);
             }
         }
     }

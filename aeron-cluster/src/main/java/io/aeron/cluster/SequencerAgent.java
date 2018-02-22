@@ -414,11 +414,11 @@ class SequencerAgent implements Agent, ServiceControlListener
 
                         final long nowMs = cachedEpochClock.time();
                         session.lastActivity(nowMs, correlationId);
-                        session.adminQueryResponseDetail(endpointsDetail);
+                        session.adminResponseData(endpointsDetail.getBytes());
 
-                        if (egressPublisher.sendEvent(session, EventCode.OK, session.adminQueryResponseDetail()))
+                        if (egressPublisher.sendAdminResponse(session, session.adminResponseData()))
                         {
-                            session.adminQueryResponseDetail(null);
+                            session.adminResponseData(null);
                         }
                         break;
 
@@ -948,11 +948,11 @@ class SequencerAgent implements Agent, ServiceControlListener
                 appendConnectedSession(session, nowMs);
                 workCount += 1;
             }
-            else if (state == OPEN && session.adminQueryResponseDetail() != null)
+            else if (state == OPEN && session.adminResponseData() != null)
             {
-                if (egressPublisher.sendEvent(session, EventCode.OK, session.adminQueryResponseDetail()))
+                if (egressPublisher.sendAdminResponse(session, session.adminResponseData()))
                 {
-                    session.adminQueryResponseDetail(null);
+                    session.adminResponseData(null);
                 }
             }
         }

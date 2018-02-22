@@ -258,13 +258,13 @@ public final class AeronCluster implements AutoCloseable
 
                 if (poller.correlationId() == correlationId)
                 {
-                    switch (poller.eventCode())
+                    if (poller.templateId() == AdminResponseDecoder.TEMPLATE_ID)
                     {
-                        case OK:
-                            return poller.detail();
-
-                        case ERROR:
-                            throw new IllegalStateException(poller.detail());
+                        return new String(poller.adminResponseData());
+                    }
+                    else if (poller.eventCode() == EventCode.ERROR)
+                    {
+                        throw new IllegalStateException(poller.detail());
                     }
                 }
             }
@@ -280,7 +280,7 @@ public final class AeronCluster implements AutoCloseable
      *
      * @return result of query.
      */
-    public String queryForRecordingLog()
+    public byte[] queryForRecordingLog()
     {
         lock.lock();
         try
@@ -295,13 +295,13 @@ public final class AeronCluster implements AutoCloseable
 
                 if (poller.correlationId() == correlationId)
                 {
-                    switch (poller.eventCode())
+                    if (poller.templateId() == AdminResponseDecoder.TEMPLATE_ID)
                     {
-                        case OK:
-                            return poller.detail();
-
-                        case ERROR:
-                            throw new IllegalStateException(poller.detail());
+                        return poller.adminResponseData();
+                    }
+                    else if (poller.eventCode() == EventCode.ERROR)
+                    {
+                        throw new IllegalStateException(poller.detail());
                     }
                 }
             }

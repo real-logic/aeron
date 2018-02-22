@@ -30,6 +30,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
+    private final AdminResponseDecoder adminResponseDecoder = new AdminResponseDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
     private long clusterSessionId = -1;
@@ -39,6 +40,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private EventCode eventCode;
     private String detail = "";
     private byte[] challengeData;
+    private byte[] adminResponseData;
 
     public EgressPoller(final Subscription subscription, final int fragmentLimit)
     {
@@ -117,6 +119,16 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
+     * Get the response data in the last admin response.
+     *
+     * @return the response data in the last admin response or null if last message was not an admin response.
+     */
+    public byte[] adminResponseData()
+    {
+        return adminResponseData;
+    }
+
+    /**
      * Has the last polling action received a complete event?
      *
      * @return true of the last polling action received a complete event?
@@ -144,6 +156,7 @@ public class EgressPoller implements ControlledFragmentHandler
         eventCode = null;
         detail = "";
         challengeData = null;
+        adminResponseData = null;
         pollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
@@ -203,6 +216,20 @@ public class EgressPoller implements ControlledFragmentHandler
 
                 clusterSessionId = challengeDecoder.clusterSessionId();
                 correlationId = challengeDecoder.correlationId();
+                break;
+
+            case AdminResponseDecoder.TEMPLATE_ID:
+                adminResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                adminResponseData = new byte[adminResponseDecoder.responseDataLength()];
+                adminResponseDecoder.getResponseData(adminResponseData, 0, adminResponseDecoder.responseDataLength());
+
+                clusterSessionId = adminResponseDecoder.clusterSessionId();
+                correlationId = adminResponseDecoder.correlationId();
                 break;
 
             default:

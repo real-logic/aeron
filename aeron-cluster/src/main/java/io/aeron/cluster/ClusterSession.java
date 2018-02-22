@@ -29,7 +29,7 @@ class ClusterSession implements AutoCloseable
 {
     public static final byte[] NULL_PRINCIPAL_DATA = ArrayUtil.EMPTY_BYTE_ARRAY;
     public static final int MAX_PRINCIPAL_DATA_LENGTH = 4 * 1024;
-    public static final int MAX_ADMIN_QUERY_RESPONSE_DETAIL_LENGTH = 4 * 1024;
+    public static final int MAX_ADMIN_RESPONSE_DATA_LENGTH = 4 * 1024;
 
     enum State
     {
@@ -69,7 +69,7 @@ class ClusterSession implements AutoCloseable
     private State state = State.INIT;
     private CloseReason closeReason = CloseReason.NULL_VAL;
     private byte[] principalData = NULL_PRINCIPAL_DATA;
-    private String adminQueryResponseDetail;
+    private byte[] adminResponseData;
     private Capability capability = NONE;
 
     ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
@@ -194,14 +194,14 @@ class ClusterSession implements AutoCloseable
         return openedTermPosition;
     }
 
-    void adminQueryResponseDetail(final String adminQueryResponseDetail)
+    void adminResponseData(final byte[] responseData)
     {
-        this.adminQueryResponseDetail = adminQueryResponseDetail;
+        this.adminResponseData = responseData;
     }
 
-    String adminQueryResponseDetail()
+    byte[] adminResponseData()
     {
-        return adminQueryResponseDetail;
+        return adminResponseData;
     }
 
     static void checkPrincipalDataLength(final byte[] principalData)
@@ -216,16 +216,16 @@ class ClusterSession implements AutoCloseable
         }
     }
 
-    static void checkAdminQueryDetailLength(final byte[] adminQueryResponseDetail)
+    static void checkAdminResponseDataLength(final byte[] adminResponseData)
     {
-        if (null != adminQueryResponseDetail &&
-            adminQueryResponseDetail.length > MAX_ADMIN_QUERY_RESPONSE_DETAIL_LENGTH)
+        if (null != adminResponseData &&
+            adminResponseData.length > MAX_ADMIN_RESPONSE_DATA_LENGTH)
         {
             throw new IllegalArgumentException(
-                "Admin Query response detail max length " +
-                MAX_ADMIN_QUERY_RESPONSE_DETAIL_LENGTH +
+                "Admin Response data max length " +
+                MAX_ADMIN_RESPONSE_DATA_LENGTH +
                 " exceeded: length=" +
-                adminQueryResponseDetail.length);
+                adminResponseData.length);
         }
     }
 
@@ -240,6 +240,7 @@ class ClusterSession implements AutoCloseable
             ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +
             ", principalData=" + Arrays.toString(principalData) +
+            ", adminResponseData=" + Arrays.toString(adminResponseData) +
             '}';
     }
 }

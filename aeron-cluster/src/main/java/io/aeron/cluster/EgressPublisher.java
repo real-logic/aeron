@@ -16,10 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Publication;
-import io.aeron.cluster.codecs.ChallengeEncoder;
-import io.aeron.cluster.codecs.EventCode;
-import io.aeron.cluster.codecs.MessageHeaderEncoder;
-import io.aeron.cluster.codecs.SessionEventEncoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 
 class EgressPublisher
@@ -30,6 +27,7 @@ class EgressPublisher
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
     private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
+    private final AdminResponseEncoder adminResponseEncoder = new AdminResponseEncoder();
 
     public boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
     {
@@ -81,6 +79,36 @@ class EgressPublisher
                     .clusterSessionId(session.id())
                     .correlationId(session.lastCorrelationId())
                     .putChallengeData(challengeData, 0, challengeData.length);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean sendAdminResponse(final ClusterSession session, final byte[] responseData)
+    {
+        final Publication publication = session.responsePublication();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            AdminResponseEncoder.BLOCK_LENGTH +
+            AdminResponseEncoder.responseDataHeaderLength() +
+            responseData.length;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                adminResponseEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .clusterSessionId(session.id())
+                    .correlationId(session.lastCorrelationId())
+                    .putResponseData(responseData, 0, responseData.length);
 
                 bufferClaim.commit();
 

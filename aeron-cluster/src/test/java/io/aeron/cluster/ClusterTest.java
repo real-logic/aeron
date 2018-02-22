@@ -15,11 +15,15 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.CommonContext;
+import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.EgressAdapter;
+import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
@@ -27,23 +31,32 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.IoUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.NoOpLock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.concurrent.CountDownLatch;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class ClusterTest
 {
+    private static final int FRAGMENT_LIMIT = 1;
     private static final int MEMBER_COUNT = 3;
     private static final String CLUSTER_MEMBERS = clusterMembersString();
     private static final String LOG_CHANNEL =
         "aeron:udp?term-length=64k|control-mode=manual|control=localhost:55550";
 
+    private final CountDownLatch latch = new CountDownLatch(MEMBER_COUNT);
+
+    private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
     private ClusteredMediaDriver[] drivers = new ClusteredMediaDriver[MEMBER_COUNT];
     private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
     private AeronCluster client;
@@ -55,6 +68,8 @@ public class ClusterTest
 
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
+            echoServices[i] = new EchoService(latch);
+
             final String baseDirName = aeronDirName + "-" + i;
 
             final AeronArchive.Context archiveCtx = new AeronArchive.Context()
@@ -95,7 +110,7 @@ public class ClusterTest
                     .aeronDirectoryName(baseDirName)
                     .archiveContext(archiveCtx.clone())
                     .clusteredServiceDir(new File(baseDirName, "service"))
-                    .clusteredService(new EchoService())
+                    .clusteredService(echoServices[i])
                     .errorHandler(Throwable::printStackTrace)
                     .deleteDirOnStart(true));
         }
@@ -136,6 +151,63 @@ public class ClusterTest
         assertTrue(client.sendKeepAlive());
     }
 
+    @Test(timeout = 10_000)
+    public void shouldEchoMessageViaService() throws InterruptedException
+    {
+        final Aeron aeron = client.context().aeron();
+        final SessionDecorator sessionDecorator = new SessionDecorator(client.clusterSessionId());
+        final Publication publication = client.ingressPublication();
+
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        final long msgCorrelationId = aeron.nextCorrelationId();
+        final String msg = "Hello World!";
+        msgBuffer.putStringWithoutLengthAscii(0, msg);
+
+        while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        final MutableInteger messageCount = new MutableInteger();
+        final EgressAdapter adapter = new EgressAdapter(
+            new StubEgressListener()
+            {
+                public void onMessage(
+                    final long correlationId,
+                    final long clusterSessionId,
+                    final long timestamp,
+                    final DirectBuffer buffer,
+                    final int offset,
+                    final int length,
+                    final Header header)
+                {
+                    assertThat(correlationId, is(msgCorrelationId));
+                    assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
+
+                    messageCount.value += 1;
+                }
+            },
+            client.egressSubscription(),
+            FRAGMENT_LIMIT);
+
+        while (messageCount.get() == 0)
+        {
+            if (adapter.poll() <= 0)
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
+        }
+
+        latch.await();
+
+        for (final EchoService service : echoServices)
+        {
+            assertThat(service.messageCount(), is(1));
+        }
+    }
+
     private static String memberSpecificPort(final String channel, final int memberId)
     {
         return channel.substring(0, channel.length() - 1) + memberId;
@@ -161,6 +233,19 @@ public class ClusterTest
 
     static class EchoService extends StubClusteredService
     {
+        private int messageCount;
+        private final CountDownLatch latch;
+
+        EchoService(final CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        int messageCount()
+        {
+            return messageCount;
+        }
+
         public void onSessionMessage(
             final long clusterSessionId,
             final long correlationId,
@@ -177,6 +262,9 @@ public class ClusterTest
                 TestUtil.checkInterruptedStatus();
                 Thread.yield();
             }
+
+            messageCount++;
+            latch.countDown();
         }
     }
 }

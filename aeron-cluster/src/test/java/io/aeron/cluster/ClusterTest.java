@@ -119,7 +119,7 @@ public class ClusterTest
             new AeronCluster.Context()
                 .aeronDirectoryName(aeronDirName + "-0")
                 .ingressChannel("aeron:udp")
-                .clusterMemberEndpoints("localhost:110", "localhost:111", "localhost:112")
+                .clusterMemberEndpoints("localhost:50110", "localhost:50111", "localhost:50112")
                 .lock(new NoOpLock()));
     }
 
@@ -221,9 +221,9 @@ public class ClusterTest
         {
             builder
                 .append(i).append(',')
-                .append("localhost:11").append(i).append(',')
-                .append("localhost:22").append(i).append(',')
-                .append("localhost:33").append(i).append('|');
+                .append("localhost:5011").append(i).append(',')
+                .append("localhost:5022").append(i).append(',')
+                .append("localhost:5033").append(i).append('|');
         }
 
         builder.setLength(builder.length() - 1);

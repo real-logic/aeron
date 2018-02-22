@@ -72,8 +72,6 @@ public class ArchiveTest
             {
                 { ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED },
                 { ThreadingMode.SHARED, ArchiveThreadingMode.SHARED },
-                { ThreadingMode.DEDICATED, ArchiveThreadingMode.SHARED },
-                { ThreadingMode.SHARED, ArchiveThreadingMode.DEDICATED },
                 { ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED },
             });
     }

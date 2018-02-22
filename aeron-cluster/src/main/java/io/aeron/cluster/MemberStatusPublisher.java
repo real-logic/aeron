@@ -37,7 +37,7 @@ class MemberStatusPublisher
         final long lastTermPosition,
         final int candidateMemberId)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RequestVoteEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -73,7 +73,7 @@ class MemberStatusPublisher
         final int followerMemberId,
         final boolean vote)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + VoteEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do

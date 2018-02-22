@@ -1002,9 +1002,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         else
         {
             votedForMemberId = NULL_MEMBER_ID;
-            leaderMemberId = NULL_MEMBER_ID;
 
-            while (NULL_MEMBER_ID == leaderMemberId)
+            while (NULL_MEMBER_ID == votedForMemberId)
             {
                 idle(memberStatusAdapter.poll());
             }
@@ -1096,10 +1095,12 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         final int streamId = ctx.logStreamId();
         archive.startRecording(logChannel, streamId, SourceLocation.REMOTE);
-        logAdapter = new LogAdapter(awaitImage(logSessionId, aeron.addSubscription(logChannel, streamId)), this);
+        final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, streamId));
+        logAdapter = new LogAdapter(image, this);
 
         createPositionCounters();
         awaitServicesReady(channelUri, false);
+        lastRecordingPosition = NULL_POSITION;
     }
 
     private void awaitFollowersReady()

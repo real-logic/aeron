@@ -365,7 +365,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
             goto cleanup;
         }
 
-        max_sndbuf = default_sndbuf;
+        max_sndbuf = socket_sndbuf;
 
         if (driver->context->socket_sndbuf > socket_sndbuf)
         {

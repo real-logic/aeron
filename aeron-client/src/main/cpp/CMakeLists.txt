@@ -68,6 +68,7 @@ SET(HEADERS
     concurrent/CountersManager.h
     concurrent/CountersReader.h
     concurrent/SleepingIdleStrategy.h
+    concurrent/YieldingIdleStrategy.h
     concurrent/atomic/Atomic64_gcc_cpp11.h
     concurrent/atomic/Atomic64_gcc_x86_64.h
     concurrent/atomic/Atomic64_msvc.h

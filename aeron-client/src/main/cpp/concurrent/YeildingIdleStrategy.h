@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef AERON_BUSY_SPIN_IDLE_STRATEGY_H
-#define AERON_BUSY_SPIN_IDLE_STRATEGY_H
+#ifndef AERON_YIELDING_IDLE_STRATEGY_H
+#define AERON_YIELDING_IDLE_STRATEGY_H
 
-#include "Atomic64.h"
+#include <thread>
 
 namespace aeron { namespace concurrent {
 
-class BusySpinIdleStrategy
+class YieldingIdleStrategy
 {
 public:
-    BusySpinIdleStrategy()
+    YieldingIdleStrategy()
     {
     }
 
@@ -35,17 +35,12 @@ public:
             return;
         }
 
-        pause();
+        std::this_thread::yield();
     }
 
     inline void idle()
     {
-        pause();
-    }
-
-    inline static void pause()
-    {
-        atomic::cpu_pause();
+        std::this_thread::yield();
     }
 
 private:

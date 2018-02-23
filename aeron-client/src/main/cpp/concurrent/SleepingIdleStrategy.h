@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_SLEEPINGIDLESTRATEGY_H
-#define AERON_SLEEPINGIDLESTRATEGY_H
+#ifndef AERON_SLEEPING_IDLE_STRATEGY_H
+#define AERON_SLEEPING_IDLE_STRATEGY_H
 
 #include <thread>
 #include <chrono>
@@ -38,10 +38,15 @@ public:
         }
     }
 
+    inline void idle()
+    {
+        std::this_thread::sleep_for(m_duration);
+    }
+
 private:
     std::chrono::duration<long, std::milli> m_duration;
 };
 
 }}
 
-#endif //AERON_SLEEPINGIDLESTRATEGY_H
+#endif

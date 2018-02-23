@@ -1099,10 +1099,10 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         createPositionCounters();
         awaitServicesReady(channelUri, false);
-        notifyLeaderReady();
+        notifyLeaderThatFollowerIsReady();
     }
 
-    private void notifyLeaderReady()
+    private void notifyLeaderThatFollowerIsReady()
     {
         idleStrategy.reset();
         final Publication publication = leaderMember.publication();

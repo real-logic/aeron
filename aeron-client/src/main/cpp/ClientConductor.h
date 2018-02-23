@@ -125,7 +125,7 @@ public:
     void onNewPublication(
         std::int32_t streamId,
         std::int32_t sessionId,
-        std::int32_t positionLimitCounterId,
+        std::int32_t publicationLimitCounterId,
         std::int32_t channelStatusIndicatorId,
         const std::string& logFileName,
         std::int64_t registrationId,
@@ -134,7 +134,7 @@ public:
     void onNewExclusivePublication(
         std::int32_t streamId,
         std::int32_t sessionId,
-        std::int32_t positionLimitCounterId,
+        std::int32_t publicationLimitCounterId,
         std::int32_t channelStatusIndicatorId,
         const std::string& logFileName,
         std::int64_t registrationId,
@@ -203,7 +203,7 @@ private:
         std::int64_t m_originalRegistrationId;
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
-        std::int32_t m_positionLimitCounterId = -1;
+        std::int32_t m_publicationLimitCounterId = -1;
         std::int32_t m_channelStatusIndicatorId = -1;
         long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
@@ -226,7 +226,7 @@ private:
         std::int64_t m_originalRegistrationId;
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
-        std::int32_t m_positionLimitCounterId = -1;
+        std::int32_t m_publicationLimitCounterId = -1;
         std::int32_t m_channelStatusIndicatorId = -1;
         long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;

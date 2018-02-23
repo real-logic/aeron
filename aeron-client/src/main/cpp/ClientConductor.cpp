@@ -100,7 +100,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
 
             case RegistrationStatus::REGISTERED_MEDIA_DRIVER:
                 {
-                    UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_positionLimitCounterId);
+                    UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_publicationLimitCounterId);
                     StatusIndicatorReader channelStatusIndicator(
                         m_counterValuesBuffer, state.m_channelStatusIndicatorId);
 
@@ -183,7 +183,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
 
             case RegistrationStatus::REGISTERED_MEDIA_DRIVER:
             {
-                UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_positionLimitCounterId);
+                UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_publicationLimitCounterId);
                 StatusIndicatorReader channelStatusIndicator(
                     m_counterValuesBuffer, state.m_channelStatusIndicatorId);
 
@@ -416,7 +416,7 @@ void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, 
 void ClientConductor::onNewPublication(
     std::int32_t streamId,
     std::int32_t sessionId,
-    std::int32_t positionLimitCounterId,
+    std::int32_t publicationLimitCounterId,
     std::int32_t channelStatusIndicatorId,
     const std::string &logFileName,
     std::int64_t registrationId,
@@ -436,7 +436,7 @@ void ClientConductor::onNewPublication(
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
-        state.m_positionLimitCounterId = positionLimitCounterId;
+        state.m_publicationLimitCounterId = publicationLimitCounterId;
         state.m_channelStatusIndicatorId = channelStatusIndicatorId;
         state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
         state.m_originalRegistrationId = originalRegistrationId;
@@ -448,7 +448,7 @@ void ClientConductor::onNewPublication(
 void ClientConductor::onNewExclusivePublication(
     std::int32_t streamId,
     std::int32_t sessionId,
-    std::int32_t positionLimitCounterId,
+    std::int32_t publicationLimitCounterId,
     std::int32_t channelStatusIndicatorId,
     const std::string &logFileName,
     std::int64_t registrationId,
@@ -468,7 +468,7 @@ void ClientConductor::onNewExclusivePublication(
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
-        state.m_positionLimitCounterId = positionLimitCounterId;
+        state.m_publicationLimitCounterId = publicationLimitCounterId;
         state.m_channelStatusIndicatorId = channelStatusIndicatorId;
         state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
         state.m_originalRegistrationId = originalRegistrationId;

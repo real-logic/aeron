@@ -53,7 +53,7 @@ public:
         m_offset = position.m_offset;
     }
 
-    inline std::int32_t id()
+    inline std::int32_t id() const
     {
         return m_id;
     }

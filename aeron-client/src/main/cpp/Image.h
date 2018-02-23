@@ -308,6 +308,16 @@ public:
     }
 
     /**
+     * Get the counter id used to represent the subscriber position.
+     *
+     * @return the counter id used to represent the subscriber position.
+     */
+    inline std::int32_t subscriberPositionId() const
+    {
+        return m_subscriberPosition.id();
+    }
+
+    /**
      * Set the subscriber position for this Image to indicate where it has been consumed to.
      *
      * @param newPosition for the consumption point.

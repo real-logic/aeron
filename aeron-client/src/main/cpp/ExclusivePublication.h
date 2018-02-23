@@ -219,7 +219,7 @@ public:
      *
      * @return the position limit beyond which this {@link Publication} will be back pressured.
      */
-    inline std::int64_t positionLimit()
+    inline std::int64_t publicationLimit()
     {
         std::int64_t result = PUBLICATION_CLOSED;
 
@@ -229,6 +229,16 @@ public:
         }
 
         return result;
+    }
+
+    /**
+     * Get the counter id used to represent the publication limit.
+     *
+     * @return the counter id used to represent the publication limit.
+     */
+    inline std::int32_t publicationLimitId() const
+    {
+        return m_publicationLimit.id();
     }
 
     /**

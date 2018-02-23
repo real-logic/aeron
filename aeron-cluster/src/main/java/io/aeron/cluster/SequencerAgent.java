@@ -1002,7 +1002,6 @@ class SequencerAgent implements Agent, ServiceControlListener
         else
         {
             votedForMemberId = NULL_MEMBER_ID;
-
             while (NULL_MEMBER_ID == votedForMemberId)
             {
                 idle(memberStatusAdapter.poll());
@@ -1100,7 +1099,21 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         createPositionCounters();
         awaitServicesReady(channelUri, false);
-        lastRecordingPosition = NULL_POSITION;
+        notifyLeaderReady();
+    }
+
+    private void notifyLeaderReady()
+    {
+        idleStrategy.reset();
+        final Publication publication = leaderMember.publication();
+
+        while (!memberStatusPublisher.appendedPosition(
+            publication, 0L, leadershipTermId, memberId))
+        {
+            idle();
+        }
+
+        lastRecordingPosition = 0;
     }
 
     private void awaitFollowersReady()

@@ -644,7 +644,7 @@ bool aeron_is_driver_active_with_cnc(
     {
         if (aeron_epochclock() > (now + timeout))
         {
-            snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version 0 for timeout");
+            snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version was 0 for timeout");
             return false;
         }
 
@@ -653,7 +653,10 @@ bool aeron_is_driver_active_with_cnc(
 
     if (AERON_CNC_VERSION != cnc_version)
     {
-        snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version not understood: version=%d", cnc_version);
+        snprintf(
+            buffer, sizeof(buffer) - 1,
+            "ERROR: aeron cnc version does not match: file version=%d software version=%d",
+            cnc_version, AERON_CNC_VERSION);
         log_func(buffer);
     }
     else

@@ -24,10 +24,10 @@ Subscription::Subscription(
     std::int64_t registrationId,
     const std::string &channel,
     std::int32_t streamId,
-    StatusIndicatorReader& channelStatusIndicator) :
+    std::int32_t channelStatusId) :
     m_conductor(conductor),
     m_channel(channel),
-    m_channelStatusIndicator(channelStatusIndicator),
+    m_channelStatusId(channelStatusId),
     m_registrationId(registrationId),
     m_streamId(streamId),
     m_imageList(new struct ImageList(new Image[0], 0)),
@@ -39,6 +39,16 @@ Subscription::Subscription(
 Subscription::~Subscription()
 {
     m_conductor.releaseSubscription(m_registrationId, std::atomic_load_explicit(&m_imageList, std::memory_order_acquire));
+}
+
+std::int64_t Subscription::channelStatus()
+{
+    if (isClosed())
+    {
+        return ChannelEndpointStatus::NO_ID_ALLOCATED;
+    }
+
+    return m_conductor.channelStatus(m_channelStatusId);
 }
 
 }

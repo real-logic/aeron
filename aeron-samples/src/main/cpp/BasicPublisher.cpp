@@ -115,9 +115,9 @@ int main(int argc, char** argv)
             publication = aeron->findPublication(id);
         }
 
-        const std::int64_t channelStatus = publication->channelStatusIndicator().getVolatile();
+        const std::int64_t channelStatus = publication->channelStatus();
 
-        std::cout << "Publication channel status (id=" << publication->channelStatusIndicator().id() << ") "
+        std::cout << "Publication channel status (id=" << publication->channelStatusId() << ") "
             << ((channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE) ?
                 "ACTIVE" : std::to_string(channelStatus))
             << std::endl;

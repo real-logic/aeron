@@ -54,7 +54,7 @@ public:
         std::int64_t registrationId,
         const std::string& channel,
         std::int32_t streamId,
-        StatusIndicatorReader& channelStatusIndicator);
+        std::int32_t channelStatusId);
     /// @endcond
     virtual ~Subscription();
 
@@ -89,13 +89,13 @@ public:
     }
 
     /**
-     * Get the status indicator assigned to the channel of this {@link Subscription}
+     * Get the counter id used to represent the channel status.
      *
-     * @return status indicator reader for the channel
+     * @return the counter id used to represent the channel status.
      */
-    inline StatusIndicatorReader& channelStatusIndicator()
+    inline std::int32_t channelStatusId() const
     {
-        return m_channelStatusIndicator;
+        return m_channelStatusId;
     }
 
     /**
@@ -419,7 +419,7 @@ public:
             std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
         }
 
-        return std::pair<struct ImageList *,int>(
+        return std::pair<struct ImageList *, int>(
                 (-1 != index) ? oldImageList : nullptr,
                 index);
     }
@@ -444,10 +444,17 @@ public:
     }
     /// @endcond
 
+    /**
+     * Get the status for the channel of this {@link Publication}
+     *
+     * @return status code for this channel
+     */
+    std::int64_t channelStatus();
+
 private:
     ClientConductor& m_conductor;
     const std::string m_channel;
-    StatusIndicatorReader m_channelStatusIndicator;
+    std::int32_t m_channelStatusId;
     std::size_t m_roundRobinIndex = 0;
     std::int64_t m_registrationId;
     std::int32_t m_streamId;

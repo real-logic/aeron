@@ -142,7 +142,7 @@ public:
 
     void onSubscriptionReady(
         std::int64_t registrationId,
-        std::int32_t channelStatusIndicatorId);
+        std::int32_t channelStatusId);
 
     void onOperationSuccess(std::int64_t correlationId);
 
@@ -183,6 +183,21 @@ public:
         return m_countersReader;
     }
 
+    inline std::int64_t channelStatus(std::int32_t counterId)
+    {
+        switch (counterId)
+        {
+            case 0:
+                return ChannelEndpointStatus::CHANNEL_ENDPOINT_INITIALIZING;
+
+            case ChannelEndpointStatus::NO_ID_ALLOCATED:
+                return ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE;
+
+            default:
+                return m_countersReader.getCounterValue(counterId);
+        }
+    }
+
 protected:
     void onCheckManagedResources(long long now);
 
@@ -204,7 +219,7 @@ private:
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
         std::int32_t m_publicationLimitCounterId = -1;
-        std::int32_t m_channelStatusIndicatorId = -1;
+        std::int32_t m_channelStatusId = -1;
         long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
@@ -227,7 +242,7 @@ private:
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
         std::int32_t m_publicationLimitCounterId = -1;
-        std::int32_t m_channelStatusIndicatorId = -1;
+        std::int32_t m_channelStatusId = -1;
         long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;

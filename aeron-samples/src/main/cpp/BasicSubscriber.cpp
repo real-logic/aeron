@@ -137,9 +137,9 @@ int main(int argc, char** argv)
             subscription = aeron->findSubscription(id);
         }
 
-        const std::int64_t channelStatus = subscription->channelStatusIndicator().getVolatile();
+        const std::int64_t channelStatus = subscription->channelStatus();
 
-        std::cout << "Subscription channel status (id=" << subscription->channelStatusIndicator().id() << ") "
+        std::cout << "Subscription channel status (id=" << subscription->channelStatusId() << ") "
             << ((channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE) ?
                 "ACTIVE" : std::to_string(channelStatus))
             << std::endl;

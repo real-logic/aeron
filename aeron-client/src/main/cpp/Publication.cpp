@@ -27,7 +27,7 @@ Publication::Publication(
     std::int32_t streamId,
     std::int32_t sessionId,
     UnsafeBufferPosition& publicationLimit,
-    StatusIndicatorReader& channelStatusIndicator,
+    std::int32_t channelStatusId,
     std::shared_ptr<LogBuffers> buffers)
     :
     m_conductor(conductor),
@@ -43,7 +43,7 @@ Publication::Publication(
     m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(buffers->atomicBuffer(0).capacity())),
     m_positionBitsToShift(util::BitUtil::numberOfTrailingZeroes(buffers->atomicBuffer(0).capacity())),
     m_publicationLimit(publicationLimit),
-    m_channelStatusIndicator(channelStatusIndicator),
+    m_channelStatusId(channelStatusId),
     m_logbuffers(buffers),
     m_headerWriter(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer))
 {
@@ -86,4 +86,13 @@ void Publication::removeDestination(const std::string& endpointChannel)
     m_conductor.removeDestination(m_registrationId, endpointChannel);
 }
 
+std::int64_t Publication::channelStatus()
+{
+    if (isClosed())
+    {
+        return ChannelEndpointStatus::NO_ID_ALLOCATED;
+    }
+
+    return m_conductor.channelStatus(m_channelStatusId);
+}
 }

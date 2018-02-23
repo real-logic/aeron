@@ -99,18 +99,16 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
                 break;
 
             case RegistrationStatus::REGISTERED_MEDIA_DRIVER:
-                {
-                    UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_publicationLimitCounterId);
-                    StatusIndicatorReader channelStatusIndicator(
-                        m_counterValuesBuffer, state.m_channelStatusIndicatorId);
+            {
+                UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_publicationLimitCounterId);
 
-                    pub = std::make_shared<Publication>(
-                        *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId,
-                        state.m_streamId, state.m_sessionId, publicationLimit, channelStatusIndicator, state.m_buffers);
+                pub = std::make_shared<Publication>(
+                    *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId,
+                    state.m_streamId, state.m_sessionId, publicationLimit, state.m_channelStatusId, state.m_buffers);
 
-                    state.m_publication = std::weak_ptr<Publication>(pub);
-                }
+                state.m_publication = std::weak_ptr<Publication>(pub);
                 break;
+            }
 
             case RegistrationStatus::ERRORED_MEDIA_DRIVER:
                 throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
@@ -184,12 +182,10 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
             case RegistrationStatus::REGISTERED_MEDIA_DRIVER:
             {
                 UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_publicationLimitCounterId);
-                StatusIndicatorReader channelStatusIndicator(
-                    m_counterValuesBuffer, state.m_channelStatusIndicatorId);
 
                 pub = std::make_shared<ExclusivePublication>(
                     *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId, state.m_streamId,
-                    state.m_sessionId, publicationLimit, channelStatusIndicator, state.m_buffers);
+                    state.m_sessionId, publicationLimit, state.m_channelStatusId, state.m_buffers);
 
                 state.m_publication = std::weak_ptr<ExclusivePublication>(pub);
                 break;
@@ -437,7 +433,7 @@ void ClientConductor::onNewPublication(
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
         state.m_publicationLimitCounterId = publicationLimitCounterId;
-        state.m_channelStatusIndicatorId = channelStatusIndicatorId;
+        state.m_channelStatusId = channelStatusIndicatorId;
         state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
         state.m_originalRegistrationId = originalRegistrationId;
 
@@ -469,7 +465,7 @@ void ClientConductor::onNewExclusivePublication(
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
         state.m_publicationLimitCounterId = publicationLimitCounterId;
-        state.m_channelStatusIndicatorId = channelStatusIndicatorId;
+        state.m_channelStatusId = channelStatusIndicatorId;
         state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
         state.m_originalRegistrationId = originalRegistrationId;
 
@@ -479,7 +475,7 @@ void ClientConductor::onNewExclusivePublication(
 
 void ClientConductor::onSubscriptionReady(
     std::int64_t registrationId,
-    std::int32_t channelStatusIndicatorId)
+    std::int32_t channelStatusId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -491,13 +487,12 @@ void ClientConductor::onSubscriptionReady(
 
     if (subIt != m_subscriptions.end() && (*subIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
     {
-        StatusIndicatorReader channelStatusIndicator(m_counterValuesBuffer, channelStatusIndicatorId);
         SubscriptionStateDefn& state = (*subIt);
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_subscriptionCache =
             std::make_shared<Subscription>(
-                *this, state.m_registrationId, state.m_channel, state.m_streamId, channelStatusIndicator);
+                *this, state.m_registrationId, state.m_channel, state.m_streamId, channelStatusId);
         state.m_subscription = std::weak_ptr<Subscription>(state.m_subscriptionCache);
         m_onNewSubscriptionHandler(state.m_channel, state.m_streamId, registrationId);
         return;

@@ -1076,16 +1076,11 @@ class SequencerAgent implements Agent, ServiceControlListener
     private void becomeFollower()
     {
         leaderMember = clusterMembers[leaderMemberId];
-        followerCommitPosition = NULL_POSITION;
 
         updateMemberDetails(leaderMemberId);
         role(Cluster.Role.FOLLOWER);
 
-        while (NULL_POSITION == followerCommitPosition)
-        {
-            final int fragments = memberStatusAdapter.poll();
-            idle(fragments);
-        }
+        awaitLogSessionIdFromLeader();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
@@ -1100,6 +1095,16 @@ class SequencerAgent implements Agent, ServiceControlListener
         createPositionCounters();
         awaitServicesReady(channelUri, false);
         notifyLeaderThatFollowerIsReady();
+    }
+
+    private void awaitLogSessionIdFromLeader()
+    {
+        followerCommitPosition = NULL_POSITION;
+        while (NULL_POSITION == followerCommitPosition)
+        {
+            final int fragments = memberStatusAdapter.poll();
+            idle(fragments);
+        }
     }
 
     private void notifyLeaderThatFollowerIsReady()

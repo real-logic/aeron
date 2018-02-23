@@ -20,5 +20,5 @@
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
     -XX:BiasedLockingStartupDelay=0 ^
-    io.aeron.driver.MediaDriver ^
-    %JVM_OPTS% low-latency.properties %*
+    %JVM_OPTS% io.aeron.driver.MediaDriver ^
+    low-latency.properties %*

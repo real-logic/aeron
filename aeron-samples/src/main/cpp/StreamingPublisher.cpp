@@ -206,7 +206,7 @@ int main(int argc, char **argv)
                         break;
                     }
 
-                    offerIdleStrategy.idle(0);
+                    offerIdleStrategy.idle();
                 }
 
                 rateReporter.onMessage(1, length);

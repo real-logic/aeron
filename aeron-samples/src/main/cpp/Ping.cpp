@@ -119,7 +119,7 @@ void sendPingAndReceivePong(
         {
             while (image.poll(fragmentHandler, settings.fragmentCountLimit) <= 0)
             {
-                idleStrategy.idle(0);
+                idleStrategy.idle();
             }
         }
         while (image.position() < position);

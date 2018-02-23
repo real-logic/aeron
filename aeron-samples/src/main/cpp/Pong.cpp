@@ -158,7 +158,7 @@ int main(int argc, char **argv)
 
                 while (pongPublicationRef.offer(buffer, offset, length) < 0L)
                 {
-                    pingHandlerIdleStrategy.idle(0);
+                    pingHandlerIdleStrategy.idle();
                 }
             });
 

@@ -224,7 +224,7 @@ int main(int argc, char **argv)
                 while (publicationPtr->tryClaim(settings.messageLength, bufferClaim) < 0L)
                 {
                     backPressureCount++;
-                    offerIdleStrategy.idle(0);
+                    offerIdleStrategy.idle();
                 }
 
                 bufferClaim.buffer().putInt64(bufferClaim.offset(), i);

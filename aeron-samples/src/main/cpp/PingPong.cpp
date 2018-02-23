@@ -125,7 +125,7 @@ void sendPingAndReceivePong(
         {
             while (image.poll(fragmentHandler, settings.fragmentCountLimit) <= 0)
             {
-                idleStrategy.idle(0);
+                idleStrategy.idle();
             }
         }
         while (image.position() < position);
@@ -254,7 +254,7 @@ int main(int argc, char **argv)
 
                 while (pongPublicationRef.offer(buffer, offset, length) < 0L)
                 {
-                    pingHandlerIdleStrategy.idle(0);
+                    pingHandlerIdleStrategy.idle();
                 }
             });
 

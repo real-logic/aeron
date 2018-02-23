@@ -78,29 +78,29 @@ public class SessionProxy
     /**
      * Inform the system that the session is met authentication requirements and can continue as a full access client.
      *
-     * @param principalData to pass to the on session open cluster event.
+     * @param encodedPrincipal to pass to the on session open cluster event.
      * @return true if success event was sent or false if success event could not be sent.
      */
-    public final boolean authenticate(final byte[] principalData)
+    public final boolean authenticate(final byte[] encodedPrincipal)
     {
-        return authenticate(principalData, ClusterSession.Capability.CLIENT_PLUS_QUERY);
+        return authenticate(encodedPrincipal, ClusterSession.Capability.CLIENT_PLUS_QUERY);
     }
 
     /**
      * Inform the system that the session is met authentication requirements and can continue with the given capability.
      *
-     * @param principalData to pass to the on session open cluster event.
-     * @param capability for the client.
+     * @param encodedPrincipal to pass to the on session open cluster event.
+     * @param capability       for the client.
      * @return true if success event was sent or false if success event could not be sent.
      * @see ClusterSession.Capability
      */
-    public final boolean authenticate(final byte[] principalData, final ClusterSession.Capability capability)
+    public final boolean authenticate(final byte[] encodedPrincipal, final ClusterSession.Capability capability)
     {
-        ClusterSession.checkPrincipalDataLength(principalData);
+        ClusterSession.checkEncodedPrincipalLength(encodedPrincipal);
 
         if (egressPublisher.sendEvent(clusterSession, EventCode.OK, memberEndpointsDetail))
         {
-            clusterSession.authenticate(principalData, capability);
+            clusterSession.authenticate(encodedPrincipal, capability);
             return true;
         }
 

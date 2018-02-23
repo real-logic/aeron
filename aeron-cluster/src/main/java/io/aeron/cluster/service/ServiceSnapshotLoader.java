@@ -99,14 +99,14 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.version());
 
                 final String responseChannel = clientSessionDecoder.responseChannel();
-                final byte[] principalData = new byte[clientSessionDecoder.principalDataLength()];
-                clientSessionDecoder.getPrincipalData(principalData, 0, principalData.length);
+                final byte[] encodedPrincipal = new byte[clientSessionDecoder.encodedPrincipalLength()];
+                clientSessionDecoder.getEncodedPrincipal(encodedPrincipal, 0, encodedPrincipal.length);
 
                 agent.addSession(
                     clientSessionDecoder.clusterSessionId(),
                     clientSessionDecoder.responseStreamId(),
                     responseChannel,
-                    principalData);
+                    encodedPrincipal);
                 break;
 
             default:

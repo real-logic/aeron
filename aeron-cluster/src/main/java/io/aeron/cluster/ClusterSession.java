@@ -27,8 +27,8 @@ import static io.aeron.cluster.ClusterSession.Capability.NONE;
 
 class ClusterSession implements AutoCloseable
 {
-    public static final byte[] NULL_PRINCIPAL_DATA = ArrayUtil.EMPTY_BYTE_ARRAY;
-    public static final int MAX_PRINCIPAL_DATA_LENGTH = 4 * 1024;
+    public static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
+    public static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
     public static final int MAX_ADMIN_RESPONSE_DATA_LENGTH = 4 * 1024;
 
     enum State
@@ -53,8 +53,8 @@ class ClusterSession implements AutoCloseable
         CLIENT_ONLY,
 
         /**
-         * Client can send/receive to/from cluster and can query cluster endpoints and recording log. Normally reserved
-         * for cluster members only.
+         * Client can send/receive to/from cluster and can query cluster endpoints and recording log.
+         * Normally reserved for cluster members only.
          */
         CLIENT_PLUS_QUERY
     }
@@ -68,7 +68,7 @@ class ClusterSession implements AutoCloseable
     private Publication responsePublication;
     private State state = State.INIT;
     private CloseReason closeReason = CloseReason.NULL_VAL;
-    private byte[] principalData = NULL_PRINCIPAL_DATA;
+    private byte[] encodedPrincipal = NULL_PRINCIPAL;
     private byte[] adminResponseData;
     private Capability capability = NONE;
 
@@ -146,11 +146,11 @@ class ClusterSession implements AutoCloseable
         return capability;
     }
 
-    void authenticate(final byte[] principalData, final Capability capability)
+    void authenticate(final byte[] encodedPrincipal, final Capability capability)
     {
-        if (principalData != null)
+        if (encodedPrincipal != null)
         {
-            this.principalData = principalData;
+            this.encodedPrincipal = encodedPrincipal;
         }
 
         this.state = State.AUTHENTICATED;
@@ -160,12 +160,12 @@ class ClusterSession implements AutoCloseable
     {
         this.openedTermPosition = openedTermPosition;
         this.state = State.OPEN;
-        principalData = null;
+        encodedPrincipal = null;
     }
 
-    byte[] principalData()
+    byte[] encodedPrincipal()
     {
-        return principalData;
+        return encodedPrincipal;
     }
 
     void lastActivity(final long timeMs, final long correlationId)
@@ -204,15 +204,15 @@ class ClusterSession implements AutoCloseable
         return adminResponseData;
     }
 
-    static void checkPrincipalDataLength(final byte[] principalData)
+    static void checkEncodedPrincipalLength(final byte[] encodedPrincipal)
     {
-        if (null != principalData && principalData.length > MAX_PRINCIPAL_DATA_LENGTH)
+        if (null != encodedPrincipal && encodedPrincipal.length > MAX_ENCODED_PRINCIPAL_LENGTH)
         {
             throw new IllegalArgumentException(
-                "Principal Data max length " +
-                MAX_PRINCIPAL_DATA_LENGTH +
+                "Encoded Principal max length " +
+                MAX_ENCODED_PRINCIPAL_LENGTH +
                 " exceeded: length=" +
-                principalData.length);
+                encodedPrincipal.length);
         }
     }
 
@@ -239,7 +239,7 @@ class ClusterSession implements AutoCloseable
             ", responseStreamId=" + responseStreamId +
             ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +
-            ", principalData=" + Arrays.toString(principalData) +
+            ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
             ", adminResponseData=" + Arrays.toString(adminResponseData) +
             '}';
     }

@@ -249,7 +249,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         final long timestampMs,
         final int responseStreamId,
         final String responseChannel,
-        final byte[] principalData)
+        final byte[] encodedPrincipal)
     {
         this.timestampMs = timestampMs;
 
@@ -257,7 +257,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             clusterSessionId,
             responseStreamId,
             responseChannel,
-            principalData,
+            encodedPrincipal,
             this);
 
         if (Role.LEADER == role)
@@ -289,13 +289,13 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         final long clusterSessionId,
         final int responseStreamId,
         final String responseChannel,
-        final byte[] principalData)
+        final byte[] encodedPrincipal)
     {
         final ClientSession session = new ClientSession(
             clusterSessionId,
             responseStreamId,
             responseChannel,
-            principalData,
+            encodedPrincipal,
             ClusteredServiceAgent.this);
 
         sessionByIdMap.put(clusterSessionId, session);

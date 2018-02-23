@@ -85,7 +85,7 @@ class LogPublisher
     public long appendConnectedSession(final ClusterSession session, final long nowMs)
     {
         long result;
-        final byte[] sessionPrincipalData = session.principalData();
+        final byte[] encodedPrincipal = session.encodedPrincipal();
         final String channel = session.responseChannel();
 
         connectEventEncoder
@@ -95,7 +95,7 @@ class LogPublisher
             .timestamp(nowMs)
             .responseStreamId(session.responseStreamId())
             .responseChannel(channel)
-            .putPrincipalData(sessionPrincipalData, 0, sessionPrincipalData.length);
+            .putEncodedPrincipal(encodedPrincipal, 0, encodedPrincipal.length);
 
         final int length = connectEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
 

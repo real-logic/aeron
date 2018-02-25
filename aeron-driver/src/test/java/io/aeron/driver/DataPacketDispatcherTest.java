@@ -235,4 +235,11 @@ public class DataPacketDispatcherTest
         verify(mockImage1, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
         verify(mockImage2).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH);
     }
+
+    @Test
+    public void shouldRemoveSessionSpecificSubscriptionWithoutAny()
+    {
+        dispatcher.addSubscription(STREAM_ID, SESSION_ID);
+        dispatcher.removeSubscription(STREAM_ID, SESSION_ID);
+    }
 }

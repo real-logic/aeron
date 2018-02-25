@@ -161,7 +161,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         }
 
         final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.remove(sessionId);
-        if (null != sessionInterest.image)
+        if (null != sessionInterest && null != sessionInterest.image)
         {
             sessionInterest.image.ifActiveGoInactive();
         }

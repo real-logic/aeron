@@ -137,11 +137,19 @@ class ControlResponseProxy
 
     private static void checkResult(final Publication controlPublication, final long result)
     {
-        if (result == Publication.NOT_CONNECTED ||
-            result == Publication.CLOSED ||
-            result == Publication.MAX_POSITION_EXCEEDED)
+        if (result == Publication.NOT_CONNECTED)
         {
-            throw new IllegalStateException("Response channel is down: " + controlPublication.channel());
+            throw new IllegalStateException("Response publication is not connected: " + controlPublication.channel());
+        }
+
+        if (result == Publication.CLOSED)
+        {
+            throw new IllegalStateException("Response publication is closed: " + controlPublication.channel());
+        }
+
+        if (result == Publication.MAX_POSITION_EXCEEDED)
+        {
+            throw new IllegalStateException("Response publication at max position: " + controlPublication.channel());
         }
     }
 }

@@ -15,6 +15,8 @@
  */
 package io.aeron.samples.archive;
 
+import io.aeron.ChannelUri;
+import io.aeron.CommonContext;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
@@ -26,17 +28,6 @@ import org.agrona.concurrent.SigInt;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * This is a Basic Aeron subscriber application to a recorded stream.
- * The application subscribes to a recorded of the default channel and stream ID.
- * These defaults can be overwritten by changing their value in {@link SampleConfiguration} or by
- * setting their corresponding Java system properties at the command line, e.g.:
- * -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20
- * This application only handles non-fragmented data. A DataHandler method is called
- * for every received message or message fragment.
- * For an example that implements reassembly of large, fragmented messages, see
- * {link@ MultipleSubscribersWithFragmentAssembly}.
- */
 public class ReplayedBasicSubscriber
 {
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
@@ -54,21 +45,21 @@ public class ReplayedBasicSubscriber
         final FragmentHandler fragmentHandler = SamplesUtil.printStringMessage(STREAM_ID);
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        // Register a SIGINT handler for graceful shutdown.
         SigInt.register(() -> running.set(false));
 
-        // Create an Aeron instance using the configured Context and create a
-        // Subscription on that instance that subscribes to the configured
-        // channel and stream ID.
-        // The Aeron and Subscription classes implement "AutoCloseable" and will automatically
-        // clean up resources when this try block is finished
         try (AeronArchive archive = AeronArchive.connect())
         {
             final long recordingId = findLatestRecording(archive);
             final long position = 0L;
             final long length = Long.MAX_VALUE;
 
-            try (Subscription subscription = archive.replay(recordingId, position, length, CHANNEL, REPLAY_STREAM_ID))
+            final int sessionId = (int)archive.startReplay(recordingId, position, length, CHANNEL, REPLAY_STREAM_ID);
+
+            final ChannelUri channelUri = ChannelUri.parse(CHANNEL);
+            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
+            final String channel = channelUri.toString();
+
+            try (Subscription subscription = archive.context().aeron().addSubscription(channel, REPLAY_STREAM_ID))
             {
                 SamplesUtil.subscriberLoop(fragmentHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 

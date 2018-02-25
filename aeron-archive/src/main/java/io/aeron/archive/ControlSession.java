@@ -288,7 +288,7 @@ class ControlSession implements Session
             {
                 if (sendFirst(queuedResponses))
                 {
-                    queuedResponses.poll();
+                    queuedResponses.pollFirst();
                     activityDeadlineMs = NULL_DEADLINE;
                     workCount++;
                 }
@@ -308,7 +308,7 @@ class ControlSession implements Session
 
     private static boolean sendFirst(final ArrayDeque<BooleanSupplier> responseQueue)
     {
-        return responseQueue.peek().getAsBoolean();
+        return responseQueue.peekFirst().getAsBoolean();
     }
 
     private int waitForConnection()

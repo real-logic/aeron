@@ -58,8 +58,8 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         int recordsScanned = 0;
 
         while (sent < count &&
-               totalBytesSent < controlSession.maxPayloadLength() &&
-               recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
+            totalBytesSent < controlSession.maxPayloadLength() &&
+            recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
@@ -71,9 +71,9 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 
             wrapDescriptorDecoder(decoder, descriptorBuffer);
 
-            if (decoder.streamId() == streamId &&
-                decoder.strippedChannel().equals(channel) &&
-                Catalog.isValidDescriptor(descriptorBuffer))
+            if (Catalog.isValidDescriptor(descriptorBuffer) &&
+                decoder.streamId() == streamId &&
+                decoder.strippedChannel().contains(channel))
             {
                 final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
                 if (bytesSent == 0)
@@ -81,10 +81,11 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
                     isDone = controlSession.isDone();
                     break;
                 }
-                totalBytesSent += bytesSent;
 
+                totalBytesSent += bytesSent;
                 ++sent;
             }
+
             recordingId++;
             recordsScanned++;
         }

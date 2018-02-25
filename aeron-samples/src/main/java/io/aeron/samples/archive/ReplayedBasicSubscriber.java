@@ -79,7 +79,7 @@ public class ReplayedBasicSubscriber
 
     private static long findLatestRecording(final AeronArchive archive)
     {
-        final MutableLong foundRecordingId = new MutableLong();
+        final MutableLong lastRecordingId = new MutableLong();
 
         final RecordingDescriptorConsumer consumer =
             (controlSessionId,
@@ -97,18 +97,18 @@ public class ReplayedBasicSubscriber
             streamId,
             strippedChannel,
             originalChannel,
-            sourceIdentity) -> foundRecordingId.set(recordingId);
+            sourceIdentity) -> lastRecordingId.set(recordingId);
 
         final long fromRecordingId = 0L;
         final int recordCount = 100;
 
-        final int foundCount = archive.listRecordings(fromRecordingId, recordCount, consumer);
+        final int foundCount = archive.listRecordingsForUri(fromRecordingId, recordCount, CHANNEL, STREAM_ID, consumer);
 
         if (foundCount == 0)
         {
             throw new IllegalStateException("No recordings found");
         }
 
-        return foundRecordingId.get();
+        return lastRecordingId.get();
     }
 }

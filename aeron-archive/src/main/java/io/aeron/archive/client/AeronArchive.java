@@ -645,7 +645,7 @@ public class AeronArchive implements AutoCloseable
      *
      * @param fromRecordingId at which to begin the listing.
      * @param recordCount     to limit for each query.
-     * @param channel         to match.
+     * @param channel         for a contains match on the stripped channel stored with the archive descriptor
      * @param streamId        to match.
      * @param consumer        to which the descriptors are dispatched.
      * @return the number of descriptors found and consumed.

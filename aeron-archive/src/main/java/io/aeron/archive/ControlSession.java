@@ -20,15 +20,15 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.util.ArrayDeque;
 import java.util.function.BooleanSupplier;
 
 import static io.aeron.archive.codecs.ControlResponseCode.*;
 
 /**
- * Control sessions are interacted with from both the {@link ArchiveConductor} and the replay/record
+ * Control sessions are interacted with from both the {@link ArchiveConductor} and the replay
  * {@link SessionWorker}s. The interaction may result in pending send actions being queued for execution by the
  * {@link ArchiveConductor}.
  * This complexity reflects the fact that replay/record/list requests happen in the context of a session, and that they
@@ -47,8 +47,7 @@ class ControlSession implements Session
 
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
-    private final ManyToOneConcurrentLinkedQueue<BooleanSupplier> queuedResponses =
-        new ManyToOneConcurrentLinkedQueue<>();
+    private final ArrayDeque<BooleanSupplier> queuedResponses = new ArrayDeque<>(8);
     private final ControlResponseProxy controlResponseProxy;
     private final long controlSessionId;
     private final long correlationId;
@@ -96,11 +95,6 @@ class ControlSession implements Session
     public boolean isDone()
     {
         return state == State.INACTIVE;
-    }
-
-    public boolean isConnected()
-    {
-        return controlPublication.isConnected();
     }
 
     public int doWork()
@@ -312,7 +306,7 @@ class ControlSession implements Session
         return workCount;
     }
 
-    private static boolean sendFirst(final ManyToOneConcurrentLinkedQueue<BooleanSupplier> responseQueue)
+    private static boolean sendFirst(final ArrayDeque<BooleanSupplier> responseQueue)
     {
         return responseQueue.peek().getAsBoolean();
     }

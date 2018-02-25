@@ -16,7 +16,6 @@
 package io.aeron.samples.archive;
 
 import io.aeron.ChannelUri;
-import io.aeron.CommonContext;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
@@ -53,11 +52,8 @@ public class ReplayedBasicSubscriber
             final long position = 0L;
             final long length = Long.MAX_VALUE;
 
-            final int sessionId = (int)archive.startReplay(recordingId, position, length, CHANNEL, REPLAY_STREAM_ID);
-
-            final ChannelUri channelUri = ChannelUri.parse(CHANNEL);
-            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
-            final String channel = channelUri.toString();
+            final long sessionId = archive.startReplay(recordingId, position, length, CHANNEL, REPLAY_STREAM_ID);
+            final String channel = ChannelUri.addSessionId(CHANNEL, (int)sessionId);
 
             try (Subscription subscription = archive.context().aeron().addSubscription(channel, REPLAY_STREAM_ID))
             {

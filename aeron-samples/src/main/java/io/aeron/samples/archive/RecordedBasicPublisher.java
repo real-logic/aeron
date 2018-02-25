@@ -17,6 +17,7 @@ package io.aeron.samples.archive;
 
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.samples.SampleConfiguration;
 import org.agrona.BufferUtil;
@@ -51,28 +52,29 @@ public class RecordedBasicPublisher
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
-        try (AeronArchive archive = AeronArchive.connect();
-            Publication publication = archive.addRecordedPublication(CHANNEL, STREAM_ID))
+        try (AeronArchive archive = AeronArchive.connect())
         {
-            // Wait for recording to have started before publishing.
-            final CountersReader counters = archive.context().aeron().countersReader();
-            int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-            while (CountersReader.NULL_COUNTER_ID == counterId)
+            archive.startRecording(CHANNEL, STREAM_ID, SourceLocation.LOCAL);
+
+            try (Publication publication = archive.context().aeron().addPublication(CHANNEL, STREAM_ID))
             {
-                if (!running.get())
+                // Wait for recording to have started before publishing.
+                final CountersReader counters = archive.context().aeron().countersReader();
+                int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                while (CountersReader.NULL_COUNTER_ID == counterId)
                 {
-                    return;
+                    if (!running.get())
+                    {
+                        return;
+                    }
+
+                    Thread.yield();
+                    counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
                 }
 
-                Thread.yield();
-                counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-            }
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+                System.out.println("Recording started: recordingId = " + recordingId);
 
-            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-            System.out.println("Recording started: recordingId = " + recordingId);
-
-            try
-            {
                 for (int i = 0; i < NUMBER_OF_MESSAGES && running.get(); i++)
                 {
                     final String message = "Hello World! " + i;
@@ -82,15 +84,7 @@ public class RecordedBasicPublisher
                     System.out.print("Offering " + i + "/" + NUMBER_OF_MESSAGES + " - ");
 
                     final long result = publication.offer(BUFFER, 0, messageBytes.length);
-
-                    if (result < 0L)
-                    {
-                        checkResult(result);
-                    }
-                    else
-                    {
-                        System.out.println("yay!");
-                    }
+                    checkResult(result);
 
                     Thread.sleep(TimeUnit.SECONDS.toMillis(1));
                 }
@@ -108,14 +102,18 @@ public class RecordedBasicPublisher
             finally
             {
                 System.out.println("Done sending.");
-                archive.stopRecording(publication);
+                archive.stopRecording(CHANNEL, STREAM_ID);
             }
         }
     }
 
     private static void checkResult(final long result)
     {
-        if (result == Publication.BACK_PRESSURED)
+        if (result > 0)
+        {
+            System.out.println("yay!");
+        }
+        else if (result == Publication.BACK_PRESSURED)
         {
             System.out.println("Offer failed due to back pressure");
         }
@@ -137,7 +135,7 @@ public class RecordedBasicPublisher
         }
         else
         {
-            System.out.println("Offer failed due to unknown reason");
+            System.out.println("Offer failed due to unknown result code: " + result);
         }
     }
 }

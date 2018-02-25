@@ -99,6 +99,11 @@ class ControlSession implements Session
         return state == State.INACTIVE;
     }
 
+    public boolean isConnected()
+    {
+        return controlPublication.isConnected();
+    }
+
     public int doWork()
     {
         int workCount = 0;

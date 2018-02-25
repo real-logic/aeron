@@ -179,7 +179,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
         }
         else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
         {
-            closeOnError(null, "replay stream has been shutdown mid-replay");
+            closeOnError(null, "stream closed before replay is complete");
         }
 
         return false;
@@ -257,7 +257,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
             cursor.close();
         }
 
-        if (!controlSession.isDone())
+        if (!controlSession.isDone() && controlSession.isConnected())
         {
             controlSession.sendResponse(
                 correlationId,

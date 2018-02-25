@@ -41,7 +41,7 @@ public class ReplayedBasicSubscriber
 {
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
 
-    // use a different stream id to avoid clashes
+    // Use a different stream id to avoid clash with live stream
     private static final int REPLAY_STREAM_ID = SampleConfiguration.STREAM_ID + 1;
 
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
@@ -64,7 +64,7 @@ public class ReplayedBasicSubscriber
         // clean up resources when this try block is finished
         try (AeronArchive archive = AeronArchive.connect())
         {
-            final long recordingId = findLatestRecording(archive, CHANNEL, STREAM_ID);
+            final long recordingId = findLatestRecording(archive);
             final long position = 0L;
             final long length = Long.MAX_VALUE;
 
@@ -77,8 +77,7 @@ public class ReplayedBasicSubscriber
         }
     }
 
-    private static long findLatestRecording(
-        final AeronArchive archive, final String expectedChannel, final int expectedStreamId)
+    private static long findLatestRecording(final AeronArchive archive)
     {
         final MutableLong foundRecordingId = new MutableLong();
 
@@ -103,13 +102,11 @@ public class ReplayedBasicSubscriber
         final long fromRecordingId = 0L;
         final int recordCount = 100;
 
-        final int foundCount = archive.listRecordingsForUri(
-            fromRecordingId, recordCount, expectedChannel, expectedStreamId, consumer);
+        final int foundCount = archive.listRecordings(fromRecordingId, recordCount, consumer);
 
         if (foundCount == 0)
         {
-            throw new IllegalStateException(
-                "No recordings found for channel=" + expectedChannel + " streamId=" + expectedStreamId);
+            throw new IllegalStateException("No recordings found");
         }
 
         return foundRecordingId.get();

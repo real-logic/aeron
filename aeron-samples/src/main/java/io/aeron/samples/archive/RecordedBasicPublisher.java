@@ -19,12 +19,13 @@ import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.samples.SampleConfiguration;
-import io.aeron.status.ReadableCounter;
 import org.agrona.BufferUtil;
+import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Basic Aeron publisher application which is recorded in an archive.
@@ -47,6 +48,9 @@ public class RecordedBasicPublisher
     {
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
+        final AtomicBoolean running = new AtomicBoolean(true);
+        SigInt.register(() -> running.set(false));
+
         try (AeronArchive archive = AeronArchive.connect();
             Publication publication = archive.addRecordedPublication(CHANNEL, STREAM_ID))
         {
@@ -55,15 +59,21 @@ public class RecordedBasicPublisher
             int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
             while (CountersReader.NULL_COUNTER_ID == counterId)
             {
+                if (!running.get())
+                {
+                    return;
+                }
+
                 Thread.yield();
                 counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
             }
 
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+            System.out.println("Recording started: recordingId = " + recordingId);
 
             try
             {
-                for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
+                for (int i = 0; i < NUMBER_OF_MESSAGES && running.get(); i++)
                 {
                     final String message = "Hello World! " + i;
                     final byte[] messageBytes = message.getBytes();
@@ -75,52 +85,17 @@ public class RecordedBasicPublisher
 
                     if (result < 0L)
                     {
-                        if (result == Publication.BACK_PRESSURED)
-                        {
-                            System.out.println("Offer failed due to back pressure");
-                        }
-                        else if (result == Publication.ADMIN_ACTION)
-                        {
-                            System.out.println("Offer failed because of an administration action in the system");
-                        }
-                        else if (result == Publication.NOT_CONNECTED)
-                        {
-                            System.out.println("Offer failed because publisher is not connected to subscriber");
-                        }
-                        else if (result == Publication.CLOSED)
-                        {
-                            System.out.println("Offer failed publication is closed");
-                            break;
-                        }
-                        else if (result == Publication.MAX_POSITION_EXCEEDED)
-                        {
-                            System.out.println("Offer failed due to publication reaching max position");
-                            break;
-                        }
-                        else
-                        {
-                            System.out.println("Offer failed due to unknown reason");
-                        }
+                        checkResult(result);
                     }
                     else
                     {
                         System.out.println("yay!");
                     }
 
-                    if (!publication.isConnected())
-                    {
-                        System.out.println("No active subscribers detected");
-                    }
-
                     Thread.sleep(TimeUnit.SECONDS.toMillis(1));
                 }
 
-                // Wait for the recording to complete before the recording is stopped.
-
-                final ReadableCounter recordedPosition = new ReadableCounter(counters, counterId);
-
-                final long publicationPosition = publication.position();
-                while (recordedPosition.get() < publicationPosition)
+                while (counters.getCounterValue(counterId) < publication.position())
                 {
                     if (!RecordingPos.isActive(counters, counterId, recordingId))
                     {
@@ -129,13 +104,40 @@ public class RecordedBasicPublisher
 
                     Thread.yield();
                 }
-
-                System.out.println("Done sending.");
             }
             finally
             {
+                System.out.println("Done sending.");
                 archive.stopRecording(publication);
             }
+        }
+    }
+
+    private static void checkResult(final long result)
+    {
+        if (result == Publication.BACK_PRESSURED)
+        {
+            System.out.println("Offer failed due to back pressure");
+        }
+        else if (result == Publication.ADMIN_ACTION)
+        {
+            System.out.println("Offer failed because of an administration action in the system");
+        }
+        else if (result == Publication.NOT_CONNECTED)
+        {
+            System.out.println("Offer failed because publisher is not connected to subscriber");
+        }
+        else if (result == Publication.CLOSED)
+        {
+            System.out.println("Offer failed publication is closed");
+        }
+        else if (result == Publication.MAX_POSITION_EXCEEDED)
+        {
+            throw new IllegalStateException("Offer failed due to publication reaching max position");
+        }
+        else
+        {
+            System.out.println("Offer failed due to unknown reason");
         }
     }
 }

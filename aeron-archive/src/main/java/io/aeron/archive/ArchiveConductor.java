@@ -139,6 +139,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             {
                 subscription.close();
             }
+
             CloseHelper.close(localControlSubscription);
             CloseHelper.close(controlSubscription);
         }
@@ -153,10 +154,10 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         {
             cachedEpochClock.update(nowMs);
             markFile.updateActivityTimestamp(nowMs);
+            workCount += invokeClientConductor();
         }
 
         workCount += invokeDriverConductor();
-        workCount += invokeClientConductor();
 
         return workCount;
     }

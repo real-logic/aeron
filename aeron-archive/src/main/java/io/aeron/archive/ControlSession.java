@@ -23,7 +23,6 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.util.ArrayDeque;
 import java.util.function.BooleanSupplier;
 
 import static io.aeron.archive.codecs.ControlResponseCode.*;
@@ -48,7 +47,6 @@ class ControlSession implements Session
 
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
-    private final ArrayDeque<AbstractListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
     private final ManyToOneConcurrentLinkedQueue<BooleanSupplier> queuedResponses =
         new ManyToOneConcurrentLinkedQueue<>();
     private final ControlResponseProxy controlResponseProxy;
@@ -58,6 +56,7 @@ class ControlSession implements Session
     private final Publication controlPublication;
     private State state = State.INIT;
     private long activityDeadlineMs = -1;
+    private AbstractListRecordingsSession activeListRecordingsSession;
 
     ControlSession(
         final long controlSessionId,
@@ -121,6 +120,16 @@ class ControlSession implements Session
         return workCount;
     }
 
+    public AbstractListRecordingsSession activeListRecordingsSession()
+    {
+        return activeListRecordingsSession;
+    }
+
+    public void activeListRecordingsSession(final AbstractListRecordingsSession session)
+    {
+        activeListRecordingsSession = session;
+    }
+
     public void onStopRecording(final long correlationId, final int streamId, final String channel)
     {
         conductor.stopRecording(correlationId, this, streamId, channel);
@@ -139,36 +148,18 @@ class ControlSession implements Session
         final int streamId,
         final String channel)
     {
-        final ListRecordingsForUriSession listRecordingsSession = conductor.newListRecordingsForUriSession(
+        conductor.newListRecordingsForUriSession(
             correlationId,
             fromRecordingId,
             recordCount,
             streamId,
             conductor.strippedChannelBuilder(channel).build(),
             this);
-
-        listRecordingsSessions.add(listRecordingsSession);
-
-        if (listRecordingsSessions.size() == 1)
-        {
-            conductor.addSession(listRecordingsSession);
-        }
     }
 
     public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
-        final ListRecordingsSession listRecordingsSession = conductor.newListRecordingsSession(
-            correlationId,
-            fromRecordingId,
-            recordCount,
-            this);
-
-        listRecordingsSessions.add(listRecordingsSession);
-
-        if (listRecordingsSessions.size() == 1)
-        {
-            conductor.addSession(listRecordingsSession);
-        }
+        conductor.newListRecordingsSession(correlationId, fromRecordingId, recordCount, this);
     }
 
     public void onListRecording(final long correlationId, final long recordingId)
@@ -211,15 +202,12 @@ class ControlSession implements Session
 
     void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)
     {
-        if (listRecordingsSession != listRecordingsSessions.poll())
+        if (listRecordingsSession != activeListRecordingsSession)
         {
             throw new IllegalStateException();
         }
 
-        if (!isDone() && listRecordingsSessions.size() != 0)
-        {
-            conductor.addSession(listRecordingsSessions.peek());
-        }
+        activeListRecordingsSession = null;
     }
 
     void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)

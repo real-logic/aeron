@@ -262,23 +262,34 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
     }
 
-    ListRecordingsSession newListRecordingsSession(
+    void newListRecordingsSession(
         final long correlationId,
         final long fromId,
         final int count,
         final ControlSession controlSession)
     {
-        return new ListRecordingsSession(
-            correlationId,
-            fromId,
-            count,
-            catalog,
-            controlResponseProxy,
-            controlSession,
-            descriptorBuffer);
+        if (controlSession.activeListRecordingsSession() != null)
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "active listing already in progress", controlResponseProxy);
+        }
+        else
+        {
+            final ListRecordingsSession session = new ListRecordingsSession(
+                correlationId,
+                fromId,
+                count,
+                catalog,
+                controlResponseProxy,
+                controlSession,
+                descriptorBuffer);
+
+            addSession(session);
+            controlSession.activeListRecordingsSession(session);
+        }
     }
 
-    ListRecordingsForUriSession newListRecordingsForUriSession(
+    void newListRecordingsForUriSession(
         final long correlationId,
         final long fromRecordingId,
         final int count,
@@ -286,22 +297,38 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final String channel,
         final ControlSession controlSession)
     {
-        return new ListRecordingsForUriSession(
-            correlationId,
-            fromRecordingId,
-            count,
-            channel,
-            streamId,
-            catalog,
-            controlResponseProxy,
-            controlSession,
-            descriptorBuffer,
-            recordingDescriptorDecoder);
+        if (controlSession.activeListRecordingsSession() != null)
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "active listing already in progress", controlResponseProxy);
+        }
+        else
+        {
+            final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
+                correlationId,
+                fromRecordingId,
+                count,
+                channel,
+                streamId,
+                catalog,
+                controlResponseProxy,
+                controlSession,
+                descriptorBuffer,
+                recordingDescriptorDecoder);
+
+            addSession(session);
+            controlSession.activeListRecordingsSession(session);
+        }
     }
 
     public void listRecording(final long correlationId, final ControlSession controlSession, final long recordingId)
     {
-        if (catalog.wrapAndValidateDescriptor(recordingId, descriptorBuffer))
+        if (controlSession.activeListRecordingsSession() != null)
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "active listing already in progress", controlResponseProxy);
+        }
+        else if (catalog.wrapAndValidateDescriptor(recordingId, descriptorBuffer))
         {
             controlSession.sendDescriptor(correlationId, descriptorBuffer, controlResponseProxy);
         }

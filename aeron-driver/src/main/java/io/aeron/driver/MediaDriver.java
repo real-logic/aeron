@@ -547,7 +547,6 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-
         /**
          * @return covariant return for fluent API.
          * @see CommonContext#countersMetaDataBuffer(UnsafeBuffer)

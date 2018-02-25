@@ -18,7 +18,6 @@ package io.aeron.archive;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
-import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -257,13 +256,9 @@ class ReplaySession implements Session, SimpleFragmentHandler
             cursor.close();
         }
 
-        if (!controlSession.isDone() && controlSession.isConnected())
+        if (!controlSession.isDone())
         {
-            controlSession.sendResponse(
-                correlationId,
-                ControlResponseCode.ERROR,
-                errorMessage,
-                threadLocalControlResponseProxy);
+            controlSession.attemptErrorResponse(correlationId, errorMessage, threadLocalControlResponseProxy);
         }
 
         if (ex != null)

@@ -19,7 +19,7 @@ import io.aeron.Publication;
 import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableDirectByteBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -31,7 +31,7 @@ class ControlResponseProxy
     private static final int DESCRIPTOR_CONTENT_OFFSET = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH +
         recordingIdEncodingOffset();
 
-    private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(2048);
+    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(1024);
     private final BufferClaim bufferClaim = new BufferClaim();
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();

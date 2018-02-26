@@ -122,7 +122,10 @@ class ReplaySession implements Session, SimpleFragmentHandler
             cursor.close();
         }
 
-        CloseHelper.close(replayPublication);
+        if (!replayPublication.isClosed())
+        {
+            CloseHelper.close(replayPublication);
+        }
     }
 
     public long sessionId()
@@ -150,6 +153,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
 
     public void abort()
     {
+        state = State.INACTIVE;
         CloseHelper.close(replayPublication);
     }
 

@@ -374,7 +374,7 @@ public:
 
         for (std::size_t i = 0; i < length; i++)
         {
-            newArray[i] = std::move(oldArray[i]);
+            newArray[i] = oldArray[i];
         }
 
         newArray[length] = image; // copy-assign
@@ -410,7 +410,7 @@ public:
             {
                 if (i != index)
                 {
-                    newArray[j++] = std::move(oldArray[i]);
+                    newArray[j++] = oldArray[i];
                 }
             }
 

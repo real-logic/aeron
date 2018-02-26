@@ -52,7 +52,7 @@ public class ListRecordingsForUriSessionTest
     @After
     public void after()
     {
-        CloseHelper.quietClose(catalog);
+        CloseHelper.close(catalog);
         IoUtil.delete(archiveDir, false);
     }
 

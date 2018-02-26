@@ -226,7 +226,7 @@ class RecordingWriter implements RawBlockHandler
         }
         catch (final IOException ex)
         {
-            CloseHelper.quietClose(recordingFile);
+            CloseHelper.close(recordingFile);
             close();
             LangUtil.rethrowUnchecked(ex);
         }

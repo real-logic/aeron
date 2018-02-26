@@ -62,8 +62,8 @@ final class SharedModeArchiveConductor extends ArchiveConductor
 
     protected void closeSessionWorkers()
     {
-        CloseHelper.quietClose(recorderAgentInvoker);
-        CloseHelper.quietClose(replayerAgentInvoker);
+        CloseHelper.close(recorderAgentInvoker);
+        CloseHelper.close(replayerAgentInvoker);
     }
 
     private class SharedModeRecorder extends SessionWorker<RecordingSession>

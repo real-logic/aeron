@@ -1079,9 +1079,9 @@ public class Archive implements AutoCloseable
                 CloseHelper.close(aeron);
             }
 
-            CloseHelper.quietClose(catalog);
-            CloseHelper.quietClose(markFile);
-            CloseHelper.quietClose(archiveDirChannel);
+            CloseHelper.close(catalog);
+            CloseHelper.close(markFile);
+            CloseHelper.close(archiveDirChannel);
         }
     }
 

@@ -118,9 +118,9 @@ public class ArchiveRecordingLoadTest
     @After
     public void after()
     {
-        CloseHelper.quietClose(aeronArchive);
-        CloseHelper.quietClose(archive);
-        CloseHelper.quietClose(driver);
+        CloseHelper.close(aeronArchive);
+        CloseHelper.close(archive);
+        CloseHelper.close(driver);
 
         archive.context().deleteArchiveDirectory();
         driver.context().deleteAeronDirectory();

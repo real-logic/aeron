@@ -88,8 +88,8 @@ class ControlSession implements Session
     public void close()
     {
         state = State.CLOSED;
-        CloseHelper.quietClose(controlPublication);
         demuxer.removeControlSession(this);
+        CloseHelper.close(controlPublication);
     }
 
     public boolean isDone()

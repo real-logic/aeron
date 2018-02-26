@@ -31,7 +31,7 @@ class RecordingSession implements Session
 
     private enum State
     {
-        INIT, RECORDING, INACTIVE, STOPPED, CLOSED
+        INIT, RECORDING, INACTIVE, STOPPED
     }
 
     private final long recordingId;
@@ -83,12 +83,8 @@ class RecordingSession implements Session
 
     public void close()
     {
-        if (State.CLOSED != state)
-        {
-            state = State.CLOSED;
-            CloseHelper.close(position);
-            recordingWriter.close();
-        }
+        recordingWriter.close();
+        CloseHelper.close(position);
     }
 
     public Counter recordingPosition()
@@ -148,12 +144,12 @@ class RecordingSession implements Session
 
             if (image.isClosed() || recordingWriter.isClosed())
             {
-                abort();
+                this.state = State.INACTIVE;
             }
         }
         catch (final Exception ex)
         {
-            abort();
+            this.state = State.INACTIVE;
             LangUtil.rethrowUnchecked(ex);
         }
 

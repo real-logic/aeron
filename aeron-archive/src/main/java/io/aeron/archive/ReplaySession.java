@@ -50,7 +50,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
 {
     enum State
     {
-        INIT, REPLAY, INACTIVE, CLOSED
+        INIT, REPLAY, INACTIVE
     }
 
     /**
@@ -117,7 +117,6 @@ class ReplaySession implements Session, SimpleFragmentHandler
 
     public void close()
     {
-        state = State.CLOSED;
         CloseHelper.close(replayPublication);
 
         if (null != cursor)

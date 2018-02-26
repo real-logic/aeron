@@ -27,7 +27,7 @@ import java.nio.channels.FileChannel;
  */
 class RecordingSession implements Session
 {
-    private static final int MAX_BLOCK_LENGTH = 16 * 1204 * 1024;
+    private static final int MAX_BLOCK_LENGTH = 2 * 1204 * 1024;
 
     private enum State
     {

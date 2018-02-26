@@ -162,7 +162,7 @@ class RecordingFragmentReader
 
             polled++;
 
-            if (replayLimit <= replayPosition)
+            if (replayPosition >= replayLimit)
             {
                 isDone = true;
                 closeRecordingSegment();
@@ -191,7 +191,7 @@ class RecordingFragmentReader
             replayLimit = newStopPosition;
         }
 
-        if (replayLimit <= replayPosition)
+        if (replayPosition >= replayLimit)
         {
             isDone = true;
             return false;

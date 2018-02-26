@@ -251,19 +251,19 @@ public class ArchiveTest
         preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
         final int messageCount = MESSAGE_COUNT;
-        final CountDownLatch waitForData = new CountDownLatch(2);
+        final CountDownLatch streamConsumed = new CountDownLatch(2);
 
-        prepMessagesAndListener(recordingEvents, messageCount, waitForData);
-        replayConsumer = validateActiveRecordingReplay (
+        prepMessagesAndListener(recordingEvents, messageCount, streamConsumed);
+        replayConsumer = validateActiveRecordingReplay(
             archiveProxy,
             termBufferLength,
             initialTermId,
             maxPayloadLength,
             messageCount,
-            waitForData);
+            streamConsumed);
 
         publishDataToBeRecorded(recordedPublication, messageCount);
-        await(waitForData);
+        await(streamConsumed);
     }
 
     @Test(timeout = 15_000)
@@ -490,7 +490,7 @@ public class ArchiveTest
     }
 
     private void prepMessagesAndListener(
-        final Subscription recordingEvents, final int messageCount, final CountDownLatch waitForData)
+        final Subscription recordingEvents, final int messageCount, final CountDownLatch streamConsumedLatch)
     {
         messageLengths = new int[messageCount];
         for (int i = 0; i < messageCount; i++)
@@ -500,7 +500,7 @@ public class ArchiveTest
             totalDataLength += BitUtil.align(messageLengths[i], FrameDescriptor.FRAME_ALIGNMENT);
         }
 
-        progressTracker = trackRecordingProgress(recordingEvents, waitForData);
+        progressTracker = trackRecordingProgress(recordingEvents, streamConsumedLatch);
     }
 
     private void publishDataToBeRecorded(final Publication publication, final int messageCount)
@@ -647,7 +647,7 @@ public class ArchiveTest
         messageCount++;
     }
 
-    private Thread trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
+    private Thread trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch streamConsumed)
     {
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
@@ -684,7 +684,7 @@ public class ArchiveTest
                     trackerError = throwable;
                 }
 
-                waitForData.countDown();
+                streamConsumed.countDown();
             });
 
         thread.setDaemon(true);

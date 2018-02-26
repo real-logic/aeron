@@ -26,7 +26,6 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -49,7 +48,6 @@ import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.archive.TestUtil.awaitConnectedReply;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
@@ -603,13 +601,14 @@ public class ArchiveTest
 
     private boolean validateFragment1(final UnsafeBuffer buffer, final int offset, final int length)
     {
-        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
-        headerFlyweight.wrap(buffer.addressOffset() + offset - HEADER_LENGTH, HEADER_LENGTH);
-
-        if (headerFlyweight.headerType() != HDR_TYPE_PAD)
+        if (!FrameDescriptor.isPaddingFrame(buffer, offset - HEADER_LENGTH))
         {
             final int expectedLength = messageLengths[messageCount] - HEADER_LENGTH;
-            assertThat("on fragment[" + messageCount + "]", length, is(expectedLength));
+            if (length != expectedLength)
+            {
+                fail("Message length=" + length + " expected=" + expectedLength + " messageCount=" + messageCount);
+            }
+
             assertThat(buffer.getInt(offset), is(messageCount));
             assertThat(buffer.getByte(offset + 4), is((byte)'z'));
 

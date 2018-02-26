@@ -606,6 +606,9 @@ public class ArchiveTest
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis))
         {
+            this.messageCount = 0;
+            remaining = totalDataLength;
+
             final RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
                 catalog,
                 catalog.recordingSummary(recordingId, new RecordingSummary()),
@@ -614,15 +617,18 @@ public class ArchiveTest
                 RecordingFragmentReader.NULL_LENGTH,
                 null);
 
-            this.messageCount = 0;
-            remaining = totalDataLength;
-            while (!archiveDataFileReader.isDone())
+            try
             {
-                archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
-                SystemTest.checkInterruptedStatus();
+                while (!archiveDataFileReader.isDone())
+                {
+                    archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
+                    SystemTest.checkInterruptedStatus();
+                }
             }
-
-            archiveDataFileReader.close();
+            finally
+            {
+                archiveDataFileReader.close();
+            }
 
             assertThat(remaining, is(0L));
             assertThat(this.messageCount, is(messageCount));

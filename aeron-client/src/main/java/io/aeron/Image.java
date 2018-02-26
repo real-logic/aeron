@@ -657,6 +657,57 @@ public class Image
         return length;
     }
 
+    /**
+     * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
+     * will be delivered to the {@link ControlledRawBlockHandler} up to a limited number of bytes.
+     * <p>
+     * This method is useful for operations like bulk archiving a stream to file.
+     *
+     * @param rawBlockHandler  to which block is delivered.
+     * @param blockLengthLimit up to which a block may be in length.
+     * @return the number of bytes that have been consumed.
+     */
+    public int controlledRawPoll(final ControlledRawBlockHandler rawBlockHandler, final int blockLengthLimit)
+    {
+        if (isClosed)
+        {
+            return 0;
+        }
+
+        final long position = subscriberPosition.get();
+        final int termOffset = (int)position & termLengthMask;
+        final int activeIndex = indexByPosition(position, positionBitsToShift);
+        final UnsafeBuffer termBuffer = termBuffers[activeIndex];
+        final int capacity = termBuffer.capacity();
+        final int limit = Math.min(termOffset + blockLengthLimit, capacity);
+
+        final int resultingOffset = TermBlockScanner.scan(termBuffer, termOffset, limit);
+        final int length = resultingOffset - termOffset;
+        int resultingLength = 0;
+
+        if (resultingOffset > termOffset)
+        {
+            try
+            {
+                final long fileOffset = ((long)capacity * activeIndex) + termOffset;
+                final int termId = termBuffer.getInt(termOffset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+
+                resultingLength = rawBlockHandler.onBlock(
+                    logBuffers.fileChannel(), fileOffset, termBuffer, termOffset, length, sessionId, termId);
+            }
+            catch (final Throwable t)
+            {
+                errorHandler.onError(t);
+            }
+            finally
+            {
+                subscriberPosition.setOrdered(position + resultingLength);
+            }
+        }
+
+        return length;
+    }
+
     private UnsafeBuffer activeTermBuffer(final long position)
     {
         return termBuffers[indexByPosition(position, positionBitsToShift)];

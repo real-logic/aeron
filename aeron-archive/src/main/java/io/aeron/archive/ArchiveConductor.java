@@ -569,7 +569,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
 
         final Publication publication = aeron.addPublication(controlChannel, streamId);
-
         final ControlSession controlSession = new ControlSession(
             nextControlSessionId++,
             correlationId,
@@ -652,18 +651,27 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             aeron, tempBuffer, recordingId, controlSessionId, correlationId, sessionId, streamId, strippedChannel);
         position.setOrdered(startPosition);
 
-        final RecordingSession session = new RecordingSession(
-            recordingId,
-            startPosition,
-            originalChannel,
-            recordingEventsProxy,
-            image,
-            position,
-            archiveDirChannel,
-            ctx);
+        try
+        {
+            final RecordingSession session = new RecordingSession(
+                recordingId,
+                startPosition,
+                originalChannel,
+                recordingEventsProxy,
+                image,
+                position,
+                archiveDirChannel,
+                ctx);
 
-        recordingSessionByIdMap.put(recordingId, session);
-        recorder.addSession(session);
+            recordingSessionByIdMap.put(recordingId, session);
+            recorder.addSession(session);
+        }
+        catch (final Exception ex)
+        {
+            position.close();
+            errorHandler.onError(ex);
+            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
+        }
     }
 
     private void extendRecordingSession(
@@ -687,20 +695,28 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             aeron, tempBuffer, recordingId, controlSessionId, correlationId, sessionId, streamId, strippedChannel);
         position.setOrdered(newStartPosition);
 
-        final RecordingSession session = new RecordingSession(
-            recordingId,
-            originalRecordingSummary.startPosition,
-            originalChannel,
-            recordingEventsProxy,
-            image,
-            position,
-            archiveDirChannel,
-            ctx);
+        try
+        {
+            final RecordingSession session = new RecordingSession(
+                recordingId,
+                originalRecordingSummary.startPosition,
+                originalChannel,
+                recordingEventsProxy,
+                image,
+                position,
+                archiveDirChannel,
+                ctx);
 
-        catalog.extendRecording(recordingId);
-
-        recordingSessionByIdMap.put(recordingId, session);
-        recorder.addSession(session);
+            catalog.extendRecording(recordingId);
+            recordingSessionByIdMap.put(recordingId, session);
+            recorder.addSession(session);
+        }
+        catch (final Exception ex)
+        {
+            position.close();
+            errorHandler.onError(ex);
+            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
+        }
     }
 
     private ExclusivePublication newReplayPublication(

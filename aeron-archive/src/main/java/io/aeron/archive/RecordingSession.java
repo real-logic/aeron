@@ -110,6 +110,7 @@ class RecordingSession implements Session
         {
             recordingEventsProxy.stopped(recordingId, image.joinPosition(), position.getWeak());
             state = State.STOPPED;
+            recordingWriter.close();
             workDone += 1;
         }
 

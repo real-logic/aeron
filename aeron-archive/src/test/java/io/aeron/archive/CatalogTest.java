@@ -27,7 +27,6 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.PAGE_SIZE;
@@ -43,12 +42,11 @@ import static org.junit.Assert.*;
 
 public class CatalogTest
 {
-    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(1);
     private static final int TERM_BUFFER_LENGTH = 2 * Catalog.PAGE_SIZE;
     private static final int SEGMENT_FILE_SIZE = 2 * TERM_BUFFER_LENGTH;
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final File archiveDir = TestUtil.makeTempDir();
+    private final File archiveDir = TestUtil.makeTestDirectory();
 
     private long currentTimeMs = 1;
     private final EpochClock clock = () -> currentTimeMs;

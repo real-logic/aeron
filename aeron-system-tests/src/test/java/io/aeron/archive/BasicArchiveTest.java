@@ -24,12 +24,15 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
 
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.Matchers.greaterThan;
@@ -74,7 +77,8 @@ public class BasicArchiveTest
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .aeronDirectoryName(aeronDirectoryName)
-                .archiveDir(TestUtil.makeTempDir())
+                .deleteArchiveOnStart(true)
+                .archiveDir(new File(IoUtil.tmpDirName(), "archive"))
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED));
 

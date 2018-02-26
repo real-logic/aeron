@@ -25,7 +25,7 @@ public class ListRecordingsForUriSessionTest
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private long[] matchingRecordingIds = new long[3];
-    private final File archiveDir = TestUtil.makeTempDir();
+    private final File archiveDir = TestUtil.makeTestDirectory();
     private final EpochClock clock = mock(EpochClock.class);
 
     private Catalog catalog;

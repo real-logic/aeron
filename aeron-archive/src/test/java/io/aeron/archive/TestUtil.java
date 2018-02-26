@@ -20,12 +20,11 @@ import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.IoUtil;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
 import java.io.File;
-import java.io.IOException;
-
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongConsumer;
@@ -35,37 +34,29 @@ public class TestUtil
     public static final long TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
     static final boolean DEBUG = false;
 
-    public static File makeTempDir()
-    {
-        final File tempDirForTest;
-        try
-        {
-            tempDirForTest = File.createTempFile("archive", "tmp");
-        }
-        catch (final IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
-
-        if (!tempDirForTest.delete())
-        {
-            throw new IllegalStateException("Failed to delete: " + tempDirForTest);
-        }
-
-        if (!tempDirForTest.mkdir())
-        {
-            throw new IllegalStateException("Failed to create: " + tempDirForTest);
-        }
-
-        return tempDirForTest;
-    }
-
     public static void printf(final String s, final Object... args)
     {
         if (DEBUG)
         {
             System.out.printf(s, args);
         }
+    }
+
+    public static File makeTestDirectory()
+    {
+        final File archiveDir = new File(IoUtil.tmpDirName(), "archive-test");
+        if (archiveDir.exists())
+        {
+            System.err.println("Warning archive directory exists, deleting: " + archiveDir.getAbsolutePath());
+            IoUtil.delete(archiveDir, false);
+        }
+
+        if (!archiveDir.mkdirs())
+        {
+            throw new IllegalStateException("Failed to make archive test directory: " + archiveDir.getAbsolutePath());
+        }
+
+        return archiveDir;
     }
 
     public static void awaitConnectedReply(

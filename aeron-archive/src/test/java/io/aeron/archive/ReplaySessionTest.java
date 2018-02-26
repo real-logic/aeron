@@ -31,7 +31,6 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.TestUtil.makeTempDir;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
@@ -64,7 +63,7 @@ public class ReplaySessionTest
 
     private int messageCounter = 0;
 
-    private File archiveDir = makeTempDir();
+    private final File archiveDir = TestUtil.makeTestDirectory();
     private ControlResponseProxy proxy = mock(ControlResponseProxy.class);
     private EpochClock epochClock = mock(EpochClock.class);
     private Catalog mockCatalog = mock(Catalog.class);

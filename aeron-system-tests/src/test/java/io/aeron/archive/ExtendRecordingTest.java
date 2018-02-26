@@ -25,6 +25,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
@@ -240,7 +241,7 @@ public class ExtendRecordingTest
 
         if (null == archiveDir)
         {
-            archiveDir = TestUtil.makeTempDir();
+            archiveDir = new File(IoUtil.tmpDirName(), "archive");
         }
 
         archivingMediaDriver = ArchivingMediaDriver.launch(

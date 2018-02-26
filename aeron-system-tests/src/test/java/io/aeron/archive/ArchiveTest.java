@@ -26,10 +26,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.After;
@@ -112,6 +109,7 @@ public class ArchiveTest
 
     private Thread replayConsumer = null;
     private Thread progressTracker = null;
+    private volatile boolean isTestComplete;
 
     @Before
     public void before()
@@ -127,7 +125,7 @@ public class ArchiveTest
 
         publishUri = new ChannelUriStringBuilder()
             .media("udp")
-            .endpoint("127.0.0.1:54325")
+            .endpoint("localhost:54325")
             .termLength(termLength)
             .mtu(mtu)
             .initialTermId(requestedInitialTermId)
@@ -151,7 +149,8 @@ public class ArchiveTest
             new Archive.Context()
                 .fileSyncLevel(SYNC_LEVEL)
                 .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-                .archiveDir(TestUtil.makeTempDir())
+                .deleteArchiveOnStart(true)
+                .archiveDir(new File(IoUtil.tmpDirName(), "archive-test"))
                 .segmentFileLength(segmentFileLength)
                 .threadingMode(archiveThreadingMode)
                 .idleStrategySupplier(YieldingIdleStrategy::new)
@@ -165,6 +164,11 @@ public class ArchiveTest
     @After
     public void after()
     {
+        if (!isTestComplete)
+        {
+            client.printCounters(System.err);
+        }
+
         if (null != replayConsumer)
         {
             replayConsumer.interrupt();
@@ -183,7 +187,7 @@ public class ArchiveTest
         driver.context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 15_000)
+    @Test(timeout = 10_000)
     public void recordAndReplayExclusivePublication()
     {
         final String controlChannel = archive.context().localControlChannel();
@@ -220,9 +224,11 @@ public class ArchiveTest
             initialTermId,
             maxPayloadLength,
             messageCount);
+
+        isTestComplete = true;
     }
 
-    @Test(timeout = 15_000)
+    @Test(timeout = 10_000)
     public void replayExclusivePublicationWhileRecording()
     {
         final String controlChannel = archive.context().localControlChannel();
@@ -264,9 +270,11 @@ public class ArchiveTest
 
         publishDataToBeRecorded(recordedPublication, messageCount);
         await(streamConsumed);
+
+        isTestComplete = true;
     }
 
-    @Test(timeout = 15_000)
+    @Test(timeout = 10_000)
     public void recordAndReplayRegularPublication()
     {
         final String controlChannel = archive.context().localControlChannel();
@@ -300,6 +308,8 @@ public class ArchiveTest
             initialTermId,
             maxPayloadLength,
             messageCount);
+
+        isTestComplete = true;
     }
 
     private void preSendChecks(

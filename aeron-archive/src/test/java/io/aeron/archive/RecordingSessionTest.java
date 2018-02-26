@@ -61,7 +61,7 @@ public class RecordingSessionTest
     private final Counter position = mock(Counter.class);
     private Image image = mockImage(
         SESSION_ID, INITIAL_TERM_ID, SOURCE_IDENTITY, TERM_BUFFER_LENGTH, mockSubscription(CHANNEL, STREAM_ID));
-    private File tempDirForTest = TestUtil.makeTempDir();
+    private final File archiveDir = TestUtil.makeTestDirectory();
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
@@ -100,7 +100,7 @@ public class RecordingSessionTest
 
         context = new Archive.Context()
             .segmentFileLength(SEGMENT_FILE_SIZE)
-            .archiveDir(tempDirForTest)
+            .archiveDir(archiveDir)
             .epochClock(epochClock);
     }
 
@@ -109,7 +109,7 @@ public class RecordingSessionTest
     {
         IoUtil.unmap(mockLogBufferMapped.byteBuffer());
         CloseHelper.close(mockLogBufferChannel);
-        IoUtil.delete(tempDirForTest, false);
+        IoUtil.delete(archiveDir, false);
         IoUtil.delete(termFile, false);
     }
 
@@ -146,7 +146,7 @@ public class RecordingSessionTest
 
         assertNotEquals("Expect some work", 0, session.doWork());
 
-        final File segmentFile = new File(tempDirForTest, segmentFileName(RECORDING_ID, 0));
+        final File segmentFile = new File(archiveDir, segmentFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
 
         final RecordingSummary recordingSummary = new RecordingSummary();
@@ -162,7 +162,7 @@ public class RecordingSessionTest
         final RecordingFragmentReader reader = new RecordingFragmentReader(
             mockCatalog,
             recordingSummary,
-            tempDirForTest,
+            archiveDir,
             NULL_POSITION,
             RecordingFragmentReader.NULL_LENGTH,
             null);

@@ -159,28 +159,27 @@ public class RecordingSessionTest
         recordingSummary.sessionId = SESSION_ID;
         recordingSummary.stopPosition = START_POSITION + RECORDED_BLOCK_LENGTH;
 
-        final RecordingFragmentReader reader = new RecordingFragmentReader(
+        try (RecordingFragmentReader reader = new RecordingFragmentReader(
             mockCatalog,
             recordingSummary,
             archiveDir,
             NULL_POSITION,
             RecordingFragmentReader.NULL_LENGTH,
-            null);
+            null))
+        {
+            final int polled = reader.controlledPoll(
+                (buffer, offset, length) ->
+                {
+                    final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
+                    assertEquals(TERM_OFFSET, frameOffset);
+                    assertEquals(RECORDED_BLOCK_LENGTH, FrameDescriptor.frameLength(buffer, frameOffset));
+                    assertEquals(RECORDED_BLOCK_LENGTH - DataHeaderFlyweight.HEADER_LENGTH, length);
+                    return true;
+                },
+                1);
 
-        final int polled = reader.controlledPoll(
-            (buffer, offset, length) ->
-            {
-                final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
-                assertEquals(TERM_OFFSET, frameOffset);
-                assertEquals(RECORDED_BLOCK_LENGTH, FrameDescriptor.frameLength(buffer, frameOffset));
-                assertEquals(RECORDED_BLOCK_LENGTH - DataHeaderFlyweight.HEADER_LENGTH, length);
-                return true;
-            },
-            1);
-
-        assertEquals(1, polled);
-
-        reader.close();
+            assertEquals(1, polled);
+        }
 
         when(image.rawPoll(any(), anyInt())).thenReturn(0);
         assertEquals("Expect no work", 0, session.doWork());

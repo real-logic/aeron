@@ -135,75 +135,74 @@ public class ReplaySessionTest
     @Test
     public void verifyRecordingFile()
     {
-        final RecordingFragmentReader reader = new RecordingFragmentReader(
+        try (RecordingFragmentReader reader = new RecordingFragmentReader(
             mockCatalog,
             recordingSummary,
             archiveDir,
             NULL_POSITION,
             RecordingFragmentReader.NULL_LENGTH,
-            null);
+            null))
+        {
+            int polled = reader.controlledPoll(
+                (buffer, offset, length) ->
+                {
+                    final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
+                    assertEquals(offset, INITIAL_TERM_OFFSET + HEADER_LENGTH);
+                    assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
+                    assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
+                    assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.UNFRAGMENTED);
 
-        int polled = reader.controlledPoll(
-            (buffer, offset, length) ->
-            {
-                final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
-                assertEquals(offset, INITIAL_TERM_OFFSET + HEADER_LENGTH);
-                assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
-                assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
-                assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.UNFRAGMENTED);
+                    return true;
+                },
+                1);
 
-                return true;
-            },
-            1);
+            assertEquals(1, polled);
 
-        assertEquals(1, polled);
+            polled = reader.controlledPoll(
+                (buffer, offset, length) ->
+                {
+                    final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
+                    assertEquals(offset, INITIAL_TERM_OFFSET + FRAME_LENGTH + HEADER_LENGTH);
+                    assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
+                    assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
+                    assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.BEGIN_FRAG_FLAG);
 
-        polled = reader.controlledPoll(
-            (buffer, offset, length) ->
-            {
-                final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
-                assertEquals(offset, INITIAL_TERM_OFFSET + FRAME_LENGTH + HEADER_LENGTH);
-                assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
-                assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
-                assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.BEGIN_FRAG_FLAG);
+                    return true;
+                },
+                1);
 
-                return true;
-            },
-            1);
+            assertEquals(1, polled);
 
-        assertEquals(1, polled);
+            polled = reader.controlledPoll(
+                (buffer, offset, length) ->
+                {
+                    final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
+                    assertEquals(offset, INITIAL_TERM_OFFSET + 2 * FRAME_LENGTH + HEADER_LENGTH);
+                    assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
+                    assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
+                    assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.END_FRAG_FLAG);
 
-        polled = reader.controlledPoll(
-            (buffer, offset, length) ->
-            {
-                final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
-                assertEquals(offset, INITIAL_TERM_OFFSET + 2 * FRAME_LENGTH + HEADER_LENGTH);
-                assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
-                assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
-                assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.END_FRAG_FLAG);
+                    return true;
+                },
+                1);
 
-                return true;
-            },
-            1);
+            assertEquals(1, polled);
 
-        assertEquals(1, polled);
+            polled = reader.controlledPoll(
+                (buffer, offset, length) ->
+                {
+                    final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
+                    assertEquals(offset, INITIAL_TERM_OFFSET + 3 * FRAME_LENGTH + HEADER_LENGTH);
+                    assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
+                    assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_PAD);
+                    assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.UNFRAGMENTED);
 
-        polled = reader.controlledPoll(
-            (buffer, offset, length) ->
-            {
-                final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
-                assertEquals(offset, INITIAL_TERM_OFFSET + 3 * FRAME_LENGTH + HEADER_LENGTH);
-                assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
-                assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_PAD);
-                assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.UNFRAGMENTED);
+                    return true;
+                },
+                1);
 
-                return true;
-            },
-            1);
-
-        assertEquals(1, polled);
-
-        reader.close();
+            assertEquals(1, polled);
+        }
     }
 
     @Test

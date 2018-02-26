@@ -35,7 +35,7 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
-class RecordingFragmentReader
+class RecordingFragmentReader implements AutoCloseable
 {
     static final long NULL_LENGTH = -1;
 

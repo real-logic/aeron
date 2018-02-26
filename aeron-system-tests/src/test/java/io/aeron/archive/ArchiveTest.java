@@ -609,25 +609,19 @@ public class ArchiveTest
             this.messageCount = 0;
             remaining = totalDataLength;
 
-            final RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
+            try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
                 catalog,
                 catalog.recordingSummary(recordingId, new RecordingSummary()),
                 archiveDir,
                 AeronArchive.NULL_POSITION,
                 RecordingFragmentReader.NULL_LENGTH,
-                null);
-
-            try
+                null))
             {
                 while (!archiveDataFileReader.isDone())
                 {
                     archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
                     SystemTest.checkInterruptedStatus();
                 }
-            }
-            finally
-            {
-                archiveDataFileReader.close();
             }
 
             assertThat(remaining, is(0L));

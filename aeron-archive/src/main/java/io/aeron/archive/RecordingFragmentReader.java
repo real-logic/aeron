@@ -125,11 +125,6 @@ class RecordingFragmentReader
         return isDone;
     }
 
-    void isDone(final boolean isDone)
-    {
-        this.isDone = isDone;
-    }
-
     int controlledPoll(final SimpleFragmentHandler fragmentHandler, final int fragmentLimit)
     {
         if (isDone() || noAvailableData())

@@ -27,6 +27,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import org.agrona.*;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.After;
@@ -365,18 +366,27 @@ public class ArchiveTest
 
         TestUtil.awaitOk(controlResponse, requestStopCorrelationId);
 
+        final MutableBoolean recordingStopped = new MutableBoolean();
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
                 public void onStop(final long rId, final long startPosition, final long stopPosition)
                 {
                     assertThat(rId, is(recordingId));
+                    recordingStopped.set(true);
                 }
             },
             recordingEvents,
             1);
 
-        TestUtil.await(() -> recordingEventsAdapter.poll() != 0);
+        while (!recordingStopped.get())
+        {
+            if (recordingEventsAdapter.poll() == 0)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+        }
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
         validateArchiveFile(messageCount, recordingId);

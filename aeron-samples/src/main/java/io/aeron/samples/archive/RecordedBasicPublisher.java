@@ -86,6 +86,12 @@ public class RecordedBasicPublisher
                     final long result = publication.offer(BUFFER, 0, messageBytes.length);
                     checkResult(result);
 
+                    final String errorMessage = archive.pollForErrorResponse();
+                    if (null != errorMessage)
+                    {
+                        throw new IllegalStateException(errorMessage);
+                    }
+
                     Thread.sleep(TimeUnit.SECONDS.toMillis(1));
                 }
 

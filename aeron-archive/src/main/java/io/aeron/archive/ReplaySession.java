@@ -105,26 +105,25 @@ class ReplaySession implements Session, SimpleFragmentHandler
         catch (final Exception ex)
         {
             CloseHelper.quietClose(replayPublication);
-            closeOnError(ex, "failed to open cursor on a recording because: " + ex.getMessage());
+            onError("failed to open cursor on a recording because: " + ex.getMessage());
+            LangUtil.rethrowUnchecked(ex);
         }
 
         this.cursor = cursor;
 
         controlSession.sendOkResponse(correlationId, replayPublication.sessionId(), threadLocalControlResponseProxy);
-
         connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
     }
 
     public void close()
     {
         state = State.CLOSED;
+        CloseHelper.close(replayPublication);
 
         if (null != cursor)
         {
             cursor.close();
         }
-
-        CloseHelper.close(replayPublication);
     }
 
     public long sessionId()
@@ -184,7 +183,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
         }
         else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
         {
-            closeOnError(null, "stream closed before replay is complete");
+            onError("stream closed before replay is complete");
         }
 
         return false;
@@ -206,7 +205,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
         {
             if (epochClock.time() > connectDeadlineMs)
             {
-                closeOnError(null, "no connection established for replay");
+                onError("no connection established for replay");
             }
 
             return 0;
@@ -230,7 +229,8 @@ class ReplaySession implements Session, SimpleFragmentHandler
         }
         catch (final Exception ex)
         {
-            closeOnError(ex, "cursor read failed");
+            onError("cursor read failed");
+            LangUtil.rethrowUnchecked(ex);
         }
 
         return workDone;
@@ -252,23 +252,13 @@ class ReplaySession implements Session, SimpleFragmentHandler
         return result;
     }
 
-    private void closeOnError(final Throwable ex, final String errorMessage)
+    private void onError(final String errorMessage)
     {
         state = State.INACTIVE;
-
-        if (null != cursor)
-        {
-            cursor.close();
-        }
 
         if (!controlSession.isDone())
         {
             controlSession.attemptErrorResponse(correlationId, errorMessage, threadLocalControlResponseProxy);
-        }
-
-        if (ex != null)
-        {
-            LangUtil.rethrowUnchecked(ex);
         }
     }
 }

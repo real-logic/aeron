@@ -17,14 +17,14 @@ package io.aeron.archive;
 
 import io.aeron.Publication;
 import io.aeron.archive.codecs.*;
-import org.agrona.ExpandableDirectByteBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.IdleStrategy;
 
 class RecordingEventsProxy
 {
     private final IdleStrategy idleStrategy;
     private final Publication recordingEventsPublication;
-    private final ExpandableDirectByteBuffer outboundBuffer = new ExpandableDirectByteBuffer(512);
+    private final ExpandableArrayBuffer outboundBuffer = new ExpandableArrayBuffer(512);
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final RecordingStartedEncoder recordingStartedEncoder = new RecordingStartedEncoder();
     private final RecordingProgressEncoder recordingProgressEncoder = new RecordingProgressEncoder();
@@ -91,9 +91,14 @@ class RecordingEventsProxy
                 break;
             }
 
-            if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
+            if (result == Publication.CLOSED)
             {
-                throw new IllegalStateException();
+                throw new IllegalStateException("Recording events publication is closed");
+            }
+
+            if (result == Publication.MAX_POSITION_EXCEEDED)
+            {
+                throw new IllegalStateException("Recording events publication at max position");
             }
 
             idleStrategy.idle();

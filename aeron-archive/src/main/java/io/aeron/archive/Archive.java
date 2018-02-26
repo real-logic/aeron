@@ -34,8 +34,6 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
@@ -356,9 +354,6 @@ public class Archive implements AutoCloseable
             {
                 ownsAeronClient = true;
 
-                final Lock lock = ArchiveThreadingMode.DEDICATED == threadingMode ?
-                    new ReentrantLock() : new NoOpLock();
-
                 aeron = Aeron.connect(
                     new Aeron.Context()
                         .aeronDirectoryName(aeronDirectoryName)
@@ -366,7 +361,7 @@ public class Archive implements AutoCloseable
                         .epochClock(epochClock)
                         .driverAgentInvoker(mediaDriverAgentInvoker)
                         .useConductorAgentInvoker(true)
-                        .clientLock(lock));
+                        .clientLock(new NoOpLock()));
 
                 if (null == errorCounter)
                 {

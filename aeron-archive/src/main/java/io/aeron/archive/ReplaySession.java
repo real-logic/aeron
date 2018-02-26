@@ -69,6 +69,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
     private final ControlSession controlSession;
     private final EpochClock epochClock;
     private State state = State.INIT;
+    private volatile boolean isAborted;
 
     @SuppressWarnings("ConstantConditions")
     ReplaySession(
@@ -103,6 +104,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
         }
         catch (final Exception ex)
         {
+            CloseHelper.quietClose(replayPublication);
             closeOnError(ex, "failed to open cursor on a recording because: " + ex.getMessage());
         }
 
@@ -122,10 +124,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
             cursor.close();
         }
 
-        if (!replayPublication.isClosed())
-        {
-            CloseHelper.close(replayPublication);
-        }
+        CloseHelper.close(replayPublication);
     }
 
     public long sessionId()
@@ -137,15 +136,19 @@ class ReplaySession implements Session, SimpleFragmentHandler
     {
         int workCount = 0;
 
-        switch (state)
+        if (isAborted)
         {
-            case INIT:
-                workCount += init();
-                break;
+            state = State.INACTIVE;
+        }
 
-            case REPLAY:
-                workCount += replay();
-                break;
+        if (State.INIT == state)
+        {
+            workCount += init();
+        }
+
+        if (State.REPLAY == state)
+        {
+            workCount += replay();
         }
 
         return workCount;
@@ -153,8 +156,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
 
     public void abort()
     {
-        state = State.INACTIVE;
-        CloseHelper.close(replayPublication);
+        isAborted = true;
     }
 
     public boolean isDone()
@@ -198,6 +200,23 @@ class ReplaySession implements Session, SimpleFragmentHandler
         threadLocalControlResponseProxy = proxy;
     }
 
+    private int init()
+    {
+        if (!replayPublication.isConnected())
+        {
+            if (epochClock.time() > connectDeadlineMs)
+            {
+                closeOnError(null, "no connection established for replay");
+            }
+
+            return 0;
+        }
+
+        state = State.REPLAY;
+
+        return 1;
+    }
+
     private int replay()
     {
         int workDone = 0;
@@ -233,27 +252,9 @@ class ReplaySession implements Session, SimpleFragmentHandler
         return result;
     }
 
-    private int init()
-    {
-        if (!replayPublication.isConnected())
-        {
-            if (epochClock.time() > connectDeadlineMs)
-            {
-                closeOnError(null, "no connection established for replay");
-            }
-
-            return 0;
-        }
-
-        state = State.REPLAY;
-
-        return 1;
-    }
-
     private void closeOnError(final Throwable ex, final String errorMessage)
     {
         state = State.INACTIVE;
-        CloseHelper.quietClose(replayPublication);
 
         if (null != cursor)
         {

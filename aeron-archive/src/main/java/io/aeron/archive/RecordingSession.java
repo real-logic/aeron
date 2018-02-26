@@ -23,7 +23,7 @@ import org.agrona.LangUtil;
 import java.nio.channels.FileChannel;
 
 /**
- * Consumes an {@link Image} and records data to file using an {@link RecordingWriter}.
+ * Consumes an {@link Image} and records data to file using a {@link RecordingWriter}.
  */
 class RecordingSession implements Session
 {
@@ -100,21 +100,21 @@ class RecordingSession implements Session
     {
         int workDone = 0;
 
-        switch (state)
+        if (State.INIT == state)
         {
-            case INIT:
-                workDone = init();
-                break;
+            workDone += init();
+        }
 
-            case RECORDING:
-                workDone = record();
-                break;
+        if (State.RECORDING == state)
+        {
+            workDone += record();
+        }
 
-            case INACTIVE:
-                recordingEventsProxy.stopped(recordingId, image.joinPosition(), position.getWeak());
-                state = State.STOPPED;
-                workDone = 1;
-                break;
+        if (State.INACTIVE == state)
+        {
+            recordingEventsProxy.stopped(recordingId, image.joinPosition(), position.getWeak());
+            state = State.STOPPED;
+            workDone += 1;
         }
 
         return workDone;

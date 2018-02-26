@@ -93,7 +93,11 @@ public:
         std::int32_t length = static_cast<std::int32_t>(keyLength);
 
         putBytes(keyLengthOffset(), reinterpret_cast<const uint8_t *>(&length), sizeof(length));
-        putBytes(keyLengthOffset() + sizeof(std::int32_t), key, static_cast<util::index_t>(keyLength));
+
+        if (length > 0)
+        {
+            putBytes(keyLengthOffset() + sizeof(std::int32_t), key, static_cast<util::index_t>(keyLength));
+        }
 
         return *this;
     }

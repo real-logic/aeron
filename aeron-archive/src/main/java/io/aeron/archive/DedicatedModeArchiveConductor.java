@@ -94,7 +94,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
         while (processCloseQueue() > 0 || !closeQueue.isEmpty())
         {
-            // drain the command queue
+            Thread.yield();
         }
     }
 
@@ -164,7 +164,11 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
         protected void closeSession(final RecordingSession session)
         {
-            closeQueue.offer(session);
+            while (!closeQueue.offer(session))
+            {
+                errorCounter.increment();
+                Thread.yield();
+            }
         }
 
         private void send(final RecordingSession session)
@@ -222,7 +226,11 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
         protected void closeSession(final ReplaySession session)
         {
-            closeQueue.offer(session);
+            while (!closeQueue.offer(session))
+            {
+                errorCounter.increment();
+                Thread.yield();
+            }
         }
 
         private void send(final ReplaySession session)

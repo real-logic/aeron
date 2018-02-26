@@ -186,30 +186,6 @@ public:
         return *this;
     }
 
-    Image& operator=(Image&& image)
-    {
-        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
-        {
-            m_termBuffers[i].wrap(image.m_termBuffers[i]);
-        }
-
-        m_header = image.m_header;
-        m_subscriberPosition.wrap(image.m_subscriberPosition);
-        m_logBuffers = std::move(image.m_logBuffers);
-        m_sourceIdentity = std::move(image.m_sourceIdentity);
-        m_isClosed = image.isClosed();
-        m_exceptionHandler = image.m_exceptionHandler;
-        m_correlationId = image.m_correlationId;
-        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
-        m_joinPosition = image.m_joinPosition;
-        m_finalPosition = image.m_finalPosition;
-        m_sessionId = image.m_sessionId;
-        m_termLengthMask = image.m_termLengthMask;
-        m_positionBitsToShift = image.m_positionBitsToShift;
-        m_isEos = image.m_isEos;
-        return *this;
-    }
-
     virtual ~Image() = default;
 
     /**

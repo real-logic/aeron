@@ -139,10 +139,13 @@ public class ClusterTest
         {
             CloseHelper.close(driver);
 
-            final File directory = driver.mediaDriver().context().aeronDirectory();
-            if (null != directory)
+            if (null != driver)
             {
-                IoUtil.delete(directory, false);
+                final File directory = driver.mediaDriver().context().aeronDirectory();
+                if (null != directory)
+                {
+                    IoUtil.delete(directory, false);
+                }
             }
         }
     }

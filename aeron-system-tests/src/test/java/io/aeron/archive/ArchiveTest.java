@@ -110,6 +110,9 @@ public class ArchiveTest
     private long startPosition;
     private int requestedInitialTermId;
 
+    private Thread replayConsumer = null;
+    private Thread progressTracker = null;
+
     @Before
     public void before()
     {
@@ -162,6 +165,16 @@ public class ArchiveTest
     @After
     public void after()
     {
+        if (null != replayConsumer)
+        {
+            replayConsumer.interrupt();
+        }
+
+        if (null != progressTracker)
+        {
+            progressTracker.interrupt();
+        }
+
         CloseHelper.close(client);
         CloseHelper.close(archive);
         CloseHelper.close(driver);
@@ -241,7 +254,7 @@ public class ArchiveTest
         final CountDownLatch waitForData = new CountDownLatch(2);
 
         prepMessagesAndListener(recordingEvents, messageCount, waitForData);
-        validateActiveRecordingReplay(
+        replayConsumer = validateActiveRecordingReplay (
             archiveProxy,
             termBufferLength,
             initialTermId,
@@ -487,7 +500,7 @@ public class ArchiveTest
             totalDataLength += BitUtil.align(messageLengths[i], FrameDescriptor.FRAME_ALIGNMENT);
         }
 
-        trackRecordingProgress(recordingEvents, waitForData);
+        progressTracker = trackRecordingProgress(recordingEvents, waitForData);
     }
 
     private void publishDataToBeRecorded(final Publication publication, final int messageCount)
@@ -590,6 +603,7 @@ public class ArchiveTest
             while (!archiveDataFileReader.isDone())
             {
                 archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
+                SystemTest.checkInterruptedStatus();
             }
 
             archiveDataFileReader.close();
@@ -633,7 +647,7 @@ public class ArchiveTest
         messageCount++;
     }
 
-    private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
+    private Thread trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
     {
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
@@ -660,6 +674,8 @@ public class ArchiveTest
                         {
                             SystemTest.sleep(1);
                         }
+
+                        SystemTest.checkInterruptedStatus();
                     }
                 }
                 catch (final Throwable throwable)
@@ -674,9 +690,11 @@ public class ArchiveTest
         thread.setDaemon(true);
         thread.setName("recording-progress-tracker");
         thread.start();
+
+        return thread;
     }
 
-    private void validateActiveRecordingReplay(
+    private Thread validateActiveRecordingReplay(
         final ArchiveProxy archiveProxy,
         final int termBufferLength,
         final int initialTermId,
@@ -732,5 +750,7 @@ public class ArchiveTest
         thread.setName("replay-consumer");
         thread.setDaemon(true);
         thread.start();
+
+        return thread;
     }
 }

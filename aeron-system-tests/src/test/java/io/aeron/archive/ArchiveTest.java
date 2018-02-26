@@ -157,7 +157,8 @@ public class ArchiveTest
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
 
-        client = Aeron.connect();
+        client = Aeron.connect(new Aeron.Context().errorHandler(Throwable::printStackTrace));
+
         recorded = 0;
     }
 
@@ -585,7 +586,12 @@ public class ArchiveTest
 
             while (remaining > 0)
             {
-                TestUtil.poll(replay, this::validateFragment2);
+                final int fragments = replay.poll(this::validateFragment2, 10);
+                if (0 == fragments)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
             }
 
             assertThat(this.messageCount, is(messageCount));
@@ -682,10 +688,9 @@ public class ArchiveTest
                     {
                         if (recordingEventsAdapter.poll() == 0)
                         {
+                            SystemTest.checkInterruptedStatus();
                             SystemTest.sleep(1);
                         }
-
-                        SystemTest.checkInterruptedStatus();
                     }
                 }
                 catch (final Throwable throwable)
@@ -750,7 +755,12 @@ public class ArchiveTest
 
                     while (this.messageCount < messageCount)
                     {
-                        TestUtil.poll(replay, this::validateFragment2);
+                        final int fragments = replay.poll(this::validateFragment2, 10);
+                        if (0 == fragments)
+                        {
+                            SystemTest.checkInterruptedStatus();
+                            Thread.yield();
+                        }
                     }
 
                     waitForData.countDown();

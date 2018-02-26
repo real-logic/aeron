@@ -19,7 +19,6 @@ import io.aeron.Subscription;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.exceptions.TimeoutException;
-import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.IoUtil;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -153,11 +152,6 @@ public class TestUtil
         );
 
         await(() -> controlResponseAdapter.poll() != 0);
-    }
-
-    static void poll(final Subscription subscription, final FragmentHandler handler)
-    {
-        await(() -> subscription.poll(handler, 1) > 0);
     }
 
     public static void await(final BooleanSupplier conditionSupplier)

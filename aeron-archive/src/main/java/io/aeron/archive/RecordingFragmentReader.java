@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Counter;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.IoUtil;
@@ -93,17 +94,20 @@ class RecordingFragmentReader implements AutoCloseable
             throw new IllegalStateException("segment file must be available for requested position: " + position);
         }
 
-        final long termStartPosition = (startPosition / termLength) * termLength;
+        final long termCount = startPosition >> LogBufferDescriptor.positionBitsToShift(termLength);
+        final long termStartPosition = termCount * termLength;
         final long fromSegmentOffset = (fromPosition - termStartPosition) & (segmentLength - 1);
         final int termMask = termLength - 1;
         final int fromTermStartSegmentOffset = (int)(fromSegmentOffset - (fromSegmentOffset & termMask));
         final int fromTermOffset = (int)(fromSegmentOffset & termMask);
+        final int fromTermId = recordingSummary.initialTermId + (int)termCount;
 
         termBuffer = new UnsafeBuffer(mappedSegmentBuffer, fromTermStartSegmentOffset, termLength);
         termStartSegmentOffset = fromTermStartSegmentOffset;
         termOffset = fromTermOffset;
 
         if (DataHeaderFlyweight.termOffset(termBuffer, fromTermOffset) != fromTermOffset ||
+            DataHeaderFlyweight.termId(termBuffer, fromTermOffset) != fromTermId ||
             DataHeaderFlyweight.streamId(termBuffer, fromTermOffset) != recordingSummary.streamId)
         {
             close();

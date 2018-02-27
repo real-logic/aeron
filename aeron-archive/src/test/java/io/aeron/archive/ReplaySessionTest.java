@@ -20,6 +20,7 @@ import io.aeron.ExclusivePublication;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -43,7 +44,7 @@ import static org.mockito.Mockito.*;
 public class ReplaySessionTest
 {
     private static final int RECORDING_ID = 0;
-    private static final int TERM_BUFFER_LENGTH = 4096 * 4;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
     private static final long START_POSITION = INITIAL_TERM_OFFSET;

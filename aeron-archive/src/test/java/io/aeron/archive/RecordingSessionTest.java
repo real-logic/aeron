@@ -18,9 +18,9 @@ package io.aeron.archive;
 import io.aeron.Counter;
 import io.aeron.Image;
 import io.aeron.Subscription;
+import io.aeron.logbuffer.BlockHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
@@ -123,18 +123,16 @@ public class RecordingSessionTest
 
         session.doWork();
 
-        when(image.rawPoll(any(), anyInt())).thenAnswer(
+        when(image.blockPoll(any(), anyInt())).thenAnswer(
             (invocation) ->
             {
-                final RawBlockHandler handle = invocation.getArgument(0);
+                final BlockHandler handle = invocation.getArgument(0);
                 if (handle == null)
                 {
                     return 0;
                 }
 
                 handle.onBlock(
-                    mockLogBufferChannel,
-                    TERM_OFFSET,
                     mockLogBufferMapped,
                     TERM_OFFSET,
                     RECORDED_BLOCK_LENGTH,
@@ -181,7 +179,7 @@ public class RecordingSessionTest
             assertEquals(1, polled);
         }
 
-        when(image.rawPoll(any(), anyInt())).thenReturn(0);
+        when(image.blockPoll(any(), anyInt())).thenReturn(0);
         assertEquals("Expect no work", 0, session.doWork());
 
         when(image.isClosed()).thenReturn(true);

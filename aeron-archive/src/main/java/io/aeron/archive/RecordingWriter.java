@@ -16,15 +16,14 @@
 package io.aeron.archive;
 
 import io.aeron.Counter;
+import io.aeron.logbuffer.BlockHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,7 +49,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  * creating a {@link RecordingWriter}.</li>
  * </ul>
  */
-class RecordingWriter implements RawBlockHandler
+class RecordingWriter implements BlockHandler
 {
     private static final int NULL_SEGMENT_POSITION = -1;
 
@@ -94,11 +93,9 @@ class RecordingWriter implements RawBlockHandler
     }
 
     public void onBlock(
-        final FileChannel fileChannel,
-        final long fileOffset,
-        final UnsafeBuffer termBuffer,
+        final DirectBuffer termBuffer,
         final int termOffset,
-        final int blockLength,
+        final int length,
         final int sessionId,
         final int termId)
     {
@@ -114,20 +111,21 @@ class RecordingWriter implements RawBlockHandler
                 onFileRollOver();
             }
 
-            long bytesWritten = 0;
+            final ByteBuffer byteBuffer = termBuffer.byteBuffer();
+            byteBuffer.limit(termOffset + length).position(termOffset);
+
             do
             {
-                bytesWritten += fileChannel.transferTo(
-                    fileOffset + bytesWritten, blockLength - bytesWritten, recordingFileChannel);
+                recordingFileChannel.write(byteBuffer);
             }
-            while (bytesWritten < blockLength);
+            while (byteBuffer.remaining() > 0);
 
             if (forceWrites)
             {
                 recordingFileChannel.force(forceMetadata);
             }
 
-            afterWrite(blockLength);
+            afterWrite(length);
         }
         catch (final ClosedByInterruptException ex)
         {

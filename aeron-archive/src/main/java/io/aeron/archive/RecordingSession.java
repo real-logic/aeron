@@ -137,7 +137,7 @@ class RecordingSession implements Session
         int workCount = 1;
         try
         {
-            workCount = image.rawPoll(recordingWriter, blockLengthLimit);
+            workCount = image.blockPoll(recordingWriter, blockLengthLimit);
             if (0 != workCount)
             {
                 recordingEventsProxy.progress(recordingId, image.joinPosition(), position.getWeak());

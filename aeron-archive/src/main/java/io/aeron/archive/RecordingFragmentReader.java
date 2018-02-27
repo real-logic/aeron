@@ -28,17 +28,27 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.OpenOption;
+import java.nio.file.attribute.FileAttribute;
+import java.util.HashSet;
 
 import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
-import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.*;
 
 class RecordingFragmentReader implements AutoCloseable
 {
     static final long NULL_LENGTH = -1;
+
+    private static final HashSet<OpenOption> FILE_OPTIONS = new HashSet<>();
+    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
+    static
+    {
+        FILE_OPTIONS.add(READ);
+    }
 
     private final File archiveDir;
     private final long recordingId;
@@ -252,7 +262,7 @@ class RecordingFragmentReader implements AutoCloseable
             return false;
         }
 
-        try (FileChannel channel = FileChannel.open(segmentFile.toPath(), READ))
+        try (FileChannel channel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
         {
             mappedSegmentBuffer = channel.map(READ_ONLY, 0, segmentLength);
         }

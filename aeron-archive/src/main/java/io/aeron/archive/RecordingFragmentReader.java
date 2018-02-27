@@ -104,7 +104,6 @@ class RecordingFragmentReader implements AutoCloseable
         termOffset = fromTermOffset;
 
         if (DataHeaderFlyweight.termOffset(termBuffer, fromTermOffset) != fromTermOffset ||
-            DataHeaderFlyweight.sessionId(termBuffer, fromTermOffset) != recordingSummary.sessionId ||
             DataHeaderFlyweight.streamId(termBuffer, fromTermOffset) != recordingSummary.streamId)
         {
             close();

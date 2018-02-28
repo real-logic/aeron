@@ -28,9 +28,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
-import java.util.HashSet;
+import java.util.EnumSet;
 
 import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
@@ -43,12 +43,8 @@ class RecordingFragmentReader implements AutoCloseable
 {
     static final long NULL_LENGTH = -1;
 
-    private static final HashSet<OpenOption> FILE_OPTIONS = new HashSet<>();
+    private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
-    static
-    {
-        FILE_OPTIONS.add(READ);
-    }
 
     private final File archiveDir;
     private final long recordingId;

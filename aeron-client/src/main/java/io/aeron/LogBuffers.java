@@ -26,10 +26,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.OpenOption;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
-import java.util.HashSet;
+import java.util.EnumSet;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
@@ -43,13 +43,8 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class LogBuffers implements AutoCloseable, ManagedResource
 {
-    private static final HashSet<OpenOption> FILE_OPTIONS = new HashSet<>();
+    private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
-    static
-    {
-        FILE_OPTIONS.add(READ);
-        FILE_OPTIONS.add(WRITE);
-    }
 
     private long timeOfLastStateChangeNs;
     private int refCount;

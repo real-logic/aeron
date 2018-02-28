@@ -37,7 +37,6 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.align;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
@@ -447,7 +446,6 @@ class Catalog implements AutoCloseable
 
     //
     // Methods for access specify record fields by recordingId.
-    // Note: These methods are thread safe.
     /////////////////////////////////////////////////////////////
 
     void recordingStopped(final long recordingId, final long position, final long timestamp)
@@ -566,35 +564,37 @@ class Catalog implements AutoCloseable
 
     private long recoverStopOffset(final File segmentFile, final int segmentFileLength)
     {
-        long lastFragmentSegmentOffset = 0;
+        long lastFragmentOffset = 0;
         try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))
         {
-            final ByteBuffer headerBB = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
-            final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(headerBB);
-            long nextFragmentSegmentOffset = 0;
+            final ByteBuffer buffer = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            buffer.order(BYTE_ORDER);
+
+            long nextFragmentOffset = 0;
             do
             {
-                headerBB.clear();
-                if (HEADER_LENGTH != segment.read(headerBB, nextFragmentSegmentOffset))
+                buffer.clear();
+                if (HEADER_LENGTH != segment.read(buffer, nextFragmentOffset))
                 {
                     throw new IllegalStateException("Unexpected read failure from file: " +
-                        segmentFile.getAbsolutePath() + " at position:" + nextFragmentSegmentOffset);
+                        segmentFile.getAbsolutePath() + " at position:" + nextFragmentOffset);
                 }
 
-                if (headerFlyweight.frameLength() == 0)
+                final int frameLength = buffer.getInt(DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
+                if (frameLength == 0)
                 {
                     break;
                 }
 
-                lastFragmentSegmentOffset = nextFragmentSegmentOffset;
-                nextFragmentSegmentOffset += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
+                lastFragmentOffset = nextFragmentOffset;
+                nextFragmentOffset += align(frameLength, FRAME_ALIGNMENT);
             }
-            while (nextFragmentSegmentOffset != segmentFileLength);
+            while (nextFragmentOffset != segmentFileLength);
 
-            if ((nextFragmentSegmentOffset / PAGE_SIZE) == (lastFragmentSegmentOffset / PAGE_SIZE))
+            if ((nextFragmentOffset / PAGE_SIZE) == (lastFragmentOffset / PAGE_SIZE))
             {
                 // if last fragment does not straddle page boundaries we need not drop it
-                lastFragmentSegmentOffset = nextFragmentSegmentOffset;
+                lastFragmentOffset = nextFragmentOffset;
             }
         }
         catch (final Exception ex)
@@ -602,6 +602,6 @@ class Catalog implements AutoCloseable
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return lastFragmentSegmentOffset;
+        return lastFragmentOffset;
     }
 }

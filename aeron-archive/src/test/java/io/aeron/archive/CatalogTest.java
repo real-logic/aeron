@@ -33,10 +33,8 @@ import static io.aeron.archive.Catalog.PAGE_SIZE;
 import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
@@ -164,7 +162,7 @@ public class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 3));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(1024);
             log.write(bb);
@@ -209,7 +207,7 @@ public class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(PAGE_SIZE - 32);
             log.write(bb);
@@ -277,7 +275,7 @@ public class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength((int)expectedLastFrame);
             log.write(bb);

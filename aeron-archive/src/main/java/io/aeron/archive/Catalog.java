@@ -35,6 +35,7 @@ import static io.aeron.archive.codecs.RecordingDescriptorDecoder.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.align;
 
@@ -429,14 +430,17 @@ class Catalog implements AutoCloseable
 
     //
     // Methods for access specify record fields by recordingId.
+    // Note: These methods are thread safe.
     /////////////////////////////////////////////////////////////
 
     void recordingStopped(final long recordingId, final long position, final long timestamp)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
-        fieldAccessBuffer.putLong(offset + stopPositionEncodingOffset(), position, BYTE_ORDER);
+        final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
+
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), timestamp, BYTE_ORDER);
+        fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
 
         if (fileSyncLevel > 0)
         {
@@ -448,8 +452,10 @@ class Catalog implements AutoCloseable
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
-        fieldAccessBuffer.putLong(offset + stopPositionEncodingOffset(), NULL_POSITION, BYTE_ORDER);
-        fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), NULL_TIMESTAMP, BYTE_ORDER);
+        final long stopPosition = nativeOrder() == BYTE_ORDER ? NULL_POSITION : Long.reverseBytes(NULL_POSITION);
+
+        fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), NULL_TIMESTAMP);
+        fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
 
         if (fileSyncLevel > 0)
         {
@@ -463,7 +469,9 @@ class Catalog implements AutoCloseable
             RecordingDescriptorHeaderDecoder.BLOCK_LENGTH +
             startPositionEncodingOffset();
 
-        return fieldAccessBuffer.getLong(offset, BYTE_ORDER);
+        final long stopPosition = fieldAccessBuffer.getLongVolatile(offset);
+
+        return nativeOrder() == BYTE_ORDER ? stopPosition : Long.reverseBytes(stopPosition);
     }
 
     RecordingSummary recordingSummary(final long recordingId, final RecordingSummary summary)

@@ -87,7 +87,6 @@ class SessionWorker<T extends Session> implements Agent
     {
         try
         {
-            session.abort();
             session.close();
         }
         catch (final Exception ex)

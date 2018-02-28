@@ -602,11 +602,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
     void closeRecordingSession(final RecordingSession session)
     {
-        final long sessionId = session.sessionId();
-
-        recordingSessionByIdMap.remove(sessionId);
-        catalog.recordingStopped(sessionId, session.recordingPosition().get(), epochClock.time());
-
+        final long recordingId = session.sessionId();
+        catalog.recordingStopped(recordingId, session.recordingPosition().get(), epochClock.time());
+        recordingSessionByIdMap.remove(recordingId);
         closeSession(session);
     }
 

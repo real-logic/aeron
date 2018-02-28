@@ -110,7 +110,6 @@ public class ArchiveTest
 
     private Thread replayConsumer = null;
     private Thread progressTracker = null;
-    private volatile boolean isTestComplete;
 
     @Before
     public void before()
@@ -166,11 +165,6 @@ public class ArchiveTest
     @After
     public void after()
     {
-        if (!isTestComplete)
-        {
-            client.printCounters(System.err);
-        }
-
         if (null != replayConsumer)
         {
             replayConsumer.interrupt();
@@ -226,8 +220,6 @@ public class ArchiveTest
             initialTermId,
             maxPayloadLength,
             messageCount);
-
-        isTestComplete = true;
     }
 
     @Test(timeout = 10_000)
@@ -272,8 +264,6 @@ public class ArchiveTest
 
         publishDataToBeRecorded(recordedPublication, messageCount);
         await(streamConsumed);
-
-        isTestComplete = true;
     }
 
     @Test(timeout = 10_000)
@@ -310,8 +300,6 @@ public class ArchiveTest
             initialTermId,
             maxPayloadLength,
             messageCount);
-
-        isTestComplete = true;
     }
 
     private void preSendChecks(

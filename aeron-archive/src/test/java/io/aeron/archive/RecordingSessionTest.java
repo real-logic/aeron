@@ -58,7 +58,7 @@ public class RecordingSessionTest
     public static final FileChannel ARCHIVE_CHANNEL = null;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
-    private final Counter position = mock(Counter.class);
+    private final Counter mockPosition = mock(Counter.class);
     private Image image = mockImage(
         SESSION_ID, INITIAL_TERM_ID, SOURCE_IDENTITY, TERM_BUFFER_LENGTH, mockSubscription(CHANNEL, STREAM_ID));
     private final File archiveDir = TestUtil.makeTestDirectory();
@@ -73,15 +73,15 @@ public class RecordingSessionTest
     @Before
     public void before() throws Exception
     {
-        when(position.getWeak()).then((invocation) -> positionLong);
-        when(position.get()).then((invocation) -> positionLong);
+        when(mockPosition.getWeak()).then((invocation) -> positionLong);
+        when(mockPosition.get()).then((invocation) -> positionLong);
         doAnswer(
             (invocation) ->
             {
                 positionLong = invocation.getArgument(0);
                 return null;
             })
-            .when(position).setOrdered(anyLong());
+            .when(mockPosition).setOrdered(anyLong());
 
         termFile = File.createTempFile("test.rec", "sourceIdentity");
 
@@ -101,6 +101,7 @@ public class RecordingSessionTest
         context = new Archive.Context()
             .segmentFileLength(SEGMENT_FILE_SIZE)
             .archiveDir(archiveDir)
+            .catalog(mockCatalog)
             .epochClock(epochClock);
     }
 
@@ -117,7 +118,7 @@ public class RecordingSessionTest
     public void shouldRecordFragmentsFromImage()
     {
         final RecordingSession session = new RecordingSession(
-            RECORDING_ID, START_POSITION, CHANNEL, recordingEventsProxy, image, position, ARCHIVE_CHANNEL, context);
+            RECORDING_ID, START_POSITION, CHANNEL, recordingEventsProxy, image, mockPosition, ARCHIVE_CHANNEL, context);
 
         assertEquals(RECORDING_ID, session.sessionId());
 

@@ -42,6 +42,7 @@ class RecordingSession implements Session
     private final RecordingWriter recordingWriter;
     private State state = State.INIT;
     private final String originalChannel;
+    private final Archive.Context ctx;
 
     RecordingSession(
         final long recordingId,
@@ -51,19 +52,20 @@ class RecordingSession implements Session
         final Image image,
         final Counter position,
         final FileChannel archiveDirChannel,
-        final Archive.Context context)
+        final Archive.Context ctx)
     {
         this.recordingId = recordingId;
         this.originalChannel = originalChannel;
         this.recordingEventsProxy = recordingEventsProxy;
         this.image = image;
         this.position = position;
+        this.ctx = ctx;
 
         final int termBufferLength = image.termBufferLength();
         blockLengthLimit = Math.min(termBufferLength, MAX_BLOCK_LENGTH);
 
         recordingWriter = new RecordingWriter(
-            recordingId, startPosition, image.joinPosition(), termBufferLength, context, archiveDirChannel, position);
+            recordingId, startPosition, image.joinPosition(), termBufferLength, ctx, archiveDirChannel, position);
     }
 
     public long sessionId()
@@ -109,8 +111,10 @@ class RecordingSession implements Session
         if (State.INACTIVE == state)
         {
             state = State.STOPPED;
+            final long stoppedPosition = position.getWeak();
+            ctx.catalog().recordingStopped(recordingId, stoppedPosition, ctx.epochClock().time());
+            recordingEventsProxy.stopped(recordingId, image.joinPosition(), stoppedPosition);
             recordingWriter.close();
-            recordingEventsProxy.stopped(recordingId, image.joinPosition(), position.getWeak());
             workDone += 1;
         }
 

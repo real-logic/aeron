@@ -105,7 +105,6 @@ class Catalog implements AutoCloseable
     private final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
 
     private final CatalogHeaderDecoder catalogHeaderDecoder = new CatalogHeaderDecoder();
-    private final CatalogHeaderEncoder catalogHeaderEncoder = new CatalogHeaderEncoder();
 
     private final MappedByteBuffer indexByteBuffer;
     private final UnsafeBuffer indexBuffer;
@@ -157,6 +156,8 @@ class Catalog implements AutoCloseable
 
             catalogHeaderDecoder.wrap(
                 catalogHeaderBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
+
+            final CatalogHeaderEncoder catalogHeaderEncoder = new CatalogHeaderEncoder();
             catalogHeaderEncoder.wrap(catalogHeaderBuffer, 0);
 
             if (catalogPreExists)

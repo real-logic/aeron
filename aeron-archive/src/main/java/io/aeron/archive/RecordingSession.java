@@ -119,6 +119,8 @@ class RecordingSession implements Session
 
     private int init()
     {
+        state = State.RECORDING;
+
         recordingEventsProxy.started(
             recordingId,
             image.joinPosition(),
@@ -126,8 +128,6 @@ class RecordingSession implements Session
             image.subscription().streamId(),
             originalChannel,
             image.sourceIdentity());
-
-        state = State.RECORDING;
 
         return 1;
     }

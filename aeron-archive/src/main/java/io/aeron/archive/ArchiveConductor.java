@@ -668,8 +668,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
         catch (final Exception ex)
         {
-            position.close();
             errorHandler.onError(ex);
+            position.close();
             controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
         }
     }
@@ -713,8 +713,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
         catch (final Exception ex)
         {
-            position.close();
             errorHandler.onError(ex);
+            position.close();
             controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
         }
     }

@@ -19,7 +19,6 @@ import io.aeron.Counter;
 import io.aeron.logbuffer.BlockHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -215,7 +214,7 @@ class RecordingWriter implements BlockHandler
         try
         {
             recordingFile = new RandomAccessFile(file, "rw");
-            recordingFile.setLength(segmentFileLength + DataHeaderFlyweight.HEADER_LENGTH);
+            recordingFile.setLength(segmentFileLength);
             recordingFileChannel = recordingFile.getChannel();
             if (forceWrites && null != archiveDirChannel)
             {

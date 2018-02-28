@@ -111,9 +111,9 @@ class RecordingSession implements Session
         if (State.INACTIVE == state)
         {
             state = State.STOPPED;
-            final long stoppedPosition = position.getWeak();
-            ctx.catalog().recordingStopped(recordingId, stoppedPosition, ctx.epochClock().time());
-            recordingEventsProxy.stopped(recordingId, image.joinPosition(), stoppedPosition);
+            final long stopPosition = position.getWeak();
+            ctx.catalog().recordingStopped(recordingId, stopPosition, ctx.epochClock().time());
+            recordingEventsProxy.stopped(recordingId, image.joinPosition(), stopPosition);
             recordingWriter.close();
             workDone += 1;
         }

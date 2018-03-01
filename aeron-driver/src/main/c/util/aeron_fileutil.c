@@ -94,75 +94,31 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
 
     if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) >= 0)
     {
-        if (lseek(fd, (off_t)(mapped_file->length - 1), SEEK_SET) >= 0)
+        void *file_mmap = mmap(NULL, mapped_file->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        close(fd);
+
+        if (MAP_FAILED != file_mmap)
         {
-            if (write(fd, "", 1) > 0)
+            if (fill_with_zeroes)
             {
-                if (fill_with_zeroes)
+                char *map = file_mmap;
+
+                size_t pos = 0;
+                while (pos < mapped_file->length)
                 {
-                    if (lseek(fd, (off_t)0, SEEK_SET) >= 0)
-                    {
-                        char block[AERON_BLOCK_SIZE];
-
-                        memset(block, 0, sizeof(block));
-                        const size_t blocks = mapped_file->length / sizeof(block);
-                        const size_t block_remainder = mapped_file->length % sizeof(block);
-
-                        for (size_t i = 0; i < blocks; i++)
-                        {
-                            if (write(fd, block, sizeof(block)) < (ssize_t) sizeof(block))
-                            {
-                                int errcode = errno;
-
-                                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
-                                close(fd);
-                                return -1;
-                            }
-                        }
-
-                        if (block_remainder > 0)
-                        {
-                            if (write(fd, block, block_remainder) < (ssize_t) block_remainder)
-                            {
-                                int errcode = errno;
-
-                                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
-                                close(fd);
-                                return -1;
-                            }
-                        }
-                    }
-                }
-
-                void *file_mmap = mmap(NULL, mapped_file->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-                close(fd);
-
-                if (MAP_FAILED != file_mmap)
-                {
-                    mapped_file->addr = file_mmap;
-                    result = 0;
-                }
-                else
-                {
-                    int errcode = errno;
-
-                    aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+                    map[pos] = 0;
+                    pos += AERON_BLOCK_SIZE;
                 }
             }
-            else
-            {
-                int errcode = errno;
 
-                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
-                close(fd);
-            }
+            mapped_file->addr = file_mmap;
+            result = 0;
         }
         else
         {
             int errcode = errno;
 
             aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
-            close(fd);
         }
     }
     else

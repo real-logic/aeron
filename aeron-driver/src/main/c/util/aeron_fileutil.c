@@ -267,53 +267,45 @@ int aeron_map_raw_log(
 {
     int fd, result = -1;
     uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
-    uint8_t null_buffer[] = { 0, 0 };
 
     if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) >= 0)
     {
-        if (lseek(fd, (off_t)(log_length - 1), SEEK_SET) >= 0)
+        if (ftruncate(fd, (off_t)log_length) >= 0)
         {
-            if (write(fd, null_buffer, 1) > 0)
-            {
-                mapped_raw_log->mapped_file.length = log_length;
-                mapped_raw_log->mapped_file.addr = NULL;
+            mapped_raw_log->mapped_file.length = log_length;
+            mapped_raw_log->mapped_file.addr = NULL;
 
-                int mmap_result = aeron_mmap(&mapped_raw_log->mapped_file, fd, 0);
-                close(fd);
+            int mmap_result = aeron_mmap(&mapped_raw_log->mapped_file, fd, 0);
+            close(fd);
 
-                if (mmap_result < 0)
-                {
-                    return -1;
-                }
-
-                if (!use_sparse_files)
-                {
-                    aeron_allocate_pages(mapped_raw_log->mapped_file.addr, log_length, page_size);
-                }
-
-                for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
-                {
-                    mapped_raw_log->term_buffers[i].addr =
-                        (uint8_t *) mapped_raw_log->mapped_file.addr + (i * term_length);
-                    mapped_raw_log->term_buffers[i].length = term_length;
-                }
-
-                mapped_raw_log->log_meta_data.addr =
-                    (uint8_t *) mapped_raw_log->mapped_file.addr +
-                        (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
-                mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
-
-                mapped_raw_log->term_length = term_length;
-
-                result = 0;
-            }
-            else
+            if (mmap_result < 0)
             {
                 int errcode = errno;
 
                 aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
-                close(fd);
+                return -1;
             }
+
+            if (!use_sparse_files)
+            {
+                aeron_allocate_pages(mapped_raw_log->mapped_file.addr, log_length, page_size);
+            }
+
+            for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+            {
+                mapped_raw_log->term_buffers[i].addr =
+                    (uint8_t *) mapped_raw_log->mapped_file.addr + (i * term_length);
+                mapped_raw_log->term_buffers[i].length = term_length;
+            }
+
+            mapped_raw_log->log_meta_data.addr =
+                (uint8_t *) mapped_raw_log->mapped_file.addr +
+                    (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
+            mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
+
+            mapped_raw_log->term_length = term_length;
+
+            result = 0;
         }
         else
         {

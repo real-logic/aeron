@@ -17,9 +17,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <memory.h>
 
 #if !defined(_MSC_VER)
 #include <pthread.h>
+
 #else
 /* Win32 Threads */
 #endif
@@ -89,8 +91,10 @@ void aeron_set_err(int errcode, const char *format, ...)
 
     error_state->errcode = errcode;
     va_list args;
+    char stack_mesage[sizeof(error_state->errmsg)];
 
     va_start(args, format);
-    vsnprintf(error_state->errmsg, sizeof(error_state->errmsg) - 1, format, args);
+    vsnprintf(stack_mesage, sizeof(stack_mesage) - 1, format, args);
     va_end(args);
+    strncpy(error_state->errmsg, stack_mesage, sizeof(error_state->errmsg));
 }

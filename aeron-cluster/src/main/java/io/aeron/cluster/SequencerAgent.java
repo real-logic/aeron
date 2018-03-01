@@ -27,7 +27,6 @@ import io.aeron.status.ReadableCounter;
 import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -47,7 +46,7 @@ import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 class SequencerAgent implements Agent, ServiceControlListener
 {
-    private boolean isRecovered;
+    private boolean isRecovering;
     private final int memberId;
     private int votedForMemberId = NULL_MEMBER_ID;
     private int leaderMemberId;
@@ -97,7 +96,6 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final ConsensusModule.Context ctx;
     private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
     private final IdleStrategy idleStrategy;
-    private final LongArrayList failedTimerCancellations = new LongArrayList();
     private RecordingLog.RecoveryPlan recoveryPlan;
 
     SequencerAgent(
@@ -186,6 +184,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         serviceAckCount = 0;
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
+            isRecovering = true;
             if (null != recoveryPlan.snapshotStep)
             {
                 recoverFromSnapshot(recoveryPlan.snapshotStep, archive);
@@ -197,8 +196,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             {
                 recoverFromLog(recoveryPlan.termSteps, archive);
             }
-
-            isRecovered = true;
+            isRecovering = false;
         }
 
         if (ConsensusModule.State.SUSPENDED != state)
@@ -436,7 +434,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public boolean onTimerEvent(final long correlationId, final long nowMs)
     {
-        return logPublisher.appendTimerEvent(correlationId, nowMs);
+        return Cluster.Role.LEADER != role || logPublisher.appendTimerEvent(correlationId, nowMs);
     }
 
     public void onScheduleTimer(final long correlationId, final long deadlineMs)
@@ -493,14 +491,9 @@ class SequencerAgent implements Agent, ServiceControlListener
         sessionByIdMap.get(clusterSessionId).lastActivity(timestamp, correlationId);
     }
 
-    void onReplayTimerEvent(final long correlationId, final long timestamp)
+    void onReplayTimerEvent(@SuppressWarnings("unused") final long correlationId, final long timestamp)
     {
         cachedEpochClock.update(timestamp);
-
-        if (!timerService.cancelTimer(correlationId))
-        {
-            failedTimerCancellations.addLong(correlationId);
-        }
     }
 
     void onReplaySessionOpen(
@@ -579,7 +572,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 break;
 
             case SNAPSHOT:
-                if (isRecovered)
+                if (!isRecovering)
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.SNAPSHOT);
@@ -588,7 +581,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 break;
 
             case SHUTDOWN:
-                if (isRecovered)
+                if (!isRecovering)
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.SHUTDOWN);
@@ -597,7 +590,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 break;
 
             case ABORT:
-                if (isRecovered)
+                if (!isRecovering)
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.ABORT);
@@ -1271,8 +1264,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 aeron, tempBuffer, recordingId, logPosition, leadershipTermId, i);
                 Subscription subscription = aeron.addSubscription(channel, streamId))
             {
-                counter.setOrdered(stopPosition);
-
                 serviceAckCount = 0;
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, channel);
                 awaitServiceAcks();
@@ -1287,7 +1278,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 final Image image = awaitImage(sessionId, subscription);
 
                 serviceAckCount = 0;
-                replayTerm(image, stopPosition);
+                replayTerm(image, stopPosition, counter);
                 awaitServiceAcks();
 
                 final long termPosition = image.position();
@@ -1297,13 +1288,8 @@ class SequencerAgent implements Agent, ServiceControlListener
                 }
 
                 baseLogPosition += termPosition;
-
-                failedTimerCancellations.forEachOrderedLong(timerService::cancelTimer);
-                failedTimerCancellations.clear();
             }
         }
-
-        failedTimerCancellations.trimToSize();
     }
 
     private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
@@ -1556,27 +1542,32 @@ class SequencerAgent implements Agent, ServiceControlListener
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
-    private void replayTerm(final Image image, final long finalTermPosition)
+    private void replayTerm(final Image image, final long finalTermPosition, final Counter replayPosition)
     {
         logAdapter = new LogAdapter(image, this);
 
         while (true)
         {
-            final int fragments = logAdapter.poll(finalTermPosition);
-            if (fragments == 0)
+            int workCount = logAdapter.poll(finalTermPosition);
+            if (workCount == 0)
             {
                 if (image.isClosed())
                 {
                     if (!image.isEndOfStream())
                     {
-                        throw new IllegalStateException("Unexpected close");
+                        throw new IllegalStateException("Unexpected close of image when replaying");
                     }
 
                     break;
                 }
             }
 
-            idle(fragments);
+            replayPosition.setOrdered(image.position());
+
+            workCount += serviceControlAdapter.poll();
+            workCount += timerService.poll(cachedEpochClock.time());
+
+            idle(workCount);
         }
     }
 }

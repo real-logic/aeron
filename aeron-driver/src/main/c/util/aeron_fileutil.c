@@ -94,25 +94,34 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
 
     if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) >= 0)
     {
-        void *file_mmap = mmap(NULL, mapped_file->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-        close(fd);
-
-        if (MAP_FAILED != file_mmap)
+        if (ftruncate(fd, (off_t )mapped_file->length) >= 0)
         {
-            if (fill_with_zeroes)
+            void *file_mmap = mmap(NULL, mapped_file->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+            close(fd);
+
+            if (MAP_FAILED != file_mmap)
             {
-                char *map = file_mmap;
-
-                size_t pos = 0;
-                while (pos < mapped_file->length)
+                if (fill_with_zeroes)
                 {
-                    map[pos] = 0;
-                    pos += AERON_BLOCK_SIZE;
-                }
-            }
+                    char *map = file_mmap;
 
-            mapped_file->addr = file_mmap;
-            result = 0;
+                    size_t pos = 0;
+                    while (pos < mapped_file->length)
+                    {
+                        map[pos] = 0;
+                        pos += AERON_BLOCK_SIZE;
+                    }
+                }
+
+                mapped_file->addr = file_mmap;
+                result = 0;
+            }
+            else
+            {
+                int errcode = errno;
+
+                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            }
         }
         else
         {

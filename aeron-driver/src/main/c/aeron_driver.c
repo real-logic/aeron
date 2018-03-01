@@ -168,6 +168,9 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
         }
         else
         {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             result = -1;
         }
     }

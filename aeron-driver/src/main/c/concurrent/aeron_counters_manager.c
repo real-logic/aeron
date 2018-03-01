@@ -17,8 +17,10 @@
 #include <string.h>
 #include <math.h>
 #include <aeron_alloc.h>
+#include <errno.h>
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_atomic.h"
+#include "util/aeron_error.h"
 
 int aeron_counters_manager_init(
     volatile aeron_counters_manager_t *manager,
@@ -44,6 +46,10 @@ int aeron_counters_manager_init(
         manager->free_to_reuse_timeout_ms = free_to_reuse_timeout_ms;
         result = aeron_alloc((void **)&manager->free_list, sizeof(int32_t) * manager->free_list_length);
     }
+    else
+    {
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+    }
 
     return result;
 }
@@ -65,11 +71,13 @@ int32_t aeron_counters_manager_allocate(
 
     if ((counter_id * AERON_COUNTERS_MANAGER_VALUE_LENGTH) + AERON_COUNTERS_MANAGER_VALUE_LENGTH > manager->values_length)
     {
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
         return -1;
     }
 
     if ((counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH) + AERON_COUNTERS_MANAGER_METADATA_LENGTH > manager->metadata_length)
     {
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
         return -1;
     }
 

@@ -54,13 +54,16 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
 {
     if (NULL == counters || NULL == manager)
     {
-        aeron_set_err(EINVAL, "%s", "invalid argument");
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
         return -1;
     }
 
     counters->manager = manager;
     if (aeron_alloc((void **)&counters->counter_ids, sizeof(int32_t) * num_system_counters) < 0)
     {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         return -1;
     }
 

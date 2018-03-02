@@ -15,8 +15,10 @@
  */
 
 #include <string.h>
+#include <errno.h>
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "aeron_atomic.h"
+#include "util/aeron_error.h"
 
 int aeron_broadcast_transmitter_init(volatile aeron_broadcast_transmitter_t *transmitter, void *buffer, size_t length)
 {
@@ -30,6 +32,10 @@ int aeron_broadcast_transmitter_init(volatile aeron_broadcast_transmitter_t *tra
         transmitter->descriptor = (aeron_broadcast_descriptor_t *) (transmitter->buffer + transmitter->capacity);
         transmitter->max_message_length = AERON_BROADCAST_MAX_MESSAGE_LENGTH(transmitter->capacity);
         result = 0;
+    }
+    else
+    {
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
     }
 
     return result;

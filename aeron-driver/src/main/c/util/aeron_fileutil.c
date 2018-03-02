@@ -94,69 +94,40 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
 
     if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) >= 0)
     {
-        if (lseek(fd, (off_t)(mapped_file->length - 1), SEEK_SET) >= 0)
+        if (ftruncate(fd, (off_t )mapped_file->length) >= 0)
         {
-            if (write(fd, "", 1) > 0)
+            void *file_mmap = mmap(NULL, mapped_file->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+            close(fd);
+
+            if (MAP_FAILED != file_mmap)
             {
                 if (fill_with_zeroes)
                 {
-                    if (lseek(fd, (off_t)0, SEEK_SET) >= 0)
+                    char *map = file_mmap;
+
+                    size_t pos = 0;
+                    while (pos < mapped_file->length)
                     {
-                        char block[AERON_BLOCK_SIZE];
-
-                        memset(block, 0, sizeof(block));
-                        const size_t blocks = mapped_file->length / sizeof(block);
-                        const size_t block_remainder = mapped_file->length % sizeof(block);
-
-                        for (size_t i = 0; i < blocks; i++)
-                        {
-                            if (write(fd, block, sizeof(block)) < (ssize_t) sizeof(block))
-                            {
-                                int errcode = errno;
-
-                                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
-                                close(fd);
-                                return -1;
-                            }
-                        }
-
-                        if (block_remainder > 0)
-                        {
-                            if (write(fd, block, block_remainder) < (ssize_t) block_remainder)
-                            {
-                                int errcode = errno;
-
-                                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
-                                close(fd);
-                                return -1;
-                            }
-                        }
+                        map[pos] = 0;
+                        pos += AERON_BLOCK_SIZE;
                     }
                 }
 
-                void *file_mmap = mmap(NULL, mapped_file->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-                close(fd);
-
-                if (MAP_FAILED != file_mmap)
-                {
-                    mapped_file->addr = file_mmap;
-                    result = 0;
-                }
-                else
-                {
-                    int errcode = errno;
-
-                    aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
-                }
+                mapped_file->addr = file_mmap;
+                result = 0;
             }
             else
             {
-                close(fd);
+                int errcode = errno;
+
+                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             }
         }
         else
         {
-            close(fd);
+            int errcode = errno;
+
+            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         }
     }
     else
@@ -193,6 +164,12 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
 
                 aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             }
+        }
+        else
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         }
 
         close(fd);
@@ -290,53 +267,45 @@ int aeron_map_raw_log(
 {
     int fd, result = -1;
     uint64_t log_length = aeron_logbuffer_compute_log_length(term_length, page_size);
-    uint8_t null_buffer[] = { 0, 0 };
 
     if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) >= 0)
     {
-        if (lseek(fd, (off_t)(log_length - 1), SEEK_SET) >= 0)
+        if (ftruncate(fd, (off_t)log_length) >= 0)
         {
-            if (write(fd, null_buffer, 1) > 0)
-            {
-                mapped_raw_log->mapped_file.length = log_length;
-                mapped_raw_log->mapped_file.addr = NULL;
+            mapped_raw_log->mapped_file.length = log_length;
+            mapped_raw_log->mapped_file.addr = NULL;
 
-                int mmap_result = aeron_mmap(&mapped_raw_log->mapped_file, fd, 0);
-                close(fd);
+            int mmap_result = aeron_mmap(&mapped_raw_log->mapped_file, fd, 0);
+            close(fd);
 
-                if (mmap_result < 0)
-                {
-                    return -1;
-                }
-
-                if (!use_sparse_files)
-                {
-                    aeron_allocate_pages(mapped_raw_log->mapped_file.addr, log_length, page_size);
-                }
-
-                for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
-                {
-                    mapped_raw_log->term_buffers[i].addr =
-                        (uint8_t *) mapped_raw_log->mapped_file.addr + (i * term_length);
-                    mapped_raw_log->term_buffers[i].length = term_length;
-                }
-
-                mapped_raw_log->log_meta_data.addr =
-                    (uint8_t *) mapped_raw_log->mapped_file.addr +
-                        (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
-                mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
-
-                mapped_raw_log->term_length = term_length;
-
-                result = 0;
-            }
-            else
+            if (mmap_result < 0)
             {
                 int errcode = errno;
 
                 aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
-                close(fd);
+                return -1;
             }
+
+            if (!use_sparse_files)
+            {
+                aeron_allocate_pages(mapped_raw_log->mapped_file.addr, log_length, page_size);
+            }
+
+            for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+            {
+                mapped_raw_log->term_buffers[i].addr =
+                    (uint8_t *) mapped_raw_log->mapped_file.addr + (i * term_length);
+                mapped_raw_log->term_buffers[i].length = term_length;
+            }
+
+            mapped_raw_log->log_meta_data.addr =
+                (uint8_t *) mapped_raw_log->mapped_file.addr +
+                    (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
+            mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
+
+            mapped_raw_log->term_length = term_length;
+
+            result = 0;
         }
         else
         {

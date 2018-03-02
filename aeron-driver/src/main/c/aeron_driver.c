@@ -168,6 +168,9 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
         }
         else
         {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             result = -1;
         }
     }
@@ -284,6 +287,7 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
 
     if (aeron_map_new_file(&driver->context->cnc_map, buffer, true) < 0)
     {
+        aeron_set_err(aeron_errcode(), "could not map CnC file: %s", aeron_errmsg());
         return -1;
     }
 
@@ -303,6 +307,7 @@ int aeron_driver_create_loss_report_file(aeron_driver_t *driver)
 
     if (aeron_map_new_file(&driver->context->loss_report, buffer, true) < 0)
     {
+        aeron_set_err(aeron_errcode(), "could not map loss report file: %s", aeron_errmsg());
         return -1;
     }
 
@@ -527,6 +532,9 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     if (aeron_alloc((void **)&_driver, sizeof(aeron_driver_t)) < 0)
     {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         goto error;
     }
 
@@ -563,7 +571,8 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     if (aeron_driver_ensure_dir_is_recreated(_driver) < 0)
     {
-        aeron_set_err(EINVAL, "could not recreate aeron dir %s", _driver->context->aeron_dir);
+        aeron_set_err(
+            aeron_errcode(), "could not recreate aeron dir %s: %s", _driver->context->aeron_dir, aeron_errmsg());
         goto error;
     }
 

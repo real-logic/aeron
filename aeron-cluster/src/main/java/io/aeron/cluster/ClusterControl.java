@@ -28,7 +28,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import static io.aeron.CncFileDescriptor.*;
-import static io.aeron.CncFileDescriptor.createCountersValuesBuffer;
 import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
 import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 

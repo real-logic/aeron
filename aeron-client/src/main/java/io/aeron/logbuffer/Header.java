@@ -23,8 +23,6 @@ import java.nio.ByteOrder;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
-import static io.aeron.protocol.HeaderFlyweight.FLAGS_FIELD_OFFSET;
-import static io.aeron.protocol.HeaderFlyweight.TYPE_FIELD_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 

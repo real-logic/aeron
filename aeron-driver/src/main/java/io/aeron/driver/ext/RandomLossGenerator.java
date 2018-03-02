@@ -21,7 +21,7 @@ import java.net.InetSocketAddress;
 import java.util.Random;
 
 /**
- * Uniform random loss generator
+ * Uniform random loss generator which can be used for testing loss scenarios.
  */
 public class RandomLossGenerator implements LossGenerator
 {

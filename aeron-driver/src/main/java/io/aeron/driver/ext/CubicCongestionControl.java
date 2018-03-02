@@ -32,16 +32,17 @@ import static io.aeron.driver.CongestionControlUtil.packOutcome;
 /**
  * CUBIC congestion control manipulation of the receiver window length.
  * <p>
- * https://research.csc.ncsu.edu/netsrv/?q=content/bic-and-cubic
+ * <a target="_blank" href="https://research.csc.ncsu.edu/netsrv/?q=content/bic-and-cubic">
+ *     https://research.csc.ncsu.edu/netsrv/?q=content/bic-and-cubic</a>
  * <p>
- * W_cubic = C(T - K)^3 + w_max
+ * {@code W_cubic = C(T - K)^3 + w_max}
  * <p>
- * K = cbrt(w_max * B / C)
- * w_max = window size before reduction
- * T = time since last decrease
+ * {@code K = cbrt(w_max * B / C)}
+ * {@code w_max} = window size before reduction
+ * {@code T} = time since last decrease
  * <p>
- * C = scaling constant (default 0.4)
- * B = multiplicative decrease (default 0.2)
+ * {@code C} = scaling constant (default 0.4)
+ * {@code B} = multiplicative decrease (default 0.2)
  * <p>
  * at MTU=4K, max window=128KB (w_max = 32 MTUs), then K ~= 2.5 seconds.
  */

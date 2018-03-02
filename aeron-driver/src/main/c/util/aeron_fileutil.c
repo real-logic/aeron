@@ -53,6 +53,14 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
     return result;
 }
 
+inline static void aeron_touch_pages(uint8_t *base, size_t length, size_t page_size)
+{
+    for (size_t i = 0; i < length; i += page_size)
+    {
+        *(base + i) = 0;
+    }
+}
+
 int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
 {
 #if defined(HAVE_FALLOCATE)
@@ -61,7 +69,6 @@ int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
 #if defined(FALLOC_FL_ZERO_RANGE)
     mode = (fill_with_zeroes ? FALLOC_FL_ZERO_RANGE : 0);
 #endif
-
     if (fallocate(fd, mode, 0, length) < 0)
     {
         int errcode = errno;
@@ -70,9 +77,7 @@ int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
         return -1;
     }
 #else
-    uint8_t null_buffer[] = { 0, 0 };
-
-    if ((lseek(fd, length, SEEK_SET) < 0) || (write(fd, null_buffer, 1) <= 0))
+    if (ftruncate(fd, length) < 0)
     {
         int errcode = errno;
 
@@ -103,14 +108,7 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
             {
                 if (fill_with_zeroes)
                 {
-                    char *map = file_mmap;
-
-                    size_t pos = 0;
-                    while (pos < mapped_file->length)
-                    {
-                        map[pos] = 0;
-                        pos += AERON_BLOCK_SIZE;
-                    }
+                    aeron_touch_pages(file_mmap, mapped_file->length, AERON_BLOCK_SIZE);
                 }
 
                 mapped_file->addr = file_mmap;
@@ -182,14 +180,6 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
     }
 
     return result;
-}
-
-inline static void aeron_allocate_pages(uint8_t *base, size_t length, size_t page_size)
-{
-    for (size_t i = 0; i < length; i += page_size)
-    {
-        *(base + i) = 0;
-    }
 }
 
 uint64_t aeron_usable_fs_space(const char *path)
@@ -288,7 +278,7 @@ int aeron_map_raw_log(
 
             if (!use_sparse_files)
             {
-                aeron_allocate_pages(mapped_raw_log->mapped_file.addr, log_length, page_size);
+                aeron_touch_pages(mapped_raw_log->mapped_file.addr, log_length, page_size);
             }
 
             for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)

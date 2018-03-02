@@ -29,9 +29,9 @@ package io.aeron.driver;
  * <code>
  * double RandomBackoff(double maxBackoffT, double groupSize)
  * {
- * double lambda = log(groupSize) + 1;
- * double x = UniformRand(lambda / maxBackoffT) + lambda / (maxBackoffT * (exp(lambda) - 1));
- * return ((maxBackoffT / lambda) * log( x * (exp(lambda) - 1) * (maxBackoffT / lambda)));
+ *     double lambda = log(groupSize) + 1;
+ *     double x = UniformRand(lambda / maxBackoffT) + lambda / (maxBackoffT * (exp(lambda) - 1));
+ *     return ((maxBackoffT / lambda) * log( x * (exp(lambda) - 1) * (maxBackoffT / lambda)));
  * }
  * </code>
  * <p>

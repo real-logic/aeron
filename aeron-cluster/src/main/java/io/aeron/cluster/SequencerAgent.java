@@ -340,7 +340,17 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public void onSessionClose(final long clusterSessionId)
     {
-        closeSession(clusterSessionId, CloseReason.CLIENT_ACTION);
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null != session)
+        {
+            session.closeReason(CloseReason.CLIENT_ACTION);
+            session.close();
+
+            if (appendClosedSession(session, cachedEpochClock.time()))
+            {
+                sessionByIdMap.remove(clusterSessionId);
+            }
+        }
     }
 
     public ControlledFragmentAssembler.Action onSessionMessage(
@@ -449,9 +459,16 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     public void onServiceCloseSession(final long clusterSessionId)
     {
-        if (Cluster.Role.LEADER == role)
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null != session)
         {
-            closeSession(clusterSessionId, CloseReason.SERVICE_ACTION);
+            session.closeReason(CloseReason.SERVICE_ACTION);
+            session.close();
+
+            if (Cluster.Role.LEADER == role && appendClosedSession(session, cachedEpochClock.time()))
+            {
+                sessionByIdMap.remove(clusterSessionId);
+            }
         }
     }
 
@@ -689,21 +706,6 @@ class SequencerAgent implements Agent, ServiceControlListener
 
             timeOfLastLogUpdateMs = cachedEpochClock.time();
             followerCommitPosition = termPosition;
-        }
-    }
-
-    private void closeSession(final long clusterSessionId, final CloseReason closeReason)
-    {
-        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session)
-        {
-            session.closeReason(closeReason);
-            session.close();
-
-            if (appendClosedSession(session, cachedEpochClock.time()))
-            {
-                sessionByIdMap.remove(clusterSessionId);
-            }
         }
     }
 

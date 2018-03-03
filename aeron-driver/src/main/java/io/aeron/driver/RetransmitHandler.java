@@ -22,6 +22,8 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 
 import static io.aeron.driver.Configuration.MAX_RETRANSMITS_DEFAULT;
+import static io.aeron.driver.RetransmitHandler.State.DELAYED;
+import static io.aeron.driver.RetransmitHandler.State.LINGERING;
 import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 
 /**
@@ -118,7 +120,7 @@ public class RetransmitHandler
     {
         final RetransmitAction action = activeRetransmitsMap.get(termId, termOffset);
 
-        if (null != action && State.DELAYED == action.state)
+        if (null != action && DELAYED == action.state)
         {
             activeRetransmitsMap.remove(termId, termOffset);
             action.cancel();
@@ -138,23 +140,15 @@ public class RetransmitHandler
         {
             for (final RetransmitAction action : retransmitActionPool)
             {
-                switch (action.state)
+                if (DELAYED == action.state && nowNs > action.expireNs)
                 {
-                    case DELAYED:
-                        if (nowNs > action.expireNs)
-                        {
-                            retransmitSender.resend(action.termId, action.termOffset, action.length);
-                            action.linger(determineLingerTimeout(), nanoClock.nanoTime());
-                        }
-                        break;
-
-                    case LINGERING:
-                        if (nowNs > action.expireNs)
-                        {
-                            action.cancel();
-                            activeRetransmitsMap.remove(action.termId, action.termOffset);
-                        }
-                        break;
+                    retransmitSender.resend(action.termId, action.termOffset, action.length);
+                    action.linger(determineLingerTimeout(), nanoClock.nanoTime());
+                }
+                else if (LINGERING == action.state && nowNs > action.expireNs)
+                {
+                    action.cancel();
+                    activeRetransmitsMap.remove(action.termId, action.termOffset);
                 }
             }
         }
@@ -195,7 +189,7 @@ public class RetransmitHandler
         throw new IllegalStateException("Maximum number of active RetransmitActions reached");
     }
 
-    private enum State
+    enum State
     {
         DELAYED,
         LINGERING,
@@ -212,13 +206,13 @@ public class RetransmitHandler
 
         public void delay(final long delayNs, final long nowNs)
         {
-            state = State.DELAYED;
+            state = DELAYED;
             expireNs = nowNs + delayNs;
         }
 
         public void linger(final long timeoutNs, final long nowNs)
         {
-            state = State.LINGERING;
+            state = LINGERING;
             expireNs = nowNs + timeoutNs;
         }
 

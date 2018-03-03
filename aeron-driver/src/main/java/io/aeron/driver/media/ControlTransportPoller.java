@@ -141,19 +141,18 @@ public class ControlTransportPoller extends UdpTransportPoller
             byteReceived = byteBuffer.position();
             if (channelEndpoint.isValidFrame(unsafeBuffer, byteReceived))
             {
-                switch (frameType(unsafeBuffer, 0))
+                final int frameType = frameType(unsafeBuffer, 0);
+                if (HDR_TYPE_NAK == frameType)
                 {
-                    case HDR_TYPE_NAK:
-                        channelEndpoint.onNakMessage(nakMessage, unsafeBuffer, byteReceived, srcAddress);
-                        break;
-
-                    case HDR_TYPE_SM:
-                        channelEndpoint.onStatusMessage(statusMessage, unsafeBuffer, byteReceived, srcAddress);
-                        break;
-
-                    case HDR_TYPE_RTTM:
-                        channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, byteReceived, srcAddress);
-                        break;
+                    channelEndpoint.onNakMessage(nakMessage, unsafeBuffer, byteReceived, srcAddress);
+                }
+                else if (HDR_TYPE_SM == frameType)
+                {
+                    channelEndpoint.onStatusMessage(statusMessage, unsafeBuffer, byteReceived, srcAddress);
+                }
+                else if (HDR_TYPE_RTTM == frameType)
+                {
+                    channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, byteReceived, srcAddress);
                 }
             }
         }

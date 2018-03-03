@@ -239,21 +239,14 @@ class SequencerAgent implements Agent, ServiceControlListener
             cachedEpochClock.update(nowMs);
         }
 
-        switch (role)
+        if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
         {
-            case LEADER:
-                if (ConsensusModule.State.ACTIVE == state)
-                {
-                    workCount += ingressAdapter.poll();
-                }
-                break;
-
-            case FOLLOWER:
-                if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
-                {
-                    workCount += logAdapter.poll(followerCommitPosition);
-                }
-                break;
+            workCount += ingressAdapter.poll();
+        }
+        else if (Cluster.Role.FOLLOWER == role &&
+            (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state))
+        {
+            workCount += logAdapter.poll(followerCommitPosition);
         }
 
         workCount += memberStatusAdapter.poll();
@@ -1377,54 +1370,48 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         int workCount = 0;
 
-        switch (role)
+        if (Cluster.Role.LEADER == role)
         {
-            case LEADER:
+            thisMember.termPosition(logRecordingPosition.get());
+
+            final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
+            if (position > commitPosition.getWeak() || nowMs >= (timeOfLastLogUpdateMs + heartbeatIntervalMs))
             {
-                thisMember.termPosition(logRecordingPosition.get());
-
-                final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
-                if (position > commitPosition.getWeak() || nowMs >= (timeOfLastLogUpdateMs + heartbeatIntervalMs))
+                for (final ClusterMember member : clusterMembers)
                 {
-                    for (final ClusterMember member : clusterMembers)
+                    if (member != thisMember)
                     {
-                        if (member != thisMember)
-                        {
-                            memberStatusPublisher.commitPosition(
-                                member.publication(), position, leadershipTermId, memberId, logSessionId);
-                        }
+                        memberStatusPublisher.commitPosition(
+                            member.publication(), position, leadershipTermId, memberId, logSessionId);
                     }
-
-                    commitPosition.setOrdered(position);
-                    timeOfLastLogUpdateMs = nowMs;
-
-                    workCount = 1;
                 }
-                break;
+
+                commitPosition.setOrdered(position);
+                timeOfLastLogUpdateMs = nowMs;
+
+                workCount = 1;
+            }
+        }
+        else if (Cluster.Role.FOLLOWER == role)
+        {
+            final long recordingPosition = logRecordingPosition.get();
+            if (recordingPosition != lastRecordingPosition)
+            {
+                final Publication publication = leaderMember.publication();
+                if (memberStatusPublisher.appendedPosition(
+                    publication, recordingPosition, leadershipTermId, memberId))
+                {
+                    lastRecordingPosition = recordingPosition;
+                }
+
+                workCount = 1;
             }
 
-            case FOLLOWER:
+            commitPosition.proposeMaxOrdered(logAdapter.position());
+
+            if (nowMs >= (timeOfLastLogUpdateMs + heartbeatTimeoutMs))
             {
-                final long recordingPosition = logRecordingPosition.get();
-                if (recordingPosition != lastRecordingPosition)
-                {
-                    final Publication publication = leaderMember.publication();
-                    if (memberStatusPublisher.appendedPosition(
-                        publication, recordingPosition, leadershipTermId, memberId))
-                    {
-                        lastRecordingPosition = recordingPosition;
-                    }
-
-                    workCount = 1;
-                }
-
-                commitPosition.proposeMaxOrdered(logAdapter.position());
-
-                if (nowMs >= (timeOfLastLogUpdateMs + heartbeatTimeoutMs))
-                {
-                    throw new AgentTerminationException("No heartbeat detected from cluster leader");
-                }
-                break;
+                throw new AgentTerminationException("No heartbeat detected from cluster leader");
             }
         }
 

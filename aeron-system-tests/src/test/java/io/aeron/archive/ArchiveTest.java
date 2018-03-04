@@ -599,32 +599,28 @@ public class ArchiveTest
 
     private void validateArchiveFile(final int messageCount, final long recordingId)
     {
-        remaining = totalDataLength;
         final File archiveDir = archive.context().archiveDir();
+        final Catalog catalog = archive.context().catalog();
+        remaining = totalDataLength;
+        this.messageCount = 0;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis))
+        try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
+            catalog,
+            catalog.recordingSummary(recordingId, new RecordingSummary()),
+            archiveDir,
+            AeronArchive.NULL_POSITION,
+            RecordingFragmentReader.NULL_LENGTH,
+            null))
         {
-            this.messageCount = 0;
-            remaining = totalDataLength;
-
-            try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
-                catalog,
-                catalog.recordingSummary(recordingId, new RecordingSummary()),
-                archiveDir,
-                AeronArchive.NULL_POSITION,
-                RecordingFragmentReader.NULL_LENGTH,
-                null))
+            while (!archiveDataFileReader.isDone())
             {
-                while (!archiveDataFileReader.isDone())
-                {
-                    archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
-                    SystemTest.checkInterruptedStatus();
-                }
+                archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
+                SystemTest.checkInterruptedStatus();
             }
-
-            assertThat(remaining, is(0L));
-            assertThat(this.messageCount, is(messageCount));
         }
+
+        assertThat(remaining, is(0L));
+        assertThat(this.messageCount, is(messageCount));
     }
 
     private boolean validateFragment1(final UnsafeBuffer buffer, final int offset, final int length)

@@ -122,8 +122,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.clusterRoleCounter = ctx.clusterNodeCounter();
         this.markFile = ctx.clusterMarkFile();
 
-        aeronClientInvoker = ctx.ownsAeronClient() ? ctx.aeron().conductorAgentInvoker() : null;
-        invokeAeronClient();
+        aeronClientInvoker = aeron.conductorAgentInvoker();
+        aeronClientInvoker.invoke();
 
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
         role(Cluster.Role.FOLLOWER);
@@ -707,7 +707,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         int workCount = 0;
 
         markFile.updateActivityTimestamp(nowMs);
-        workCount += invokeAeronClient();
+        workCount += aeronClientInvoker.invoke();
         workCount += serviceControlAdapter.poll();
 
         if (Cluster.Role.LEADER == role)
@@ -1421,14 +1421,14 @@ class SequencerAgent implements Agent, ServiceControlListener
     private void idle()
     {
         checkInterruptedStatus();
-        invokeAeronClient();
+        aeronClientInvoker.invoke();
         idleStrategy.idle();
     }
 
     private void idle(final int workCount)
     {
         checkInterruptedStatus();
-        invokeAeronClient();
+        aeronClientInvoker.invoke();
         idleStrategy.idle(workCount);
     }
 
@@ -1440,17 +1440,6 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-    private int invokeAeronClient()
-    {
-        int workCount = 0;
-
-        if (null != aeronClientInvoker)
-        {
-            workCount += aeronClientInvoker.invoke();
-        }
-
-        return workCount;
-    }
 
     private void takeSnapshot(final long timestampMs, final long termPosition)
     {
@@ -1523,7 +1512,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             }
         }
 
-        invokeAeronClient();
+        aeronClientInvoker.invoke();
 
         timerService.snapshot(snapshotTaker);
         snapshotTaker.sequencerState(nextSessionId);

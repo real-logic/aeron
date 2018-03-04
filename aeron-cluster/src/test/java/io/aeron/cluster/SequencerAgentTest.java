@@ -62,6 +62,7 @@ public class SequencerAgentTest
     @Before
     public void before()
     {
+        when(mockAeron.conductorAgentInvoker()).thenReturn(mock(AgentInvoker.class));
         when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
         when(mockLogPublisher.appendConnectedSession(any(), anyLong())).thenReturn(128L);
         when(mockLogPublisher.appendClusterAction(any(), anyLong(), anyLong(), anyLong())).thenReturn(TRUE);

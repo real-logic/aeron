@@ -85,7 +85,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         this.aeron = aeron;
         this.ctx = ctx;
 
-        aeronAgentInvoker = ctx.ownsAeronClient() ? aeron.conductorAgentInvoker() : null;
+        aeronAgentInvoker = aeron.conductorAgentInvoker();
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
         epochClock = ctx.epochClock();
         archiveDir = ctx.archiveDir();
@@ -154,7 +154,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         {
             cachedEpochClock.update(nowMs);
             markFile.updateActivityTimestamp(nowMs);
-            workCount += invokeClientConductor();
+            workCount += aeronAgentInvoker.invoke();
         }
 
         workCount += invokeDriverConductor();
@@ -165,11 +165,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     protected final int invokeDriverConductor()
     {
         return null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
-    }
-
-    private int invokeClientConductor()
-    {
-        return null != aeronAgentInvoker ? aeronAgentInvoker.invoke() : 0;
     }
 
     Catalog catalog()

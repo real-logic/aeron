@@ -34,6 +34,7 @@ import java.util.EnumSet;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.SPARSE;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
@@ -43,7 +44,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class LogBuffers implements AutoCloseable, ManagedResource
 {
-    private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
+    private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE, SPARSE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
     private long timeOfLastStateChangeNs;

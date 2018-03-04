@@ -371,7 +371,7 @@ public class Archive implements AutoCloseable
 
             if (null == aeron.conductorAgentInvoker())
             {
-                throw new IllegalStateException("Aeron client must conductor agent invoker");
+                throw new IllegalStateException("Aeron client must use conductor agent invoker");
             }
 
             Objects.requireNonNull(errorCounter, "Error counter must be supplied if aeron client is");

@@ -748,6 +748,11 @@ public class ConsensusModule implements AutoCloseable
                 }
             }
 
+            if (null == aeron.conductorAgentInvoker())
+            {
+                throw new IllegalStateException("Aeron client must use conductor agent invoker");
+            }
+
             if (null == errorCounter)
             {
                 throw new IllegalStateException("Error counter must be supplied if aeron client is");

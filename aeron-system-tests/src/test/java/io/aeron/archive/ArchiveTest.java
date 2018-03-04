@@ -16,7 +16,6 @@
 package io.aeron.archive;
 
 import io.aeron.*;
-import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveProxy;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.client.RecordingEventsAdapter;
@@ -45,6 +44,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.archive.TestUtil.awaitConnectedReply;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
@@ -100,7 +100,7 @@ public class ArchiveTest
     private long totalRecordingLength;
     private volatile long recorded;
     private long requestedStartPosition;
-    private volatile long stopPosition = -1;
+    private volatile long stopPosition = NULL_POSITION;
     private Throwable trackerError;
 
     private Subscription controlResponse;
@@ -309,6 +309,7 @@ public class ArchiveTest
         final int termBufferLength,
         final long startPosition)
     {
+        final MutableBoolean recordingStarted = new MutableBoolean();
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
@@ -324,12 +325,20 @@ public class ArchiveTest
                     assertThat(streamId0, is(PUBLISH_STREAM_ID));
                     assertThat(sessionId0, is(sessionId));
                     assertThat(startPosition0, is(startPosition));
+                    recordingStarted.set(true);
                 }
             },
             recordingEvents,
             1);
 
-        TestUtil.await(() -> recordingEventsAdapter.poll() != 0);
+        while (!recordingStarted.get())
+        {
+            if (recordingEventsAdapter.poll() == 0)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+        }
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
     }
@@ -358,9 +367,9 @@ public class ArchiveTest
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
-                public void onStop(final long rId, final long startPosition, final long stopPosition)
+                public void onStop(final long id, final long startPosition, final long stopPosition)
                 {
-                    assertThat(rId, is(recordingId));
+                    assertThat(id, is(recordingId));
                     recordingStopped.set(true);
                 }
             },
@@ -604,11 +613,17 @@ public class ArchiveTest
         remaining = totalDataLength;
         this.messageCount = 0;
 
+        while (catalog.stopPosition(recordingId) != stopPosition)
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
+
         try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
             catalog,
             catalog.recordingSummary(recordingId, new RecordingSummary()),
             archiveDir,
-            AeronArchive.NULL_POSITION,
+            NULL_POSITION,
             RecordingFragmentReader.NULL_LENGTH,
             null))
         {
@@ -678,7 +693,7 @@ public class ArchiveTest
                 {
                     recorded = 0;
 
-                    while (stopPosition == -1 || recorded < totalRecordingLength)
+                    while (stopPosition == NULL_POSITION || recorded < totalRecordingLength)
                     {
                         if (recordingEventsAdapter.poll() == 0)
                         {

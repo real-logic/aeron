@@ -467,7 +467,7 @@ class Catalog implements AutoCloseable
     {
         final int offset = recordingDescriptorOffset(recordingId) +
             RecordingDescriptorHeaderDecoder.BLOCK_LENGTH +
-            startPositionEncodingOffset();
+            stopPositionEncodingOffset();
 
         final long stopPosition = fieldAccessBuffer.getLongVolatile(offset);
 

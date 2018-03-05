@@ -35,9 +35,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.NoOpLock;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
@@ -46,6 +44,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class ClusterTest
 {
     private static final int MEMBER_COUNT = 3;

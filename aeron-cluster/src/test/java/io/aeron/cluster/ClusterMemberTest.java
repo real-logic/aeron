@@ -25,9 +25,9 @@ public class ClusterMemberTest
 {
     private final ClusterMember[] members = new ClusterMember[]
     {
-        new ClusterMember(0, "clientEndpoint", "memberEndpoint", "logEndpoint"),
-        new ClusterMember(1, "clientEndpoint", "memberEndpoint", "logEndpoint"),
-        new ClusterMember(2, "clientEndpoint", "memberEndpoint", "logEndpoint"),
+        new ClusterMember(0, "clientEndpoint", "memberEndpoint", "logEndpoint", "archiveEndpoint"),
+        new ClusterMember(1, "clientEndpoint", "memberEndpoint", "logEndpoint", "archiveEndpoint"),
+        new ClusterMember(2, "clientEndpoint", "memberEndpoint", "logEndpoint", "archiveEndpoint"),
     };
 
     private final long[] rankedPositions = new long[quorumThreshold(members.length)];

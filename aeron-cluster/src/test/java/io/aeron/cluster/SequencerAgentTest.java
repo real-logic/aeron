@@ -15,13 +15,20 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ConcurrentPublication;
+import io.aeron.Counter;
+import io.aeron.Subscription;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.status.ReadableCounter;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.NoOpIdleStrategy;
+import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,7 +64,8 @@ public class SequencerAgentTest
         .clusterMemberId(0)
         .epochClock(new SystemEpochClock())
         .authenticatorSupplier(new DefaultAuthenticatorSupplier())
-        .clusterMarkFile(mock(ClusterMarkFile.class));
+        .clusterMarkFile(mock(ClusterMarkFile.class))
+        .archiveContext(new AeronArchive.Context());
 
     @Before
     public void before()

@@ -36,6 +36,7 @@ public final class ClusterMember
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
+    private final String archiveEndpoint;
     private Publication publication;
 
     /**
@@ -45,17 +46,20 @@ public final class ClusterMember
      * @param clientFacingEndpoint address and port endpoint to which cluster clients connect.
      * @param memberFacingEndpoint address and port endpoint to which other cluster members connect.
      * @param logEndpoint          address and port endpoint to which the log is replicated.
+     * @param archiveEndpoint      address and port endpoint to which the archive control channel can be reached.
      */
     public ClusterMember(
         final int id,
         final String clientFacingEndpoint,
         final String memberFacingEndpoint,
-        final String logEndpoint)
+        final String logEndpoint,
+        final String archiveEndpoint)
     {
         this.id = id;
         this.clientFacingEndpoint = clientFacingEndpoint;
         this.memberFacingEndpoint = memberFacingEndpoint;
         this.logEndpoint = logEndpoint;
+        this.archiveEndpoint = archiveEndpoint;
     }
 
     /**
@@ -159,6 +163,16 @@ public final class ClusterMember
     }
 
     /**
+     * The address:port endpoint for this cluster member that the archive can be reached.
+     *
+     * @return the address:port endpoint for this cluster member that the archive can be reached.
+     */
+    public String archiveEndpoint()
+    {
+        return archiveEndpoint;
+    }
+
+    /**
      * The {@link Publication} used for send status updates to the member.
      *
      * @return {@link Publication} used for send status updates to the member.
@@ -182,7 +196,7 @@ public final class ClusterMember
      * Parse the details for a cluster members from a string.
      * <p>
      * <code>
-     * 0,client-facing:port,member-facing:port,log:port|1,client-facing:port,member-facing:port,log:port| ...
+     * 0,client-facing:port,member-facing:port,log:port,archive:port|1,...
      * </code>
      *
      * @param value of the string to be parsed.
@@ -197,7 +211,7 @@ public final class ClusterMember
         for (int i = 0; i < length; i++)
         {
             final String[] memberAttributes = memberValues[i].split(",");
-            if (memberAttributes.length != 4)
+            if (memberAttributes.length != 5)
             {
                 throw new IllegalStateException("Invalid member value: " + memberValues[i]);
             }
@@ -206,7 +220,8 @@ public final class ClusterMember
                 Integer.parseInt(memberAttributes[0]),
                 memberAttributes[1],
                 memberAttributes[2],
-                memberAttributes[3]);
+                memberAttributes[3],
+                memberAttributes[4]);
         }
 
         return members;

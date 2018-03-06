@@ -54,6 +54,10 @@ public class ClusterTest
     private static final String CLUSTER_MEMBERS = clusterMembersString();
     private static final String LOG_CHANNEL =
         "aeron:udp?term-length=64k|control-mode=manual|control=localhost:55550";
+    private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
+        "aeron:udp?term-length=64k|endpoint=localhost:8010";
+    private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
+        "aeron:udp?term-length=64k|endpoint=localhost:8020";
 
     private final CountDownLatch latch = new CountDownLatch(MEMBER_COUNT);
 
@@ -74,9 +78,9 @@ public class ClusterTest
             final String baseDirName = aeronDirName + "-" + i;
 
             final AeronArchive.Context archiveCtx = new AeronArchive.Context()
-                .controlRequestChannel("aeron:ipc?term-length=64k")
+                .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, i))
                 .controlRequestStreamId(100 + i)
-                .controlResponseChannel("aeron:ipc?term-length=64k")
+                .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, i))
                 .controlResponseStreamId(110 + i)
                 .aeronDirectoryName(baseDirName);
 
@@ -90,9 +94,10 @@ public class ClusterTest
                 new Archive.Context()
                     .aeronDirectoryName(baseDirName)
                     .archiveDir(new File(baseDirName, "archive"))
-                    .controlChannel(memberSpecificPort(AeronArchive.Configuration.controlChannel(), i))
+                    .controlChannel(archiveCtx.controlRequestChannel())
+                    .controlStreamId(archiveCtx.controlRequestStreamId())
+                    .localControlChannel("aeron:ipc?term-length=64k")
                     .localControlStreamId(archiveCtx.controlRequestStreamId())
-                    .localControlChannel(archiveCtx.controlRequestChannel())
                     .threadingMode(ArchiveThreadingMode.SHARED)
                     .deleteArchiveOnStart(true),
                 new ConsensusModule.Context()
@@ -204,7 +209,8 @@ public class ClusterTest
                 .append(i).append(',')
                 .append("localhost:2011").append(i).append(',')
                 .append("localhost:2022").append(i).append(',')
-                .append("localhost:2033").append(i).append('|');
+                .append("localhost:2033").append(i).append(',')
+                .append("localhost:801").append(i).append('|');
         }
 
         builder.setLength(builder.length() - 1);

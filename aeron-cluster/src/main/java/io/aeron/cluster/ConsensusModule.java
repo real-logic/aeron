@@ -251,7 +251,8 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Default property for the list of cluster member endpoints.
          */
-        public static final String CLUSTER_MEMBERS_DEFAULT = "0,localhost:10000,localhost:20000,localhost:30000";
+        public static final String CLUSTER_MEMBERS_DEFAULT =
+            "0,localhost:10000,localhost:20000,localhost:30000,localhost:40000";
 
         /**
          * Channel for the clustered log.

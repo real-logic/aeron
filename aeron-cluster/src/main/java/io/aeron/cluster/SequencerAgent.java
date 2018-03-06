@@ -147,6 +147,10 @@ class SequencerAgent implements Agent, ServiceControlListener
         ingressAdapter = new IngressAdapter(
             aeron.addSubscription(ingressUri.toString(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
 
+        final ChannelUri archiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
+        archiveUri.put(ENDPOINT_PARAM_NAME, thisMember.archiveEndpoint());
+        ctx.archiveContext().controlRequestChannel(archiveUri.toString());
+
         serviceControlAdapter = new ServiceControlAdapter(
             aeron.addSubscription(ctx.serviceControlChannel(), ctx.serviceControlStreamId()), this);
         serviceControlPublisher = new ServiceControlPublisher(

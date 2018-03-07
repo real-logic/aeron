@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,10 @@ public class AeronClient implements DriverManagedResource
         this.clientId = clientId;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
         this.timeOfLastKeepaliveNs = nowNs;
+    }
+
+    public void close()
+    {
     }
 
     public long clientId()
@@ -63,20 +67,5 @@ public class AeronClient implements DriverManagedResource
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;
-    }
-
-    public void timeOfLastStateChange(final long timeNs)
-    {
-        timeOfLastKeepaliveNs = timeNs;
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return timeOfLastKeepaliveNs;
-    }
-
-    public void delete()
-    {
-        // nothing to do
     }
 }

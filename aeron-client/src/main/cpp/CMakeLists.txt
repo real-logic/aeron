@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2017 Real Logic Ltd.
+# Copyright 2014-2018 Real Logic Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ SET(HEADERS
     concurrent/CountersManager.h
     concurrent/CountersReader.h
     concurrent/SleepingIdleStrategy.h
+    concurrent/YieldingIdleStrategy.h
     concurrent/atomic/Atomic64_gcc_cpp11.h
     concurrent/atomic/Atomic64_gcc_x86_64.h
     concurrent/atomic/Atomic64_msvc.h

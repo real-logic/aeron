@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,31 +15,74 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.Publication;
+import io.aeron.cluster.codecs.CloseReason;
 import org.agrona.CloseHelper;
+import org.agrona.collections.ArrayUtil;
+
+import java.util.Arrays;
+
+import static io.aeron.cluster.ClusterSession.Capability.NONE;
 
 class ClusterSession implements AutoCloseable
 {
+    public static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
+    public static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
+    public static final int MAX_ADMIN_RESPONSE_DATA_LENGTH = 4 * 1024;
+
     enum State
     {
-        INIT, CONNECTED, OPEN, TIMED_OUT, CLOSED
+        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSED
+    }
+
+    /**
+     * What a client is capable of doing.
+     */
+    enum Capability
+    {
+        /**
+         * No capability.
+         */
+        NONE,
+
+        /**
+         * Client can send/receive to/from cluster and can act as a normal client. Can not query endpoints and
+         * recording log
+         */
+        CLIENT_ONLY,
+
+        /**
+         * Client can send/receive to/from cluster and can query cluster endpoints and recording log.
+         * Normally reserved for cluster members only.
+         */
+        CLIENT_PLUS_QUERY
     }
 
     private long timeOfLastActivityMs;
     private long lastCorrelationId;
+    private long openedTermPosition = Long.MAX_VALUE;
     private final long id;
-    private final Publication responsePublication;
+    private final int responseStreamId;
+    private final String responseChannel;
+    private Publication responsePublication;
     private State state = State.INIT;
+    private CloseReason closeReason = CloseReason.NULL_VAL;
+    private byte[] encodedPrincipal = NULL_PRINCIPAL;
+    private byte[] adminResponseData;
+    private Capability capability = NONE;
 
-    ClusterSession(final long sessionId, final Publication responsePublication)
+    ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
     {
         this.id = sessionId;
-        this.responsePublication = responsePublication;
+        this.responseStreamId = responseStreamId;
+        this.responseChannel = responseChannel;
     }
 
     public void close()
     {
         CloseHelper.close(responsePublication);
+        responsePublication = null;
         state = State.CLOSED;
     }
 
@@ -48,9 +91,44 @@ class ClusterSession implements AutoCloseable
         return id;
     }
 
+    int responseStreamId()
+    {
+        return responseStreamId;
+    }
+
+    String responseChannel()
+    {
+        return responseChannel;
+    }
+
+    void closeReason(final CloseReason closeReason)
+    {
+        this.closeReason = closeReason;
+    }
+
+    CloseReason closeReason()
+    {
+        return closeReason;
+    }
+
+    void connect(final Aeron aeron)
+    {
+        if (null != responsePublication)
+        {
+            throw new IllegalStateException("Response publication already present");
+        }
+
+        responsePublication = aeron.addPublication(responseChannel, responseStreamId);
+    }
+
     Publication responsePublication()
     {
         return responsePublication;
+    }
+
+    boolean isResponsePublicationConnected()
+    {
+        return null != responsePublication && responsePublication.isConnected();
     }
 
     State state()
@@ -61,6 +139,34 @@ class ClusterSession implements AutoCloseable
     void state(final State state)
     {
         this.state = state;
+    }
+
+    Capability capability()
+    {
+        return capability;
+    }
+
+    void authenticate(final byte[] encodedPrincipal, final Capability capability)
+    {
+        if (encodedPrincipal != null)
+        {
+            this.encodedPrincipal = encodedPrincipal;
+        }
+
+        this.state = State.AUTHENTICATED;
+        this.capability = capability;
+    }
+
+    void open(final long openedTermPosition)
+    {
+        this.openedTermPosition = openedTermPosition;
+        this.state = State.OPEN;
+        encodedPrincipal = null;
+    }
+
+    byte[] encodedPrincipal()
+    {
+        return encodedPrincipal;
     }
 
     void lastActivity(final long timeMs, final long correlationId)
@@ -84,9 +190,44 @@ class ClusterSession implements AutoCloseable
         return lastCorrelationId;
     }
 
-    void lastCorrelationId(final long correlationId)
+    long openedTermPosition()
     {
-        lastCorrelationId = correlationId;
+        return openedTermPosition;
+    }
+
+    void adminResponseData(final byte[] responseData)
+    {
+        this.adminResponseData = responseData;
+    }
+
+    byte[] adminResponseData()
+    {
+        return adminResponseData;
+    }
+
+    static void checkEncodedPrincipalLength(final byte[] encodedPrincipal)
+    {
+        if (null != encodedPrincipal && encodedPrincipal.length > MAX_ENCODED_PRINCIPAL_LENGTH)
+        {
+            throw new IllegalArgumentException(
+                "Encoded Principal max length " +
+                MAX_ENCODED_PRINCIPAL_LENGTH +
+                " exceeded: length=" +
+                encodedPrincipal.length);
+        }
+    }
+
+    static void checkAdminResponseDataLength(final byte[] adminResponseData)
+    {
+        if (null != adminResponseData &&
+            adminResponseData.length > MAX_ADMIN_RESPONSE_DATA_LENGTH)
+        {
+            throw new IllegalArgumentException(
+                "Admin Response data max length " +
+                MAX_ADMIN_RESPONSE_DATA_LENGTH +
+                " exceeded: length=" +
+                adminResponseData.length);
+        }
     }
 
     public String toString()
@@ -95,8 +236,12 @@ class ClusterSession implements AutoCloseable
             "id=" + id +
             ", timeOfLastActivityMs=" + timeOfLastActivityMs +
             ", lastCorrelationId=" + lastCorrelationId +
-            ", responsePublication=" + responsePublication +
+            ", openedTermPosition=" + openedTermPosition +
+            ", responseStreamId=" + responseStreamId +
+            ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +
+            ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
+            ", adminResponseData=" + Arrays.toString(adminResponseData) +
             '}';
     }
 }

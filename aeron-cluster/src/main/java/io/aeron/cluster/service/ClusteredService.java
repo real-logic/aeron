@@ -1,5 +1,5 @@
 /*
- *  Copyright 2017 Real Logic Ltd.
+ *  Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
@@ -25,7 +27,8 @@ import org.agrona.DirectBuffer;
 public interface ClusteredService
 {
     /**
-     * Start event for the service.
+     * Start event for the service where the service can perform any initialisation required. This will be called
+     * before any snapshot or logs are replayed.
      *
      * @param cluster with which the service can interact.
      */
@@ -34,8 +37,8 @@ public interface ClusteredService
     /**
      * A session has been opened for a client to the cluster.
      *
-     * @param session     for the client which have been opened.
-     * @param timestampMs at which the session was opened.
+     * @param session       for the client which have been opened.
+     * @param timestampMs   at which the session was opened.
      */
     void onSessionOpen(ClientSession session, long timestampMs);
 
@@ -75,4 +78,46 @@ public interface ClusteredService
      * @param timestampMs   at which the timer expired.
      */
     void onTimerEvent(long correlationId, long timestampMs);
+
+    /**
+     * The service should take a snapshot and store its state to the provided archive {@link Publication}.
+     * <p>
+     * <b>Note:</b> As this is a potentially long running operation the implementation should occasional call
+     * {@link Thread#isInterrupted()} and if true then throw an {@link InterruptedException} or
+     * {@link org.agrona.concurrent.AgentTerminationException}.
+     *
+     * @param snapshotPublication to which the state should be recorded.
+     */
+    void onTakeSnapshot(Publication snapshotPublication);
+
+    /**
+     * The service should load its state from a stored snapshot in the provided archived {@link Image}.
+     * <p>
+     * <b>Note:</b> As this is a potentially long running operation the implementation should occasional call
+     * {@link Thread#isInterrupted()} and if true then throw an {@link InterruptedException} or
+     * {@link org.agrona.concurrent.AgentTerminationException}.
+     *
+     * @param snapshotImage to which the service should store its state.
+     */
+    void onLoadSnapshot(Image snapshotImage);
+
+    /**
+     * Notify the service that a replay of existing logs is about to begin.
+     */
+    void onReplayBegin();
+
+    /**
+     * Notify the service that a replay of existing logs has ended so that it can check external state is consistent.
+     * <p>
+     * If the service is in an invalid state and wished to terminate operation it can throw a
+     * {@link org.agrona.concurrent.AgentTerminationException}.
+     */
+    void onReplayEnd();
+
+    /**
+     * Notify that the cluster node has changed role.
+     *
+     * @param newRole that the node has assumed.
+     */
+    void onRoleChange(Cluster.Role newRole);
 }

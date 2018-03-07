@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,14 @@
  */
 package io.aeron;
 
+import org.agrona.LangUtil;
+
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 
-public class SystemTestHelper
+import static org.junit.Assert.fail;
+
+public class SystemTest
 {
     /**
      * Execute a task until a condition is satisfied, or a maximum number of iterations, or a timeout is reached.
@@ -40,6 +44,7 @@ public class SystemTestHelper
 
         do
         {
+            checkInterruptedStatus();
             iterationConsumer.accept(i);
             nowNs = System.nanoTime();
         }
@@ -55,5 +60,36 @@ public class SystemTestHelper
     public static String spyForChannel(final String channel)
     {
         return CommonContext.SPY_PREFIX + channel;
+    }
+
+    /**
+     * Check if the interrupt flag has been set on the current thread and fail the test if it has.
+     * <p>
+     * This is useful for terminating tests stuck in a loop on timeout otherwise JUnit will proceed to the next test
+     * and leave the thread spinning and consuming CPU resource.
+     */
+    public static void checkInterruptedStatus()
+    {
+        if (Thread.currentThread().isInterrupted())
+        {
+            fail("Unexpected interrupt - Test likely to have timed out");
+        }
+    }
+
+    /**
+     * Same as {@link Thread#sleep(long)} but without the checked exception.
+     *
+     * @param durationMs to sleep.
+     */
+    public static void sleep(final long durationMs)
+    {
+        try
+        {
+            Thread.sleep(durationMs);
+        }
+        catch (final InterruptedException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 }

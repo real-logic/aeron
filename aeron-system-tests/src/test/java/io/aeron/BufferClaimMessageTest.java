@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,10 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.CloseHelper;
+import org.agrona.collections.MutableBoolean;
+import org.agrona.collections.MutableInteger;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -24,15 +28,12 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.*;
 
 @RunWith(Theories.class)
 public class BufferClaimMessageTest
@@ -43,30 +44,42 @@ public class BufferClaimMessageTest
     @DataPoint
     public static final String IPC_CHANNEL = CommonContext.IPC_CHANNEL;
 
-    public static final int STREAM_ID = 1;
-    public static final int FRAGMENT_COUNT_LIMIT = 10;
-    public static final int MESSAGE_LENGTH = 200;
+    private static final int STREAM_ID = 1;
+    private static final int FRAGMENT_COUNT_LIMIT = 10;
+    private static final int MESSAGE_LENGTH = 200;
 
-    private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
+        .threadingMode(ThreadingMode.SHARED));
+
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessageWithInterleavedAbort(final String channel)
     {
+        final MutableInteger fragmentCount = new MutableInteger();
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;
+
         final BufferClaim bufferClaim = new BufferClaim();
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .threadingMode(ThreadingMode.SHARED);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect();
-             Publication publication = aeron.addPublication(channel, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+        try (Publication publication = aeron.addPublication(channel, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
         {
             publishMessage(srcBuffer, publication);
 
             while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -78,9 +91,10 @@ public class BufferClaimMessageTest
             int numFragments = 0;
             do
             {
-                final int fragments = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
 
@@ -88,29 +102,22 @@ public class BufferClaimMessageTest
             }
             while (numFragments < expectedNumberOfFragments);
 
-            verify(mockFragmentHandler, times(expectedNumberOfFragments)).onFragment(
-                any(DirectBuffer.class), anyInt(), eq(MESSAGE_LENGTH), any(Header.class));
-        }
-        finally
-        {
-            ctx.deleteAeronDirectory();
+            assertThat(fragmentCount.value, is(expectedNumberOfFragments));
         }
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldTransferReservedValue(final String channel)
     {
         final BufferClaim bufferClaim = new BufferClaim();
-        final MediaDriver.Context ctx = new MediaDriver.Context();
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect();
-             Publication publication = aeron.addPublication(channel, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+        try (Publication publication = aeron.addPublication(channel, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
         {
             while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -118,23 +125,25 @@ public class BufferClaimMessageTest
             bufferClaim.reservedValue(reservedValue);
             bufferClaim.commit();
 
-            final boolean[] done = new boolean[1];
-            while (!done[0])
+            final MutableBoolean done = new MutableBoolean();
+            while (!done.get())
             {
-                subscription.poll(
+                final int fragments = subscription.poll(
                     (buffer, offset, length, header) ->
                     {
                         assertThat(length, is(MESSAGE_LENGTH));
                         assertThat(header.reservedValue(), is(reservedValue));
 
-                        done[0] = true;
+                        done.value = true;
                     },
                     FRAGMENT_COUNT_LIMIT);
+
+                if (0 == fragments)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
             }
-        }
-        finally
-        {
-            ctx.deleteAeronDirectory();
         }
     }
 
@@ -142,6 +151,7 @@ public class BufferClaimMessageTest
     {
         while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }

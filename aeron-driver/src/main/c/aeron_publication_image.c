@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,7 +137,6 @@ int aeron_publication_image_create(
     _image->conductor_fields.managed_resource.clientd = _image;
     _image->conductor_fields.managed_resource.incref = NULL;
     _image->conductor_fields.managed_resource.decref = NULL;
-    _image->conductor_fields.has_reached_end_of_life = false;
     _image->conductor_fields.is_reliable = is_reliable;
     _image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_ACTIVE;
     _image->conductor_fields.liveness_timeout_ns = context->image_liveness_timeout_ns;
@@ -153,6 +152,7 @@ int aeron_publication_image_create(
     _image->mtu_length = sender_mtu_length;
     _image->last_sm_change_number = -1;
     _image->last_loss_change_number = -1;
+    _image->is_end_of_stream = false;
 
     memcpy(&_image->control_address, control_address, sizeof(_image->control_address));
     memcpy(&_image->source_address, source_address, sizeof(_image->source_address));
@@ -359,8 +359,9 @@ int aeron_publication_image_insert_packet(
     {
         if (is_heartbeat)
         {
-            if (aeron_publication_image_is_end_of_stream(buffer, length))
+            if (!image->is_end_of_stream && aeron_publication_image_is_end_of_stream(buffer, length))
             {
+                AERON_PUT_ORDERED(image->is_end_of_stream, true);
                 AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position, packet_position);
             }
 
@@ -374,7 +375,8 @@ int aeron_publication_image_insert_packet(
             aeron_term_rebuilder_insert(term_buffer + term_offset, buffer, length);
         }
 
-        aeron_publication_image_hwm_candidate(image, proposed_position);
+        AERON_PUT_ORDERED(image->last_packet_timestamp_ns, image->nano_clock());
+        aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
     }
 
     return (int)length;
@@ -522,9 +524,14 @@ void aeron_publication_image_on_time_event(
         {
             int64_t last_packet_timestamp_ns;
             AERON_GET_VOLATILE(last_packet_timestamp_ns, image->last_packet_timestamp_ns);
+            bool is_end_of_stream;
+            AERON_GET_VOLATILE(is_end_of_stream, image->is_end_of_stream);
 
             if (0 == image->conductor_fields.subscribable.length ||
-                now_ns > (last_packet_timestamp_ns + image->conductor_fields.liveness_timeout_ns))
+                now_ns > (last_packet_timestamp_ns + image->conductor_fields.liveness_timeout_ns) ||
+                (is_end_of_stream &&
+                    aeron_counter_get(image->rcv_pos_position.value_addr) >=
+                        aeron_counter_get_volatile(image->rcv_hwm_position.value_addr)))
             {
                 image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_INACTIVE;
                 image->conductor_fields.time_of_last_status_change_ns = now_ns;
@@ -552,10 +559,13 @@ void aeron_publication_image_on_time_event(
         {
             if (now_ns > (image->conductor_fields.time_of_last_status_change_ns + image->conductor_fields.liveness_timeout_ns))
             {
-                image->conductor_fields.has_reached_end_of_life = true;
+                image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_DONE;
             }
             break;
         }
+
+        default:
+            break;
     }
 }
 
@@ -565,7 +575,6 @@ extern bool aeron_publication_image_is_flow_control_under_run(
     aeron_publication_image_t *image, int64_t window_position, int64_t packet_position);
 extern bool aeron_publication_image_is_flow_control_over_run(
     aeron_publication_image_t *image, int64_t window_position, int64_t proposed_position);
-extern void aeron_publication_image_hwm_candidate(aeron_publication_image_t *image, int64_t proposed_position);
 extern void aeron_publication_image_schedule_status_message(
     aeron_publication_image_t *image, int64_t now_ns, int64_t sm_position, int32_t window_length);
 extern bool aeron_publication_image_is_drained(aeron_publication_image_t *image);

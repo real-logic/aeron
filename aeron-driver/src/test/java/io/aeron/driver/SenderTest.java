@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,40 +17,42 @@ package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.cmd.NewPublicationCmd;
-import io.aeron.driver.media.UdpChannel;
-import io.aeron.driver.status.SystemCounters;
-import io.aeron.protocol.StatusMessageFlyweight;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.stubbing.Answer;
 import io.aeron.driver.cmd.SenderCmd;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.driver.media.UdpChannel;
+import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.HeaderWriter;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermAppender;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
+import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
+import static org.agrona.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.*;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static org.agrona.BitUtil.align;
 
 public class SenderTest
 {
@@ -89,7 +91,7 @@ public class SenderTest
     private final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue =
         new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
 
-    private final HeaderWriter headerWriter = new HeaderWriter(HEADER);
+    private final HeaderWriter headerWriter = HeaderWriter.newInstance(HEADER);
 
     private Answer<Integer> saveByteBufferAnswer =
         (invocation) ->
@@ -112,8 +114,13 @@ public class SenderTest
         when(mockSendChannelEndpoint.send(any())).thenAnswer(saveByteBufferAnswer);
         when(mockSystemCounters.get(any())).thenReturn(mock(AtomicCounter.class));
 
+        final CachedNanoClock mockCachedNanoClock = mock(CachedNanoClock.class);
+        when(mockCachedNanoClock.nanoTime()).thenAnswer((invocation) -> currentTimestamp);
+
         sender = new Sender(
             new MediaDriver.Context()
+                .cachedEpochClock(new CachedEpochClock())
+                .cachedNanoClock(mockCachedNanoClock)
                 .controlTransportPoller(mockTransportPoller)
                 .systemCounters(mockSystemCounters)
                 .senderCommandQueue(senderCommandQueue)
@@ -145,6 +152,7 @@ public class SenderTest
             new NetworkPublicationThreadLocals(),
             Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS,
             Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS,
+            Configuration.PUBLICATION_LINGER_NS,
             false,
             false);
 

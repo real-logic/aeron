@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,9 @@ int aeron_driver_sender_init(
             context->mtu_length,
             AERON_CACHE_LINE_LENGTH * 2) < 0)
         {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             return -1;
         }
 

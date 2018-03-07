@@ -25,7 +25,7 @@ public class ListRecordingsForUriSessionTest
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private long[] matchingRecordingIds = new long[3];
-    private final File archiveDir = TestUtil.makeTempDir();
+    private final File archiveDir = TestUtil.makeTestDirectory();
     private final EpochClock clock = mock(EpochClock.class);
 
     private Catalog catalog;
@@ -38,21 +38,21 @@ public class ListRecordingsForUriSessionTest
     {
         catalog = new Catalog(archiveDir, null, 0, clock);
         matchingRecordingIds[0] = catalog.addNewRecording(
-            0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channel", "channelA?tag=f", "sourceA");
+            0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "localhost", "localhost?tag=f", "sourceA");
         catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 7, 1, "channelA", "channel?tag=f", "sourceV");
         matchingRecordingIds[1] = catalog.addNewRecording(
-            0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 1, "channel", "channel?tag=f", "sourceB");
+            0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 1, "localhost", "localhost?tag=f", "sourceB");
         catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 1, "channelB", "channelB?tag=f", "sourceB");
         matchingRecordingIds[2] = catalog.addNewRecording(
-            0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 1, "channel", "channel?tag=f", "sourceB");
+            0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 1, "localhost", "localhost?tag=f", "sourceB");
     }
 
     @After
     public void after()
     {
-        CloseHelper.quietClose(catalog);
+        CloseHelper.close(catalog);
         IoUtil.delete(archiveDir, false);
     }
 
@@ -63,7 +63,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             0,
             3,
-            "channel",
+            "localhost",
             1,
             catalog,
             controlResponseProxy,
@@ -89,7 +89,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             fromRecordingId,
             2,
-            "channel",
+            "localhost",
             1,
             catalog,
             controlResponseProxy,
@@ -115,7 +115,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             fromRecordingId,
             1,
-            "channel",
+            "localhost",
             1,
             catalog,
             controlResponseProxy,
@@ -146,7 +146,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             0,
             3,
-            "channel",
+            "localhost",
             1,
             catalog,
             controlResponseProxy,
@@ -173,7 +173,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             1,
             5,
-            "channel",
+            "localhost",
             1,
             catalog,
             controlResponseProxy,
@@ -224,7 +224,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             5,
             3,
-            "channel",
+            "localhost",
             1,
             catalog,
             controlResponseProxy,

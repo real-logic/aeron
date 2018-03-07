@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,11 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
-import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableInteger;
 import org.junit.After;
 import org.junit.Test;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -30,16 +29,14 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.mockito.Mockito.*;
 
-/**
- * Tests requiring multiple embedded drivers
- */
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 public class MultiDriverTest
 {
-    public static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
+    private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
 
     private static final int STREAM_ID = 1;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
@@ -59,9 +56,12 @@ public class MultiDriverTest
     private Subscription subscriptionA;
     private Subscription subscriptionB;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
-    private FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+
+    private final MutableInteger fragmentCountA = new MutableInteger();
+    private final FragmentHandler fragmentHandlerA = (buffer1, offset, length, header) -> fragmentCountA.value++;
+    private final MutableInteger fragmentCountB = new MutableInteger();
+    private final FragmentHandler fragmentHandlerB = (buffer1, offset, length, header) -> fragmentCountB.value++;
 
     private void launch()
     {
@@ -71,11 +71,13 @@ public class MultiDriverTest
         buffer.putInt(0, 1);
 
         final MediaDriver.Context driverAContext = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .threadingMode(THREADING_MODE);
 
         final MediaDriver.Context driverBContext = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .threadingMode(THREADING_MODE);
@@ -87,7 +89,7 @@ public class MultiDriverTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
         publication.close();
         subscriptionA.close();
@@ -101,8 +103,8 @@ public class MultiDriverTest
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 
-    @Test(timeout = 10000)
-    public void shouldSpinUpAndShutdown() throws Exception
+    @Test(timeout = 10_000)
+    public void shouldSpinUpAndShutdown()
     {
         launch();
 
@@ -112,11 +114,12 @@ public class MultiDriverTest
 
         while (!subscriptionA.isConnected() && !subscriptionB.isConnected())
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldJoinExistingStreamWithLockStepSendingReceiving() throws Exception
     {
         final int numMessagesToSendPreJoin = NUM_MESSAGES_PER_TERM / 2;
@@ -131,15 +134,16 @@ public class MultiDriverTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
-            SystemTestHelper.executeUntil(
+            final MutableInteger fragmentsRead = new MutableInteger();
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.getAndAdd(subscriptionA.poll(fragmentHandlerA, 10));
+                    fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -155,46 +159,38 @@ public class MultiDriverTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
-            SystemTestHelper.executeUntil(
+            final MutableInteger fragmentsRead = new MutableInteger();
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscriptionA.poll(fragmentHandlerA, 10));
+                    fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
 
             fragmentsRead.set(0);
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
+                    fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(fragmentHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerB, times(numMessagesToSendPostJoin)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        assertThat(fragmentCountA.value, is(numMessagesToSendPreJoin + numMessagesToSendPostJoin));
+        assertThat(fragmentCountB.value, is(numMessagesToSendPostJoin));
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldJoinExistingIdleStreamWithLockStepSendingReceiving() throws Exception
     {
         final int numMessagesToSendPreJoin = 0;
@@ -207,6 +203,7 @@ public class MultiDriverTest
 
         while (!publication.isConnected() && !subscriptionA.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -219,42 +216,34 @@ public class MultiDriverTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
-            SystemTestHelper.executeUntil(
+            final MutableInteger fragmentsRead = new MutableInteger();
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscriptionA.poll(fragmentHandlerA, 10));
+                    fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
 
             fragmentsRead.set(0);
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
-                    fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
+                    fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(fragmentHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerB, times(numMessagesToSendPostJoin)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        assertThat(fragmentCountA.value, is(numMessagesToSendPreJoin + numMessagesToSendPostJoin));
+        assertThat(fragmentCountB.value, is(numMessagesToSendPostJoin));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
 
-@FunctionalInterface
-public interface IngressAdapterSupplier
+#ifndef AERON_YIELDING_IDLE_STRATEGY_H
+#define AERON_YIELDING_IDLE_STRATEGY_H
+
+#include <thread>
+
+namespace aeron { namespace concurrent {
+
+class YieldingIdleStrategy
 {
-    IngressAdapter newIngressAdapter(SequencerAgent sequencerAgent);
-}
+public:
+    YieldingIdleStrategy()
+    {
+    }
+
+    inline void idle(int workCount)
+    {
+        if (workCount > 0)
+        {
+            return;
+        }
+
+        std::this_thread::yield();
+    }
+
+    inline void idle()
+    {
+        std::this_thread::yield();
+    }
+
+private:
+};
+
+}}
+
+#endif

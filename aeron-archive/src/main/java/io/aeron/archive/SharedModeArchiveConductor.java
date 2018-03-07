@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -53,13 +53,17 @@ final class SharedModeArchiveConductor extends ArchiveConductor
 
     protected int preWork()
     {
-        return super.preWork() + replayerAgentInvoker.invoke() + recorderAgentInvoker.invoke();
+        return super.preWork() +
+            replayerAgentInvoker.invoke() +
+            invokeDriverConductor() +
+            recorderAgentInvoker.invoke() +
+            invokeDriverConductor();
     }
 
     protected void closeSessionWorkers()
     {
-        CloseHelper.quietClose(recorderAgentInvoker);
-        CloseHelper.quietClose(replayerAgentInvoker);
+        CloseHelper.close(recorderAgentInvoker);
+        CloseHelper.close(replayerAgentInvoker);
     }
 
     private class SharedModeRecorder extends SessionWorker<RecordingSession>

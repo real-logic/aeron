@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ import io.aeron.driver.*;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.*;
 import org.agrona.LangUtil;
+import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
+import org.agrona.collections.Long2LongCounterMap;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -49,9 +51,9 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter possibleTtlAsymmetry;
     private final AtomicCounter statusIndicator;
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
+    private final Long2LongCounterMap refCountByStreamIdAndSessionIdMap = new Long2LongCounterMap(0);
 
     private final long receiverId;
-    private boolean isClosed = false;
 
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
@@ -95,7 +97,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         int bytesSent = 0;
         try
         {
-            bytesSent = sendDatagramChannel.send(buffer, remoteAddress);
+            if (null != sendDatagramChannel)
+            {
+                bytesSent = sendDatagramChannel.send(buffer, remoteAddress);
+            }
         }
         catch (final IOException ex)
         {
@@ -134,12 +139,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             statusIndicator.setOrdered(ChannelEndpointStatus.CLOSING);
             statusIndicator.close();
         }
-    }
-
-    public void close()
-    {
-        super.close();
-        isClosed = true;
     }
 
     public void openChannel(final DriverConductorProxy conductorProxy)
@@ -185,14 +184,37 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return count;
     }
 
+    public long incRefToStreamAndSession(final int streamId, final int sessionId)
+    {
+        return refCountByStreamIdAndSessionIdMap.incrementAndGet(Hashing.compoundKey(streamId, sessionId));
+    }
+
+    public long decRefToStreamAndSession(final int streamId, final int sessionId)
+    {
+        final long key = Hashing.compoundKey(streamId, sessionId);
+
+        final long count = refCountByStreamIdAndSessionIdMap.decrementAndGet(key);
+
+        if (-1 == count)
+        {
+            refCountByStreamIdAndSessionIdMap.remove(key);
+            throw new IllegalStateException(
+                "Could not find stream Id + session Id to decrement: " + streamId + " " + sessionId);
+        }
+
+        return count;
+    }
+
     public int streamCount()
     {
-        return refCountByStreamIdMap.size();
+        return refCountByStreamIdMap.size() + refCountByStreamIdAndSessionIdMap.size();
     }
 
     public boolean shouldBeClosed()
     {
-        return refCountByStreamIdMap.isEmpty() && !statusIndicator.isClosed();
+        return refCountByStreamIdMap.isEmpty() &&
+            refCountByStreamIdAndSessionIdMap.isEmpty() &&
+            !statusIndicator.isClosed();
     }
 
     public boolean hasExplicitControl()
@@ -229,7 +251,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final int length,
         final InetSocketAddress srcAddress)
     {
-        if (header.receiverId() == receiverId || header.receiverId() == 0)
+        final long requestedReceiverId = header.receiverId();
+        if (requestedReceiverId == receiverId || requestedReceiverId == 0)
         {
             dispatcher.onRttMeasurement(this, header, srcAddress);
         }
@@ -336,9 +359,19 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         dispatcher.addSubscription(streamId);
     }
 
+    public void addSubscription(final int streamId, final int sessionId)
+    {
+        dispatcher.addSubscription(streamId, sessionId);
+    }
+
     public void removeSubscription(final int streamId)
     {
         dispatcher.removeSubscription(streamId);
+    }
+
+    public void removeSubscription(final int streamId, final int sessionId)
+    {
+        dispatcher.removeSubscription(streamId, sessionId);
     }
 
     public void addPublicationImage(final PublicationImage image)

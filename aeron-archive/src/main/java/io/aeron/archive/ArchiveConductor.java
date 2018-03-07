@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,27 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static io.aeron.ChannelUriStringBuilder.integerValueOf;
 import static io.aeron.CommonContext.SPY_PREFIX;
-import static io.aeron.archive.Catalog.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
@@ -47,7 +49,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
-    private final Map<String, Subscription> subscriptionMap = new HashMap<>();
+    private final Map<String, Subscription> recordingSubscriptionMap = new HashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final RecordingSummary recordingSummary = new RecordingSummary();
@@ -57,10 +59,14 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final AgentInvoker aeronAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
     private final EpochClock epochClock;
+    private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private final File archiveDir;
     private final FileChannel archiveDirChannel;
+    private final Subscription controlSubscription;
+    private final Subscription localControlSubscription;
 
     private final Catalog catalog;
+    private final ArchiveMarkFile markFile;
     private final RecordingEventsProxy recordingEventsProxy;
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
@@ -70,8 +76,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     protected SessionWorker<ReplaySession> replayer;
     protected SessionWorker<RecordingSession> recorder;
 
-    private long replaySessionId = ThreadLocalRandom.current().nextInt();
-    private long controlSessionId = ThreadLocalRandom.current().nextInt();
+    private long nextControlSessionId = ThreadLocalRandom.current().nextInt();
 
     ArchiveConductor(final Aeron aeron, final Archive.Context ctx)
     {
@@ -80,22 +85,28 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         this.aeron = aeron;
         this.ctx = ctx;
 
-        aeronAgentInvoker = ctx.ownsAeronClient() ? aeron.conductorAgentInvoker() : null;
+        aeronAgentInvoker = aeron.conductorAgentInvoker();
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
         epochClock = ctx.epochClock();
         archiveDir = ctx.archiveDir();
-        archiveDirChannel = channelForDirectorySync(archiveDir, ctx.fileSyncLevel());
+        archiveDirChannel = ctx.archiveDirChannel();
         controlResponseProxy = new ControlResponseProxy();
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
 
-        aeron.addSubscription(ctx.controlChannel(), ctx.controlStreamId(), this, null);
+        controlSubscription = aeron.addSubscription(
+            ctx.controlChannel(), ctx.controlStreamId(), this, null);
+
+        localControlSubscription = aeron.addSubscription(
+            ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
 
         recordingEventsProxy = new RecordingEventsProxy(
             ctx.idleStrategy(),
             aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
-        catalog = new Catalog(archiveDir, archiveDirChannel, ctx.fileSyncLevel(), epochClock);
+        cachedEpochClock.update(epochClock.time());
+        catalog = ctx.catalog();
+        markFile = ctx.archiveMarkFile();
     }
 
     public void onStart()
@@ -116,28 +127,44 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     protected final void preSessionsClose()
     {
         closeSessionWorkers();
-        subscriptionMap.values().forEach(Subscription::close);
-        subscriptionMap.clear();
     }
 
     protected abstract void closeSessionWorkers();
 
     protected void postSessionsClose()
     {
-        CloseHelper.quietClose(catalog);
-        CloseHelper.quietClose(archiveDirChannel);
-        CloseHelper.quietClose(aeronAgentInvoker);
-        CloseHelper.quietClose(driverAgentInvoker);
+        if (!ctx.ownsAeronClient())
+        {
+            for (final Subscription subscription : recordingSubscriptionMap.values())
+            {
+                subscription.close();
+            }
+
+            CloseHelper.close(localControlSubscription);
+            CloseHelper.close(controlSubscription);
+        }
     }
 
     protected int preWork()
     {
         int workCount = 0;
 
-        workCount += null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
-        workCount += null != aeronAgentInvoker ? aeronAgentInvoker.invoke() : 0;
+        final long nowMs = epochClock.time();
+        if (cachedEpochClock.time() != nowMs)
+        {
+            cachedEpochClock.update(nowMs);
+            markFile.updateActivityTimestamp(nowMs);
+            workCount += aeronAgentInvoker.invoke();
+        }
+
+        workCount += invokeDriverConductor();
 
         return workCount;
+    }
+
+    protected final int invokeDriverConductor()
+    {
+        return null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
     }
 
     Catalog catalog()
@@ -167,23 +194,19 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         {
             final String strippedChannel = strippedChannelBuilder(originalChannel).build();
             final String key = makeKey(streamId, strippedChannel);
-            final Subscription oldSubscription = subscriptionMap.get(key);
+            final Subscription oldSubscription = recordingSubscriptionMap.get(key);
 
             if (oldSubscription == null)
             {
                 final String channel = originalChannel.contains("udp") && sourceLocation == SourceLocation.LOCAL ?
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
-                final long controlSessionId = controlSession.sessionId();
+                final AvailableImageHandler handler = (image) ->
+                    startRecordingSession(controlSession, correlationId, strippedChannel, originalChannel, image);
 
-                final Subscription subscription = aeron.addSubscription(
-                    channel,
-                    streamId,
-                    (image) -> startRecordingSession(
-                        controlSessionId, correlationId, strippedChannel, originalChannel, image),
-                    null);
+                final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
 
-                subscriptionMap.put(key, subscription);
+                recordingSubscriptionMap.put(key, subscription);
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
             }
             else
@@ -211,7 +234,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         try
         {
             final String key = makeKey(streamId, strippedChannelBuilder(channel).build());
-            final Subscription oldSubscription = subscriptionMap.remove(key);
+            final Subscription oldSubscription = recordingSubscriptionMap.remove(key);
 
             if (oldSubscription != null)
             {
@@ -234,23 +257,34 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
     }
 
-    ListRecordingsSession newListRecordingsSession(
+    void newListRecordingsSession(
         final long correlationId,
         final long fromId,
         final int count,
         final ControlSession controlSession)
     {
-        return new ListRecordingsSession(
-            correlationId,
-            fromId,
-            count,
-            catalog,
-            controlResponseProxy,
-            controlSession,
-            descriptorBuffer);
+        if (controlSession.activeListRecordingsSession() != null)
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "active listing already in progress", controlResponseProxy);
+        }
+        else
+        {
+            final ListRecordingsSession session = new ListRecordingsSession(
+                correlationId,
+                fromId,
+                count,
+                catalog,
+                controlResponseProxy,
+                controlSession,
+                descriptorBuffer);
+
+            addSession(session);
+            controlSession.activeListRecordingsSession(session);
+        }
     }
 
-    ListRecordingsForUriSession newListRecordingsForUriSession(
+    void newListRecordingsForUriSession(
         final long correlationId,
         final long fromRecordingId,
         final int count,
@@ -258,17 +292,45 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final String channel,
         final ControlSession controlSession)
     {
-        return new ListRecordingsForUriSession(
-            correlationId,
-            fromRecordingId,
-            count,
-            channel,
-            streamId,
-            catalog,
-            controlResponseProxy,
-            controlSession,
-            descriptorBuffer,
-            recordingDescriptorDecoder);
+        if (controlSession.activeListRecordingsSession() != null)
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "active listing already in progress", controlResponseProxy);
+        }
+        else
+        {
+            final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
+                correlationId,
+                fromRecordingId,
+                count,
+                channel,
+                streamId,
+                catalog,
+                controlResponseProxy,
+                controlSession,
+                descriptorBuffer,
+                recordingDescriptorDecoder);
+
+            addSession(session);
+            controlSession.activeListRecordingsSession(session);
+        }
+    }
+
+    public void listRecording(final long correlationId, final ControlSession controlSession, final long recordingId)
+    {
+        if (controlSession.activeListRecordingsSession() != null)
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "active listing already in progress", controlResponseProxy);
+        }
+        else if (catalog.wrapAndValidateDescriptor(recordingId, descriptorBuffer))
+        {
+            controlSession.sendDescriptor(correlationId, descriptorBuffer, controlResponseProxy);
+        }
+        else
+        {
+            controlSession.sendRecordingUnknown(correlationId, recordingId, controlResponseProxy);
+        }
     }
 
     void startReplay(
@@ -294,62 +356,84 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         if (!catalog.hasRecording(recordingId))
         {
             controlSession.sendResponse(
-                correlationId,
-                ERROR,
-                "Unknown recording : " + recordingId,
-                controlResponseProxy);
+                correlationId, ERROR, "Unknown recording : " + recordingId, controlResponseProxy);
 
             return;
         }
 
         catalog.recordingSummary(recordingId, recordingSummary);
+        long replayPosition = recordingSummary.startPosition;
+
+        if (position != NULL_POSITION)
+        {
+            if (!validateReplayPosition(correlationId, controlSession, position, recordingSummary))
+            {
+                return;
+            }
+
+            replayPosition = position;
+        }
+
+        final ExclusivePublication replayPublication = newReplayPublication(
+            correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
+
+        final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
+        final ReplaySession replaySession = new ReplaySession(
+            replayPosition,
+            length,
+            catalog,
+            controlSession,
+            archiveDir,
+            controlResponseProxy,
+            correlationId,
+            cachedEpochClock,
+            replayPublication,
+            recordingSummary,
+            null == recordingSession ? null : recordingSession.recordingPosition());
+
+        replaySessionByIdMap.put(replaySession.sessionId(), replaySession);
+        replayer.addSession(replaySession);
+    }
+
+    private boolean validateReplayPosition(
+        final long correlationId,
+        final ControlSession controlSession,
+        final long position,
+        final RecordingSummary recordingSummary)
+    {
+        if ((position & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
+        {
+            final String msg = "requested replay start position(=" + position +
+                ") is not a multiple of FRAME_ALIGNMENT (=" + FrameDescriptor.FRAME_ALIGNMENT + ")";
+
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
+
+            return false;
+        }
 
         final long startPosition = recordingSummary.startPosition;
         if (position - startPosition < 0)
         {
-            controlSession.sendResponse(
-                correlationId,
-                ControlResponseCode.ERROR,
-                "requested replay start position(=" + position +
-                    ") is before recording start position(=" + startPosition + ")",
-                controlResponseProxy);
+            final String msg = "requested replay start position(=" + position +
+                ") is before recording start position(=" + startPosition + ")";
 
-            return;
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
+
+            return false;
         }
 
         final long stopPosition = recordingSummary.stopPosition;
         if (stopPosition != NULL_POSITION && position >= stopPosition)
         {
-            controlSession.sendResponse(
-                correlationId,
-                ControlResponseCode.ERROR,
-                "requested replay start position(=" + position +
-                    ") must be before current highest recorded position(=" + stopPosition + ")",
-                controlResponseProxy);
+            final String msg = "requested replay start position(=" + position +
+                ") must be before current highest recorded position(=" + stopPosition + ")";
 
-            return;
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
+
+            return false;
         }
 
-        final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
-        final long newId = replaySessionId++;
-
-        final ReplaySession replaySession = new ReplaySession(
-            position,
-            length,
-            this,
-            controlSession,
-            archiveDir,
-            controlResponseProxy,
-            newId,
-            correlationId,
-            epochClock,
-            replayChannel,
-            replayStreamId,
-            recordingSummary,
-            null == recordingSession ? null : recordingSession.recordingPosition());
-
-        replaySessionByIdMap.put(newId, replaySession);
-        replayer.addSession(replaySession);
+        return true;
     }
 
     public void stopReplay(final long correlationId, final ControlSession controlSession, final long replaySessionId)
@@ -364,6 +448,99 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         {
             replaySession.abort();
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        }
+    }
+
+    public void extendRecording(
+        final long correlationId,
+        final ControlSession controlSession,
+        final long recordingId,
+        final int streamId,
+        final String originalChannel,
+        final SourceLocation sourceLocation)
+    {
+        if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
+        {
+            controlSession.sendResponse(
+                correlationId,
+                ERROR,
+                "Max concurrent recordings reached: " + maxConcurrentRecordings,
+                controlResponseProxy);
+
+            return;
+        }
+
+        if (!catalog.hasRecording(recordingId))
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "Unknown recording : " + recordingId, controlResponseProxy);
+
+            return;
+        }
+
+        if (recordingSessionByIdMap.containsKey(recordingId))
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "Can not extend active recording : " + recordingId, controlResponseProxy);
+
+            return;
+        }
+
+        final RecordingSummary originalRecordingSummary = new RecordingSummary();
+        catalog.recordingSummary(recordingId, originalRecordingSummary);
+
+        final ChannelUri channelUri = ChannelUri.parse(originalChannel);
+        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+
+        if (null == sessionIdStr || originalRecordingSummary.sessionId != Integer.parseInt(sessionIdStr))
+        {
+            controlSession.sendResponse(
+                correlationId,
+                ERROR,
+                "Extend recording channel must contain correct sessionId: " + recordingId,
+                controlResponseProxy);
+
+            return;
+        }
+
+        try
+        {
+            final String strippedChannel = strippedChannelBuilder(channelUri).build();
+            final String key = makeKey(streamId, strippedChannel);
+            final Subscription oldSubscription = recordingSubscriptionMap.get(key);
+
+            if (oldSubscription == null)
+            {
+                final String channel = originalChannel.contains("udp") && sourceLocation == SourceLocation.LOCAL ?
+                    SPY_PREFIX + strippedChannel : strippedChannel;
+
+                final AvailableImageHandler handler = (image) -> extendRecordingSession(
+                    controlSession,
+                    correlationId,
+                    recordingId,
+                    strippedChannel,
+                    originalChannel,
+                    originalRecordingSummary,
+                    image);
+
+                final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
+
+                recordingSubscriptionMap.put(key, subscription);
+                controlSession.sendOkResponse(correlationId, controlResponseProxy);
+            }
+            else
+            {
+                controlSession.sendResponse(
+                    correlationId,
+                    ERROR,
+                    "Recording already setup for subscription: " + key,
+                    controlResponseProxy);
+            }
+        }
+        catch (final Exception ex)
+        {
+            errorHandler.onError(ex);
+            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
         }
     }
 
@@ -387,40 +564,42 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
 
         final Publication publication = aeron.addPublication(controlChannel, streamId);
-
         final ControlSession controlSession = new ControlSession(
-            controlSessionId++,
+            nextControlSessionId++,
             correlationId,
             demuxer,
             publication,
             this,
-            epochClock,
+            cachedEpochClock,
             controlResponseProxy);
         addSession(controlSession);
 
         return controlSession;
     }
 
-    ChannelUriStringBuilder strippedChannelBuilder(final String channel)
+    ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
     {
-        final ChannelUri channelUri = ChannelUri.parse(channel);
         channelBuilder
             .clear()
             .media(channelUri.media())
             .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
             .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
-            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME));
+            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME))
+            .sessionId(integerValueOf(channelUri.get(CommonContext.SESSION_ID_PARAM_NAME)));
 
         return channelBuilder;
     }
 
+    ChannelUriStringBuilder strippedChannelBuilder(final String channel)
+    {
+        return strippedChannelBuilder(ChannelUri.parse(channel));
+    }
+
     void closeRecordingSession(final RecordingSession session)
     {
-        final long sessionId = session.sessionId();
-
-        recordingSessionByIdMap.remove(sessionId);
-        catalog.recordingStopped(sessionId, session.recordingPosition().get(), epochClock.time());
-
+        final long recordingId = session.sessionId();
+        catalog.recordingStopped(recordingId, session.recordingPosition().get(), epochClock.time());
+        recordingSessionByIdMap.remove(recordingId);
         closeSession(session);
     }
 
@@ -430,23 +609,14 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         closeSession(session);
     }
 
-    private static String makeKey(final int streamId, final String strippedChannel)
-    {
-        return streamId + ":" + strippedChannel;
-    }
-
     private void startRecordingSession(
-        final long controlSessionId,
+        final ControlSession controlSession,
         final long correlationId,
         final String strippedChannel,
         final String originalChannel,
         final Image image)
     {
-        if (recordingSessionByIdMap.size() >= 2 * maxConcurrentRecordings)
-        {
-            throw new IllegalStateException(
-                "Too many recordings, can't record: " + originalChannel + ":" + image.subscription().streamId());
-        }
+        validateMaxConcurrentRecordings(controlSession, correlationId, originalChannel, image);
 
         final int sessionId = image.sessionId();
         final int streamId = image.subscription().streamId();
@@ -458,7 +628,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         final long recordingId = catalog.addNewRecording(
             startPosition,
-            epochClock.time(),
+            cachedEpochClock.time(),
             initialTermId,
             ctx.segmentFileLength(),
             termBufferLength,
@@ -469,58 +639,169 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             originalChannel,
             sourceIdentity);
 
+        final long controlSessionId = controlSession.sessionId();
         final Counter position = RecordingPos.allocate(
             aeron, tempBuffer, recordingId, controlSessionId, correlationId, sessionId, streamId, strippedChannel);
         position.setOrdered(startPosition);
 
-        final RecordingSession session = new RecordingSession(
-            recordingId,
-            originalChannel,
-            recordingEventsProxy,
-            image,
-            position,
-            archiveDirChannel,
-            ctx);
+        try
+        {
+            final RecordingSession session = new RecordingSession(
+                recordingId,
+                startPosition,
+                originalChannel,
+                recordingEventsProxy,
+                image,
+                position,
+                archiveDirChannel,
+                ctx);
 
-        recordingSessionByIdMap.put(recordingId, session);
-        recorder.addSession(session);
+            recordingSessionByIdMap.put(recordingId, session);
+            recorder.addSession(session);
+        }
+        catch (final Exception ex)
+        {
+            errorHandler.onError(ex);
+            position.close();
+            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
+        }
     }
 
-    ExclusivePublication newReplayPublication(
+    private void extendRecordingSession(
+        final ControlSession controlSession,
+        final long correlationId,
+        final long recordingId,
+        final String strippedChannel,
+        final String originalChannel,
+        final RecordingSummary originalRecordingSummary,
+        final Image image)
+    {
+        validateMaxConcurrentRecordings(controlSession, correlationId, originalChannel, image);
+        validateImageForExtendRecording(correlationId, controlSession, image, originalRecordingSummary);
+
+        final int sessionId = image.sessionId();
+        final int streamId = image.subscription().streamId();
+        final long newStartPosition = image.joinPosition();
+        final long controlSessionId = controlSession.sessionId();
+
+        final Counter position = RecordingPos.allocate(
+            aeron, tempBuffer, recordingId, controlSessionId, correlationId, sessionId, streamId, strippedChannel);
+        position.setOrdered(newStartPosition);
+
+        try
+        {
+            final RecordingSession session = new RecordingSession(
+                recordingId,
+                originalRecordingSummary.startPosition,
+                originalChannel,
+                recordingEventsProxy,
+                image,
+                position,
+                archiveDirChannel,
+                ctx);
+
+            catalog.extendRecording(recordingId);
+            recordingSessionByIdMap.put(recordingId, session);
+            recorder.addSession(session);
+        }
+        catch (final Exception ex)
+        {
+            errorHandler.onError(ex);
+            position.close();
+            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
+        }
+    }
+
+    private ExclusivePublication newReplayPublication(
+        final long correlationId,
+        final ControlSession controlSession,
         final String replayChannel,
         final int replayStreamId,
-        final long fromPosition,
-        final int mtuLength,
-        final int initialTermId,
-        final int termBufferLength)
+        final long position,
+        final RecordingSummary recording)
     {
-        final int termId = (int)((fromPosition / termBufferLength) + initialTermId);
-        final int termOffset = (int)(fromPosition % termBufferLength);
+        final int initialTermId = recording.initialTermId;
+        final int termBufferLength = recording.termBufferLength;
+
+        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termBufferLength);
+        final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
+        final int termOffset = (int)(position & (termBufferLength - 1));
 
         final String channel = strippedChannelBuilder(replayChannel)
-            .mtu(mtuLength)
+            .mtu(recording.mtuLength)
             .termLength(termBufferLength)
             .initialTermId(initialTermId)
             .termId(termId)
             .termOffset(termOffset)
             .build();
 
-        return aeron.addExclusivePublication(channel, replayStreamId);
+        try
+        {
+            return aeron.addExclusivePublication(channel, replayStreamId);
+        }
+        catch (final Exception ex)
+        {
+            final String msg = "Failed to create replay publication - " + ex;
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
+            throw ex;
+        }
     }
 
-    private static FileChannel channelForDirectorySync(final File directory, final int fileSyncLevel)
+    private void validateMaxConcurrentRecordings(
+        final ControlSession controlSession,
+        final long correlationId,
+        final String originalChannel,
+        final Image image)
     {
-        if (fileSyncLevel > 0)
+        if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
-            try
-            {
-                return FileChannel.open(directory.toPath());
-            }
-            catch (final IOException ignore)
-            {
-            }
+            final String msg = "Max concurrent recordings reached, can't record: " +
+                image.subscription().streamId() + ":" + originalChannel;
+
+            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            throw new IllegalStateException(msg);
+        }
+    }
+
+    private void validateImageForExtendRecording(
+        final long correlationId,
+        final ControlSession controlSession,
+        final Image image,
+        final RecordingSummary originalRecordingSummary)
+    {
+        if (image.joinPosition() != originalRecordingSummary.stopPosition)
+        {
+            final String msg = "Can't extend recording: " + originalRecordingSummary.recordingId +
+                ": image joinPosition=" + image.joinPosition() +
+                " not equal to recording stopPosition=" + originalRecordingSummary.stopPosition;
+
+            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            throw new IllegalStateException(msg);
         }
 
-        return null;
+        if (image.termBufferLength() != originalRecordingSummary.termBufferLength)
+        {
+            final String msg = "Can't extend recording: " + originalRecordingSummary.recordingId +
+                ": image termBufferLength=" + image.termBufferLength() +
+                " not equal to recording termBufferLength=" + originalRecordingSummary.termBufferLength;
+
+            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            throw new IllegalStateException(msg);
+        }
+
+        if (image.mtuLength() != originalRecordingSummary.mtuLength)
+        {
+            final String msg = "Can't extend recording: " + originalRecordingSummary.recordingId +
+                ": image mtuLength=" + image.mtuLength() +
+                " not equal to recording mtuLength=" + originalRecordingSummary.mtuLength;
+
+            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            throw new IllegalStateException(msg);
+        }
+    }
+
+    private static String makeKey(final int streamId, final String strippedChannel)
+    {
+        return streamId + ":" + strippedChannel;
     }
 }

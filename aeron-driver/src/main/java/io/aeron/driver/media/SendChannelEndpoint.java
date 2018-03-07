@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.NotYetConnectedException;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.status.ChannelEndpointStatus.status;
@@ -77,21 +78,21 @@ public class SendChannelEndpoint extends UdpChannelTransport
             }
             else if (null == mode || CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(mode))
             {
-                multiDestination = new DynamicMultiDestination(context.nanoClock(), DESTINATION_TIMEOUT);
+                multiDestination = new DynamicMultiDestination(context.cachedNanoClock(), DESTINATION_TIMEOUT);
             }
         }
 
         this.multiDestination = multiDestination;
     }
 
-    public int decRef()
+    public void decRef()
     {
-        return --refCount;
+        --refCount;
     }
 
-    public int incRef()
+    public void incRef()
     {
-        return ++refCount;
+        ++refCount;
     }
 
     public void openChannel(final DriverConductorProxy conductorProxy)
@@ -184,27 +185,32 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public int send(final ByteBuffer buffer)
     {
-        final int bytesToSend = buffer.remaining();
         int bytesSent = 0;
 
-        if (null == multiDestination)
+        if (null != sendDatagramChannel)
         {
-            try
+            final int bytesToSend = buffer.remaining();
+
+            if (null == multiDestination)
             {
-                presend(buffer, connectAddress);
-                bytesSent = sendDatagramChannel.write(buffer);
+                try
+                {
+                    presend(buffer, connectAddress);
+                    bytesSent = sendDatagramChannel.write(buffer);
+                }
+                catch (final PortUnreachableException | ClosedChannelException | NotYetConnectedException ignore)
+                {
+                }
+                catch (final IOException ex)
+                {
+                    throw new RuntimeException(
+                        "Failed to send packet of " + bytesToSend + " bytes to " + connectAddress, ex);
+                }
             }
-            catch (final PortUnreachableException | ClosedChannelException ignore)
+            else
             {
+                bytesSent = multiDestination.send(sendDatagramChannel, buffer, this, bytesToSend);
             }
-            catch (final IOException ex)
-            {
-                throw new RuntimeException("Failed to send: " + bytesToSend, ex);
-            }
-        }
-        else
-        {
-            bytesSent = multiDestination.send(sendDatagramChannel, buffer, this);
         }
 
         return bytesSent;

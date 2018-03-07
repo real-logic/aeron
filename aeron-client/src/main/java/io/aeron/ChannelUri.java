@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,14 +45,14 @@ public class ChannelUri
     public static final String AERON_SCHEME = "aeron";
 
     /**
-     * Qualifier for spy subscriptions.
+     * Qualifier for spy subscriptions which spy on outgoing network destined traffic efficiently.
      */
     public static final String SPY_QUALIFIER = "aeron-spy";
 
     private static final String AERON_PREFIX = AERON_SCHEME + ":";
 
-    private final String prefix;
-    private final String media;
+    private String prefix;
+    private String media;
     private final Map<String, String> params;
 
     /**
@@ -91,6 +91,18 @@ public class ChannelUri
     }
 
     /**
+     * Change the prefix from what has been parsed.
+     *
+     * @param prefix to replace the existing prefix.
+     * @return this for a fluent API.
+     */
+    public ChannelUri prefix(final String prefix)
+    {
+        this.prefix = prefix;
+        return this;
+    }
+
+    /**
      * The media over which the channel operates.
      *
      * @return the media over which the channel operates.
@@ -98,6 +110,18 @@ public class ChannelUri
     public String media()
     {
         return media;
+    }
+
+    /**
+     * Set the media over which the channel operates.
+     *
+     * @param media to replace the parsed value.
+     * @return this for a fluent API.
+     */
+    public ChannelUri media(final String media)
+    {
+        this.media = media;
+        return this;
     }
 
     /**
@@ -178,7 +202,11 @@ public class ChannelUri
         else
         {
             sb = new StringBuilder((params.size() * 20) + 20);
-            sb.append(SPY_PREFIX);
+            sb.append(prefix);
+            if (!prefix.endsWith(":"))
+            {
+                sb.append(':');
+            }
         }
 
         sb.append(AERON_PREFIX).append(media);
@@ -304,6 +332,22 @@ public class ChannelUri
         }
 
         return new ChannelUri(prefix, media, params);
+    }
+
+    /**
+     * Add a sessionId to a given channel.
+     *
+     * @param channel   to add sessionId to.
+     * @param sessionId to add to channel.
+     * @return new string that represents channel with sessionId added.
+     */
+    public static String addSessionId(final String channel, final int sessionId)
+    {
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+
+        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
+
+        return channelUri.toString();
     }
 
     private static boolean startsWith(final CharSequence input, final int position, final CharSequence prefix)

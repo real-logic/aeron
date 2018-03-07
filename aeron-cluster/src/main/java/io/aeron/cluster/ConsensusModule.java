@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,149 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.service.ClusteredServiceContainer;
-import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
+import io.aeron.cluster.codecs.ClusterAction;
+import io.aeron.cluster.codecs.mark.ClusterComponentType;
+import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
+import io.aeron.cluster.service.*;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 
+import java.io.File;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static io.aeron.cluster.ConsensusModule.Configuration.*;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
-public class ConsensusModule
-    implements AutoCloseable, IngressAdapterSupplier, TimerServiceSupplier, ClusterSessionSupplier
+public class ConsensusModule implements AutoCloseable
 {
-    private static final int FRAGMENT_POLL_LIMIT = 10;
-    private static final int TIMER_POLL_LIMIT = 10;
+    /**
+     * Type of snapshot for this agent.
+     */
+    public static final long SNAPSHOT_TYPE_ID = 1;
+
+    /**
+     * Possible states for the {@link ConsensusModule}.
+     * These will be reflected in the {@link Context#moduleStateCounter()} counter.
+     */
+    public enum State
+    {
+        /**
+         * Starting up and recovering state.
+         */
+        INIT(0, ClusterAction.INIT, ClusterAction.READY, ClusterAction.REPLAY),
+
+        /**
+         * Active state with ingress and expired timers appended to the log.
+         */
+        ACTIVE(1, ClusterAction.READY),
+
+        /**
+         * Suspended processing of ingress and expired timers.
+         */
+        SUSPENDED(2, ClusterAction.SUSPEND),
+
+        /**
+         * In the process of taking a snapshot.
+         */
+        SNAPSHOT(3, ClusterAction.SNAPSHOT),
+
+        /**
+         * In the process of doing an orderly shutdown taking a snapshot first.
+         */
+        SHUTDOWN(4, ClusterAction.SHUTDOWN),
+
+        /**
+         * Aborting processing and shutting down as soon as services ack without taking a snapshot.
+         */
+        ABORT(5, ClusterAction.ABORT),
+
+        /**
+         * Terminal state.
+         */
+        CLOSED(6);
+
+        static final State[] STATES;
+
+        static
+        {
+            final State[] states = values();
+            STATES = new State[states.length];
+            for (final State state : states)
+            {
+                final int code = state.code();
+                if (null != STATES[code])
+                {
+                    throw new IllegalStateException("Code already in use: " + code);
+                }
+
+                STATES[code] = state;
+            }
+        }
+
+        private final int code;
+        private final ClusterAction[] validClusterActions;
+
+        State(final int code, final ClusterAction... clusterActions)
+        {
+            this.code = code;
+            this.validClusterActions = clusterActions;
+        }
+
+        public final int code()
+        {
+            return code;
+        }
+
+        /**
+         * Is the {@link ClusterAction} valid for the current state?
+         *
+         * @param action to check if valid.
+         * @return true if the action is valid for the current state otherwise false.
+         */
+        public final boolean isValid(final ClusterAction action)
+        {
+            for (final ClusterAction validAction : validClusterActions)
+            {
+                if (action == validAction)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * Get the {@link State} encoded in an {@link AtomicCounter}.
+         *
+         * @param counter to get the current state for.
+         * @return the state for the {@link ConsensusModule}.
+         * @throws IllegalStateException if the counter is not one of the valid values.
+         */
+        public static State get(final AtomicCounter counter)
+        {
+            final long code = counter.get();
+
+            if (code < 0 || code > (STATES.length - 1))
+            {
+                throw new IllegalStateException("Invalid state counter code: " + code);
+            }
+
+            return STATES[(int)code];
+        }
+    }
 
     private final Context ctx;
-    private final Counter messageIndex;
-    private final LogAppender logAppender;
     private final AgentRunner conductorRunner;
 
     ConsensusModule(final Context ctx)
@@ -49,16 +166,7 @@ public class ConsensusModule
         this.ctx = ctx;
         ctx.conclude();
 
-        try (AeronArchive archive = AeronArchive.connect(ctx.archiveContext()))
-        {
-            archive.startRecording(ctx.logChannel(), ctx.logStreamId(), SourceLocation.LOCAL);
-        }
-
-        messageIndex = ctx.aeron().addCounter(SYSTEM_COUNTER_TYPE_ID, "Log message index");
-        logAppender = new LogAppender(ctx.aeron().addExclusivePublication(ctx.logChannel(), ctx.logStreamId()));
-
-        final SequencerAgent conductor = new SequencerAgent(
-            ctx, new EgressPublisher(), messageIndex, logAppender, this, this, this);
+        final SequencerAgent conductor = new SequencerAgent(ctx, new EgressPublisher(), new LogPublisher());
 
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
@@ -83,7 +191,7 @@ public class ConsensusModule
      * Launch an {@link ConsensusModule} by providing a configuration context.
      *
      * @param ctx for the configuration parameters.
-     * @return  a new instance of an {@link ConsensusModule}.
+     * @return a new instance of an {@link ConsensusModule}.
      */
     public static ConsensusModule launch(final Context ctx)
     {
@@ -103,33 +211,7 @@ public class ConsensusModule
     public void close()
     {
         CloseHelper.close(conductorRunner);
-        CloseHelper.close(messageIndex);
-        CloseHelper.close(logAppender);
         CloseHelper.close(ctx);
-    }
-
-    public IngressAdapter newIngressAdapter(final SequencerAgent sequencerAgent)
-    {
-        return new IngressAdapter(
-            sequencerAgent,
-            ctx.aeron().addSubscription(ctx.ingressChannel(), ctx.ingressStreamId()),
-            FRAGMENT_POLL_LIMIT);
-    }
-
-    public TimerService newTimerService(final SequencerAgent sequencerAgent)
-    {
-        return new TimerService(
-            TIMER_POLL_LIMIT,
-            FRAGMENT_POLL_LIMIT,
-            sequencerAgent,
-            ctx.aeron().addSubscription(ctx.timerChannel(), ctx.timerStreamId()),
-            ctx.cachedEpochClock());
-    }
-
-    public ClusterSession newClusterSession(
-        final long sessionId, final int responseStreamId, final String responseChannel)
-    {
-        return new ClusterSession(sessionId, ctx.aeron().addPublication(responseChannel, responseStreamId));
     }
 
     /**
@@ -137,13 +219,165 @@ public class ConsensusModule
      */
     public static class Configuration
     {
+        static final int TIMER_POLL_LIMIT = 10;
+
+        /**
+         * Property name for the identity of the cluster member.
+         */
+        public static final String CLUSTER_MEMBER_ID_PROP_NAME = "aeron.cluster.member.id";
+
+        /**
+         * Default property for the cluster member identity.
+         */
+        public static final int CLUSTER_MEMBER_ID_DEFAULT = 0;
+
+        /**
+         * Property name for the identity of the appointed leader. This is when automated leader elections are
+         * not employed.
+         */
+        public static final String APPOINTED_LEADER_ID_PROP_NAME = "aeron.cluster.appointed.leader.id";
+
+        /**
+         * Default property for the appointed cluster leader id. A value of -1 means no leader has been appointed
+         * and thus an automated leader election should occur.
+         */
+        public static final int APPOINTED_LEADER_ID_DEFAULT = ClusterMember.NULL_MEMBER_ID;
+
+        /**
+         * Property name for the comma separated list of cluster member endpoints.
+         */
+        public static final String CLUSTER_MEMBERS_PROP_NAME = "aeron.cluster.members";
+
+        /**
+         * Default property for the list of cluster member endpoints.
+         */
+        public static final String CLUSTER_MEMBERS_DEFAULT =
+            "0,localhost:10000,localhost:20000,localhost:30000,localhost:40000";
+
+        /**
+         * Channel for the clustered log.
+         */
+        public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
+
+        /**
+         * Channel for the clustered log.
+         */
+        public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030";
+
+        /**
+         * Stream id within a channel for the clustered log.
+         */
+        public static final String LOG_STREAM_ID_PROP_NAME = "aeron.cluster.log.stream.id";
+
+        /**
+         * Stream id within a channel for the clustered log.
+         */
+        public static final int LOG_STREAM_ID_DEFAULT = 3;
+
+        /**
+         * Channel to be used for archiving snapshots.
+         */
+        public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+
+        /**
+         * Stream id for the archived snapshots within a channel.
+         */
+        public static final int SNAPSHOT_STREAM_ID_DEFAULT = 6;
+
+        /**
+         * Message detail to be sent when max concurrent session limit is reached.
+         */
+        public static final String SESSION_LIMIT_MSG = "Concurrent session limit";
+
+        /**
+         * Message detail to be sent when a session timeout occurs.
+         */
+        public static final String SESSION_TIMEOUT_MSG = "Session inactive";
+
+        /**
+         * Message detail to be sent when a session is rejected due to authentication.
+         */
+        public static final String SESSION_REJECTED_MSG = "Session failed authentication";
+
+        /**
+         * Channel to be used communicating cluster member status to each other. This can be used for default
+         * configuration with the endpoints replaced with those provided by {@link #CLUSTER_MEMBERS_PROP_NAME}.
+         */
+        public static final String MEMBER_STATUS_CHANNEL_PROP_NAME = "aeron.cluster.member.status.channel";
+
+        /**
+         * Channel to be used for communicating cluster member status to each other. This can be used for default
+         * configuration with the endpoints replaced with those provided by {@link #CLUSTER_MEMBERS_PROP_NAME}.
+         */
+        public static final String MEMBER_STATUS_CHANNEL_DEFAULT = "aeron:udp?term-length=64k";
+
+        /**
+         * Stream id within a channel for communicating cluster member status.
+         */
+        public static final String MEMBER_STATUS_STREAM_ID_PROP_NAME = "aeron.cluster.member.status.stream.id";
+
+        /**
+         * Stream id for the archived snapshots within a channel.
+         */
+        public static final int MEMBER_STATUS_STREAM_ID_DEFAULT = 8;
+
+        /**
+         * Counter type id for the consensus module state.
+         */
+        public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;
+
+        /**
+         * Counter type id for the cluster node role.
+         */
+        public static final int CLUSTER_NODE_ROLE_TYPE_ID = ClusterNodeRole.CLUSTER_NODE_ROLE_TYPE_ID;
+
+        /**
+         * Counter type id for the control toggle.
+         */
+        public static final int CONTROL_TOGGLE_TYPE_ID = ClusterControl.CONTROL_TOGGLE_TYPE_ID;
+
+        /**
+         * Type id of a commit position counter.
+         */
+        public static final int COMMIT_POSITION_TYPE_ID = CommitPos.COMMIT_POSITION_TYPE_ID;
+
+        /**
+         * Type id of a recovery state counter.
+         */
+        public static final int RECOVERY_STATE_TYPE_ID = RecoveryState.RECOVERY_STATE_TYPE_ID;
+
+        /**
+         * Counter type id for count of snapshots taken.
+         */
+        public static final int SNAPSHOT_COUNTER_TYPE_ID = 205;
+
+        /**
+         * Directory to use for the aeron cluster.
+         */
+        public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
+
+        /**
+         * Directory to use for the aeron cluster.
+         */
+        public static final String CLUSTER_DIR_DEFAULT = "aeron-cluster";
+
+        /**
+         * The number of services in this cluster instance.
+         */
+        public static final String SERVICE_COUNT_PROP_NAME = "aeron.cluster.service.count";
+
+        /**
+         * The number of services in this cluster instance.
+         */
+        public static final int SERVICE_COUNT_DEFAULT = 1;
+
         /**
          * Maximum number of cluster sessions that can be active concurrently.
          */
         public static final String MAX_CONCURRENT_SESSIONS_PROP_NAME = "aeron.cluster.max.sessions";
 
         /**
-         * Maximum number of cluster sessions that can be active concurrently. Default to 10.
+         * Maximum number of cluster sessions that can be active concurrently.
          */
         public static final int MAX_CONCURRENT_SESSIONS_DEFAULT = 10;
 
@@ -156,6 +390,140 @@ public class ConsensusModule
          * Timeout for a session if no activity is observed. Default to 5 seconds in nanoseconds.
          */
         public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+        /**
+         * Timeout for a leader if no heartbeat is received by an other member.
+         */
+        public static final String HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.heartbeat.timeout";
+
+        /**
+         * Timeout for a leader if no heartbeat is received by an other member.
+         */
+        public static final long HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
+        /**
+         * Interval at which a leader will send heartbeats if the log is not progressing.
+         */
+        public static final String HEARTBEAT_INTERVAL_PROP_NAME = "aeron.cluster.heartbeat.interval";
+
+        /**
+         * Interval at which a leader will send heartbeats if the log is not progressing.
+         * Default to 500 milliseconds in nanoseconds.
+         */
+        public static final long HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
+
+        /**
+         * Name of class to use as a supplier of {@link Authenticator} for the cluster.
+         */
+        public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.Authenticator.supplier";
+
+        /**
+         * Name of the class to use as a supplier of {@link Authenticator} for the cluster. Default is
+         * a non-authenticating option.
+         */
+        public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.cluster.DefaultAuthenticatorSupplier";
+
+        /**
+         * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBER_ID_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBER_ID_PROP_NAME} if set.
+         */
+        public static int clusterMemberId()
+        {
+            return Integer.getInteger(CLUSTER_MEMBER_ID_PROP_NAME, CLUSTER_MEMBER_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #APPOINTED_LEADER_ID_DEFAULT} or system property
+         * {@link #APPOINTED_LEADER_ID_PROP_NAME} if set.
+         *
+         * @return {@link #APPOINTED_LEADER_ID_DEFAULT} or system property
+         * {@link #APPOINTED_LEADER_ID_PROP_NAME} if set.
+         */
+        public static int appointedLeaderId()
+        {
+            return Integer.getInteger(APPOINTED_LEADER_ID_PROP_NAME, APPOINTED_LEADER_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #CLUSTER_MEMBERS_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBERS_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_MEMBERS_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBERS_PROP_NAME} if set.
+         */
+        public static String clusterMembers()
+        {
+            return System.getProperty(CLUSTER_MEMBERS_PROP_NAME, CLUSTER_MEMBERS_DEFAULT);
+        }
+
+        /**
+         * The value {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
+         */
+        public static String logChannel()
+        {
+            return System.getProperty(LOG_CHANNEL_PROP_NAME, LOG_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #LOG_STREAM_ID_DEFAULT} or system property {@link #LOG_STREAM_ID_PROP_NAME} if set.
+         *
+         * @return {@link #LOG_STREAM_ID_DEFAULT} or system property {@link #LOG_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int logStreamId()
+        {
+            return Integer.getInteger(LOG_STREAM_ID_PROP_NAME, LOG_STREAM_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property
+         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property
+         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME} if set.
+         */
+        public static String snapshotChannel()
+        {
+            return System.getProperty(SNAPSHOT_CHANNEL_PROP_NAME, SNAPSHOT_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #SNAPSHOT_STREAM_ID_DEFAULT} or system property
+         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME} if set.
+         *
+         * @return {@link #SNAPSHOT_STREAM_ID_DEFAULT} or system property
+         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int snapshotStreamId()
+        {
+            return Integer.getInteger(SNAPSHOT_STREAM_ID_PROP_NAME, SNAPSHOT_STREAM_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
+         */
+        public static String clusterDirName()
+        {
+            return System.getProperty(CLUSTER_DIR_PROP_NAME, CLUSTER_DIR_DEFAULT);
+        }
+
+        /**
+         * The value {@link #SERVICE_COUNT_DEFAULT} or system property
+         * {@link #SERVICE_COUNT_PROP_NAME} if set.
+         *
+         * @return {@link #SERVICE_COUNT_DEFAULT} or system property
+         * {@link #SERVICE_COUNT_PROP_NAME} if set.
+         */
+        public static int serviceCount()
+        {
+            return Integer.getInteger(SERVICE_COUNT_PROP_NAME, SERVICE_COUNT_DEFAULT);
+        }
 
         /**
          * The value {@link #MAX_CONCURRENT_SESSIONS_DEFAULT} or system property
@@ -179,36 +547,180 @@ public class ConsensusModule
         {
             return getDurationInNanos(SESSION_TIMEOUT_PROP_NAME, SESSION_TIMEOUT_DEFAULT_NS);
         }
+
+        /**
+         * Timeout for a leader if no heartbeat is received by an other member.
+         *
+         * @return timeout in nanoseconds to wait for heartbeat from a leader.
+         * @see #HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public static long leaderHeartbeatTimeoutNs()
+        {
+            return getDurationInNanos(HEARTBEAT_TIMEOUT_PROP_NAME, HEARTBEAT_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Interval at which a leader will send a heartbeat if the log is not progressing.
+         *
+         * @return timeout in nanoseconds to for leader heartbeats when no log being appended.
+         * @see #HEARTBEAT_INTERVAL_PROP_NAME
+         */
+        public static long leaderHeartbeatIntervalNs()
+        {
+            return getDurationInNanos(HEARTBEAT_INTERVAL_PROP_NAME, HEARTBEAT_INTERVAL_DEFAULT_NS);
+        }
+
+        /**
+         * The value {@link #AUTHENTICATOR_SUPPLIER_DEFAULT} or system property
+         * {@link #AUTHENTICATOR_SUPPLIER_PROP_NAME} if set.
+         *
+         * @return {@link #AUTHENTICATOR_SUPPLIER_DEFAULT} or system property
+         * {@link #AUTHENTICATOR_SUPPLIER_PROP_NAME} if set.
+         */
+        public static AuthenticatorSupplier authenticatorSupplier()
+        {
+            final String supplierClassName = System.getProperty(
+                AUTHENTICATOR_SUPPLIER_PROP_NAME, AUTHENTICATOR_SUPPLIER_DEFAULT);
+
+            AuthenticatorSupplier supplier = null;
+            try
+            {
+                supplier = (AuthenticatorSupplier)Class.forName(supplierClassName).newInstance();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+
+            return supplier;
+        }
+
+        /**
+         * The value {@link #MEMBER_STATUS_CHANNEL_DEFAULT} or system property
+         * {@link #MEMBER_STATUS_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #MEMBER_STATUS_CHANNEL_DEFAULT} or system property
+         * {@link #MEMBER_STATUS_CHANNEL_PROP_NAME} if set.
+         */
+        public static String memberStatusChannel()
+        {
+            return System.getProperty(MEMBER_STATUS_CHANNEL_PROP_NAME, MEMBER_STATUS_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #MEMBER_STATUS_STREAM_ID_DEFAULT} or system property
+         * {@link #MEMBER_STATUS_STREAM_ID_PROP_NAME} if set.
+         *
+         * @return {@link #MEMBER_STATUS_STREAM_ID_DEFAULT} or system property
+         * {@link #MEMBER_STATUS_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int memberStatusStreamId()
+        {
+            return Integer.getInteger(MEMBER_STATUS_STREAM_ID_PROP_NAME, MEMBER_STATUS_STREAM_ID_DEFAULT);
+        }
     }
 
-    public static class Context implements AutoCloseable
+    public static class Context implements AutoCloseable, Cloneable
     {
         private boolean ownsAeronClient = false;
+        private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
 
+        private boolean deleteDirOnStart = false;
+        private String clusterDirectoryName = Configuration.clusterDirName();
+        private File clusterDir;
+        private RecordingLog recordingLog;
+        private ClusterMarkFile markFile;
+
+        private int clusterMemberId = Configuration.clusterMemberId();
+        private int appointedLeaderId = Configuration.appointedLeaderId();
+        private String clusterMembers = Configuration.clusterMembers();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
-        private String logChannel = ClusteredServiceContainer.Configuration.logChannel();
-        private int logStreamId = ClusteredServiceContainer.Configuration.logStreamId();
-        private String timerChannel = ClusteredServiceContainer.Configuration.timerChannel();
-        private int timerStreamId = ClusteredServiceContainer.Configuration.timerStreamId();
+        private String logChannel = Configuration.logChannel();
+        private int logStreamId = Configuration.logStreamId();
+        private String replayChannel = ClusteredServiceContainer.Configuration.replayChannel();
+        private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
+        private String serviceControlChannel = ClusteredServiceContainer.Configuration.serviceControlChannel();
+        private int serviceControlStreamId = ClusteredServiceContainer.Configuration.serviceControlStreamId();
+        private String snapshotChannel = Configuration.snapshotChannel();
+        private int snapshotStreamId = Configuration.snapshotStreamId();
+        private String memberStatusChannel = Configuration.memberStatusChannel();
+        private int memberStatusStreamId = Configuration.memberStatusStreamId();
 
+        private int serviceCount = Configuration.serviceCount();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
         private long sessionTimeoutNs = Configuration.sessionTimeoutNs();
+        private long heartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
+        private long heartbeatIntervalNs = Configuration.leaderHeartbeatIntervalNs();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
-        private CachedEpochClock cachedEpochClock;
 
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
-        private AeronArchive.Context archiveContext;
+        private Counter moduleState;
+        private Counter clusterNodeRole;
+        private Counter controlToggle;
+        private Counter snapshotCounter;
+        private Counter invalidRequestCounter;
+        private ShutdownSignalBarrier shutdownSignalBarrier;
+        private Runnable terminationHook;
 
+        private AeronArchive.Context archiveContext;
+        private AuthenticatorSupplier authenticatorSupplier;
+
+        /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            try
+            {
+                return (Context)super.clone();
+            }
+            catch (final CloneNotSupportedException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        @SuppressWarnings("MethodLength")
         public void conclude()
         {
+            if (deleteDirOnStart)
+            {
+                if (null != clusterDir)
+                {
+                    IoUtil.delete(clusterDir, true);
+                }
+                else
+                {
+                    IoUtil.delete(new File(Configuration.clusterDirName()), true);
+                }
+            }
+
+            if (null == clusterDir)
+            {
+                clusterDir = new File(clusterDirectoryName);
+            }
+
+            if (!clusterDir.exists() && !clusterDir.mkdirs())
+            {
+                throw new IllegalStateException(
+                    "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
+            }
+
+            if (null == recordingLog)
+            {
+                recordingLog = new RecordingLog(clusterDir);
+            }
+
             if (null == errorHandler)
             {
                 throw new IllegalStateException("Error handler must be supplied");
@@ -219,17 +731,13 @@ public class ConsensusModule
                 epochClock = new SystemEpochClock();
             }
 
-            if (null == cachedEpochClock)
-            {
-                cachedEpochClock = new CachedEpochClock();
-            }
-
             if (null == aeron)
             {
                 ownsAeronClient = true;
 
                 aeron = Aeron.connect(
                     new Aeron.Context()
+                        .aeronDirectoryName(aeronDirectoryName)
                         .errorHandler(errorHandler)
                         .epochClock(epochClock)
                         .useConductorAgentInvoker(true)
@@ -239,6 +747,11 @@ public class ConsensusModule
                 {
                     errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Cluster errors");
                 }
+            }
+
+            if (null == aeron.conductorAgentInvoker())
+            {
+                throw new IllegalStateException("Aeron client must use conductor agent invoker");
             }
 
             if (null == errorCounter)
@@ -255,6 +768,31 @@ public class ConsensusModule
                 }
             }
 
+            if (null == moduleState)
+            {
+                moduleState = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus module state");
+            }
+
+            if (null == clusterNodeRole)
+            {
+                clusterNodeRole = aeron.addCounter(Configuration.CLUSTER_NODE_ROLE_TYPE_ID, "Cluster node role");
+            }
+
+            if (null == controlToggle)
+            {
+                controlToggle = aeron.addCounter(CONTROL_TOGGLE_TYPE_ID, "Cluster control toggle");
+            }
+
+            if (null == snapshotCounter)
+            {
+                snapshotCounter = aeron.addCounter(SNAPSHOT_COUNTER_TYPE_ID, "Snapshot count");
+            }
+
+            if (null == invalidRequestCounter)
+            {
+                invalidRequestCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Invalid cluster request count");
+            }
+
             if (null == threadFactory)
             {
                 threadFactory = Thread::new;
@@ -267,8 +805,211 @@ public class ConsensusModule
 
             if (null == archiveContext)
             {
-                archiveContext = new AeronArchive.Context().lock(new NoOpLock());
+                archiveContext = new AeronArchive.Context()
+                    .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
+                    .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
+                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
             }
+
+            archiveContext
+                .aeron(aeron)
+                .ownsAeronClient(false)
+                .lock(new NoOpLock());
+
+            if (null == shutdownSignalBarrier)
+            {
+                shutdownSignalBarrier = new ShutdownSignalBarrier();
+            }
+
+            if (null == terminationHook)
+            {
+                terminationHook = () -> shutdownSignalBarrier.signal();
+            }
+
+            if (null == authenticatorSupplier)
+            {
+                authenticatorSupplier = Configuration.authenticatorSupplier();
+            }
+
+            concludeMarkFile();
+        }
+
+        /**
+         * Should the consensus module attempt to immediately delete {@link #clusterDir()} on startup.
+         *
+         * @param deleteDirOnStart Attempt deletion.
+         * @return this for a fluent API.
+         */
+        public Context deleteDirOnStart(final boolean deleteDirOnStart)
+        {
+            this.deleteDirOnStart = deleteDirOnStart;
+            return this;
+        }
+
+        /**
+         * Will the consensus module attempt to immediately delete {@link #clusterDir()} on startup.
+         *
+         * @return true when directory will be deleted, otherwise false.
+         */
+        public boolean deleteDirOnStart()
+        {
+            return deleteDirOnStart;
+        }
+
+        /**
+         * Set the directory name to use for the consensus module directory.
+         *
+         * @param clusterDirectoryName to use.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public Context clusterDirectoryName(final String clusterDirectoryName)
+        {
+            this.clusterDirectoryName = clusterDirectoryName;
+            return this;
+        }
+
+        /**
+         * The directory name to use for the consensus module directory.
+         *
+         * @return directory name for the consensus module directory.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public String clusterDirectoryName()
+        {
+            return clusterDirectoryName;
+        }
+
+        /**
+         * Set the directory to use for the consensus module directory.
+         *
+         * @param clusterDir to use.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public Context clusterDir(final File clusterDir)
+        {
+            this.clusterDir = clusterDir;
+            return this;
+        }
+
+        /**
+         * The directory used for for the consensus module directory.
+         *
+         * @return directory for for the consensus module directory.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public File clusterDir()
+        {
+            return clusterDir;
+        }
+
+        /**
+         * Set the {@link RecordingLog} for the log terms and snapshots.
+         *
+         * @param recordingLog to use.
+         * @return this for a fluent API.
+         */
+        public Context recordingLog(final RecordingLog recordingLog)
+        {
+            this.recordingLog = recordingLog;
+            return this;
+        }
+
+        /**
+         * The {@link RecordingLog} for the log terms and snapshots.
+         *
+         * @return {@link RecordingLog} for the  log terms and snapshots.
+         */
+        public RecordingLog recordingLog()
+        {
+            return recordingLog;
+        }
+
+        /**
+         * This cluster member identity.
+         *
+         * @param clusterMemberId for this member.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_MEMBER_ID_PROP_NAME
+         */
+        public Context clusterMemberId(final int clusterMemberId)
+        {
+            this.clusterMemberId = clusterMemberId;
+            return this;
+        }
+
+        /**
+         * This cluster member identity.
+         *
+         * @return this cluster member identity.
+         * @see Configuration#CLUSTER_MEMBER_ID_PROP_NAME
+         */
+        public int clusterMemberId()
+        {
+            return clusterMemberId;
+        }
+
+        /**
+         * The cluster member id of the appointed cluster leader.
+         * <p>
+         * -1 means no leader has been appointed and an automated leader election should occur.
+         *
+         * @param appointedLeaderId for the cluster.
+         * @return this for a fluent API.
+         * @see Configuration#APPOINTED_LEADER_ID_PROP_NAME
+         */
+        public Context appointedLeaderId(final int appointedLeaderId)
+        {
+            this.appointedLeaderId = appointedLeaderId;
+            return this;
+        }
+
+        /**
+         * The cluster member id of the appointed cluster leader.
+         * <p>
+         * -1 means no leader has been appointed and an automated leader election should occur.
+         *
+         * @return cluster member id of the appointed cluster leader.
+         * @see Configuration#APPOINTED_LEADER_ID_PROP_NAME
+         */
+        public int appointedLeaderId()
+        {
+            return appointedLeaderId;
+        }
+
+        /**
+         * String representing the cluster members.
+         * <p>
+         * <code>
+         *     0,client-facing:port,member-facing:port,log:port|1,client-facing:port,member-facing:port,log:port| ...
+         * </code>
+         * <p>
+         * The client facing endpoints will be used as the endpoint in {@link #ingressChannel()} if the endpoint is
+         * not provided in that when it is not multicast.
+         *
+         * @param clusterMembers which are all candidates to be leader.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_MEMBERS_PROP_NAME
+         */
+        public Context clusterMembers(final String clusterMembers)
+        {
+            this.clusterMembers = clusterMembers;
+            return this;
+        }
+
+        /**
+         * The endpoints representing members of the cluster which are all candidates to be leader.
+         * <p>
+         * The client facing endpoints will be used as the endpoint in {@link #ingressChannel()} if the endpoint is
+         * not provided in that when it is not multicast.
+         *
+         * @return members of the cluster which are all candidates to be leader.
+         * @see Configuration#CLUSTER_MEMBERS_PROP_NAME
+         */
+        public String clusterMembers()
+        {
+            return clusterMembers;
         }
 
         /**
@@ -324,7 +1065,7 @@ public class ConsensusModule
          *
          * @param channel parameter for the cluster log channel.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#LOG_CHANNEL_PROP_NAME
+         * @see Configuration#LOG_CHANNEL_PROP_NAME
          */
         public Context logChannel(final String channel)
         {
@@ -336,7 +1077,7 @@ public class ConsensusModule
          * Get the channel parameter for the cluster log channel.
          *
          * @return the channel parameter for the cluster channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_CHANNEL_PROP_NAME
+         * @see Configuration#LOG_CHANNEL_PROP_NAME
          */
         public String logChannel()
         {
@@ -348,7 +1089,7 @@ public class ConsensusModule
          *
          * @param streamId for the cluster log channel.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#LOG_STREAM_ID_PROP_NAME
+         * @see Configuration#LOG_STREAM_ID_PROP_NAME
          */
         public Context logStreamId(final int streamId)
         {
@@ -360,7 +1101,7 @@ public class ConsensusModule
          * Get the stream id for the cluster log channel.
          *
          * @return the stream id for the cluster log channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_STREAM_ID_PROP_NAME
+         * @see Configuration#LOG_STREAM_ID_PROP_NAME
          */
         public int logStreamId()
         {
@@ -368,51 +1109,219 @@ public class ConsensusModule
         }
 
         /**
-         * Set the channel parameter for scheduling timer events channel.
+         * Set the channel parameter for the cluster log and snapshot replay channel.
          *
-         * @param channel parameter for the scheduling timer events channel.
+         * @param channel parameter for the cluster log replay channel.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#TIMER_CHANNEL_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
          */
-        public Context timerChannel(final String channel)
+        public Context replayChannel(final String channel)
         {
-            timerChannel = channel;
+            replayChannel = channel;
             return this;
         }
 
         /**
-         * Get the channel parameter for the scheduling timer events channel.
+         * Get the channel parameter for the cluster log and snapshot replay channel.
          *
-         * @return the channel parameter for the scheduling timer events channel.
-         * @see ClusteredServiceContainer.Configuration#TIMER_CHANNEL_PROP_NAME
+         * @return the channel parameter for the cluster replay channel.
+         * @see ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
          */
-        public String timerChannel()
+        public String replayChannel()
         {
-            return timerChannel;
+            return replayChannel;
         }
 
         /**
-         * Set the stream id for the scheduling timer events channel.
+         * Set the stream id for the cluster log and snapshot replay channel.
          *
-         * @param streamId for the scheduling timer events channel.
+         * @param streamId for the cluster log replay channel.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#TIMER_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
-        public Context timerStreamId(final int streamId)
+        public Context replayStreamId(final int streamId)
         {
-            timerStreamId = streamId;
+            replayStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for the scheduling timer events channel.
+         * Get the stream id for the cluster log and snapshot replay channel.
+         *
+         * @return the stream id for the cluster log replay channel.
+         * @see ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
+         */
+        public int replayStreamId()
+        {
+            return replayStreamId;
+        }
+
+        /**
+         * Set the channel parameter for bi-directional communications between the consensus module and services.
+         *
+         * @param channel parameter for bi-directional communications between the consensus module and services.
+         * @return this for a fluent API.
+         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
+         */
+        public Context serviceControlChannel(final String channel)
+        {
+            serviceControlChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for bi-directional communications between the consensus module and services.
+         *
+         * @return the channel parameter for bi-directional communications between the consensus module and services.
+         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
+         */
+        public String serviceControlChannel()
+        {
+            return serviceControlChannel;
+        }
+
+        /**
+         * Set the stream id for bi-directional communications between the consensus module and services.
+         *
+         * @param streamId for bi-directional communications between the consensus module and services.
+         * @return this for a fluent API
+         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_STREAM_ID_PROP_NAME
+         */
+        public Context serviceControlStreamId(final int streamId)
+        {
+            serviceControlStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for bi-directional communications between the consensus module and services.
          *
          * @return the stream id for the scheduling timer events channel.
-         * @see ClusteredServiceContainer.Configuration#TIMER_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_STREAM_ID_PROP_NAME
          */
-        public int timerStreamId()
+        public int serviceControlStreamId()
         {
-            return timerStreamId;
+            return serviceControlStreamId;
+        }
+
+        /**
+         * Set the channel parameter for snapshot recordings.
+         *
+         * @param channel parameter for snapshot recordings
+         * @return this for a fluent API.
+         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME
+         */
+        public Context snapshotChannel(final String channel)
+        {
+            snapshotChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for snapshot recordings.
+         *
+         * @return the channel parameter for snapshot recordings.
+         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME
+         */
+        public String snapshotChannel()
+        {
+            return snapshotChannel;
+        }
+
+        /**
+         * Set the stream id for snapshot recordings.
+         *
+         * @param streamId for snapshot recordings.
+         * @return this for a fluent API
+         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
+         */
+        public Context snapshotStreamId(final int streamId)
+        {
+            snapshotStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for snapshot recordings.
+         *
+         * @return the stream id for snapshot recordings.
+         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
+         */
+        public int snapshotStreamId()
+        {
+            return snapshotStreamId;
+        }
+
+        /**
+         * Set the channel parameter for the member status communication channel.
+         *
+         * @param channel parameter for the member status communication channel.
+         * @return this for a fluent API.
+         * @see Configuration#MEMBER_STATUS_CHANNEL_PROP_NAME
+         */
+        public Context memberStatusChannel(final String channel)
+        {
+            memberStatusChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for the member status communication channel.
+         *
+         * @return the channel parameter for the member status communication channel.
+         * @see Configuration#MEMBER_STATUS_CHANNEL_PROP_NAME
+         */
+        public String memberStatusChannel()
+        {
+            return memberStatusChannel;
+        }
+
+        /**
+         * Set the stream id for the member status channel.
+         *
+         * @param streamId for the ingress channel.
+         * @return this for a fluent API
+         * @see Configuration#MEMBER_STATUS_STREAM_ID_PROP_NAME
+         */
+        public Context memberStatusStreamId(final int streamId)
+        {
+            memberStatusStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for the member status channel.
+         *
+         * @return the stream id for the member status channel.
+         * @see Configuration#MEMBER_STATUS_STREAM_ID_PROP_NAME
+         */
+        public int memberStatusStreamId()
+        {
+            return memberStatusStreamId;
+        }
+
+        /**
+         * Set the number of clustered services in this cluster instance.
+         *
+         * @param serviceCount the number of clustered services in this cluster instance.
+         * @return this for a fluent API
+         * @see Configuration#SERVICE_COUNT_PROP_NAME
+         */
+        public Context serviceCount(final int serviceCount)
+        {
+            this.serviceCount = serviceCount;
+            return this;
+        }
+
+        /**
+         * Get the number of clustered services in this cluster instance.
+         *
+         * @return the number of clustered services in this cluster instance.
+         * @see Configuration#SERVICE_COUNT_PROP_NAME
+         */
+        public int serviceCount()
+        {
+            return serviceCount;
         }
 
         /**
@@ -461,6 +1370,54 @@ public class ConsensusModule
         public long sessionTimeoutNs()
         {
             return sessionTimeoutNs;
+        }
+
+        /**
+         * Timeout for a leader if no heartbeat is received by an other member.
+         *
+         * @param heartbeatTimeoutNs to wait for heartbeat from a leader.
+         * @return this for a fluent API.
+         * @see Configuration#HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public Context heartbeatTimeoutNs(final long heartbeatTimeoutNs)
+        {
+            this.heartbeatTimeoutNs = heartbeatTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout for a leader if no heartbeat is received by an other member.
+         *
+         * @return the timeout for a leader if no heartbeat is received by an other member.
+         * @see Configuration#HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public long heartbeatTimeoutNs()
+        {
+            return heartbeatTimeoutNs;
+        }
+
+        /**
+         * Interval at which a leader will send heartbeats if the log is not progressing.
+         *
+         * @param heartbeatIntervalNs between leader heartbeats.
+         * @return this for a fluent API.
+         * @see Configuration#HEARTBEAT_INTERVAL_PROP_NAME
+         */
+        public Context heartbeatIntervalNs(final long heartbeatIntervalNs)
+        {
+            this.heartbeatIntervalNs = heartbeatIntervalNs;
+            return this;
+        }
+
+        /**
+         * Interval at which a leader will send heartbeats if the log is not progressing.
+         *
+         * @return the interval at which a leader will send heartbeats if the log is not progressing.
+         * @see Configuration#HEARTBEAT_INTERVAL_PROP_NAME
+         */
+        public long heartbeatIntervalNs()
+        {
+            return heartbeatIntervalNs;
         }
 
         /**
@@ -530,28 +1487,6 @@ public class ConsensusModule
         }
 
         /**
-         * Set the {@link CachedEpochClock} to be used for tracking wall clock time.
-         *
-         * @param clock {@link CachedEpochClock} to be used for tracking wall clock time.
-         * @return this for a fluent API.
-         */
-        public Context cachedEpochClock(final CachedEpochClock clock)
-        {
-            this.cachedEpochClock = clock;
-            return this;
-        }
-
-        /**
-         * Get the {@link CachedEpochClock} to used for tracking wall clock time.
-         *
-         * @return the {@link CachedEpochClock} to used for tracking wall clock time.
-         */
-        public CachedEpochClock cachedEpochClock()
-        {
-            return cachedEpochClock;
-        }
-
-        /**
          * Get the {@link ErrorHandler} to be used by the Consensus Module.
          *
          * @return the {@link ErrorHandler} to be used by the Consensus Module.
@@ -618,6 +1553,122 @@ public class ConsensusModule
         }
 
         /**
+         * Get the counter for the current state of the consensus module.
+         *
+         * @return the counter for the current state of the consensus module.
+         * @see State
+         */
+        public Counter moduleStateCounter()
+        {
+            return moduleState;
+        }
+
+        /**
+         * Set the counter for the current state of the consensus module.
+         *
+         * @param moduleState the counter for the current state of the consensus module.
+         * @return this for a fluent API.
+         * @see State
+         */
+        public Context moduleStateCounter(final Counter moduleState)
+        {
+            this.moduleState = moduleState;
+            return this;
+        }
+
+        /**
+         * Get the counter for representing the current {@link Cluster.Role} of the consensus module node.
+         *
+         * @return the counter for representing the current {@link Cluster.Role} of the cluster node.
+         * @see Cluster.Role
+         */
+        public Counter clusterNodeCounter()
+        {
+            return clusterNodeRole;
+        }
+
+        /**
+         * Set the counter for representing the current {@link Cluster.Role} of the cluster node.
+         *
+         * @param moduleRole the counter for representing the current {@link Cluster.Role} of the cluster node.
+         * @return this for a fluent API.
+         * @see Cluster.Role
+         */
+        public Context clusterNodeCounter(final Counter moduleRole)
+        {
+            this.clusterNodeRole = moduleRole;
+            return this;
+        }
+
+        /**
+         * Get the counter for the control toggle for triggering actions on the cluster node.
+         *
+         * @return the counter for triggering cluster node actions.
+         * @see ClusterControl
+         */
+        public Counter controlToggleCounter()
+        {
+            return controlToggle;
+        }
+
+        /**
+         * Set the counter for the control toggle for triggering actions on the cluster node.
+         *
+         * @param controlToggle the counter for triggering cluster node actions.
+         * @return this for a fluent API.
+         * @see ClusterControl
+         */
+        public Context controlToggleCounter(final Counter controlToggle)
+        {
+            this.controlToggle = controlToggle;
+            return this;
+        }
+
+        /**
+         * Get the counter for the count of snapshots taken.
+         *
+         * @return the counter for the count of snapshots taken.
+         */
+        public Counter snapshotCounter()
+        {
+            return snapshotCounter;
+        }
+
+        /**
+         * Set the counter for the count of snapshots taken.
+         *
+         * @param snapshotCounter the count of snapshots taken.
+         * @return this for a fluent API.
+         */
+        public Context snapshotCounter(final Counter snapshotCounter)
+        {
+            this.snapshotCounter = snapshotCounter;
+            return this;
+        }
+
+        /**
+         * Get the counter for the count of invalid client requests.
+         *
+         * @return the counter for the count of invalid client requests.
+         */
+        public Counter invalidRequestCounter()
+        {
+            return invalidRequestCounter;
+        }
+
+        /**
+         * Set the counter for the count of invalid client requests.
+         *
+         * @param invalidRequestCounter the count of invalid client requests.
+         * @return this for a fluent API.
+         */
+        public Context invalidRequestCounter(final Counter invalidRequestCounter)
+        {
+            this.invalidRequestCounter = invalidRequestCounter;
+            return this;
+        }
+
+        /**
          * {@link Aeron} client for communicating with the local Media Driver.
          * <p>
          * This client will be closed when the {@link ConsensusModule#close()} or {@link #close()} methods are called
@@ -644,6 +1695,28 @@ public class ConsensusModule
         public Aeron aeron()
         {
             return aeron;
+        }
+
+        /**
+         * Set the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @param aeronDirectoryName the top level Aeron directory.
+         * @return this for a fluent API.
+         */
+        public Context aeronDirectoryName(final String aeronDirectoryName)
+        {
+            this.aeronDirectoryName = aeronDirectoryName;
+            return this;
+        }
+
+        /**
+         * Get the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @return The top level Aeron directory.
+         */
+        public String aeronDirectoryName()
+        {
+            return aeronDirectoryName;
         }
 
         /**
@@ -691,15 +1764,167 @@ public class ConsensusModule
         }
 
         /**
+         * Get the {@link AuthenticatorSupplier} that should be used for the consensus module.
+         *
+         * @return the {@link AuthenticatorSupplier} to be used for the consensus module.
+         */
+        public AuthenticatorSupplier authenticatorSupplier()
+        {
+            return authenticatorSupplier;
+        }
+
+        /**
+         * Set the {@link AuthenticatorSupplier} that will be used for the consensus module.
+         *
+         * @param authenticatorSupplier {@link AuthenticatorSupplier} to use for the consensus module.
+         * @return this for a fluent API.
+         */
+        public Context authenticatorSupplier(final AuthenticatorSupplier authenticatorSupplier)
+        {
+            this.authenticatorSupplier = authenticatorSupplier;
+            return this;
+        }
+
+        /**
+         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         *
+         * @param barrier that can be used to shutdown a consensus module.
+         * @return this for a fluent API.
+         */
+        public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
+        {
+            shutdownSignalBarrier = barrier;
+            return this;
+        }
+
+        /**
+         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         *
+         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         */
+        public ShutdownSignalBarrier shutdownSignalBarrier()
+        {
+            return shutdownSignalBarrier;
+        }
+
+        /**
+         * Set the {@link Runnable} that is called when the {@link ConsensusModule} processes a termination action such
+         * as a {@link ConsensusModule.State#SHUTDOWN} or {@link ConsensusModule.State#ABORT}.
+         *
+         * @param terminationHook that can be used to terminate a consensus module.
+         * @return this for a fluent API.
+         */
+        public Context terminationHook(final Runnable terminationHook)
+        {
+            this.terminationHook = terminationHook;
+            return this;
+        }
+
+        /**
+         * Get the {@link Runnable} that is called when the {@link ConsensusModule} processes a termination action such
+         * as a {@link ConsensusModule.State#SHUTDOWN} or {@link ConsensusModule.State#ABORT}.
+         * <p>
+         * The default action is to call signal on the {@link #shutdownSignalBarrier()}.
+         *
+         * @return the {@link Runnable} that can be used to terminate a consensus module.
+         */
+        public Runnable terminationHook()
+        {
+            return terminationHook;
+        }
+
+        /**
+         * Set the {@link ClusterMarkFile} in use.
+         *
+         * @param markFile to use.
+         * @return this for a fluent API.
+         */
+        public Context clusterMarkFile(final ClusterMarkFile markFile)
+        {
+            this.markFile = markFile;
+            return this;
+        }
+
+        /**
+         * The {@link ClusterMarkFile} in use.
+         *
+         * @return {@link ClusterMarkFile} in use.
+         */
+        public ClusterMarkFile clusterMarkFile()
+        {
+            return markFile;
+        }
+
+        /**
+         * Delete the cluster directory.
+         */
+        public void deleteDirectory()
+        {
+            if (null != clusterDir)
+            {
+                IoUtil.delete(clusterDir, false);
+            }
+        }
+
+        /**
          * Close the context and free applicable resources.
          * <p>
          * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
          */
         public void close()
         {
+            CloseHelper.close(markFile);
+
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
+            }
+            else
+            {
+                CloseHelper.close(moduleState);
+                CloseHelper.close(clusterNodeRole);
+                CloseHelper.close(controlToggle);
+                CloseHelper.close(snapshotCounter);
+            }
+        }
+
+        private void concludeMarkFile()
+        {
+            if (null == markFile)
+            {
+                final int alignedTotalFileLength = ClusterMarkFile.alignedTotalFileLength(
+                    ClusterMarkFile.ALIGNMENT,
+                    aeron.context().aeronDirectoryName(),
+                    archiveContext.controlRequestChannel(),
+                    serviceControlChannel(),
+                    ingressChannel,
+                    null,
+                    authenticatorSupplier.getClass().toString());
+
+                markFile = new ClusterMarkFile(
+                    new File(clusterDir, ClusterMarkFile.FILENAME),
+                    ClusterComponentType.CONSENSUS_MODULE,
+                    alignedTotalFileLength,
+                    epochClock,
+                    0);
+
+                final MarkFileHeaderEncoder encoder = markFile.encoder();
+
+                encoder
+                    .archiveStreamId(archiveContext.controlRequestStreamId())
+                    .serviceControlStreamId(serviceControlStreamId)
+                    .ingressStreamId(ingressStreamId)
+                    .memberId(clusterMemberId)
+                    .serviceId(-1)
+                    .aeronDirectory(aeron.context().aeronDirectoryName())
+                    .archiveChannel(archiveContext.controlRequestChannel())
+                    .serviceControlChannel(serviceControlChannel)
+                    .ingressChannel(ingressChannel)
+                    .serviceName("")
+                    .authenticator(authenticatorSupplier.getClass().toString());
+
+                markFile.updateActivityTimestamp(epochClock.time());
+                markFile.signalReady();
             }
         }
     }

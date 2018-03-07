@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 package io.aeron.driver.status;
 
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
-import static io.aeron.driver.status.StreamPositionCounter.*;
-
 /**
- * Allocates {@link AtomicCounter} indicating a per {@link io.aeron.driver.PublicationImage} indication.
+ * Allocates {@link AtomicCounter} indicating a per {@link io.aeron.driver.PublicationImage} indication of presence for
+ * {@link io.aeron.driver.CongestionControl}.
  */
 public class PerImageIndicator
 {
@@ -33,6 +33,7 @@ public class PerImageIndicator
     /**
      * Allocate a per {@link io.aeron.driver.PublicationImage} indicator.
      *
+     * @param tempBuffer      to be used for labels and key.
      * @param name            of the counter for the label.
      * @param countersManager from which to allocated the underlying storage.
      * @param registrationId  to be associated with the counter.
@@ -42,6 +43,7 @@ public class PerImageIndicator
      * @return a new {@link AtomicCounter} for tracking the indicator.
      */
     public static AtomicCounter allocate(
+        final MutableDirectBuffer tempBuffer,
         final String name,
         final CountersManager countersManager,
         final long registrationId,
@@ -49,20 +51,9 @@ public class PerImageIndicator
         final int streamId,
         final String channel)
     {
-        final String label = name + ": " + registrationId + ' ' + sessionId + ' ' + streamId + ' ' + channel;
+        final int counterId = StreamPositionCounter.allocateCounterId(
+            tempBuffer, name, PER_IMAGE_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
 
-        return countersManager.newCounter(
-            label,
-            PER_IMAGE_TYPE_ID,
-            (buffer) ->
-            {
-                buffer.putLong(REGISTRATION_ID_OFFSET, registrationId);
-                buffer.putInt(SESSION_ID_OFFSET, sessionId);
-                buffer.putInt(STREAM_ID_OFFSET, streamId);
-
-                final String truncatedChannel =
-                    channel.length() > MAX_CHANNEL_LENGTH ? channel.substring(0, MAX_CHANNEL_LENGTH) : channel;
-                buffer.putStringAscii(CHANNEL_OFFSET, truncatedChannel);
-            });
+        return new AtomicCounter(countersManager.valuesBuffer(), counterId, countersManager);
     }
 }

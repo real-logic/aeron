@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -43,9 +42,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.hamcrest.core.IsNot.not;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -87,6 +85,7 @@ public class PubAndSubTest
     {
         context
             .threadingMode(THREADING_MODE)
+            .errorHandler(Throwable::printStackTrace)
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 
@@ -98,54 +97,20 @@ public class PubAndSubTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
         CloseHelper.quietClose(subscribingClient);
         CloseHelper.quietClose(publishingClient);
         CloseHelper.quietClose(driver);
 
-        context.deleteAeronDirectory();
+        if (null != context.aeronDirectory())
+        {
+            context.deleteAeronDirectory();
+        }
     }
 
     @Theory
-    @Test(timeout = 10000)
-    public void shouldSpinUpAndShutdown(final String channel)
-    {
-        launch(channel);
-    }
-
-    @Theory
-    @Test(timeout = 10000)
-    public void shouldReceivePublishedMessage(final String channel)
-    {
-        launch(channel);
-
-        publishMessage();
-
-        final MutableInteger fragmentsRead = new MutableInteger();
-        SystemTestHelper.executeUntil(
-            () -> fragmentsRead.value > 0,
-            (i) ->
-            {
-                final int fragments = subscription.poll(fragmentHandler, 10);
-                if (0 == fragments)
-                {
-                    Thread.yield();
-                }
-                fragmentsRead.value += fragments;
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(9900));
-
-        verify(fragmentHandler).onFragment(
-            any(DirectBuffer.class),
-            eq(HEADER_LENGTH),
-            eq(SIZE_OF_INT),
-            any(Header.class));
-    }
-
-    @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessageViaPollFile(final String channel)
     {
         launch(channel);
@@ -153,7 +118,7 @@ public class PubAndSubTest
         publishMessage();
 
         final MutableLong bytesRead = new MutableLong();
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> bytesRead.value > 0,
             (i) ->
             {
@@ -189,12 +154,13 @@ public class PubAndSubTest
 
         while (publication.offer(buffer, 0, SIZE_OF_INT) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldContinueAfterBufferRollover(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -210,12 +176,13 @@ public class PubAndSubTest
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
@@ -238,7 +205,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -257,12 +224,13 @@ public class PubAndSubTest
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
@@ -288,18 +256,20 @@ public class PubAndSubTest
         // small enough to leave room for padding that is just a header
         while (publication.offer(buffer, 0, lastMessageLength) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
         // no roll over
         while (publication.offer(buffer, 0, messageLength) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead.value == 9,
             (j) ->
             {
@@ -333,9 +303,14 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel)
     {
+        if (IPC_URI.equals(channel))
+        {
+            return;
+        }
+
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
@@ -351,17 +326,14 @@ public class PubAndSubTest
 
         context.publicationTermBufferLength(termBufferLength);
 
-        context.sendChannelEndpointSupplier(
-            (udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
-                udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
+        context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
+            udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
         context.receiveChannelEndpointSupplier(
             (udpChannel, dispatcher, statusIndicator, context) -> new DebugReceiveChannelEndpoint(
-                udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
+            udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
 
         launch(channel);
-
-        Assume.assumeThat(channel, not(IPC_URI));
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
@@ -371,7 +343,7 @@ public class PubAndSubTest
             }
 
             final MutableInteger mutableInteger = new MutableInteger();
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> mutableInteger.value > 0,
                 (j) ->
                 {
@@ -396,9 +368,14 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel)
     {
+        if (IPC_URI.equals(channel))
+        {
+            return;
+        }
+
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
@@ -416,17 +393,14 @@ public class PubAndSubTest
 
         context.publicationTermBufferLength(termBufferLength);
 
-        context.sendChannelEndpointSupplier(
-            (udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
-                udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
+        context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
+            udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
         context.receiveChannelEndpointSupplier(
             (udpChannel, dispatcher, statusIndicator, context) -> new DebugReceiveChannelEndpoint(
-                udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
+            udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
 
         launch(channel);
-
-        Assume.assumeThat(channel, not(IPC_URI));
 
         for (int i = 0; i < numBatches; i++)
         {
@@ -434,13 +408,14 @@ public class PubAndSubTest
             {
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.value >= numMessagesPerBatch,
                 (j) ->
                 {
@@ -465,7 +440,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldContinueAfterBufferRolloverBatched(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -485,13 +460,14 @@ public class PubAndSubTest
             {
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.value >= numMessagesPerBatch,
                 (j) ->
                 {
@@ -508,12 +484,13 @@ public class PubAndSubTest
 
         while (publication.offer(buffer, 0, messageLength) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead.value > 0,
             (j) ->
             {
@@ -535,7 +512,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldContinueAfterBufferRolloverWithPadding(final String channel)
     {
         /*
@@ -556,12 +533,13 @@ public class PubAndSubTest
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
@@ -584,7 +562,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
     {
         /*
@@ -609,13 +587,14 @@ public class PubAndSubTest
             {
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.value >= numMessagesPerBatch,
                 (j) ->
                 {
@@ -638,7 +617,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
     {
         /*
@@ -665,6 +644,8 @@ public class PubAndSubTest
                 {
                     break;
                 }
+
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -679,7 +660,7 @@ public class PubAndSubTest
         final MutableInteger fragmentsRead = new MutableInteger();
         final int messagesToReceive = messagesSent;
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead.value >= messagesToReceive,
             (j) ->
             {
@@ -701,7 +682,7 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
     {
         final int termBufferLength = 64 * 1024;
@@ -709,7 +690,6 @@ public class PubAndSubTest
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSendStageOne = numMessagesInTermBuffer / 2;
         final int numMessagesToSendStageTwo = numMessagesInTermBuffer;
-        final AtomicInteger stage = new AtomicInteger(1);
 
         context.publicationTermBufferLength(termBufferLength);
 
@@ -717,6 +697,7 @@ public class PubAndSubTest
 
         while (!subscription.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -724,12 +705,13 @@ public class PubAndSubTest
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
@@ -747,11 +729,11 @@ public class PubAndSubTest
         assertEquals(publication.position(), subscription.imageAtIndex(0).position());
 
         subscription.close();
-        stage.set(2);
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
 
         while (!subscription.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -761,12 +743,13 @@ public class PubAndSubTest
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
@@ -791,12 +774,12 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldFragmentExactMessageLengthsCorrectly(final String channel)
     {
         final int termBufferLength = 64 * 1024;
         final int numFragmentsPerMessage = 2;
-        final int mtuLength = 4096;
+        final int mtuLength = context.mtuLength();
         final int frameLength = mtuLength - HEADER_LENGTH;
         final int messageLength = frameLength * numFragmentsPerMessage;
         final int numMessagesToSend = 2;
@@ -811,13 +794,14 @@ public class PubAndSubTest
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsRead.value > numFramesToExpect,
             (j) ->
             {
@@ -839,13 +823,14 @@ public class PubAndSubTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldNoticeDroppedSubscriber(final String channel) throws Exception
     {
         launch(channel);
 
         while (!publication.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.sleep(1);
         }
 
@@ -853,6 +838,7 @@ public class PubAndSubTest
 
         while (publication.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }

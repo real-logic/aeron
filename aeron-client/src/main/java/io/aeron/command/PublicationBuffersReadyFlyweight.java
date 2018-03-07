@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  *  |                           Stream ID                           |
  *  +---------------------------------------------------------------+
- *  |                  Publication Limit Counter Id                 |
+ *  |                  Publication Limit Counter ID                 |
  *  +---------------------------------------------------------------+
  *  |                  Channel Status Indicator ID                  |
  *  +---------------------------------------------------------------+

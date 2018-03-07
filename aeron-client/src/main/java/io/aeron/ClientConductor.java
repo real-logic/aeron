@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,8 +68,8 @@ class ClientConductor implements Agent, DriverEventsListener
     private final Long2ObjectHashMap<LogBuffers> logBuffersByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<Object> resourceByRegIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
-    private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final AvailableImageHandler defaultAvailableImageHandler;
+    private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final AvailableCounterHandler availableCounterHandler;
     private final UnavailableCounterHandler unavailableCounterHandler;
     private final DriverProxy driverProxy;
@@ -208,18 +208,18 @@ class ClientConductor implements Agent, DriverEventsListener
         final int statusIndicatorId,
         final String logFileName)
     {
-        resourceByRegIdMap.put(
-            correlationId,
-            new ConcurrentPublication(
-                this,
-                stashedChannel,
-                streamId,
-                sessionId,
-                new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-                statusIndicatorId,
-                logBuffers(registrationId, logFileName),
-                registrationId,
-                correlationId));
+        final ConcurrentPublication publication = new ConcurrentPublication(
+            this,
+            stashedChannel,
+            streamId,
+            sessionId,
+            new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+            statusIndicatorId,
+            logBuffers(registrationId, logFileName),
+            registrationId,
+            correlationId);
+
+        resourceByRegIdMap.put(correlationId, publication);
     }
 
     public void onNewExclusivePublication(
@@ -231,18 +231,18 @@ class ClientConductor implements Agent, DriverEventsListener
         final int statusIndicatorId,
         final String logFileName)
     {
-        resourceByRegIdMap.put(
-            correlationId,
-            new ExclusivePublication(
-                this,
-                stashedChannel,
-                streamId,
-                sessionId,
-                new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
-                statusIndicatorId,
-                logBuffers(registrationId, logFileName),
-                registrationId,
-                correlationId));
+        final ExclusivePublication publication = new ExclusivePublication(
+            this,
+            stashedChannel,
+            streamId,
+            sessionId,
+            new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+            statusIndicatorId,
+            logBuffers(registrationId, logFileName),
+            registrationId,
+            correlationId);
+
+        resourceByRegIdMap.put(correlationId, publication);
     }
 
     public void onNewSubscription(final long correlationId, final int statusIndicatorId)
@@ -776,8 +776,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 final ManagedResource resource = lingeringResources.get(i);
                 if (nowNs > (resource.timeOfLastStateChange() + RESOURCE_LINGER_NS))
                 {
-                    ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex);
-                    lastIndex--;
+                    ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex--);
                     resource.delete();
                 }
             }

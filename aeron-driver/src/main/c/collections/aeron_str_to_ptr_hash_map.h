@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include "aeron_alloc.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_strutil.h"
+#include "util/aeron_error.h"
 
 typedef struct aeron_str_to_ptr_hash_map_key_stct
 {
@@ -73,11 +74,17 @@ inline int aeron_str_to_ptr_hash_map_init(
 
     if (aeron_alloc((void **)&map->keys, (capacity * sizeof(aeron_str_to_ptr_hash_map_key_t))) < 0)
     {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         return -1;
     }
 
     if (aeron_alloc((void **)&map->values, (capacity * sizeof(void *))) < 0)
     {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         return -1;
     }
 
@@ -107,11 +114,17 @@ inline int aeron_str_to_ptr_hash_map_rehash(aeron_str_to_ptr_hash_map_t *map, si
 
     if (aeron_alloc((void **)&tmp_keys, (new_capacity * sizeof(aeron_str_to_ptr_hash_map_key_t))) < 0)
     {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         return -1;
     }
 
     if (aeron_alloc((void **)&tmp_values, (new_capacity * sizeof(void *))) < 0)
     {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         return -1;
     }
 

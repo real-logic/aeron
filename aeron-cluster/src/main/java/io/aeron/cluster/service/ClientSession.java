@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,12 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
-import io.aeron.ReservedValueSupplier;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SessionHeaderEncoder;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -35,16 +36,26 @@ public class ClientSession
         MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
 
     private final long id;
-    private final Publication responsePublication;
+    private final int responseStreamId;
+    private final String responseChannel;
+    private Publication responsePublication;
+    private final byte[] encodedPrincipal;
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
     private final Cluster cluster;
 
-    ClientSession(final long sessionId, final Publication responsePublication, final Cluster cluster)
+    ClientSession(
+        final long sessionId,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] encodedPrincipal,
+        final Cluster cluster)
     {
         this.id = sessionId;
-        this.responsePublication = responsePublication;
+        this.responseStreamId = responseStreamId;
+        this.responseChannel = responseChannel;
+        this.encodedPrincipal = encodedPrincipal;
         this.cluster = cluster;
 
         final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
@@ -67,13 +78,45 @@ public class ClientSession
     }
 
     /**
+     * The response channel stream id for responding to the client.
+     *
+     * @return response channel stream id for responding to the client.
+     */
+    public int responseStreamId()
+    {
+        return responseStreamId;
+    }
+
+    /**
+     * The response channel for responding to the client.
+     *
+     * @return response channel for responding to the client.
+     */
+    public String responseChannel()
+    {
+        return responseChannel;
+    }
+
+    /**
+     * Cluster session encoded principal passed from {@link io.aeron.cluster.Authenticator}
+     * when the session was authenticated.
+     *
+     * @return The encoded Principal passed. May be 0 length to indicate none present.
+     */
+    public byte[] encodedPrincipal()
+    {
+        return encodedPrincipal;
+    }
+
+    /**
      * Non-blocking publish of a partial buffer containing a message to a cluster.
      *
      * @param correlationId to be used to identify the message to the cluster.
      * @param buffer        containing message.
      * @param offset        offset in the buffer at which the encoded message begins.
      * @param length        in bytes of the encoded message.
-     * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
+     * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.Role#LEADER}
+     * otherwise 1.
      */
     public long offer(
         final long correlationId,
@@ -81,6 +124,11 @@ public class ClientSession
         final int offset,
         final int length)
     {
+        if (cluster.role() != Cluster.Role.LEADER)
+        {
+            return 1;
+        }
+
         sessionHeaderEncoder.correlationId(correlationId);
         sessionHeaderEncoder.timestamp(cluster.timeMs());
         messageBuffer.reset(buffer, offset, length);
@@ -88,32 +136,19 @@ public class ClientSession
         return responsePublication.offer(vectors, null);
     }
 
-    /**
-     * Non-blocking publish of a partial buffer containing a message to a cluster.
-     *
-     * @param correlationId         to be used to identify the message to the cluster.
-     * @param buffer                containing message.
-     * @param offset                offset in the buffer at which the encoded message begins.
-     * @param length                in bytes of the encoded message.
-     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
-     * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
-     */
-    public long offer(
-        final long correlationId,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        final ReservedValueSupplier reservedValueSupplier)
+    void connect(final Aeron aeron)
     {
-        sessionHeaderEncoder.correlationId(correlationId);
-        sessionHeaderEncoder.timestamp(cluster.timeMs());
-        messageBuffer.reset(buffer, offset, length);
+        if (null != responsePublication)
+        {
+            throw new IllegalStateException("Response publication already present");
+        }
 
-        return responsePublication.offer(vectors, reservedValueSupplier);
+        responsePublication = aeron.addPublication(responseChannel, responseStreamId);
     }
 
-    Publication responsePublication()
+    void disconnect()
     {
-        return responsePublication;
+        CloseHelper.close(responsePublication);
+        responsePublication = null;
     }
 }

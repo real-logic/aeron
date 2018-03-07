@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,14 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -51,7 +54,21 @@ public class PublishFromArbitraryPositionTest
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MAX_MESSAGE_LENGTH));
     private long seed;
 
-    @Test(timeout = 10000)
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
+        .threadingMode(ThreadingMode.SHARED));
+
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
+
+    @Test(timeout = 10_000)
     public void shouldPublishFromArbitraryJoinPosition() throws Exception
     {
         final Random rnd = new Random();
@@ -72,18 +89,15 @@ public class PublishFromArbitraryPositionTest
             .mtu(mtu)
             .media("udp")
             .build();
+
         final int expectedNumberOfFragments = 10 + rnd.nextInt(10000);
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .termBufferSparseFile(true);
-
-        try (MediaDriver ignore = MediaDriver.launch(driverCtx);
-             Aeron aeron = Aeron.connect();
-             ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
+        try (ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
         {
             while (!publication.isConnected())
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -107,7 +121,7 @@ public class PublishFromArbitraryPositionTest
                     assertEquals(expectedNumberOfFragments, totalFragmentsRead);
                 });
 
-            t.setDaemon(false);
+            t.setDaemon(true);
             t.setName("image-consumer");
             t.start();
 
@@ -118,10 +132,6 @@ public class PublishFromArbitraryPositionTest
 
             t.join();
         }
-        finally
-        {
-            driverCtx.deleteAeronDirectory();
-        }
     }
 
     private static void publishMessage(
@@ -129,6 +139,7 @@ public class PublishFromArbitraryPositionTest
     {
         while (publication.offer(buffer, 0, 1 + rnd.nextInt(MAX_MESSAGE_LENGTH - 1)) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }

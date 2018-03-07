@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,66 +15,32 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Subscription;
-import io.aeron.cluster.codecs.CancelTimerRequestDecoder;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.ScheduleTimerRequestDecoder;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
-import org.agrona.CloseHelper;
 import org.agrona.DeadlineTimerWheel;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2LongHashMap;
-import org.agrona.concurrent.EpochClock;
 
 import java.util.concurrent.TimeUnit;
 
-public class TimerService implements FragmentHandler, AutoCloseable, DeadlineTimerWheel.TimerHandler
-{
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ScheduleTimerRequestDecoder scheduleTimerRequestDecoder = new ScheduleTimerRequestDecoder();
-    private final CancelTimerRequestDecoder cancelTimerRequestDecoder = new CancelTimerRequestDecoder();
+import static io.aeron.cluster.ConsensusModule.Configuration.TIMER_POLL_LIMIT;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-    private final int timerLimit;
-    private final int fragmentLimit;
+class TimerService implements DeadlineTimerWheel.TimerHandler
+{
     private final SequencerAgent sequencerAgent;
-    private final Subscription subscription;
-    private final EpochClock epochClock;
-    private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(
-        TimeUnit.MILLISECONDS, 0, 1, 128);
+    private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(MILLISECONDS, 0, 1, 128);
     private Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
 
-    public TimerService(
-        final int timerPollLimit,
-        final int fragmentPollLimit,
-        final SequencerAgent sequencerAgent,
-        final Subscription subscription,
-        final EpochClock epochClock)
+    TimerService(final SequencerAgent sequencerAgent)
     {
-        this.timerLimit = timerPollLimit;
-        this.fragmentLimit = fragmentPollLimit;
         this.sequencerAgent = sequencerAgent;
-        this.subscription = subscription;
-        this.epochClock = epochClock;
-    }
-
-    public void close()
-    {
-        CloseHelper.close(subscription);
     }
 
     public int poll(final long nowMs)
     {
-        int workCount = 0;
-
-        workCount += timerWheel.poll(nowMs, this, timerLimit);
-        workCount += subscription.poll(this, fragmentLimit);
-
-        return workCount;
+        return timerWheel.poll(nowMs, this, TIMER_POLL_LIMIT);
     }
 
-    public boolean onExpiry(final TimeUnit timeUnit, final long now, final long timerId)
+    public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId)
     {
         final long correlationId = correlationIdByTimerIdMap.remove(timerId);
         timerIdByCorrelationIdMap.remove(correlationId);
@@ -82,60 +48,42 @@ public class TimerService implements FragmentHandler, AutoCloseable, DeadlineTim
         return sequencerAgent.onTimerEvent(correlationId, now);
     }
 
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public void scheduleTimer(final long correlationId, final long deadlineMs)
     {
-        messageHeaderDecoder.wrap(buffer, offset);
+        cancelTimer(correlationId);
 
-        final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
-        {
-            case ScheduleTimerRequestDecoder.TEMPLATE_ID:
-                scheduleTimerRequestDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                scheduleTimer(
-                    scheduleTimerRequestDecoder.correlationId(),
-                    scheduleTimerRequestDecoder.deadline());
-                break;
-
-            case CancelTimerRequestDecoder.TEMPLATE_ID:
-                cancelTimerRequestDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                cancelTimer(scheduleTimerRequestDecoder.correlationId());
-                break;
-        }
+        final long timerId = timerWheel.scheduleTimer(deadlineMs);
+        timerIdByCorrelationIdMap.put(correlationId, timerId);
+        correlationIdByTimerIdMap.put(timerId, correlationId);
     }
 
-    private void scheduleTimer(final long correlationId, final long deadlineMs)
-    {
-        if (epochClock.time() >= deadlineMs)
-        {
-            sequencerAgent.onTimerEvent(correlationId, epochClock.time());
-        }
-        else
-        {
-            cancelTimer(correlationId);
-
-            final long timerId = timerWheel.scheduleTimer(deadlineMs);
-            timerIdByCorrelationIdMap.put(correlationId, timerId);
-            correlationIdByTimerIdMap.put(timerId, correlationId);
-        }
-    }
-
-    private void cancelTimer(final long correlationId)
+    public boolean cancelTimer(final long correlationId)
     {
         final long timerId = timerIdByCorrelationIdMap.remove(correlationId);
         if (Long.MAX_VALUE != timerId)
         {
             timerWheel.cancelTimer(timerId);
             correlationIdByTimerIdMap.remove(timerId);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public void snapshot(final ConsensusModuleSnapshotTaker snapshotTaker)
+    {
+        final Long2LongHashMap.EntryIterator iter =
+            (Long2LongHashMap.EntryIterator)timerIdByCorrelationIdMap.entrySet().iterator();
+
+        while (iter.hasNext())
+        {
+            iter.next();
+
+            final long correlationId = iter.getLongKey();
+            final long deadline = timerWheel.deadline(iter.getLongValue());
+
+            snapshotTaker.snapshotTimer(correlationId, deadline);
         }
     }
 }

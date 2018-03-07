@@ -1,5 +1,5 @@
 ::
-:: Copyright 2014-2017 Real Logic Ltd.
+:: Copyright 2014-2018 Real Logic Ltd.
 ::
 :: Licensed under the Apache License, Version 2.0 (the "License");
 :: you may not use this file except in compliance with the License.
@@ -20,5 +20,5 @@
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
     -XX:BiasedLockingStartupDelay=0 ^
-    io.aeron.driver.MediaDriver ^
-    %JVM_OPTS% low-latency.properties %*
+    %JVM_OPTS% io.aeron.driver.MediaDriver ^
+    low-latency.properties %*

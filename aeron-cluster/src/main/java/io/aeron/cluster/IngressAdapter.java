@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,26 +22,31 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 
-public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
+class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
+    private static final int FRAGMENT_POLL_LIMIT = 10;
+
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionConnectRequestDecoder connectRequestDecoder = new SessionConnectRequestDecoder();
     private final SessionCloseRequestDecoder closeRequestDecoder = new SessionCloseRequestDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final SessionKeepAliveRequestDecoder keepAliveRequestDecoder = new SessionKeepAliveRequestDecoder();
+    private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
+    private final AdminQueryDecoder adminQueryDecoder = new AdminQueryDecoder();
 
-    private final ControlledFragmentHandler fragmentAssembler = new ControlledFragmentAssembler(this);
-    private final SequencerAgent sequencerAgent;
+    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
-    private final int fragmentLimit;
+    private final SequencerAgent sequencerAgent;
+    private final AtomicCounter invalidRequests;
 
-    public IngressAdapter(
-        final SequencerAgent sequencerAgent, final Subscription subscription, final int fragmentLimit)
+    IngressAdapter(
+        final Subscription subscription, final SequencerAgent sequencerAgent, final AtomicCounter invalidRequests)
     {
-        this.sequencerAgent = sequencerAgent;
         this.subscription = subscription;
-        this.fragmentLimit = fragmentLimit;
+        this.sequencerAgent = sequencerAgent;
+        this.invalidRequests = invalidRequests;
     }
 
     public void close()
@@ -51,13 +56,14 @@ public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 
     public int poll()
     {
-        return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
+        return subscription.controlledPoll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
     }
 
-    public ControlledFragmentAssembler.Action onFragment(
-        final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
+
+        final byte[] credentialData;
 
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
@@ -69,10 +75,16 @@ public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                final String responseChannel = connectRequestDecoder.responseChannel();
+
+                credentialData = new byte[connectRequestDecoder.credentialDataLength()];
+                connectRequestDecoder.getCredentialData(credentialData, 0, credentialData.length);
+
                 sequencerAgent.onSessionConnect(
                     connectRequestDecoder.correlationId(),
                     connectRequestDecoder.responseStreamId(),
-                    connectRequestDecoder.responseChannel());
+                    responseChannel,
+                    credentialData);
                 break;
 
             case SessionHeaderDecoder.TEMPLATE_ID:
@@ -106,13 +118,40 @@ public class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onKeepAlive(
-                    keepAliveRequestDecoder.correlationId(),
-                    keepAliveRequestDecoder.clusterSessionId());
+                sequencerAgent.onSessionKeepAlive(keepAliveRequestDecoder.clusterSessionId());
+                break;
+
+            case ChallengeResponseDecoder.TEMPLATE_ID:
+                challengeResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                credentialData = new byte[challengeResponseDecoder.credentialDataLength()];
+                challengeResponseDecoder.getCredentialData(credentialData, 0, credentialData.length);
+
+                sequencerAgent.onChallengeResponse(
+                    challengeResponseDecoder.correlationId(),
+                    challengeResponseDecoder.clusterSessionId(),
+                    credentialData);
+                break;
+
+            case AdminQueryDecoder.TEMPLATE_ID:
+                adminQueryDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onAdminQuery(
+                    adminQueryDecoder.correlationId(),
+                    adminQueryDecoder.clusterSessionId(),
+                    adminQueryDecoder.queryType());
                 break;
 
             default:
-                throw new IllegalStateException("Unknown templateId: " + templateId);
+                invalidRequests.incrementOrdered();
         }
 
         return Action.CONTINUE;

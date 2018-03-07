@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Test;
@@ -31,11 +32,7 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class MultiDestinationCastTest
@@ -43,10 +40,12 @@ public class MultiDestinationCastTest
     private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:54325|control-mode=dynamic";
     private static final String SUB1_MDC_DYNAMIC_URI = "aeron:udp?endpoint=localhost:54326|control=localhost:54325";
     private static final String SUB2_MDC_DYNAMIC_URI = "aeron:udp?endpoint=localhost:54327|control=localhost:54325";
+    private static final String SUB3_MDC_DYNAMIC_URI = CommonContext.SPY_PREFIX + PUB_MDC_DYNAMIC_URI;
 
     private static final String PUB_MDC_MANUAL_URI = "aeron:udp?control=localhost:54325|control-mode=manual";
     private static final String SUB1_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54326";
     private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54327";
+    private static final String SUB3_MDC_MANUAL_URI = CommonContext.SPY_PREFIX + PUB_MDC_MANUAL_URI;
 
     private static final int STREAM_ID = 1;
 
@@ -66,10 +65,12 @@ public class MultiDestinationCastTest
     private Publication publication;
     private Subscription subscriptionA;
     private Subscription subscriptionB;
+    private Subscription subscriptionC;
 
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
     private FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
+    private FragmentHandler fragmentHandlerC = mock(FragmentHandler.class);
 
     private void launch()
     {
@@ -79,11 +80,13 @@ public class MultiDestinationCastTest
         buffer.putInt(0, 1);
 
         final MediaDriver.Context driverAContext = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
+            .errorHandler(Throwable::printStackTrace)
             .aeronDirectoryName(baseDirB)
             .threadingMode(ThreadingMode.SHARED);
 
@@ -96,10 +99,6 @@ public class MultiDestinationCastTest
     @After
     public void closeEverything()
     {
-        CloseHelper.close(publication);
-        CloseHelper.close(subscriptionA);
-        CloseHelper.close(subscriptionB);
-
         CloseHelper.close(clientB);
         CloseHelper.close(clientA);
         CloseHelper.close(driverB);
@@ -108,41 +107,45 @@ public class MultiDestinationCastTest
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 
-    @Test(timeout = 10000)
-    public void shouldSpinUpAndShutdownWithDynamic() throws Exception
+    @Test(timeout = 10_000)
+    public void shouldSpinUpAndShutdownWithDynamic()
     {
         launch();
 
         publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
+        subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
 
-        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
+        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
         }
     }
 
-    @Test(timeout = 10000)
-    public void shouldSpinUpAndShutdownWithManual() throws Exception
+    @Test(timeout = 10_000)
+    public void shouldSpinUpAndShutdownWithManual()
     {
         launch();
 
         publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
-        subscriptionB = clientA.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
+        subscriptionC = clientA.addSubscription(SUB3_MDC_MANUAL_URI, STREAM_ID);
 
         publication.addDestination(SUB1_MDC_MANUAL_URI);
         publication.addDestination(SUB2_MDC_MANUAL_URI);
 
-        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
+        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
         }
     }
 
-    @Test(timeout = 10000)
-    public void shouldSendToTwoPortsWithDynamic() throws Exception
+    @Test(timeout = 10_000)
+    public void shouldSendToTwoPortsWithDynamic()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -151,57 +154,39 @@ public class MultiDestinationCastTest
         publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
+        subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
 
-        while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
+        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
-            SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.getAndAdd(subscriptionA.poll(fragmentHandlerA, 10));
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            final MutableInteger fragmentsRead = new MutableInteger();
+            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
 
             fragmentsRead.set(0);
-            SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
+
+            fragmentsRead.set(0);
+            pollForFragment(subscriptionC, fragmentHandlerC, fragmentsRead);
         }
 
-        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerB, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        verifyFragments(fragmentHandlerA, numMessagesToSend);
+        verifyFragments(fragmentHandlerB, numMessagesToSend);
+        verifyFragments(fragmentHandlerC, numMessagesToSend);
     }
 
-    @Test(timeout = 10000)
-    public void shouldSendToTwoPortsWithDynamicSingleDriver() throws Exception
+    @Test(timeout = 10_000)
+    public void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -210,57 +195,39 @@ public class MultiDestinationCastTest
         publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionB = clientA.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
+        subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
 
-        while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
+        while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !subscriptionC.isConnected())
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
-            SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.getAndAdd(subscriptionA.poll(fragmentHandlerA, 10));
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            final MutableInteger fragmentsRead = new MutableInteger();
+            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
 
             fragmentsRead.set(0);
-            SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
+
+            fragmentsRead.set(0);
+            pollForFragment(subscriptionC, fragmentHandlerC, fragmentsRead);
         }
 
-        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerB, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        verifyFragments(fragmentHandlerA, numMessagesToSend);
+        verifyFragments(fragmentHandlerB, numMessagesToSend);
+        verifyFragments(fragmentHandlerC, numMessagesToSend);
     }
 
-    @Test(timeout = 10000)
-    public void shouldSendToTwoPortsWithManualSingleDriver() throws Exception
+    @Test(timeout = 10_000)
+    public void shouldSendToTwoPortsWithManualSingleDriver()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -275,58 +242,36 @@ public class MultiDestinationCastTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
-            SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.getAndAdd(subscriptionA.poll(fragmentHandlerA, 10));
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            final MutableInteger fragmentsRead = new MutableInteger();
+
+            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
 
             fragmentsRead.set(0);
-            SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
         }
 
-        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerB, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        verifyFragments(fragmentHandlerA, numMessagesToSend);
+        verifyFragments(fragmentHandlerB, numMessagesToSend);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldManuallyRemovePortDuringActiveStream() throws Exception
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
-        final CountDownLatch unavailableCountDownLatch = new CountDownLatch(1);
+        final CountDownLatch unavailableImage = new CountDownLatch(1);
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
 
@@ -335,51 +280,38 @@ public class MultiDestinationCastTest
         publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(
-            SUB2_MDC_MANUAL_URI, STREAM_ID, null, (image) -> unavailableCountDownLatch.countDown());
+            SUB2_MDC_MANUAL_URI, STREAM_ID, null, (image) -> unavailableImage.countDown());
 
         publication.addDestination(SUB1_MDC_MANUAL_URI);
         publication.addDestination(SUB2_MDC_MANUAL_URI);
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
-            SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.getAndAdd(subscriptionA.poll(fragmentHandlerA, 10));
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            final MutableInteger fragmentsRead = new MutableInteger();
+
+            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
 
             fragmentsRead.set(0);
 
             if (i < numMessageForSub2)
             {
-                SystemTestHelper.executeUntil(
-                    () -> fragmentsRead.get() > 0,
-                    (j) ->
-                    {
-                        fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
-                        Thread.yield();
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(500));
+                pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
             }
             else
             {
-                fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
+                fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
                 Thread.yield();
             }
 
@@ -389,94 +321,86 @@ public class MultiDestinationCastTest
             }
         }
 
-        unavailableCountDownLatch.await();
+        unavailableImage.await();
 
-        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerB, times(numMessageForSub2)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        verifyFragments(fragmentHandlerA, numMessagesToSend);
+        verifyFragments(fragmentHandlerB, numMessageForSub2);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldManuallyAddPortDuringActiveStream() throws Exception
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
-        final CountDownLatch availableCountDownLatch = new CountDownLatch(1);
+        final CountDownLatch availableImage = new CountDownLatch(1);
 
         launch();
 
         publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(
-            SUB2_MDC_MANUAL_URI, STREAM_ID, (image) -> availableCountDownLatch.countDown(), null);
+            SUB2_MDC_MANUAL_URI, STREAM_ID, (image) -> availableImage.countDown(), null);
 
         publication.addDestination(SUB1_MDC_MANUAL_URI);
 
         while (!subscriptionA.isConnected())
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
-            final AtomicInteger fragmentsRead = new AtomicInteger();
-            SystemTestHelper.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.getAndAdd(subscriptionA.poll(fragmentHandlerA, 10));
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            final MutableInteger fragmentsRead = new MutableInteger();
+
+            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
 
             fragmentsRead.set(0);
 
             if (i > (numMessagesToSend - numMessageForSub2))
             {
-                SystemTestHelper.executeUntil(
-                    () -> fragmentsRead.get() > 0,
-                    (j) ->
-                    {
-                        fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
-                        Thread.yield();
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(500));
+                pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
             }
             else
             {
-                fragmentsRead.addAndGet(subscriptionB.poll(fragmentHandlerB, 10));
+                fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
                 Thread.yield();
             }
 
             if (i == (numMessagesToSend - numMessageForSub2 - 1))
             {
                 publication.addDestination(SUB2_MDC_MANUAL_URI);
-                availableCountDownLatch.await();
+                availableImage.await();
             }
         }
 
-        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        verifyFragments(fragmentHandlerA, numMessagesToSend);
+        verifyFragments(fragmentHandlerB, numMessageForSub2);
+    }
 
-        verify(fragmentHandlerB, times(numMessageForSub2)).onFragment(
+    private void pollForFragment(
+        final Subscription subscription, final FragmentHandler handler, final MutableInteger fragmentsRead)
+    {
+        SystemTest.executeUntil(
+            () -> fragmentsRead.get() > 0,
+            (j) ->
+            {
+                fragmentsRead.value += subscription.poll(handler, 10);
+                Thread.yield();
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
+    }
+
+    private void verifyFragments(final FragmentHandler fragmentHandler, final int numMessagesToSend)
+    {
+        verify(fragmentHandler, times(numMessagesToSend)).onFragment(
             any(DirectBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),

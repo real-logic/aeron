@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -221,7 +221,13 @@ inline int64_t aeron_network_publication_consumer_position(aeron_network_publica
 
 inline void aeron_network_publication_trigger_send_setup_frame(aeron_network_publication_t *publication)
 {
-    publication->should_send_setup_frame = true;
+    bool is_end_of_stream;
+    AERON_GET_VOLATILE(is_end_of_stream, publication->is_end_of_stream);
+
+    if (!is_end_of_stream)
+    {
+        publication->should_send_setup_frame = true;
+    }
 }
 
 inline void aeron_network_publication_sender_release(aeron_network_publication_t *publication)

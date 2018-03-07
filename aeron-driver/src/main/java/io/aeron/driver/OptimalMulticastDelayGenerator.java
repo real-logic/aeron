@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,40 +18,41 @@ package io.aeron.driver;
 /**
  * Feedback delay used for NAKs as well as for some retransmission use cases.
  * <p>
- * Generates delay based on Optimal Multicast Feedback
- * http://tools.ietf.org/html/rfc5401#page-13
+ * Generates delay based on Optimal Multicast Feedback<br>
+ * <a target="_blank" href="http://tools.ietf.org/html/rfc5401#page-13">http://tools.ietf.org/html/rfc5401#page-13</a>
  * <p>
- * {@code
- * maxBackoffT is max interval for delay
+ * {@code maxBackoffT} is max interval for delay
  * <p>
- * C version:
- * <p>
- * <code>
+ * C version of the code:
+ * <pre>{@code
  * double RandomBackoff(double maxBackoffT, double groupSize)
  * {
- * double lambda = log(groupSize) + 1;
- * double x = UniformRand(lambda / maxBackoffT) + lambda / (maxBackoffT * (exp(lambda) - 1));
- * return ((maxBackoffT / lambda) * log( x * (exp(lambda) - 1) * (maxBackoffT / lambda)));
+ *     double lambda = log(groupSize) + 1;
+ *     double x = UniformRand(lambda / maxBackoffT) + lambda / (maxBackoffT * (exp(lambda) - 1));
+ *     return ((maxBackoffT / lambda) * log(x * (exp(lambda) - 1) * (maxBackoffT / lambda)));
  * }
- * </code>
- * <p>
- * where UniformRand(x) is uniform distribution from 0..max
+ * }</pre>
+ * where {@code UniformRand(x)} is uniform distribution from {@code 0..max}
  * <p>
  * In this implementations calculation:
- * - the groupSize is a constant (could be configurable as system property)
- * - maxBackoffT is a constant (could be configurable as system property)
- * - GRTT is a constant (could be configurable as a system property)
+ * <ul>
+ *     <li>the {@code groupSize} is a constant (could be configurable as system property)</li>
+ *     <li>{@code maxBackoffT} is a constant (could be configurable as system property)</li>
+ *     <li>{@code GRTT} is a constant (could be configurable as a system property)</li>
+ * </ul>
  * <p>
- * N (the expected number of feedback messages per RTT) is
- * N = exp(1.2 * L / (2 * maxBackoffT/GRTT))
+ * {@code N} (the expected number of feedback messages per RTT) is:<br>
+ * {@code N = exp(1.2 * L / (2 * maxBackoffT / GRTT))}
  * <p>
- * Assumptions:
- * maxBackoffT = K * GRTT (K >= 1)
+ * <b>Assumptions:</b>
  * <p>
- * Recommended K:
- * - K = 4 for situations where responses come from multiple places (i.e. for NAKs, multiple retransmitters)
- * - K = 6 for situations where responses come from single places (i.e. for NAKs, source only retransmit)
- * }
+ * {@code maxBackoffT = K * GRTT (K >= 1)}
+ * <p>
+ * Recommended {@code K}:
+ * <ul>
+ *     <li>K = 4 for situations where responses come from multiple places (i.e. for NAKs, multiple retransmitters)</li>
+ *     <li>K = 6 for situations where responses come from single places (i.e. for NAKs, source only retransmit)</li>
+ * </ul>
  */
 public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@ package io.aeron.agent;
 import io.aeron.driver.EventLog;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.builder.AgentBuilder;
+import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.scaffold.TypeValidation;
+import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.utility.JavaModule;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
@@ -89,6 +91,7 @@ public class EventLogAgent
         }
     };
 
+    @SuppressWarnings("Indendation")
     private static void agent(final boolean shouldRedefine, final Instrumentation instrumentation)
     {
         if (EventConfiguration.ENABLED_EVENT_CODES == 0)
@@ -180,15 +183,20 @@ public class EventLogAgent
         {
             readerAgentRunner.close();
             instrumentation.removeTransformer(logTransformer);
-            instrumentation.removeTransformer(new AgentBuilder.Default()
-                .type(nameEndsWith("DriverConductor")
-                    .or(nameEndsWith("ClientProxy"))
-                    .or(nameEndsWith("ClientCommandAdapter"))
-                    .or(nameEndsWith("SenderProxy"))
-                    .or(nameEndsWith("ReceiverProxy"))
-                    .or(inheritsAnnotation(EventLog.class)))
+
+            final ElementMatcher.Junction<TypeDescription> orClause = nameEndsWith("DriverConductor")
+                .or(nameEndsWith("ClientProxy"))
+                .or(nameEndsWith("ClientCommandAdapter"))
+                .or(nameEndsWith("SenderProxy"))
+                .or(nameEndsWith("ReceiverProxy"))
+                .or(inheritsAnnotation(EventLog.class));
+
+            final ResettableClassFileTransformer transformer = new AgentBuilder.Default()
+                .type(orClause)
                 .transform(AgentBuilder.Transformer.NoOp.INSTANCE)
-                .installOn(instrumentation));
+                .installOn(instrumentation);
+
+            instrumentation.removeTransformer(transformer);
 
             readerAgentRunner = null;
             instrumentation = null;

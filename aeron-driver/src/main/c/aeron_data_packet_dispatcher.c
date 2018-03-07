@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,7 +176,8 @@ int aeron_data_packet_dispatcher_on_data(
         }
         else if (NULL == aeron_int64_to_ptr_hash_map_get(
             &dispatcher->ignored_sessions_map,
-            aeron_int64_to_ptr_hash_map_compound_key(header->session_id, header->stream_id)))
+            aeron_int64_to_ptr_hash_map_compound_key(header->session_id, header->stream_id)) &&
+            (((aeron_frame_header_t *)buffer)->flags & AERON_DATA_HEADER_EOS_FLAG) == 0)
         {
             return aeron_data_packet_dispatcher_elicit_setup_from_source(
                 dispatcher, endpoint, addr, header->stream_id, header->session_id);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ Aeron::Aeron(Context &context) :
     m_cncBuffer(mapCncFile(context)),
     m_toDriverAtomicBuffer(CncFileDescriptor::createToDriverBuffer(m_cncBuffer)),
     m_toClientsAtomicBuffer(CncFileDescriptor::createToClientsBuffer(m_cncBuffer)),
+    m_countersMetadataBuffer(CncFileDescriptor::createCounterMetadataBuffer(m_cncBuffer)),
     m_countersValueBuffer(CncFileDescriptor::createCounterValuesBuffer(m_cncBuffer)),
     m_toDriverRingBuffer(m_toDriverAtomicBuffer),
     m_driverProxy(m_toDriverRingBuffer),
@@ -49,10 +50,13 @@ Aeron::Aeron(Context &context) :
         currentTimeMillis,
         m_driverProxy,
         m_toClientsCopyReceiver,
+        m_countersMetadataBuffer,
         m_countersValueBuffer,
         context.m_onNewPublicationHandler,
         context.m_onNewSubscriptionHandler,
         context.m_exceptionHandler,
+        context.m_onAvailableCounterHandler,
+        context.m_onUnavailableCounterHandler,
         context.m_mediaDriverTimeout,
         context.m_resourceLingerTimeout,
         CncFileDescriptor::clientLivenessTimeout(m_cncBuffer)),

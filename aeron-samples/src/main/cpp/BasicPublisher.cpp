@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,9 +115,9 @@ int main(int argc, char** argv)
             publication = aeron->findPublication(id);
         }
 
-        const std::int64_t channelStatus = publication->channelStatusIndicator().getVolatile();
+        const std::int64_t channelStatus = publication->channelStatus();
 
-        std::cout << "Publication channel status (id=" << publication->channelStatusIndicator().id() << ") "
+        std::cout << "Publication channel status (id=" << publication->channelStatusId() << ") "
             << ((channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE) ?
                 "ACTIVE" : std::to_string(channelStatus))
             << std::endl;

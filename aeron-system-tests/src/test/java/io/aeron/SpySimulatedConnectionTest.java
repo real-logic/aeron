@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,10 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
@@ -35,16 +31,12 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.SystemTestHelper.spyForChannel;
+import static io.aeron.SystemTest.spyForChannel;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
-/**
- * Tests that allow Spies to simulate connection
- */
 @RunWith(Theories.class)
 public class SpySimulatedConnectionTest
 {
@@ -69,18 +61,22 @@ public class SpySimulatedConnectionTest
     private Subscription subscription;
     private Subscription spy;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private FragmentHandler fragmentHandlerSpy = mock(FragmentHandler.class);
-    private FragmentHandler fragmentHandlerSubscription = mock(FragmentHandler.class);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+
+    private final MutableInteger fragmentCountSpy = new MutableInteger();
+    private final FragmentHandler fragmentHandlerSpy = (buffer1, offset, length, header) -> fragmentCountSpy.value++;
+
+    private final MutableInteger fragmentCountSub = new MutableInteger();
+    private final FragmentHandler fragmentHandlerSub = (buffer1, offset, length, header) -> fragmentCountSub.value++;
 
     private void launch()
     {
         driverContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
-            .sharedIdleStrategy(new YieldingIdleStrategy())
+            .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED);
 
         driver = MediaDriver.launch(driverContext);
-        client = Aeron.connect(new Aeron.Context());
+        client = Aeron.connect();
     }
 
     @After
@@ -93,11 +89,11 @@ public class SpySimulatedConnectionTest
         CloseHelper.quietClose(client);
         CloseHelper.quietClose(driver);
 
-        IoUtil.delete(driverContext.aeronDirectory(), true);
+        driver.context().deleteAeronDirectory();
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldNotSimulateConnectionWhenNotConfiguredTo(final String channel)
     {
         launch();
@@ -107,6 +103,7 @@ public class SpySimulatedConnectionTest
 
         while (!spy.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -114,10 +111,10 @@ public class SpySimulatedConnectionTest
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSimulateConnectionWithNoNetworkSubscriptions(final String channel)
     {
-        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
         driverContext
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250))
@@ -131,18 +128,20 @@ public class SpySimulatedConnectionTest
 
         while (!spy.isConnected() || !publication.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
-        for (int i = 0; i < numMessagesToSend; i++)
+        for (int i = 0; i < messagesToSend; i++)
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTestHelper.executeUntil(
+            SystemTest.executeUntil(
                 () -> fragmentsRead.get() > 0,
                 (j) ->
                 {
@@ -157,21 +156,17 @@ public class SpySimulatedConnectionTest
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(fragmentHandlerSpy, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        assertThat(fragmentCountSpy.value, is(messagesToSend));
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSimulateConnectionWithSlowNetworkSubscription(final String channel)
     {
-        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
-        int numMessagesLeftToSend = numMessagesToSend;
-        int numFragmentsFromSpy = 0;
-        int numFragmentsFromSubscription = 0;
+        final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        int messagesLeftToSend = messagesToSend;
+        int fragmentsFromSpy = 0;
+        int fragmentsFromSubscription = 0;
 
         driverContext
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250))
@@ -184,55 +179,42 @@ public class SpySimulatedConnectionTest
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
         subscription = client.addSubscription(channel, STREAM_ID);
 
-        while (!spy.isConnected() || !subscription.isConnected() || !publication.isConnected())
-        {
-            Thread.yield();
-        }
+        waitUntilFullConnectivity();
 
-        for (int i = 0;
-             numFragmentsFromSpy < numMessagesToSend || numFragmentsFromSubscription < numMessagesToSend;
-             i++)
+        for (int i = 0; fragmentsFromSpy < messagesToSend || fragmentsFromSubscription < messagesToSend; i++)
         {
-            if (numMessagesLeftToSend > 0)
+            if (messagesLeftToSend > 0)
             {
                 if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
                 {
-                    numMessagesLeftToSend--;
+                    messagesLeftToSend--;
                 }
             }
 
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
 
-            numFragmentsFromSpy += spy.poll(fragmentHandlerSpy, 10);
+            fragmentsFromSpy += spy.poll(fragmentHandlerSpy, 10);
 
             // subscription receives slowly
             if ((i % 2) == 0)
             {
-                numFragmentsFromSubscription += subscription.poll(fragmentHandlerSubscription, 1);
+                fragmentsFromSubscription += subscription.poll(fragmentHandlerSub, 1);
             }
         }
 
-        verify(fragmentHandlerSpy, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerSubscription, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        assertThat(fragmentCountSpy.value, is(messagesToSend));
+        assertThat(fragmentCountSub.value, is(messagesToSend));
     }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSimulateConnectionWithLeavingNetworkSubscription(final String channel)
     {
-        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
-        int numMessagesLeftToSend = numMessagesToSend;
-        int numFragmentsReadFromSpy = 0;
-        int numFragmentsReadFromSubscription = 0;
+        final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        int messagesLeftToSend = messagesToSend;
+        int fragmentsReadFromSpy = 0;
+        int fragmentsReadFromSubscription = 0;
         boolean isSubscriptionClosed = false;
 
         driverContext
@@ -246,27 +228,28 @@ public class SpySimulatedConnectionTest
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
         subscription = client.addSubscription(channel, STREAM_ID);
 
-        while (!spy.isConnected() || !subscription.isConnected() || !publication.isConnected())
-        {
-            Thread.yield();
-        }
+        waitUntilFullConnectivity();
 
-        while (numFragmentsReadFromSpy < numMessagesToSend)
+        while (fragmentsReadFromSpy < messagesToSend)
         {
-            if (numMessagesLeftToSend > 0)
+            if (messagesLeftToSend > 0)
             {
                 if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
                 {
-                    numMessagesLeftToSend--;
+                    messagesLeftToSend--;
+                }
+                else
+                {
+                    SystemTest.checkInterruptedStatus();
                 }
             }
 
-            numFragmentsReadFromSpy += spy.poll(fragmentHandlerSpy, 10);
+            fragmentsReadFromSpy += spy.poll(fragmentHandlerSpy, 10);
 
             // subscription receives up to 1/8 of the messages, then stops
-            if (numFragmentsReadFromSubscription < (numMessagesToSend / 8))
+            if (fragmentsReadFromSubscription < (messagesToSend / 8))
             {
-                numFragmentsReadFromSubscription += subscription.poll(fragmentHandlerSubscription, 10);
+                fragmentsReadFromSubscription += subscription.poll(fragmentHandlerSub, 10);
             }
             else if (!isSubscriptionClosed)
             {
@@ -275,10 +258,34 @@ public class SpySimulatedConnectionTest
             }
         }
 
-        verify(fragmentHandlerSpy, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
+        assertThat(fragmentCountSpy.value, is(messagesToSend));
+    }
+
+    private void waitUntilFullConnectivity()
+    {
+        while (!spy.isConnected() || !subscription.isConnected() || !publication.isConnected())
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        // send initial message to ensure connectivity
+        while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        while (spy.poll(mock(FragmentHandler.class), 1) == 0)
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        while (subscription.poll(mock(FragmentHandler.class), 1) == 0)
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
     }
 }

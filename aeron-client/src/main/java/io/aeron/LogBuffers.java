@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,14 @@ import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
+import java.util.EnumSet;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.SPARSE;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
@@ -40,6 +44,9 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class LogBuffers implements AutoCloseable, ManagedResource
 {
+    private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE, SPARSE);
+    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
+
     private long timeOfLastStateChangeNs;
     private int refCount;
     private final int termLength;
@@ -57,8 +64,7 @@ public class LogBuffers implements AutoCloseable, ManagedResource
     {
         try
         {
-            fileChannel = FileChannel.open(Paths.get(logFileName), READ, WRITE);
-
+            fileChannel = FileChannel.open(Paths.get(logFileName), FILE_OPTIONS, NO_ATTRIBUTES);
             final long logLength = fileChannel.size();
 
             if (logLength < Integer.MAX_VALUE)

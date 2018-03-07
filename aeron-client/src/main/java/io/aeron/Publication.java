@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,8 +119,8 @@ public abstract class Publication implements AutoCloseable
         this.positionLimit = positionLimit;
         this.channelStatusId = channelStatusId;
         this.logBuffers = logBuffers;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termBufferLength);
-        this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
+        this.positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termBufferLength);
+        this.headerWriter = HeaderWriter.newInstance(defaultFrameHeader(logMetaDataBuffer));
     }
 
     /**
@@ -166,7 +166,8 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
-     * Session under which messages are published. Identifies this Publication instance.
+     * Session under which messages are published. Identifies this Publication instance. Sessions are unique across
+     * all active publications on a driver instance.
      *
      * @return the session id for this publication.
      */
@@ -293,6 +294,16 @@ public abstract class Publication implements AutoCloseable
     }
 
     /**
+     * Get the counter used to represent the channel status for this publication.
+     *
+     * @return the counter used to represent the channel status for this publication.
+     */
+    public int channelStatusId()
+    {
+        return channelStatusId;
+    }
+
+    /**
      * Get the current position to which the publication has advanced for this stream.
      *
      * @return the current position to which the publication has advanced for this stream.
@@ -326,6 +337,16 @@ public abstract class Publication implements AutoCloseable
         }
 
         return positionLimit.getVolatile();
+    }
+
+    /**
+     * Get the counter id for the position limit after which the publication will be back pressured.
+     *
+     * @return the counter id for the position limit after which the publication will be back pressured.
+     */
+    public int positionLimitId()
+    {
+        return positionLimit.id();
     }
 
     /**
@@ -459,11 +480,6 @@ public abstract class Publication implements AutoCloseable
     void internalClose()
     {
         isClosed = true;
-    }
-
-    int channelStatusId()
-    {
-        return channelStatusId;
     }
 
     LogBuffers logBuffers()

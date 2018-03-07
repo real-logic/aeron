@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,8 +62,15 @@ public class StopStartSecondSubscriberTest
 
     private void launch(final String channelOne, final int streamOne, final String channelTwo, final int streamTwo)
     {
-        driverOne = MediaDriver.launchEmbedded(new MediaDriver.Context().termBufferSparseFile(true));
-        driverTwo = MediaDriver.launchEmbedded(new MediaDriver.Context().termBufferSparseFile(true));
+        driverOne = MediaDriver.launchEmbedded(
+            new MediaDriver.Context()
+                .errorHandler(Throwable::printStackTrace)
+                .termBufferSparseFile(true));
+
+        driverTwo = MediaDriver.launchEmbedded(
+            new MediaDriver.Context()
+                .errorHandler(Throwable::printStackTrace)
+                .termBufferSparseFile(true));
 
         publisherOne = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverOne.aeronDirectoryName()));
         subscriberOne = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverTwo.aeronDirectoryName()));
@@ -77,7 +84,7 @@ public class StopStartSecondSubscriberTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
         subscriberOne.close();
         publisherOne.close();
@@ -91,7 +98,7 @@ public class StopStartSecondSubscriberTest
         driverTwo.context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldSpinUpAndShutdown()
     {
         launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
@@ -104,23 +111,24 @@ public class StopStartSecondSubscriberTest
 
         buffer.putInt(0, 1);
 
-        final int numMessagesPerPublication = 1;
+        final int messagesPerPublication = 1;
 
         while (publicationOne.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
         while (publicationTwo.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
         final MutableInteger fragmentsRead1 = new MutableInteger();
         final MutableInteger fragmentsRead2 = new MutableInteger();
-        SystemTestHelper.executeUntil(
-            () -> fragmentsRead1.get() >= numMessagesPerPublication &&
-                fragmentsRead2.get() >= numMessagesPerPublication,
+        SystemTest.executeUntil(
+            () -> fragmentsRead1.get() >= messagesPerPublication && fragmentsRead2.get() >= messagesPerPublication,
             (i) ->
             {
                 fragmentsRead1.value += subscriptionOne.poll(fragmentHandlerOne, 10);
@@ -130,29 +138,29 @@ public class StopStartSecondSubscriberTest
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(9900));
 
-        assertEquals(numMessagesPerPublication, subOneCount.get());
-        assertEquals(numMessagesPerPublication, subTwoCount.get());
+        assertEquals(messagesPerPublication, subOneCount.get());
+        assertEquals(messagesPerPublication, subTwoCount.get());
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveMessagesAfterStopStartOnSameChannelSameStream()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID1);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveMessagesAfterStopStartOnSameChannelDifferentStreams()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID2);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsSameStream()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID1);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsDifferentStreams()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
@@ -189,7 +197,7 @@ public class StopStartSecondSubscriberTest
 
         final MutableInteger fragmentsReadOne = new MutableInteger();
         final MutableInteger fragmentsReadTwo = new MutableInteger();
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages,
             (i) ->
             {
@@ -210,7 +218,7 @@ public class StopStartSecondSubscriberTest
 
         subscriptionTwo = subscriberTwo.addSubscription(channelTwo, streamTwo);
 
-        SystemTestHelper.executeUntil(
+        SystemTest.executeUntil(
             () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages,
             (i) ->
             {

@@ -1,4 +1,4 @@
-# Copyright 2014-2017 Real Logic Ltd.
+# Copyright 2014-2018 Real Logic Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ include(CheckTypeSize)
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+    add_definitions(-D_DEFAULT_SOURCE)
 endif()
 
 check_include_file("bsd/stdlib.h" BSDSTDLIB_H_EXISTS)
@@ -57,6 +58,7 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 
 check_symbol_exists(recvmmsg "sys/socket.h" RECVMMSG_PROTOTYPE_EXISTS)
 check_symbol_exists(sendmmsg "sys/socket.h" SENDMMSG_PROTOTYPE_EXISTS)
+check_symbol_exists(fallocate "fcntl.h" FALLOCATE_PROTOTYPE_EXISTS)
 
 if(ARC4RANDOM_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_ARC4RANDOM)
@@ -88,6 +90,10 @@ endif()
 
 if(SENDMMSG_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_SENDMMSG)
+endif()
+
+if(FALLOCATE_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_FALLOCATE)
 endif()
 
 SET(SOURCE

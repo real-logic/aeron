@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Is the frame at data frame at the beginning of packet a heartbeat message.
+     * Is the frame at data frame at the beginning of packet a heartbeat message?
      *
      * @param packet containing the data frame.
      * @param length of the data frame.

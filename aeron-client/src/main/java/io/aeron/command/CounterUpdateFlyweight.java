@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class CounterUpdateFlyweight
 {
-
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int COUNTER_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
 

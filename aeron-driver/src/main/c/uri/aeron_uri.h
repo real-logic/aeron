@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ aeron_ipc_channel_params_t;
 
 typedef enum aeron_uri_type_enum
 {
-    AERON_URI_UDP, AERON_URI_IPC
+    AERON_URI_UDP, AERON_URI_IPC, AERON_URI_UNKNOWN
 }
 aeron_uri_type_t;
 

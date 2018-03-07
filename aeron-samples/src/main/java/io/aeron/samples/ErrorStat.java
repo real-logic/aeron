@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,8 @@ import static io.aeron.CncFileDescriptor.CNC_VERSION;
  */
 public class ErrorStat
 {
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+
     public static void main(final String[] args)
     {
         final File cncFile = CommonContext.newDefaultCncFile();
@@ -52,19 +54,23 @@ public class ErrorStat
         }
 
         final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-
-        final int distinctErrorCount = ErrorLogReader.read(
-            buffer,
-            (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                System.out.format(
-                    "***%n%d observations from %s to %s for:%n %s%n",
-                    observationCount,
-                    dateFormat.format(new Date(firstObservationTimestamp)),
-                    dateFormat.format(new Date(lastObservationTimestamp)),
-                    encodedException
-                ));
+        final int distinctErrorCount = ErrorLogReader.read(buffer, ErrorStat::accept);
 
         System.out.format("%n%d distinct errors observed.%n", distinctErrorCount);
+    }
+
+    private static void accept(
+        final int observationCount,
+        final long firstObservationTimestamp,
+        final long lastObservationTimestamp,
+        final String encodedException)
+    {
+        System.out.format(
+            "***%n%d observations from %s to %s for:%n %s%n",
+            observationCount,
+            DATE_FORMAT.format(new Date(firstObservationTimestamp)),
+            DATE_FORMAT.format(new Date(lastObservationTimestamp)),
+            encodedException
+        );
     }
 }

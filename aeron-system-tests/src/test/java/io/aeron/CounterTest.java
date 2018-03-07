@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ public class CounterTest
 
     private Aeron clientA;
     private Aeron clientB;
-    private MediaDriver.Context driverContext;
     private MediaDriver driver;
 
     private AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
@@ -53,11 +52,10 @@ public class CounterTest
     {
         labelBuffer.putStringWithoutLengthAscii(0, COUNTER_LABEL);
 
-        driverContext =
+        driver = MediaDriver.launch(
             new MediaDriver.Context()
-                .threadingMode(ThreadingMode.SHARED);
-
-        driver = MediaDriver.launch(driverContext);
+                .errorHandler(Throwable::printStackTrace)
+                .threadingMode(ThreadingMode.SHARED));
 
         clientA = Aeron.connect(
             new Aeron.Context()
@@ -71,14 +69,13 @@ public class CounterTest
     }
 
     @After
-    public void closeEverything()
+    public void after()
     {
         CloseHelper.quietClose(clientB);
         CloseHelper.quietClose(clientA);
 
-        driver.close();
-
-        driverContext.deleteAeronDirectory();
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
     }
 
     @Test(timeout = 2000)
@@ -86,15 +83,14 @@ public class CounterTest
     {
         launch();
 
-        final Counter counter =
-            clientA.addCounter(
-                COUNTER_TYPE_ID,
-                null,
-                0,
-                0,
-                labelBuffer,
-                0,
-                COUNTER_LABEL.length());
+        final Counter counter = clientA.addCounter(
+            COUNTER_TYPE_ID,
+            null,
+            0,
+            0,
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length());
 
         assertFalse(counter.isClosed());
 
@@ -105,25 +101,25 @@ public class CounterTest
     }
 
     @Test(timeout = 2000)
-    public void shouldBeAbleToAddReadableCounterWithinHandler() throws Exception
+    public void shouldBeAbleToAddReadableCounterWithinHandler()
     {
         availableCounterHandlerClientB = this::createReadableCounter;
 
         launch();
 
-        final Counter counter =
-            clientA.addCounter(
-                COUNTER_TYPE_ID,
-                null,
-                0,
-                0,
-                labelBuffer,
-                0,
-                COUNTER_LABEL.length());
+        final Counter counter = clientA.addCounter(
+            COUNTER_TYPE_ID,
+            null,
+            0,
+            0,
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length());
 
         while (null == readableCounter)
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            SystemTest.sleep(1);
         }
 
         assertThat(readableCounter.state(), is(CountersReader.RECORD_ALLOCATED));
@@ -132,26 +128,26 @@ public class CounterTest
     }
 
     @Test(timeout = 2000)
-    public void shouldCloseReadableCounterOnUnavailableCounter() throws Exception
+    public void shouldCloseReadableCounterOnUnavailableCounter()
     {
         availableCounterHandlerClientB = this::createReadableCounter;
         unavailableCounterHandlerClientB = this::unavailableCounterHandler;
 
         launch();
 
-        final Counter counter =
-            clientA.addCounter(
-                COUNTER_TYPE_ID,
-                null,
-                0,
-                0,
-                labelBuffer,
-                0,
-                COUNTER_LABEL.length());
+        final Counter counter = clientA.addCounter(
+            COUNTER_TYPE_ID,
+            null,
+            0,
+            0,
+            labelBuffer,
+            0,
+            COUNTER_LABEL.length());
 
         while (null == readableCounter)
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            SystemTest.sleep(1);
         }
 
         assertTrue(!readableCounter.isClosed());
@@ -161,7 +157,8 @@ public class CounterTest
 
         while (!readableCounter.isClosed())
         {
-            Thread.sleep(1);
+            SystemTest.checkInterruptedStatus();
+            SystemTest.sleep(1);
         }
     }
 

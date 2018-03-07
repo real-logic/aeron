@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     private final DataTransportPoller dataTransportPoller;
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
     private final AtomicCounter totalBytesReceived;
-    private final NanoClock clock;
+    private final NanoClock nanoClock;
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
     private final DriverConductorProxy conductorProxy;
@@ -49,7 +49,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         dataTransportPoller = ctx.dataTransportPoller();
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().get(BYTES_RECEIVED);
-        clock = ctx.nanoClock();
+        nanoClock = ctx.cachedNanoClock();
         conductorProxy = ctx.driverConductorProxy();
     }
 
@@ -68,13 +68,13 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         int workCount = commandQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
         final int bytesReceived = dataTransportPoller.pollTransports();
 
-        final long nowNs = clock.nanoTime();
+        final long nowNs = nanoClock.nanoTime();
 
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int lastIndex = publicationImages.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final PublicationImage image = publicationImages.get(i);
-            if (image.checkForActivity(nowNs))
+            if (image.hasActivityAndNotEndOfStream(nowNs))
             {
                 workCount += image.sendPendingStatusMessage();
                 workCount += image.processPendingLoss();
@@ -82,9 +82,8 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             }
             else
             {
+                ArrayListUtil.fastUnorderedRemove(publicationImages, i, lastIndex--);
                 image.removeFromDispatcher();
-                ArrayListUtil.fastUnorderedRemove(publicationImages, i, lastIndex);
-                lastIndex--;
             }
         }
 
@@ -104,7 +103,8 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     {
         final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(
             sessionId, streamId, channelEndpoint, periodic, controlAddress);
-        cmd.timeOfStatusMessageNs(clock.nanoTime());
+
+        cmd.timeOfStatusMessageNs(nanoClock.nanoTime());
         pendingSetupMessages.add(cmd);
     }
 
@@ -113,9 +113,21 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         channelEndpoint.addSubscription(streamId);
     }
 
+    public void onAddSubscription(
+        final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
+    {
+        channelEndpoint.addSubscription(streamId, sessionId);
+    }
+
     public void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
         channelEndpoint.removeSubscription(streamId);
+    }
+
+    public void onRemoveSubscription(
+        final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)
+    {
+        channelEndpoint.removeSubscription(streamId, sessionId);
     }
 
     public void onNewPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
@@ -163,8 +175,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             {
                 if (!pending.isPeriodic())
                 {
-                    ArrayListUtil.fastUnorderedRemove(pendingSetupMessages, i, lastIndex);
-                    lastIndex--;
+                    ArrayListUtil.fastUnorderedRemove(pendingSetupMessages, i, lastIndex--);
                     pending.removeFromDataPacketDispatcher();
                 }
                 else if (pending.shouldElicitSetupMessage())

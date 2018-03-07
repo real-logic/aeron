@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,12 @@ int32_t aeron_randomised_int32()
         }
     }
 
-    read(aeron_dev_random_fd, &result, sizeof(result));
+    if (sizeof(result) != read(aeron_dev_random_fd, &result, sizeof(result)))
+    {
+        fprintf(stderr, "Failed to read from aeron_dev_random (%d): %s\n", errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
 #endif
     return result;
 }
@@ -163,6 +168,9 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
         }
         else
         {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             result = -1;
         }
     }
@@ -279,6 +287,7 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
 
     if (aeron_map_new_file(&driver->context->cnc_map, buffer, true) < 0)
     {
+        aeron_set_err(aeron_errcode(), "could not map CnC file: %s", aeron_errmsg());
         return -1;
     }
 
@@ -298,6 +307,7 @@ int aeron_driver_create_loss_report_file(aeron_driver_t *driver)
 
     if (aeron_map_new_file(&driver->context->loss_report, buffer, true) < 0)
     {
+        aeron_set_err(aeron_errcode(), "could not map loss report file: %s", aeron_errmsg());
         return -1;
     }
 
@@ -360,7 +370,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
             goto cleanup;
         }
 
-        max_sndbuf = default_sndbuf;
+        max_sndbuf = socket_sndbuf;
 
         if (driver->context->socket_sndbuf > socket_sndbuf)
         {
@@ -517,12 +527,15 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     {
         errno = EINVAL;
         aeron_set_err(EINVAL, "aeron_driver_init: %s", strerror(EINVAL));
-        return -1;
+        goto error;
     }
 
     if (aeron_alloc((void **)&_driver, sizeof(aeron_driver_t)) < 0)
     {
-        return -1;
+        int errcode = errno;
+
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        goto error;
     }
 
     _driver->context = context;
@@ -537,44 +550,45 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     if (aeron_logbuffer_check_term_length(_driver->context->term_buffer_length) < 0 ||
         aeron_logbuffer_check_term_length(_driver->context->ipc_term_buffer_length) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_validate_page_size(_driver) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_context_validate_mtu_length(_driver->context->mtu_length) < 0 ||
         aeron_driver_context_validate_mtu_length(_driver->context->ipc_mtu_length) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_validate_sufficient_socket_buffer_lengths(_driver) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_ensure_dir_is_recreated(_driver) < 0)
     {
-        aeron_set_err(EINVAL, "could not recreate aeron dir %s", _driver->context->aeron_dir);
-        return -1;
+        aeron_set_err(
+            aeron_errcode(), "could not recreate aeron dir %s: %s", _driver->context->aeron_dir, aeron_errmsg());
+        goto error;
     }
 
     if (aeron_driver_create_cnc_file(_driver) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_create_loss_report_file(_driver) < 0)
     {
-        return -1;
+        goto error;
     }
 
     if (aeron_driver_conductor_init(&_driver->conductor, context) < 0)
     {
-        return -1;
+        goto error;
     }
 
     _driver->context->conductor_proxy = &_driver->conductor.conductor_proxy;
@@ -582,7 +596,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     if (aeron_driver_sender_init(
         &_driver->sender, context, &_driver->conductor.system_counters, &_driver->conductor.error_log) < 0)
     {
-        return -1;
+        goto error;
     }
 
     _driver->context->sender_proxy = &_driver->sender.sender_proxy;
@@ -590,7 +604,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     if (aeron_driver_receiver_init(
         &_driver->receiver, context, &_driver->conductor.system_counters, &_driver->conductor.error_log) < 0)
     {
-        return -1;
+        goto error;
     }
 
     _driver->context->receiver_proxy = &_driver->receiver.receiver_proxy;
@@ -606,12 +620,13 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 "[conductor, sender, receiver]",
                 _driver,
                 _driver->context->agent_on_start_func,
+                _driver->context->agent_on_start_state,
                 aeron_driver_shared_do_work,
                 aeron_driver_shared_on_close,
                 _driver->context->shared_idle_strategy_func,
                 _driver->context->shared_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
             break;
 
@@ -621,12 +636,13 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 "conductor",
                 &_driver->conductor,
                 _driver->context->agent_on_start_func,
+                _driver->context->agent_on_start_state,
                 aeron_driver_conductor_do_work,
                 aeron_driver_conductor_on_close,
                 _driver->context->conductor_idle_strategy_func,
                 _driver->context->conductor_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
 
             if (aeron_agent_init(
@@ -634,12 +650,13 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 "[sender, receiver]",
                 &_driver,
                 _driver->context->agent_on_start_func,
+                _driver->context->agent_on_start_state,
                 aeron_driver_shared_network_do_work,
                 aeron_driver_shared_network_on_close,
                 _driver->context->shared_network_idle_strategy_func,
                 _driver->context->shared_network_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
             break;
 
@@ -650,12 +667,13 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 "conductor",
                 &_driver->conductor,
                 _driver->context->agent_on_start_func,
+                _driver->context->agent_on_start_state,
                 aeron_driver_conductor_do_work,
                 aeron_driver_conductor_on_close,
                 _driver->context->conductor_idle_strategy_func,
                 _driver->context->conductor_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
 
             if (aeron_agent_init(
@@ -663,12 +681,13 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 "sender",
                 &_driver->sender,
                 _driver->context->agent_on_start_func,
+                _driver->context->agent_on_start_state,
                 aeron_driver_sender_do_work,
                 aeron_driver_sender_on_close,
                 _driver->context->sender_idle_strategy_func,
                 _driver->context->sender_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
 
             if (aeron_agent_init(
@@ -676,18 +695,28 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
                 "receiver",
                 &_driver->receiver,
                 _driver->context->agent_on_start_func,
+                _driver->context->agent_on_start_state,
                 aeron_driver_receiver_do_work,
                 aeron_driver_receiver_on_close,
                 _driver->context->receiver_idle_strategy_func,
                 _driver->context->receiver_idle_strategy_state) < 0)
             {
-                return -1;
+                goto error;
             }
             break;
     }
 
     *driver = _driver;
     return 0;
+
+    error:
+
+    if (NULL != _driver)
+    {
+        aeron_free(_driver);
+    }
+
+    return -1;
 }
 
 int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
@@ -710,7 +739,7 @@ int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
     {
         if (NULL != driver->runners[0].on_start)
         {
-            driver->runners[0].on_start(driver->runners[0].role_name);
+            driver->runners[0].on_start(driver->runners[0].on_start_state, driver->runners[0].role_name);
         }
 
         driver->runners[0].state = AERON_AGENT_STATE_MANUAL;

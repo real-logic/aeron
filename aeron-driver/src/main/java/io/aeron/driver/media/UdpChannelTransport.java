@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.aeron.driver.media;
 import io.aeron.driver.Configuration;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.HeaderFlyweight;
+import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -47,6 +48,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected DatagramChannel sendDatagramChannel;
     protected DatagramChannel receiveDatagramChannel;
     protected int multicastTtl = 0;
+    protected boolean isClosed = false;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
@@ -91,7 +93,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 if (0 != udpChannel.multicastTtl())
                 {
                     sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, udpChannel.multicastTtl());
-                    multicastTtl = getOption(StandardSocketOptions.IP_MULTICAST_TTL);
+                    multicastTtl = sendDatagramChannel.getOption(StandardSocketOptions.IP_MULTICAST_TTL);
                 }
             }
             else
@@ -120,8 +122,20 @@ public abstract class UdpChannelTransport implements AutoCloseable
         catch (final IOException ex)
         {
             statusIndicator.setOrdered(ChannelEndpointStatus.ERRORED);
+
+            CloseHelper.quietClose(sendDatagramChannel);
+            if (receiveDatagramChannel != sendDatagramChannel)
+            {
+                CloseHelper.quietClose(receiveDatagramChannel);
+            }
+
+            sendDatagramChannel = null;
+            receiveDatagramChannel = null;
+
             throw new RuntimeException(
-                "Channel error: " + ex.getMessage() + " : " + udpChannel.originalUriString(), ex);
+                "Channel error: " + ex.getMessage() +
+                " (at " + ex.getStackTrace()[0].toString() + "): " +
+                udpChannel.originalUriString(), ex);
         }
     }
 
@@ -171,32 +185,36 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public void close()
     {
-        try
+        if (!isClosed)
         {
-            if (null != selectionKey)
+            isClosed = true;
+            try
             {
-                selectionKey.cancel();
-            }
+                if (null != selectionKey)
+                {
+                    selectionKey.cancel();
+                }
 
-            if (null != transportPoller)
-            {
-                transportPoller.cancelRead(this);
-                transportPoller.selectNowWithoutProcessing();
-            }
+                if (null != transportPoller)
+                {
+                    transportPoller.cancelRead(this);
+                    transportPoller.selectNowWithoutProcessing();
+                }
 
-            if (null != sendDatagramChannel)
-            {
-                sendDatagramChannel.close();
-            }
+                if (null != sendDatagramChannel)
+                {
+                    sendDatagramChannel.close();
+                }
 
-            if (receiveDatagramChannel != sendDatagramChannel && null != receiveDatagramChannel)
-            {
-                receiveDatagramChannel.close();
+                if (receiveDatagramChannel != sendDatagramChannel && null != receiveDatagramChannel)
+                {
+                    receiveDatagramChannel.close();
+                }
             }
-        }
-        catch (final IOException ex)
-        {
-            errorLog.record(ex);
+            catch (final IOException ex)
+            {
+                errorLog.record(ex);
+            }
         }
     }
 
@@ -261,27 +279,5 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
 
         return address;
-    }
-
-    /**
-     * Return socket option value
-     *
-     * @param socketOption of the socket option
-     * @param <T>          type of option
-     * @return option value
-     */
-    protected <T> T getOption(final SocketOption<T> socketOption)
-    {
-        T option = null;
-        try
-        {
-            option = sendDatagramChannel.getOption(socketOption);
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return option;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,11 +75,10 @@ public class ArchivingMediaDriver implements AutoCloseable
     {
         final MediaDriver driver = MediaDriver.launch(driverCtx);
 
-        final Archive archive = Archive.launch(
-            archiveCtx
-                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-                .errorHandler(driverCtx.errorHandler())
-                .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
+        final Archive archive = Archive.launch(archiveCtx
+            .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+            .errorHandler(driverCtx.errorHandler())
+            .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
 
         return new ArchivingMediaDriver(driver, archive);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.aeron.archive;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
-import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -47,11 +46,11 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <li>If the replay is aborted part way through, send a ReplayAborted message and terminate.</li>
  * </ul>
  */
-class ReplaySession implements Session, SimplifiedControlledFragmentHandler
+class ReplaySession implements Session, SimpleFragmentHandler
 {
     enum State
     {
-        INIT, REPLAY, INACTIVE, CLOSED
+        INIT, REPLAY, INACTIVE
     }
 
     /**
@@ -62,7 +61,6 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     private static final int REPLAY_FRAGMENT_LIMIT = Archive.Configuration.replayFragmentLimit();
 
     private long connectDeadlineMs;
-    private final long replaySessionId;
     private final long correlationId;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final ExclusivePublication replayPublication;
@@ -71,34 +69,33 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
     private final ControlSession controlSession;
     private final EpochClock epochClock;
     private State state = State.INIT;
+    private volatile boolean isAborted;
 
     @SuppressWarnings("ConstantConditions")
     ReplaySession(
         final long replayPosition,
         final long replayLength,
-        final ArchiveConductor archiveConductor,
+        final Catalog catalog,
         final ControlSession controlSession,
         final File archiveDir,
         final ControlResponseProxy threadLocalControlResponseProxy,
-        final long replaySessionId,
         final long correlationId,
         final EpochClock epochClock,
-        final String replayChannel,
-        final int replayStreamId,
+        final ExclusivePublication replayPublication,
         final RecordingSummary recordingSummary,
         final Counter recordingPosition)
     {
         this.controlSession = controlSession;
         this.threadLocalControlResponseProxy = threadLocalControlResponseProxy;
-        this.replaySessionId = replaySessionId;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
+        this.replayPublication = replayPublication;
 
         RecordingFragmentReader cursor = null;
         try
         {
             cursor = new RecordingFragmentReader(
-                archiveConductor.catalog(),
+                catalog,
                 recordingSummary,
                 archiveDir,
                 replayPosition,
@@ -107,59 +104,49 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         }
         catch (final Exception ex)
         {
-            closeOnError(ex, "failed to open cursor on a recording because: " + ex.getMessage());
+            CloseHelper.close(replayPublication);
+            onError("failed to open cursor on a recording because: " + ex.getMessage());
+            LangUtil.rethrowUnchecked(ex);
         }
 
         this.cursor = cursor;
 
-        ExclusivePublication replayPublication = null;
-        try
-        {
-            replayPublication = archiveConductor.newReplayPublication(
-                replayChannel,
-                replayStreamId,
-                cursor.fromPosition(),
-                recordingSummary.mtuLength,
-                recordingSummary.initialTermId,
-                recordingSummary.termBufferLength);
-        }
-        catch (final Exception ex)
-        {
-            closeOnError(ex, "failed to create replay publication because: " + ex.getMessage());
-        }
-
-        this.replayPublication = replayPublication;
-        controlSession.sendOkResponse(correlationId, replaySessionId, threadLocalControlResponseProxy);
-
+        controlSession.sendOkResponse(correlationId, replayPublication.sessionId(), threadLocalControlResponseProxy);
         connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
     }
 
     public void close()
     {
-        state = State.CLOSED;
+        CloseHelper.close(replayPublication);
 
-        CloseHelper.quietClose(cursor);
-        CloseHelper.quietClose(replayPublication);
+        if (null != cursor)
+        {
+            cursor.close();
+        }
     }
 
     public long sessionId()
     {
-        return replaySessionId;
+        return replayPublication.sessionId();
     }
 
     public int doWork()
     {
         int workCount = 0;
 
-        switch (state)
+        if (isAborted)
         {
-            case INIT:
-                workCount += init();
-                break;
+            state = State.INACTIVE;
+        }
 
-            case REPLAY:
-                workCount += replay();
-                break;
+        if (State.INIT == state)
+        {
+            workCount += init();
+        }
+
+        if (State.REPLAY == state)
+        {
+            workCount += replay();
         }
 
         return workCount;
@@ -167,7 +154,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
 
     public void abort()
     {
-        CloseHelper.close(replayPublication);
+        isAborted = true;
     }
 
     public boolean isDone()
@@ -175,19 +162,19 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         return state == State.INACTIVE;
     }
 
-    public boolean onFragment(final UnsafeBuffer termBuffer, final int offset, final int length)
+    public boolean onFragment(final UnsafeBuffer buffer, final int offset, final int length)
     {
-        if (isDone())
+        if (state != State.REPLAY)
         {
             return false;
         }
 
         final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
-        final int frameType = frameType(termBuffer, frameOffset);
+        final int frameType = frameType(buffer, frameOffset);
 
         final long result = frameType == FrameDescriptor.PADDING_FRAME_TYPE ?
             replayPublication.appendPadding(length) :
-            replayFrame(termBuffer, offset, length, frameOffset);
+            replayFrame(buffer, offset, length, frameOffset);
 
         if (result > 0)
         {
@@ -195,7 +182,7 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         }
         else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
         {
-            closeOnError(null, "replay stream has been shutdown mid-replay");
+            onError("stream closed before replay is complete");
         }
 
         return false;
@@ -211,6 +198,23 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         threadLocalControlResponseProxy = proxy;
     }
 
+    private int init()
+    {
+        if (!replayPublication.isConnected())
+        {
+            if (epochClock.time() > connectDeadlineMs)
+            {
+                onError("no connection established for replay");
+            }
+
+            return 0;
+        }
+
+        state = State.REPLAY;
+
+        return 1;
+    }
+
     private int replay()
     {
         int workDone = 0;
@@ -224,21 +228,22 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         }
         catch (final Exception ex)
         {
-            closeOnError(ex, "cursor read failed");
+            onError("cursor read failed");
+            LangUtil.rethrowUnchecked(ex);
         }
 
         return workDone;
     }
 
-    private long replayFrame(final UnsafeBuffer termBuffer, final int offset, final int length, final int frameOffset)
+    private long replayFrame(final UnsafeBuffer buffer, final int offset, final int length, final int frameOffset)
     {
         final long result = replayPublication.tryClaim(length, bufferClaim);
         if (result > 0)
         {
             bufferClaim
-                .flags(frameFlags(termBuffer, frameOffset))
-                .reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
-                .buffer().putBytes(bufferClaim.offset(), termBuffer, offset, length);
+                .flags(frameFlags(buffer, frameOffset))
+                .reservedValue(buffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
+                .buffer().putBytes(bufferClaim.offset(), buffer, offset, length);
 
             bufferClaim.commit();
         }
@@ -246,40 +251,13 @@ class ReplaySession implements Session, SimplifiedControlledFragmentHandler
         return result;
     }
 
-    private int init()
-    {
-        if (!replayPublication.isConnected())
-        {
-            if (epochClock.time() > connectDeadlineMs)
-            {
-                closeOnError(null, "no connection established for replay");
-            }
-
-            return 0;
-        }
-
-        state = State.REPLAY;
-
-        return 1;
-    }
-
-    private void closeOnError(final Throwable ex, final String errorMessage)
+    private void onError(final String errorMessage)
     {
         state = State.INACTIVE;
-        CloseHelper.quietClose(cursor);
 
         if (!controlSession.isDone())
         {
-            controlSession.sendResponse(
-                correlationId,
-                ControlResponseCode.ERROR,
-                errorMessage,
-                threadLocalControlResponseProxy);
-        }
-
-        if (ex != null)
-        {
-            LangUtil.rethrowUnchecked(ex);
+            controlSession.attemptErrorResponse(correlationId, errorMessage, threadLocalControlResponseProxy);
         }
     }
 }

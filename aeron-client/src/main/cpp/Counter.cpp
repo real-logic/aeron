@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,10 @@ namespace aeron
 {
 
 Counter::Counter(
-    ClientConductor& clientConductor, AtomicBuffer& buffer, std::int64_t registrationId, std::int32_t counterId) :
+    ClientConductor* clientConductor,
+    AtomicBuffer& buffer,
+    std::int64_t registrationId,
+    std::int32_t counterId) :
     AtomicCounter(buffer, counterId),
     m_clientConductor(clientConductor),
     m_registrationId(registrationId)
@@ -30,7 +33,20 @@ Counter::Counter(
 
 Counter::~Counter()
 {
-    m_clientConductor.releaseCounter(m_registrationId);
+    if (nullptr != m_clientConductor)
+    {
+        m_clientConductor->releaseCounter(m_registrationId);
+    }
+}
+
+std::int32_t Counter::state() const
+{
+    return m_clientConductor->countersReader().getCounterState(id());
+}
+
+std::string Counter::label() const
+{
+    return m_clientConductor->countersReader().getCounterLabel(id());
 }
 
 }

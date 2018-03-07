@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,17 +36,18 @@ import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static io.aeron.CncFileDescriptor.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
-import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
+import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 /**
  * Main class for JVM-based media driver
@@ -393,16 +394,22 @@ public final class MediaDriver implements AutoCloseable
         private long imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
         private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
         private long publicationConnectionTimeoutNs = Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS;
+        private long publicationLingerTimeoutNs = Configuration.PUBLICATION_LINGER_NS;
         private long statusMessageTimeoutNs = Configuration.statusMessageTimeout();
+        private long counterFreeToReuseTimeoutNs = Configuration.counterFreeToReuseTimeout();
         private int publicationTermBufferLength = Configuration.termBufferLength();
         private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength);
         private int initialWindowLength = Configuration.initialWindowLength();
         private int mtuLength = Configuration.MTU_LENGTH;
         private int ipcMtuLength = Configuration.IPC_MTU_LENGTH;
         private int filePageSize = Configuration.FILE_PAGE_SIZE;
+        private int publicationReservedSessionIdLow = Configuration.PUBLICATION_RESERVED_SESSION_ID_LOW;
+        private int publicationReservedSessionIdHigh = Configuration.PUBLICATION_RESERVED_SESSION_ID_HIGH;
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
+        private CachedEpochClock cachedEpochClock;
+        private CachedNanoClock cachedNanoClock;
         private ThreadingMode threadingMode = Configuration.THREADING_MODE_DEFAULT;
         private ThreadFactory conductorThreadFactory;
         private ThreadFactory senderThreadFactory;
@@ -417,6 +424,7 @@ public final class MediaDriver implements AutoCloseable
         private SendChannelEndpointSupplier sendChannelEndpointSupplier;
         private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
         private ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals;
+        private MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
         private FlowControlSupplier unicastFlowControlSupplier;
         private FlowControlSupplier multicastFlowControlSupplier;
         private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
@@ -444,6 +452,16 @@ public final class MediaDriver implements AutoCloseable
         private MappedByteBuffer lossReportBuffer;
         private MappedByteBuffer cncByteBuffer;
         private UnsafeBuffer cncMetaDataBuffer;
+
+        /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            return (Context)super.clone();
+        }
 
         /**
          * Free up resources but don't delete files in case they are required for debugging.
@@ -528,7 +546,6 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-
         /**
          * @return covariant return for fluent API.
          * @see CommonContext#countersMetaDataBuffer(UnsafeBuffer)
@@ -540,8 +557,6 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * /**
-         *
          * @return covariant return for fluent API.
          * @see CommonContext#countersValuesBuffer(UnsafeBuffer)
          */
@@ -563,8 +578,10 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        /*
+        /**
          * Should an attempt be made to use the high resolution timers for waiting on Windows.
+         *
+         * @return true if an attempt be made to use the high resolution timers for waiting on Windows.
          */
         public boolean useWindowsHighResTimer()
         {
@@ -726,6 +743,28 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Time in nanoseconds a publication will linger once it is drained to recover potential tail loss.
+         *
+         * @return nanoseconds that a publication will linger once it is drained.
+         */
+        public long publicationLingerTimeoutNs()
+        {
+            return publicationLingerTimeoutNs;
+        }
+
+        /**
+         * Time in nanoseconds a publication will linger once it is drained to recover potential tail loss.
+         *
+         * @param timeoutNs for keeping a publication once it is drained.
+         * @return this for a fluent API.
+         */
+        public Context publicationLingerTimeoutNs(final long timeoutNs)
+        {
+            this.publicationLingerTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
          * Time in nanoseconds after which a client is considered dead if a keep alive is not received.
          *
          * @return time in nanoseconds after which a client is considered dead if a keep alive is not received.
@@ -766,6 +805,28 @@ public final class MediaDriver implements AutoCloseable
         public Context statusMessageTimeoutNs(final long statusMessageTimeoutNs)
         {
             this.statusMessageTimeoutNs = statusMessageTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Time in nanoseconds after which a freed counter may be reused.
+         *
+         * @return time in nanoseconds after which a freed counter may be reused.
+         */
+        public long counterFreeToReuseTimeoutNs()
+        {
+            return counterFreeToReuseTimeoutNs;
+        }
+
+        /**
+         * Time in nanoseconds after which a freed counter may be reused.
+         *
+         * @param counterFreeToReuseTimeoutNs after which a freed counter may be reused.
+         * @return this for a fluent API.
+         */
+        public Context counterFreeToReuseTimeoutNs(final long counterFreeToReuseTimeoutNs)
+        {
+            this.counterFreeToReuseTimeoutNs = counterFreeToReuseTimeoutNs;
             return this;
         }
 
@@ -915,7 +976,8 @@ public final class MediaDriver implements AutoCloseable
          * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
          * <p>
          * Larger MTUs reduce system call overhead at the expense of possible increase in loss which
-         * will need to be recovered.
+         * will need to be recovered. If this is greater than the network MTU for UDP then the packet will be
+         * fragmented and can amplify the impact of loss.
          *
          * @return MTU in bytes for datagrams sent to the network.
          */
@@ -928,7 +990,8 @@ public final class MediaDriver implements AutoCloseable
          * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
          * <p>
          * Larger MTUs reduce system call overhead at the expense of possible increase in loss which
-         * will need to be recovered.
+         * will need to be recovered. If this is greater than the network MTU for UDP then the packet will be
+         * fragmented and can amplify the impact of loss.
          *
          * @param mtuLength in bytes for datagrams sent to the network.
          * @return this for a fluent API.
@@ -940,9 +1003,10 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
+         * MTU in bytes for datagrams sent over shared memory. Messages larger than this are fragmented.
          * <p>
-         * Larger MTUs reduce fragmentation.
+         * Larger MTUs reduce fragmentation. If an IPC stream is recorded to be later sent over the network then
+         * then a large MTU may be an issue.
          *
          * @return MTU in bytes for message fragments.
          */
@@ -952,9 +1016,10 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
+         * MTU in bytes for datagrams sent over shared memory. Messages larger than this are fragmented.
          * <p>
-         * Larger MTUs reduce fragmentation.
+         * Larger MTUs reduce fragmentation. If an IPC stream is recorded to be later sent over the network then
+         * then a large MTU may be an issue.
          *
          * @param ipcMtuLength in bytes for message fragments.
          * @return this for a fluent API.
@@ -1006,6 +1071,51 @@ public final class MediaDriver implements AutoCloseable
         public Context nanoClock(final NanoClock clock)
         {
             nanoClock = clock;
+            return this;
+        }
+
+        /**
+         * The {@link CachedEpochClock} as a source of time in milliseconds for wall clock time.
+         *
+         * @return the {@link CachedEpochClock} as a source of time in milliseconds for wall clock time.
+         */
+        public CachedEpochClock cachedEpochClock()
+        {
+            return cachedEpochClock;
+        }
+
+        /**
+         * The {@link CachedEpochClock} as a source of time in milliseconds for wall clock time.
+         *
+         * @param clock to be used.
+         * @return this for a fluent API.
+         */
+        public Context cachedEpochClock(final CachedEpochClock clock)
+        {
+            cachedEpochClock = clock;
+            return this;
+        }
+
+        /**
+         * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration. This is updated
+         * once per duty cycle of the {@link DriverConductor}.
+         *
+         * @return the {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration.
+         */
+        public CachedNanoClock cachedNanoClock()
+        {
+            return cachedNanoClock;
+        }
+
+        /**
+         * The {@link CachedNanoClock} as a source of time in nanoseconds for measuring duration.
+         *
+         * @param clock to be used.
+         * @return this for a fluent API.
+         */
+        public Context cachedNanoClock(final CachedNanoClock clock)
+        {
+            cachedNanoClock = clock;
             return this;
         }
 
@@ -1348,6 +1458,28 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * The temporary buffer than can be used to build up counter labels to avoid allocation.
+         *
+         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
+         */
+        public MutableDirectBuffer tempBuffer()
+        {
+            return tempBuffer;
+        }
+
+        /**
+         * Set the temporary buffer than can be used to build up counter labels to avoid allocation.
+         *
+         * @param tempBuffer to be used to avoid allocation.
+         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
+         */
+        public Context tempBuffer(final MutableDirectBuffer tempBuffer)
+        {
+            this.tempBuffer = tempBuffer;
+            return this;
+        }
+
+        /**
          * Supplier of dynamically created {@link FlowControl} strategies for unicast connections.
          *
          * @return supplier of dynamically created {@link FlowControl} strategies for unicast connections.
@@ -1582,6 +1714,60 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Low end of the publication reserved session id range which will not be automatically assigned.
+         *
+         * @return low end of the publication reserved session id range which will not be automatically assigned.
+         * @see #publicationReservedSessionIdHigh()
+         * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME
+         */
+        public int publicationReservedSessionIdLow()
+        {
+            return publicationReservedSessionIdLow;
+        }
+
+        /**
+         * Low end of the publication reserved session id range which will not be automatically assigned.
+         *
+         * @param sessionId for low end of the publication reserved session id range which will not be automatically
+         *                 assigned.
+         * @return this for fluent API.
+         * @see #publicationReservedSessionIdHigh(int)
+         * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME
+         */
+        public Context publicationReservedSessionIdLow(final int sessionId)
+        {
+            publicationReservedSessionIdLow = sessionId;
+            return this;
+        }
+
+        /**
+         * High end of the publication reserved session id range which will not be automatically assigned.
+         *
+         * @return high end of the publication reserved session id range which will not be automatically assigned.
+         * @see #publicationReservedSessionIdLow()
+         * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME
+         */
+        public int publicationReservedSessionIdHigh()
+        {
+            return publicationReservedSessionIdHigh;
+        }
+
+        /**
+         * High end of the publication reserved session id range which will not be automatically assigned.
+         *
+         * @param sessionId for high end of the publication reserved session id range which will not be automatically
+         *                 assigned.
+         * @return this for fluent API.
+         * @see #publicationReservedSessionIdLow(int)
+         * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME
+         */
+        public Context publicationReservedSessionIdHigh(final int sessionId)
+        {
+            publicationReservedSessionIdHigh = sessionId;
+            return this;
+        }
+
         OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue()
         {
             return receiverCommandQueue;
@@ -1703,80 +1889,7 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        private void concludeDependantProperties()
-        {
-            clientProxy = new ClientProxy(new BroadcastTransmitter(
-                createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer)));
-
-            toDriverCommands = new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
-
-            if (null == errorLog)
-            {
-                errorLog = new DistinctErrorLog(createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock);
-            }
-
-            if (null == errorHandler)
-            {
-                errorHandler = new LoggingErrorHandler(errorLog);
-            }
-
-            receiverProxy = new ReceiverProxy(
-                threadingMode, receiverCommandQueue(), systemCounters.get(RECEIVER_PROXY_FAILS));
-            senderProxy = new SenderProxy(
-                threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS));
-            driverConductorProxy = new DriverConductorProxy(
-                threadingMode, driverCommandQueue(), systemCounters.get(CONDUCTOR_PROXY_FAILS));
-
-            if (null == rawLogFactory)
-            {
-                rawLogFactory = new RawLogFactory(
-                    aeronDirectoryName(),
-                    filePageSize,
-                    termBufferSparseFile,
-                    performStorageChecks,
-                    errorLog);
-            }
-
-            if (null == lossReport)
-            {
-                lossReportBuffer = mapLossReport(
-                    aeronDirectoryName(), align(Configuration.LOSS_REPORT_BUFFER_LENGTH, filePageSize));
-                lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
-            }
-        }
-
-        private void concludeCounters()
-        {
-            if (null == countersManager)
-            {
-                if (countersMetaDataBuffer() == null)
-                {
-                    countersMetaDataBuffer(createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
-                }
-
-                if (countersValuesBuffer() == null)
-                {
-                    countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
-                }
-
-                final UnsafeBuffer metaDataBuffer = countersMetaDataBuffer();
-                final UnsafeBuffer valuesBuffer = countersValuesBuffer();
-                if (useConcurrentCountersManager)
-                {
-                    countersManager(new ConcurrentCountersManager(metaDataBuffer, valuesBuffer, US_ASCII));
-                }
-                else
-                {
-                    countersManager(new CountersManager(metaDataBuffer, valuesBuffer, US_ASCII));
-                }
-            }
-
-            if (null == systemCounters)
-            {
-                systemCounters = new SystemCounters(countersManager);
-            }
-        }
-
+        @SuppressWarnings("MethodLength")
         private void concludeNullProperties()
         {
             if (null == epochClock)
@@ -1787,6 +1900,16 @@ public final class MediaDriver implements AutoCloseable
             if (null == nanoClock)
             {
                 nanoClock = new SystemNanoClock();
+            }
+
+            if (null == cachedEpochClock)
+            {
+                cachedEpochClock = new CachedEpochClock();
+            }
+
+            if (null == cachedNanoClock)
+            {
+                cachedNanoClock = new CachedNanoClock();
             }
 
             if (null == unicastFlowControlSupplier)
@@ -1870,34 +1993,138 @@ public final class MediaDriver implements AutoCloseable
             }
         }
 
+        private void concludeDependantProperties()
+        {
+            clientProxy = new ClientProxy(new BroadcastTransmitter(
+                createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer)));
+
+            toDriverCommands = new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+
+            if (null == errorLog)
+            {
+                errorLog = new DistinctErrorLog(createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock);
+            }
+
+            if (null == errorHandler)
+            {
+                errorHandler = new LoggingErrorHandler(errorLog);
+            }
+
+            receiverProxy = new ReceiverProxy(
+                threadingMode, receiverCommandQueue(), systemCounters.get(RECEIVER_PROXY_FAILS));
+            senderProxy = new SenderProxy(
+                threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS));
+            driverConductorProxy = new DriverConductorProxy(
+                threadingMode, driverCommandQueue(), systemCounters.get(CONDUCTOR_PROXY_FAILS));
+
+            if (null == rawLogFactory)
+            {
+                rawLogFactory = new RawLogFactory(
+                    aeronDirectoryName(),
+                    filePageSize,
+                    termBufferSparseFile,
+                    performStorageChecks,
+                    errorLog);
+            }
+
+            if (null == lossReport)
+            {
+                lossReportBuffer = mapLossReport(
+                    aeronDirectoryName(), align(Configuration.LOSS_REPORT_BUFFER_LENGTH, filePageSize));
+                lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
+            }
+        }
+
+        private void concludeCounters()
+        {
+            if (null == countersManager)
+            {
+                if (countersMetaDataBuffer() == null)
+                {
+                    countersMetaDataBuffer(createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
+                }
+
+                if (countersValuesBuffer() == null)
+                {
+                    countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+                }
+
+                final EpochClock clock;
+                final long reuseTimeoutMs;
+                if (counterFreeToReuseTimeoutNs > 0)
+                {
+                    clock = epochClock;
+                    reuseTimeoutMs = Math.min(TimeUnit.NANOSECONDS.toMillis(counterFreeToReuseTimeoutNs), 1);
+                }
+                else
+                {
+                    clock = () -> 0;
+                    reuseTimeoutMs = 0;
+                }
+
+                if (useConcurrentCountersManager)
+                {
+                    countersManager = new ConcurrentCountersManager(
+                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, clock, reuseTimeoutMs);
+                }
+                else
+                {
+                    countersManager = new CountersManager(
+                        countersMetaDataBuffer(), countersValuesBuffer(), US_ASCII, clock, reuseTimeoutMs);
+                }
+            }
+
+            if (null == systemCounters)
+            {
+                systemCounters = new SystemCounters(countersManager);
+            }
+        }
+
         private void concludeIdleStrategies()
         {
-            final StatusIndicator controllableIdleStrategyStatus = new UnsafeBufferStatusIndicator(
+            final StatusIndicator indicator = new UnsafeBufferStatusIndicator(
                 countersManager.valuesBuffer(), CONTROLLABLE_IDLE_STRATEGY.id());
 
-            if (null == conductorIdleStrategy)
+            switch (threadingMode)
             {
-                conductorIdleStrategy(Configuration.conductorIdleStrategy(controllableIdleStrategyStatus));
-            }
+                case SHARED:
+                    if (null == sharedIdleStrategy)
+                    {
+                        sharedIdleStrategy = Configuration.sharedIdleStrategy(indicator);
+                    }
+                    break;
 
-            if (null == senderIdleStrategy)
-            {
-                senderIdleStrategy(Configuration.senderIdleStrategy(controllableIdleStrategyStatus));
-            }
+                case DEDICATED:
+                    if (null == conductorIdleStrategy)
+                    {
+                        conductorIdleStrategy = Configuration.conductorIdleStrategy(indicator);
+                    }
 
-            if (null == receiverIdleStrategy)
-            {
-                receiverIdleStrategy(Configuration.receiverIdleStrategy(controllableIdleStrategyStatus));
-            }
+                    if (null == senderIdleStrategy)
+                    {
+                        senderIdleStrategy = Configuration.senderIdleStrategy(indicator);
+                    }
 
-            if (null == sharedNetworkIdleStrategy)
-            {
-                sharedNetworkIdleStrategy(Configuration.sharedNetworkIdleStrategy(controllableIdleStrategyStatus));
-            }
+                    if (null == receiverIdleStrategy)
+                    {
+                        receiverIdleStrategy = Configuration.receiverIdleStrategy(indicator);
+                    }
+                    break;
 
-            if (null == sharedIdleStrategy)
-            {
-                sharedIdleStrategy(Configuration.sharedIdleStrategy(controllableIdleStrategyStatus));
+                case SHARED_NETWORK:
+                    if (null == conductorIdleStrategy)
+                    {
+                        conductorIdleStrategy = Configuration.conductorIdleStrategy(indicator);
+                    }
+
+                    if (null == sharedNetworkIdleStrategy)
+                    {
+                        sharedNetworkIdleStrategy = Configuration.sharedNetworkIdleStrategy(indicator);
+                    }
+                    break;
+
+                case INVOKER:
+                    break;
             }
         }
     }

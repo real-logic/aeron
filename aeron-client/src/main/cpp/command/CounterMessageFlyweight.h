@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,15 +82,29 @@ public:
 
     inline std::int32_t keyLength() const
     {
-        return getInt32(keyLengthOffset());
+        std::int32_t length;
+
+        getBytes(keyLengthOffset(), reinterpret_cast<uint8_t *>(&length), sizeof(length));
+        return length;
     }
 
     inline this_t& keyBuffer(const uint8_t *key, size_t keyLength)
     {
-        putInt32(keyLengthOffset(), static_cast<std::int32_t>(keyLength));
-        putBytes(keyLengthOffset() + sizeof(std::int32_t), key, static_cast<util::index_t>(keyLength));
+        std::int32_t length = static_cast<std::int32_t>(keyLength);
+
+        putBytes(keyLengthOffset(), reinterpret_cast<const uint8_t *>(&length), sizeof(length));
+
+        if (length > 0)
+        {
+            putBytes(keyLengthOffset() + sizeof(std::int32_t), key, static_cast<util::index_t>(keyLength));
+        }
 
         return *this;
+    }
+
+    inline std::int32_t labelLength() const
+    {
+        return stringGetLength(labelLengthOffset());
     }
 
     inline std::string label() const
@@ -107,7 +121,7 @@ public:
 
     inline util::index_t length() const
     {
-        return labelLengthOffset() + sizeof(std::int32_t) + getInt32(labelLengthOffset());
+        return labelLengthOffset() + sizeof(std::int32_t) + labelLength();
     }
 
 private:
@@ -120,7 +134,7 @@ private:
 
     inline util::index_t labelLengthOffset() const
     {
-        return keyLengthOffset() + sizeof(std::int32_t) + getInt32(keyLengthOffset());
+        return keyLengthOffset() + sizeof(std::int32_t) + keyLength();
     }
 };
 

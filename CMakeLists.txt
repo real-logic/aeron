@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2017 Real Logic Ltd.
+# Copyright 2014-2018 Real Logic Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ set(GMOCK_LIBS
 ExternalProject_Add(
     hdr_histogram
     URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c.zip
-    URL_MD5 a57ae27cf2f099c657c2bbf7415b38f4
+    URL_MD5 8d1d6c6df1ee8342c180529a89568081
     INSTALL_COMMAND ""
 )
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,15 +23,15 @@ import org.agrona.LangUtil;
 import java.nio.channels.FileChannel;
 
 /**
- * Consumes an {@link Image} and records data to file using an {@link RecordingWriter}.
+ * Consumes an {@link Image} and records data to file using a {@link RecordingWriter}.
  */
 class RecordingSession implements Session
 {
-    private static final int MAX_BLOCK_LENGTH = 16 * 1204 * 1024;
+    private static final int MAX_BLOCK_LENGTH = 2 * 1204 * 1024;
 
     private enum State
     {
-        INIT, RECORDING, INACTIVE, STOPPED, CLOSED
+        INIT, RECORDING, INACTIVE, STOPPED
     }
 
     private final long recordingId;
@@ -45,12 +45,13 @@ class RecordingSession implements Session
 
     RecordingSession(
         final long recordingId,
+        final long startPosition,
         final String originalChannel,
         final RecordingEventsProxy recordingEventsProxy,
         final Image image,
         final Counter position,
         final FileChannel archiveDirChannel,
-        final Archive.Context context)
+        final Archive.Context ctx)
     {
         this.recordingId = recordingId;
         this.originalChannel = originalChannel;
@@ -61,7 +62,8 @@ class RecordingSession implements Session
         final int termBufferLength = image.termBufferLength();
         blockLengthLimit = Math.min(termBufferLength, MAX_BLOCK_LENGTH);
 
-        recordingWriter = new RecordingWriter(recordingId, termBufferLength, context, archiveDirChannel, position);
+        recordingWriter = new RecordingWriter(
+            recordingId, startPosition, image.joinPosition(), termBufferLength, ctx, archiveDirChannel, position);
     }
 
     public long sessionId()
@@ -81,12 +83,8 @@ class RecordingSession implements Session
 
     public void close()
     {
-        if (State.CLOSED != state)
-        {
-            state = State.CLOSED;
-            CloseHelper.close(recordingWriter);
-            CloseHelper.close(position);
-        }
+        recordingWriter.close();
+        CloseHelper.close(position);
     }
 
     public Counter recordingPosition()
@@ -98,21 +96,23 @@ class RecordingSession implements Session
     {
         int workDone = 0;
 
-        switch (state)
+        if (State.INIT == state)
         {
-            case INIT:
-                workDone = init();
-                break;
+            workDone += init();
+        }
 
-            case RECORDING:
-                workDone = record();
-                break;
+        if (State.RECORDING == state)
+        {
+            workDone += record();
+        }
 
-            case INACTIVE:
-                recordingEventsProxy.stopped(recordingId, image.joinPosition(), position.getWeak());
-                state = State.STOPPED;
-                workDone = 1;
-                break;
+        if (State.INACTIVE == state)
+        {
+            state = State.STOPPED;
+            final long stopPosition = position.getWeak();
+            recordingEventsProxy.stopped(recordingId, image.joinPosition(), stopPosition);
+            recordingWriter.close();
+            workDone += 1;
         }
 
         return workDone;
@@ -120,6 +120,8 @@ class RecordingSession implements Session
 
     private int init()
     {
+        state = State.RECORDING;
+
         recordingEventsProxy.started(
             recordingId,
             image.joinPosition(),
@@ -127,8 +129,6 @@ class RecordingSession implements Session
             image.subscription().streamId(),
             originalChannel,
             image.sourceIdentity());
-
-        state = State.RECORDING;
 
         return 1;
     }
@@ -138,7 +138,7 @@ class RecordingSession implements Session
         int workCount = 1;
         try
         {
-            workCount = image.rawPoll(recordingWriter, blockLengthLimit);
+            workCount = image.blockPoll(recordingWriter, blockLengthLimit);
             if (0 != workCount)
             {
                 recordingEventsProxy.progress(recordingId, image.joinPosition(), position.getWeak());
@@ -146,12 +146,12 @@ class RecordingSession implements Session
 
             if (image.isClosed() || recordingWriter.isClosed())
             {
-                abort();
+                this.state = State.INACTIVE;
             }
         }
         catch (final Exception ex)
         {
-            abort();
+            this.state = State.INACTIVE;
             LangUtil.rethrowUnchecked(ex);
         }
 

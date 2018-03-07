@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,54 +15,23 @@
  */
 package io.aeron.archive;
 
-import io.aeron.ExclusivePublication;
-import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.logbuffer.FragmentHandler;
-import org.agrona.concurrent.UnsafeBuffer;
+import io.aeron.exceptions.TimeoutException;
+import org.agrona.IoUtil;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-
-import static org.junit.Assert.fail;
+import java.util.function.LongConsumer;
 
 public class TestUtil
 {
-    public static final int TIMEOUT_MS = 5000;
+    public static final long TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
     static final boolean DEBUG = false;
-    private static final int SLEEP_TIME_NS = 5000;
-
-    public static File makeTempDir()
-    {
-        final File tempDirForTest;
-        try
-        {
-            tempDirForTest = File.createTempFile("archive", "tmp");
-        }
-        catch (final IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
-
-        if (!tempDirForTest.delete())
-        {
-            throw new IllegalStateException("Failed to delete: " + tempDirForTest);
-        }
-
-        if (!tempDirForTest.mkdir())
-        {
-            throw new IllegalStateException("Failed to create: " + tempDirForTest);
-        }
-
-        return tempDirForTest;
-    }
 
     public static void printf(final String s, final Object... args)
     {
@@ -72,10 +41,27 @@ public class TestUtil
         }
     }
 
+    public static File makeTestDirectory()
+    {
+        final File archiveDir = new File(IoUtil.tmpDirName(), "archive-test");
+        if (archiveDir.exists())
+        {
+            System.err.println("Warning archive directory exists, deleting: " + archiveDir.getAbsolutePath());
+            IoUtil.delete(archiveDir, false);
+        }
+
+        if (!archiveDir.mkdirs())
+        {
+            throw new IllegalStateException("Failed to make archive test directory: " + archiveDir.getAbsolutePath());
+        }
+
+        return archiveDir;
+    }
+
     public static void awaitConnectedReply(
         final Subscription controlResponse,
         final long expectedCorrelationId,
-        final Consumer<Long> receiveSessionId)
+        final LongConsumer receiveSessionId)
     {
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
@@ -168,59 +154,22 @@ public class TestUtil
         await(() -> controlResponseAdapter.poll() != 0);
     }
 
-    static void poll(final Subscription subscription, final FragmentHandler handler)
-    {
-        await(() -> subscription.poll(handler, 1) > 0);
-    }
-
-    public static void offer(final Publication publication, final UnsafeBuffer buffer, final int length)
-    {
-        await(
-            () ->
-            {
-                final long result = publication.offer(buffer, 0, length);
-                if (result > 0)
-                {
-                    return true;
-                }
-                else if (result == Publication.ADMIN_ACTION || result == Publication.BACK_PRESSURED)
-                {
-                    return false;
-                }
-
-                throw new IllegalStateException("Unexpected return code: " + result);
-            });
-    }
-
-    static void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)
-    {
-        await(
-            () ->
-            {
-                final long result = publication.offer(buffer, 0, length);
-                if (result > 0)
-                {
-                    return true;
-                }
-                else if (result == Publication.ADMIN_ACTION || result == Publication.BACK_PRESSURED)
-                {
-                    return false;
-                }
-
-                throw new IllegalStateException("Unexpected return code: " + result);
-            });
-    }
-
     public static void await(final BooleanSupplier conditionSupplier)
     {
-        final long deadlineMs = System.currentTimeMillis() + TIMEOUT_MS;
+        final long deadlineNs = System.nanoTime() + TIMEOUT_NS;
         while (!conditionSupplier.getAsBoolean())
         {
-            LockSupport.parkNanos(SLEEP_TIME_NS);
-            if (deadlineMs < System.currentTimeMillis())
+            if (Thread.currentThread().isInterrupted())
             {
-                fail();
+                throw new IllegalStateException("Unexpected interrupt in test");
             }
+
+            if (System.nanoTime() > deadlineNs)
+            {
+                throw new TimeoutException();
+            }
+
+            Thread.yield();
         }
     }
 

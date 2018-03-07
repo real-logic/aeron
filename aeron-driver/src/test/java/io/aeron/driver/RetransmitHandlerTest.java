@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,8 +70,8 @@ public class RetransmitHandlerTest
     private final RetransmitSender retransmitSender = mock(RetransmitSender.class);
     private final SystemCounters systemCounters = mock(SystemCounters.class);
 
-    private final HeaderWriter headerWriter =
-        new HeaderWriter(DataHeaderFlyweight.createDefaultHeader(0, 0, 0));
+    private final HeaderWriter headerWriter = HeaderWriter.newInstance(
+        DataHeaderFlyweight.createDefaultHeader(0, 0, 0));
 
     private RetransmitHandler handler = new RetransmitHandler(
         () -> currentTime, systemCounters, DELAY_GENERATOR, LINGER_GENERATOR);

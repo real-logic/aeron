@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@ package io.aeron.archive;
 import io.aeron.Counter;
 import io.aeron.Image;
 import io.aeron.Subscription;
+import io.aeron.logbuffer.BlockHandler;
 import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
@@ -33,6 +34,7 @@ import java.io.File;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.file.StandardOpenOption.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -41,7 +43,7 @@ public class RecordingSessionTest
 {
     private static final int RECORDED_BLOCK_LENGTH = 100;
     private static final long RECORDING_ID = 12345;
-    private static final int TERM_BUFFER_LENGTH = 4096;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int SEGMENT_FILE_SIZE = TERM_BUFFER_LENGTH;
 
     private static final String CHANNEL = "channel";
@@ -56,10 +58,10 @@ public class RecordingSessionTest
     public static final FileChannel ARCHIVE_CHANNEL = null;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
-    private final Counter position = mock(Counter.class);
+    private final Counter mockPosition = mock(Counter.class);
     private Image image = mockImage(
         SESSION_ID, INITIAL_TERM_ID, SOURCE_IDENTITY, TERM_BUFFER_LENGTH, mockSubscription(CHANNEL, STREAM_ID));
-    private File tempDirForTest = TestUtil.makeTempDir();
+    private final File archiveDir = TestUtil.makeTestDirectory();
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
@@ -71,15 +73,15 @@ public class RecordingSessionTest
     @Before
     public void before() throws Exception
     {
-        when(position.getWeak()).then((invocation) -> positionLong);
-        when(position.get()).then((invocation) -> positionLong);
+        when(mockPosition.getWeak()).then((invocation) -> positionLong);
+        when(mockPosition.get()).then((invocation) -> positionLong);
         doAnswer(
             (invocation) ->
             {
                 positionLong = invocation.getArgument(0);
                 return null;
             })
-            .when(position).setOrdered(anyLong());
+            .when(mockPosition).setOrdered(anyLong());
 
         termFile = File.createTempFile("test.rec", "sourceIdentity");
 
@@ -98,7 +100,8 @@ public class RecordingSessionTest
 
         context = new Archive.Context()
             .segmentFileLength(SEGMENT_FILE_SIZE)
-            .archiveDir(tempDirForTest)
+            .archiveDir(archiveDir)
+            .catalog(mockCatalog)
             .epochClock(epochClock);
     }
 
@@ -107,32 +110,30 @@ public class RecordingSessionTest
     {
         IoUtil.unmap(mockLogBufferMapped.byteBuffer());
         CloseHelper.close(mockLogBufferChannel);
-        IoUtil.delete(tempDirForTest, false);
+        IoUtil.delete(archiveDir, false);
         IoUtil.delete(termFile, false);
     }
 
     @Test
-    public void shouldRecordFragmentsFromImage() throws Exception
+    public void shouldRecordFragmentsFromImage()
     {
         final RecordingSession session = new RecordingSession(
-            RECORDING_ID, CHANNEL, recordingEventsProxy, image, position, ARCHIVE_CHANNEL, context);
+            RECORDING_ID, START_POSITION, CHANNEL, recordingEventsProxy, image, mockPosition, ARCHIVE_CHANNEL, context);
 
         assertEquals(RECORDING_ID, session.sessionId());
 
         session.doWork();
 
-        when(image.rawPoll(any(), anyInt())).thenAnswer(
+        when(image.blockPoll(any(), anyInt())).thenAnswer(
             (invocation) ->
             {
-                final RawBlockHandler handle = invocation.getArgument(0);
+                final BlockHandler handle = invocation.getArgument(0);
                 if (handle == null)
                 {
                     return 0;
                 }
 
                 handle.onBlock(
-                    mockLogBufferChannel,
-                    TERM_OFFSET,
                     mockLogBufferMapped,
                     TERM_OFFSET,
                     RECORDED_BLOCK_LENGTH,
@@ -144,7 +145,7 @@ public class RecordingSessionTest
 
         assertNotEquals("Expect some work", 0, session.doWork());
 
-        final File segmentFile = new File(tempDirForTest, segmentFileName(RECORDING_ID, 0));
+        final File segmentFile = new File(archiveDir, segmentFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
 
         final RecordingSummary recordingSummary = new RecordingSummary();
@@ -160,8 +161,8 @@ public class RecordingSessionTest
         try (RecordingFragmentReader reader = new RecordingFragmentReader(
             mockCatalog,
             recordingSummary,
-            tempDirForTest,
-            RecordingFragmentReader.NULL_POSITION,
+            archiveDir,
+            NULL_POSITION,
             RecordingFragmentReader.NULL_LENGTH,
             null))
         {
@@ -179,7 +180,7 @@ public class RecordingSessionTest
             assertEquals(1, polled);
         }
 
-        when(image.rawPoll(any(), anyInt())).thenReturn(0);
+        when(image.blockPoll(any(), anyInt())).thenReturn(0);
         assertEquals("Expect no work", 0, session.doWork());
 
         when(image.isClosed()).thenReturn(true);

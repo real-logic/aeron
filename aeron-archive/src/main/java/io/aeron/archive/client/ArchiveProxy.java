@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,7 @@ package io.aeron.archive.client;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.*;
 import org.agrona.ExpandableDirectByteBuffer;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.SystemNanoClock;
-import org.agrona.concurrent.YieldingIdleStrategy;
+import org.agrona.concurrent.*;
 
 import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT_DEFAULT_NS;
 
@@ -52,6 +49,8 @@ public class ArchiveProxy
     private final ListRecordingsRequestEncoder listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
     private final ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder =
         new ListRecordingsForUriRequestEncoder();
+    private final ListRecordingRequestEncoder listRecordingRequestEncoder = new ListRecordingRequestEncoder();
+    private final ExtendRecordingRequestEncoder extendRecordingRequestEncoder = new ExtendRecordingRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -121,7 +120,31 @@ public class ArchiveProxy
             .responseStreamId(responseStreamId)
             .responseChannel(responseChannel);
 
-        return offerWithTimeout(connectRequestEncoder.encodedLength());
+        return offerWithTimeout(connectRequestEncoder.encodedLength(), null);
+    }
+
+    /**
+     * Connect to an archive on its control interface providing the response stream details.
+     *
+     * @param responseChannel    for the control message responses.
+     * @param responseStreamId   for the control message responses.
+     * @param correlationId      for this request.
+     * @param aeronClientInvoker for aeron client conductor thread.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean connect(
+        final String responseChannel,
+        final int responseStreamId,
+        final long correlationId,
+        final AgentInvoker aeronClientInvoker)
+    {
+        connectRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .responseStreamId(responseStreamId)
+            .responseChannel(responseChannel);
+
+        return offerWithTimeout(connectRequestEncoder.encodedLength(), aeronClientInvoker);
     }
 
     /**
@@ -197,7 +220,7 @@ public class ArchiveProxy
      *
      * @param recordingId      to be replayed.
      * @param position         from which the replay should be started.
-     * @param length           of the stream to be replayed.
+     * @param length           of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live stream.
      * @param replayChannel    to which the replay should be sent.
      * @param replayStreamId   to which the replay should be sent.
      * @param correlationId    for this request.
@@ -304,6 +327,56 @@ public class ArchiveProxy
         return offer(listRecordingsForUriRequestEncoder.encodedLength());
     }
 
+    /**
+     * List a recording descriptor for a given recording id.
+     *
+     * @param recordingId      at which to begin listing.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean listRecording(final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        listRecordingRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(listRecordingRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Extend a recorded stream for a given channel and stream id pairing.
+     *
+     * @param channel          to be recorded.
+     * @param streamId         to be recorded.
+     * @param sourceLocation   of the publication to be recorded.
+     * @param recordingId      to be extended.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean extendRecording(
+        final String channel,
+        final int streamId,
+        final SourceLocation sourceLocation,
+        final long recordingId,
+        final long correlationId,
+        final long controlSessionId)
+    {
+        extendRecordingRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .streamId(streamId)
+            .sourceLocation(sourceLocation)
+            .channel(channel);
+
+        return offer(extendRecordingRequestEncoder.encodedLength());
+    }
+
     private boolean offer(final int length)
     {
         retryIdleStrategy.reset();
@@ -311,10 +384,15 @@ public class ArchiveProxy
         int attempts = retryAttempts;
         while (true)
         {
-            final long result;
-            if ((result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length)) > 0)
+            final long result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
+            if (result > 0)
             {
                 return true;
+            }
+
+            if (result == Publication.CLOSED)
+            {
+                throw new IllegalStateException("Connection to the archive has been closed");
             }
 
             if (result == Publication.NOT_CONNECTED)
@@ -336,17 +414,22 @@ public class ArchiveProxy
         }
     }
 
-    private boolean offerWithTimeout(final int length)
+    private boolean offerWithTimeout(final int length, final AgentInvoker aeronClientInvoker)
     {
         retryIdleStrategy.reset();
 
         final long deadlineNs = nanoClock.nanoTime() + connectTimeoutNs;
         while (true)
         {
-            final long result;
-            if ((result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length)) > 0)
+            final long result = publication.offer(buffer, 0, MessageHeaderEncoder.ENCODED_LENGTH + length);
+            if (result > 0)
             {
                 return true;
+            }
+
+            if (result == Publication.CLOSED)
+            {
+                throw new IllegalStateException("Connection to the archive has been closed");
             }
 
             if (result == Publication.MAX_POSITION_EXCEEDED)
@@ -359,6 +442,10 @@ public class ArchiveProxy
                 return false;
             }
 
+            if (null != aeronClientInvoker)
+            {
+                aeronClientInvoker.invoke();
+            }
             retryIdleStrategy.idle();
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ ExclusivePublication::ExclusivePublication(
     std::int32_t streamId,
     std::int32_t sessionId,
     UnsafeBufferPosition& publicationLimit,
-    StatusIndicatorReader& channelStatusIndicator,
+    std::int32_t channelStatusId,
     std::shared_ptr<LogBuffers> buffers)
     :
     m_conductor(conductor),
@@ -45,7 +45,7 @@ ExclusivePublication::ExclusivePublication(
     m_activePartitionIndex(
         LogBufferDescriptor::indexByTermCount(LogBufferDescriptor::activeTermCount(m_logMetaDataBuffer))),
     m_publicationLimit(publicationLimit),
-    m_channelStatusIndicator(channelStatusIndicator),
+    m_channelStatusId(channelStatusId),
     m_logbuffers(buffers),
     m_headerWriter(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer))
 {
@@ -92,6 +92,16 @@ void ExclusivePublication::removeDestination(const std::string& endpointChannel)
     }
 
     m_conductor.removeDestination(m_registrationId, endpointChannel);
+}
+
+std::int64_t ExclusivePublication::channelStatus()
+{
+    if (isClosed())
+    {
+        return ChannelEndpointStatus::NO_ID_ALLOCATED;
+    }
+
+    return m_conductor.channelStatus(m_channelStatusId);
 }
 
 }

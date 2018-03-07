@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,6 @@ import java.nio.ByteOrder;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
-import static io.aeron.protocol.HeaderFlyweight.FLAGS_FIELD_OFFSET;
-import static io.aeron.protocol.HeaderFlyweight.TYPE_FIELD_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 

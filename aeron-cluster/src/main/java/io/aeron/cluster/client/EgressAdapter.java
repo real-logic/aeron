@@ -1,5 +1,5 @@
 /*
- *  Copyright 2017 Real Logic Ltd.
+ *  Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,7 @@ package io.aeron.cluster.client;
 
 import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.NewLeaderEventDecoder;
-import io.aeron.cluster.codecs.SessionEventDecoder;
-import io.aeron.cluster.codecs.SessionHeaderDecoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
@@ -86,10 +83,10 @@ public class EgressAdapter implements FragmentHandler
                     newLeaderEventDecoder.lastCorrelationId(),
                     newLeaderEventDecoder.clusterSessionId(),
                     newLeaderEventDecoder.lastMessageTimestamp(),
-                    newLeaderEventDecoder.clusterTermTimestamp(),
-                    newLeaderEventDecoder.clusterMessageIndex(),
-                    newLeaderEventDecoder.clusterTermId(),
-                    newLeaderEventDecoder.clusterLeader());
+                    newLeaderEventDecoder.leadershipTimestamp(),
+                    newLeaderEventDecoder.leadershipTermId(),
+                    newLeaderEventDecoder.leaderMemberId(),
+                    newLeaderEventDecoder.memberEndpoints());
                 break;
 
             case SessionHeaderDecoder.TEMPLATE_ID:

@@ -12,6 +12,9 @@ import org.agrona.BufferUtil;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
 import static io.aeron.archive.Archive.segmentFileName;
@@ -45,9 +48,18 @@ public class CatalogTool
 
         if (args.length == 2 && args[1].equals("describe"))
         {
-            try (Catalog catalog = openCatalog())
+            try (Catalog catalog = openCatalog();
+                ArchiveMarkFile markFile = openMarkFile(System.out::println))
             {
+                printMarkInformation(markFile);
                 catalog.forEach((he, hd, e, d) -> System.out.println(d));
+            }
+        }
+        else if (args.length == 2 && args[1].equals("pid"))
+        {
+            try (ArchiveMarkFile markFile = openMarkFile(null))
+            {
+                System.out.println(markFile.decoder().pid());
             }
         }
         else if (args.length == 3 && args[1].equals("describe"))
@@ -74,9 +86,25 @@ public class CatalogTool
         // TODO: add a manual override tool to force mark entries as unusable
     }
 
+    private static ArchiveMarkFile openMarkFile(final Consumer<String> logger)
+    {
+        return new ArchiveMarkFile(
+            archiveDir, ArchiveMarkFile.FILENAME, System::currentTimeMillis, TimeUnit.SECONDS.toMillis(5), logger);
+    }
+
     private static Catalog openCatalog()
     {
-        return new Catalog(archiveDir, null, 0, System::currentTimeMillis, false);
+        return new Catalog(archiveDir, System::currentTimeMillis);
+    }
+
+    private static void printMarkInformation(final ArchiveMarkFile markFile)
+    {
+        System.out.format(
+            "%1$tH:%1$tM:%1$tS (start: %2tF %2$tH:%2$tM:%2$tS, activity: %3tF %3$tH:%3$tM:%3$tS)%n",
+            new Date(),
+            new Date(markFile.decoder().startTimestamp()),
+            new Date(markFile.activityTimestampVolatile()));
+        System.out.println(markFile.decoder());
     }
 
     private static void verify(
@@ -240,6 +268,7 @@ public class CatalogTool
         System.out.println("Usage: <archive-dir> <command> <optional recordingId>");
         System.out.println("  describe: prints out all descriptors in the file. Optionally specify a recording id" +
             " to describe a single recording.");
+        System.out.println("  pid: prints just PID of archive.");
         System.out.println("  verify: verifies all descriptors in the file, checking recording files availability %n" +
             "and contents. Faulty entries are marked as unusable. Optionally specify a recording id%n" +
             "to verify a single recording.");

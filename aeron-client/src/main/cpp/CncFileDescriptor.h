@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ namespace CncFileDescriptor {
 
 static const std::string CNC_FILE = "cnc.dat";
 
-static const std::int32_t CNC_VERSION = 11;
+static const std::int32_t CNC_VERSION = 12;
 
 #pragma pack(push)
 #pragma pack(4)

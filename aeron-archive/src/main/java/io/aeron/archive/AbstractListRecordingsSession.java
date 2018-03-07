@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,10 @@
  */
 package io.aeron.archive;
 
-import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import static io.aeron.archive.Catalog.VALID;
-import static io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
-import static io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder.SCHEMA_VERSION;
 
 abstract class AbstractListRecordingsSession implements Session
 {
-    private final RecordingDescriptorHeaderDecoder headerDecoder = new RecordingDescriptorHeaderDecoder();
     protected final UnsafeBuffer descriptorBuffer;
     protected final Catalog catalog;
     protected final ControlSession controlSession;
@@ -76,11 +70,6 @@ abstract class AbstractListRecordingsSession implements Session
     public void close()
     {
         controlSession.onListRecordingSessionClosed(this);
-    }
-
-    protected boolean isDescriptorValid(final UnsafeBuffer buffer)
-    {
-        return headerDecoder.wrap(buffer, 0, BLOCK_LENGTH, SCHEMA_VERSION).valid() == VALID;
     }
 
     protected abstract int sendDescriptors();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,13 @@
  */
 package io.aeron.driver;
 
-import org.agrona.ManagedResource;
-
-public interface DriverManagedResource extends ManagedResource
+public interface DriverManagedResource
 {
+    /**
+     * Close and delete or free external dependencies.
+     */
+    void close();
+
     /**
      * Inform resource of timeNs passing and pass it DriverConductor to inform of any state transitions.
      *
@@ -34,24 +37,4 @@ public interface DriverManagedResource extends ManagedResource
      * @return whether resource has reached end of life or not
      */
     boolean hasReachedEndOfLife();
-
-    /**
-     * Increment reference count to this resource.
-     *
-     * @return new reference count value
-     */
-    default int incRef()
-    {
-        return 0;
-    }
-
-    /**
-     * Decrement reference count to this resource.
-     *
-     * @return new reference count value
-     */
-    default int decRef()
-    {
-        return 0;
-    }
 }

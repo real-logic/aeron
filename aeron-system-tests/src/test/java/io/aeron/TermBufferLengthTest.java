@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,16 +42,17 @@ public class TermBufferLengthTest
     public static final int STREAM_ID = 1;
 
     @Theory
-    @Test(timeout = 10000)
+    @Test
     public void shouldHaveCorrectTermBufferLength(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
             .publicationTermBufferLength(TEST_TERM_LENGTH * 2)
             .ipcTermBufferLength(TEST_TERM_LENGTH * 2);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect();
-             Publication publication = aeron.addPublication(channel, STREAM_ID))
+            Aeron aeron = Aeron.connect();
+            Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
             assertThat(publication.termBufferLength(), is(TEST_TERM_LENGTH));
         }

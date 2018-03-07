@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
@@ -34,6 +35,7 @@ public class SenderLimit
     public static final String NAME = "snd-lmt";
 
     public static UnsafeBufferPosition allocate(
+        final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,
         final long registrationId,
         final int sessionId,
@@ -41,6 +43,6 @@ public class SenderLimit
         final String channel)
     {
         return StreamPositionCounter.allocate(
-            NAME, SENDER_LIMIT_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+            tempBuffer, NAME, SENDER_LIMIT_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

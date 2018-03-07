@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,18 +99,16 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
                 break;
 
             case RegistrationStatus::REGISTERED_MEDIA_DRIVER:
-                {
-                    UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_positionLimitCounterId);
-                    StatusIndicatorReader channelStatusIndicator(
-                        m_counterValuesBuffer, state.m_channelStatusIndicatorId);
+            {
+                UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_publicationLimitCounterId);
 
-                    pub = std::make_shared<Publication>(
-                        *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId,
-                        state.m_streamId, state.m_sessionId, publicationLimit, channelStatusIndicator, state.m_buffers);
+                pub = std::make_shared<Publication>(
+                    *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId,
+                    state.m_streamId, state.m_sessionId, publicationLimit, state.m_channelStatusId, state.m_buffers);
 
-                    state.m_publication = std::weak_ptr<Publication>(pub);
-                }
+                state.m_publication = std::weak_ptr<Publication>(pub);
                 break;
+            }
 
             case RegistrationStatus::ERRORED_MEDIA_DRIVER:
                 throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
@@ -183,13 +181,11 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
 
             case RegistrationStatus::REGISTERED_MEDIA_DRIVER:
             {
-                UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_positionLimitCounterId);
-                StatusIndicatorReader channelStatusIndicator(
-                    m_counterValuesBuffer, state.m_channelStatusIndicatorId);
+                UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_publicationLimitCounterId);
 
                 pub = std::make_shared<ExclusivePublication>(
                     *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId, state.m_streamId,
-                    state.m_sessionId, publicationLimit, channelStatusIndicator, state.m_buffers);
+                    state.m_sessionId, publicationLimit, state.m_channelStatusId, state.m_buffers);
 
                 state.m_publication = std::weak_ptr<ExclusivePublication>(pub);
                 break;
@@ -416,7 +412,7 @@ void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, 
 void ClientConductor::onNewPublication(
     std::int32_t streamId,
     std::int32_t sessionId,
-    std::int32_t positionLimitCounterId,
+    std::int32_t publicationLimitCounterId,
     std::int32_t channelStatusIndicatorId,
     const std::string &logFileName,
     std::int64_t registrationId,
@@ -436,8 +432,8 @@ void ClientConductor::onNewPublication(
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
-        state.m_positionLimitCounterId = positionLimitCounterId;
-        state.m_channelStatusIndicatorId = channelStatusIndicatorId;
+        state.m_publicationLimitCounterId = publicationLimitCounterId;
+        state.m_channelStatusId = channelStatusIndicatorId;
         state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
         state.m_originalRegistrationId = originalRegistrationId;
 
@@ -448,7 +444,7 @@ void ClientConductor::onNewPublication(
 void ClientConductor::onNewExclusivePublication(
     std::int32_t streamId,
     std::int32_t sessionId,
-    std::int32_t positionLimitCounterId,
+    std::int32_t publicationLimitCounterId,
     std::int32_t channelStatusIndicatorId,
     const std::string &logFileName,
     std::int64_t registrationId,
@@ -468,8 +464,8 @@ void ClientConductor::onNewExclusivePublication(
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
-        state.m_positionLimitCounterId = positionLimitCounterId;
-        state.m_channelStatusIndicatorId = channelStatusIndicatorId;
+        state.m_publicationLimitCounterId = publicationLimitCounterId;
+        state.m_channelStatusId = channelStatusIndicatorId;
         state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
         state.m_originalRegistrationId = originalRegistrationId;
 
@@ -479,7 +475,7 @@ void ClientConductor::onNewExclusivePublication(
 
 void ClientConductor::onSubscriptionReady(
     std::int64_t registrationId,
-    std::int32_t channelStatusIndicatorId)
+    std::int32_t channelStatusId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -491,20 +487,19 @@ void ClientConductor::onSubscriptionReady(
 
     if (subIt != m_subscriptions.end() && (*subIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
     {
-        StatusIndicatorReader channelStatusIndicator(m_counterValuesBuffer, channelStatusIndicatorId);
         SubscriptionStateDefn& state = (*subIt);
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_subscriptionCache =
             std::make_shared<Subscription>(
-                *this, state.m_registrationId, state.m_channel, state.m_streamId, channelStatusIndicator);
+                *this, state.m_registrationId, state.m_channel, state.m_streamId, channelStatusId);
         state.m_subscription = std::weak_ptr<Subscription>(state.m_subscriptionCache);
         m_onNewSubscriptionHandler(state.m_channel, state.m_streamId, registrationId);
         return;
     }
 }
 
-void ClientConductor::onCounterReady(
+void ClientConductor::onAvailableCounter(
     std::int64_t registrationId,
     std::int32_t counterId)
 {
@@ -524,10 +519,20 @@ void ClientConductor::onCounterReady(
         state.m_counterId = counterId;
         state.m_counterCache =
             std::make_shared<Counter>(
-                *this, m_counterValuesBuffer, state.m_registrationId, counterId);
+                this, m_counterValuesBuffer, state.m_registrationId, counterId);
         state.m_counter = std::weak_ptr<Counter>(state.m_counterCache);
-        return;
     }
+
+    m_onAvailableCounterHandler(m_countersReader, registrationId, counterId);
+}
+
+void ClientConductor::onUnavailableCounter(
+    std::int64_t registrationId,
+    std::int32_t counterId)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    m_onUnavailableCounterHandler(m_countersReader, registrationId, counterId);
 }
 
 void ClientConductor::onOperationSuccess(std::int64_t correlationId)
@@ -598,7 +603,6 @@ void ClientConductor::onErrorResponse(
         (*counterIt).m_errorMessage = errorMessage;
         return;
     }
-
 }
 
 void ClientConductor::onAvailableImage(

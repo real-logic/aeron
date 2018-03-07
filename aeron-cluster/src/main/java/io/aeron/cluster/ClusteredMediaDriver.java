@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.archive.Archive;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
@@ -49,9 +48,9 @@ public class ClusteredMediaDriver implements AutoCloseable
     {
         loadPropertiesFiles(args);
 
-        try (ClusteredMediaDriver ignore = launch())
+        try (ClusteredMediaDriver driver = launch())
         {
-            new ShutdownSignalBarrier().await();
+            driver.consensusModule().context().shutdownSignalBarrier().await();
 
             System.out.println("Shutdown ClusteredMediaDriver...");
         }
@@ -80,18 +79,17 @@ public class ClusteredMediaDriver implements AutoCloseable
         final Archive.Context archiveCtx,
         final ConsensusModule.Context consensusModuleCtx)
     {
-        final MediaDriver driver = MediaDriver.launch(driverCtx);
+        final MediaDriver driver = MediaDriver.launch(driverCtx
+            .spiesSimulateConnection(true));
 
-        final Archive archive = Archive.launch(
-            archiveCtx
-                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-                .errorHandler(driverCtx.errorHandler())
-                .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
+        final Archive archive = Archive.launch(archiveCtx
+            .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+            .errorHandler(driverCtx.errorHandler())
+            .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
 
-        final ConsensusModule consensusModule = ConsensusModule.launch(
-            consensusModuleCtx
-                .errorHandler(driverCtx.errorHandler())
-                .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
+        final ConsensusModule consensusModule = ConsensusModule.launch(consensusModuleCtx
+            .errorHandler(driverCtx.errorHandler())
+            .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
 
         return new ClusteredMediaDriver(driver, archive, consensusModule);
     }

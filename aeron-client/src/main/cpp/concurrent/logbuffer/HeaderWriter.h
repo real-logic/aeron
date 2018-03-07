@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public:
     inline void write(AtomicBuffer& termBuffer, util::index_t offset, util::index_t length, std::int32_t termId) const
     {
         termBuffer.putInt32Ordered(offset, -length);
-        atomic::thread_fence();
+        atomic::release();
 
         struct DataFrameHeader::DataFrameHeaderDefn* hdr =
             (struct DataFrameHeader::DataFrameHeaderDefn *)(termBuffer.buffer() + offset);

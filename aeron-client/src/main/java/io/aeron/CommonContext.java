@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.errors.ErrorConsumer;
 import org.agrona.concurrent.errors.ErrorLogReader;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
@@ -47,7 +48,7 @@ import static java.lang.System.getProperty;
  * <li><code>aeron.dir</code>: Use value as directory name for Aeron buffers and status.</li>
  * </ul>
  */
-public class CommonContext implements AutoCloseable
+public class CommonContext implements AutoCloseable, Cloneable
 {
     /**
      * Property name for driver timeout after which the driver is considered inactive.
@@ -117,7 +118,8 @@ public class CommonContext implements AutoCloseable
     public static final String TERM_LENGTH_PARAM_NAME = "term-length";
 
     /**
-     * MTU length parameter name for using as a channel URI param.
+     * MTU length parameter name for using as a channel URI param. If this is greater than the network MTU for UDP
+     * then the packet will be fragmented and can amplify the impact of loss.
      */
     public static final String MTU_LENGTH_PARAM_NAME = "mtu";
 
@@ -137,6 +139,16 @@ public class CommonContext implements AutoCloseable
     public static final String MDC_CONTROL_MODE_PARAM_NAME = "control-mode";
 
     /**
+     * Key for the session id for a publication or restricted subscription.
+     */
+    public static final String SESSION_ID_PARAM_NAME = "session-id";
+
+    /**
+     * Key for the linger timeout for a publication to wait around after draining in nanoseconds.
+     */
+    public static final String LINGER_PARAM_NAME = "linger";
+
+    /**
      * Valid value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when manual control is desired.
      */
     public static final String MDC_CONTROL_MODE_MANUAL = "manual";
@@ -152,7 +164,7 @@ public class CommonContext implements AutoCloseable
     public static final String RELIABLE_STREAM_PARAM_NAME = "reliable";
 
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
-    private String aeronDirectoryName;
+    private String aeronDirectoryName = getAeronDirectoryName();
     private File aeronDirectory;
     private File cncFile;
     private UnsafeBuffer countersMetaDataBuffer;
@@ -181,6 +193,34 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
+     * Perform a shallow copy of the object.
+     *
+     * @return a shallow copy of the object.
+     */
+    public CommonContext clone()
+    {
+        try
+        {
+            return (CommonContext)super.clone();
+        }
+        catch (final CloneNotSupportedException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * Get the default directory name to be used if {@link #aeronDirectoryName(String)} is not set. This will take
+     * the {@link #AERON_DIR_PROP_NAME} if set and if not then {@link #AERON_DIR_PROP_DEFAULT}.
+     *
+     * @return the default directory name to be used if {@link #aeronDirectoryName(String)} is not set.
+     */
+    public static String getAeronDirectoryName()
+    {
+        return getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
+    }
+
+    /**
      * Convert the default Aeron directory name to be a random name for use with embedded drivers.
      *
      * @return random directory name with default directory name as base
@@ -188,14 +228,6 @@ public class CommonContext implements AutoCloseable
     public static String generateRandomDirName()
     {
         return AERON_DIR_PROP_DEFAULT + '-' + UUID.randomUUID().toString();
-    }
-
-    /**
-     * Create a new context with Aeron directory and delete on exit values based on the current system properties.
-     */
-    public CommonContext()
-    {
-        aeronDirectoryName = getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
     }
 
     /**
@@ -526,16 +558,10 @@ public class CommonContext implements AutoCloseable
 
         final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
         final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+        final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->
+            formatError(out, dateFormat, count, firstTimestamp, lastTimestamp, ex);
 
-        final int distinctErrorCount = ErrorLogReader.read(
-            buffer,
-            (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                out.format(
-                    "***%n%d observations from %s to %s for:%n %s%n",
-                    observationCount,
-                    dateFormat.format(new Date(firstObservationTimestamp)),
-                    dateFormat.format(new Date(lastObservationTimestamp)),
-                    encodedException));
+        final int distinctErrorCount = ErrorLogReader.read(buffer, errorConsumer);
 
         out.format("%n%d distinct errors observed.%n", distinctErrorCount);
 
@@ -547,5 +573,21 @@ public class CommonContext implements AutoCloseable
      */
     public void close()
     {
+    }
+
+    public static void formatError(
+        final PrintStream out,
+        final SimpleDateFormat dateFormat,
+        final int observationCount,
+        final long firstObservationTimestamp,
+        final long lastObservationTimestamp,
+        final String encodedException)
+    {
+        out.format(
+            "***%n%d observations from %s to %s for:%n %s%n",
+            observationCount,
+            dateFormat.format(new Date(firstObservationTimestamp)),
+            dateFormat.format(new Date(lastObservationTimestamp)),
+            encodedException);
     }
 }

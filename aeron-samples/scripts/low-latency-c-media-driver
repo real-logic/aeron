@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ##
-## Copyright 2014-2017 Real Logic Ltd.
+## Copyright 2014-2018 Real Logic Ltd.
 ##
 ## Licensed under the Apache License, Version 2.0 (the "License");
 ## you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ export AERON_SOCKET_SO_RCVBUF="2097152"
 export AERON_SOCKET_SO_SNDBUF="2097152"
 export AERON_RCV_INITIAL_WINDOW_LENGTH="2097152"
 export AERON_THREADING_MODE="DEDICATED"
-export AERON_CONDUCTOR_IDLE_STRATEGY_ENV_VAR="noop"
-export AERON_SENDER_IDLE_STRATEGY_ENV_VAR="noop"
-export AERON_RECEIVER_IDLE_STRATEGY_ENV_VAR="noop"
+export AERON_CONDUCTOR_IDLE_STRATEGY="noop"
+export AERON_SENDER_IDLE_STRATEGY="noop"
+export AERON_RECEIVER_IDLE_STRATEGY="noop"
 
 $AERON_BUILD_DIR/binaries/aeronmd

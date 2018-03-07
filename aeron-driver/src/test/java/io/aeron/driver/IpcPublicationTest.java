@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,9 +59,8 @@ public class IpcPublicationTest
     @Before
     public void setUp()
     {
-        final RingBuffer fromClientCommands =
-            new ManyToOneRingBuffer(new UnsafeBuffer(
-                ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH)));
+        final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new UnsafeBuffer(
+            ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH)));
 
         final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
         final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));
@@ -78,6 +77,8 @@ public class IpcPublicationTest
             .clientProxy(mock(ClientProxy.class))
             .driverCommandQueue(mock(ManyToOneConcurrentArrayQueue.class))
             .epochClock(new SystemEpochClock())
+            .cachedEpochClock(new CachedEpochClock())
+            .cachedNanoClock(new CachedNanoClock())
             .countersManager(countersManager)
             .systemCounters(mock(SystemCounters.class))
             .nanoClock(nanoClock);
@@ -104,7 +105,7 @@ public class IpcPublicationTest
     @Test
     public void shouldKeepPublisherLimitZeroOnNoSubscriptionUpdate()
     {
-        ipcPublication.updatePublishersLimit();
+        ipcPublication.updatePublisherLimit();
         assertThat(publisherLimit.get(), is(0L));
     }
 

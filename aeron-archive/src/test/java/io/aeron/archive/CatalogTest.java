@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,15 +29,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.Catalog.*;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.archive.Catalog.PAGE_SIZE;
+import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class CatalogTest
 {
@@ -45,8 +44,11 @@ public class CatalogTest
     private static final int SEGMENT_FILE_SIZE = 2 * TERM_BUFFER_LENGTH;
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final File archiveDir = TestUtil.makeTempDir();
-    private final EpochClock clock = mock(EpochClock.class);
+    private final File archiveDir = TestUtil.makeTestDirectory();
+
+    private long currentTimeMs = 1;
+    private final EpochClock clock = () -> currentTimeMs;
+
     private long recordingOneId;
     private long recordingTwoId;
     private long recordingThreeId;
@@ -74,7 +76,7 @@ public class CatalogTest
     @Test
     public void shouldReloadExistingIndex()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
             verifyRecordingForId(catalog, recordingTwoId, 7, 2, "channelH", "sourceV");
@@ -106,13 +108,13 @@ public class CatalogTest
     public void shouldAppendToExistingIndex()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, () -> 3L))
         {
             newRecordingId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             verifyRecordingForId(catalog, recordingOneId, 6, 1, "channelG", "sourceA");
             verifyRecordingForId(catalog, newRecordingId, 9, 4, "channelJ", "sourceN");
@@ -122,7 +124,7 @@ public class CatalogTest
     @Test
     public void shouldAllowMultipleInstancesForSameStream()
     {
-        try (Catalog ignore = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog ignore = new Catalog(archiveDir, clock))
         {
             final long newRecordingId = newRecording();
             assertNotEquals(recordingOneId, newRecordingId);
@@ -134,13 +136,13 @@ public class CatalogTest
     {
         final long newRecordingId = newRecording();
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             catalog.forEntry(
-                (he, hd, e, decoder) -> assertThat(decoder.stopTimestamp(), is(NULL_TIME)), newRecordingId);
+                (he, hd, e, decoder) -> assertThat(decoder.stopTimestamp(), is(NULL_TIMESTAMP)), newRecordingId);
         }
 
-        when(clock.time()).thenReturn(42L);
+        currentTimeMs = 42L;
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
@@ -160,7 +162,7 @@ public class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 3));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(1024);
             log.write(bb);
@@ -172,18 +174,18 @@ public class CatalogTest
             log.write(bb, 1024 + 128);
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) ->
                 {
-                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
+                    assertThat(decoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(decoder.stopPosition(), is(NULL_POSITION));
                 },
                 newRecordingId);
         }
 
-        when(clock.time()).thenReturn(42L);
+        currentTimeMs = 42L;
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
@@ -205,7 +207,7 @@ public class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-            final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength(PAGE_SIZE - 32);
             log.write(bb);
@@ -217,18 +219,18 @@ public class CatalogTest
             log.write(bb, PAGE_SIZE - 32 + 128);
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) ->
                 {
-                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
+                    assertThat(decoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(decoder.stopPosition(), is(NULL_POSITION));
                 },
                 newRecordingId);
         }
 
-        when(clock.time()).thenReturn(42L);
+        currentTimeMs = 42L;
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
@@ -273,8 +275,7 @@ public class CatalogTest
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
-
-            final ByteBuffer bb = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
             final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
             flyweight.frameLength((int)expectedLastFrame);
             log.write(bb);
@@ -287,18 +288,19 @@ public class CatalogTest
             log.truncate(SEGMENT_FILE_SIZE);
         }
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock, false))
+        try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) ->
                 {
-                    assertThat(decoder.stopTimestamp(), is(NULL_TIME));
+                    assertThat(decoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     e.stopPosition(NULL_POSITION);
                 },
                 newRecordingId);
         }
 
-        when(clock.time()).thenReturn(42L);
+        currentTimeMs = 42L;
+
         try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
         {
             catalog.forEntry(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -56,9 +56,8 @@ class SessionWorker<T extends Session> implements Agent
             workDone += session.doWork();
             if (session.isDone())
             {
+                ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex--);
                 closeSession(session);
-                ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex);
-                lastIndex--;
             }
         }
 
@@ -75,8 +74,12 @@ class SessionWorker<T extends Session> implements Agent
         isClosed = true;
 
         preSessionsClose();
-        sessions.forEach(this::closeSession);
-        sessions.clear();
+
+        for (int i = 0, size = sessions.size(); i < size; i++)
+        {
+            closeSession(sessions.get(i));
+        }
+
         postSessionsClose();
     }
 
@@ -84,7 +87,6 @@ class SessionWorker<T extends Session> implements Agent
     {
         try
         {
-            session.abort();
             session.close();
         }
         catch (final Exception ex)

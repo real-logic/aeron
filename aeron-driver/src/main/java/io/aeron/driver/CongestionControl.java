@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,13 @@ public interface CongestionControl extends AutoCloseable
      * @return true for should measure RTT now or false for no measurement
      */
     boolean shouldMeasureRtt(long nowNs);
+
+    /**
+     * Called by {@link Receiver} to record that a measurement request has been sent.
+     *
+     * @param nowNs in nanoseconds.
+     */
+    void onRttMeasurementSent(long nowNs);
 
     /**
      * Called by {@link Receiver} on reception of an RTT Measurement.

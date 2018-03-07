@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ public class Image
 
         final int termLength = logBuffers.termLength();
         this.termLengthMask = termLength - 1;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        this.positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         this.initialTermId = LogBufferDescriptor.initialTermId(logBuffers.metaDataBuffer());
         header = new Header(initialTermId, positionBitsToShift, this);
     }
@@ -113,7 +113,8 @@ public class Image
     }
 
     /**
-     * The sessionId for the steam of messages.
+     * The sessionId for the steam of messages. Sessions are unique within a {@link Subscription} and unique across
+     * all {@link Publication}s from a {@link #sourceIdentity()}.
      *
      * @return the sessionId for the steam of messages.
      */
@@ -222,6 +223,16 @@ public class Image
         validatePosition(newPosition);
 
         subscriberPosition.setOrdered(newPosition);
+    }
+
+    /**
+     * The counter id for the subscriber position counter.
+     *
+     * @return the id for the subscriber position counter.
+     */
+    public int subscriberPositionId()
+    {
+        return subscriberPosition.id();
     }
 
     /**

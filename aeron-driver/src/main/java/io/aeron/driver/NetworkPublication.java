@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,13 @@ import org.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static io.aeron.driver.Configuration.*;
+import static io.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
+import static io.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermScanner.*;
+import static io.aeron.protocol.DataHeaderFlyweight.BEGIN_AND_END_FLAGS;
+import static io.aeron.protocol.DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS;
 
 class NetworkPublicationPadding1
 {
@@ -92,6 +95,7 @@ public class NetworkPublication
     private final long registrationId;
     private final long unblockTimeoutNs;
     private final long connectionTimeoutNs;
+    private final long lingerTimeoutNs;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termBufferLength;
@@ -150,12 +154,14 @@ public class NetworkPublication
         final NetworkPublicationThreadLocals threadLocals,
         final long unblockTimeoutNs,
         final long connectionTimeoutNs,
+        final long lingerTimeoutNs,
         final boolean isExclusive,
         final boolean spiesSimulateConnection)
     {
         this.registrationId = registrationId;
         this.unblockTimeoutNs = unblockTimeoutNs;
         this.connectionTimeoutNs = connectionTimeoutNs;
+        this.lingerTimeoutNs = lingerTimeoutNs;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.nanoClock = nanoClock;
@@ -198,7 +204,7 @@ public class NetworkPublication
         timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
         statusMessageDeadlineNs = spiesSimulateConnection ? nowNs : (nowNs + connectionTimeoutNs);
 
-        positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
 
         lastSenderPosition = senderPosition.get();
@@ -234,7 +240,7 @@ public class NetworkPublication
         return isExclusive;
     }
 
-    public int send(final long nowNs)
+    public final int send(final long nowNs)
     {
         final long senderPosition = this.senderPosition.get();
         final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
@@ -366,28 +372,29 @@ public class NetworkPublication
 
     public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final long timeNs = nanoClock.nanoTime();
-        statusMessageDeadlineNs = timeNs + connectionTimeoutNs;
-
         if (!hasReceivers)
         {
             hasReceivers = true;
         }
+
+        final long timeNs = nanoClock.nanoTime();
+        statusMessageDeadlineNs = timeNs + connectionTimeoutNs;
+
+        final long limit = flowControl.onStatusMessage(
+            msg,
+            srcAddress,
+            senderLimit.get(),
+            initialTermId,
+            positionBitsToShift,
+            timeNs);
+
+        senderLimit.setOrdered(limit);
 
         if (!isConnected)
         {
             LogBufferDescriptor.isConnected(metaDataBuffer, true);
             isConnected = true;
         }
-
-        senderLimit.setOrdered(
-            flowControl.onStatusMessage(
-                msg,
-                srcAddress,
-                senderLimit.get(),
-                initialTermId,
-                positionBitsToShift,
-                timeNs));
     }
 
     public void onRttMeasurement(
@@ -430,13 +437,8 @@ public class NetworkPublication
      *
      * @return 1 if the limit has been updated otherwise 0.
      */
-    int updatePublisherLimit()
+    final int updatePublisherLimit()
     {
-        if (State.ACTIVE != state)
-        {
-            return 0;
-        }
-
         int workCount = 0;
 
         final long senderPosition = this.senderPosition.getVolatile();
@@ -468,7 +470,7 @@ public class NetworkPublication
         return hasSpies;
     }
 
-    void updateHasReceivers(final long timeNs)
+    final void updateHasReceivers(final long timeNs)
     {
         if (timeNs > statusMessageDeadlineNs && hasReceivers)
         {
@@ -519,6 +521,9 @@ public class NetworkPublication
     {
         if (nowNs > (timeOfLastSetupNs + PUBLICATION_SETUP_TIMEOUT_NS))
         {
+            timeOfLastSetupNs = nowNs;
+            timeOfLastSendOrHeartbeatNs = nowNs;
+
             setupBuffer.clear();
             setupHeader
                 .activeTermId(activeTermId)
@@ -530,14 +535,10 @@ public class NetworkPublication
                 .mtuLength(mtuLength)
                 .ttl(channelEndpoint.multicastTtl());
 
-            final int bytesSent = channelEndpoint.send(setupBuffer);
-            if (SetupFlyweight.HEADER_LENGTH != bytesSent)
+            if (SetupFlyweight.HEADER_LENGTH != channelEndpoint.send(setupBuffer))
             {
                 shortSends.increment();
             }
-
-            timeOfLastSetupNs = nowNs;
-            timeOfLastSendOrHeartbeatNs = nowNs;
 
             if (hasReceivers)
             {
@@ -558,16 +559,8 @@ public class NetworkPublication
                 .sessionId(sessionId)
                 .streamId(streamId)
                 .termId(activeTermId)
-                .termOffset(termOffset);
-
-            if (isEndOfStream)
-            {
-                heartbeatDataHeader.flags((byte)DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS);
-            }
-            else
-            {
-                heartbeatDataHeader.flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
-            }
+                .termOffset(termOffset)
+                .flags((byte)(isEndOfStream ? BEGIN_END_AND_EOS_FLAGS : BEGIN_AND_END_FLAGS));
 
             bytesSent = channelEndpoint.send(heartbeatBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
@@ -575,8 +568,8 @@ public class NetworkPublication
                 shortSends.increment();
             }
 
-            heartbeatsSent.incrementOrdered();
             timeOfLastSendOrHeartbeatNs = nowNs;
+            heartbeatsSent.incrementOrdered();
         }
 
         return bytesSent;
@@ -721,7 +714,7 @@ public class NetworkPublication
                 break;
 
             case LINGER:
-                if (timeNs > (timeOfLastActivityNs + PUBLICATION_LINGER_NS))
+                if (timeNs > (timeOfLastActivityNs + lingerTimeoutNs))
                 {
                     conductor.cleanupPublication(this);
                     state = State.CLOSING;
@@ -735,25 +728,9 @@ public class NetworkPublication
         return hasSenderReleased;
     }
 
-    public void timeOfLastStateChange(final long time)
+    public void decRef()
     {
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return timeOfLastActivityNs;
-    }
-
-    public void delete()
-    {
-        close();
-    }
-
-    public int decRef()
-    {
-        final int count = --refCount;
-
-        if (0 == count)
+        if (0 == --refCount)
         {
             state = State.DRAINING;
             channelEndpoint.decRef();
@@ -766,16 +743,14 @@ public class NetworkPublication
                 isEndOfStream = true;
             }
         }
-
-        return count;
     }
 
-    public int incRef()
+    public void incRef()
     {
-        return ++refCount;
+        ++refCount;
     }
 
-    State state()
+    final State state()
     {
         return state;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,9 +63,9 @@ public class EmbeddedExclusiveSpiedThroughput
         final MediaDriver.Context ctx = new MediaDriver.Context().spiesSimulateConnection(true);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect();
-             ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(CommonContext.SPY_PREFIX + CHANNEL, STREAM_ID))
+            Aeron aeron = Aeron.connect();
+            ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(CommonContext.SPY_PREFIX + CHANNEL, STREAM_ID))
         {
             executor.execute(reporter);
             executor.execute(() -> SamplesUtil.subscriberLoop(

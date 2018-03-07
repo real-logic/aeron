@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014 - 2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_LOSS_REPORT_FILE "loss-report.dat"
-#define AERON_CNC_VERSION (11)
+#define AERON_CNC_VERSION (12)
 
 #pragma pack(push)
 #pragma pack(4)
@@ -86,6 +86,7 @@ typedef struct aeron_driver_context_stct
     uint64_t publication_unblock_timeout_ns;    /* aeron.publication.unblock.timeout = 10s */
     uint64_t publication_connection_timeout_ns; /* aeron.publication.connection.timeout = 5s */
     uint64_t timer_interval_ns;                 /* aeron.timer.interval = 1s */
+    uint64_t counter_free_to_reuse_ns;          /* aeron.counters.free.to.reuse.timeout = 1s */
     size_t to_driver_buffer_length;             /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;            /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;       /* aeron.counters.buffer.length = 1MB */
@@ -93,8 +94,8 @@ typedef struct aeron_driver_context_stct
     size_t error_buffer_length;                 /* aeron.error.buffer.length = 1MB */
     size_t term_buffer_length;                  /* aeron.term.buffer.length = 16 * 1024 * 1024 */
     size_t ipc_term_buffer_length;              /* aeron.ipc.term.buffer.length = 64 * 1024 * 1024 */
-    size_t mtu_length;                          /* aeron.mtu.length = 4096 */
-    size_t ipc_mtu_length;                      /* aeron.ipc.mtu.length = 4096 */
+    size_t mtu_length;                          /* aeron.mtu.length = 1408 */
+    size_t ipc_mtu_length;                      /* aeron.ipc.mtu.length = 1408 */
     size_t ipc_publication_window_length;       /* aeron.ipc.publication.term.window.length = 0 */
     size_t publication_window_length;           /* aeron.publication.term.window.length = 0 */
     size_t socket_rcvbuf;                       /* aeron.socket.so_rcvbuf = 128 * 1024 */
@@ -122,6 +123,7 @@ typedef struct aeron_driver_context_stct
     aeron_mpsc_concurrent_array_queue_t conductor_command_queue;
 
     aeron_agent_on_start_func_t agent_on_start_func;
+    void *agent_on_start_state;
 
     aeron_idle_strategy_func_t conductor_idle_strategy_func;
     void *conductor_idle_strategy_state;

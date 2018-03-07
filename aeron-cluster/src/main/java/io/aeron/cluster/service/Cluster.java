@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,98 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.Aeron;
+
+import java.util.Collection;
+
 /**
  * Interface for a {@link ClusteredService} to interact with cluster hosting it.
  */
 public interface Cluster
 {
+    enum Role
+    {
+        /**
+         * The cluster node is a follower of the current leader.
+         */
+        FOLLOWER(0),
+
+        /**
+         * The cluster node is a candidate to become a leader in an election.
+         */
+        CANDIDATE(1),
+
+        /**
+         * The cluster node is the leader of the current leadership term.
+         */
+        LEADER(2);
+
+        static final Role[] ROLES;
+
+        static
+        {
+            final Role[] roles = values();
+            ROLES = new Role[roles.length];
+            for (final Role role : roles)
+            {
+                final int code = role.code();
+                if (null != ROLES[code])
+                {
+                    throw new IllegalStateException("Code already in use: " + code);
+                }
+
+                ROLES[code] = role;
+            }
+        }
+
+        private final int code;
+
+        Role(final int code)
+        {
+            this.code = code;
+        }
+
+        /**
+         * The code which matches the role in the cluster.
+         *
+         * @return the code which matches the role in the cluster.
+         */
+        public final int code()
+        {
+            return code;
+        }
+
+        /**
+         * Get the role from a code read from a counter.
+         *
+         * @param code for the {@link Role}.
+         * @return the {@link Role} of the cluster node.
+         */
+        public static Role get(final int code)
+        {
+            if (code < 0 || code > (ROLES.length - 1))
+            {
+                throw new IllegalStateException("Invalid role counter code: " + code);
+            }
+
+            return ROLES[code];
+        }
+    }
+
+    /**
+     * The role the cluster node is playing.
+     *
+     * @return the role the cluster node is playing.
+     */
+    Role role();
+
+    /**
+     * Get the {@link Aeron} client used by the cluster.
+     *
+     * @return the {@link Aeron} client used by the cluster.
+     */
+    Aeron aeron();
+
     /**
      * Get the {@link ClientSession} for a given cluster session id.
      *
@@ -27,6 +114,21 @@ public interface Cluster
      * @return the {@link ClientSession} that matches the clusterSessionId.
      */
     ClientSession getClientSession(long clusterSessionId);
+
+    /**
+     * Get the current collection of cluster client sessions.
+     *
+     * @return the current collection of cluster client sessions.
+     */
+    Collection<ClientSession> clientSessions();
+
+    /**
+     * Close a cluster session.
+     *
+     * @param clusterSessionId to be closed.
+     * @return true if the instruction is successfully or false if the session id does not exist.
+     */
+    boolean closeSession(long clusterSessionId);
 
     /**
      * Current Epoch time in milliseconds.

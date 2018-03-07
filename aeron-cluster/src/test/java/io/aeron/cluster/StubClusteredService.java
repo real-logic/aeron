@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
@@ -51,6 +53,26 @@ public class StubClusteredService implements ClusteredService
     }
 
     public void onTimerEvent(final long correlationId, final long timestampMs)
+    {
+    }
+
+    public void onTakeSnapshot(final Publication snapshotPublication)
+    {
+    }
+
+    public void onLoadSnapshot(final Image snapshotImage)
+    {
+    }
+
+    public void onReplayBegin()
+    {
+    }
+
+    public void onReplayEnd()
+    {
+    }
+
+    public void onRoleChange(final Cluster.Role newRole)
     {
     }
 }

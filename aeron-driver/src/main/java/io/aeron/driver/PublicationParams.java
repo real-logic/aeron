@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,25 +20,29 @@ import io.aeron.driver.buffer.RawLog;
 import io.aeron.ChannelUri;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.SystemUtil;
 
 import static io.aeron.CommonContext.*;
 
 class PublicationParams
 {
+    long lingerTimeoutNs = 0;
     int termLength = 0;
     int mtuLength = 0;
     int initialTermId = 0;
     int termId = 0;
     int termOffset = 0;
+    int sessionId = 0;
     boolean isReplay = false;
+    boolean hasSessionId = false;
 
     static int getTermBufferLength(final ChannelUri channelUri, final int defaultTermLength)
     {
-        final String termLengthParam = channelUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
+        final String termLengthParam = channelUri.get(TERM_LENGTH_PARAM_NAME);
         int termLength = defaultTermLength;
         if (null != termLengthParam)
         {
-            termLength = Integer.parseInt(termLengthParam);
+            termLength = (int)SystemUtil.parseSize(TERM_OFFSET_PARAM_NAME, termLengthParam);
             LogBufferDescriptor.checkTermLength(termLength);
         }
 
@@ -48,14 +52,27 @@ class PublicationParams
     static int getMtuLength(final ChannelUri channelUri, final int defaultMtuLength)
     {
         int mtuLength = defaultMtuLength;
-        final String mtu = channelUri.get(CommonContext.MTU_LENGTH_PARAM_NAME);
-        if (null != mtu)
+        final String mtuParam = channelUri.get(MTU_LENGTH_PARAM_NAME);
+        if (null != mtuParam)
         {
-            mtuLength = Integer.parseInt(mtu);
+            mtuLength = (int)SystemUtil.parseSize(MTU_LENGTH_PARAM_NAME, mtuParam);
             Configuration.validateMtuLength(mtuLength);
         }
 
         return mtuLength;
+    }
+
+    static long getLingerTimeoutNs(final ChannelUri channelUri, final long driverLingerTImeoutNs)
+    {
+        long lingerTimeoutNs = driverLingerTImeoutNs;
+        final String lingerParam = channelUri.get(LINGER_PARAM_NAME);
+        if (null != lingerParam)
+        {
+            lingerTimeoutNs = SystemUtil.parseDuration(LINGER_PARAM_NAME, lingerParam);
+            Configuration.validatePublicationLingerTimeoutNs(lingerTimeoutNs, driverLingerTImeoutNs);
+        }
+
+        return lingerTimeoutNs;
     }
 
     static void validateMtuForMaxMessage(final PublicationParams params, final boolean isExclusive)
@@ -73,7 +90,7 @@ class PublicationParams
     }
 
     static void confirmMatch(
-        final ChannelUri uri, final PublicationParams params, final RawLog rawLog)
+        final ChannelUri uri, final PublicationParams params, final RawLog rawLog, final int existingSessionId)
     {
         final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
         if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
@@ -86,6 +103,12 @@ class PublicationParams
         {
             throw new IllegalStateException("Existing publication has different term length: existing=" +
                 rawLog.termLength() + " requested=" + params.termLength);
+        }
+
+        if (uri.containsKey(SESSION_ID_PARAM_NAME) && params.sessionId != existingSessionId)
+        {
+            throw new IllegalStateException("Existing publication has different session id: existing=" +
+                existingSessionId + " requested=" + params.sessionId);
         }
     }
 
@@ -102,6 +125,15 @@ class PublicationParams
             channelUri, isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength());
 
         params.mtuLength = getMtuLength(channelUri, isIpc ? context.ipcMtuLength() : context.mtuLength());
+
+        params.lingerTimeoutNs = getLingerTimeoutNs(channelUri, context.publicationLingerTimeoutNs());
+
+        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+        if (null != sessionIdStr)
+        {
+            params.sessionId = Integer.parseInt(sessionIdStr);
+            params.hasSessionId = true;
+        }
 
         if (isExclusive)
         {

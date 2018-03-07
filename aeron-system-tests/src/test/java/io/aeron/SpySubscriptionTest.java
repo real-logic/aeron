@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,21 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
-import org.agrona.DirectBuffer;
+import org.agrona.CloseHelper;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
-import static io.aeron.SystemTestHelper.spyForChannel;
-import static org.mockito.Mockito.*;
+import static io.aeron.SystemTest.spyForChannel;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 @RunWith(Theories.class)
 public class SpySubscriptionTest
@@ -38,37 +41,51 @@ public class SpySubscriptionTest
     @DataPoint
     public static final String MULTICAST_CHANNEL = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
 
-    public static final int STREAM_ID = 1;
-    public static final int FRAGMENT_COUNT_LIMIT = 10;
-    public static final int PAYLOAD_LENGTH = 10;
+    private static final int STREAM_ID = 1;
+    private static final int FRAGMENT_COUNT_LIMIT = 10;
+    private static final int PAYLOAD_LENGTH = 10;
 
-    private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
-    private final FragmentHandler mockSpyFragmentHandler = mock(FragmentHandler.class);
+    private final MutableInteger fragmentCountSpy = new MutableInteger();
+    private final FragmentHandler fragmentHandlerSpy = (buffer1, offset, length, header) -> fragmentCountSpy.value++;
+
+    private final MutableInteger fragmentCountSub = new MutableInteger();
+    private final FragmentHandler fragmentHandlerSub = (buffer1, offset, length, header) -> fragmentCountSub.value++;
+
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
+        .threadingMode(ThreadingMode.SHARED));
+
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
 
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessage(final String channel)
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-        final Aeron.Context aeronCtx = new Aeron.Context();
-
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect(aeronCtx);
-             Publication publication = aeron.addPublication(channel, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-             Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID))
+        try (Publication publication = aeron.addPublication(channel, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID))
         {
-            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
+            final int expectedMessageCount = 4;
+            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * expectedMessageCount]);
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < expectedMessageCount; i++)
             {
                 srcBuffer.setMemory(i * PAYLOAD_LENGTH, PAYLOAD_LENGTH, (byte)(65 + i));
             }
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < expectedMessageCount; i++)
             {
                 while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
             }
@@ -77,19 +94,15 @@ public class SpySubscriptionTest
             int numSpyFragments = 0;
             do
             {
-                numFragments += subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
-                numSpyFragments += spy.poll(mockSpyFragmentHandler, FRAGMENT_COUNT_LIMIT);
-            }
-            while (numSpyFragments < 4 || numFragments < 4);
+                SystemTest.checkInterruptedStatus();
 
-            verify(mockFragmentHandler, times(4)).onFragment(
-                any(DirectBuffer.class), anyInt(), eq(PAYLOAD_LENGTH), any(Header.class));
-            verify(mockSpyFragmentHandler, times(4)).onFragment(
-                any(DirectBuffer.class), anyInt(), eq(PAYLOAD_LENGTH), any(Header.class));
-        }
-        finally
-        {
-            ctx.deleteAeronDirectory();
+                numFragments += subscription.poll(fragmentHandlerSub, FRAGMENT_COUNT_LIMIT);
+                numSpyFragments += spy.poll(fragmentHandlerSpy, FRAGMENT_COUNT_LIMIT);
+            }
+            while (numSpyFragments < expectedMessageCount || numFragments < expectedMessageCount);
+
+            assertThat(fragmentCountSpy.value, is(expectedMessageCount));
+            assertThat(fragmentCountSub.value, is(expectedMessageCount));
         }
     }
 }

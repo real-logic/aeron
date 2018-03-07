@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,6 +206,7 @@ int aeron_uri_parse(const char *uri, aeron_uri_t *params)
     char *ptr = params->mutable_uri;
 
     strncpy(params->mutable_uri, uri, sizeof(params->mutable_uri));
+    params->type = AERON_URI_UNKNOWN;
 
     if (strncmp(ptr, AERON_URI_SCHEME, strlen(AERON_URI_SCHEME)) == 0)
     {

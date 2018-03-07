@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class LogBufferUnblocker
         final long blockedPosition,
         final int termLength)
     {
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         final int blockedTermCount = (int)(blockedPosition >> positionBitsToShift);
         final int blockedOffset = computeTermOffsetFromPosition(blockedPosition, positionBitsToShift);
         final int activeTermCount = activeTermCount(logMetaDataBuffer);

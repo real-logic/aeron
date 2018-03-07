@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
@@ -52,6 +51,7 @@ import java.util.function.LongConsumer;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -105,15 +105,14 @@ public class DriverConductorTest
 
     private DriverConductor driverConductor;
 
-    private final Answer<Void> closeChannelEndpointAnswer =
-        (invocation) ->
-        {
-            final Object args[] = invocation.getArguments();
-            final ReceiveChannelEndpoint channelEndpoint = (ReceiveChannelEndpoint)args[0];
-            channelEndpoint.close();
+    private final Answer<Void> closeChannelEndpointAnswer = (invocation) ->
+    {
+        final Object args[] = invocation.getArguments();
+        final ReceiveChannelEndpoint channelEndpoint = (ReceiveChannelEndpoint)args[0];
+        channelEndpoint.close();
 
-            return null;
-        };
+        return null;
+    };
 
     @Before
     public void setUp()
@@ -148,6 +147,8 @@ public class DriverConductorTest
             .countersManager(spyCountersManager)
             .epochClock(epochClock)
             .nanoClock(nanoClock)
+            .cachedEpochClock(new CachedEpochClock())
+            .cachedNanoClock(new CachedNanoClock())
             .sendChannelEndpointSupplier(Configuration.sendChannelEndpointSupplier())
             .receiveChannelEndpointSupplier(Configuration.receiveChannelEndpointSupplier())
             .congestControlSupplier(Configuration.congestionControlSupplier());
@@ -192,9 +193,8 @@ public class DriverConductorTest
         final NetworkPublication publication = captor.getValue();
         assertThat(publication.streamId(), is(STREAM_ID_1));
 
-        verify(mockClientProxy)
-            .onPublicationReady(
-                anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
+        verify(mockClientProxy).onPublicationReady(
+            anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
     }
 
     @Test
@@ -231,9 +231,8 @@ public class DriverConductorTest
         assertThat(publication.producerPosition(), is(expectedPosition));
         assertThat(publication.consumerPosition(), is(expectedPosition));
 
-        verify(mockClientProxy)
-            .onPublicationReady(
-                anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(true));
+        verify(mockClientProxy).onPublicationReady(
+            anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(true));
     }
 
     @Test
@@ -506,7 +505,6 @@ public class DriverConductorTest
         verify(senderProxy, never()).removeNetworkPublication(eq(publication));
     }
 
-    @Ignore
     @Test
     public void shouldTimeoutPublicationWithNoKeepaliveButNotDrained()
     {
@@ -525,7 +523,8 @@ public class DriverConductorTest
         LogBufferDescriptor.rawTail(rawLog.metaData(), index, LogBufferDescriptor.packTail(termId, 0));
         final TermAppender appender = new TermAppender(rawLog.termBuffers()[index], rawLog.metaData(), index);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
-        final HeaderWriter headerWriter = new HeaderWriter(createDefaultHeader(SESSION_ID, STREAM_ID_1, termId));
+        final HeaderWriter headerWriter = HeaderWriter.newInstance(
+            createDefaultHeader(SESSION_ID, STREAM_ID_1, termId));
 
         final StatusMessageFlyweight msg = mock(StatusMessageFlyweight.class);
         when(msg.consumptionTermId()).thenReturn(termId);
@@ -545,12 +544,14 @@ public class DriverConductorTest
                 publication.updateHasReceivers(timeNs);
             });
 
-        assertThat(publication.state(), is(NetworkPublication.State.DRAINING));
+        assertThat(publication.state(),
+            anyOf(is(NetworkPublication.State.DRAINING), is(NetworkPublication.State.LINGER)));
 
         final long endTime = nanoClock.nanoTime() + PUBLICATION_CONNECTION_TIMEOUT_NS + TIMER_INTERVAL_NS;
         doWorkUntil(() -> nanoClock.nanoTime() >= endTime, publication::updateHasReceivers);
 
-        assertThat(publication.state(), is(NetworkPublication.State.LINGER));
+        assertThat(publication.state(),
+            anyOf(is(NetworkPublication.State.LINGER), is(NetworkPublication.State.CLOSING)));
 
         currentTimeNs += TIMER_INTERVAL_NS + PUBLICATION_LINGER_NS;
         driverConductor.doWork();
@@ -694,8 +695,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
-        verify(mockClientProxy)
-            .onUnavailableImage(eq(publicationImage.correlationId()), eq(subId), eq(STREAM_ID_1), anyString());
+        verify(mockClientProxy).onUnavailableImage(
+            eq(publicationImage.correlationId()), eq(subId), eq(STREAM_ID_1), anyString());
     }
 
     @Test
@@ -808,9 +809,8 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         assertNotNull(driverConductor.getSharedIpcPublication(STREAM_ID_1));
-        verify(mockClientProxy)
-            .onPublicationReady(
-                anyLong(), eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
+        verify(mockClientProxy).onPublicationReady(
+            anyLong(), eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
     }
 
     @Test
@@ -1138,12 +1138,11 @@ public class DriverConductorTest
         driverProxy.removePublication(id1);
         driverProxy.removePublication(id2);
 
-        doWorkUntil(
-            () ->
-            {
-                driverProxy.sendClientKeepalive();
-                return nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2;
-            });
+        doWorkUntil(() ->
+        {
+            driverProxy.sendClientKeepalive();
+            return nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2;
+        });
 
         verify(senderProxy, times(1)).closeSendChannelEndpoint(any());
     }
@@ -1156,12 +1155,11 @@ public class DriverConductorTest
         driverProxy.removeSubscription(id1);
         driverProxy.removeSubscription(id2);
 
-        doWorkUntil(
-            () ->
-            {
-                driverProxy.sendClientKeepalive();
-                return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
-            });
+        doWorkUntil(() ->
+        {
+            driverProxy.sendClientKeepalive();
+            return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
+        });
 
         verify(receiverProxy, times(1)).closeReceiveChannelEndpoint(any());
     }
@@ -1217,15 +1215,14 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         verify(mockClientProxy).onCounterReady(eq(registrationId), anyInt());
-        verify(spyCountersManager)
-            .newCounter(
-                eq(COUNTER_TYPE_ID),
-                any(),
-                anyInt(),
-                eq(COUNTER_KEY_LENGTH),
-                any(),
-                anyInt(),
-                eq(COUNTER_LABEL_LENGTH));
+        verify(spyCountersManager).newCounter(
+            eq(COUNTER_TYPE_ID),
+            any(),
+            anyInt(),
+            eq(COUNTER_KEY_LENGTH),
+            any(),
+            anyInt(),
+            eq(COUNTER_LABEL_LENGTH));
     }
 
     @Test
@@ -1295,12 +1292,11 @@ public class DriverConductorTest
 
         verify(mockClientProxy).onCounterReady(eq(registrationId), captor.capture());
 
-        doWorkUntil(
-            () ->
-            {
-                driverProxy.sendClientKeepalive();
-                return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
-            });
+        doWorkUntil(() ->
+        {
+            driverProxy.sendClientKeepalive();
+            return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
+        });
 
         verify(spyCountersManager, never()).free(captor.getValue());
     }
@@ -1330,6 +1326,306 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).onUnavailableCounter(eq(registrationId), captor.capture());
 
         verify(spyCountersManager).free(captor.getValue());
+    }
+
+    @Test
+    public void shouldAddPublicationWithSessionId()
+    {
+        final int sessionId = 4096;
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
+        driverProxy.addPublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        assertThat(argumentCaptor.getValue().sessionId(), is(sessionId));
+    }
+
+    @Test
+    public void shouldAddExclusivePublicationWithSessionId()
+    {
+        final int sessionId = 4096;
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
+        driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        assertThat(argumentCaptor.getValue().sessionId(), is(sessionId));
+    }
+
+    @Test
+    public void shouldAddPublicationWithSameSessionId()
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        final int sessionId = argumentCaptor.getValue().sessionId();
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
+        driverProxy.addPublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy, times(2)).onPublicationReady(
+            anyLong(), anyLong(), eq(STREAM_ID_1), eq(sessionId), anyString(), anyInt(), anyInt(), eq(false));
+    }
+
+    @Test
+    public void shouldAddExclusivePublicationWithSameSessionId()
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        final int sessionId = argumentCaptor.getValue().sessionId();
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + (sessionId + 1);
+        driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onPublicationReady(
+            anyLong(), anyLong(), eq(STREAM_ID_1), eq(sessionId), anyString(), anyInt(), anyInt(), eq(false));
+        verify(mockClientProxy).onPublicationReady(
+            anyLong(), anyLong(), eq(STREAM_ID_1), eq(sessionId + 1), anyString(), anyInt(), anyInt(), eq(true));
+    }
+
+    @Test
+    public void shouldErrorOnAddPublicationWithNonEqualSessionId()
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        final String sessionIdParam =
+            "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + (argumentCaptor.getValue().sessionId() + 1);
+        final long correlationId = driverProxy.addPublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(eq(correlationId), eq(GENERIC_ERROR), anyString());
+        verify(mockErrorCounter).increment();
+        verify(mockErrorHandler).onError(any(Throwable.class));
+    }
+
+    @Test
+    public void shouldErrorOnAddPublicationWithClashingSessionId()
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        final String sessionIdParam =
+            "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + argumentCaptor.getValue().sessionId();
+        final long correlationId = driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(eq(correlationId), eq(GENERIC_ERROR), anyString());
+        verify(mockErrorCounter).increment();
+        verify(mockErrorHandler).onError(any(Throwable.class));
+    }
+
+    @Test
+    public void shouldAvoidAssigningClashingSessionIdOnAddPublication()
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
+
+        final int sessionId = argumentCaptor.getValue().sessionId();
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + (sessionId + 1);
+        driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverConductor.doWork();
+
+        final long correlationId = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1 + 1);
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onPublicationReady(
+            eq(correlationId),
+            anyLong(),
+            eq(STREAM_ID_1 + 1),
+            eq(sessionId + 2),
+            anyString(),
+            anyInt(),
+            anyInt(),
+            eq(false));
+    }
+
+    @Test
+    public void shouldAddIpcPublicationThenSubscriptionWithSessionId()
+    {
+        final int sessionId = -4097;
+        final String sessionIdParam = "?" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
+        final String channelIpcAndSessionId = CHANNEL_IPC + sessionIdParam;
+
+        driverProxy.addPublication(channelIpcAndSessionId, STREAM_ID_1);
+        driverProxy.addSubscription(channelIpcAndSessionId, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final IpcPublication ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
+
+        verify(mockClientProxy).onAvailableImage(
+            eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
+            anyLong(), anyInt(), eq(ipcPublication.rawLog().fileName()), anyString());
+    }
+
+    @Test
+    public void shouldAddIpcSubscriptionThenPublicationWithSessionId()
+    {
+        final int sessionId = -4097;
+        final String sessionIdParam = "?" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
+        final String channelIpcAndSessionId = CHANNEL_IPC + sessionIdParam;
+
+        driverProxy.addSubscription(channelIpcAndSessionId, STREAM_ID_1);
+        driverProxy.addPublication(channelIpcAndSessionId, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final IpcPublication ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
+
+        verify(mockClientProxy).onAvailableImage(
+            eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
+            anyLong(), anyInt(), eq(ipcPublication.rawLog().fileName()), anyString());
+    }
+
+    @Test
+    public void shouldNotAddIpcPublicationThenSubscriptionWithDifferentSessionId()
+    {
+        final int sessionIdPub = -4097;
+        final int sessionIdSub = -4098;
+        final String sessionIdPubParam = "?" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdPub;
+        final String sessionIdSubParam = "?" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdSub;
+
+        driverProxy.addPublication(CHANNEL_IPC + sessionIdPubParam, STREAM_ID_1);
+        driverProxy.addSubscription(CHANNEL_IPC + sessionIdSubParam, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final IpcPublication ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
+
+        verify(mockClientProxy, never()).onAvailableImage(
+            anyLong(), eq(STREAM_ID_1), anyInt(), anyLong(), anyInt(), anyString(), anyString());
+    }
+
+    @Test
+    public void shouldNotAddIpcSubscriptionThenPublicationWithDifferentSessionId()
+    {
+        final int sessionIdPub = -4097;
+        final int sessionIdSub = -4098;
+        final String sessionIdPubParam = "?" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdPub;
+        final String sessionIdSubParam = "?" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdSub;
+
+        driverProxy.addSubscription(CHANNEL_IPC + sessionIdSubParam, STREAM_ID_1);
+        driverProxy.addPublication(CHANNEL_IPC + sessionIdPubParam, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final IpcPublication ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID_1);
+        assertNotNull(ipcPublication);
+
+        verify(mockClientProxy, never()).onAvailableImage(
+            anyLong(), eq(STREAM_ID_1), anyInt(), anyLong(), anyInt(), anyString(), anyString());
+    }
+
+    @Test
+    public void shouldAddNetworkPublicationThenSingleSpyWithSameSessionId()
+    {
+        final int sessionId = -4097;
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
+        driverProxy.addPublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        driverProxy.addSubscription(spyForChannel(CHANNEL_4000 + sessionIdParam), STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertTrue(publication.hasSpies());
+
+        verify(mockClientProxy).onAvailableImage(
+            eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
+            anyLong(), anyInt(), eq(publication.rawLog().fileName()), anyString());
+    }
+
+    @Test
+    public void shouldNotAddNetworkPublicationThenSingleSpyWithDifferentSessionId()
+    {
+        final int sessionIdPub = -4097;
+        final int sessionIdSub = -4098;
+        final String sessionIdPubParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdPub;
+        final String sessionIdSubParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdSub;
+        driverProxy.addPublication(CHANNEL_4000 + sessionIdPubParam, STREAM_ID_1);
+        driverProxy.addSubscription(spyForChannel(CHANNEL_4000 + sessionIdSubParam), STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertFalse(publication.hasSpies());
+
+        verify(mockClientProxy, never()).onAvailableImage(
+            anyLong(), eq(STREAM_ID_1), anyInt(), anyLong(), anyInt(), anyString(), anyString());
+    }
+
+    @Test
+    public void shouldAddSingleSpyThenNetworkPublicationWithSameSessionId()
+    {
+        final int sessionId = -4097;
+        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
+        driverProxy.addSubscription(spyForChannel(CHANNEL_4000 + sessionIdParam), STREAM_ID_1);
+        driverProxy.addPublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertTrue(publication.hasSpies());
+
+        verify(mockClientProxy).onAvailableImage(
+            eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
+            anyLong(), anyInt(), eq(publication.rawLog().fileName()), anyString());
+    }
+
+    @Test
+    public void shouldNotAddSingleSpyThenNetworkPublicationWithDifferentSessionId()
+    {
+        final int sessionIdPub = -4097;
+        final int sessionIdSub = -4098;
+        final String sessionIdPubParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdPub;
+        final String sessionIdSubParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdSub;
+        driverProxy.addSubscription(spyForChannel(CHANNEL_4000 + sessionIdSubParam), STREAM_ID_1);
+        driverProxy.addPublication(CHANNEL_4000 + sessionIdPubParam, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertFalse(publication.hasSpies());
+
+        verify(mockClientProxy, never()).onAvailableImage(
+            anyLong(), eq(STREAM_ID_1), anyInt(), anyLong(), anyInt(), anyString(), anyString());
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -191,6 +191,34 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         }
 
         controlSession.onListRecordings(correlationId, fromRecordingId, recordCount);
+    }
+
+    public void onListRecording(final long controlSessionId, final long correlationId, final long recordingId)
+    {
+        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
+        if (controlSession == null)
+        {
+            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
+        }
+
+        controlSession.onListRecording(correlationId, recordingId);
+    }
+
+    public void onExtendRecording(
+        final long controlSessionId,
+        final long correlationId,
+        final long recordingId,
+        final int streamId,
+        final String channel,
+        final SourceLocation sourceLocation)
+    {
+        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
+        if (controlSession == null)
+        {
+            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
+        }
+
+        controlSession.onExtendRecording(correlationId, recordingId, channel, streamId, sourceLocation);
     }
 
     void removeControlSession(final ControlSession controlSession)

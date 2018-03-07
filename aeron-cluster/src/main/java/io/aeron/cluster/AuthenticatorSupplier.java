@@ -1,5 +1,5 @@
 /*
- *  Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.archive;
-
-import org.agrona.concurrent.UnsafeBuffer;
+package io.aeron.cluster;
 
 @FunctionalInterface
-interface SimplifiedControlledFragmentHandler
+public interface AuthenticatorSupplier
 {
-    /**
-     * Called by the {@link RecordingFragmentReader}. Implementors need to process DATA and PADDING fragments.
-     *
-     * @return true if fragment processed, false to abort.
-     */
-    boolean onFragment(UnsafeBuffer fragmentBuffer, int fragmentOffset, int fragmentLength);
+    Authenticator newAuthenticator(ConsensusModule.Context context);
 }

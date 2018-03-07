@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +17,34 @@ package io.aeron.archive;
 
 import io.aeron.Counter;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
+import java.util.EnumSet;
 
 import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
-import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.*;
 
 class RecordingFragmentReader implements AutoCloseable
 {
-    static final long NULL_POSITION = -1;
     static final long NULL_LENGTH = -1;
+
+    private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ);
+    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
     private final File archiveDir;
     private final long recordingId;
@@ -49,7 +57,6 @@ class RecordingFragmentReader implements AutoCloseable
     private final UnsafeBuffer termBuffer;
     private MappedByteBuffer mappedSegmentBuffer;
 
-    private long fromPosition;
     private long stopPosition;
     private long replayPosition;
     private long replayLimit;
@@ -64,36 +71,20 @@ class RecordingFragmentReader implements AutoCloseable
         final File archiveDir,
         final long position,
         final long length,
-        final Counter recordingPosition) throws IOException
+        final Counter recordingPosition)
     {
         this.catalog = catalog;
-        stopPosition = recordingSummary.stopPosition;
+        this.archiveDir = archiveDir;
+        this.recordingPosition = recordingPosition;
         termLength = recordingSummary.termBufferLength;
         segmentLength = recordingSummary.segmentFileLength;
         startPosition = recordingSummary.startPosition;
         recordingId = recordingSummary.recordingId;
 
-        if (stopPosition == NULL_POSITION)
-        {
-            if (recordingPosition == null)
-            {
-                throw new IllegalArgumentException(
-                    "Recording descriptor indicates live recording, but recordedPosition" +
-                        " is null. Replay for recording id:" + recordingId);
-            }
+        final long fromPosition = position == NULL_POSITION ? startPosition : position;
+        final long stopPosition = recordingSummary.stopPosition;
+        this.stopPosition = stopPosition == NULL_POSITION ? recordingPosition.get() : stopPosition;
 
-            stopPosition = recordingPosition.get();
-        }
-
-        this.archiveDir = archiveDir;
-
-        fromPosition = position == NULL_POSITION ? startPosition : position;
-        if (fromPosition < 0)
-        {
-            throw new IllegalArgumentException("fromPosition must be positive");
-        }
-
-        this.recordingPosition = recordingPosition;
         final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
         final long replayLength = length == NULL_LENGTH ? maxLength : Math.min(length, maxLength);
 
@@ -109,18 +100,20 @@ class RecordingFragmentReader implements AutoCloseable
             throw new IllegalStateException("segment file must be available for requested position: " + position);
         }
 
-        final long termStartPosition = (startPosition / termLength) * termLength;
+        final long termCount = startPosition >> LogBufferDescriptor.positionBitsToShift(termLength);
+        final long termStartPosition = termCount * termLength;
         final long fromSegmentOffset = (fromPosition - termStartPosition) & (segmentLength - 1);
         final int termMask = termLength - 1;
         final int fromTermStartSegmentOffset = (int)(fromSegmentOffset - (fromSegmentOffset & termMask));
         final int fromTermOffset = (int)(fromSegmentOffset & termMask);
+        final int fromTermId = recordingSummary.initialTermId + (int)termCount;
 
         termBuffer = new UnsafeBuffer(mappedSegmentBuffer, fromTermStartSegmentOffset, termLength);
         termStartSegmentOffset = fromTermStartSegmentOffset;
         termOffset = fromTermOffset;
 
         if (DataHeaderFlyweight.termOffset(termBuffer, fromTermOffset) != fromTermOffset ||
-            DataHeaderFlyweight.sessionId(termBuffer, fromTermOffset) != recordingSummary.sessionId ||
+            DataHeaderFlyweight.termId(termBuffer, fromTermOffset) != fromTermId ||
             DataHeaderFlyweight.streamId(termBuffer, fromTermOffset) != recordingSummary.streamId)
         {
             close();
@@ -141,13 +134,7 @@ class RecordingFragmentReader implements AutoCloseable
         return isDone;
     }
 
-    long fromPosition()
-    {
-        return fromPosition;
-    }
-
-    int controlledPoll(final SimplifiedControlledFragmentHandler fragmentHandler, final int fragmentLimit)
-        throws IOException
+    int controlledPoll(final SimpleFragmentHandler fragmentHandler, final int fragmentLimit)
     {
         if (isDone() || noAvailableData())
         {
@@ -184,7 +171,7 @@ class RecordingFragmentReader implements AutoCloseable
 
             polled++;
 
-            if (replayLimit <= replayPosition)
+            if (replayPosition >= replayLimit)
             {
                 isDone = true;
                 closeRecordingSegment();
@@ -213,7 +200,7 @@ class RecordingFragmentReader implements AutoCloseable
             replayLimit = newStopPosition;
         }
 
-        if (replayLimit <= replayPosition)
+        if (replayPosition >= replayLimit)
         {
             isDone = true;
             return false;
@@ -228,7 +215,7 @@ class RecordingFragmentReader implements AutoCloseable
         return false;
     }
 
-    private void nextTerm() throws IOException
+    private void nextTerm()
     {
         termStartSegmentOffset += termLength;
 
@@ -250,15 +237,11 @@ class RecordingFragmentReader implements AutoCloseable
 
     private void closeRecordingSegment()
     {
-        if (null != mappedSegmentBuffer)
-        {
-            IoUtil.unmap(mappedSegmentBuffer);
-        }
-
+        IoUtil.unmap(mappedSegmentBuffer);
         mappedSegmentBuffer = null;
     }
 
-    private boolean openRecordingSegment() throws IOException
+    private boolean openRecordingSegment()
     {
         final String segmentFileName = segmentFileName(recordingId, segmentFileIndex);
         final File segmentFile = new File(archiveDir, segmentFileName);
@@ -275,9 +258,13 @@ class RecordingFragmentReader implements AutoCloseable
             return false;
         }
 
-        try (FileChannel channel = FileChannel.open(segmentFile.toPath(), READ))
+        try (FileChannel channel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
         {
             mappedSegmentBuffer = channel.map(READ_ONLY, 0, segmentLength);
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
 
         return true;

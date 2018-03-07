@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,7 +171,10 @@ public:
             header.write(m_termBuffer, frameOffset, frameLength, termId);
 
             std::int32_t offset = frameOffset + DataFrameHeader::LENGTH;
-            for (std::int32_t endingOffset = offset + length; offset < endingOffset; offset += bufferIt->capacity(), ++bufferIt)
+            for (
+                std::int32_t endingOffset = offset + length;
+                offset < endingOffset;
+                offset += bufferIt->capacity(), ++bufferIt)
             {
                 m_termBuffer.putBytes(offset, *bufferIt, 0, bufferIt->capacity());
             }
@@ -223,7 +226,8 @@ public:
             {
                 const util::index_t bytesToWrite = std::min(remaining, maxPayloadLength);
                 const util::index_t frameLength = bytesToWrite + DataFrameHeader::LENGTH;
-                const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+                const util::index_t alignedLength =
+                    util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
                 header.write(m_termBuffer, frameOffset, frameLength, termId);
                 m_termBuffer.putBytes(

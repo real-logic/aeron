@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,13 @@
  */
 package io.aeron.status;
 
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
 
 /**
  * Status for an Aeron media channel for a {@link io.aeron.Publication} or {@link io.aeron.Subscription}.
@@ -95,6 +97,7 @@ public class ChannelEndpointStatus
     /**
      * Allocate an indicator for tracking the status of a channel endpoint.
      *
+     * @param tempBuffer      to be used for labels and metadata.
      * @param name            of the counter for the label.
      * @param typeId          of the counter for classification.
      * @param countersManager from which to allocated the underlying storage.
@@ -102,18 +105,22 @@ public class ChannelEndpointStatus
      * @return a new {@link AtomicCounter} for tracking the status.
      */
     public static AtomicCounter allocate(
+        final MutableDirectBuffer tempBuffer,
         final String name,
         final int typeId,
         final CountersManager countersManager,
         final String channel)
     {
-        final String label = name + ": " + channel;
+        final int keyLength = tempBuffer.putStringWithoutLengthAscii(
+            CHANNEL_OFFSET + SIZE_OF_INT, channel, 0, MAX_CHANNEL_LENGTH);
+        tempBuffer.putInt(CHANNEL_OFFSET, keyLength);
 
-        return countersManager.newCounter(
-            label,
-            typeId,
-            (buffer) -> buffer.putStringAscii(
-                CHANNEL_OFFSET,
-                channel.length() > MAX_CHANNEL_LENGTH ? channel.substring(0, MAX_CHANNEL_LENGTH) : channel));
+        int labelLength = 0;
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, name);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, ": ");
+        labelLength += tempBuffer.putStringWithoutLengthAscii(
+            keyLength + labelLength, channel, 0, MAX_LABEL_LENGTH - labelLength);
+
+        return countersManager.newCounter(typeId, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelLength);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,12 +61,13 @@ class PublicationImagePadding2 extends PublicationImageConductorFields
     protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
-class PublicationImageHotFields extends PublicationImagePadding2
+class PublicationImageReceiverFields extends PublicationImagePadding2
 {
+    protected boolean isEndOfStream = false;
     protected long lastPacketTimestampNs;
 }
 
-class PublicationImagePadding3 extends PublicationImageHotFields
+class PublicationImagePadding3 extends PublicationImageReceiverFields
 {
     @SuppressWarnings("unused")
     protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
@@ -81,7 +82,7 @@ public class PublicationImage
 {
     enum State
     {
-        INIT, ACTIVE, INACTIVE, LINGER
+        INIT, ACTIVE, INACTIVE, LINGER, DONE
     }
 
     private long timeOfLastStateChangeNs;
@@ -110,11 +111,11 @@ public class PublicationImage
     private final int initialTermId;
     private final boolean isReliable;
 
-    private boolean noLongerActive;
-    private boolean reachedEndOfLife;
+    private boolean isTrackingRebuild = true;
     private volatile State state = State.INIT;
 
     private final NanoClock nanoClock;
+    private final NanoClock cachedNanoClock;
     private final InetSocketAddress controlAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final UnsafeBuffer[] termBuffers;
@@ -129,7 +130,7 @@ public class PublicationImage
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
     private final AtomicCounter lossGapFills;
-    private final EpochClock epochClock;
+    private final EpochClock cachedEpochClock;
     private final RawLog rawLog;
 
     public PublicationImage(
@@ -148,7 +149,8 @@ public class PublicationImage
         final Position hwmPosition,
         final Position rebuildPosition,
         final NanoClock nanoClock,
-        final EpochClock epochClock,
+        final NanoClock cachedNanoClock,
+        final EpochClock cachedEpochClock,
         final SystemCounters systemCounters,
         final InetSocketAddress sourceAddress,
         final CongestionControl congestionControl,
@@ -179,8 +181,9 @@ public class PublicationImage
         lossGapFills = systemCounters.get(LOSS_GAP_FILLS);
 
         this.nanoClock = nanoClock;
-        this.epochClock = epochClock;
-        final long nowNs = nanoClock.nanoTime();
+        this.cachedNanoClock = cachedNanoClock;
+        this.cachedEpochClock = cachedEpochClock;
+        final long nowNs = cachedNanoClock.nanoTime();
         timeOfLastStateChangeNs = nowNs;
         lastPacketTimestampNs = nowNs;
 
@@ -189,7 +192,7 @@ public class PublicationImage
 
         final int termLength = rawLog.termLength();
         termLengthMask = termLength - 1;
-        positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
 
         final long initialPosition = computePosition(
             activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
@@ -253,18 +256,6 @@ public class PublicationImage
     }
 
     /**
-     * Does this image match a given {@link ReceiveChannelEndpoint} and stream id?
-     *
-     * @param channelEndpoint to match by identity.
-     * @param streamId        to match on value.
-     * @return true on a match otherwise false.
-     */
-    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
-    {
-        return this.streamId == streamId && this.channelEndpoint == channelEndpoint;
-    }
-
-    /**
      * Remove a {@link ReadablePosition} for a subscriber that has been removed so it is not tracked for flow control.
      *
      * @param subscriberPosition for the subscriber that has been removed.
@@ -304,12 +295,12 @@ public class PublicationImage
 
         if (null != reportEntry)
         {
-            reportEntry.recordObservation(length, epochClock.time());
+            reportEntry.recordObservation(length, cachedEpochClock.time());
         }
         else if (null != lossReport)
         {
             reportEntry = lossReport.createEntry(
-                length, epochClock.time(), sessionId, streamId, channel(), sourceAddress.toString());
+                length, cachedEpochClock.time(), sessionId, streamId, channel(), sourceAddress.toString());
 
             if (null == reportEntry)
             {
@@ -367,7 +358,7 @@ public class PublicationImage
 
     private void state(final State state)
     {
-        timeOfLastStateChangeNs = nanoClock.nanoTime();
+        timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
         this.state = state;
     }
 
@@ -390,13 +381,8 @@ public class PublicationImage
      * @param nowNs                  in nanoseconds
      * @param statusMessageTimeoutNs for sending of Status Messages.
      */
-    void trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
+    final void trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
     {
-        if (noLongerActive)
-        {
-            return;
-        }
-
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
 
@@ -455,6 +441,11 @@ public class PublicationImage
         }
     }
 
+    final boolean isTrackingRebuild()
+    {
+        return isTrackingRebuild;
+    }
+
     /**
      * Insert frame into term buffer.
      *
@@ -476,8 +467,9 @@ public class PublicationImage
         {
             if (isHeartbeat)
             {
-                if (DataHeaderFlyweight.isEndOfStream(buffer))
+                if (!isEndOfStream && DataHeaderFlyweight.isEndOfStream(buffer))
                 {
+                    isEndOfStream = true;
                     LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
                 }
 
@@ -489,23 +481,25 @@ public class PublicationImage
                 TermRebuilder.insert(termBuffer, termOffset, buffer, length);
             }
 
-            hwmCandidate(proposedPosition);
+            lastPacketTimestampNs = cachedNanoClock.nanoTime();
+            hwmPosition.proposeMaxOrdered(proposedPosition);
         }
 
         return length;
     }
 
     /**
-     * To be called from the {@link Receiver} to see if a image should be garbage collected.
+     * To be called from the {@link Receiver} to see if a image should be retained.
      *
-     * @param nowNs current time to check against.
-     * @return true if still active otherwise false.
+     * @param nowNs current time to check against for activity.
+     * @return true if the image should be retained otherwise false.
      */
-    boolean checkForActivity(final long nowNs)
+    boolean hasActivityAndNotEndOfStream(final long nowNs)
     {
         boolean isActive = true;
 
-        if (nowNs > (lastPacketTimestampNs + imageLivenessTimeoutNs))
+        if (nowNs > (lastPacketTimestampNs + imageLivenessTimeoutNs) ||
+            (isEndOfStream && rebuildPosition.getVolatile() >= hwmPosition.get()))
         {
             isActive = false;
         }
@@ -608,7 +602,11 @@ public class PublicationImage
 
         if (congestionControl.shouldMeasureRtt(nowNs))
         {
-            channelEndpoint.sendRttMeasurement(controlAddress, sessionId, streamId, nowNs, 0, true);
+            final long preciseTimeNs = nanoClock.nanoTime();
+
+            channelEndpoint.sendRttMeasurement(controlAddress, sessionId, streamId, preciseTimeNs, 0, true);
+            congestionControl.onRttMeasurementSent(preciseTimeNs);
+
             workCount = 1;
         }
 
@@ -656,16 +654,17 @@ public class PublicationImage
             case INACTIVE:
                 if (isDrained() || timeNs > (timeOfLastStateChangeNs + imageLivenessTimeoutNs))
                 {
-                    state(State.LINGER);
+                    state = State.LINGER;
+                    timeOfLastStateChangeNs = timeNs;
                     conductor.transitionToLinger(this);
                 }
-                noLongerActive = true;
+                isTrackingRebuild = false;
                 break;
 
             case LINGER:
                 if (timeNs > (timeOfLastStateChangeNs + imageLivenessTimeoutNs))
                 {
-                    reachedEndOfLife = true;
+                    state = State.DONE;
                     conductor.cleanupImage(this);
                 }
                 break;
@@ -674,21 +673,7 @@ public class PublicationImage
 
     public boolean hasReachedEndOfLife()
     {
-        return reachedEndOfLife;
-    }
-
-    public void timeOfLastStateChange(final long time)
-    {
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return timeOfLastStateChangeNs;
-    }
-
-    public void delete()
-    {
-        close();
+        return State.DONE == state;
     }
 
     private boolean isDrained()
@@ -704,12 +689,6 @@ public class PublicationImage
         }
 
         return true;
-    }
-
-    private void hwmCandidate(final long proposedPosition)
-    {
-        lastPacketTimestampNs = nanoClock.nanoTime();
-        hwmPosition.proposeMaxOrdered(proposedPosition);
     }
 
     private boolean isFlowControlUnderRun(final long windowPosition, final long packetPosition)

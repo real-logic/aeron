@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package io.aeron;
 
+import org.agrona.CloseHelper;
+import org.junit.After;
 import org.junit.Test;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -28,21 +30,30 @@ import static org.junit.Assert.assertThat;
 
 public class ControlledMessageTest
 {
-    public static final String CHANNEL = CommonContext.IPC_CHANNEL;
-    public static final int STREAM_ID = 1;
-    public static final int FRAGMENT_COUNT_LIMIT = 10;
-    public static final int PAYLOAD_LENGTH = 10;
+    private static final String CHANNEL = CommonContext.IPC_CHANNEL;
+    private static final int STREAM_ID = 1;
+    private static final int FRAGMENT_COUNT_LIMIT = 10;
+    private static final int PAYLOAD_LENGTH = 10;
 
-    @Test(timeout = 10000)
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
+        .threadingMode(ThreadingMode.SHARED));
+
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
+
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessage()
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-        ctx.threadingMode(ThreadingMode.SHARED);
-
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect();
-             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        try (Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
 
@@ -55,6 +66,7 @@ public class ControlledMessageTest
             {
                 while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
                 {
+                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
                 }
             }
@@ -63,7 +75,13 @@ public class ControlledMessageTest
             int numFragments = 0;
             do
             {
-                numFragments += subscription.controlledPoll(fragmentCollector, FRAGMENT_COUNT_LIMIT);
+                final int fragments = subscription.controlledPoll(fragmentCollector, FRAGMENT_COUNT_LIMIT);
+                if (0 == fragments)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
+                numFragments += fragments;
             }
             while (numFragments < 4);
 
@@ -73,10 +91,6 @@ public class ControlledMessageTest
             {
                 assertThat("same at i=" + i, collectedBuffer.getByte(i), is(srcBuffer.getByte(i)));
             }
-        }
-        finally
-        {
-            ctx.deleteAeronDirectory();
         }
     }
 

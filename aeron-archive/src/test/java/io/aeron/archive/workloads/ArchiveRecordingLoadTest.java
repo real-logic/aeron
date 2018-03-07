@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,12 +27,15 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 
+import java.io.File;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -98,8 +101,9 @@ public class ArchiveRecordingLoadTest
 
         archive = Archive.launch(
             new Archive.Context()
-                .fileSyncLevel(2)
-                .archiveDir(TestUtil.makeTempDir())
+                .fileSyncLevel(0)
+                .deleteArchiveOnStart(true)
+                .archiveDir(new File(IoUtil.tmpDirName(), "archive-test"))
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
@@ -110,15 +114,16 @@ public class ArchiveRecordingLoadTest
             new AeronArchive.Context()
                 .controlResponseChannel(CONTROL_RESPONSE_URI)
                 .controlResponseStreamId(CONTROL_RESPONSE_STREAM_ID)
-                .aeron(aeron));
+                .aeron(aeron)
+                .ownsAeronClient(true));
     }
 
     @After
     public void after()
     {
-        CloseHelper.quietClose(aeronArchive);
-        CloseHelper.quietClose(archive);
-        CloseHelper.quietClose(driver);
+        CloseHelper.close(aeronArchive);
+        CloseHelper.close(archive);
+        CloseHelper.close(driver);
 
         archive.context().deleteArchiveDirectory();
         driver.context().deleteAeronDirectory();
@@ -128,7 +133,7 @@ public class ArchiveRecordingLoadTest
     public void archive() throws InterruptedException
     {
         try (Subscription recordingEvents = aeron.addSubscription(
-                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
+            archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
         {
             initRecordingStartIndicator(recordingEvents);
             initRecordingEndIndicator(recordingEvents);
@@ -255,7 +260,7 @@ public class ArchiveRecordingLoadTest
         buffer.setMemory(0, 1024, (byte)'z');
 
         final int termLength = publication.termBufferLength();
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         final int initialTermId = publication.initialTermId();
         final long startPosition = publication.position();
         final int startTermOffset = computeTermOffsetFromPosition(startPosition, positionBitsToShift);
@@ -280,7 +285,7 @@ public class ArchiveRecordingLoadTest
     {
         if (publication.offer(buffer, 0, length) < 0)
         {
-            final long deadlineNs = System.currentTimeMillis() + TestUtil.TIMEOUT_MS;
+            final long deadlineNs = System.nanoTime() + TestUtil.TIMEOUT_NS;
             slowOffer(publication, buffer, length, deadlineNs);
         }
     }
@@ -311,8 +316,8 @@ public class ArchiveRecordingLoadTest
 
         while (publication.offer(buffer, 0, length) < 0)
         {
-            LockSupport.parkNanos(TIMEOUT_MS);
-            if (System.currentTimeMillis() > deadlineNs)
+            LockSupport.parkNanos(1000);
+            if (System.nanoTime() > deadlineNs)
             {
                 fail("Offer has timed out");
             }

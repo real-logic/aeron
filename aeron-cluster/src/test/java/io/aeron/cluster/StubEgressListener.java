@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,10 @@ public class StubEgressListener implements EgressListener
         final long correlationId,
         final long clusterSessionId,
         final long lastMessageTimestamp,
-        final long clusterTermTimestamp,
-        final long clusterMessageIndex,
-        final long clusterTermId,
-        final String leader)
+        final long leadershipTimestamp,
+        final long leadershipTermId,
+        final int leaderMemberId,
+        final String memberEndpoints)
     {
     }
 

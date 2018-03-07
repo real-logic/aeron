@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Publication;
-import io.aeron.cluster.codecs.EventCode;
-import io.aeron.cluster.codecs.MessageHeaderEncoder;
-import io.aeron.cluster.codecs.SessionEventEncoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 
 class EgressPublisher
@@ -28,6 +26,8 @@ class EgressPublisher
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
+    private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
+    private final AdminResponseEncoder adminResponseEncoder = new AdminResponseEncoder();
 
     public boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
     {
@@ -40,7 +40,8 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            if (publication.tryClaim(length, bufferClaim) > 0)
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
                 sessionEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
@@ -48,6 +49,66 @@ class EgressPublisher
                     .correlationId(session.lastCorrelationId())
                     .code(code)
                     .detail(detail);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean sendChallenge(final ClusterSession session, final byte[] challengeData)
+    {
+        final Publication publication = session.responsePublication();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            ChallengeEncoder.BLOCK_LENGTH +
+            ChallengeEncoder.challengeDataHeaderLength() +
+            challengeData.length;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                challengeEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .clusterSessionId(session.id())
+                    .correlationId(session.lastCorrelationId())
+                    .putChallengeData(challengeData, 0, challengeData.length);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean sendAdminResponse(final ClusterSession session, final byte[] responseData)
+    {
+        final Publication publication = session.responsePublication();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            AdminResponseEncoder.BLOCK_LENGTH +
+            AdminResponseEncoder.responseDataHeaderLength() +
+            responseData.length;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                adminResponseEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .clusterSessionId(session.id())
+                    .correlationId(session.lastCorrelationId())
+                    .putResponseData(responseData, 0, responseData.length);
 
                 bufferClaim.commit();
 

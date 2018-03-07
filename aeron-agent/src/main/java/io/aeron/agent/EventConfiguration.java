@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,11 +118,14 @@ public class EventConfiguration
 
     static long makeTagBitSet(final Set<EventCode> eventCodes)
     {
-        return
-            eventCodes
-                .stream()
-                .mapToLong(EventCode::tagBit)
-                .reduce(0L, (acc, x) -> acc | x);
+        long result = 0;
+
+        for (final EventCode eventCode : eventCodes)
+        {
+            result |= eventCode.tagBit();
+        }
+
+        return result;
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,22 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
 
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.Matchers.greaterThan;
@@ -38,12 +43,13 @@ import static org.junit.Assert.assertThat;
 public class BasicArchiveTest
 {
     private static final int FRAGMENT_LIMIT = 10;
+    private static final int TERM_BUFFER_LENGTH = 64 * 1024;
 
     private static final int RECORDING_STREAM_ID = 33;
     private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
-        .termLength(64 * 1024)
+        .termLength(TERM_BUFFER_LENGTH)
         .build();
 
     private static final int REPLAY_STREAM_ID = 66;
@@ -71,11 +77,14 @@ public class BasicArchiveTest
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .aeronDirectoryName(aeronDirectoryName)
-                .archiveDir(TestUtil.makeTempDir())
+                .deleteArchiveOnStart(true)
+                .archiveDir(new File(IoUtil.tmpDirName(), "archive"))
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
-        aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
+        aeron = Aeron.connect(
+            new Aeron.Context()
+                .aeronDirectoryName(aeronDirectoryName));
 
         aeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
@@ -93,64 +102,84 @@ public class BasicArchiveTest
         archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldRecordAndReplay()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
-        final long length;
+        final long stopPosition;
 
-        final long correlationId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+        aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
         final long recordingIdFromCounter;
 
         try (Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-             Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+            Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             offer(publication, messageCount, messagePrefix);
 
-            recordingIdFromCounter = RecordingPos.findActiveRecordingId(
-                aeron.countersReader(), aeronArchive.controlSessionId(), correlationId, publication.sessionId());
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+            recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             consume(subscription, messageCount, messagePrefix);
 
-            length = publication.position();
+            stopPosition = publication.position();
+
+            while (counters.getCounterValue(counterId) < stopPosition)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
         }
 
         aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
 
-        final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, length);
+        final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, stopPosition);
         assertEquals(recordingIdFromCounter, recordingId);
 
         final long fromPosition = 0L;
+        final long length = stopPosition - fromPosition;
 
         try (Subscription subscription = aeronArchive.replay(
             recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
             consume(subscription, messageCount, messagePrefix);
-            assertEquals(length, subscription.imageAtIndex(0).position());
+            assertEquals(stopPosition, subscription.imageAtIndex(0).position());
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldRecordReplayAndCancelReplayEarly()
     {
         final String messagePrefix = "Message-Prefix-";
+        final long stopPosition;
         final int messageCount = 10;
-        final long length;
+        final long recordingId;
 
         try (Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-             Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+            Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             offer(publication, messageCount, messagePrefix);
+
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+            recordingId = RecordingPos.getRecordingId(counters, counterId);
+
             consume(subscription, messageCount, messagePrefix);
 
-            length = publication.position();
+            stopPosition = publication.position();
+
+            while (counters.getCounterValue(counterId) < stopPosition)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            aeronArchive.stopRecording(publication);
         }
 
-        aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-
-        final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, length);
         final long fromPosition = 0L;
+        final long length = stopPosition - fromPosition;
 
         final long replaySessionId = aeronArchive.startReplay(
             recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID);
@@ -162,29 +191,23 @@ public class BasicArchiveTest
     {
         final MutableLong foundRecordingId = new MutableLong();
 
-        final int recordingsFound = aeronArchive.listRecordingsForUri(
-            0L,
-            10,
-            expectedChannel,
-            expectedStreamId,
-            (
-                controlSessionId,
-                correlationId,
-                recordingId,
-                startTimestamp,
-                stopTimestamp,
-                startPosition,
-                stopPosition,
-                initialTermId,
-                segmentFileLength,
-                termBufferLength,
-                mtuLength,
-                sessionId,
-                streamId,
-                strippedChannel,
-                originalChannel,
-                sourceIdentity
-            ) ->
+        final RecordingDescriptorConsumer consumer =
+            (controlSessionId,
+            correlationId,
+            recordingId,
+            startTimestamp,
+            stopTimestamp,
+            startPosition,
+            stopPosition,
+            initialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
+            sessionId,
+            streamId,
+            strippedChannel,
+            originalChannel,
+            sourceIdentity) ->
             {
                 foundRecordingId.set(recordingId);
 
@@ -192,7 +215,14 @@ public class BasicArchiveTest
                 assertEquals(expectedPosition, stopPosition);
                 assertEquals(expectedStreamId, streamId);
                 assertEquals(expectedChannel, originalChannel);
-            });
+            };
+
+        final int recordingsFound = aeronArchive.listRecordingsForUri(
+            0L,
+            10,
+            expectedChannel,
+            expectedStreamId,
+            consumer);
 
         assertThat(recordingsFound, greaterThan(0));
 
@@ -209,6 +239,7 @@ public class BasicArchiveTest
 
             while (publication.offer(buffer, 0, length) <= 0)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
         }
@@ -233,6 +264,7 @@ public class BasicArchiveTest
         {
             if (0 == subscription.poll(fragmentHandler, FRAGMENT_LIMIT))
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
         }

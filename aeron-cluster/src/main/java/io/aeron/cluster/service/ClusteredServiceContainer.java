@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,13 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.codecs.mark.ClusterComponentType;
+import io.aeron.cluster.ClusterMarkFile;
+import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
@@ -29,12 +33,35 @@ import java.io.File;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
-import static java.lang.System.getProperty;
+import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 public final class ClusteredServiceContainer implements AutoCloseable
 {
+    /**
+     * Type of snapshot for this service.
+     */
+    public static final long SNAPSHOT_TYPE_ID = 2;
+
     private final Context ctx;
     private final AgentRunner serviceAgentRunner;
+
+    /**
+     * Launch the clustered service container and await a shutdown signal.
+     *
+     * @param args command line argument which is a list for properties files as URLs or filenames.
+     */
+    public static void main(final String[] args)
+    {
+        loadPropertiesFiles(args);
+
+        try (ClusteredServiceContainer container = launch())
+        {
+            container.context().shutdownSignalBarrier().await();
+
+            System.out.println("Shutdown ClusteredMediaDriver...");
+        }
+    }
 
     private ClusteredServiceContainer(final Context ctx)
     {
@@ -94,141 +121,187 @@ public final class ClusteredServiceContainer implements AutoCloseable
     public static class Configuration
     {
         /**
-         * Channel for the clustered log.
+         * Identity for a clustered service.
          */
-        public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
+        public static final String SERVICE_ID_PROP_NAME = "aeron.cluster.service.id";
 
         /**
-         * Channel for the clustered log. Default to localhost:9030.
+         * Identity for a clustered service. Default to 0.
          */
-        public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030";
+        public static final int SERVICE_ID_DEFAULT = 0;
 
         /**
-         * Stream id within a channel for the clustered log.
+         * Name for a clustered service to be the role of the {@link Agent}.
          */
-        public static final String LOG_STREAM_ID_PROP_NAME = "aeron.cluster.log.stream.id";
+        public static final String SERVICE_NAME_PROP_NAME = "aeron.cluster.service.name";
 
         /**
-         * Stream id within a channel for the clustered log. Default to stream id of 3.
+         * Name for a clustered service to be the role of the {@link Agent}. Default to "clustered-service".
          */
-        public static final int LOG_STREAM_ID_DEFAULT = 3;
+        public static final String SERVICE_NAME_DEFAULT = "clustered-service";
 
         /**
-         * Channel to be used for log replay on startup.
+         * Class name for dynamically loading a {@link ClusteredService}. This is used if
+         * {@link Context#clusteredService()} is not set.
          */
-        public static final String LOG_REPLAY_CHANNEL_PROP_NAME = "aeron.cluster.log.replay.channel";
+        public static final String SERVICE_CLASS_NAME_PROP_NAME = "aeron.cluster.service.class.name";
 
         /**
-         * Channel to be used for log replay on startup.
+         * Channel to be used for log or snapshot replay on startup.
          */
-        public static final String LOG_REPLAY_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+        public static final String REPLAY_CHANNEL_PROP_NAME = "aeron.cluster.replay.channel";
 
         /**
-         * Stream id within a channel for the clustered log replay.
+         * Channel to be used for log or snapshot replay on startup.
          */
-        public static final String LOG_REPLAY_STREAM_ID_PROP_NAME = "aeron.cluster.log.replay.stream.id";
+        public static final String REPLAY_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
 
         /**
-         * Stream id for the log replay within a channel.
+         * Stream id within a channel for the clustered log or snapshot replay.
          */
-        public static final int LOG_REPLAY_STREAM_ID_DEFAULT = 4;
+        public static final String REPLAY_STREAM_ID_PROP_NAME = "aeron.cluster.replay.stream.id";
 
         /**
-         * Channel for timer scheduling messages to the cluster.
+         * Stream id for the log or snapshot replay within a channel.
          */
-        public static final String TIMER_CHANNEL_PROP_NAME = "aeron.cluster.timer.channel";
+        public static final int REPLAY_STREAM_ID_DEFAULT = 4;
 
         /**
-         * Channel for timer scheduling messages to the cluster. This should be IPC.
+         * Channel for bi-directional communications between the consensus module and services.
          */
-        public static final String TIMER_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+        public static final String SERVICE_CONTROL_CHANNEL_PROP_NAME = "aeron.cluster.service.control.channel";
 
         /**
-         * Stream id within a channel for timer scheduling messages to the cluster.
+         * Channel for for bi-directional communications between the consensus module and services. This should be IPC.
          */
-        public static final String TIMER_STREAM_ID_PROP_NAME = "aeron.cluster.timer.stream.id";
+        public static final String SERVICE_CONTROL_CHANNEL_DEFAULT = "aeron:ipc?term-length=64k";
 
         /**
-         * Stream id within a channel for timer scheduling messages to the cluster. Default to stream id of 4.
+         * Stream id within a channel for bi-directional communications between the consensus module and services.
          */
-        public static final int TIMER_STREAM_ID_DEFAULT = 5;
+        public static final String SERVICE_CONTROL_STREAM_ID_PROP_NAME = "aeron.cluster.service.control.stream.id";
 
         /**
-         * Whether to start without any previous log or use any existing log.
+         * Stream id within a channel for bi-directional communications between the consensus module and services.
+         * Default to stream id of 5.
          */
-        public static final String DIR_DELETE_ON_START_PROP_NAME = "aeron.cluster.dir.delete.on.start";
+        public static final int CONSENSUS_MODULE_STREAM_ID_DEFAULT = 5;
 
         /**
-         * Whether to start without any previous log or use any existing log.
+         * Channel to be used for archiving snapshots.
          */
-        public static final String DIR_DELETE_ON_START_DEFAULT = "false";
-
-        public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
-
-        public static final String CLUSTER_DIR_DEFAULT = "cluster";
-
-        public static final String RECORDING_IDS_LOG_FILE_NAME = "recording-events.log";
+        public static final String SNAPSHOT_CHANNEL_PROP_NAME = "aeron.cluster.snapshot.channel";
 
         /**
-         * The value {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
+         * Channel to be used for archiving snapshots.
+         */
+        public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+
+        /**
+         * Stream id within a channel for archiving snapshots.
+         */
+        public static final String SNAPSHOT_STREAM_ID_PROP_NAME = "aeron.cluster.snapshot.stream.id";
+
+        /**
+         * Stream id for the archived snapshots within a channel.
+         */
+        public static final int SNAPSHOT_STREAM_ID_DEFAULT = 7;
+
+        /**
+         * Directory to use for the clustered service.
+         */
+        public static final String CLUSTERED_SERVICE_DIR_PROP_NAME = "aeron.clustered.service.dir";
+
+        /**
+         * Directory to use for the cluster container.
+         */
+        public static final String CLUSTERED_SERVICE_DIR_DEFAULT = "clustered-service";
+
+        /**
+         * The value {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
          *
-         * @return {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
+         * @return {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
          */
-        public static String logChannel()
+        public static int serviceId()
         {
-            return System.getProperty(LOG_CHANNEL_PROP_NAME, LOG_CHANNEL_DEFAULT);
+            return Integer.getInteger(SERVICE_ID_PROP_NAME, SERVICE_ID_DEFAULT);
         }
 
         /**
-         * The value {@link #LOG_STREAM_ID_DEFAULT} or system property {@link #LOG_STREAM_ID_PROP_NAME} if set.
+         * The value {@link #SERVICE_NAME_DEFAULT} or system property {@link #SERVICE_NAME_PROP_NAME} if set.
          *
-         * @return {@link #LOG_STREAM_ID_DEFAULT} or system property {@link #LOG_STREAM_ID_PROP_NAME} if set.
+         * @return {@link #SERVICE_NAME_DEFAULT} or system property {@link #SERVICE_NAME_PROP_NAME} if set.
          */
-        public static int logStreamId()
+        public static String serviceName()
         {
-            return Integer.getInteger(LOG_STREAM_ID_PROP_NAME, LOG_STREAM_ID_DEFAULT);
+            return System.getProperty(SERVICE_NAME_PROP_NAME, SERVICE_NAME_DEFAULT);
         }
 
         /**
-         * The value {@link #LOG_REPLAY_CHANNEL_DEFAULT} or system property {@link #LOG_REPLAY_CHANNEL_PROP_NAME} if set.
+         * The value {@link #REPLAY_CHANNEL_DEFAULT} or system property {@link #REPLAY_CHANNEL_PROP_NAME} if set.
          *
-         * @return {@link #LOG_REPLAY_CHANNEL_DEFAULT} or system property {@link #LOG_REPLAY_CHANNEL_PROP_NAME} if set.
+         * @return {@link #REPLAY_CHANNEL_DEFAULT} or system property {@link #REPLAY_CHANNEL_PROP_NAME} if set.
          */
-        public static String logReplayChannel()
+        public static String replayChannel()
         {
-            return System.getProperty(LOG_REPLAY_CHANNEL_PROP_NAME, LOG_REPLAY_CHANNEL_DEFAULT);
+            return System.getProperty(REPLAY_CHANNEL_PROP_NAME, REPLAY_CHANNEL_DEFAULT);
         }
 
         /**
-         * The value {@link #LOG_REPLAY_STREAM_ID_DEFAULT} or system property {@link #LOG_REPLAY_STREAM_ID_PROP_NAME}
+         * The value {@link #REPLAY_STREAM_ID_DEFAULT} or system property {@link #REPLAY_STREAM_ID_PROP_NAME}
          * if set.
          *
-         * @return {@link #LOG_REPLAY_STREAM_ID_DEFAULT} or system property {@link #LOG_REPLAY_STREAM_ID_PROP_NAME}
+         * @return {@link #REPLAY_STREAM_ID_DEFAULT} or system property {@link #REPLAY_STREAM_ID_PROP_NAME}
          * if set.
          */
-        public static int logReplayStreamId()
+        public static int replayStreamId()
         {
-            return Integer.getInteger(LOG_REPLAY_STREAM_ID_PROP_NAME, LOG_REPLAY_STREAM_ID_DEFAULT);
+            return Integer.getInteger(REPLAY_STREAM_ID_PROP_NAME, REPLAY_STREAM_ID_DEFAULT);
         }
 
         /**
-         * The value {@link #TIMER_CHANNEL_DEFAULT} or system property {@link #TIMER_CHANNEL_PROP_NAME} if set.
+         * The value {@link #SERVICE_CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #SERVICE_CONTROL_CHANNEL_PROP_NAME} if set.
          *
-         * @return {@link #TIMER_CHANNEL_DEFAULT} or system property {@link #TIMER_CHANNEL_PROP_NAME} if set.
+         * @return {@link #SERVICE_CONTROL_CHANNEL_DEFAULT} or system property
+         * {@link #SERVICE_CONTROL_CHANNEL_PROP_NAME} if set.
          */
-        public static String timerChannel()
+        public static String serviceControlChannel()
         {
-            return System.getProperty(TIMER_CHANNEL_PROP_NAME, TIMER_CHANNEL_DEFAULT);
+            return System.getProperty(SERVICE_CONTROL_CHANNEL_PROP_NAME, SERVICE_CONTROL_CHANNEL_DEFAULT);
         }
 
         /**
-         * The value {@link #TIMER_STREAM_ID_DEFAULT} or system property {@link #TIMER_STREAM_ID_PROP_NAME} if set.
+         * The value {@link #CONSENSUS_MODULE_STREAM_ID_DEFAULT} or system property
+         * {@link #SERVICE_CONTROL_STREAM_ID_PROP_NAME} if set.
          *
-         * @return {@link #TIMER_STREAM_ID_DEFAULT} or system property {@link #TIMER_STREAM_ID_PROP_NAME} if set.
+         * @return {@link #CONSENSUS_MODULE_STREAM_ID_DEFAULT} or system property
+         * {@link #SERVICE_CONTROL_STREAM_ID_PROP_NAME} if set.
          */
-        public static int timerStreamId()
+        public static int serviceControlStreamId()
         {
-            return Integer.getInteger(TIMER_STREAM_ID_PROP_NAME, TIMER_STREAM_ID_DEFAULT);
+            return Integer.getInteger(SERVICE_CONTROL_STREAM_ID_PROP_NAME, CONSENSUS_MODULE_STREAM_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property {@link #SNAPSHOT_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property {@link #SNAPSHOT_CHANNEL_PROP_NAME} if set.
+         */
+        public static String snapshotChannel()
+        {
+            return System.getProperty(SNAPSHOT_CHANNEL_PROP_NAME, SNAPSHOT_CHANNEL_DEFAULT);
+        }
+
+        /**
+         * The value {@link #SNAPSHOT_STREAM_ID_DEFAULT} or system property {@link #SNAPSHOT_STREAM_ID_PROP_NAME}
+         * if set.
+         *
+         * @return {@link #SNAPSHOT_STREAM_ID_DEFAULT} or system property {@link #SNAPSHOT_STREAM_ID_PROP_NAME} if set.
+         */
+        public static int snapshotStreamId()
+        {
+            return Integer.getInteger(SNAPSHOT_STREAM_ID_PROP_NAME, SNAPSHOT_STREAM_ID_DEFAULT);
         }
 
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
@@ -250,30 +323,29 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The value {@link #DIR_DELETE_ON_START_DEFAULT} or system property {@link #DIR_DELETE_ON_START_PROP_NAME} if set.
+         * The value {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property
+         * {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
          *
-         * @return {@link #DIR_DELETE_ON_START_DEFAULT} or system property {@link #DIR_DELETE_ON_START_PROP_NAME} if set.
+         * @return {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property
+         * {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
          */
-        public static boolean deleteDirOnStart()
+        public static String clusteredServiceDirName()
         {
-            return "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_START_PROP_NAME, DIR_DELETE_ON_START_DEFAULT));
-        }
-
-        public static String clusterDirName()
-        {
-            return System.getProperty(CLUSTER_DIR_PROP_NAME, CLUSTER_DIR_DEFAULT);
+            return System.getProperty(CLUSTERED_SERVICE_DIR_PROP_NAME, CLUSTERED_SERVICE_DIR_DEFAULT);
         }
     }
 
-    public static class Context implements AutoCloseable
+    public static class Context implements AutoCloseable, Cloneable
     {
-        private String logChannel = Configuration.logChannel();
-        private int logStreamId = Configuration.logStreamId();
-        private String logReplayChannel = Configuration.logReplayChannel();
-        private int logReplayStreamId = Configuration.logReplayStreamId();
-        private String timerChannel = Configuration.timerChannel();
-        private int timerStreamId = Configuration.timerStreamId();
-        private boolean deleteDirOnStart = Configuration.deleteDirOnStart();
+        private int serviceId = Configuration.serviceId();
+        private String serviceName = Configuration.serviceName();
+        private String replayChannel = Configuration.replayChannel();
+        private int replayStreamId = Configuration.replayStreamId();
+        private String serviceControlChannel = Configuration.serviceControlChannel();
+        private int serviceControlStreamId = Configuration.serviceControlStreamId();
+        private String snapshotChannel = Configuration.snapshotChannel();
+        private int snapshotStreamId = Configuration.snapshotStreamId();
+        private boolean deleteDirOnStart = false;
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -281,14 +353,37 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
-        private Aeron aeron;
         private AeronArchive.Context archiveContext;
-        private File clusterDir;
+        private String clusteredServiceDirectoryName = Configuration.clusteredServiceDirName();
+        private File clusteredServiceDir;
+        private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
+        private Aeron aeron;
         private boolean ownsAeronClient;
 
         private ClusteredService clusteredService;
-        private ClusterRecordingEventLog clusterRecordingEventLog;
+        private RecordingLog recordingLog;
+        private ShutdownSignalBarrier shutdownSignalBarrier;
+        private Runnable terminationHook;
+        private ClusterMarkFile markFile;
 
+        /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            try
+            {
+                return (Context)super.clone();
+            }
+            catch (final CloneNotSupportedException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        @SuppressWarnings("MethodLength")
         public void conclude()
         {
             if (null == threadFactory)
@@ -311,6 +406,22 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 throw new IllegalStateException("Error handler must be supplied");
             }
 
+            if (null == aeron)
+            {
+                aeron = Aeron.connect(
+                    new Aeron.Context()
+                        .aeronDirectoryName(aeronDirectoryName)
+                        .errorHandler(countedErrorHandler)
+                        .epochClock(epochClock));
+
+                if (null == errorCounter)
+                {
+                    errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Cluster errors - service " + serviceId);
+                }
+
+                ownsAeronClient = true;
+            }
+
             if (null == errorCounter)
             {
                 throw new IllegalStateException("Error counter must be supplied");
@@ -319,196 +430,275 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null == countedErrorHandler)
             {
                 countedErrorHandler = new CountedErrorHandler(errorHandler, errorCounter);
-            }
-
-            if (null == aeron)
-            {
-                aeron = Aeron.connect(
-                    new Aeron.Context()
-                        .errorHandler(countedErrorHandler)
-                        .epochClock(epochClock)
-                        .useConductorAgentInvoker(true)
-                        .clientLock(new NoOpLock()));
-
-                ownsAeronClient = true;
+                if (ownsAeronClient)
+                {
+                    aeron.context().errorHandler(countedErrorHandler);
+                }
             }
 
             if (null == archiveContext)
             {
-                archiveContext = new AeronArchive.Context().lock(new NoOpLock());
+                archiveContext = new AeronArchive.Context()
+                    .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
+                    .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
+                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
             }
+
+            archiveContext
+                .aeron(aeron)
+                .ownsAeronClient(false)
+                .lock(new NoOpLock());
 
             if (deleteDirOnStart)
             {
-                if (null != clusterDir)
+                if (null != clusteredServiceDir)
                 {
-                    IoUtil.delete(clusterDir, true);
+                    IoUtil.delete(clusteredServiceDir, true);
                 }
                 else
                 {
-                    IoUtil.delete(new File(Configuration.clusterDirName()), true);
+                    IoUtil.delete(new File(Configuration.clusteredServiceDirName()), true);
                 }
             }
 
-            if (null == clusterDir)
+            if (null == clusteredServiceDir)
             {
-                clusterDir = new File(Configuration.clusterDirName());
+                clusteredServiceDir = new File(clusteredServiceDirectoryName);
             }
 
-            if (!clusterDir.exists() && !clusterDir.mkdirs())
+            if (!clusteredServiceDir.exists() && !clusteredServiceDir.mkdirs())
             {
-                throw new IllegalArgumentException(
-                    "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
+                throw new IllegalStateException(
+                    "Failed to create clustered service dir: " + clusteredServiceDir.getAbsolutePath());
             }
 
-            if (null == clusterRecordingEventLog)
+            if (null == recordingLog)
             {
-                clusterRecordingEventLog = new ClusterRecordingEventLog(clusterDir);
+                recordingLog = new RecordingLog(clusteredServiceDir);
             }
+
+            if (null == shutdownSignalBarrier)
+            {
+                shutdownSignalBarrier = new ShutdownSignalBarrier();
+            }
+
+            if (null == terminationHook)
+            {
+                terminationHook = () -> shutdownSignalBarrier.signal();
+            }
+
+            if (null == clusteredService)
+            {
+                final String className = System.getProperty(Configuration.SERVICE_CLASS_NAME_PROP_NAME);
+                if (null == className)
+                {
+                    throw new IllegalStateException(
+                        "Either a ClusteredService instance or class name for the service must be provided");
+                }
+
+                try
+                {
+                    clusteredService = (ClusteredService)Class.forName(className).newInstance();
+                }
+                catch (final Exception ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                }
+            }
+
+            concludeMarkFile();
         }
 
         /**
-         * Set the channel parameter for the cluster log channel.
+         * Set the id for this clustered service.
          *
-         * @param channel parameter for the cluster log channel.
-         * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#LOG_CHANNEL_PROP_NAME
-         */
-        public Context logChannel(final String channel)
-        {
-            logChannel = channel;
-            return this;
-        }
-
-        /**
-         * Get the channel parameter for the cluster log channel.
-         *
-         * @return the channel parameter for the cluster channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_CHANNEL_PROP_NAME
-         */
-        public String logChannel()
-        {
-            return logChannel;
-        }
-
-        /**
-         * Set the stream id for the cluster log channel.
-         *
-         * @param streamId for the cluster log channel.
+         * @param serviceId for this clustered service.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#LOG_STREAM_ID_PROP_NAME
+         * @see Configuration#SERVICE_ID_PROP_NAME
          */
-        public Context logStreamId(final int streamId)
+        public Context serviceId(final int serviceId)
         {
-            logStreamId = streamId;
+            this.serviceId = serviceId;
             return this;
         }
 
         /**
-         * Get the stream id for the cluster log channel.
+         * Get the id for this clustered service.
          *
-         * @return the stream id for the cluster log channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_STREAM_ID_PROP_NAME
+         * @return the id for this clustered service.
+         * @see Configuration#SERVICE_ID_PROP_NAME
          */
-        public int logStreamId()
+        public int serviceId()
         {
-            return logStreamId;
+            return serviceId;
         }
 
         /**
-         * Set the channel parameter for the cluster log replay channel.
+         * Set the name for a clustered service to be the role of the {@link Agent}.
+         *
+         * @param serviceName for a clustered service to be the role of the {@link Agent}.
+         * @return this for a fluent API.
+         * @see Configuration#SERVICE_NAME_PROP_NAME
+         */
+        public Context serviceName(final String serviceName)
+        {
+            this.serviceName = serviceName;
+            return this;
+        }
+
+        /**
+         * Get the name for a clustered service to be the role of the {@link Agent}.
+         *
+         * @return the name for a clustered service to be the role of the {@link Agent}.
+         * @see Configuration#SERVICE_NAME_PROP_NAME
+         */
+        public String serviceName()
+        {
+            return serviceName;
+        }
+
+        /**
+         * Set the channel parameter for the cluster log and snapshot replay channel.
          *
          * @param channel parameter for the cluster log replay channel.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_CHANNEL_PROP_NAME
+         * @see Configuration#REPLAY_CHANNEL_PROP_NAME
          */
-        public Context logReplayChannel(final String channel)
+        public Context replayChannel(final String channel)
         {
-            logChannel = channel;
+            replayChannel = channel;
             return this;
         }
 
         /**
-         * Get the channel parameter for the cluster log replay channel.
+         * Get the channel parameter for the cluster log and snapshot replay channel.
          *
          * @return the channel parameter for the cluster replay channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_CHANNEL_PROP_NAME
+         * @see Configuration#REPLAY_CHANNEL_PROP_NAME
          */
-        public String logReplayChannel()
+        public String replayChannel()
         {
-            return logReplayChannel;
+            return replayChannel;
         }
 
         /**
-         * Set the stream id for the cluster log replay channel.
+         * Set the stream id for the cluster log and snapshot replay channel.
          *
          * @param streamId for the cluster log replay channel.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_STREAM_ID_PROP_NAME
+         * @see Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
-        public Context logReplayStreamId(final int streamId)
+        public Context replayStreamId(final int streamId)
         {
-            logReplayStreamId = streamId;
+            replayStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for the cluster log replay channel.
+         * Get the stream id for the cluster log and snapshot replay channel.
          *
          * @return the stream id for the cluster log replay channel.
-         * @see ClusteredServiceContainer.Configuration#LOG_REPLAY_STREAM_ID_PROP_NAME
+         * @see Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
-        public int logReplayStreamId()
+        public int replayStreamId()
         {
-            return logReplayStreamId;
+            return replayStreamId;
         }
 
         /**
-         * Set the channel parameter for scheduling timer events channel.
+         * Set the channel parameter for bi-directional communications between the consensus module and services.
          *
-         * @param channel parameter for the scheduling timer events channel.
+         * @param channel parameter for sending messages to the Consensus Module.
          * @return this for a fluent API.
-         * @see Configuration#TIMER_CHANNEL_PROP_NAME
+         * @see Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
          */
-        public Context timerChannel(final String channel)
+        public Context serviceControlChannel(final String channel)
         {
-            timerChannel = channel;
+            serviceControlChannel = channel;
             return this;
         }
 
         /**
-         * Get the channel parameter for the scheduling timer events channel.
+         * Get the channel parameter for bi-directional communications between the consensus module and services.
          *
-         * @return the channel parameter for the scheduling timer events channel.
-         * @see Configuration#TIMER_CHANNEL_PROP_NAME
+         * @return the channel parameter for sending messages to the Consensus Module.
+         * @see Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
          */
-        public String timerChannel()
+        public String serviceControlChannel()
         {
-            return timerChannel;
+            return serviceControlChannel;
         }
 
         /**
-         * Set the stream id for the scheduling timer events channel.
+         * Set the stream id for bi-directional communications between the consensus module and services.
          *
-         * @param streamId for the scheduling timer events channel.
+         * @param streamId for bi-directional communications between the consensus module and services.
          * @return this for a fluent API
-         * @see Configuration#TIMER_STREAM_ID_PROP_NAME
+         * @see Configuration#SERVICE_CONTROL_STREAM_ID_PROP_NAME
          */
-        public Context timerStreamId(final int streamId)
+        public Context serviceControlStreamId(final int streamId)
         {
-            timerStreamId = streamId;
+            serviceControlStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for the scheduling timer events channel.
+         * Get the stream id for bi-directional communications between the consensus module and services.
          *
-         * @return the stream id for the scheduling timer events channel.
-         * @see Configuration#TIMER_STREAM_ID_PROP_NAME
+         * @return the stream id for bi-directional communications between the consensus module and services.
+         * @see Configuration#SERVICE_CONTROL_STREAM_ID_PROP_NAME
          */
-        public int timerStreamId()
+        public int serviceControlStreamId()
         {
-            return timerStreamId;
+            return serviceControlStreamId;
+        }
+
+        /**
+         * Set the channel parameter for snapshot recordings.
+         *
+         * @param channel parameter for snapshot recordings
+         * @return this for a fluent API.
+         * @see Configuration#SNAPSHOT_CHANNEL_PROP_NAME
+         */
+        public Context snapshotChannel(final String channel)
+        {
+            snapshotChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for snapshot recordings.
+         *
+         * @return the channel parameter for snapshot recordings.
+         * @see Configuration#SNAPSHOT_CHANNEL_PROP_NAME
+         */
+        public String snapshotChannel()
+        {
+            return snapshotChannel;
+        }
+
+        /**
+         * Set the stream id for snapshot recordings.
+         *
+         * @param streamId for snapshot recordings.
+         * @return this for a fluent API
+         * @see Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
+         */
+        public Context snapshotStreamId(final int streamId)
+        {
+            snapshotStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for snapshot recordings.
+         *
+         * @return the stream id for snapshot recordings.
+         * @see Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
+         */
+        public int snapshotStreamId()
+        {
+            return snapshotStreamId;
         }
 
         /**
@@ -644,6 +834,28 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
+         * Set the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @param aeronDirectoryName the top level Aeron directory.
+         * @return this for a fluent API.
+         */
+        public Context aeronDirectoryName(final String aeronDirectoryName)
+        {
+            this.aeronDirectoryName = aeronDirectoryName;
+            return this;
+        }
+
+        /**
+         * Get the top level Aeron directory used for communication between the Aeron client and Media Driver.
+         *
+         * @return The top level Aeron directory.
+         */
+        public String aeronDirectoryName()
+        {
+            return aeronDirectoryName;
+        }
+
+        /**
          * An {@link Aeron} client for the container.
          *
          * @return {@link Aeron} client for the container
@@ -664,17 +876,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public Context aeron(final Aeron aeron)
         {
             this.aeron = aeron;
-            return this;
-        }
-
-        public ClusteredService clusteredService()
-        {
-            return clusteredService;
-        }
-
-        public Context clusteredService(final ClusteredService clusteredService)
-        {
-            this.clusteredService = clusteredService;
             return this;
         }
 
@@ -701,6 +902,28 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
+         * The service this container holds.
+         *
+         * @return service this container holds.
+         */
+        public ClusteredService clusteredService()
+        {
+            return clusteredService;
+        }
+
+        /**
+         * Set the service this container is to hold.
+         *
+         * @param clusteredService this container is to hold.
+         * @return this for fluent API.
+         */
+        public Context clusteredService(final ClusteredService clusteredService)
+        {
+            this.clusteredService = clusteredService;
+            return this;
+        }
+
+        /**
          * Set the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
          *
          * @param archiveContext that should be used for communicating with the local Archive.
@@ -722,44 +945,176 @@ public final class ClusteredServiceContainer implements AutoCloseable
             return archiveContext;
         }
 
+        /**
+         * Should the container attempt to immediately delete {@link #clusteredServiceDir()} on startup.
+         *
+         * @param deleteDirOnStart Attempt deletion.
+         * @return this for a fluent API.
+         */
         public Context deleteDirOnStart(final boolean deleteDirOnStart)
         {
             this.deleteDirOnStart = deleteDirOnStart;
             return this;
         }
 
+        /**
+         * Will the container attempt to immediately delete {@link #clusteredServiceDir()} on startup.
+         *
+         * @return true when directory will be deleted, otherwise false.
+         */
         public boolean deleteDirOnStart()
         {
             return deleteDirOnStart;
         }
 
-        public Context clusterDir(final File clusterDir)
+        /**
+         * Set the directory name to use for the clustered service container.
+         *
+         * @param clusteredServiceDirectoryName to use.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
+         */
+        public Context clusteredServiceDirectoryName(final String clusteredServiceDirectoryName)
         {
-            this.clusterDir = clusterDir;
+            this.clusteredServiceDirectoryName = clusteredServiceDirectoryName;
             return this;
         }
 
-        public File clusterDir()
+        /**
+         * The directory name used for the clustered service container.
+         *
+         * @return directory for the cluster container.
+         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
+         */
+        public String clusteredServiceDirectoryName()
         {
-            return clusterDir;
+            return clusteredServiceDirectoryName;
         }
 
-        public Context clusterRecordingEventLog(final ClusterRecordingEventLog log)
+        /**
+         * Set the directory to use for the clustered service container.
+         *
+         * @param dir to use.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
+         */
+        public Context clusteredServiceDir(final File dir)
         {
-            clusterRecordingEventLog = log;
+            this.clusteredServiceDir = dir;
             return this;
         }
 
-        public ClusterRecordingEventLog clusterRecordingEventLog()
+        /**
+         * The directory used for the clustered service container.
+         *
+         * @return directory for the cluster container.
+         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
+         */
+        public File clusteredServiceDir()
         {
-            return clusterRecordingEventLog;
+            return clusteredServiceDir;
         }
 
-        public void deleteClusterDirectory()
+        /**
+         * Set the {@link RecordingLog} for the  log terms and snapshots.
+         *
+         * @param recordingLog to use.
+         * @return this for a fluent API.
+         */
+        public Context recordingLog(final RecordingLog recordingLog)
         {
-            if (null != clusterDir)
+            this.recordingLog = recordingLog;
+            return this;
+        }
+
+        /**
+         * The {@link RecordingLog} for the  log terms and snapshots.
+         *
+         * @return {@link RecordingLog} for the  log terms and snapshots.
+         */
+        public RecordingLog recordingLog()
+        {
+            return recordingLog;
+        }
+
+        /**
+         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         *
+         * @param barrier that can be used to shutdown a clustered service.
+         * @return this for a fluent API.
+         */
+        public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
+        {
+            shutdownSignalBarrier = barrier;
+            return this;
+        }
+
+        /**
+         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         *
+         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown a clustered service.
+         */
+        public ShutdownSignalBarrier shutdownSignalBarrier()
+        {
+            return shutdownSignalBarrier;
+        }
+
+        /**
+         * Set the {@link Runnable} that is called when processing a
+         * {@link io.aeron.cluster.codecs.ClusterAction#SHUTDOWN} or {@link io.aeron.cluster.codecs.ClusterAction#ABORT}
+         *
+         * @param terminationHook that can be used to terminate a service container.
+         * @return this for a fluent API.
+         */
+        public Context terminationHook(final Runnable terminationHook)
+        {
+            this.terminationHook = terminationHook;
+            return this;
+        }
+
+        /**
+         * Get the {@link Runnable} that is called when processing a
+         * {@link io.aeron.cluster.codecs.ClusterAction#SHUTDOWN} or {@link io.aeron.cluster.codecs.ClusterAction#ABORT}
+         * <p>
+         * The default action is to call signal on the {@link #shutdownSignalBarrier()}.
+
+         * @return the {@link Runnable} that can be used to terminate a service container.
+         */
+        public Runnable terminationHook()
+        {
+            return terminationHook;
+        }
+
+        /**
+         * Set the {@link ClusterMarkFile} in use.
+         *
+         * @param markFile to use.
+         * @return this for a fluent API.
+         */
+        public Context clusterMarkFile(final ClusterMarkFile markFile)
+        {
+            this.markFile = markFile;
+            return this;
+        }
+
+        /**
+         * The {@link ClusterMarkFile} in use.
+         *
+         * @return {@link ClusterMarkFile} in use.
+         */
+        public ClusterMarkFile clusterMarkFile()
+        {
+            return markFile;
+        }
+
+        /**
+         * Delete the cluster container directory.
+         */
+        public void deleteDirectory()
+        {
+            if (null != clusteredServiceDir)
             {
-                IoUtil.delete(clusterDir, false);
+                IoUtil.delete(clusteredServiceDir, false);
             }
         }
 
@@ -770,9 +1125,51 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public void close()
         {
+            CloseHelper.quietClose(markFile);
+
             if (ownsAeronClient)
             {
-                aeron.close();
+                CloseHelper.close(aeron);
+            }
+        }
+
+        private void concludeMarkFile()
+        {
+            if (null == markFile)
+            {
+                final int alignedTotalFileLength = ClusterMarkFile.alignedTotalFileLength(
+                    ClusterMarkFile.ALIGNMENT,
+                    aeron.context().aeronDirectoryName(),
+                    archiveContext.controlRequestChannel(),
+                    serviceControlChannel(),
+                    null,
+                    serviceName,
+                    null);
+
+                markFile = new ClusterMarkFile(
+                    new File(clusteredServiceDir, ClusterMarkFile.FILENAME),
+                    ClusterComponentType.CONTAINER,
+                    alignedTotalFileLength,
+                    epochClock,
+                    0);
+
+                final MarkFileHeaderEncoder encoder = markFile.encoder();
+
+                encoder
+                    .archiveStreamId(archiveContext.controlRequestStreamId())
+                    .serviceControlStreamId(serviceControlStreamId)
+                    .ingressStreamId(0)
+                    .memberId(-1)
+                    .serviceId(serviceId)
+                    .aeronDirectory(aeron.context().aeronDirectoryName())
+                    .archiveChannel(archiveContext.controlRequestChannel())
+                    .serviceControlChannel(serviceControlChannel)
+                    .ingressChannel("")
+                    .serviceName(serviceName)
+                    .authenticator("");
+
+                markFile.updateActivityTimestamp(epochClock.time());
+                markFile.signalReady();
             }
         }
     }

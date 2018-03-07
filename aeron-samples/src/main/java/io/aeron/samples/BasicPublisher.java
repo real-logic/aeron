@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class BasicPublisher
         // The Aeron and Publication classes implement "AutoCloseable" and will automatically
         // clean up resources when this try block is finished
         try (Aeron aeron = Aeron.connect(ctx);
-             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
             for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
             {

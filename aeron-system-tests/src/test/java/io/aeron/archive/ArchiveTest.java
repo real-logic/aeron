@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,10 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
+import org.agrona.*;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,16 +38,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.LockSupport;
 
 import static io.aeron.archive.TestUtil.awaitConnectedReply;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
@@ -75,9 +72,9 @@ public class ArchiveTest
             });
     }
 
-    private static final String CONTROL_URI = "aeron:udp?endpoint=127.0.0.1:54327";
-    private static final int CONTROL_STREAM_ID = 100;
-    private static final String REPLAY_URI = "aeron:ipc";
+    private static final String CONTROL_RESPONSE_URI = CommonContext.IPC_CHANNEL;
+    private static final int CONTROL_RESPONSE_STREAM_ID = 100;
+    private static final String REPLAY_URI = CommonContext.IPC_CHANNEL;
     private static final int MESSAGE_COUNT = 5000;
     private static final int SYNC_LEVEL = 0;
     private static final int PUBLISH_STREAM_ID = 1;
@@ -92,7 +89,7 @@ public class ArchiveTest
     public final TestWatcher testWatcher = TestUtil.newWatcher(this.getClass(), seed);
 
     private String publishUri;
-    private Aeron publishingClient;
+    private Aeron client;
     private Archive archive;
     private MediaDriver driver;
     private long recordingId;
@@ -103,13 +100,16 @@ public class ArchiveTest
     private long totalRecordingLength;
     private volatile long recorded;
     private long requestedStartPosition;
-    private volatile long stopPosition = -1;
+    private volatile long stopPosition = NULL_POSITION;
     private Throwable trackerError;
 
     private Subscription controlResponse;
     private long correlationId;
     private long startPosition;
     private int requestedInitialTermId;
+
+    private Thread replayConsumer = null;
+    private Thread progressTracker = null;
 
     @Before
     public void before()
@@ -121,49 +121,61 @@ public class ArchiveTest
         final int mtu = 1 << (10 + rnd.nextInt(3)); // 1024 to 8096
         final int requestedStartTermOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
         final int requestedStartTermId = requestedInitialTermId + rnd.nextInt(1000);
+        final int segmentFileLength = termLength << rnd.nextInt(4);
 
-        final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder()
-            .endpoint("127.0.0.1:54325")
+        publishUri = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint("localhost:54325")
             .termLength(termLength)
             .mtu(mtu)
-            .media("udp");
-
-        channelUriStringBuilder
             .initialTermId(requestedInitialTermId)
             .termId(requestedStartTermId)
-            .termOffset(requestedStartTermOffset);
+            .termOffset(requestedStartTermOffset)
+            .build();
 
-        publishUri = channelUriStringBuilder.build();
+        requestedStartPosition =
+            ((requestedStartTermId - requestedInitialTermId) * (long)termLength) + requestedStartTermOffset;
 
-        requestedStartPosition = ((requestedStartTermId - requestedInitialTermId) * (long)termLength) +
-            requestedStartTermOffset;
+        driver = MediaDriver.launch(
+            new MediaDriver.Context()
+                .termBufferSparseFile(true)
+                .threadingMode(threadingMode)
+                .sharedIdleStrategy(new YieldingIdleStrategy())
+                .spiesSimulateConnection(true)
+                .errorHandler(Throwable::printStackTrace)
+                .dirDeleteOnStart(true));
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .termBufferSparseFile(true)
-            .threadingMode(threadingMode)
-            .spiesSimulateConnection(true)
-            .errorHandler(Throwable::printStackTrace)
-            .dirDeleteOnStart(true);
+        archive = Archive.launch(
+            new Archive.Context()
+                .fileSyncLevel(SYNC_LEVEL)
+                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+                .deleteArchiveOnStart(true)
+                .archiveDir(new File(IoUtil.tmpDirName(), "archive-test"))
+                .segmentFileLength(segmentFileLength)
+                .threadingMode(archiveThreadingMode)
+                .idleStrategySupplier(YieldingIdleStrategy::new)
+                .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
+                .errorHandler(driver.context().errorHandler()));
 
-        driver = MediaDriver.launch(driverCtx);
+        client = Aeron.connect(new Aeron.Context().errorHandler(Throwable::printStackTrace));
 
-        final Archive.Context archiverCtx = new Archive.Context()
-            .fileSyncLevel(SYNC_LEVEL)
-            .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-            .archiveDir(TestUtil.makeTempDir())
-            .segmentFileLength(termLength << rnd.nextInt(4))
-            .threadingMode(archiveThreadingMode)
-            .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS))
-            .errorHandler(driverCtx.errorHandler());
-
-        archive = Archive.launch(archiverCtx);
-        publishingClient = Aeron.connect();
+        recorded = 0;
     }
 
     @After
     public void after()
     {
-        CloseHelper.close(publishingClient);
+        if (null != replayConsumer)
+        {
+            replayConsumer.interrupt();
+        }
+
+        if (null != progressTracker)
+        {
+            progressTracker.interrupt();
+        }
+
+        CloseHelper.close(client);
         CloseHelper.close(archive);
         CloseHelper.close(driver);
 
@@ -171,121 +183,123 @@ public class ArchiveTest
         driver.context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 10000)
-    public void recordAndReplayExclusivePublication() throws IOException
+    @Test(timeout = 10_000)
+    public void recordAndReplayExclusivePublication()
     {
-        try (Publication controlPublication = publishingClient.addPublication(
-                archive.context().controlChannel(), archive.context().controlStreamId());
-             Subscription recordingEvents = publishingClient.addSubscription(
-                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
-        {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
+        final String controlChannel = archive.context().localControlChannel();
+        final int controlStreamId = archive.context().localControlStreamId();
 
-            prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
+        final String recordingChannel = archive.context().recordingEventsChannel();
+        final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-            final ExclusivePublication recordedPublication =
-                publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
+        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
+        final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-            TestUtil.await(recordedPublication::isConnected);
+        prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
-            final int sessionId = recordedPublication.sessionId();
-            final int termBufferLength = recordedPublication.termBufferLength();
-            final int initialTermId = recordedPublication.initialTermId();
-            final int maxPayloadLength = recordedPublication.maxPayloadLength();
-            final long startPosition = recordedPublication.position();
+        final ExclusivePublication recordedPublication =
+            client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-            assertThat(startPosition, is(requestedStartPosition));
-            assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
-            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
+        final int sessionId = recordedPublication.sessionId();
+        final int termBufferLength = recordedPublication.termBufferLength();
+        final int initialTermId = recordedPublication.initialTermId();
+        final int maxPayloadLength = recordedPublication.maxPayloadLength();
+        final long startPosition = recordedPublication.position();
 
-            final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
+        assertThat(startPosition, is(requestedStartPosition));
+        assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
+        preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
-            postPublicationValidations(
-                archiveProxy,
-                recordingEvents,
-                termBufferLength,
-                initialTermId,
-                maxPayloadLength,
-                messageCount);
-        }
+        final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
+
+        postPublicationValidations(
+            archiveProxy,
+            recordingEvents,
+            termBufferLength,
+            initialTermId,
+            maxPayloadLength,
+            messageCount);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void replayExclusivePublicationWhileRecording()
     {
-        try (Publication controlPublication = publishingClient.addPublication(
-                archive.context().controlChannel(), archive.context().controlStreamId());
-             Subscription recordingEvents = publishingClient.addSubscription(
-                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
-        {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
+        final String controlChannel = archive.context().localControlChannel();
+        final int controlStreamId = archive.context().localControlStreamId();
 
-            prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
+        final String recordingChannel = archive.context().recordingEventsChannel();
+        final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-            final ExclusivePublication recordedPublication =
-                publishingClient.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
+        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
+        final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-            TestUtil.await(recordedPublication::isConnected);
+        prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
-            final int sessionId = recordedPublication.sessionId();
-            final int termBufferLength = recordedPublication.termBufferLength();
-            final int initialTermId = recordedPublication.initialTermId();
-            final int maxPayloadLength = recordedPublication.maxPayloadLength();
-            final long startPosition = recordedPublication.position();
+        final ExclusivePublication recordedPublication =
+            client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-            assertThat(startPosition, is(requestedStartPosition));
-            assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
-            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
+        final int sessionId = recordedPublication.sessionId();
+        final int termBufferLength = recordedPublication.termBufferLength();
+        final int initialTermId = recordedPublication.initialTermId();
+        final int maxPayloadLength = recordedPublication.maxPayloadLength();
+        final long startPosition = recordedPublication.position();
 
-            final int messageCount = MESSAGE_COUNT;
-            final CountDownLatch waitForData = new CountDownLatch(2);
-            prepMessagesAndListener(recordingEvents, messageCount, waitForData);
-            validateActiveRecordingReplay(
-                archiveProxy,
-                termBufferLength,
-                initialTermId,
-                maxPayloadLength,
-                messageCount,
-                waitForData);
+        assertThat(startPosition, is(requestedStartPosition));
+        assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
+        preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
-            publishDataToRecorded(recordedPublication, messageCount);
-            await(waitForData);
-        }
+        final int messageCount = MESSAGE_COUNT;
+        final CountDownLatch streamConsumed = new CountDownLatch(2);
+
+        prepMessagesAndListener(recordingEvents, messageCount, streamConsumed);
+        replayConsumer = validateActiveRecordingReplay(
+            archiveProxy,
+            termBufferLength,
+            initialTermId,
+            maxPayloadLength,
+            messageCount,
+            streamConsumed);
+
+        publishDataToBeRecorded(recordedPublication, messageCount);
+        await(streamConsumed);
     }
 
-    @Test(timeout = 10000)
-    public void recordAndReplayRegularPublication() throws IOException
+    @Test(timeout = 10_000)
+    public void recordAndReplayRegularPublication()
     {
-        try (Publication controlPublication = publishingClient.addPublication(
-                archive.context().controlChannel(), archive.context().controlStreamId());
-             Subscription recordingEvents = publishingClient.addSubscription(
-                archive.context().recordingEventsChannel(), archive.context().recordingEventsStreamId()))
-        {
-            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
+        final String controlChannel = archive.context().localControlChannel();
+        final int controlStreamId = archive.context().localControlStreamId();
 
-            prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
+        final String recordingChannel = archive.context().recordingEventsChannel();
+        final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-            final Publication recordedPublication = publishingClient.addPublication(publishUri, PUBLISH_STREAM_ID);
-            TestUtil.await(recordedPublication::isConnected);
+        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
+        final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-            final int sessionId = recordedPublication.sessionId();
-            final int termBufferLength = recordedPublication.termBufferLength();
-            final int initialTermId = recordedPublication.initialTermId();
-            final int maxPayloadLength = recordedPublication.maxPayloadLength();
-            final long startPosition = recordedPublication.position();
+        prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
-            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
+        final Publication recordedPublication = client.addPublication(publishUri, PUBLISH_STREAM_ID);
 
-            final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
+        final int sessionId = recordedPublication.sessionId();
+        final int termBufferLength = recordedPublication.termBufferLength();
+        final int initialTermId = recordedPublication.initialTermId();
+        final int maxPayloadLength = recordedPublication.maxPayloadLength();
+        final long startPosition = recordedPublication.position();
 
-            postPublicationValidations(
-                archiveProxy,
-                recordingEvents,
-                termBufferLength,
-                initialTermId,
-                maxPayloadLength,
-                messageCount);
-        }
+        preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
+
+        final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
+
+        postPublicationValidations(
+            archiveProxy,
+            recordingEvents,
+            termBufferLength,
+            initialTermId,
+            maxPayloadLength,
+            messageCount);
     }
 
     private void preSendChecks(
@@ -295,6 +309,7 @@ public class ArchiveTest
         final int termBufferLength,
         final long startPosition)
     {
+        final MutableBoolean recordingStarted = new MutableBoolean();
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
@@ -310,12 +325,20 @@ public class ArchiveTest
                     assertThat(streamId0, is(PUBLISH_STREAM_ID));
                     assertThat(sessionId0, is(sessionId));
                     assertThat(startPosition0, is(startPosition));
+                    recordingStarted.set(true);
                 }
             },
             recordingEvents,
             1);
 
-        TestUtil.await(() -> recordingEventsAdapter.poll() != 0);
+        while (!recordingStarted.get())
+        {
+            if (recordingEventsAdapter.poll() == 0)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+        }
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
     }
@@ -326,44 +349,45 @@ public class ArchiveTest
         final int termBufferLength,
         final int initialTermId,
         final int maxPayloadLength,
-        final int messageCount) throws IOException
+        final int messageCount)
     {
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
 
         assertNull(trackerError);
 
         final long requestStopCorrelationId = correlationId++;
-        TestUtil.await(() -> archiveProxy.stopRecording(
-            publishUri,
-            PUBLISH_STREAM_ID,
-            requestStopCorrelationId,
-            controlSessionId));
+        if (!archiveProxy.stopRecording(publishUri, PUBLISH_STREAM_ID, requestStopCorrelationId, controlSessionId))
+        {
+            throw new IllegalStateException("Failed to stop recording");
+        }
 
         TestUtil.awaitOk(controlResponse, requestStopCorrelationId);
 
+        final MutableBoolean recordingStopped = new MutableBoolean();
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
-                public void onStop(final long rId, final long startPosition, final long stopPosition)
+                public void onStop(final long id, final long startPosition, final long stopPosition)
                 {
-                    assertThat(rId, is(recordingId));
+                    assertThat(id, is(recordingId));
+                    recordingStopped.set(true);
                 }
             },
             recordingEvents,
             1);
 
-        TestUtil.await(() -> recordingEventsAdapter.poll() != 0);
+        while (!recordingStopped.get())
+        {
+            if (recordingEventsAdapter.poll() == 0)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+        }
 
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
-
         validateArchiveFile(messageCount, recordingId);
-
-        validateReplay(
-            archiveProxy,
-            messageCount,
-            initialTermId,
-            maxPayloadLength,
-            termBufferLength);
+        validateReplay(archiveProxy, messageCount, initialTermId, maxPayloadLength, termBufferLength);
     }
 
     private void prePublicationActionsAndVerifications(
@@ -374,21 +398,24 @@ public class ArchiveTest
         TestUtil.await(controlPublication::isConnected);
         TestUtil.await(recordingEvents::isConnected);
 
-        controlResponse = publishingClient.addSubscription(CONTROL_URI, CONTROL_STREAM_ID);
+        controlResponse = client.addSubscription(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
         final long connectCorrelationId = correlationId++;
-        assertTrue(archiveProxy.connect(CONTROL_URI, CONTROL_STREAM_ID, connectCorrelationId));
+        assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
 
         TestUtil.await(controlResponse::isConnected);
         awaitConnectedReply(controlResponse, connectCorrelationId, (sessionId) -> controlSessionId = sessionId);
         verifyEmptyDescriptorList(archiveProxy);
 
         final long startRecordingCorrelationId = correlationId++;
-        TestUtil.await(() -> archiveProxy.startRecording(
+        if (!archiveProxy.startRecording(
             publishUri,
             PUBLISH_STREAM_ID,
             SourceLocation.LOCAL,
             startRecordingCorrelationId,
-            controlSessionId));
+            controlSessionId))
+        {
+            throw new IllegalStateException("Failed to start recording");
+        }
 
         TestUtil.awaitOk(controlResponse, startRecordingCorrelationId);
     }
@@ -404,7 +431,7 @@ public class ArchiveTest
         final ArchiveProxy archiveProxy, final int publicationTermBufferLength)
     {
         final long requestRecordingsCorrelationId = correlationId++;
-        archiveProxy.listRecordings(recordingId, 1, requestRecordingsCorrelationId, controlSessionId);
+        archiveProxy.listRecording(recordingId, requestRecordingsCorrelationId, controlSessionId);
 
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
@@ -439,7 +466,11 @@ public class ArchiveTest
             1
         );
 
-        TestUtil.await(() -> controlResponseAdapter.poll() != 0);
+        while (controlResponseAdapter.poll() == 0)
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
     }
 
     private int prepAndSendMessages(final Subscription recordingEvents, final Publication publication)
@@ -447,7 +478,7 @@ public class ArchiveTest
         final int messageCount = MESSAGE_COUNT;
         final CountDownLatch waitForData = new CountDownLatch(1);
         prepMessagesAndListener(recordingEvents, messageCount, waitForData);
-        publishDataToRecorded(publication, messageCount);
+        publishDataToBeRecorded(publication, messageCount);
         await(waitForData);
 
         return messageCount;
@@ -458,7 +489,7 @@ public class ArchiveTest
         final int messageCount = MESSAGE_COUNT;
         final CountDownLatch waitForData = new CountDownLatch(1);
         prepMessagesAndListener(recordingEvents, messageCount, waitForData);
-        publishDataToRecorded(publication, messageCount);
+        publishDataToBeRecorded(publication, messageCount);
         await(waitForData);
 
         return messageCount;
@@ -472,12 +503,12 @@ public class ArchiveTest
         }
         catch (final InterruptedException ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
     private void prepMessagesAndListener(
-        final Subscription recordingEvents, final int messageCount, final CountDownLatch waitForData)
+        final Subscription recordingEvents, final int messageCount, final CountDownLatch streamConsumedLatch)
     {
         messageLengths = new int[messageCount];
         for (int i = 0; i < messageCount; i++)
@@ -487,10 +518,10 @@ public class ArchiveTest
             totalDataLength += BitUtil.align(messageLengths[i], FrameDescriptor.FRAME_ALIGNMENT);
         }
 
-        trackRecordingProgress(recordingEvents, waitForData);
+        progressTracker = trackRecordingProgress(recordingEvents, streamConsumedLatch);
     }
 
-    private void publishDataToRecorded(final Publication publication, final int messageCount)
+    private void publishDataToBeRecorded(final Publication publication, final int messageCount)
     {
         startPosition = publication.position();
 
@@ -501,26 +532,23 @@ public class ArchiveTest
         {
             final int dataLength = messageLengths[i] - HEADER_LENGTH;
             buffer.putInt(0, i);
-            TestUtil.offer(publication, buffer, dataLength);
-        }
 
-        final long position = publication.position();
-        totalRecordingLength = position - startPosition;
-        stopPosition = position;
-    }
+            while (true)
+            {
+                final long result = publication.offer(buffer, 0, dataLength);
+                if (result > 0)
+                {
+                    break;
+                }
 
-    private void publishDataToRecorded(final ExclusivePublication publication, final int messageCount)
-    {
-        startPosition = publication.position();
+                if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
+                {
+                    throw new IllegalStateException("Publication not connected: result=" + result);
+                }
 
-        buffer.setMemory(0, 1024, (byte)'z');
-        buffer.putStringAscii(32, "TEST");
-
-        for (int i = 0; i < messageCount; i++)
-        {
-            final int dataLength = messageLengths[i] - HEADER_LENGTH;
-            buffer.putInt(0, i);
-            TestUtil.offer(publication, buffer, dataLength);
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
         }
 
         final long position = publication.position();
@@ -535,21 +563,25 @@ public class ArchiveTest
         final int maxPayloadLength,
         final int termBufferLength)
     {
-        try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
+        try (Subscription replay = client.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
         {
             final long replayCorrelationId = correlationId++;
 
-            TestUtil.await(() -> archiveProxy.replay(
+            if (!archiveProxy.replay(
                 recordingId,
                 startPosition,
                 totalRecordingLength,
                 REPLAY_URI,
                 REPLAY_STREAM_ID,
                 replayCorrelationId,
-                controlSessionId));
+                controlSessionId))
+            {
+                throw new IllegalStateException("Failed to replay");
+            }
 
             TestUtil.awaitOk(controlResponse, replayCorrelationId);
             TestUtil.await(replay::isConnected);
+
             final Image image = replay.images().get(0);
             assertThat(image.initialTermId(), is(initialTermId));
             assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
@@ -561,7 +593,12 @@ public class ArchiveTest
 
             while (remaining > 0)
             {
-                TestUtil.poll(replay, this::validateFragment2);
+                final int fragments = replay.poll(this::validateFragment2, 10);
+                if (0 == fragments)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
             }
 
             assertThat(this.messageCount, is(messageCount));
@@ -569,48 +606,54 @@ public class ArchiveTest
         }
     }
 
-    private void validateArchiveFile(final int messageCount, final long recordingId) throws IOException
+    private void validateArchiveFile(final int messageCount, final long recordingId)
     {
-        remaining = totalDataLength;
         final File archiveDir = archive.context().archiveDir();
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, System::currentTimeMillis);
-             RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
-                 catalog,
-                 catalog.recordingSummary(recordingId, new RecordingSummary()),
-                 archiveDir,
-                 RecordingFragmentReader.NULL_POSITION,
-                 RecordingFragmentReader.NULL_LENGTH,
-                 null))
+        final Catalog catalog = archive.context().catalog();
+        remaining = totalDataLength;
+        this.messageCount = 0;
+
+        while (catalog.stopPosition(recordingId) != stopPosition)
         {
-            this.messageCount = 0;
-            remaining = totalDataLength;
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
+            catalog,
+            catalog.recordingSummary(recordingId, new RecordingSummary()),
+            archiveDir,
+            NULL_POSITION,
+            RecordingFragmentReader.NULL_LENGTH,
+            null))
+        {
             while (!archiveDataFileReader.isDone())
             {
                 archiveDataFileReader.controlledPoll(this::validateFragment1, messageCount);
+                SystemTest.checkInterruptedStatus();
             }
-
-            assertThat(remaining, is(0L));
-            assertThat(this.messageCount, is(messageCount));
         }
+
+        assertThat(remaining, is(0L));
+        assertThat(this.messageCount, is(messageCount));
     }
 
-    @SuppressWarnings("SameReturnValue")
     private boolean validateFragment1(final UnsafeBuffer buffer, final int offset, final int length)
     {
-        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight();
-        headerFlyweight.wrap(buffer.addressOffset() + offset - HEADER_LENGTH, HEADER_LENGTH);
-        if (headerFlyweight.headerType() == HDR_TYPE_PAD)
+        if (!FrameDescriptor.isPaddingFrame(buffer, offset - HEADER_LENGTH))
         {
-            return true;
+            final int expectedLength = messageLengths[messageCount] - HEADER_LENGTH;
+            if (length != expectedLength)
+            {
+                fail("Message length=" + length + " expected=" + expectedLength + " messageCount=" + messageCount);
+            }
+
+            assertThat(buffer.getInt(offset), is(messageCount));
+            assertThat(buffer.getByte(offset + 4), is((byte)'z'));
+
+            remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
+            messageCount++;
         }
-
-        final int expectedLength = messageLengths[messageCount] - HEADER_LENGTH;
-        assertThat("on fragment[" + messageCount + "]", length, is(expectedLength));
-        assertThat(buffer.getInt(offset), is(messageCount));
-        assertThat(buffer.getByte(offset + 4), is((byte)'z'));
-
-        remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
-        messageCount++;
 
         return true;
     }
@@ -624,19 +667,17 @@ public class ArchiveTest
         assertThat(length, is(messageLengths[messageCount] - HEADER_LENGTH));
         assertThat(buffer.getInt(offset), is(messageCount));
         assertThat(buffer.getByte(offset + 4), is((byte)'z'));
+
         remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
         messageCount++;
     }
 
-    private void trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch waitForData)
+    private Thread trackRecordingProgress(final Subscription recordingEvents, final CountDownLatch streamConsumed)
     {
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
             new FailRecordingEventsListener()
             {
-                public void onProgress(
-                    final long recordingId0,
-                    final long startPosition,
-                    final long position)
+                public void onProgress(final long recordingId0, final long startPosition, final long position)
                 {
                     assertThat(recordingId0, is(recordingId));
                     recorded = position - startPosition;
@@ -652,11 +693,12 @@ public class ArchiveTest
                 {
                     recorded = 0;
 
-                    while (stopPosition == -1 || recorded < totalRecordingLength)
+                    while (stopPosition == NULL_POSITION || recorded < totalRecordingLength)
                     {
                         if (recordingEventsAdapter.poll() == 0)
                         {
-                            LockSupport.parkNanos(1);
+                            SystemTest.checkInterruptedStatus();
+                            SystemTest.sleep(1);
                         }
                     }
                 }
@@ -666,15 +708,17 @@ public class ArchiveTest
                     trackerError = throwable;
                 }
 
-                waitForData.countDown();
+                streamConsumed.countDown();
             });
 
         thread.setDaemon(true);
         thread.setName("recording-progress-tracker");
         thread.start();
+
+        return thread;
     }
 
-    private void validateActiveRecordingReplay(
+    private Thread validateActiveRecordingReplay(
         final ArchiveProxy archiveProxy,
         final int termBufferLength,
         final int initialTermId,
@@ -685,27 +729,28 @@ public class ArchiveTest
         final Thread thread = new Thread(
             () ->
             {
-                do
+                while (0 == recorded)
                 {
-                    LockSupport.parkNanos(1000000);
+                    SystemTest.sleep(1);
                 }
-                while (recorded == 0);
 
-                try (Subscription replay = publishingClient.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
+                try (Subscription replay = client.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
                 {
                     final long replayCorrelationId = correlationId++;
 
-                    TestUtil.await(() -> archiveProxy.replay(
+                    if (!archiveProxy.replay(
                         recordingId,
                         startPosition,
                         Long.MAX_VALUE,
                         REPLAY_URI,
                         REPLAY_STREAM_ID,
                         replayCorrelationId,
-                        controlSessionId));
+                        controlSessionId))
+                    {
+                        throw new IllegalStateException("Failed to start replay");
+                    }
 
                     TestUtil.awaitOk(controlResponse, replayCorrelationId);
-
                     TestUtil.await(replay::isConnected);
 
                     final Image image = replay.images().get(0);
@@ -719,7 +764,12 @@ public class ArchiveTest
 
                     while (this.messageCount < messageCount)
                     {
-                        TestUtil.poll(replay, this::validateFragment2);
+                        final int fragments = replay.poll(this::validateFragment2, 10);
+                        if (0 == fragments)
+                        {
+                            SystemTest.checkInterruptedStatus();
+                            Thread.yield();
+                        }
                     }
 
                     waitForData.countDown();
@@ -729,5 +779,7 @@ public class ArchiveTest
         thread.setName("replay-consumer");
         thread.setDaemon(true);
         thread.start();
+
+        return thread;
     }
 }

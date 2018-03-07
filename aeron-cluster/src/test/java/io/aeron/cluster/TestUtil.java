@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,15 @@
  */
 package io.aeron.cluster;
 
-@FunctionalInterface
-public interface TimerServiceSupplier
+import static org.junit.Assert.fail;
+
+public class TestUtil
 {
-    TimerService newTimerService(SequencerAgent sequencerAgent);
+    public static void checkInterruptedStatus()
+    {
+        if (Thread.currentThread().isInterrupted())
+        {
+            fail("Unexpected interrupt - Test likely to have timed out");
+        }
+    }
 }

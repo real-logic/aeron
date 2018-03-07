@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,13 +46,14 @@ public class GapFillLossTest
 
     private static final AtomicLong FINAL_POSITION = new AtomicLong(Long.MAX_VALUE);
 
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldGapFillWhenLossOccurs() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_LENGTH));
         srcBuffer.setMemory(0, MSG_LENGTH, (byte)7);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH);
 
@@ -64,23 +65,21 @@ public class GapFillLossTest
         final LossGenerator noLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 
-        ctx.sendChannelEndpointSupplier(
-            (udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
-                udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
+        ctx.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
+            udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
         ctx.receiveChannelEndpointSupplier(
             (udpChannel, dispatcher, statusIndicator, context) -> new DebugReceiveChannelEndpoint(
-                udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
+            udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect();
-             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID))
+            Aeron aeron = Aeron.connect();
+            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID))
         {
-            final IdleStrategy idleStrategy = new YieldingIdleStrategy();
-
             final Subscriber subscriber = new Subscriber(subscription);
             final Thread subscriberThread = new Thread(subscriber);
+            subscriberThread.setDaemon(true);
             subscriberThread.start();
 
             long position = 0;
@@ -90,7 +89,8 @@ public class GapFillLossTest
 
                 while ((position = publication.offer(srcBuffer)) < 0L)
                 {
-                    idleStrategy.idle();
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
                 }
             }
 
@@ -118,18 +118,26 @@ public class GapFillLossTest
 
         public void run()
         {
-            final IdleStrategy idleStrategy = new YieldingIdleStrategy();
-
             while (!subscription.isConnected())
             {
-                idleStrategy.idle();
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
             }
 
             final Image image = subscription.imageAtIndex(0);
 
             while (image.position() < FINAL_POSITION.get())
             {
-                idleStrategy.idle(subscription.poll(this, FRAGMENT_COUNT_LIMIT));
+                final int fragments = subscription.poll(this, FRAGMENT_COUNT_LIMIT);
+                if (0 == fragments)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    if (subscription.isClosed())
+                    {
+                        return;
+                    }
+                }
+                Thread.yield();
             }
         }
 

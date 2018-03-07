@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ class ControlRequestAdapter implements FragmentHandler
     private final ListRecordingsRequestDecoder listRecordingsRequestDecoder = new ListRecordingsRequestDecoder();
     private final ListRecordingsForUriRequestDecoder listRecordingsForUriRequestDecoder =
         new ListRecordingsForUriRequestDecoder();
+    private final ListRecordingRequestDecoder listRecordingRequestDecoder = new ListRecordingRequestDecoder();
+    private final ExtendRecordingRequestDecoder extendRecordingRequestDecoder = new ExtendRecordingRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -156,6 +158,35 @@ class ControlRequestAdapter implements FragmentHandler
                     listRecordingsForUriRequestDecoder.recordCount(),
                     listRecordingsForUriRequestDecoder.streamId(),
                     listRecordingsForUriRequestDecoder.channel());
+                break;
+
+            case ListRecordingRequestDecoder.TEMPLATE_ID:
+                listRecordingRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onListRecording(
+                    listRecordingRequestDecoder.controlSessionId(),
+                    listRecordingRequestDecoder.correlationId(),
+                    listRecordingRequestDecoder.recordingId());
+                break;
+
+            case ExtendRecordingRequestDecoder.TEMPLATE_ID:
+                extendRecordingRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onExtendRecording(
+                    extendRecordingRequestDecoder.controlSessionId(),
+                    extendRecordingRequestDecoder.correlationId(),
+                    extendRecordingRequestDecoder.recordingId(),
+                    extendRecordingRequestDecoder.streamId(),
+                    extendRecordingRequestDecoder.channel(),
+                    extendRecordingRequestDecoder.sourceLocation());
                 break;
 
             default:

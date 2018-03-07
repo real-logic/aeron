@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,14 +25,13 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
 
-import static io.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_PUBLICATIONS;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Encapsulation of a LogBuffer used directly between publishers and subscribers for IPC.
  */
-public class IpcPublication implements DriverManagedResource, Subscribable
+public final class IpcPublication implements DriverManagedResource, Subscribable
 {
     enum State
     {
@@ -43,6 +42,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
     private final long registrationId;
     private final long unblockTimeoutNs;
+    private final long lingerTimeoutNs;
     private final int sessionId;
     private final int streamId;
     private final int tripGain;
@@ -74,6 +74,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         final Position publisherLimit,
         final RawLog rawLog,
         final long unblockTimeoutNs,
+        final long lingerTimeoutNs,
         final long nowNs,
         final SystemCounters systemCounters,
         final boolean isExclusive)
@@ -87,12 +88,13 @@ public class IpcPublication implements DriverManagedResource, Subscribable
 
         final int termLength = rawLog.termLength();
         this.termBufferLength = termLength;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        this.positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         this.termWindowLength = Configuration.ipcPublicationTermWindowLength(termLength);
         this.tripGain = termWindowLength / 8;
         this.publisherLimit = publisherLimit;
         this.rawLog = rawLog;
         this.unblockTimeoutNs = unblockTimeoutNs;
+        this.lingerTimeoutNs = lingerTimeoutNs;
         this.unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
         this.metaDataBuffer = rawLog.metaData();
 
@@ -162,13 +164,8 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         }
     }
 
-    int updatePublishersLimit()
+    int updatePublisherLimit()
     {
-        if (State.ACTIVE != state)
-        {
-            return 0;
-        }
-
         int workCount = 0;
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = consumerPosition;
@@ -260,7 +257,7 @@ public class IpcPublication implements DriverManagedResource, Subscribable
                 break;
 
             case LINGER:
-                if (timeNs > (timeOfLastStateChangeNs + PUBLICATION_LINGER_NS))
+                if (timeNs > (timeOfLastStateChangeNs + lingerTimeoutNs))
                 {
                     reachedEndOfLife = true;
                     conductor.cleanupIpcPublication(this);
@@ -274,37 +271,18 @@ public class IpcPublication implements DriverManagedResource, Subscribable
         return reachedEndOfLife;
     }
 
-    public void timeOfLastStateChange(final long timeNs)
+    public void incRef()
     {
-        timeOfLastStateChangeNs = timeNs;
+        ++refCount;
     }
 
-    public long timeOfLastStateChange()
+    public void decRef()
     {
-        return timeOfLastStateChangeNs;
-    }
-
-    public void delete()
-    {
-        close();
-    }
-
-    public int incRef()
-    {
-        return ++refCount;
-    }
-
-    public int decRef()
-    {
-        final int count = --refCount;
-
-        if (0 == count)
+        if (0 == --refCount)
         {
             state = State.INACTIVE;
             LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition());
         }
-
-        return count;
     }
 
     long consumerPosition()

@@ -23,7 +23,7 @@ public class ListRecordingsSessionTest
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private long[] recordingIds = new long[3];
-    private final File archiveDir = TestUtil.makeTempDir();
+    private final File archiveDir = TestUtil.makeTestDirectory();
     private final EpochClock clock = mock(EpochClock.class);
 
     private Catalog catalog;
@@ -47,7 +47,7 @@ public class ListRecordingsSessionTest
     @After
     public void after()
     {
-        CloseHelper.quietClose(catalog);
+        CloseHelper.close(catalog);
         IoUtil.delete(archiveDir, false);
     }
 

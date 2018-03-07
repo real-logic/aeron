@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,5 +54,15 @@ interface ControlRequestListener
         int streamId,
         String channel);
 
+    void onListRecording(long controlSessionId, long correlationId, long recordingId);
+
     void onStopReplay(long controlSessionId, long correlationId, long replaySessionId);
+
+    void onExtendRecording(
+        long controlSessionId,
+        long correlationId,
+        long recordingId,
+        int streamId,
+        String channel,
+        SourceLocation sourceLocation);
 }

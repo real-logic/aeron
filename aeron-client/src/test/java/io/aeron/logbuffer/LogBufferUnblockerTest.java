@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class LogBufferUnblockerTest
     private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(allocateDirect(LOG_META_DATA_LENGTH)));
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
 
-    private final int positionBitsToShift = Integer.numberOfTrailingZeros(TERM_LENGTH);
+    private final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(TERM_LENGTH);
 
     @Before
     public void setUp()

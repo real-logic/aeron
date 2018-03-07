@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
  */
 package io.aeron;
 
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -45,26 +47,35 @@ public class FragmentedMessageTest
     @DataPoint
     public static final String MULTICAST_CHANNEL = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
 
-    public static final int STREAM_ID = 1;
-    public static final int FRAGMENT_COUNT_LIMIT = 10;
+    private static final int STREAM_ID = 1;
+    private static final int FRAGMENT_COUNT_LIMIT = 10;
 
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
 
+    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .errorHandler(Throwable::printStackTrace)
+        .threadingMode(ThreadingMode.SHARED));
+
+    private final Aeron aeron = Aeron.connect();
+
+    @After
+    public void after()
+    {
+        CloseHelper.close(aeron);
+        CloseHelper.close(driver);
+        driver.context().deleteAeronDirectory();
+    }
+
     @Theory
-    @Test(timeout = 10000)
+    @Test(timeout = 10_000)
     public void shouldReceivePublishedMessage(final String channel)
     {
         final FragmentAssembler assembler = new FragmentAssembler(mockFragmentHandler);
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .aeronDirectoryName(CommonContext.generateRandomDirName())
-            .threadingMode(ThreadingMode.SHARED);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
-             Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(ctx.aeronDirectoryName()));
-             Publication publication = aeron.addPublication(channel, STREAM_ID);
-             Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+        try (Publication publication = aeron.addPublication(channel, STREAM_ID);
+            Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
         {
-            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[ctx.mtuLength() * 4]);
+            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[driver.context().mtuLength() * 4]);
             final int offset = 0;
             final int length = srcBuffer.capacity() / 4;
 
@@ -75,6 +86,7 @@ public class FragmentedMessageTest
 
             while (publication.offer(srcBuffer, offset, srcBuffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -82,7 +94,13 @@ public class FragmentedMessageTest
             int numFragments = 0;
             do
             {
-                numFragments += subscription.poll(assembler, FRAGMENT_COUNT_LIMIT);
+                final int fragments = subscription.poll(assembler, FRAGMENT_COUNT_LIMIT);
+                if (0 == fragments)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
+                numFragments += fragments;
             }
             while (numFragments < expectedFragmentsBecauseOfHeader);
 
@@ -99,10 +117,6 @@ public class FragmentedMessageTest
             }
 
             assertThat(headerArg.getValue().flags(), is(END_FRAG_FLAG));
-        }
-        finally
-        {
-            ctx.deleteAeronDirectory();
         }
     }
 }

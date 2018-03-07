@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.nio.ByteOrder;
 
 import static java.lang.Integer.reverseBytes;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static io.aeron.protocol.DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET;
 import static io.aeron.protocol.DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET;
 import static io.aeron.protocol.DataHeaderFlyweight.TERM_OFFSET_FIELD_OFFSET;
@@ -36,23 +35,33 @@ import static io.aeron.protocol.HeaderFlyweight.VERSION_FIELD_OFFSET;
  */
 public class HeaderWriter
 {
-    private final long versionFlagsType;
-    private final long sessionId;
-    private final long streamId;
+    protected final long versionFlagsType;
+    protected final long sessionId;
+    protected final long streamId;
 
-    public HeaderWriter(final UnsafeBuffer defaultHeader)
+    protected HeaderWriter(final long versionFlagsType, final long sessionId, final long streamId)
     {
-        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
+        this.versionFlagsType = versionFlagsType;
+        this.sessionId = sessionId;
+        this.streamId = streamId;
+    }
+
+    HeaderWriter(final UnsafeBuffer defaultHeader)
+    {
+        versionFlagsType = ((long)defaultHeader.getInt(VERSION_FIELD_OFFSET)) << 32;
+        sessionId = ((long)defaultHeader.getInt(SESSION_ID_FIELD_OFFSET)) << 32;
+        streamId = defaultHeader.getInt(STREAM_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
+    }
+
+    public static HeaderWriter newInstance(final UnsafeBuffer defaultHeader)
+    {
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN)
         {
-            versionFlagsType = ((long)defaultHeader.getInt(VERSION_FIELD_OFFSET)) << 32;
-            sessionId = ((long)defaultHeader.getInt(SESSION_ID_FIELD_OFFSET)) << 32;
-            streamId = defaultHeader.getInt(STREAM_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
+            return new HeaderWriter(defaultHeader);
         }
         else
         {
-            versionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL;
-            sessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
-            streamId = ((long)defaultHeader.getInt(STREAM_ID_FIELD_OFFSET)) << 32;
+            return new NativeBigEndianHeaderWriter(defaultHeader);
         }
     }
 
@@ -66,27 +75,31 @@ public class HeaderWriter
      */
     public void write(final UnsafeBuffer termBuffer, final int offset, final int length, final int termId)
     {
-        final long lengthVersionFlagsType;
-        final long termOffsetSessionId;
-        final long streamAndTermIds;
-
-        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
-        {
-            lengthVersionFlagsType = versionFlagsType | ((-length) & 0xFFFF_FFFFL);
-            termOffsetSessionId = sessionId | offset;
-            streamAndTermIds = streamId | (((long)termId) << 32);
-        }
-        else
-        {
-            lengthVersionFlagsType = versionFlagsType | ((((long)reverseBytes(-length))) << 32);
-            termOffsetSessionId = sessionId | ((((long)reverseBytes(offset))) << 32);
-            streamAndTermIds = streamId | (reverseBytes(termId) & 0xFFFF_FFFFL);
-        }
-
-        termBuffer.putLong(offset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
+        termBuffer.putLong(offset + FRAME_LENGTH_FIELD_OFFSET, versionFlagsType | ((-length) & 0xFFFF_FFFFL));
         UnsafeAccess.UNSAFE.storeFence();
 
-        termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, termOffsetSessionId);
-        termBuffer.putLong(offset + STREAM_ID_FIELD_OFFSET, streamAndTermIds);
+        termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, sessionId | offset);
+        termBuffer.putLong(offset + STREAM_ID_FIELD_OFFSET, streamId | (((long)termId) << 32));
+    }
+}
+
+class NativeBigEndianHeaderWriter extends HeaderWriter
+{
+    NativeBigEndianHeaderWriter(final UnsafeBuffer defaultHeader)
+    {
+        super(
+            defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL,
+            defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL,
+            ((long)defaultHeader.getInt(STREAM_ID_FIELD_OFFSET)) << 32);
+    }
+
+    public void write(final UnsafeBuffer termBuffer, final int offset, final int length, final int termId)
+    {
+        termBuffer.putLong(
+            offset + FRAME_LENGTH_FIELD_OFFSET, versionFlagsType | ((((long)reverseBytes(-length))) << 32));
+        UnsafeAccess.UNSAFE.storeFence();
+
+        termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, sessionId | ((((long)reverseBytes(offset))) << 32));
+        termBuffer.putLong(offset + STREAM_ID_FIELD_OFFSET, streamId | (reverseBytes(termId) & 0xFFFF_FFFFL));
     }
 }

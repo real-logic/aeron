@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014 - 2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@
 #include "concurrent/aeron_mpsc_rb.h"
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "aeron_agent.h"
+#include "concurrent/aeron_counters_manager.h"
 
 inline static const char *tmp_dir()
 {
@@ -192,6 +193,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     }
 
     _context->agent_on_start_func = NULL;
+    _context->agent_on_start_state = NULL;
 
     if ((_context->unicast_flow_control_supplier_func =
         aeron_flow_control_strategy_supplier_load("aeron_unicast_flow_control_strategy_supplier")) == NULL)
@@ -229,14 +231,16 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->to_driver_buffer_length = 1024 * 1024 + AERON_RB_TRAILER_LENGTH;
     _context->to_clients_buffer_length = 1024 * 1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH;
     _context->counters_values_buffer_length = 1024 * 1024;
-    _context->counters_metadata_buffer_length = _context->counters_values_buffer_length * 2;
+    _context->counters_metadata_buffer_length =
+        _context->counters_values_buffer_length *
+        (AERON_COUNTERS_MANAGER_METADATA_LENGTH / AERON_COUNTERS_MANAGER_VALUE_LENGTH);
     _context->error_buffer_length = 1024 * 1024;
     _context->client_liveness_timeout_ns = 5 * 1000 * 1000 * 1000L;
     _context->timer_interval_ns = 1 * 1000 * 1000 * 1000L;
     _context->term_buffer_length = 16 * 1024 * 1024;
     _context->ipc_term_buffer_length = 64 * 1024 * 1024;
-    _context->mtu_length = 4096;
-    _context->ipc_mtu_length = 4096;
+    _context->mtu_length = 1408;
+    _context->ipc_mtu_length = 1408;
     _context->ipc_publication_window_length = 0;
     _context->publication_window_length = 0;
     _context->publication_linger_timeout_ns = 5 * 1000 * 1000 * 1000L;
@@ -251,6 +255,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->file_page_size = 4 * 1024;
     _context->publication_unblock_timeout_ns = 10 * 1000 * 1000 * 1000L;
     _context->publication_connection_timeout_ns = 5 * 1000 * 1000 * 1000L;
+    _context->counter_free_to_reuse_ns = 1 * 1000 * 1000 * 1000L;
 
     /* set from env */
     char *value = NULL;
@@ -349,7 +354,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             1024,
             INT32_MAX);
 
-    _context->counters_metadata_buffer_length = _context->counters_values_buffer_length * 2;
+    _context->counters_metadata_buffer_length =
+        _context->counters_values_buffer_length *
+        (AERON_COUNTERS_MANAGER_METADATA_LENGTH / AERON_COUNTERS_MANAGER_VALUE_LENGTH);
 
     _context->error_buffer_length =
         aeron_config_parse_uint64(
@@ -498,6 +505,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             1000,
             INT64_MAX);
 
+    _context->counter_free_to_reuse_ns =
+        aeron_config_parse_uint64(
+            getenv(AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_ENV_VAR),
+            _context->counter_free_to_reuse_ns,
+            0,
+            INT64_MAX);
+
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
     _context->counters_values_buffer = NULL;
@@ -630,7 +644,7 @@ bool aeron_is_driver_active_with_cnc(
     {
         if (aeron_epochclock() > (now + timeout))
         {
-            snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version 0 for timeout");
+            snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version was 0 for timeout");
             return false;
         }
 
@@ -639,7 +653,10 @@ bool aeron_is_driver_active_with_cnc(
 
     if (AERON_CNC_VERSION != cnc_version)
     {
-        snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version not understood: version=%d", cnc_version);
+        snprintf(
+            buffer, sizeof(buffer) - 1,
+            "ERROR: aeron cnc version does not match: file version=%d software version=%d",
+            cnc_version, AERON_CNC_VERSION);
         log_func(buffer);
     }
     else

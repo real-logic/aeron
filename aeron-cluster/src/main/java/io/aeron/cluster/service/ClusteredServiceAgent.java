@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,108 +18,138 @@ package io.aeron.cluster.service;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.RecordingInfo;
+import io.aeron.cluster.ClusterMarkFile;
 import io.aeron.cluster.codecs.*;
-import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
-public class ClusteredServiceAgent implements
-    ControlledFragmentHandler, Agent, Cluster, AvailableImageHandler, UnavailableImageHandler
+import java.util.Collection;
+
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static java.util.Collections.unmodifiableCollection;
+
+final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 {
-    /**
-     * Length of the session header that will be precede application protocol message.
-     */
-    public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
-
-    private static final int SEND_ATTEMPTS = 3;
-    private static final int FRAGMENT_LIMIT = 10;
-    private static final int INITIAL_BUFFER_LENGTH = 4096;
-
-    private long timestampMs;
+    private final int serviceId;
+    private boolean isRecovering;
     private final boolean shouldCloseResources;
-    private final boolean useAeronAgentInvoker;
-    private final Aeron aeron;
-    private final AgentInvoker aeronAgentInvoker;
-    private final ClusteredService service;
-    private final Subscription logSubscription;
-    private final ExclusivePublication timerPublication;
-    private final ControlledFragmentAssembler fragmentAssembler =
-        new ControlledFragmentAssembler(this, INITIAL_BUFFER_LENGTH, true);
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
-    private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
-    private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
-    private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
-    private final BufferClaim bufferClaim = new BufferClaim();
-    private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final ScheduleTimerRequestEncoder scheduleTimerRequestEncoder = new ScheduleTimerRequestEncoder();
-    private final CancelTimerRequestEncoder cancelTimerRequestEncoder = new CancelTimerRequestEncoder();
-
-    private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
-
-    private final ClusterRecordingEventLog recordingEventLog;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
+    private final Aeron aeron;
+    private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
+    private final Collection<ClientSession> readOnlyClientSessions = unmodifiableCollection(sessionByIdMap.values());
+    private final ClusteredService service;
+    private final ServiceControlPublisher serviceControlPublisher;
+    private final ServiceControlAdapter serviceControlAdapter;
+    private final IdleStrategy idleStrategy;
+    private final RecordingLog recordingLog;
+    private final EpochClock epochClock;
+    private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
+    private final ClusterMarkFile markFile;
 
-    private ReadableCounter recPositionCounter;
-    private volatile Image latestLogImage;
+    private long baseLogPosition;
+    private long leadershipTermId;
+    private long timestampMs;
+    private BoundedLogAdapter logAdapter;
+    private ActiveLog activeLog;
+    private ReadableCounter roleCounter;
+    private Role role = Role.FOLLOWER;
 
-    public ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
+    ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
         this.ctx = ctx;
 
+        archiveCtx = ctx.archiveContext();
         aeron = ctx.aeron();
         shouldCloseResources = ctx.ownsAeronClient();
-        useAeronAgentInvoker = aeron.context().useConductorAgentInvoker();
-        aeronAgentInvoker = aeron.conductorAgentInvoker();
         service = ctx.clusteredService();
-        logSubscription = aeron.addSubscription(ctx.logChannel(), ctx.logStreamId(), this, this);
-        timerPublication = aeron.addExclusivePublication(ctx.timerChannel(), ctx.timerStreamId());
-        recordingEventLog = ctx.clusterRecordingEventLog();
-        archiveCtx = ctx.archiveContext();
+        recordingLog = ctx.recordingLog();
+        idleStrategy = ctx.idleStrategy();
+        serviceId = ctx.serviceId();
+        epochClock = ctx.epochClock();
+        markFile = ctx.clusterMarkFile();
+
+        serviceControlPublisher = new ServiceControlPublisher(
+            aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceControlStreamId()));
+
+        serviceControlAdapter = new ServiceControlAdapter(
+            aeron.addSubscription(ctx.serviceControlChannel(), ctx.serviceControlStreamId()), this);
     }
 
     public void onStart()
     {
         service.onStart(this);
-        replayPreviousLogs();
+
+        final CountersReader counters = aeron.countersReader();
+        final int recoveryCounterId = awaitRecoveryCounter(counters);
+
+        isRecovering = true;
+        checkForSnapshot(counters, recoveryCounterId);
+        checkForReplay(counters, recoveryCounterId);
+        isRecovering = false;
+
+        joinActiveLog(counters);
+
+        roleCounter = awaitClusterRoleCounter(counters);
+        role(Role.get((int)roleCounter.get()));
+
+        if (Role.LEADER == role)
+        {
+            for (final ClientSession session : sessionByIdMap.values())
+            {
+                session.connect(aeron);
+            }
+        }
     }
 
     public void onClose()
     {
         if (shouldCloseResources)
         {
-            CloseHelper.close(logSubscription);
-            CloseHelper.close(timerPublication);
+            CloseHelper.close(logAdapter);
+            CloseHelper.close(serviceControlPublisher);
+            CloseHelper.close(serviceControlAdapter);
 
             for (final ClientSession session : sessionByIdMap.values())
             {
-                CloseHelper.close(session.responsePublication());
+                session.disconnect();
             }
-
-            CloseHelper.close(recordingEventLog);
         }
     }
 
     public int doWork()
     {
-        int workCount = 0;
-
-        workCount += invokeAeronClient();
-
-        if (null != latestLogImage)
+        final long nowMs = epochClock.time();
+        if (cachedEpochClock.time() != nowMs)
         {
-            workCount +=
-                latestLogImage.boundedControlledPoll(fragmentAssembler, recPositionCounter.get(), FRAGMENT_LIMIT);
+            markFile.updateActivityTimestamp(nowMs);
+            cachedEpochClock.update(nowMs);
+        }
+
+        int workCount = logAdapter.poll();
+        if (0 == workCount)
+        {
+            if (logAdapter.image().isClosed())
+            {
+                throw new AgentTerminationException("Image closed unexpectedly");
+            }
+
+            if (!CommitPos.isActive(aeron.countersReader(), logAdapter.upperBoundCounterId()))
+            {
+                throw new AgentTerminationException("Commit position is not active");
+            }
+        }
+
+        workCount += serviceControlAdapter.poll();
+        if (activeLog != null)
+        {
+            // TODO: handle new log case
+            activeLog = null;
         }
 
         return workCount;
@@ -127,98 +157,38 @@ public class ClusteredServiceAgent implements
 
     public String roleName()
     {
-        return "clustered-service";
+        return ctx.serviceName();
     }
 
-    public ControlledFragmentHandler.Action onFragment(
-        final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public Cluster.Role role()
     {
-        messageHeaderDecoder.wrap(buffer, offset);
+        return role;
+    }
 
-        final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
-        {
-            case SessionHeaderDecoder.TEMPLATE_ID:
-            {
-                sessionHeaderDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                timestampMs = sessionHeaderDecoder.timestamp();
-                service.onSessionMessage(
-                    sessionHeaderDecoder.clusterSessionId(),
-                    sessionHeaderDecoder.correlationId(),
-                    timestampMs,
-                    buffer,
-                    offset + SESSION_HEADER_LENGTH,
-                    length - SESSION_HEADER_LENGTH,
-                    header);
-
-                break;
-            }
-
-            case TimerEventDecoder.TEMPLATE_ID:
-            {
-                timerEventDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                timestampMs = timerEventDecoder.timestamp();
-                service.onTimerEvent(timerEventDecoder.correlationId(), timestampMs);
-                break;
-            }
-
-            case SessionOpenEventDecoder.TEMPLATE_ID:
-            {
-                openEventDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                final long sessionId = openEventDecoder.clusterSessionId();
-                final ClientSession session = new ClientSession(
-                    sessionId,
-                    aeron.addExclusivePublication(
-                        openEventDecoder.responseChannel(),
-                        openEventDecoder.responseStreamId()),
-                    this);
-
-                sessionByIdMap.put(sessionId, session);
-                timestampMs = openEventDecoder.timestamp();
-                service.onSessionOpen(session, timestampMs);
-                break;
-            }
-
-            case SessionCloseEventDecoder.TEMPLATE_ID:
-            {
-                closeEventDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                final ClientSession session = sessionByIdMap.remove(closeEventDecoder.clusterSessionId());
-                if (null != session)
-                {
-                    timestampMs = closeEventDecoder.timestamp();
-                    session.responsePublication().close();
-                    service.onSessionClose(session, timestampMs, closeEventDecoder.closeReason());
-                }
-                break;
-            }
-        }
-
-        return Action.CONTINUE;
+    public Aeron aeron()
+    {
+        return aeron;
     }
 
     public ClientSession getClientSession(final long clusterSessionId)
     {
         return sessionByIdMap.get(clusterSessionId);
+    }
+
+    public Collection<ClientSession> clientSessions()
+    {
+        return readOnlyClientSessions;
+    }
+
+    public boolean closeSession(final long clusterSessionId)
+    {
+        if (sessionByIdMap.containsKey(clusterSessionId))
+        {
+            serviceControlPublisher.closeSession(clusterSessionId);
+            return true;
+        }
+
+        return false;
     }
 
     public long timeMs()
@@ -228,178 +198,469 @@ public class ClusteredServiceAgent implements
 
     public void scheduleTimer(final long correlationId, final long deadlineMs)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerRequestEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            if (timerPublication.tryClaim(length, bufferClaim) > 0)
-            {
-                scheduleTimerRequestEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .deadline(deadlineMs);
-
-                bufferClaim.commit();
-
-                return;
-            }
-
-            Thread.yield();
-        }
-        while (--attempts > 0);
-
-        throw new IllegalStateException("Failed to schedule timer");
+        serviceControlPublisher.scheduleTimer(correlationId, deadlineMs);
     }
 
     public void cancelTimer(final long correlationId)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerRequestEncoder.BLOCK_LENGTH;
+        serviceControlPublisher.cancelTimer(correlationId);
+    }
 
-        int attempts = SEND_ATTEMPTS;
-        do
+    public void onJoinLog(
+        final long leadershipTermId,
+        final int commitPositionId,
+        final int logSessionId,
+        final int logStreamId,
+        final String logChannel)
+    {
+        activeLog = new ActiveLog(leadershipTermId, commitPositionId, logSessionId, logStreamId, logChannel);
+    }
+
+    void onSessionMessage(
+        final long clusterSessionId,
+        final long correlationId,
+        final long timestampMs,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
+    {
+        this.timestampMs = timestampMs;
+
+        service.onSessionMessage(
+            clusterSessionId,
+            correlationId,
+            timestampMs,
+            buffer,
+            offset,
+            length,
+            header);
+    }
+
+    void onTimerEvent(final long correlationId, final long timestampMs)
+    {
+        this.timestampMs = timestampMs;
+
+        service.onTimerEvent(correlationId, timestampMs);
+    }
+
+    void onSessionOpen(
+        final long clusterSessionId,
+        final long timestampMs,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] encodedPrincipal)
+    {
+        this.timestampMs = timestampMs;
+
+        final ClientSession session = new ClientSession(
+            clusterSessionId,
+            responseStreamId,
+            responseChannel,
+            encodedPrincipal,
+            this);
+
+        if (Role.LEADER == role)
         {
-            if (timerPublication.tryClaim(length, bufferClaim) > 0)
-            {
-                cancelTimerRequestEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId);
-
-                bufferClaim.commit();
-
-                return;
-            }
-
-            Thread.yield();
-        }
-        while (--attempts > 0);
-
-        throw new IllegalStateException("Failed to schedule timer");
-    }
-
-    public void onAvailableImage(final Image image)
-    {
-        // TODO: make sessionId specific?
-        latestLogImage = image;
-    }
-
-    public void onUnavailableImage(final Image image)
-    {
-        latestLogImage = null;
-    }
-
-    private void replayPreviousLogs()
-    {
-        try (AeronArchive aeronArchive = AeronArchive.connect(archiveCtx))
-        {
-            final IdleStrategy idleStrategy = new BackoffIdleStrategy(100, 100, 100, 1000);
-
-            final Long2ObjectHashMap<RecordingInfo> recordingsMap = RecordingInfo.mapRecordings(
-                aeronArchive, 0, 100, logSubscription.channel(), logSubscription.streamId());
-
-            if (recordingsMap.size() == 0)
-            {
-                throw new IllegalStateException("could not find any log recordings");
-            }
-
-            final RecordingInfo latestRecordingInfo = RecordingInfo.findLatestRecording(recordingsMap);
-            final CountersReader countersReader = aeron.countersReader();
-            final int recPosCounterId =
-                RecordingPos.findActiveRecordingPositionCounterId(countersReader, latestRecordingInfo.recordingId);
-
-            if (recPosCounterId == RecordingPos.NULL_COUNTER_ID)
-            {
-                throw new IllegalStateException("could not find latest recording recPosition counter Id");
-            }
-
-            recPositionCounter = new ReadableCounter(countersReader, recPosCounterId);
-
-            final MutableLong lastReplayedRecordingId = new MutableLong(-1);
-
-            recordingEventLog.forEach(
-                (id) ->
-                {
-                    final RecordingInfo recordingInfo = recordingsMap.get(id);
-                    lastReplayedRecordingId.value = id;
-
-                    replayRecording(idleStrategy, aeronArchive, recordingInfo);
-                });
-
-            while (!logSubscription.isConnected() && null == latestLogImage)
-            {
-                idleStrategy.idle(invokeAeronClient());
-            }
-
-            if (lastReplayedRecordingId.value != latestRecordingInfo.recordingId)
-            {
-                recordingEventLog.append(latestRecordingInfo.recordingId);
-            }
-        }
-    }
-
-    private void replayRecording(
-        final IdleStrategy idleStrategy, final AeronArchive aeronArchive, final RecordingInfo recordingInfo)
-    {
-        if (null == recordingInfo)
-        {
-            throw new IllegalStateException("could not find log recording");
+            session.connect(aeron);
         }
 
-        final long length = recordingInfo.stopPosition - recordingInfo.startPosition;
-        if (length == 0)
+        sessionByIdMap.put(clusterSessionId, session);
+        service.onSessionOpen(session, timestampMs);
+    }
+
+    void onSessionClose(final long clusterSessionId, final long timestampMs, final CloseReason closeReason)
+    {
+        this.timestampMs = timestampMs;
+
+        final ClientSession session = sessionByIdMap.remove(clusterSessionId);
+        session.disconnect();
+        service.onSessionClose(session, timestampMs, closeReason);
+    }
+
+    void onServiceAction(final long termPosition, final long timestampMs, final ClusterAction action)
+    {
+        this.timestampMs = timestampMs;
+
+        executeAction(action, termPosition);
+    }
+
+    void addSession(
+        final long clusterSessionId,
+        final int responseStreamId,
+        final String responseChannel,
+        final byte[] encodedPrincipal)
+    {
+        final ClientSession session = new ClientSession(
+            clusterSessionId,
+            responseStreamId,
+            responseChannel,
+            encodedPrincipal,
+            ClusteredServiceAgent.this);
+
+        sessionByIdMap.put(clusterSessionId, session);
+    }
+
+    private void role(final Role newRole)
+    {
+        if (newRole != role)
+        {
+            role = newRole;
+            service.onRoleChange(newRole);
+        }
+    }
+
+    private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
+    {
+        final long termPosition = RecoveryState.getTermPosition(counters, recoveryCounterId);
+        leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
+        timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
+
+        if (NULL_POSITION != termPosition)
+        {
+            final RecordingLog.Entry snapshotEntry = recordingLog.getSnapshot(leadershipTermId, termPosition);
+            if (null == snapshotEntry)
+            {
+                throw new IllegalStateException("No snapshot available for term position: " + termPosition);
+            }
+
+            baseLogPosition = snapshotEntry.logPosition;
+            loadSnapshot(snapshotEntry.recordingId);
+        }
+
+        serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.INIT);
+    }
+
+    private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
+    {
+        final long replayTermCount = RecoveryState.getReplayTermCount(counters, recoveryCounterId);
+        if (0 == replayTermCount)
         {
             return;
         }
 
-        try (Subscription replaySubscription = aeronArchive.replay(
-             recordingInfo.recordingId,
-             recordingInfo.startPosition,
-             length,
-             ctx.logReplayChannel(),
-             ctx.logReplayStreamId()))
+        service.onReplayBegin();
+
+        for (int i = 0; i < replayTermCount; i++)
         {
-            while (!replaySubscription.isConnected())
+            awaitActiveLog();
+
+            final int counterId = activeLog.commitPositionId;
+            baseLogPosition = CommitPos.getBaseLogPosition(counters, counterId);
+            leadershipTermId = CommitPos.getLeadershipTermId(counters, counterId);
+
+            try (Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId))
             {
-                idleStrategy.idle(invokeAeronClient());
+                serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.READY);
+
+                final Image image = awaitImage(activeLog.sessionId, subscription);
+                final ReadableCounter limit = new ReadableCounter(counters, counterId);
+                final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
+
+                consumeImage(image, adapter);
+
+                final long logPosition = baseLogPosition + image.position();
+                serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, ClusterAction.REPLAY);
+            }
+        }
+
+        service.onReplayEnd();
+    }
+
+    private void awaitActiveLog()
+    {
+        activeLog = null;
+        idleStrategy.reset();
+        while (true)
+        {
+            final int fragments = serviceControlAdapter.poll();
+            if (activeLog != null)
+            {
+                break;
             }
 
-            if (replaySubscription.imageCount() > 1)
+            checkInterruptedStatus();
+            idleStrategy.idle(fragments);
+        }
+    }
+
+    private void consumeImage(final Image image, final BoundedLogAdapter adapter)
+    {
+        while (true)
+        {
+            final int workCount = adapter.poll();
+            if (workCount == 0)
             {
-                throw new IllegalStateException("Only expected one replay");
-            }
-
-            final Image replayImage = replaySubscription.imageAtIndex(0);
-
-            while (replayImage.position() < recordingInfo.stopPosition)
-            {
-                invokeAeronClient();
-
-                final int workCount = replayImage.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
-                if (workCount == 0)
+                if (image.isClosed())
                 {
-                    if (replayImage.isClosed())
+                    if (!image.isEndOfStream())
                     {
                         throw new IllegalStateException("Unexpected close of replay");
                     }
 
-                    if (Thread.currentThread().isInterrupted())
-                    {
-                        throw new AgentTerminationException("Unexpected interrupt during replay");
-                    }
+                    break;
                 }
 
-                idleStrategy.idle(workCount);
+                checkInterruptedStatus();
+            }
+
+            idleStrategy.idle(workCount);
+        }
+    }
+
+    private int awaitRecoveryCounter(final CountersReader counters)
+    {
+        idleStrategy.reset();
+        int counterId = RecoveryState.findCounterId(counters);
+        while (CountersReader.NULL_COUNTER_ID == counterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+
+            counterId = RecoveryState.findCounterId(counters);
+        }
+
+        return counterId;
+    }
+
+    private void joinActiveLog(final CountersReader counters)
+    {
+        awaitActiveLog();
+
+        final int commitPositionId = activeLog.commitPositionId;
+        if (!CommitPos.isActive(counters, commitPositionId))
+        {
+            throw new IllegalStateException("CommitPos counter not active: " + commitPositionId);
+        }
+
+        final int logSessionId = activeLog.sessionId;
+        leadershipTermId = activeLog.leadershipTermId;
+        baseLogPosition = CommitPos.getBaseLogPosition(counters, commitPositionId);
+
+        final Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
+        final Image image = awaitImage(logSessionId, logSubscription);
+
+        serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.READY);
+
+        logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, commitPositionId), this);
+        activeLog = null;
+    }
+
+    private Image awaitImage(final int sessionId, final Subscription subscription)
+    {
+        idleStrategy.reset();
+        Image image;
+        while ((image = subscription.imageBySessionId(sessionId)) == null)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+        }
+
+        return image;
+    }
+
+    private ReadableCounter awaitClusterRoleCounter(final CountersReader counters)
+    {
+        idleStrategy.reset();
+        int counterId = ClusterNodeRole.findCounterId(counters);
+        while (CountersReader.NULL_COUNTER_ID == counterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+            counterId = ClusterNodeRole.findCounterId(counters);
+        }
+
+        return new ReadableCounter(counters, counterId);
+    }
+
+    private void loadSnapshot(final long recordingId)
+    {
+        try (AeronArchive archive = AeronArchive.connect(archiveCtx))
+        {
+            final RecordingExtent recordingExtent = new RecordingExtent();
+            if (0 == archive.listRecording(recordingId, recordingExtent))
+            {
+                throw new IllegalStateException("Could not find recordingId: " + recordingId);
+            }
+
+            final String channel = ctx.replayChannel();
+            final int streamId = ctx.replayStreamId();
+
+            final long length = recordingExtent.stopPosition - recordingExtent.startPosition;
+            final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
+
+            final String replaySessionChannel = ChannelUri.addSessionId(channel, sessionId);
+            try (Subscription subscription = aeron.addSubscription(replaySessionChannel, streamId))
+            {
+                final Image image = awaitImage(sessionId, subscription);
+                loadState(image);
+                service.onLoadSnapshot(image);
             }
         }
     }
 
-    private int invokeAeronClient()
+    private void loadState(final Image image)
     {
-        if (useAeronAgentInvoker)
+        final ServiceSnapshotLoader snapshotLoader = new ServiceSnapshotLoader(image, this);
+        while (true)
         {
-            return aeronAgentInvoker.invoke();
+            final int fragments = snapshotLoader.poll();
+            if (snapshotLoader.isDone())
+            {
+                break;
+            }
+
+            if (fragments == 0)
+            {
+                checkInterruptedStatus();
+
+                if (image.isClosed())
+                {
+                    throw new IllegalStateException("Snapshot ended unexpectedly");
+                }
+
+                idleStrategy.idle(fragments);
+            }
+        }
+    }
+
+    private void onTakeSnapshot(final long termPosition)
+    {
+        final long recordingId;
+        final String channel = ctx.snapshotChannel();
+        final int streamId = ctx.snapshotStreamId();
+
+        try (AeronArchive archive = AeronArchive.connect(archiveCtx);
+            Publication publication = archive.addRecordedExclusivePublication(channel, streamId))
+        {
+            try
+            {
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = awaitRecordingCounter(publication, counters);
+
+                recordingId = RecordingPos.getRecordingId(counters, counterId);
+                snapshotState(publication, baseLogPosition + termPosition);
+                service.onTakeSnapshot(publication);
+
+                awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
+            }
+            finally
+            {
+                archive.stopRecording(publication);
+            }
         }
 
-        return 0;
+        recordingLog.appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
+    }
+
+    private void awaitRecordingComplete(
+        final long recordingId,
+        final long completePosition,
+        final CountersReader counters,
+        final int counterId,
+        final AeronArchive archive)
+    {
+        idleStrategy.reset();
+        do
+        {
+            idleStrategy.idle();
+            checkInterruptedStatus();
+
+            if (!RecordingPos.isActive(counters, counterId, recordingId))
+            {
+                throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
+            }
+
+            archive.checkForErrorResponse();
+        }
+        while (counters.getCounterValue(counterId) < completePosition);
+    }
+
+    private void snapshotState(final Publication publication, final long logPosition)
+    {
+        final ServiceSnapshotTaker snapshotTaker = new ServiceSnapshotTaker(publication, idleStrategy, null);
+
+        snapshotTaker.markBegin(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
+
+        for (final ClientSession clientSession : sessionByIdMap.values())
+        {
+            snapshotTaker.snapshotSession(clientSession);
+        }
+
+        snapshotTaker.markEnd(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
+    }
+
+    private void executeAction(final ClusterAction action, final long termPosition)
+    {
+        if (isRecovering)
+        {
+            return;
+        }
+
+        final long logPosition = baseLogPosition + termPosition;
+
+        switch (action)
+        {
+            case SNAPSHOT:
+                onTakeSnapshot(termPosition);
+                serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, action);
+                break;
+
+            case SHUTDOWN:
+                onTakeSnapshot(termPosition);
+                serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, action);
+                ctx.terminationHook().run();
+                break;
+
+            case ABORT:
+                serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, action);
+                ctx.terminationHook().run();
+                break;
+        }
+    }
+
+    private int awaitRecordingCounter(final Publication publication, final CountersReader counters)
+    {
+        idleStrategy.reset();
+        int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+        while (CountersReader.NULL_COUNTER_ID == counterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+            counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+        }
+
+        return counterId;
+    }
+
+    private static void checkInterruptedStatus()
+    {
+        if (Thread.currentThread().isInterrupted())
+        {
+            throw new AgentTerminationException("Unexpected interrupt during operation");
+        }
+    }
+
+    static class ActiveLog
+    {
+        final long leadershipTermId;
+        final int commitPositionId;
+        final int sessionId;
+        final int streamId;
+        final String channel;
+
+        ActiveLog(
+            final long leadershipTermId,
+            final int commitPositionId,
+            final int sessionId,
+            final int streamId,
+            final String channel)
+        {
+            this.leadershipTermId = leadershipTermId;
+            this.commitPositionId = commitPositionId;
+            this.sessionId = sessionId;
+            this.streamId = streamId;
+            this.channel = channel;
+        }
     }
 }

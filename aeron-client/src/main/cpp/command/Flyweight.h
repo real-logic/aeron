@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,27 +36,27 @@ protected:
 
     inline std::string stringGet(util::index_t offset) const
     {
-        return m_buffer.getStringUtf8(m_baseOffset + offset);
+        return m_buffer.getString(m_baseOffset + offset);
     }
 
     inline util::index_t stringGetLength(util::index_t offset) const
     {
-        return m_buffer.getStringUtf8Length(m_baseOffset + offset);
+        return m_buffer.getStringLength(m_baseOffset + offset);
     }
 
     inline util::index_t stringPut(util::index_t offset, const std::string& s)
     {
-        return m_buffer.putStringUtf8(m_baseOffset + offset, s);
+        return m_buffer.putString(m_baseOffset + offset, s);
     }
 
     inline util::index_t stringPutWithoutLength(util::index_t offset, const std::string& s)
     {
-        return m_buffer.putStringUtf8WithoutLength(m_baseOffset + offset, s);
+        return m_buffer.putStringWithoutLength(m_baseOffset + offset, s);
     }
 
     inline std::string stringGetWithoutLength(util::index_t offset, std::int32_t size) const
     {
-        return m_buffer.getStringUtf8WithoutLength(m_baseOffset + offset, size);
+        return m_buffer.getStringWithoutLength(m_baseOffset + offset, size);
     }
 
     inline std::int32_t getInt32(util::index_t offset) const
@@ -74,9 +74,14 @@ protected:
         return m_buffer.buffer() + m_baseOffset + offset;
     }
 
-    inline void putBytes(util::index_t offset, const uint8_t *buffer, util::index_t length)
+    inline void putBytes(util::index_t offset, const uint8_t *src, util::index_t length)
     {
-        m_buffer.putBytes(m_baseOffset + offset, buffer, length);
+        m_buffer.putBytes(m_baseOffset + offset, src, length);
+    }
+
+    inline void getBytes(util::index_t offset, uint8_t *dest, util::index_t length) const
+    {
+        m_buffer.getBytes(offset, dest, length);
     }
 
     template <typename struct_t2>

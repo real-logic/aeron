@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,21 +21,38 @@ package io.aeron.driver;
 public class PublicationLink implements DriverManagedResource
 {
     private final long registrationId;
-    private final DriverManagedResource publication;
+    private final Object publication;
     private final AeronClient client;
     private boolean reachedEndOfLife = false;
 
-    public PublicationLink(final long registrationId, final DriverManagedResource publication, final AeronClient client)
+    public PublicationLink(final long registrationId, final AeronClient client, final NetworkPublication publication)
     {
         this.registrationId = registrationId;
-        this.publication = publication;
         this.client = client;
-        this.publication.incRef();
+
+        this.publication = publication;
+        publication.incRef();
+    }
+
+    public PublicationLink(final long registrationId, final AeronClient client, final IpcPublication publication)
+    {
+        this.registrationId = registrationId;
+        this.client = client;
+
+        this.publication = publication;
+        publication.incRef();
     }
 
     public void close()
     {
-        publication.decRef();
+        if (publication instanceof NetworkPublication)
+        {
+            ((NetworkPublication)publication).decRef();
+        }
+        else
+        {
+            ((IpcPublication)publication).decRef();
+        }
     }
 
     public long registrationId()
@@ -54,20 +71,5 @@ public class PublicationLink implements DriverManagedResource
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;
-    }
-
-    public void timeOfLastStateChange(final long time)
-    {
-        // not set this way
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return client.timeOfLastKeepalive();
-    }
-
-    public void delete()
-    {
-        close();
     }
 }

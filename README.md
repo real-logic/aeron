@@ -37,22 +37,6 @@ For the latest version information and changes see the [Change Log](https://gith
 1. [Hacking on Aeron](https://github.com/real-logic/aeron/wiki/Hacking-on-Aeron)
 1. [Performance Testing](https://github.com/real-logic/aeron/wiki/Performance-Testing)
 
-Directory Structure
--------------------
-
-Client API and common classes
-
-    aeron-client
-
-Samples
-
-    aeron-samples
-
-Media Driver
-
-    aeron-driver
-
-
 Build
 -----
 
@@ -91,7 +75,7 @@ You require the following to build the C++ API for Aeron:
     $ sudo apt-get install libz-dev
 ```
 
-__NOTE__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
+__Note__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
 with Visual Studio 2013 and 2015 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
 
 For convenience, a script is provided that does a full clean, build, and test of all targets as a Release build.
@@ -132,7 +116,7 @@ If you are comfortable with using CMake, then a full clean, build, and test look
     $ ctest
 ```
 
-__NOTE__: C Media Driver is currently only supported on Mac and Linux.
+__Note__: C Media Driver is currently only supported on Mac and Linux.
 
 For dependencies and other information, see the
 [README](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/README.md).
@@ -220,7 +204,7 @@ Troubleshooting
 
 License (See LICENSE file for full license)
 -------------------------------------------
-Copyright 2014-2017 Real Logic Limited
+Copyright 2014-2018 Real Logic Limited
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

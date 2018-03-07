@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.ArrayDeque;
@@ -29,7 +28,7 @@ import java.util.function.BooleanSupplier;
 import static io.aeron.archive.codecs.ControlResponseCode.*;
 
 /**
- * Control sessions are interacted with from both the {@link ArchiveConductor} and the replay/record
+ * Control sessions are interacted with from both the {@link ArchiveConductor} and the replay
  * {@link SessionWorker}s. The interaction may result in pending send actions being queued for execution by the
  * {@link ArchiveConductor}.
  * This complexity reflects the fact that replay/record/list requests happen in the context of a session, and that they
@@ -48,9 +47,7 @@ class ControlSession implements Session
 
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
-    private final ArrayDeque<AbstractListRecordingsSession> listRecordingsSessions = new ArrayDeque<>();
-    private final ManyToOneConcurrentLinkedQueue<BooleanSupplier> queuedResponses =
-        new ManyToOneConcurrentLinkedQueue<>();
+    private final ArrayDeque<BooleanSupplier> queuedResponses = new ArrayDeque<>(8);
     private final ControlResponseProxy controlResponseProxy;
     private final long controlSessionId;
     private final long correlationId;
@@ -58,6 +55,7 @@ class ControlSession implements Session
     private final Publication controlPublication;
     private State state = State.INIT;
     private long activityDeadlineMs = -1;
+    private AbstractListRecordingsSession activeListRecordingsSession;
 
     ControlSession(
         final long controlSessionId,
@@ -90,8 +88,8 @@ class ControlSession implements Session
     public void close()
     {
         state = State.CLOSED;
-        CloseHelper.quietClose(controlPublication);
         demuxer.removeControlSession(this);
+        CloseHelper.close(controlPublication);
     }
 
     public boolean isDone()
@@ -116,6 +114,16 @@ class ControlSession implements Session
         return workCount;
     }
 
+    public AbstractListRecordingsSession activeListRecordingsSession()
+    {
+        return activeListRecordingsSession;
+    }
+
+    public void activeListRecordingsSession(final AbstractListRecordingsSession session)
+    {
+        activeListRecordingsSession = session;
+    }
+
     public void onStopRecording(final long correlationId, final int streamId, final String channel)
     {
         conductor.stopRecording(correlationId, this, streamId, channel);
@@ -134,36 +142,23 @@ class ControlSession implements Session
         final int streamId,
         final String channel)
     {
-        final ListRecordingsForUriSession listRecordingsSession = conductor.newListRecordingsForUriSession(
+        conductor.newListRecordingsForUriSession(
             correlationId,
             fromRecordingId,
             recordCount,
             streamId,
             conductor.strippedChannelBuilder(channel).build(),
             this);
-
-        listRecordingsSessions.add(listRecordingsSession);
-
-        if (listRecordingsSessions.size() == 1)
-        {
-            conductor.addSession(listRecordingsSession);
-        }
     }
 
     public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
-        final ListRecordingsSession listRecordingsSession = conductor.newListRecordingsSession(
-            correlationId,
-            fromRecordingId,
-            recordCount,
-            this);
+        conductor.newListRecordingsSession(correlationId, fromRecordingId, recordCount, this);
+    }
 
-        listRecordingsSessions.add(listRecordingsSession);
-
-        if (listRecordingsSessions.size() == 1)
-        {
-            conductor.addSession(listRecordingsSession);
-        }
+    public void onListRecording(final long correlationId, final long recordingId)
+    {
+        conductor.listRecording(correlationId, this, recordingId);
     }
 
     public void onStartReplay(
@@ -189,17 +184,24 @@ class ControlSession implements Session
         conductor.stopReplay(correlationId, this, replaySessionId);
     }
 
+    public void onExtendRecording(
+        final long correlationId,
+        final long recordingId,
+        final String channel,
+        final int streamId,
+        final SourceLocation sourceLocation)
+    {
+        conductor.extendRecording(correlationId, this, recordingId, streamId, channel, sourceLocation);
+    }
+
     void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)
     {
-        if (listRecordingsSession != listRecordingsSessions.poll())
+        if (listRecordingsSession != activeListRecordingsSession)
         {
             throw new IllegalStateException();
         }
 
-        if (!isDone() && listRecordingsSessions.size() != 0)
-        {
-            conductor.addSession(listRecordingsSessions.peek());
-        }
+        activeListRecordingsSession = null;
     }
 
     void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)
@@ -210,7 +212,7 @@ class ControlSession implements Session
         }
     }
 
-    void sendOkResponse(final long correlationId, final long relevantId,  final ControlResponseProxy proxy)
+    void sendOkResponse(final long correlationId, final long relevantId, final ControlResponseProxy proxy)
     {
         if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, OK, null, controlPublication))
         {
@@ -242,6 +244,11 @@ class ControlSession implements Session
         {
             queueResponse(correlationId, 0, code, errorMessage);
         }
+    }
+
+    void attemptErrorResponse(final long correlationId, final String errorMessage, final ControlResponseProxy proxy)
+    {
+        proxy.attemptErrorResponse(controlSessionId, correlationId, errorMessage, controlPublication);
     }
 
     int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer, final ControlResponseProxy proxy)
@@ -281,7 +288,7 @@ class ControlSession implements Session
             {
                 if (sendFirst(queuedResponses))
                 {
-                    queuedResponses.poll();
+                    queuedResponses.pollFirst();
                     activityDeadlineMs = NULL_DEADLINE;
                     workCount++;
                 }
@@ -299,9 +306,9 @@ class ControlSession implements Session
         return workCount;
     }
 
-    private static boolean sendFirst(final ManyToOneConcurrentLinkedQueue<BooleanSupplier> responseQueue)
+    private static boolean sendFirst(final ArrayDeque<BooleanSupplier> responseQueue)
     {
-        return responseQueue.peek().getAsBoolean();
+        return responseQueue.peekFirst().getAsBoolean();
     }
 
     private int waitForConnection()
@@ -334,13 +341,12 @@ class ControlSession implements Session
     private void queueResponse(
         final long correlationId, final long relevantId, final ControlResponseCode code, final String message)
     {
-        queuedResponses.offer(
-            () -> controlResponseProxy.sendResponse(
-                controlSessionId,
-                correlationId,
-                relevantId,
-                code,
-                message,
-                controlPublication));
+        queuedResponses.offer(() -> controlResponseProxy.sendResponse(
+            controlSessionId,
+            correlationId,
+            relevantId,
+            code,
+            message,
+            controlPublication));
     }
 }

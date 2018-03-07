@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
  */
 
 #include <stdlib.h>
+#include <errno.h>
 #include "aeron_mpsc_rb.h"
+#include "util/aeron_error.h"
 
 int aeron_mpsc_rb_init(volatile aeron_mpsc_rb_t *ring_buffer, void *buffer, size_t length)
 {
@@ -29,6 +31,10 @@ int aeron_mpsc_rb_init(volatile aeron_mpsc_rb_t *ring_buffer, void *buffer, size
         ring_buffer->descriptor = (aeron_rb_descriptor_t *) (ring_buffer->buffer + ring_buffer->capacity);
         ring_buffer->max_message_length = AERON_RB_MAX_MESSAGE_LENGTH(ring_buffer->capacity);
         result = 0;
+    }
+    else
+    {
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
     }
 
     return result;

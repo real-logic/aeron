@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,21 @@
 
 #define COUNTER_LABEL "counter label"
 #define COUNTER_TYPE_ID (102)
+#define COUNTER_KEY_LENGTH (sizeof(int64_t) + 3)
 
 class DriverConductorCounterTest : public DriverConductorTest
 {
+public:
+    DriverConductorCounterTest() :
+        m_keyBuffer(m_key.data(), m_key.size())
+    {
+        m_key.fill(0);
+    }
+
 protected:
     std::string m_label = COUNTER_LABEL;
+    std::array<uint8_t,COUNTER_KEY_LENGTH> m_key;
+    AtomicBuffer m_keyBuffer;
 };
 
 TEST_F(DriverConductorCounterTest, shouldBeAbleToAddSingleCounter)
@@ -31,7 +41,8 @@ TEST_F(DriverConductorCounterTest, shouldBeAbleToAddSingleCounter)
     int64_t reg_id = nextCorrelationId();
     int32_t counter_id = -1;
 
-    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, (const uint8_t *)&reg_id, sizeof(int64_t), m_label), 0);
+    m_keyBuffer.putInt64(0, reg_id);
+    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
@@ -63,7 +74,7 @@ TEST_F(DriverConductorCounterTest, shouldRemoveSingleCounter)
     int64_t reg_id = nextCorrelationId();
     int32_t counter_id = -1;
 
-    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, (const uint8_t *)&reg_id, sizeof(int64_t), m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
@@ -121,7 +132,7 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
     int64_t reg_id = nextCorrelationId();
     int32_t counter_id = -1;
 
-    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, (const uint8_t *)&reg_id, sizeof(int64_t), m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
@@ -145,13 +156,29 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
     EXPECT_FALSE(findCounter(counter_id, counter_func));
 }
 
+TEST_F(DriverConductorCounterTest, shouldRemoveMultipleCountersOnClientTimeout)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t reg_id1 = nextCorrelationId();
+    int64_t reg_id2 = nextCorrelationId();
+
+    ASSERT_EQ(addCounter(client_id, reg_id1, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id2, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
+
+    doWorkUntilTimeNs((m_context.m_context->client_liveness_timeout_ns * 2));
+    EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
+}
+
 TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
 {
     int64_t client_id = nextCorrelationId();
     int64_t reg_id = nextCorrelationId();
     int32_t counter_id = -1;
 
-    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, (const uint8_t *)&reg_id, sizeof(int64_t), m_label), 0);
+    ASSERT_EQ(addCounter(client_id, reg_id, COUNTER_TYPE_ID, m_key.data(), m_key.size(), m_label), 0);
     doWork();
 
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)

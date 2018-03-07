@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ public:
         std::int32_t streamId,
         std::int32_t sessionId,
         UnsafeBufferPosition& publicationLimit,
-        StatusIndicatorReader& channelStatusIndicator,
+        std::int32_t channelStatusId,
         std::shared_ptr<LogBuffers> buffers);
     /// @endcond
 
@@ -224,7 +224,7 @@ public:
      *
      * @return the position limit beyond which this {@link Publication} will be back pressured.
      */
-    inline std::int64_t positionLimit()
+    inline std::int64_t publicationLimit()
     {
         if (isClosed())
         {
@@ -235,13 +235,23 @@ public:
     }
 
     /**
-     * Get the status indicator assigned to the channel of this {@link Publication}
+     * Get the counter id used to represent the publication limit.
      *
-     * @return status indicator reader for the channel
+     * @return the counter id used to represent the publication limit.
      */
-    inline StatusIndicatorReader& channelStatusIndicator()
+    inline std::int32_t publicationLimitId() const
     {
-        return m_channelStatusIndicator;
+        return m_publicationLimit.id();
+    }
+
+    /**
+     * Get the counter id used to represent the channel status.
+     *
+     * @return the counter id used to represent the channel status.
+     */
+    inline std::int32_t channelStatusId() const
+    {
+        return m_channelStatusId;
     }
 
     /**
@@ -352,7 +362,10 @@ public:
             if (AERON_COND_EXPECT(length + it->capacity() < 0, false))
             {
                 throw aeron::util::IllegalStateException(
-                    aeron::util::strPrintf("length overflow: %d + %d -> %d", length, it->capacity(), length + it->capacity()),
+                    aeron::util::strPrintf("length overflow: %d + %d -> %d",
+                        length,
+                        it->capacity(),
+                        length + it->capacity()),
                     SOURCEINFO);
             }
 
@@ -522,6 +535,13 @@ public:
      */
     void removeDestination(const std::string& endpointChannel);
 
+    /**
+     * Get the status for the channel of this {@link Publication}
+     *
+     * @return status code for this channel
+     */
+    std::int64_t channelStatus();
+
     /// @cond HIDDEN_SYMBOLS
     inline void close()
     {
@@ -543,7 +563,7 @@ private:
     std::int32_t m_maxMessageLength;
     std::int32_t m_positionBitsToShift;
     ReadablePosition<UnsafeBufferPosition> m_publicationLimit;
-    StatusIndicatorReader m_channelStatusIndicator;
+    std::int32_t m_channelStatusId;
     std::atomic<bool> m_isClosed = { false };
 
     std::shared_ptr<LogBuffers> m_logbuffers;

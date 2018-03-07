@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -90,12 +91,7 @@ public class Aeron implements AutoCloseable
      */
     public static final long KEEPALIVE_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(500);
 
-    /**
-     * Default interval that if exceeded between duty cycles the conductor will consider itself a zombie and suicide.
-     */
-    public static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
-
-    private volatile int isClosed;
+    @SuppressWarnings("unused") private volatile int isClosed;
     private final long clientId;
     private final ClientConductor conductor;
     private final RingBuffer commandBuffer;
@@ -169,6 +165,17 @@ public class Aeron implements AutoCloseable
             ctx.close();
             throw ex;
         }
+    }
+
+    /**
+     * Print out the values from {@link #countersReader()} which can be useful for debugging.
+     *
+     *  @param out to where the counters get printed.
+     */
+    public void printCounters(final PrintStream out)
+    {
+        final CountersReader counters = countersReader();
+        counters.forEach((value, id, label) -> out.format("%3d: %,20d - %s%n", id, value, label));
     }
 
     /**
@@ -412,6 +419,16 @@ public class Aeron implements AutoCloseable
         private ThreadFactory threadFactory = Thread::new;
 
         /**
+         * Perform a shallow copy of the object.
+         *
+         * @return a shallow copy of the object.
+         */
+        public Context clone()
+        {
+            return (Context)super.clone();
+        }
+
+        /**
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.
          * There is no need to call it from a client application. It is responsible for providing default
          * values for options that are not individually changed through field setters.
@@ -470,14 +487,7 @@ public class Aeron implements AutoCloseable
                 countersValuesBuffer(CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
             }
 
-            if (0 == interServiceTimeout)
-            {
-                interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
-            }
-            else
-            {
-                interServiceTimeout = INTER_SERVICE_TIMEOUT_NS;
-            }
+            interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
 
             if (null == logBuffersFactory)
             {
@@ -653,7 +663,7 @@ public class Aeron implements AutoCloseable
          * @param toClientBuffer Injected CopyBroadcastReceiver
          * @return this Aeron.Context for method chaining.
          */
-        public Context toClientBuffer(final CopyBroadcastReceiver toClientBuffer)
+        Context toClientBuffer(final CopyBroadcastReceiver toClientBuffer)
         {
             this.toClientBuffer = toClientBuffer;
             return this;
@@ -675,7 +685,7 @@ public class Aeron implements AutoCloseable
          * @param toDriverBuffer Injected RingBuffer.
          * @return this Aeron.Context for method chaining.
          */
-        public Context toDriverBuffer(final RingBuffer toDriverBuffer)
+        Context toDriverBuffer(final RingBuffer toDriverBuffer)
         {
             this.toDriverBuffer = toDriverBuffer;
             return this;
@@ -697,7 +707,7 @@ public class Aeron implements AutoCloseable
          * @param driverProxy for communicating with the media driver.
          * @return this Aeron.Context for method chaining.
          */
-        public Context driverProxy(final DriverProxy driverProxy)
+        Context driverProxy(final DriverProxy driverProxy)
         {
             this.driverProxy = driverProxy;
             return this;
@@ -719,7 +729,7 @@ public class Aeron implements AutoCloseable
          * @param logBuffersFactory Injected LogBuffersFactory
          * @return this Aeron.Context for method chaining.
          */
-        public Context logBuffersFactory(final LogBuffersFactory logBuffersFactory)
+        Context logBuffersFactory(final LogBuffersFactory logBuffersFactory)
         {
             this.logBuffersFactory = logBuffersFactory;
             return this;
@@ -896,7 +906,7 @@ public class Aeron implements AutoCloseable
          * @param interServiceTimeout the timeout (ns) between service calls the to {@link ClientConductor} duty cycle.
          * @return this Aeron.Context for method chaining.
          */
-        public Context interServiceTimeout(final long interServiceTimeout)
+        Context interServiceTimeout(final long interServiceTimeout)
         {
             this.interServiceTimeout = interServiceTimeout;
             return this;
@@ -908,9 +918,10 @@ public class Aeron implements AutoCloseable
          * When exceeded, {@link #errorHandler} will be called and the active {@link Publication}s and {@link Image}s
          * closed.
          * <p>
-         * This value is controlled by the driver and included in the CnC file.
+         * This value is controlled by the driver and included in the CnC file. It can be configured by adjusting
+         * the aeron.client.liveness.timeout property on the media driver.
          *
-         * @return the timeout in nanoseconds between service calls in nanoseconds.
+         * @return the timeout in nanoseconds between service calls.
          */
         public long interServiceTimeout()
         {
@@ -969,7 +980,7 @@ public class Aeron implements AutoCloseable
                 {
                     if (epochClock.time() > (startTimeMs + driverTimeoutMs()))
                     {
-                        throw new DriverTimeoutException("CnC file not found: " + cncFile.getName());
+                        throw new DriverTimeoutException("CnC file not found: " + cncFile.getAbsolutePath());
                     }
 
                     sleep(16);

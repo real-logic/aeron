@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,19 +51,25 @@ public:
         epoch_clock_t epochClock,
         DriverProxy& driverProxy,
         CopyBroadcastReceiver& broadcastReceiver,
+        AtomicBuffer& counterMetadataBuffer,
         AtomicBuffer& counterValuesBuffer,
         const on_new_publication_t& newPublicationHandler,
         const on_new_subscription_t& newSubscriptionHandler,
         const exception_handler_t& errorHandler,
+        const on_available_counter_t& availableCounterHandler,
+        const on_unavailable_counter_t& unavailableCounterHandler,
         long driverTimeoutMs,
         long resourceLingerTimeoutMs,
         long long interServiceTimeoutNs) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),
+        m_countersReader(counterMetadataBuffer, counterValuesBuffer),
         m_counterValuesBuffer(counterValuesBuffer),
         m_onNewPublicationHandler(newPublicationHandler),
         m_onNewSubscriptionHandler(newSubscriptionHandler),
         m_errorHandler(errorHandler),
+        m_onAvailableCounterHandler(availableCounterHandler),
+        m_onUnavailableCounterHandler(unavailableCounterHandler),
         m_epochClock(epochClock),
         m_timeOfLastKeepalive(epochClock()),
         m_timeOfLastCheckManagedResources(epochClock()),
@@ -119,7 +125,7 @@ public:
     void onNewPublication(
         std::int32_t streamId,
         std::int32_t sessionId,
-        std::int32_t positionLimitCounterId,
+        std::int32_t publicationLimitCounterId,
         std::int32_t channelStatusIndicatorId,
         const std::string& logFileName,
         std::int64_t registrationId,
@@ -128,7 +134,7 @@ public:
     void onNewExclusivePublication(
         std::int32_t streamId,
         std::int32_t sessionId,
-        std::int32_t positionLimitCounterId,
+        std::int32_t publicationLimitCounterId,
         std::int32_t channelStatusIndicatorId,
         const std::string& logFileName,
         std::int64_t registrationId,
@@ -136,7 +142,7 @@ public:
 
     void onSubscriptionReady(
         std::int64_t registrationId,
-        std::int32_t channelStatusIndicatorId);
+        std::int32_t channelStatusId);
 
     void onOperationSuccess(std::int64_t correlationId);
 
@@ -159,7 +165,11 @@ public:
         std::int64_t correlationId,
         std::int64_t subscriptionRegistrationId);
 
-    void onCounterReady(
+    void onAvailableCounter(
+        std::int64_t registrationId,
+        std::int32_t counterId);
+
+    void onUnavailableCounter(
         std::int64_t registrationId,
         std::int32_t counterId);
 
@@ -167,6 +177,26 @@ public:
 
     void addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
     void removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
+
+    inline CountersReader& countersReader()
+    {
+        return m_countersReader;
+    }
+
+    inline std::int64_t channelStatus(std::int32_t counterId)
+    {
+        switch (counterId)
+        {
+            case 0:
+                return ChannelEndpointStatus::CHANNEL_ENDPOINT_INITIALIZING;
+
+            case ChannelEndpointStatus::NO_ID_ALLOCATED:
+                return ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE;
+
+            default:
+                return m_countersReader.getCounterValue(counterId);
+        }
+    }
 
 protected:
     void onCheckManagedResources(long long now);
@@ -188,8 +218,8 @@ private:
         std::int64_t m_originalRegistrationId;
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
-        std::int32_t m_positionLimitCounterId = -1;
-        std::int32_t m_channelStatusIndicatorId = -1;
+        std::int32_t m_publicationLimitCounterId = -1;
+        std::int32_t m_channelStatusId = -1;
         long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
@@ -211,8 +241,8 @@ private:
         std::int64_t m_originalRegistrationId;
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
-        std::int32_t m_positionLimitCounterId = -1;
-        std::int32_t m_channelStatusIndicatorId = -1;
+        std::int32_t m_publicationLimitCounterId = -1;
+        std::int32_t m_channelStatusId = -1;
         long long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
@@ -311,11 +341,14 @@ private:
     DriverProxy& m_driverProxy;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;
 
+    CountersReader m_countersReader;
     AtomicBuffer& m_counterValuesBuffer;
 
     on_new_publication_t m_onNewPublicationHandler;
     on_new_subscription_t m_onNewSubscriptionHandler;
     exception_handler_t m_errorHandler;
+    on_available_counter_t m_onAvailableCounterHandler;
+    on_unavailable_counter_t m_onUnavailableCounterHandler;
 
     epoch_clock_t m_epochClock;
     long long m_timeOfLastKeepalive;

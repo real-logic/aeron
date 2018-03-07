@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,14 @@ import org.agrona.concurrent.status.Position;
 public final class SubscriberPosition
 {
     private final SubscriptionLink subscriptionLink;
+    private final Subscribable subscribable;
     private final Position position;
 
-    public SubscriberPosition(final SubscriptionLink subscriptionLink, final Position position)
+    public SubscriberPosition(
+        final SubscriptionLink subscriptionLink, final Subscribable subscribable, final Position position)
     {
         this.subscriptionLink = subscriptionLink;
+        this.subscribable = subscribable;
         this.position = position;
     }
 
@@ -44,6 +47,11 @@ public final class SubscriberPosition
     public SubscriptionLink subscription()
     {
         return subscriptionLink;
+    }
+
+    public Subscribable subscribable()
+    {
+        return subscribable;
     }
 
     public void addLink(final PublicationImage image)

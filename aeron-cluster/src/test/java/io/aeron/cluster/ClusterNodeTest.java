@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.NoOpLock;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +40,6 @@ import org.junit.Test;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 public class ClusterNodeTest
 {
@@ -49,6 +47,7 @@ public class ClusterNodeTest
 
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
+    private AeronCluster aeronCluster;
 
     @Before
     public void before()
@@ -56,48 +55,53 @@ public class ClusterNodeTest
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.SHARED)
-                .spiesSimulateConnection(true)
+                .termBufferSparseFile(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
-            new ConsensusModule.Context());
+            new ConsensusModule.Context()
+                .deleteDirOnStart(true));
     }
 
     @After
     public void after()
     {
+        CloseHelper.close(aeronCluster);
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
-        clusteredMediaDriver.archive().context().deleteArchiveDirectory();
-        clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
-
         if (null != container)
         {
-            container.context().deleteClusterDirectory();
+            container.context().deleteDirectory();
+        }
+
+        if (null != clusteredMediaDriver)
+        {
+            clusteredMediaDriver.consensusModule().context().deleteDirectory();
+            clusteredMediaDriver.archive().context().deleteArchiveDirectory();
+            clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
         }
     }
 
     @Test
     public void shouldConnectAndSendKeepAlive()
     {
-        try (AeronCluster aeronCluster = connectToCluster())
-        {
-            assertTrue(aeronCluster.sendKeepAlive());
-        }
+        container = launchEchoService();
+        aeronCluster = connectToCluster();
+
+        assertTrue(aeronCluster.sendKeepAlive());
     }
 
     @Test(timeout = 10_000)
     public void shouldEchoMessageViaService()
     {
         container = launchEchoService();
+        aeronCluster = connectToCluster();
 
-        final AeronCluster aeronCluster = connectToCluster();
         final Aeron aeron = aeronCluster.context().aeron();
-
-        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         final Publication publication = aeronCluster.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -107,6 +111,7 @@ public class ClusterNodeTest
 
         while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -136,21 +141,20 @@ public class ClusterNodeTest
         {
             if (adapter.poll() <= 0)
             {
+                TestUtil.checkInterruptedStatus();
                 Thread.yield();
             }
         }
-
-        aeronCluster.close();
     }
 
     @Test(timeout = 10_000)
     public void shouldScheduleEventInService()
     {
-        container = launchScheduledService();
-        final AeronCluster aeronCluster = connectToCluster();
-        final Aeron aeron = aeronCluster.context().aeron();
+        container = launchTimedService();
+        aeronCluster = connectToCluster();
 
-        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.sessionId());
+        final Aeron aeron = aeronCluster.context().aeron();
+        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         final Publication publication = aeronCluster.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -160,6 +164,7 @@ public class ClusterNodeTest
 
         while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
         {
+            TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -189,11 +194,10 @@ public class ClusterNodeTest
         {
             if (adapter.poll() <= 0)
             {
+                TestUtil.checkInterruptedStatus();
                 Thread.yield();
             }
         }
-
-        aeronCluster.close();
     }
 
     private ClusteredServiceContainer launchEchoService()
@@ -213,6 +217,7 @@ public class ClusterNodeTest
 
                 while (session.offer(correlationId, buffer, offset, length) < 0)
                 {
+                    TestUtil.checkInterruptedStatus();
                     Thread.yield();
                 }
             }
@@ -221,14 +226,13 @@ public class ClusterNodeTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(echoService)
-                .errorCounter(mock(AtomicCounter.class))
                 .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(true));
     }
 
-    private ClusteredServiceContainer launchScheduledService()
+    private ClusteredServiceContainer launchTimedService()
     {
-        final ClusteredService echoScheduledService = new StubClusteredService()
+        final ClusteredService timedService = new StubClusteredService()
         {
             long clusterSessionId;
             long correlationId;
@@ -259,6 +263,7 @@ public class ClusterNodeTest
 
                 while (clientSession.offer(correlationId, buffer, 0, responseMsg.length()) < 0)
                 {
+                    TestUtil.checkInterruptedStatus();
                     Thread.yield();
                 }
             }
@@ -266,8 +271,7 @@ public class ClusterNodeTest
 
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
-                .clusteredService(echoScheduledService)
-                .errorCounter(mock(AtomicCounter.class))
+                .clusteredService(timedService)
                 .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(true));
     }
@@ -276,6 +280,8 @@ public class ClusterNodeTest
     {
         return AeronCluster.connect(
             new AeronCluster.Context()
+                .ingressChannel("aeron:udp")
+                .clusterMemberEndpoints("localhost:9010", "localhost:9011", "localhost:9012")
                 .lock(new NoOpLock()));
     }
 }

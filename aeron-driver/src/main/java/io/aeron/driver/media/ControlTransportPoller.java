@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,8 +110,8 @@ public class ControlTransportPoller extends UdpTransportPoller
         SelectionKey key = null;
         try
         {
-            transports = ArrayUtil.add(transports, transport);
             key = transport.receiveDatagramChannel().register(selector, SelectionKey.OP_READ, transport);
+            transports = ArrayUtil.add(transports, transport);
         }
         catch (final ClosedChannelException ex)
         {
@@ -141,19 +141,18 @@ public class ControlTransportPoller extends UdpTransportPoller
             byteReceived = byteBuffer.position();
             if (channelEndpoint.isValidFrame(unsafeBuffer, byteReceived))
             {
-                switch (frameType(unsafeBuffer, 0))
+                final int frameType = frameType(unsafeBuffer, 0);
+                if (HDR_TYPE_NAK == frameType)
                 {
-                    case HDR_TYPE_NAK:
-                        channelEndpoint.onNakMessage(nakMessage, unsafeBuffer, byteReceived, srcAddress);
-                        break;
-
-                    case HDR_TYPE_SM:
-                        channelEndpoint.onStatusMessage(statusMessage, unsafeBuffer, byteReceived, srcAddress);
-                        break;
-
-                    case HDR_TYPE_RTTM:
-                        channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, byteReceived, srcAddress);
-                        break;
+                    channelEndpoint.onNakMessage(nakMessage, unsafeBuffer, byteReceived, srcAddress);
+                }
+                else if (HDR_TYPE_SM == frameType)
+                {
+                    channelEndpoint.onStatusMessage(statusMessage, unsafeBuffer, byteReceived, srcAddress);
+                }
+                else if (HDR_TYPE_RTTM == frameType)
+                {
+                    channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, byteReceived, srcAddress);
                 }
             }
         }

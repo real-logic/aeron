@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -246,13 +246,13 @@ public class AeronStat
             {
                 System.out.format(
                     "Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat%n" +
-                        "\t[delay=<seconds between updates>]%n" +
-                        "filter by optional regex patterns:%n" +
-                        "\t[type=<pattern>]%n" +
-                        "\t[identity=<pattern>]%n" +
-                        "\t[sessionId=<pattern>]%n" +
-                        "\t[streamId=<pattern>]%n" +
-                        "\t[channel=<pattern>]%n");
+                    "\t[delay=<seconds between updates>]%n" +
+                    "filter by optional regex patterns:%n" +
+                    "\t[type=<pattern>]%n" +
+                    "\t[identity=<pattern>]%n" +
+                    "\t[sessionId=<pattern>]%n" +
+                    "\t[streamId=<pattern>]%n" +
+                    "\t[channel=<pattern>]%n");
 
                 System.exit(0);
             }

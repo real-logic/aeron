@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.cluster.client;
 
-@FunctionalInterface
-public interface ClusterSessionSupplier
+import org.agrona.collections.ArrayUtil;
+
+/**
+ * Null provider of credentials when no authentication is required.
+ */
+public class NullCredentialsSupplier implements CredentialsSupplier
 {
-    ClusterSession newClusterSession(long sessionId, int responseStreamId, String responseChannel);
+    public static final byte[] NULL_CREDENTIAL = ArrayUtil.EMPTY_BYTE_ARRAY;
+
+    public byte[] connectRequestCredentialData()
+    {
+        return NULL_CREDENTIAL;
+    }
+
+    public byte[] onChallenge(final byte[] challengeData)
+    {
+        return NULL_CREDENTIAL;
+    }
 }

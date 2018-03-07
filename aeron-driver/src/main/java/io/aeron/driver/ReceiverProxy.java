@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,18 @@ public class ReceiverProxy
         }
     }
 
+    public void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId, final int sessionId)
+    {
+        if (notConcurrent())
+        {
+            receiver.onAddSubscription(mediaEndpoint, streamId, sessionId);
+        }
+        else
+        {
+            offer(new AddSubscriptionAndSessionCmd(mediaEndpoint, streamId, sessionId));
+        }
+    }
+
     public void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
         if (notConcurrent())
@@ -74,6 +86,18 @@ public class ReceiverProxy
         else
         {
             offer(new RemoveSubscriptionCmd(mediaEndpoint, streamId));
+        }
+    }
+
+    public void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId, final int sessionId)
+    {
+        if (notConcurrent())
+        {
+            receiver.onRemoveSubscription(mediaEndpoint, streamId, sessionId);
+        }
+        else
+        {
+            offer(new RemoveSubscriptionAndSessionCmd(mediaEndpoint, streamId, sessionId));
         }
     }
 

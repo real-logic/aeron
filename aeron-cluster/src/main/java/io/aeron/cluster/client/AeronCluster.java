@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -260,7 +261,7 @@ public final class AeronCluster implements AutoCloseable
                 {
                     if (poller.templateId() == AdminResponseDecoder.TEMPLATE_ID)
                     {
-                        return new String(poller.adminResponseData());
+                        return new String(poller.adminResponseData(), US_ASCII);
                     }
                     else if (poller.eventCode() == EventCode.ERROR)
                     {

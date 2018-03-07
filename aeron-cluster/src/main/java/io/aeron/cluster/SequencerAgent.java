@@ -42,6 +42,7 @@ import static io.aeron.cluster.ClusterMember.NULL_MEMBER_ID;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 class SequencerAgent implements Agent, ServiceControlListener
@@ -420,7 +421,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
                         final long nowMs = cachedEpochClock.time();
                         session.lastActivity(nowMs, correlationId);
-                        session.adminResponseData(endpointsDetail.getBytes());
+                        session.adminResponseData(endpointsDetail.getBytes(US_ASCII));
 
                         if (egressPublisher.sendAdminResponse(session, session.adminResponseData()))
                         {

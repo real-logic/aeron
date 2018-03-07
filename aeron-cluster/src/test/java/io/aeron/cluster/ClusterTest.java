@@ -194,6 +194,26 @@ public class ClusterTest
         }
     }
 
+    @Test(timeout = 10_000)
+    public void shouldQueryLeaderForEndpoints()
+    {
+        final String endpoints = client.queryForEndpoints();
+        final ClusterMember[] responseClusterMembers = ClusterMember.parse(endpoints);
+        final int appointedLeaderId = 0;
+        final ClusterMember responseLeader = responseClusterMembers[0];
+
+        assertThat(responseClusterMembers.length, is(1));
+        assertThat(responseLeader.id(), is(appointedLeaderId));
+
+        final ClusterMember[] configuredClusterMembers = ClusterMember.parse(CLUSTER_MEMBERS);
+        final ClusterMember configuredLeader = configuredClusterMembers[appointedLeaderId];
+
+        assertThat(responseLeader.clientFacingEndpoint(), is(configuredLeader.clientFacingEndpoint()));
+        assertThat(responseLeader.memberFacingEndpoint(), is(configuredLeader.memberFacingEndpoint()));
+        assertThat(responseLeader.logEndpoint(), is(configuredLeader.logEndpoint()));
+        assertThat(responseLeader.archiveEndpoint(), is(configuredLeader.archiveEndpoint()));
+    }
+
     private static String memberSpecificPort(final String channel, final int memberId)
     {
         return channel.substring(0, channel.length() - 1) + memberId;

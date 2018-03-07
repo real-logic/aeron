@@ -154,6 +154,7 @@ class ClusterSession implements AutoCloseable
         }
 
         this.state = State.AUTHENTICATED;
+        this.capability = capability;
     }
 
     void open(final long openedTermPosition)

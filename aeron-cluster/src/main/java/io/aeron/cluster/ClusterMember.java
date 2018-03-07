@@ -397,4 +397,21 @@ public final class ClusterMember
 
         return false;
     }
+
+    public static void checkArchiveEndpoint(final ClusterMember thisMember, final ChannelUri archiveControlRequestUri)
+    {
+        if (!archiveControlRequestUri.media().equals("udp"))
+        {
+            throw new IllegalStateException("archive control request channel must be udp");
+        }
+
+        final String archiveEndpoint = archiveControlRequestUri.get(ENDPOINT_PARAM_NAME);
+
+        if (archiveEndpoint != null && !archiveEndpoint.equals(thisMember.archiveEndpoint))
+        {
+            throw new IllegalStateException(
+                "archive control request endpoint must match cluster members configuration: " + archiveEndpoint +
+                " != " + thisMember.archiveEndpoint);
+        }
+    }
 }

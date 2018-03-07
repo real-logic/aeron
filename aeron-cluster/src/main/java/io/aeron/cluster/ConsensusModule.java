@@ -252,7 +252,7 @@ public class ConsensusModule implements AutoCloseable
          * Default property for the list of cluster member endpoints.
          */
         public static final String CLUSTER_MEMBERS_DEFAULT =
-            "0,localhost:10000,localhost:20000,localhost:30000,localhost:40000";
+            "0,localhost:10000,localhost:20000,localhost:30000,localhost:8010";
 
         /**
          * Channel for the clustered log.
@@ -805,10 +805,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == archiveContext)
             {
-                archiveContext = new AeronArchive.Context()
-                    .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
+                archiveContext = new AeronArchive.Context();
             }
 
             archiveContext

@@ -24,7 +24,8 @@ import io.aeron.cluster.service.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
@@ -149,6 +150,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             aeron.addSubscription(ingressUri.toString(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
 
         final ChannelUri archiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
+        ClusterMember.checkArchiveEndpoint(thisMember, archiveUri);
         archiveUri.put(ENDPOINT_PARAM_NAME, thisMember.archiveEndpoint());
         ctx.archiveContext().controlRequestChannel(archiveUri.toString());
 

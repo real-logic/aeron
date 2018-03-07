@@ -412,10 +412,11 @@ class SequencerAgent implements Agent, ServiceControlListener
                             ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
 
                         final String endpointsDetail =
-                            "id=" + Long.toString(thisMember.id()) +
-                            ",memberStatus=" + thisMember.memberFacingEndpoint() +
-                            ",log=" + thisMember.logEndpoint() +
-                            ",archive=" + archiveChannelUri.get(ENDPOINT_PARAM_NAME);
+                            thisMember.id() + "," +
+                            thisMember.clientFacingEndpoint() + "," +
+                            thisMember.memberFacingEndpoint() + "," +
+                            thisMember.logEndpoint() + "," +
+                            thisMember.archiveEndpoint();
 
                         final long nowMs = cachedEpochClock.time();
                         session.lastActivity(nowMs, correlationId);

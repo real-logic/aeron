@@ -27,6 +27,7 @@ import io.aeron.cluster.client.EgressAdapter;
 import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
+import io.aeron.cluster.service.RecordingLog;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
@@ -212,6 +213,13 @@ public class ClusterTest
         assertThat(responseLeader.memberFacingEndpoint(), is(configuredLeader.memberFacingEndpoint()));
         assertThat(responseLeader.logEndpoint(), is(configuredLeader.logEndpoint()));
         assertThat(responseLeader.archiveEndpoint(), is(configuredLeader.archiveEndpoint()));
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldQueryLeaderForRecoveryPlan()
+    {
+        final byte[] encodedPlan = client.queryForRecoveryPlan();
+        final RecordingLog.RecoveryPlan recoveryPlan = new RecordingLog.RecoveryPlan(encodedPlan);
     }
 
     private static String memberSpecificPort(final String channel, final int memberId)

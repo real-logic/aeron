@@ -277,17 +277,17 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
-     * Query cluster member for recording log information.
+     * Query cluster member for recovery plan information.
      *
      * @return result of query.
      */
-    public byte[] queryForRecordingLog()
+    public byte[] queryForRecoveryPlan()
     {
         lock.lock();
         try
         {
             final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
-            final long correlationId = sendAdminQuery(AdminQueryType.RECORDING_LOG, deadlineNs);
+            final long correlationId = sendAdminQuery(AdminQueryType.RECOVERY_PLAN, deadlineNs);
             final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
 
             while (true)

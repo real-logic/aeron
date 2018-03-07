@@ -16,6 +16,8 @@
 package io.aeron.cluster.service;
 
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.codecs.RecoveryPlanDecoder;
+import io.aeron.cluster.codecs.RecoveryPlanEncoder;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
@@ -121,6 +123,31 @@ public class RecordingLog
             this.entryIndex = entryIndex;
         }
 
+        public Entry(final RecoveryPlanDecoder.StepsDecoder decoder)
+        {
+            this.recordingId = decoder.entryRecordingId();
+            this.leadershipTermId = decoder.entryLeadershipTermId();
+            this.logPosition = decoder.entryLogPosition();
+            this.termPosition = decoder.entryTermPosition();
+            this.timestamp = decoder.entryTimestamp();
+            this.memberIdVote = decoder.entryMemberIdVote();
+            this.type = decoder.entryType();
+            this.entryIndex = decoder.entryIndex();
+        }
+
+        public void encode(final RecoveryPlanEncoder.StepsEncoder encoder)
+        {
+            encoder
+                .entryRecordingId(recordingId)
+                .entryLeadershipTermId(leadershipTermId)
+                .entryLogPosition(logPosition)
+                .entryTermPosition(termPosition)
+                .entryTimestamp(timestamp)
+                .entryMemberIdVote(memberIdVote)
+                .entryType(type)
+                .entryIndex(entryIndex);
+        }
+
         public String toString()
         {
             return "Entry{" +
@@ -152,6 +179,21 @@ public class RecordingLog
             this.entry = entry;
         }
 
+        public ReplayStep(final RecoveryPlanDecoder.StepsDecoder decoder)
+        {
+            this.recordingStartPosition = decoder.recordingStartPosition();
+            this.recordingStopPosition = decoder.recordingStopPosition();
+            entry = new Entry(decoder);
+        }
+
+        public void encode(final RecoveryPlanEncoder.StepsEncoder encoder)
+        {
+            encoder
+                .recordingStartPosition(recordingStartPosition)
+                .recordingStopPosition(recordingStopPosition);
+            entry.encode(encoder);
+        }
+
         public String toString()
         {
             return "ReplayStep{" +
@@ -173,6 +215,9 @@ public class RecordingLog
         public final long lastTermPositionAppended;
         public final ReplayStep snapshotStep;
         public final ArrayList<ReplayStep> termSteps;
+        public final RecoveryPlanEncoder encoder = new RecoveryPlanEncoder();
+        public final RecoveryPlanDecoder decoder = new RecoveryPlanDecoder();
+        public final UnsafeBuffer buffer = new UnsafeBuffer();
 
         public RecoveryPlan(
             final long lastLeadershipTermId,
@@ -188,6 +233,71 @@ public class RecordingLog
             this.lastTermPositionAppended = lastTermPositionAppended;
             this.snapshotStep = snapshotStep;
             this.termSteps = termSteps;
+        }
+
+        public RecoveryPlan(final byte[] decodingBuffer)
+        {
+            buffer.wrap(decodingBuffer);
+            decoder.wrap(buffer, 0, RecoveryPlanDecoder.BLOCK_LENGTH, RecoveryPlanDecoder.SCHEMA_VERSION);
+
+            this.lastLeadershipTermId = decoder.lastLeadershipTermId();
+            this.lastLogPosition = decoder.lastLogPosition();
+            this.lastTermPositionCommitted = decoder.lastTermPositionCommitted();
+            this.lastTermPositionAppended = decoder.lastTermPositionAppended();
+
+            ReplayStep snapshot = null;
+            termSteps = new ArrayList<>();
+            int stepNumber = 0;
+
+            for (final RecoveryPlanDecoder.StepsDecoder stepDecoder : decoder.steps())
+            {
+                if (0 == stepNumber && stepDecoder.entryType() == RecordingLog.ENTRY_TYPE_SNAPSHOT)
+                {
+                    snapshot = new ReplayStep(stepDecoder);
+                }
+                else
+                {
+                    termSteps.add(new ReplayStep(stepDecoder));
+                }
+
+                stepNumber++;
+            }
+
+            this.snapshotStep = snapshot;
+        }
+
+        public byte[] serialize()
+        {
+            final int numberOfSteps = termSteps.size() + (null != snapshotStep ? 1 : 0);
+            final int length = RecoveryPlanEncoder.BLOCK_LENGTH +
+                RecoveryPlanEncoder.StepsEncoder.sbeHeaderSize() +
+                numberOfSteps * RecoveryPlanEncoder.StepsEncoder.sbeBlockLength();
+            final byte[] encodingbBffer = new byte[length];
+
+            buffer.wrap(encodingbBffer);
+            encoder.wrap(buffer, 0);
+
+            encoder
+                .lastLeadershipTermId(lastLeadershipTermId)
+                .lastLogPosition(lastLogPosition)
+                .lastTermPositionCommitted(lastTermPositionCommitted)
+                .lastTermPositionAppended(lastTermPositionAppended);
+
+            final RecoveryPlanEncoder.StepsEncoder stepEncoder = encoder.stepsCount(numberOfSteps);
+
+            if (null != snapshotStep)
+            {
+                snapshotStep.encode(stepEncoder);
+                stepEncoder.next();
+            }
+
+            for (final ReplayStep step : termSteps)
+            {
+                step.encode(stepEncoder);
+                stepEncoder.next();
+            }
+
+            return encodingbBffer;
         }
 
         public String toString()

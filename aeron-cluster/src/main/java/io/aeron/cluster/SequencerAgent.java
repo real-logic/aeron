@@ -406,6 +406,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         {
             if (session.capability() == ClusterSession.Capability.CLIENT_PLUS_QUERY)
             {
+                final long nowMs;
+
                 switch (queryType)
                 {
                     case ENDPOINTS:
@@ -419,7 +421,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                             thisMember.logEndpoint() + "," +
                             thisMember.archiveEndpoint();
 
-                        final long nowMs = cachedEpochClock.time();
+                        nowMs = cachedEpochClock.time();
                         session.lastActivity(nowMs, correlationId);
                         session.adminResponseData(endpointsDetail.getBytes(US_ASCII));
 
@@ -429,8 +431,15 @@ class SequencerAgent implements Agent, ServiceControlListener
                         }
                         break;
 
-                    case RECORDING_LOG: // TODO: or should this really be recoveryPlan?
-                        // TODO: send recordingLog as a byte[]
+                    case RECOVERY_PLAN:
+                        nowMs = cachedEpochClock.time();
+                        session.lastActivity(nowMs, correlationId);
+                        session.adminResponseData(recoveryPlan.serialize());
+
+                        if (egressPublisher.sendAdminResponse(session, session.adminResponseData()))
+                        {
+                            session.adminResponseData(null);
+                        }
                         break;
                 }
             }

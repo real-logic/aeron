@@ -45,7 +45,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-@Ignore
 public class ClusterTest
 {
     private static final int MEMBER_COUNT = 3;

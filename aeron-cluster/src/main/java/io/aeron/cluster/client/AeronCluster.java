@@ -94,11 +94,11 @@ public final class AeronCluster implements AutoCloseable
             this.nanoClock = aeron.context().nanoClock();
             this.isUnicast = ctx.clusterMemberEndpoints() != null;
 
-            publication = connectToCluster();
-            this.publication = publication;
-
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
             this.subscription = subscription;
+
+            publication = connectToCluster();
+            this.publication = publication;
 
             this.clusterSessionId = openSession();
         }

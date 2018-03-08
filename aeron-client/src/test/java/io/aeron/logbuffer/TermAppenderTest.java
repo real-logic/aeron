@@ -306,10 +306,10 @@ public class TermAppenderTest
         logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tail));
 
         final DirectBufferVector[] vectors = new DirectBufferVector[]
-            {
-                new DirectBufferVector(bufferOne, 0, bufferOneLength),
-                new DirectBufferVector(bufferTwo, offset, bufferTwoLength)
-            };
+        {
+            new DirectBufferVector(bufferOne, 0, bufferOneLength),
+            new DirectBufferVector(bufferTwo, offset, bufferTwoLength)
+        };
 
         assertThat(termAppender.appendFragmentedMessage(
             headerWriter, vectors, msgLength, maxPayloadLength, RVS, TERM_ID), is(resultingOffset));

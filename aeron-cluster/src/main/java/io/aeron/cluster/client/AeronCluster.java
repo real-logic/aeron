@@ -261,7 +261,7 @@ public final class AeronCluster implements AutoCloseable
                 {
                     if (poller.templateId() == AdminResponseDecoder.TEMPLATE_ID)
                     {
-                        return new String(poller.adminResponseData(), US_ASCII);
+                        return new String(poller.encodedAdminResponse(), US_ASCII);
                     }
                     else if (poller.eventCode() == EventCode.ERROR)
                     {
@@ -298,7 +298,7 @@ public final class AeronCluster implements AutoCloseable
                 {
                     if (poller.templateId() == AdminResponseDecoder.TEMPLATE_ID)
                     {
-                        return poller.adminResponseData();
+                        return poller.encodedAdminResponse();
                     }
                     else if (poller.eventCode() == EventCode.ERROR)
                     {
@@ -437,7 +437,7 @@ public final class AeronCluster implements AutoCloseable
     private long openSession()
     {
         final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
-        long correlationId = sendConnectRequest(ctx.credentialsSupplier().connectRequestCredentialData(), deadlineNs);
+        long correlationId = sendConnectRequest(ctx.credentialsSupplier().encodedCredentials(), deadlineNs);
         final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
 
         while (true)
@@ -446,10 +446,10 @@ public final class AeronCluster implements AutoCloseable
 
             if (poller.correlationId() == correlationId)
             {
-                if (poller.challenged())
+                if (poller.isChallenged())
                 {
-                    final byte[] credentialData = ctx.credentialsSupplier().onChallenge(poller.challengeData());
-                    correlationId = sendChallengeResponse(poller.clusterSessionId(), credentialData, deadlineNs);
+                    final byte[] encodedCredentials = ctx.credentialsSupplier().onChallenge(poller.encodedChallenge());
+                    correlationId = sendChallengeResponse(poller.clusterSessionId(), encodedCredentials, deadlineNs);
                     continue;
                 }
 
@@ -483,7 +483,7 @@ public final class AeronCluster implements AutoCloseable
         }
     }
 
-    private long sendConnectRequest(final byte[] credentialData, final long deadlineNs)
+    private long sendConnectRequest(final byte[] encodedCredentials, final long deadlineNs)
     {
         final long correlationId = aeron.nextCorrelationId();
 
@@ -492,8 +492,8 @@ public final class AeronCluster implements AutoCloseable
             SessionConnectRequestEncoder.BLOCK_LENGTH +
             SessionConnectRequestEncoder.responseChannelHeaderLength() +
             ctx.egressChannel().length() +
-            SessionConnectRequestEncoder.credentialDataHeaderLength() +
-            credentialData.length;
+            SessionConnectRequestEncoder.encodedCredentialsHeaderLength() +
+            encodedCredentials.length;
 
         idleStrategy.reset();
 
@@ -507,7 +507,7 @@ public final class AeronCluster implements AutoCloseable
                     .correlationId(correlationId)
                     .responseStreamId(ctx.egressStreamId())
                     .responseChannel(ctx.egressChannel())
-                    .putCredentialData(credentialData, 0, credentialData.length);
+                    .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
                 bufferClaim.commit();
 
@@ -568,15 +568,15 @@ public final class AeronCluster implements AutoCloseable
         return correlationId;
     }
 
-    private long sendChallengeResponse(final long sessionId, final byte[] credentialData, final long deadlineNs)
+    private long sendChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long deadlineNs)
     {
         final long correlationId = aeron.nextCorrelationId();
 
         final ChallengeResponseEncoder challengeResponseEncoder = new ChallengeResponseEncoder();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             ChallengeResponseEncoder.BLOCK_LENGTH +
-            ChallengeResponseEncoder.credentialDataHeaderLength() +
-            credentialData.length;
+            ChallengeResponseEncoder.encodedCredentialsHeaderLength() +
+            encodedCredentials.length;
 
         idleStrategy.reset();
 
@@ -589,7 +589,7 @@ public final class AeronCluster implements AutoCloseable
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId)
                     .clusterSessionId(sessionId)
-                    .putCredentialData(credentialData, 0, credentialData.length);
+                    .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
                 bufferClaim.commit();
 

@@ -39,8 +39,8 @@ public class EgressPoller implements ControlledFragmentHandler
     private boolean pollComplete = false;
     private EventCode eventCode;
     private String detail = "";
-    private byte[] challengeData;
-    private byte[] adminResponseData;
+    private byte[] encodedChallenge;
+    private byte[] encodedAdminResponse;
 
     public EgressPoller(final Subscription subscription, final int fragmentLimit)
     {
@@ -109,23 +109,23 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
-     * Get the challenge data in the last challenge.
+     * Get the encoded challenge in the last challenge.
      *
-     * @return the challenge data in the last challenge or null if last message was not a challenge.
+     * @return the encoded challenge in the last challenge or null if last message was not a challenge.
      */
-    public byte[] challengeData()
+    public byte[] encodedChallenge()
     {
-        return challengeData;
+        return encodedChallenge;
     }
 
     /**
-     * Get the response data in the last admin response.
+     * Get the encoded response from an admin query.
      *
-     * @return the response data in the last admin response or null if last message was not an admin response.
+     * @return the encoded response from an admin query or null if last message was not an admin response.
      */
-    public byte[] adminResponseData()
+    public byte[] encodedAdminResponse()
     {
-        return adminResponseData;
+        return encodedAdminResponse;
     }
 
     /**
@@ -143,7 +143,7 @@ public class EgressPoller implements ControlledFragmentHandler
      *
      * @return true if last message was a challenge or false if not.
      */
-    public boolean challenged()
+    public boolean isChallenged()
     {
         return ChallengeDecoder.TEMPLATE_ID == templateId;
     }
@@ -155,8 +155,8 @@ public class EgressPoller implements ControlledFragmentHandler
         templateId = -1;
         eventCode = null;
         detail = "";
-        challengeData = null;
-        adminResponseData = null;
+        encodedChallenge = null;
+        encodedAdminResponse = null;
         pollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
@@ -211,8 +211,8 @@ public class EgressPoller implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                challengeData = new byte[challengeDecoder.challengeDataLength()];
-                challengeDecoder.getChallengeData(challengeData, 0, challengeDecoder.challengeDataLength());
+                encodedChallenge = new byte[challengeDecoder.encodedChallengeLength()];
+                challengeDecoder.getEncodedChallenge(encodedChallenge, 0, challengeDecoder.encodedChallengeLength());
 
                 clusterSessionId = challengeDecoder.clusterSessionId();
                 correlationId = challengeDecoder.correlationId();
@@ -225,8 +225,9 @@ public class EgressPoller implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                adminResponseData = new byte[adminResponseDecoder.responseDataLength()];
-                adminResponseDecoder.getResponseData(adminResponseData, 0, adminResponseDecoder.responseDataLength());
+                encodedAdminResponse = new byte[adminResponseDecoder.encodedResponseLength()];
+                adminResponseDecoder.getEncodedResponse(
+                    encodedAdminResponse, 0, adminResponseDecoder.encodedResponseLength());
 
                 clusterSessionId = adminResponseDecoder.clusterSessionId();
                 correlationId = adminResponseDecoder.correlationId();

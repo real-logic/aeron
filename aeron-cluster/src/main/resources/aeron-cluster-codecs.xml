@@ -136,7 +136,7 @@
         <field name="clusterSessionId"     id="2" type="int64"/>
         <field name="responseStreamId"     id="3" type="int32"/>
         <data  name="responseChannel"      id="4" type="varAsciiEncoding"/>
-        <data  name="credentialData"       id="5" type="varDataEncoding"/>
+        <data  name="encodedCredentials"   id="5" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="SessionHeader"
@@ -174,18 +174,18 @@
 
     <sbe:message name="Challenge"
                  id="7"
-                 description="Challenge the client to provide additional credentials">
+                 description="Challenge the client to provide credentials">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
-        <data  name="challengeData"        id="3" type="varDataEncoding"/>
+        <data  name="encodedChallenge"     id="3" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="ChallengeResponse"
                  id="8"
-                 description="Respond to a cluster challenge with additional credentials">
+                 description="Respond to a cluster challenge with credentials">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
-        <data  name="credentialData"       id="3" type="varDataEncoding"/>
+        <data  name="encodedCredentials"   id="3" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="AdminQuery"
@@ -201,7 +201,7 @@
                  description="Query response from the cluster member">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
-        <data  name="responseData"         id="3" type="varDataEncoding"/>
+        <data  name="encodedResponse"      id="3" type="varDataEncoding"/>
     </sbe:message>
 
     <!-- Events from the Consensus Module to the clustered services which get appended to the log  -->

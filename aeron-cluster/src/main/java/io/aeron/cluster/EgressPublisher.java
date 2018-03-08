@@ -60,13 +60,13 @@ class EgressPublisher
         return false;
     }
 
-    public boolean sendChallenge(final ClusterSession session, final byte[] challengeData)
+    public boolean sendChallenge(final ClusterSession session, final byte[] encodedChallenge)
     {
         final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             ChallengeEncoder.BLOCK_LENGTH +
-            ChallengeEncoder.challengeDataHeaderLength() +
-            challengeData.length;
+            ChallengeEncoder.encodedChallengeHeaderLength() +
+            encodedChallenge.length;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -78,7 +78,7 @@ class EgressPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .correlationId(session.lastCorrelationId())
-                    .putChallengeData(challengeData, 0, challengeData.length);
+                    .putEncodedChallenge(encodedChallenge, 0, encodedChallenge.length);
 
                 bufferClaim.commit();
 
@@ -90,13 +90,13 @@ class EgressPublisher
         return false;
     }
 
-    public boolean sendAdminResponse(final ClusterSession session, final byte[] responseData)
+    public boolean sendAdminResponse(final ClusterSession session, final byte[] encodedResponse)
     {
         final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             AdminResponseEncoder.BLOCK_LENGTH +
-            AdminResponseEncoder.responseDataHeaderLength() +
-            responseData.length;
+            AdminResponseEncoder.encodedResponseHeaderLength() +
+            encodedResponse.length;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -108,7 +108,7 @@ class EgressPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .correlationId(session.lastCorrelationId())
-                    .putResponseData(responseData, 0, responseData.length);
+                    .putEncodedResponse(encodedResponse, 0, encodedResponse.length);
 
                 bufferClaim.commit();
 

@@ -217,7 +217,7 @@ public class RecordingLog
         public final ArrayList<ReplayStep> termSteps;
         public final RecoveryPlanEncoder encoder = new RecoveryPlanEncoder();
         public final RecoveryPlanDecoder decoder = new RecoveryPlanDecoder();
-        public final UnsafeBuffer buffer = new UnsafeBuffer();
+        public final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
 
         public RecoveryPlan(
             final long lastLeadershipTermId,
@@ -237,8 +237,8 @@ public class RecordingLog
 
         public RecoveryPlan(final byte[] decodingBuffer)
         {
-            buffer.wrap(decodingBuffer);
-            decoder.wrap(buffer, 0, RecoveryPlanDecoder.BLOCK_LENGTH, RecoveryPlanDecoder.SCHEMA_VERSION);
+            unsafeBuffer.wrap(decodingBuffer);
+            decoder.wrap(unsafeBuffer, 0, RecoveryPlanDecoder.BLOCK_LENGTH, RecoveryPlanDecoder.SCHEMA_VERSION);
 
             this.lastLeadershipTermId = decoder.lastLeadershipTermId();
             this.lastLogPosition = decoder.lastLogPosition();
@@ -266,16 +266,16 @@ public class RecordingLog
             this.snapshotStep = snapshot;
         }
 
-        public byte[] serialize()
+        public byte[] encode()
         {
             final int numberOfSteps = termSteps.size() + (null != snapshotStep ? 1 : 0);
             final int length = RecoveryPlanEncoder.BLOCK_LENGTH +
                 RecoveryPlanEncoder.StepsEncoder.sbeHeaderSize() +
                 numberOfSteps * RecoveryPlanEncoder.StepsEncoder.sbeBlockLength();
-            final byte[] encodingbBffer = new byte[length];
+            final byte[] bytes = new byte[length];
 
-            buffer.wrap(encodingbBffer);
-            encoder.wrap(buffer, 0);
+            unsafeBuffer.wrap(bytes);
+            encoder.wrap(unsafeBuffer, 0);
 
             encoder
                 .lastLeadershipTermId(lastLeadershipTermId)
@@ -297,7 +297,7 @@ public class RecordingLog
                 stepEncoder.next();
             }
 
-            return encodingbBffer;
+            return bytes;
         }
 
         public String toString()

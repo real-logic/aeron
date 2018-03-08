@@ -22,28 +22,28 @@ import org.agrona.collections.ArrayUtil;
  */
 public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
 {
-    private static final byte[] NULL_PRINCIPAL_DATA = ArrayUtil.EMPTY_BYTE_ARRAY;
+    private static final byte[] NULL_ENCODED_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
 
     public Authenticator newAuthenticator(final ConsensusModule.Context context)
     {
         return new Authenticator()
         {
-            public void onConnectRequest(final long sessionId, final byte[] credentialData, final long nowMs)
+            public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
             {
             }
 
-            public void onChallengeResponse(final long sessionId, final byte[] credentialData, final long nowMs)
+            public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
             {
             }
 
             public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
             {
-                sessionProxy.authenticate(NULL_PRINCIPAL_DATA);
+                sessionProxy.authenticate(NULL_ENCODED_PRINCIPAL);
             }
 
             public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
             {
-                sessionProxy.authenticate(NULL_PRINCIPAL_DATA);
+                sessionProxy.authenticate(NULL_ENCODED_PRINCIPAL);
             }
         };
     }

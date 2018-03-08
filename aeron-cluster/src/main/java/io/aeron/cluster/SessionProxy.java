@@ -59,14 +59,14 @@ public class SessionProxy
     }
 
     /**
-     * Inform the system that the session requires a challenge and to send the provided data in the challenge.
+     * Inform the system that the session requires a challenge and to send the provided encoded challenge.
      *
-     * @param challengeData to send in the challenge to the client.
+     * @param encodedChallenge to send to the client.
      * @return true if challenge was sent or false if challenge could not be sent.
      */
-    public final boolean challenge(final byte[] challengeData)
+    public final boolean challenge(final byte[] encodedChallenge)
     {
-        if (egressPublisher.sendChallenge(clusterSession, challengeData))
+        if (egressPublisher.sendChallenge(clusterSession, encodedChallenge))
         {
             clusterSession.state(CHALLENGED);
             return true;

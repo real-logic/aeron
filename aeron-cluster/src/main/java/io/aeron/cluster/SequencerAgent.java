@@ -319,7 +319,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final long correlationId,
         final int responseStreamId,
         final String responseChannel,
-        final byte[] credentialData)
+        final byte[] encodedCredentials)
     {
         final long nowMs = cachedEpochClock.time();
         final long sessionId = nextSessionId++;
@@ -329,7 +329,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         if (pendingSessions.size() + sessionByIdMap.size() < ctx.maxConcurrentSessions())
         {
-            authenticator.onConnectRequest(sessionId, credentialData, nowMs);
+            authenticator.onConnectRequest(sessionId, encodedCredentials, nowMs);
             pendingSessions.add(session);
         }
         else
@@ -385,7 +385,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-    public void onChallengeResponse(final long correlationId, final long clusterSessionId, final byte[] credentialData)
+    public void onChallengeResponse(
+        final long correlationId, final long clusterSessionId, final byte[] encodedCredentials)
     {
         for (int lastIndex = pendingSessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
@@ -395,7 +396,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             {
                 final long nowMs = cachedEpochClock.time();
                 session.lastActivity(nowMs, correlationId);
-                authenticator.onChallengeResponse(clusterSessionId, credentialData, nowMs);
+                authenticator.onChallengeResponse(clusterSessionId, encodedCredentials, nowMs);
                 break;
             }
         }
@@ -408,14 +409,9 @@ class SequencerAgent implements Agent, ServiceControlListener
         {
             if (session.capability() == ClusterSession.Capability.CLIENT_PLUS_QUERY)
             {
-                final long nowMs;
-
                 switch (queryType)
                 {
                     case ENDPOINTS:
-                        final ChannelUri archiveChannelUri =
-                            ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
-
                         final String endpointsDetail =
                             thisMember.id() + "," +
                             thisMember.clientFacingEndpoint() + "," +
@@ -423,24 +419,23 @@ class SequencerAgent implements Agent, ServiceControlListener
                             thisMember.logEndpoint() + "," +
                             thisMember.archiveEndpoint();
 
-                        nowMs = cachedEpochClock.time();
+                        final long nowMs = cachedEpochClock.time();
                         session.lastActivity(nowMs, correlationId);
-                        session.adminResponseData(endpointsDetail.getBytes(US_ASCII));
+                        session.encodedAdminResponse(endpointsDetail.getBytes(US_ASCII));
 
-                        if (egressPublisher.sendAdminResponse(session, session.adminResponseData()))
+                        if (egressPublisher.sendAdminResponse(session, session.encodedAdminResponse()))
                         {
-                            session.adminResponseData(null);
+                            session.encodedAdminResponse(null);
                         }
                         break;
 
                     case RECOVERY_PLAN:
-                        nowMs = cachedEpochClock.time();
-                        session.lastActivity(nowMs, correlationId);
-                        session.adminResponseData(recoveryPlan.serialize());
+                        session.lastActivity(cachedEpochClock.time(), correlationId);
+                        session.encodedAdminResponse(recoveryPlan.encode());
 
-                        if (egressPublisher.sendAdminResponse(session, session.adminResponseData()))
+                        if (egressPublisher.sendAdminResponse(session, session.encodedAdminResponse()))
                         {
-                            session.adminResponseData(null);
+                            session.encodedAdminResponse(null);
                         }
                         break;
                 }
@@ -953,11 +948,11 @@ class SequencerAgent implements Agent, ServiceControlListener
                 appendConnectedSession(session, nowMs);
                 workCount += 1;
             }
-            else if (state == OPEN && session.adminResponseData() != null)
+            else if (state == OPEN && session.encodedAdminResponse() != null)
             {
-                if (egressPublisher.sendAdminResponse(session, session.adminResponseData()))
+                if (egressPublisher.sendAdminResponse(session, session.encodedAdminResponse()))
                 {
-                    session.adminResponseData(null);
+                    session.encodedAdminResponse(null);
                 }
             }
         }

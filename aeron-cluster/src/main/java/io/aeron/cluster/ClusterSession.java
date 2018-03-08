@@ -29,7 +29,7 @@ class ClusterSession implements AutoCloseable
 {
     public static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
     public static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
-    public static final int MAX_ADMIN_RESPONSE_DATA_LENGTH = 4 * 1024;
+    public static final int MAX_ENCODED_ADMIN_RESPONSE_LENGTH = 4 * 1024;
 
     enum State
     {
@@ -69,7 +69,7 @@ class ClusterSession implements AutoCloseable
     private State state = State.INIT;
     private CloseReason closeReason = CloseReason.NULL_VAL;
     private byte[] encodedPrincipal = NULL_PRINCIPAL;
-    private byte[] adminResponseData;
+    private byte[] encodedAdminResponse;
     private Capability capability = NONE;
 
     ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
@@ -195,14 +195,14 @@ class ClusterSession implements AutoCloseable
         return openedTermPosition;
     }
 
-    void adminResponseData(final byte[] responseData)
+    void encodedAdminResponse(final byte[] encodedResponse)
     {
-        this.adminResponseData = responseData;
+        encodedAdminResponse = encodedResponse;
     }
 
-    byte[] adminResponseData()
+    byte[] encodedAdminResponse()
     {
-        return adminResponseData;
+        return encodedAdminResponse;
     }
 
     static void checkEncodedPrincipalLength(final byte[] encodedPrincipal)
@@ -217,16 +217,16 @@ class ClusterSession implements AutoCloseable
         }
     }
 
-    static void checkAdminResponseDataLength(final byte[] adminResponseData)
+    static void checkEncodedAdminResponseLength(final byte[] encodedResponse)
     {
-        if (null != adminResponseData &&
-            adminResponseData.length > MAX_ADMIN_RESPONSE_DATA_LENGTH)
+        if (null != encodedResponse &&
+            encodedResponse.length > MAX_ENCODED_ADMIN_RESPONSE_LENGTH)
         {
             throw new IllegalArgumentException(
-                "Admin Response data max length " +
-                MAX_ADMIN_RESPONSE_DATA_LENGTH +
+                "Encoded Admin Response max length " +
+                    MAX_ENCODED_ADMIN_RESPONSE_LENGTH +
                 " exceeded: length=" +
-                adminResponseData.length);
+                encodedResponse.length);
         }
     }
 
@@ -241,7 +241,7 @@ class ClusterSession implements AutoCloseable
             ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +
             ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
-            ", adminResponseData=" + Arrays.toString(adminResponseData) +
+            ", encodedAdminResponse=" + Arrays.toString(encodedAdminResponse) +
             '}';
     }
 }

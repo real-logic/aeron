@@ -29,6 +29,7 @@ import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.cluster.service.RecordingLog;
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
@@ -89,6 +90,7 @@ public class ClusterTest
                     .aeronDirectoryName(baseDirName)
                     .threadingMode(ThreadingMode.SHARED)
                     .termBufferSparseFile(true)
+                    .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
                     .errorHandler(Throwable::printStackTrace)
                     .dirDeleteOnStart(true),
                 new Archive.Context()

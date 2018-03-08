@@ -698,13 +698,13 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         if (leadershipTermId == this.leadershipTermId)
         {
-            if (leaderMemberId != this.leaderMemberId)
+            if (leaderMemberId != votedForMemberId)
             {
                 throw new IllegalStateException("Commit position not for current leader: expected=" +
                     this.leaderMemberId + " received=" + leaderMemberId);
             }
 
-            if (0 == termPosition && leaderMemberId == votedForMemberId && this.logSessionId != logSessionId)
+            if (0 == termPosition)
             {
                 this.logSessionId = logSessionId;
             }

@@ -283,6 +283,57 @@ public class TermAppenderTest
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameTwoLength);
     }
 
+    @Test
+    public void shouldAppendFragmentedFromVectorsWithNonZeroOffsetToEmptyLog()
+    {
+        final int mtu = 2048;
+        final int headerLength = DEFAULT_HEADER.capacity();
+        final int maxPayloadLength = mtu - headerLength;
+        final int bufferOneLength = 64;
+        final int offset = 15;
+        final int bufferTwoTotalLength = 3000;
+        final int bufferTwoLength = bufferTwoTotalLength - offset;
+        final UnsafeBuffer bufferOne = new UnsafeBuffer(new byte[bufferOneLength]);
+        final UnsafeBuffer bufferTwo = new UnsafeBuffer(new byte[bufferTwoTotalLength]);
+        bufferOne.setMemory(0, bufferOne.capacity(), (byte)'1');
+        bufferTwo.setMemory(0, bufferTwo.capacity(), (byte)'2');
+        final int msgLength = bufferOneLength + bufferTwoLength;
+        int tail = 0;
+        final int frameOneLength = mtu;
+        final int frameTwoLength = (msgLength - (mtu - headerLength)) + headerLength;
+        final int resultingOffset = frameOneLength + BitUtil.align(frameTwoLength, FRAME_ALIGNMENT);
+
+        logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID, tail));
+
+        final DirectBufferVector[] vectors = new DirectBufferVector[]
+            {
+                new DirectBufferVector(bufferOne, 0, bufferOneLength),
+                new DirectBufferVector(bufferTwo, offset, bufferTwoLength)
+            };
+
+        assertThat(termAppender.appendFragmentedMessage(
+            headerWriter, vectors, msgLength, maxPayloadLength, RVS, TERM_ID), is(resultingOffset));
+
+        final InOrder inOrder = inOrder(termBuffer, headerWriter);
+
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameOneLength, TERM_ID);
+        inOrder.verify(termBuffer, times(1)).putBytes(headerLength, bufferOne, 0, bufferOneLength);
+        inOrder.verify(termBuffer, times(1))
+            .putBytes(headerLength + bufferOneLength, bufferTwo, offset, maxPayloadLength - bufferOneLength);
+        inOrder.verify(termBuffer, times(1)).putLong(tail + RESERVED_VALUE_OFFSET, RV, LITTLE_ENDIAN);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameOneLength);
+
+        tail += frameOneLength;
+        final int bufferTwoOffset = maxPayloadLength - bufferOneLength + offset;
+        final int fragmentTwoPayloadLength = bufferTwoLength - (maxPayloadLength - bufferOneLength);
+
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameTwoLength, TERM_ID);
+        inOrder.verify(termBuffer, times(1))
+            .putBytes(tail + headerLength, bufferTwo, bufferTwoOffset, fragmentTwoPayloadLength);
+        inOrder.verify(termBuffer, times(1)).putLong(tail + RESERVED_VALUE_OFFSET, RV, LITTLE_ENDIAN);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameTwoLength);
+    }
+
     @Test(expected = IllegalStateException.class)
     public void shouldDetectInvalidTerm()
     {

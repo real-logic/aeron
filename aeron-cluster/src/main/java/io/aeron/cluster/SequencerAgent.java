@@ -1250,10 +1250,15 @@ class SequencerAgent implements Agent, ServiceControlListener
         {
             final RecordingLog.ReplayStep step = steps.get(i);
             final RecordingLog.Entry entry = step.entry;
-            final long recordingId = entry.recordingId;
             final long startPosition = step.recordingStartPosition;
             final long stopPosition = step.recordingStopPosition;
-            final long length = NULL_POSITION == stopPosition ? Long.MAX_VALUE : stopPosition - startPosition;
+
+            if (stopPosition == NULL_POSITION)
+            {
+                throw new IllegalStateException("stop position not set for replay step " + step);
+            }
+
+            final long length = stopPosition - startPosition;
             final long logPosition = entry.logPosition;
 
             if (logPosition != baseLogPosition)
@@ -1266,6 +1271,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(i));
             final String channel = channelUri.toString();
+            final long recordingId = entry.recordingId;
 
             try (Counter counter = CommitPos.allocate(
                 aeron, tempBuffer, recordingId, logPosition, leadershipTermId, i);

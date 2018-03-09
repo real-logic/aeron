@@ -279,18 +279,17 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         if (++serviceAckCount == ctx.serviceCount())
         {
-            final long termPosition = logPosition - baseLogPosition;
-
             if (isRecovering)
             {
                 return;
             }
 
+            final long termPosition = currentTermPosition();
             switch (action)
             {
                 case SNAPSHOT:
                     final long nowNs = cachedEpochClock.time();
-                    takeSnapshot(nowNs, currentTermPosition());
+                    takeSnapshot(nowNs, termPosition);
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
 
@@ -301,7 +300,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                     break;
 
                 case SHUTDOWN:
-                    takeSnapshot(cachedEpochClock.time(), currentTermPosition());
+                    takeSnapshot(cachedEpochClock.time(), termPosition);
                     ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();

@@ -281,10 +281,15 @@ class SequencerAgent implements Agent, ServiceControlListener
         {
             final long termPosition = logPosition - baseLogPosition;
 
+            if (isRecovering)
+            {
+                return;
+            }
+
             switch (action)
             {
                 case SNAPSHOT:
-                    ctx.snapshotCounter().incrementOrdered();
+                    takeSnapshot(cachedEpochClock.time(), currentTermPosition());
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
 
@@ -296,7 +301,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                     break;
 
                 case SHUTDOWN:
-                    ctx.snapshotCounter().incrementOrdered();
+                    takeSnapshot(cachedEpochClock.time(), currentTermPosition());
                     ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
@@ -598,7 +603,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.SNAPSHOT);
-                    takeSnapshot(timestamp, termPosition);
                 }
                 break;
 
@@ -607,7 +611,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 {
                     serviceAckCount = 0;
                     state(ConsensusModule.State.SHUTDOWN);
-                    takeSnapshot(timestamp, termPosition);
                 }
                 break;
 
@@ -768,7 +771,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT, nowMs))
                 {
                     state(ConsensusModule.State.SNAPSHOT);
-                    takeSnapshot(nowMs, logPublisher.position());
                 }
                 break;
 
@@ -777,7 +779,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SHUTDOWN, nowMs))
                 {
                     state(ConsensusModule.State.SHUTDOWN);
-                    takeSnapshot(nowMs, logPublisher.position());
                 }
                 break;
 
@@ -1452,7 +1453,6 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-
     private void takeSnapshot(final long timestampMs, final long termPosition)
     {
         final long recordingId;
@@ -1478,6 +1478,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
 
         ctx.recordingLog().appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
+        ctx.snapshotCounter().incrementOrdered();
+
     }
 
     private void awaitRecordingComplete(

@@ -1263,8 +1263,8 @@ class SequencerAgent implements Agent, ServiceControlListener
 
             if (logPosition != baseLogPosition)
             {
-                throw new IllegalStateException("base position for log not as expected: expected " +
-                    baseLogPosition + " actual is " + logPosition + ", " + step);
+                throw new IllegalStateException("invalid base position for log: expected=" +
+                    baseLogPosition + " actual=" + logPosition + ", " + step);
             }
 
             leadershipTermId = entry.leadershipTermId;

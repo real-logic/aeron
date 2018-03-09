@@ -321,7 +321,7 @@ public class RecordingLog
     /**
      * Filename for the history of log terms and snapshot recordings.
      */
-    public static final String RECORDING_LOG_FILE_NAME = "recordings.log";
+    public static final String RECORDING_LOG_FILE_NAME = "recording.log";
 
     /**
      * Represents a value that is not set or invalid.

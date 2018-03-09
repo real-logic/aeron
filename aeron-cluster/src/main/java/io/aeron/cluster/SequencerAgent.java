@@ -289,11 +289,11 @@ class SequencerAgent implements Agent, ServiceControlListener
             switch (action)
             {
                 case SNAPSHOT:
-                    takeSnapshot(cachedEpochClock.time(), currentTermPosition());
+                    final long nowNs = cachedEpochClock.time();
+                    takeSnapshot(nowNs, currentTermPosition());
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
 
-                    final long nowNs = epochClock.time();
                     for (final ClusterSession session : sessionByIdMap.values())
                     {
                         session.timeOfLastActivityMs(nowNs);

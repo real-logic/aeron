@@ -1341,7 +1341,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final long currentLogPosition = baseLogPosition + currentTermPosition();
         if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)
         {
-            throw new IllegalStateException("Invalid log state:" +
+            throw new IllegalStateException("invalid log state:" +
                 " serviceId=" + serviceId +
                 ", logPosition=" + logPosition + " current is " + currentLogPosition +
                 ", leadershipTermId=" + leadershipTermId + " current is " + this.leadershipTermId);
@@ -1349,7 +1349,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         if (!state.isValid(action))
         {
-            throw new IllegalStateException("Invalid action ack for state " + state + " action " + action);
+            throw new IllegalStateException("invalid service ACK given state " + state + ", action " + action);
         }
     }
 
@@ -1484,7 +1484,6 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         ctx.recordingLog().appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
         ctx.snapshotCounter().incrementOrdered();
-
     }
 
     private void awaitRecordingComplete(

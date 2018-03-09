@@ -1461,7 +1461,6 @@ class SequencerAgent implements Agent, ServiceControlListener
     private void takeSnapshot(final long timestampMs, final long termPosition)
     {
         final long recordingId;
-        final long logPosition = baseLogPosition + termPosition;
         final String channel = ctx.snapshotChannel();
         final int streamId = ctx.snapshotStreamId();
 
@@ -1473,7 +1472,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                snapshotState(publication, logPosition, leadershipTermId);
+                snapshotState(publication, baseLogPosition + termPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
             }
             finally

@@ -235,6 +235,11 @@ public class RecordingLog
             this.termSteps = termSteps;
         }
 
+        public RecoveryPlan(final ByteBuffer byteBuffer)
+        {
+            this(byteBuffer.array());
+        }
+
         public RecoveryPlan(final byte[] decodingBuffer)
         {
             unsafeBuffer.wrap(decodingBuffer);

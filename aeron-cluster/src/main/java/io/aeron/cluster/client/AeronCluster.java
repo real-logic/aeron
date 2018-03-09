@@ -23,6 +23,7 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.*;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -279,9 +280,10 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Query cluster member for recovery plan information.
      *
-     * @return result of query.
+     * @return serialized recovery plan
+     * @see io.aeron.cluster.service.RecordingLog.RecoveryPlan
      */
-    public byte[] queryForRecoveryPlan()
+    public ByteBuffer queryForRecoveryPlan()
     {
         lock.lock();
         try
@@ -298,7 +300,9 @@ public final class AeronCluster implements AutoCloseable
                 {
                     if (poller.templateId() == AdminResponseDecoder.TEMPLATE_ID)
                     {
-                        return poller.encodedAdminResponse();
+                        final byte[] recoveryPlan = poller.encodedAdminResponse();
+
+                        return ByteBuffer.wrap(recoveryPlan);
                     }
                     else if (poller.eventCode() == EventCode.ERROR)
                     {

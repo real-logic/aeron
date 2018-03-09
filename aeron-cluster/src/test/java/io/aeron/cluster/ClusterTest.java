@@ -40,6 +40,7 @@ import org.agrona.concurrent.NoOpLock;
 import org.junit.*;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.core.Is.is;
@@ -219,7 +220,7 @@ public class ClusterTest
     @Test(timeout = 10_000)
     public void shouldQueryLeaderForRecoveryPlan()
     {
-        final byte[] encodedPlan = client.queryForRecoveryPlan();
+        final ByteBuffer encodedPlan = client.queryForRecoveryPlan();
         final RecordingLog.RecoveryPlan recoveryPlan = new RecordingLog.RecoveryPlan(encodedPlan);
     }
 

@@ -67,6 +67,11 @@ public class ClusterTool
                     System.out.println(recordingLog.createRecoveryPlan(archive));
                 }
                 break;
+
+            case "recording-log":
+                final RecordingLog recordingLog = new RecordingLog(clusterDir);
+                System.out.println(recordingLog.toString());
+                break;
         }
     }
 
@@ -91,5 +96,6 @@ public class ClusterTool
         System.out.println("  describe: prints out all descriptors in the file.");
         System.out.println("  pid: prints PID of cluster component.");
         System.out.println("  recovery: prints recovery plan of cluster component.");
+        System.out.println("  recording-log: prints recording log of cluster component.");
     }
 }

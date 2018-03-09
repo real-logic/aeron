@@ -35,7 +35,7 @@ public class RecordingLogTest
     @After
     public void after()
     {
-        IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_INDEX_FILE_NAME), false);
+        IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_LOG_FILE_NAME), false);
     }
 
     @Test

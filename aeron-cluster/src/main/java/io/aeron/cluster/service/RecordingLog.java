@@ -314,9 +314,9 @@ public class RecordingLog
     }
 
     /**
-     * Filename for the recording index for the history of log terms and snapshots.
+     * Filename for the history of log terms and snapshot recordings.
      */
-    public static final String RECORDING_INDEX_FILE_NAME = "recording-index.log";
+    public static final String RECORDING_LOG_FILE_NAME = "recordings.log";
 
     /**
      * Represents a value that is not set or invalid.
@@ -375,7 +375,7 @@ public class RecordingLog
 
     private int nextEntryIndex;
     private final File parentDir;
-    private final File indexFile;
+    private final File logFile;
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(ByteOrder.LITTLE_ENDIAN);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
     private final ArrayList<Entry> entries = new ArrayList<>();
@@ -388,7 +388,7 @@ public class RecordingLog
     public RecordingLog(final File parentDir)
     {
         this.parentDir = parentDir;
-        this.indexFile = new File(parentDir, RECORDING_INDEX_FILE_NAME);
+        this.logFile = new File(parentDir, RECORDING_LOG_FILE_NAME);
 
         reload();
     }
@@ -423,8 +423,8 @@ public class RecordingLog
         FileChannel fileChannel = null;
         try
         {
-            final boolean newFile = !indexFile.exists();
-            fileChannel = FileChannel.open(indexFile.toPath(), CREATE, READ, WRITE, SYNC);
+            final boolean newFile = !logFile.exists();
+            fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE, SYNC);
 
             if (newFile)
             {
@@ -469,9 +469,9 @@ public class RecordingLog
     }
 
     /**
-     * Get the latest snapshot {@link Entry} in the index.
+     * Get the latest snapshot {@link Entry} in the log.
      *
-     * @return the latest snapshot {@link Entry} in the index or null if no snapshot exists.
+     * @return the latest snapshot {@link Entry} in the log or null if no snapshot exists.
      */
     public Entry getLatestSnapshot()
     {
@@ -620,7 +620,7 @@ public class RecordingLog
     }
 
     /**
-     * Append an index entry for a Raft term.
+     * Append an log entry for a Raft term.
      *
      * @param recordingId      in the archive for the term.
      * @param leadershipTermId for the current term.
@@ -652,7 +652,7 @@ public class RecordingLog
     }
 
     /**
-     * Append an index entry for a snapshot.
+     * Append an log entry for a snapshot.
      *
      * @param recordingId      in the archive for the snapshot.
      * @param leadershipTermId for the current term
@@ -710,7 +710,7 @@ public class RecordingLog
         byteBuffer.limit(SIZE_OF_LONG).position(0);
         final long filePosition = (index * ENTRY_LENGTH) + TERM_POSITION_OFFSET;
 
-        try (FileChannel fileChannel = FileChannel.open(indexFile.toPath(), WRITE, SYNC))
+        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
         {
             if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
             {
@@ -751,7 +751,7 @@ public class RecordingLog
         byteBuffer.limit(SIZE_OF_INT).position(0);
         final long filePosition = (index * ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
 
-        try (FileChannel fileChannel = FileChannel.open(indexFile.toPath(), WRITE, SYNC))
+        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
         {
             if (SIZE_OF_INT != fileChannel.write(byteBuffer, filePosition))
             {
@@ -762,6 +762,14 @@ public class RecordingLog
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    public String toString()
+    {
+        return "RecordingLog{" +
+            "file=" + logFile.getAbsolutePath() +
+            ", entries=" + entries +
+            '}';
     }
 
     private void append(
@@ -783,7 +791,7 @@ public class RecordingLog
 
         byteBuffer.limit(ENTRY_LENGTH).position(0);
 
-        try (FileChannel fileChannel = FileChannel.open(indexFile.toPath(), WRITE, APPEND, SYNC))
+        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, APPEND, SYNC))
         {
             if (ENTRY_LENGTH != fileChannel.write(byteBuffer))
             {

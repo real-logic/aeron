@@ -235,14 +235,14 @@ public class RecordingLog
             this.termSteps = termSteps;
         }
 
-        public RecoveryPlan(final ByteBuffer byteBuffer)
+        public RecoveryPlan(final byte[] bytes)
         {
-            this(byteBuffer.array());
+            this(ByteBuffer.wrap(bytes));
         }
 
-        public RecoveryPlan(final byte[] decodingBuffer)
+        public RecoveryPlan(final ByteBuffer byteBuffer)
         {
-            unsafeBuffer.wrap(decodingBuffer);
+            unsafeBuffer.wrap(byteBuffer);
             decoder.wrap(unsafeBuffer, 0, RecoveryPlanDecoder.BLOCK_LENGTH, RecoveryPlanDecoder.SCHEMA_VERSION);
 
             this.lastLeadershipTermId = decoder.lastLeadershipTermId();

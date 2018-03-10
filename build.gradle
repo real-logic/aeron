@@ -457,6 +457,7 @@ project(':aeron-archive') {
     task sourcesJar(type: Jar) {
         classifier = 'sources'
         from sourceSets.main.allSource
+        from sourceSets.generated.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
@@ -559,6 +560,7 @@ project(':aeron-cluster') {
     task sourcesJar(type: Jar) {
         classifier = 'sources'
         from sourceSets.main.allSource
+        from sourceSets.generated.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
@@ -765,6 +767,7 @@ project(':aeron-all') {
         from project(':aeron-driver').sourceSets.main.allSource
         from project(':aeron-agent').sourceSets.main.allSource
         from project(':aeron-archive').sourceSets.main.allSource
+        from project(':aeron-archive').sourceSets.generated.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {

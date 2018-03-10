@@ -212,17 +212,9 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
 
         leadershipTermId++;
+        electLeader();
 
-        if (clusterMembers.length > 1)
-        {
-            electLeader();
-        }
-        else
-        {
-            votedForMemberId = memberId;
-        }
-
-        if (memberId == votedForMemberId || clusterMembers.length == 1)
+        if (memberId == votedForMemberId)
         {
             becomeLeader();
         }
@@ -986,7 +978,12 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private void electLeader()
     {
-        if (ctx.appointedLeaderId() == memberId)
+        if (clusterMembers.length == 1)
+        {
+            votedForMemberId = memberId;
+            leaderMember = thisMember;
+        }
+        else if (ctx.appointedLeaderId() == memberId)
         {
             role(Cluster.Role.CANDIDATE);
             ClusterMember.becomeCandidate(clusterMembers, memberId);

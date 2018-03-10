@@ -450,7 +450,8 @@ class SequencerAgent implements Agent, ServiceControlListener
             }
             else
             {
-                // TODO: error back, but leave client open.
+                session.lastActivity(cachedEpochClock.time(), correlationId);
+                egressPublisher.sendEvent(session, EventCode.ERROR, "Principal does not have QUERY capability");
             }
         }
     }

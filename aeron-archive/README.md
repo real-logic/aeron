@@ -1,6 +1,8 @@
 Aeron Archive
 ===
 
+[![Javadocs](http://www.javadoc.io/badge/io.aeron/aeron-all.svg)](http://www.javadoc.io/doc/io.aeron/aeron-all)
+
 The aeron-archive is an service which enables Aeron data stream recording
 and replay support from an archive. 
 
@@ -15,7 +17,7 @@ a particular `termId + termOffset`, and for a particular length.
 
 - **Query:** service provides a rudimentary query interface which
 allows `recordingId` discovery and description. Currently this
-supports a query for all descriptors or filtered by `<channel, streamId>`.
+supports a query for all descriptors, filtered by `<channel, streamId>`, or by specific `recordingId`.
 
 Usage
 =====

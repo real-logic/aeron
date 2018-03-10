@@ -324,7 +324,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
                 throw new IllegalStateException("No snapshot available for term position: " + termPosition);
             }
 
-            baseLogPosition = snapshotEntry.logPosition;
+            baseLogPosition = snapshotEntry.logPosition + snapshotEntry.termPosition;
             loadSnapshot(snapshotEntry.recordingId);
         }
 

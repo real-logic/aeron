@@ -1186,7 +1186,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final RecordingLog.Entry snapshot = snapshotStep.entry;
 
         cachedEpochClock.update(snapshot.timestamp);
-        baseLogPosition = snapshot.logPosition;
+        baseLogPosition = snapshot.logPosition + snapshot.termPosition;
         leadershipTermId = snapshot.leadershipTermId;
 
         final long recordingId = snapshot.recordingId;
@@ -1259,7 +1259,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             }
 
             final long length = stopPosition - startPosition;
-            final long logPosition = entry.logPosition;
+            final long logPosition = entry.logPosition + (entry.termPosition - length);
 
             if (logPosition != baseLogPosition)
             {
@@ -1300,7 +1300,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                     ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
                 }
 
-                baseLogPosition += termPosition;
+                baseLogPosition = entry.logPosition + termPosition;
             }
         }
     }

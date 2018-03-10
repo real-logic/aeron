@@ -96,7 +96,7 @@ public class RecordingLog
          *
          * @param recordingId      of the entry in an archive.
          * @param leadershipTermId of this entry.
-         * @param logPosition      accumulated position of the log over leadership terms for the beginning of the term.
+         * @param logPosition      accumulated position of the log over leadership terms at the beginning of the term.
          * @param termPosition     position reached within the current leadership term, same at leadership term length.
          * @param timestamp        of this entry.
          * @param memberIdVote     which member this node voted for in the election.
@@ -572,7 +572,7 @@ public class RecordingLog
                     final Entry entry = entries.get(i);
                     if (ENTRY_TYPE_TERM == entry.type)
                     {
-                        getRecordingExtent(archive, recordingExtent, snapshot);
+                        getRecordingExtent(archive, recordingExtent, entry);
                         final long snapshotPosition = snapshot.logPosition + snapshot.termPosition;
 
                         if (recordingExtent.stopPosition == NULL_POSITION ||

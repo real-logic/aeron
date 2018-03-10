@@ -50,8 +50,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 {
     private boolean isRecovering;
     private final int memberId;
-    private int votedForMemberId = NULL_MEMBER_ID;
-    private int leaderMemberId;
+    private int votedForMemberId;
     private int serviceAckCount = 0;
     private int logSessionId;
     private final long sessionTimeoutMs;
@@ -120,7 +119,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.clusterMembers = ClusterMember.parse(ctx.clusterMembers());
         this.sessionProxy = new SessionProxy(egressPublisher);
         this.memberId = ctx.clusterMemberId();
-        this.leaderMemberId = ctx.appointedLeaderId();
+        this.votedForMemberId = ctx.appointedLeaderId();
         this.clusterRoleCounter = ctx.clusterNodeCounter();
         this.markFile = ctx.clusterMarkFile();
 
@@ -217,8 +216,12 @@ class SequencerAgent implements Agent, ServiceControlListener
         {
             electLeader();
         }
+        else
+        {
+            votedForMemberId = memberId;
+        }
 
-        if (memberId == leaderMemberId || clusterMembers.length == 1)
+        if (memberId == votedForMemberId || clusterMembers.length == 1)
         {
             becomeLeader();
         }
@@ -231,7 +234,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         cachedEpochClock.update(nowMs);
         timeOfLastLogUpdateMs = nowMs;
 
-        ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, baseLogPosition, nowMs, leaderMemberId);
+        ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, baseLogPosition, nowMs, votedForMemberId);
     }
 
     public int doWork()
@@ -703,7 +706,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             if (leaderMemberId != votedForMemberId)
             {
                 throw new IllegalStateException("Commit position not for current leader: expected=" +
-                    this.leaderMemberId + " received=" + leaderMemberId);
+                    this.votedForMemberId + " received=" + leaderMemberId);
             }
 
             if (0 == termPosition)
@@ -996,7 +999,6 @@ class SequencerAgent implements Agent, ServiceControlListener
             }
             while (ClusterMember.awaitingVotes(clusterMembers));
 
-            leaderMemberId = memberId;
             leaderMember = thisMember;
         }
         else
@@ -1032,7 +1034,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private void becomeLeader()
     {
-        updateMemberDetails(leaderMemberId);
+        updateMemberDetails(votedForMemberId);
         role(Cluster.Role.LEADER);
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
@@ -1075,9 +1077,9 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private void becomeFollower()
     {
-        leaderMember = clusterMembers[leaderMemberId];
+        leaderMember = clusterMembers[votedForMemberId];
 
-        updateMemberDetails(leaderMemberId);
+        updateMemberDetails(votedForMemberId);
         role(Cluster.Role.FOLLOWER);
 
         awaitLogSessionIdFromLeader();
@@ -1460,7 +1462,6 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private void takeSnapshot(final long timestampMs, final long termPosition)
     {
-        final long recordingId;
         final String channel = ctx.snapshotChannel();
         final int streamId = ctx.snapshotStreamId();
 
@@ -1470,19 +1471,19 @@ class SequencerAgent implements Agent, ServiceControlListener
             {
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
-                recordingId = RecordingPos.getRecordingId(counters, counterId);
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 snapshotState(publication, baseLogPosition + termPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
+                ctx.recordingLog()
+                    .appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
+                ctx.snapshotCounter().incrementOrdered();
             }
             finally
             {
                 archive.stopRecording(publication);
             }
         }
-
-        ctx.recordingLog().appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
-        ctx.snapshotCounter().incrementOrdered();
     }
 
     private void awaitRecordingComplete(

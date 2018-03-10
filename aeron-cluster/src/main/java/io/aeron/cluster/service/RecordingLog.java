@@ -26,12 +26,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.*;
 
@@ -96,7 +96,7 @@ public class RecordingLog
          *
          * @param recordingId      of the entry in an archive.
          * @param leadershipTermId of this entry.
-         * @param logPosition      accumulated position of the log over leadership terms for the beginning of the term.
+         * @param logPosition      accumulated position of the log over leadership terms at the beginning of this term.
          * @param termPosition     position reached within the current leadership term, same at leadership term length.
          * @param timestamp        of this entry.
          * @param memberIdVote     which member this node voted for in the election.
@@ -381,7 +381,7 @@ public class RecordingLog
     private int nextEntryIndex;
     private final File parentDir;
     private final File logFile;
-    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(ByteOrder.LITTLE_ENDIAN);
+    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
     private final ArrayList<Entry> entries = new ArrayList<>();
 
@@ -572,7 +572,7 @@ public class RecordingLog
                     final Entry entry = entries.get(i);
                     if (ENTRY_TYPE_TERM == entry.type)
                     {
-                        getRecordingExtent(archive, recordingExtent, snapshot);
+                        getRecordingExtent(archive, recordingExtent, entry);
                         final long snapshotPosition = snapshot.logPosition + snapshot.termPosition;
 
                         if (recordingExtent.stopPosition == NULL_POSITION ||
@@ -711,7 +711,7 @@ public class RecordingLog
             throw new IllegalArgumentException("Unknown leadershipTermId: " + leadershipTermId);
         }
 
-        buffer.putLong(0, termPosition);
+        buffer.putLong(0, termPosition, LITTLE_ENDIAN);
         byteBuffer.limit(SIZE_OF_LONG).position(0);
         final long filePosition = (index * ENTRY_LENGTH) + TERM_POSITION_OFFSET;
 
@@ -752,7 +752,7 @@ public class RecordingLog
             throw new IllegalArgumentException("Unknown entry index: " + entryIndex);
         }
 
-        buffer.putInt(0, NULL_VALUE);
+        buffer.putInt(0, NULL_VALUE, LITTLE_ENDIAN);
         byteBuffer.limit(SIZE_OF_INT).position(0);
         final long filePosition = (index * ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
 
@@ -786,13 +786,13 @@ public class RecordingLog
         final long timestamp,
         final int memberIdVote)
     {
-        buffer.putLong(RECORDING_ID_OFFSET, recordingId);
-        buffer.putLong(LOG_POSITION_OFFSET, logPosition);
-        buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
-        buffer.putLong(TIMESTAMP_OFFSET, timestamp);
-        buffer.putLong(TERM_POSITION_OFFSET, termPosition);
-        buffer.putInt(MEMBER_ID_VOTE_OFFSET, memberIdVote);
-        buffer.putInt(ENTRY_TYPE_OFFSET, entryType);
+        buffer.putLong(RECORDING_ID_OFFSET, recordingId, LITTLE_ENDIAN);
+        buffer.putLong(LOG_POSITION_OFFSET, logPosition, LITTLE_ENDIAN);
+        buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId, LITTLE_ENDIAN);
+        buffer.putLong(TIMESTAMP_OFFSET, timestamp, LITTLE_ENDIAN);
+        buffer.putLong(TERM_POSITION_OFFSET, termPosition, LITTLE_ENDIAN);
+        buffer.putInt(MEMBER_ID_VOTE_OFFSET, memberIdVote, LITTLE_ENDIAN);
+        buffer.putInt(ENTRY_TYPE_OFFSET, entryType, LITTLE_ENDIAN);
 
         byteBuffer.limit(ENTRY_LENGTH).position(0);
 
@@ -829,12 +829,12 @@ public class RecordingLog
             if (NULL_VALUE != entryType)
             {
                 entries.add(new Entry(
-                    buffer.getLong(i + RECORDING_ID_OFFSET),
-                    buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET),
-                    buffer.getLong(i + LOG_POSITION_OFFSET),
-                    buffer.getLong(i + TERM_POSITION_OFFSET),
-                    buffer.getLong(i + TIMESTAMP_OFFSET),
-                    buffer.getInt(i + MEMBER_ID_VOTE_OFFSET),
+                    buffer.getLong(i + RECORDING_ID_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(i + LOG_POSITION_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(i + TERM_POSITION_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(i + TIMESTAMP_OFFSET, LITTLE_ENDIAN),
+                    buffer.getInt(i + MEMBER_ID_VOTE_OFFSET, LITTLE_ENDIAN),
                     entryType,
                     nextEntryIndex));
             }

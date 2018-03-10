@@ -324,7 +324,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
                 throw new IllegalStateException("No snapshot available for term position: " + termPosition);
             }
 
-            baseLogPosition = snapshotEntry.logPosition;
+            baseLogPosition = snapshotEntry.logPosition + snapshotEntry.termPosition;
             loadSnapshot(snapshotEntry.recordingId);
         }
 
@@ -359,8 +359,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
                 consumeImage(image, adapter);
 
-                final long logPosition = baseLogPosition + image.position();
-                serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, ClusterAction.REPLAY);
+                baseLogPosition += image.position();
+                serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.REPLAY);
             }
         }
 

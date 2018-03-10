@@ -187,7 +187,6 @@ class SequencerAgent implements Agent, ServiceControlListener
         archive = AeronArchive.connect(ctx.archiveContext());
         recoveryPlan = ctx.recordingLog().createRecoveryPlan(archive);
 
-        serviceAckCount = 0;
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
             isRecovering = true;
@@ -202,6 +201,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             {
                 recoverFromLog(recoveryPlan.termSteps, archive);
             }
+
             isRecovering = false;
         }
 
@@ -426,8 +426,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                             thisMember.logEndpoint() + "," +
                             thisMember.archiveEndpoint();
 
-                        final long nowMs = cachedEpochClock.time();
-                        session.lastActivity(nowMs, correlationId);
+                        session.lastActivity(cachedEpochClock.time(), correlationId);
                         session.encodedAdminResponse(endpointsDetail.getBytes(US_ASCII));
 
                         if (egressPublisher.sendAdminResponse(session, session.encodedAdminResponse()))
@@ -1188,7 +1187,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final RecordingLog.Entry snapshot = snapshotStep.entry;
 
         cachedEpochClock.update(snapshot.timestamp);
-        baseLogPosition = snapshot.logPosition;
+        baseLogPosition = snapshot.logPosition + snapshot.termPosition;
         leadershipTermId = snapshot.leadershipTermId;
 
         final long recordingId = snapshot.recordingId;
@@ -1254,21 +1253,10 @@ class SequencerAgent implements Agent, ServiceControlListener
             final RecordingLog.Entry entry = step.entry;
             final long startPosition = step.recordingStartPosition;
             final long stopPosition = step.recordingStopPosition;
-
-            if (stopPosition == NULL_POSITION)
-            {
-                throw new IllegalStateException("stop position not set for replay step " + step);
-            }
-
             final long length = stopPosition - startPosition;
             final long logPosition = entry.logPosition;
 
-            if (logPosition != baseLogPosition)
-            {
-                throw new IllegalStateException("invalid base position for log: expected=" +
-                    baseLogPosition + " actual=" + logPosition + ", " + step);
-            }
-
+            baseLogPosition = logPosition;
             leadershipTermId = entry.leadershipTermId;
 
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(i));
@@ -1302,7 +1290,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                     ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
                 }
 
-                baseLogPosition += termPosition;
+                baseLogPosition = entry.logPosition + termPosition;
             }
         }
     }

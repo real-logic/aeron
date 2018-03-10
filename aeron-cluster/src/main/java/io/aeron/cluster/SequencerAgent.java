@@ -203,7 +203,6 @@ class SequencerAgent implements Agent, ServiceControlListener
             {
                 recoverFromLog(recoveryPlan.termSteps, archive);
             }
-
             isRecovering = false;
         }
 

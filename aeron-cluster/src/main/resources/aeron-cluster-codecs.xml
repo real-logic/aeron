@@ -340,7 +340,7 @@
         <field name="logSessionId"         id="4" type="int32"/>
     </sbe:message>
 
-    <!-- Snapshot serialisation -->
+    <!-- Serialisation of major Entities -->
 
     <sbe:message name="SnapshotMarker"
                  id="100"
@@ -386,11 +386,9 @@
         <field name="nextSessionId"        id="1" type="int64"/>
     </sbe:message>
 
-    <!-- RecoveryPlan serialization -->
-
     <sbe:message name="RecoveryPlan"
                  id="110"
-                 description="Serialized Recovery Plan">
+                 description="Serialised Recovery Plan">
         <field name="lastLeadershipTermId"       id="1"  type="int64"/>
         <field name="lastLogPosition"            id="2"  type="int64"/>
         <field name="lastTermPositionCommitted"  id="3"  type="int64"/>
@@ -398,12 +396,12 @@
         <group name="steps"                      id="5"  dimensionType="groupSizeEncoding">
             <field name="recordingStartPosition" id="6"  type="int64"/>
             <field name="recordingStopPosition"  id="7"  type="int64"/>
-            <field name="entryRecordingId"       id="8"  type="int64"/>
-            <field name="entryLeadershipTermId"  id="9"  type="int64"/>
-            <field name="entryLogPosition"       id="10" type="int64"/>
-            <field name="entryTermPosition"      id="11" type="int64"/>
-            <field name="entryTimestamp"         id="12" type="time_t"/>
-            <field name="entryMemberIdVote"      id="13" type="int32"/>
+            <field name="recordingId"            id="8"  type="int64"/>
+            <field name="leadershipTermId"       id="9"  type="int64"/>
+            <field name="logPosition"            id="10" type="int64"/>
+            <field name="termPosition"           id="11" type="int64"/>
+            <field name="timestamp"              id="12" type="time_t"/>
+            <field name="votedForMemberId"       id="13" type="int32"/>
             <field name="entryType"              id="14" type="int32"/>
             <field name="entryIndex"             id="15" type="int32"/>
         </group>

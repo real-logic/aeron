@@ -68,7 +68,7 @@ public class RecordingLogTest
         final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, 0, ENTRY_TYPE_TERM, 0);
 
         recordingLog.appendTerm(
-            entry.recordingId, entry.leadershipTermId, entry.logPosition, entry.timestamp, entry.memberIdVote);
+            entry.recordingId, entry.leadershipTermId, entry.logPosition, entry.timestamp, entry.votedForMemberId);
         recordingLog.commitLeadershipTermPosition(entry.leadershipTermId, 777);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
@@ -89,7 +89,7 @@ public class RecordingLogTest
             entryOne.leadershipTermId,
             entryOne.logPosition,
             entryOne.timestamp,
-            entryOne.memberIdVote);
+            entryOne.votedForMemberId);
 
         final RecordingLog.Entry entryTwo = new RecordingLog.Entry(2, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
         recordingLog.appendTerm(
@@ -97,7 +97,7 @@ public class RecordingLogTest
             entryTwo.leadershipTermId,
             entryTwo.logPosition,
             entryTwo.timestamp,
-            entryTwo.memberIdVote);
+            entryTwo.votedForMemberId);
 
         recordingLog.tombstoneEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);

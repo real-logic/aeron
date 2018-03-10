@@ -87,7 +87,7 @@ public class RecordingLog
         public final long logPosition;
         public final long termPosition;
         public final long timestamp;
-        public final int memberIdVote;
+        public final int votedForMemberId;
         public final int type;
         public final int entryIndex;
 
@@ -99,7 +99,7 @@ public class RecordingLog
          * @param logPosition      accumulated position of the log over leadership terms at the beginning of this term.
          * @param termPosition     position reached within the current leadership term, same at leadership term length.
          * @param timestamp        of this entry.
-         * @param memberIdVote     which member this node voted for in the election.
+         * @param votedForMemberId which member this node voted for in the election.
          * @param type             of the entry as a log of a term or a snapshot.
          * @param entryIndex       of the entry on disk.
          */
@@ -109,7 +109,7 @@ public class RecordingLog
             final long logPosition,
             final long termPosition,
             final long timestamp,
-            final int memberIdVote,
+            final int votedForMemberId,
             final int type,
             final int entryIndex)
         {
@@ -118,19 +118,19 @@ public class RecordingLog
             this.logPosition = logPosition;
             this.termPosition = termPosition;
             this.timestamp = timestamp;
-            this.memberIdVote = memberIdVote;
+            this.votedForMemberId = votedForMemberId;
             this.type = type;
             this.entryIndex = entryIndex;
         }
 
         public Entry(final RecoveryPlanDecoder.StepsDecoder decoder)
         {
-            this.recordingId = decoder.entryRecordingId();
-            this.leadershipTermId = decoder.entryLeadershipTermId();
-            this.logPosition = decoder.entryLogPosition();
-            this.termPosition = decoder.entryTermPosition();
-            this.timestamp = decoder.entryTimestamp();
-            this.memberIdVote = decoder.entryMemberIdVote();
+            this.recordingId = decoder.recordingId();
+            this.leadershipTermId = decoder.leadershipTermId();
+            this.logPosition = decoder.logPosition();
+            this.termPosition = decoder.termPosition();
+            this.timestamp = decoder.timestamp();
+            this.votedForMemberId = decoder.votedForMemberId();
             this.type = decoder.entryType();
             this.entryIndex = decoder.entryIndex();
         }
@@ -138,12 +138,12 @@ public class RecordingLog
         public void encode(final RecoveryPlanEncoder.StepsEncoder encoder)
         {
             encoder
-                .entryRecordingId(recordingId)
-                .entryLeadershipTermId(leadershipTermId)
-                .entryLogPosition(logPosition)
-                .entryTermPosition(termPosition)
-                .entryTimestamp(timestamp)
-                .entryMemberIdVote(memberIdVote)
+                .recordingId(recordingId)
+                .leadershipTermId(leadershipTermId)
+                .logPosition(logPosition)
+                .termPosition(termPosition)
+                .timestamp(timestamp)
+                .votedForMemberId(votedForMemberId)
                 .entryType(type)
                 .entryIndex(entryIndex);
         }
@@ -156,7 +156,7 @@ public class RecordingLog
                 ", logPosition=" + logPosition +
                 ", termPosition=" + termPosition +
                 ", timestamp=" + timestamp +
-                ", memberIdVote=" + memberIdVote +
+                ", votedForMemberId=" + votedForMemberId +
                 ", type=" + type +
                 ", entryIndex=" + entryIndex +
                 '}';
@@ -631,14 +631,14 @@ public class RecordingLog
      * @param leadershipTermId for the current term.
      * @param logPosition      reached at the beginning of the term.
      * @param timestamp        at the beginning of the term.
-     * @param memberIdVote     in the leader election.
+     * @param votedForMemberId in the leader election.
      */
     public void appendTerm(
         final long recordingId,
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
-        final int memberIdVote)
+        final int votedForMemberId)
     {
         final int size = entries.size();
         if (size > 0)
@@ -653,7 +653,7 @@ public class RecordingLog
             }
         }
 
-        append(ENTRY_TYPE_TERM, recordingId, leadershipTermId, logPosition, NULL_POSITION, timestamp, memberIdVote);
+        append(ENTRY_TYPE_TERM, recordingId, leadershipTermId, logPosition, NULL_POSITION, timestamp, votedForMemberId);
     }
 
     /**
@@ -784,14 +784,14 @@ public class RecordingLog
         final long logPosition,
         final long termPosition,
         final long timestamp,
-        final int memberIdVote)
+        final int votedForMemberId)
     {
         buffer.putLong(RECORDING_ID_OFFSET, recordingId, LITTLE_ENDIAN);
         buffer.putLong(LOG_POSITION_OFFSET, logPosition, LITTLE_ENDIAN);
         buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId, LITTLE_ENDIAN);
         buffer.putLong(TIMESTAMP_OFFSET, timestamp, LITTLE_ENDIAN);
         buffer.putLong(TERM_POSITION_OFFSET, termPosition, LITTLE_ENDIAN);
-        buffer.putInt(MEMBER_ID_VOTE_OFFSET, memberIdVote, LITTLE_ENDIAN);
+        buffer.putInt(MEMBER_ID_VOTE_OFFSET, votedForMemberId, LITTLE_ENDIAN);
         buffer.putInt(ENTRY_TYPE_OFFSET, entryType, LITTLE_ENDIAN);
 
         byteBuffer.limit(ENTRY_LENGTH).position(0);
@@ -814,7 +814,7 @@ public class RecordingLog
             logPosition,
             NULL_POSITION,
             timestamp,
-            memberIdVote,
+            votedForMemberId,
             entryType,
             nextEntryIndex++));
     }

@@ -97,6 +97,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final ConsensusModule.Context ctx;
     private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
     private final IdleStrategy idleStrategy;
+    private final RecordingLog recordingLog;
     private RecordingLog.RecoveryPlan recoveryPlan;
 
     SequencerAgent(
@@ -122,6 +123,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.votedForMemberId = ctx.appointedLeaderId();
         this.clusterRoleCounter = ctx.clusterNodeCounter();
         this.markFile = ctx.clusterMarkFile();
+        this.recordingLog = ctx.recordingLog();
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -185,7 +187,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext());
-        recoveryPlan = ctx.recordingLog().createRecoveryPlan(archive);
+        recoveryPlan = recordingLog.createRecoveryPlan(archive);
 
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
@@ -234,7 +236,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         cachedEpochClock.update(nowMs);
         timeOfLastLogUpdateMs = nowMs;
 
-        ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, baseLogPosition, nowMs, votedForMemberId);
+        recordingLog.appendTerm(logRecordingId, leadershipTermId, baseLogPosition, nowMs, votedForMemberId);
     }
 
     public int doWork()
@@ -304,13 +306,13 @@ class SequencerAgent implements Agent, ServiceControlListener
 
                 case SHUTDOWN:
                     takeSnapshot(cachedEpochClock.time(), termPosition);
-                    ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
+                    recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
                     break;
 
                 case ABORT:
-                    ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
+                    recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
                     break;
@@ -1287,7 +1289,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 final long termPosition = image.position();
                 if (step.entry.termPosition < termPosition)
                 {
-                    ctx.recordingLog().commitLeadershipTermPosition(leadershipTermId, termPosition);
+                    recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
                 }
 
                 baseLogPosition = entry.logPosition + termPosition;
@@ -1463,14 +1465,13 @@ class SequencerAgent implements Agent, ServiceControlListener
 
                 snapshotState(publication, baseLogPosition + termPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
-                ctx.recordingLog()
-                    .appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
-                ctx.snapshotCounter().incrementOrdered();
+                recordingLog.appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
             }
             finally
             {
                 archive.stopRecording(publication);
             }
+            ctx.snapshotCounter().incrementOrdered();
         }
     }
 

@@ -15,14 +15,16 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
-import org.agrona.collections.MutableLong;
+import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.service.RecordingLog;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.CountersReader;
 
-public class RecordingCatchUp
+public final class RecordingCatchUp implements AutoCloseable
 {
     private final AeronArchive targetArchive;
     private final AeronArchive replayArchive;
@@ -34,7 +36,7 @@ public class RecordingCatchUp
     private final String replayChannel;
     private final int replayStreamId;
 
-    public RecordingCatchUp(
+    private RecordingCatchUp(
         final AeronArchive targetArchive,
         final CountersReader targetCounters,
         final long recordingIdToExtend,
@@ -65,6 +67,12 @@ public class RecordingCatchUp
         }
     }
 
+    public void close()
+    {
+        CloseHelper.close(replayArchive);
+        CloseHelper.close(targetArchive);
+    }
+
     public void cancel()
     {
         replayArchive.stopReplay(replaySessionId);
@@ -81,35 +89,77 @@ public class RecordingCatchUp
         return countersReader.getCounterValue(counterId);
     }
 
-    public static boolean foundRecordingIdFromRemoteArchive(
-        final AeronArchive remoteArchive,
-        final String recordingChannel,
-        final int recordingStreamId,
-        final MutableLong remoteRecordingId,
-        final MutableLong remoteStopPosition)
+    public static RecordingCatchUp catchUp(
+        final AeronArchive.Context localArchiveContext,
+        final RecordingLog.RecoveryPlan localRecoveryPlan,
+        final ClusterMember leader,
+        final CountersReader localCounters,
+        final String replayChannel,
+        final int replayStreamId)
     {
-        final RecordingDescriptorConsumer consumer =
-            (controlSessionId,
-            correlationId,
-            recordingId,
-            startTimestamp,
-            stopTimestamp,
-            startPosition,
-            stopPosition,
-            initialTermId,
-            segmentFileLength,
-            termBufferLength,
-            mtuLength,
-            sessionId,
-            streamId,
-            strippedChannel,
-            originalChannel,
-            sourceIdentity) ->
-            {
-                remoteRecordingId.value = recordingId;
-                remoteStopPosition.value = stopPosition;
-            };
+        final AeronCluster.Context leaderContext = new AeronCluster.Context()
+            .clusterMemberEndpoints(leader.clientFacingEndpoint());
+        final RecordingLog.RecoveryPlan leaderRecoveryPlan;
 
-        return remoteArchive.listRecordingsForUri(0, 1, recordingChannel, recordingStreamId, consumer) > 0;
+        try (AeronCluster aeronCluster = AeronCluster.connect(leaderContext))
+        {
+            leaderRecoveryPlan = new RecordingLog.RecoveryPlan(aeronCluster.queryForRecoveryPlan());
+        }
+
+        if (leaderRecoveryPlan.lastLeadershipTermId != localRecoveryPlan.lastLeadershipTermId)
+        {
+            throw new IllegalStateException(
+                "lastLeadershiptTermIds are not equal, can not catch up: leader=" +
+                leaderRecoveryPlan.lastLeadershipTermId +
+                " local=" +
+                localRecoveryPlan.lastLeadershipTermId);
+        }
+
+        final RecordingLog.ReplayStep localLastStep =
+            localRecoveryPlan.termSteps.get(localRecoveryPlan.termSteps.size() - 1);
+        final RecordingLog.ReplayStep leaderLastStep =
+            leaderRecoveryPlan.termSteps.get(leaderRecoveryPlan.termSteps.size() - 1);
+
+        if (localLastStep.entry.leadershipTermId != leaderLastStep.entry.leadershipTermId)
+        {
+            throw new IllegalStateException(
+                "last step leadershiptTermIds are not equal, can not catch up: leader=" +
+                leaderLastStep.entry.leadershipTermId +
+                " local=" +
+                localLastStep.entry.leadershipTermId);
+        }
+
+        if (localLastStep.recordingStartPosition != leaderLastStep.recordingStartPosition)
+        {
+            throw new IllegalStateException(
+                "last step local start position does not match leader last step start position");
+        }
+
+        final long leaderRecordingId = leaderLastStep.entry.recordingId;
+        final long localRecordingId = localLastStep.entry.recordingId;
+
+        final long extendStartPosition = localLastStep.recordingStopPosition;  // TODO: probably needs to be queried
+        final long extendStopPosition = leaderLastStep.recordingStopPosition;
+
+        final ChannelUriStringBuilder archiveControlRequestChannel = new ChannelUriStringBuilder()
+            .media("udp")
+            .endpoint(leader.archiveEndpoint());
+
+        final AeronArchive.Context leaderArchiveContext = new AeronArchive.Context()
+            .controlRequestChannel(archiveControlRequestChannel.build());
+
+        final AeronArchive localArchive = AeronArchive.connect(localArchiveContext.clone());
+        final AeronArchive leaderArchive = AeronArchive.connect(leaderArchiveContext);
+
+        return new RecordingCatchUp(
+            localArchive,
+            localCounters,
+            localRecordingId,
+            leaderArchive,
+            leaderRecordingId,
+            extendStartPosition,
+            extendStopPosition,
+            replayChannel,
+            replayStreamId);
     }
 }

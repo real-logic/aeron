@@ -99,6 +99,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private RecordingLog.RecoveryPlan recoveryPlan;
+    private RecordingCatchUp recordingCatchUp;
 
     SequencerAgent(
         final ConsensusModule.Context ctx,
@@ -647,7 +648,14 @@ class SequencerAgent implements Agent, ServiceControlListener
                 votedForMemberId = candidateId;
                 if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
                 {
-                    // TODO: need to catch up with leader
+                    // initiate catch up
+                    recordingCatchUp = RecordingCatchUp.catchUp(
+                        ctx.archiveContext(),
+                        recoveryPlan,
+                        leaderMember,
+                        aeron.countersReader(),
+                        ctx.replayChannel(),
+                        ctx.replayStreamId());
                 }
             }
         }
@@ -1404,6 +1412,15 @@ class SequencerAgent implements Agent, ServiceControlListener
             final long recordingPosition = logRecordingPosition.get();
             if (recordingPosition != lastRecordingPosition)
             {
+                if (null != recordingCatchUp)
+                {
+                    if (recordingCatchUp.isCaughtUp())
+                    {
+                        recordingCatchUp.close();
+                        recordingCatchUp = null;
+                    }
+                }
+
                 final Publication publication = leaderMember.publication();
                 if (memberStatusPublisher.appendedPosition(
                     publication, recordingPosition, leadershipTermId, memberId))

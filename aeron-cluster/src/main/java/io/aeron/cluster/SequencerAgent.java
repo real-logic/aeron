@@ -57,7 +57,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private final long heartbeatIntervalMs;
     private final long heartbeatTimeoutMs;
     private long nextSessionId = 1;
-    private long baseLogPosition = 0;
+    private long termBaseLogPosition = 0;
     private long leadershipTermId = -1;
     private long lastRecordingPosition = 0;
     private long timeOfLastLogUpdateMs = 0;
@@ -228,7 +228,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         cachedEpochClock.update(nowMs);
         timeOfLastLogUpdateMs = nowMs;
 
-        recordingLog.appendTerm(logRecordingId, leadershipTermId, baseLogPosition, nowMs, votedForMemberId);
+        recordingLog.appendTerm(logRecordingId, leadershipTermId, termBaseLogPosition, nowMs, votedForMemberId);
     }
 
     public int doWork()
@@ -582,7 +582,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final long logPosition, final long leadershipTermId, final long timestamp, final ClusterAction action)
     {
         cachedEpochClock.update(timestamp);
-        final long termPosition = logPosition - baseLogPosition;
+        final long termPosition = logPosition - termBaseLogPosition;
 
         switch (action)
         {
@@ -633,7 +633,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         if (Cluster.Role.FOLLOWER == role &&
             candidateTermId == leadershipTermId &&
-            lastBaseLogPosition == recoveryPlan.lastLogPosition)
+            lastBaseLogPosition == recoveryPlan.lastTermBaseLogPosition)
         {
             final boolean vote = lastTermPosition >= recoveryPlan.lastTermPositionAppended;
             sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, vote);
@@ -675,7 +675,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         if (Cluster.Role.CANDIDATE == role &&
             candidateTermId == leadershipTermId &&
-            lastBaseLogPosition == recoveryPlan.lastLogPosition &&
+            lastBaseLogPosition == recoveryPlan.lastTermBaseLogPosition &&
             lastTermPosition == recoveryPlan.lastTermPositionAppended &&
             candidateMemberId == memberId)
         {
@@ -824,7 +824,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
     private boolean appendAction(final ClusterAction action, final long nowMs)
     {
-        final long position = baseLogPosition +
+        final long position = termBaseLogPosition +
             logPublisher.position() +
             MessageHeaderEncoder.ENCODED_LENGTH +
             ClusterActionRequestEncoder.BLOCK_LENGTH;
@@ -997,7 +997,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             ClusterMember.becomeCandidate(clusterMembers, memberId);
             votedForMemberId = memberId;
 
-            requestVotes(clusterMembers, recoveryPlan.lastLogPosition, recoveryPlan.lastTermPositionAppended);
+            requestVotes(clusterMembers, recoveryPlan.lastTermBaseLogPosition, recoveryPlan.lastTermPositionAppended);
 
             do
             {
@@ -1146,7 +1146,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                     if (member != thisMember)
                     {
                         memberStatusPublisher.commitPosition(
-                            member.publication(), baseLogPosition, leadershipTermId, memberId, logSessionId);
+                            member.publication(), termBaseLogPosition, leadershipTermId, memberId, logSessionId);
                     }
                 }
             }
@@ -1165,7 +1165,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         logRecordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
 
         commitPosition = CommitPos.allocate(
-            aeron, tempBuffer, logRecordingId, baseLogPosition, leadershipTermId, logSessionId);
+            aeron, tempBuffer, logRecordingId, termBaseLogPosition, leadershipTermId, logSessionId);
     }
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader)
@@ -1194,7 +1194,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         final RecordingLog.Entry snapshot = snapshotStep.entry;
 
         cachedEpochClock.update(snapshot.timestamp);
-        baseLogPosition = snapshot.logPosition + snapshot.termPosition;
+        termBaseLogPosition = snapshot.termBaseLogPosition + snapshot.termPosition;
         leadershipTermId = snapshot.leadershipTermId;
 
         final long recordingId = snapshot.recordingId;
@@ -1261,9 +1261,9 @@ class SequencerAgent implements Agent, ServiceControlListener
             final long startPosition = step.recordingStartPosition;
             final long stopPosition = step.recordingStopPosition;
             final long length = stopPosition - startPosition;
-            final long logPosition = entry.logPosition;
+            final long logPosition = entry.termBaseLogPosition;
 
-            baseLogPosition = logPosition;
+            termBaseLogPosition = logPosition;
             leadershipTermId = entry.leadershipTermId;
 
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(i));
@@ -1297,7 +1297,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                     recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
                 }
 
-                baseLogPosition = entry.logPosition + termPosition;
+                termBaseLogPosition = entry.termBaseLogPosition + termPosition;
             }
         }
     }
@@ -1335,7 +1335,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     private void validateServiceAck(
         final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
-        final long currentLogPosition = baseLogPosition + currentTermPosition();
+        final long currentLogPosition = termBaseLogPosition + currentTermPosition();
         if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)
         {
             throw new IllegalStateException("invalid log state:" +
@@ -1477,9 +1477,10 @@ class SequencerAgent implements Agent, ServiceControlListener
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                snapshotState(publication, baseLogPosition + termPosition, leadershipTermId);
+                snapshotState(publication, termBaseLogPosition + termPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
-                recordingLog.appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
+                recordingLog.appendSnapshot(
+                    recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs);
             }
             finally
             {

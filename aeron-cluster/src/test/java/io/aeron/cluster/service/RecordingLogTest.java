@@ -52,7 +52,8 @@ public class RecordingLogTest
         final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
         final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, NULL_VALUE, ENTRY_TYPE_SNAPSHOT, 0);
 
-        recordingLog.appendSnapshot(entry.recordingId, entry.leadershipTermId, entry.logPosition, 777, entry.timestamp);
+        recordingLog.appendSnapshot(
+            entry.recordingId, entry.leadershipTermId, entry.termBaseLogPosition, 777, entry.timestamp);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
         assertThat(recordingLogTwo.entries().size(), is(1));
@@ -68,7 +69,12 @@ public class RecordingLogTest
         final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, 0, ENTRY_TYPE_TERM, 0);
 
         recordingLog.appendTerm(
-            entry.recordingId, entry.leadershipTermId, entry.logPosition, entry.timestamp, entry.votedForMemberId);
+            entry.recordingId,
+            entry.leadershipTermId,
+            entry.termBaseLogPosition,
+            entry.timestamp,
+            entry.votedForMemberId);
+
         recordingLog.commitLeadershipTermPosition(entry.leadershipTermId, 777);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
@@ -87,7 +93,7 @@ public class RecordingLogTest
         recordingLog.appendTerm(
             entryOne.recordingId,
             entryOne.leadershipTermId,
-            entryOne.logPosition,
+            entryOne.termBaseLogPosition,
             entryOne.timestamp,
             entryOne.votedForMemberId);
 
@@ -95,7 +101,7 @@ public class RecordingLogTest
         recordingLog.appendTerm(
             entryTwo.recordingId,
             entryTwo.leadershipTermId,
-            entryTwo.logPosition,
+            entryTwo.termBaseLogPosition,
             entryTwo.timestamp,
             entryTwo.votedForMemberId);
 

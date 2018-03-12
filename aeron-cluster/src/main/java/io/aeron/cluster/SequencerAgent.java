@@ -1165,7 +1165,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         logRecordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
 
         commitPosition = CommitPos.allocate(
-            aeron, tempBuffer, logRecordingId, termBaseLogPosition, leadershipTermId, logSessionId);
+            aeron, tempBuffer, leadershipTermId, termBaseLogPosition, CommitPos.NULL_VALUE);
     }
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader)
@@ -1261,43 +1261,51 @@ class SequencerAgent implements Agent, ServiceControlListener
             final long startPosition = step.recordingStartPosition;
             final long stopPosition = step.recordingStopPosition;
             final long length = stopPosition - startPosition;
-            final long logPosition = entry.termBaseLogPosition;
 
-            termBaseLogPosition = logPosition;
+            termBaseLogPosition = entry.termBaseLogPosition;
             leadershipTermId = entry.leadershipTermId;
 
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(i));
             final String channel = channelUri.toString();
             final long recordingId = entry.recordingId;
 
-            try (Counter counter = CommitPos.allocate(
-                aeron, tempBuffer, recordingId, logPosition, leadershipTermId, i);
-                Subscription subscription = aeron.addSubscription(channel, streamId))
+            try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
             {
                 serviceAckCount = 0;
-                serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, channel);
-                awaitServiceAcks();
-
-                final int sessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, streamId);
-
-                if (i != sessionId)
+                if (length > 0)
                 {
-                    throw new IllegalStateException("Session id not for iteration: " + sessionId);
+                    try (Subscription subscription = aeron.addSubscription(channel, streamId))
+                    {
+                        serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, channel);
+                        awaitServiceAcks();
+
+                        final int sessionId = (int)archive.startReplay(
+                            recordingId, startPosition, length, channel, streamId);
+
+                        if (i != sessionId)
+                        {
+                            throw new IllegalStateException("Session id not for iteration: " + sessionId);
+                        }
+
+                        final Image image = awaitImage(sessionId, subscription);
+
+                        serviceAckCount = 0;
+                        replayTerm(image, stopPosition, counter);
+                        awaitServiceAcks();
+
+                        final long termPosition = image.position();
+                        if (step.entry.termPosition < termPosition)
+                        {
+                            recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
+                        }
+
+                        termBaseLogPosition = entry.termBaseLogPosition + termPosition;
+                    }
                 }
-
-                final Image image = awaitImage(sessionId, subscription);
-
-                serviceAckCount = 0;
-                replayTerm(image, stopPosition, counter);
-                awaitServiceAcks();
-
-                final long termPosition = image.position();
-                if (step.entry.termPosition < termPosition)
+                else
                 {
-                    recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
+                    awaitServiceAcks();
                 }
-
-                termBaseLogPosition = entry.termBaseLogPosition + termPosition;
             }
         }
     }

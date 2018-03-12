@@ -348,22 +348,26 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             awaitActiveLog();
 
             final int counterId = activeLog.commitPositionId;
-            termBaseLogPosition = CommitPos.getBaseLogPosition(counters, counterId);
             leadershipTermId = CommitPos.getLeadershipTermId(counters, counterId);
+            termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, counterId);
 
-            try (Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId))
+            if (CommitPos.getLeadershipTermLength(counters, counterId) > 0)
             {
-                serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+                try (Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId))
+                {
+                    serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
 
-                final Image image = awaitImage(activeLog.sessionId, subscription);
-                final ReadableCounter limit = new ReadableCounter(counters, counterId);
-                final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
+                    final Image image = awaitImage(activeLog.sessionId, subscription);
+                    final ReadableCounter limit = new ReadableCounter(counters, counterId);
+                    final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
 
-                consumeImage(image, adapter);
+                    consumeImage(image, adapter);
 
-                termBaseLogPosition += image.position();
-                serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, REPLAY);
+                    termBaseLogPosition += image.position();
+                }
             }
+
+            serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, REPLAY);
         }
 
         service.onReplayEnd();
@@ -437,7 +441,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
         final int logSessionId = activeLog.sessionId;
         leadershipTermId = activeLog.leadershipTermId;
-        termBaseLogPosition = CommitPos.getBaseLogPosition(counters, commitPositionId);
+        termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, commitPositionId);
 
         final Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
         final Image image = awaitImage(logSessionId, logSubscription);

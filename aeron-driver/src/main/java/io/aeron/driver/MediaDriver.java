@@ -509,7 +509,9 @@ public final class MediaDriver implements AutoCloseable
                     COUNTERS_METADATA_BUFFER_LENGTH,
                     COUNTERS_VALUES_BUFFER_LENGTH,
                     clientLivenessTimeoutNs,
-                    ERROR_BUFFER_LENGTH);
+                    ERROR_BUFFER_LENGTH,
+                    epochClock.time(),
+                    SystemUtil.getPid());
 
                 concludeCounters();
                 concludeDependantProperties();

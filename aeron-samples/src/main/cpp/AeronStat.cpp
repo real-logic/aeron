@@ -93,7 +93,6 @@ int main (int argc, char** argv)
         }
 
         const std::int64_t clientLivenessTimeoutNs = CncFileDescriptor::clientLivenessTimeout(cncFile);
-        const std::int64_t startTimestamp = CncFileDescriptor::startTimestamp(cncFile);
         const std::int64_t pid = CncFileDescriptor::pid(cncFile);
 
         AtomicBuffer metadataBuffer = CncFileDescriptor::createCounterMetadataBuffer(cncFile);

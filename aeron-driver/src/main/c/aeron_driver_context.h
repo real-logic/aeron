@@ -30,7 +30,7 @@
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_LOSS_REPORT_FILE "loss-report.dat"
-#define AERON_CNC_VERSION (12)
+#define AERON_CNC_VERSION (13)
 
 #pragma pack(push)
 #pragma pack(4)
@@ -43,6 +43,8 @@ typedef struct aeron_cnc_metadata_stct
     int32_t counter_values_buffer_length;
     int32_t error_log_buffer_length;
     int64_t client_liveness_timeout;
+    int64_t start_timestamp;
+    int64_t pid;
 }
 aeron_cnc_metadata_t;
 #pragma pack(pop)

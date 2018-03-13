@@ -1174,7 +1174,8 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         serviceAckCount = 0;
 
-        final String channel = isLeader ? channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
+        final String channel = isLeader && channelUri.media().equals("udp") ?
+            channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
         serviceControlPublisher.joinLog(
             leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), channel);
 

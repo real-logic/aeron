@@ -130,8 +130,7 @@ public class StreamPositionCounter
             keyLength,
             tempBuffer,
             keyLength,
-            labelLength
-        );
+            labelLength);
     }
 
     /**
@@ -193,8 +192,7 @@ public class StreamPositionCounter
             keyLength,
             tempBuffer,
             keyLength,
-            labelLength
-        );
+            labelLength);
 
         return new UnsafeBufferPosition((UnsafeBuffer)countersManager.valuesBuffer(), counterId, countersManager);
     }

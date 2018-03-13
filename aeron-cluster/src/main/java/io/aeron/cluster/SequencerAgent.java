@@ -1047,7 +1047,7 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         final Publication publication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
-        if (!channelUri.containsKey(CommonContext.ENDPOINT_PARAM_NAME))
+        if (!channelUri.containsKey(CommonContext.ENDPOINT_PARAM_NAME) && channelUri.media().equals("udp"))
         {
             final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");
             for (final ClusterMember member : clusterMembers)

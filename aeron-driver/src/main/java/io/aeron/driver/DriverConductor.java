@@ -207,10 +207,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         Configuration.validateMtuLength(senderMtuLength);
         Configuration.validateInitialWindowLength(context.initialWindowLength(), senderMtuLength);
 
-        final UdpChannel udpChannel = channelEndpoint.udpChannel();
-        final String channel = udpChannel.originalUriString();
-        final long registrationId = toDriverCommands.nextCorrelationId();
-
         final long joinPosition = computePosition(
             activeTermId, initialTermOffset, LogBufferDescriptor.positionBitsToShift(termBufferLength), initialTermId);
 
@@ -219,6 +215,9 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         if (subscriberPositions.size() > 0)
         {
+            final UdpChannel udpChannel = channelEndpoint.udpChannel();
+            final String channel = udpChannel.originalUriString();
+            final long registrationId = toDriverCommands.nextCorrelationId();
             final RawLog rawLog = newPublicationImageLog(
                 sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, registrationId);
 
@@ -260,6 +259,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             publicationImages.add(image);
             receiverProxy.newPublicationImage(channelEndpoint, image);
 
+            final String sourceIdentity = generateSourceIdentity(sourceAddress);
             for (int i = 0, size = subscriberPositions.size(); i < size; i++)
             {
                 final SubscriberPosition position = subscriberPositions.get(i);
@@ -273,7 +273,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                     position.subscription().registrationId(),
                     position.positionCounterId(),
                     rawLog.fileName(),
-                    generateSourceIdentity(sourceAddress));
+                    sourceIdentity);
             }
         }
     }
@@ -846,10 +846,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     }
 
     private List<SubscriberPosition> createSubscriberPositions(
-        final int sessionId,
-        final int streamId,
-        final ReceiveChannelEndpoint channelEndpoint,
-        final long joinPosition)
+        final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint, final long joinPosition)
     {
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
 

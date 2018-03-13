@@ -35,7 +35,7 @@ public interface CredentialsSupplier
      * authentication with a cluster.
      *
      * @param encodedChallenge from the cluster to use in providing a credential.
-     * @return a encoded credentials to be included in the Challenge Response to the cluster.
+     * @return encoded credentials to be included in the Challenge Response to the cluster.
      */
     byte[] onChallenge(byte[] encodedChallenge);
 }

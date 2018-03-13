@@ -329,12 +329,12 @@ public class RecordingLog
     public static final int NULL_VALUE = -1;
 
     /**
-     * The index entry is for a recording of messages within a term to the consensus log.
+     * The log entry is for a recording of messages within a term to the consensus log.
      */
     public static final int ENTRY_TYPE_TERM = 0;
 
     /**
-     * The index entry is for a recording of a snapshot of state taken as of a position in the log.
+     * The log entry is for a recording of a snapshot of state taken as of a position in the log.
      */
     public static final int ENTRY_TYPE_SNAPSHOT = 1;
 
@@ -386,9 +386,9 @@ public class RecordingLog
     private final ArrayList<Entry> entries = new ArrayList<>();
 
     /**
-     * Create an index that appends to an existing index or creates a new one.
+     * Create a log that appends to an existing log or creates a new one.
      *
-     * @param parentDir in which the index will be created.
+     * @param parentDir in which the log will be created.
      */
     public RecordingLog(final File parentDir)
     {
@@ -419,7 +419,7 @@ public class RecordingLog
     }
 
     /**
-     * Reload the index from disk.
+     * Reload the log from disk.
      */
     public void reload()
     {
@@ -625,7 +625,7 @@ public class RecordingLog
     }
 
     /**
-     * Append an log entry for a Raft term.
+     * Append a log entry for a Raft term.
      *
      * @param recordingId      in the archive for the term.
      * @param leadershipTermId for the current term.
@@ -657,7 +657,7 @@ public class RecordingLog
     }
 
     /**
-     * Append an log entry for a snapshot.
+     * Append a log entry for a snapshot.
      *
      * @param recordingId      in the archive for the snapshot.
      * @param leadershipTermId for the current term

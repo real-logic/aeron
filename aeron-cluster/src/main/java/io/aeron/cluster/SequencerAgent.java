@@ -1282,11 +1282,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                         final int sessionId = (int)archive.startReplay(
                             recordingId, startPosition, length, channel, streamId);
 
-                        if (i != sessionId)
-                        {
-                            throw new IllegalStateException("Session id not for iteration: " + sessionId);
-                        }
-
                         final Image image = awaitImage(sessionId, subscription);
 
                         serviceAckCount = 0;

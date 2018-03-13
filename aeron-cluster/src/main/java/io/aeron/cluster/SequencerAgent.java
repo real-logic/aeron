@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.client.RecordingLog;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -403,12 +404,13 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-    public void onAdminQuery(final long correlationId, final long clusterSessionId, final AdminQueryType queryType)
+    public void onMembershipQuery(
+        final long correlationId, final long clusterSessionId, final MembershipQueryType queryType)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session && session.state() == OPEN)
         {
-            if (session.capability() == ClusterSession.Capability.CLIENT_PLUS_QUERY)
+            if (session.capability() == ClusterSession.Capability.CLIENT_AND_MEMBER)
             {
                 switch (queryType)
                 {
@@ -421,21 +423,21 @@ class SequencerAgent implements Agent, ServiceControlListener
                             thisMember.archiveEndpoint();
 
                         session.lastActivity(cachedEpochClock.time(), correlationId);
-                        session.encodedAdminResponse(endpointsDetail.getBytes(US_ASCII));
+                        session.encodedMembershipQueryResponse(endpointsDetail.getBytes(US_ASCII));
 
-                        if (egressPublisher.sendAdminResponse(session, session.encodedAdminResponse()))
+                        if (egressPublisher.sendMembershipResponse(session, session.encodedMembershipQueryResponse()))
                         {
-                            session.encodedAdminResponse(null);
+                            session.encodedMembershipQueryResponse(null);
                         }
                         break;
 
                     case RECOVERY_PLAN:
                         session.lastActivity(cachedEpochClock.time(), correlationId);
-                        session.encodedAdminResponse(recoveryPlan.encode());
+                        session.encodedMembershipQueryResponse(recoveryPlan.encode());
 
-                        if (egressPublisher.sendAdminResponse(session, session.encodedAdminResponse()))
+                        if (egressPublisher.sendMembershipResponse(session, session.encodedMembershipQueryResponse()))
                         {
-                            session.encodedAdminResponse(null);
+                            session.encodedMembershipQueryResponse(null);
                         }
                         break;
                 }
@@ -952,11 +954,11 @@ class SequencerAgent implements Agent, ServiceControlListener
                 appendConnectedSession(session, nowMs);
                 workCount += 1;
             }
-            else if (state == OPEN && session.encodedAdminResponse() != null)
+            else if (state == OPEN && session.encodedMembershipQueryResponse() != null)
             {
-                if (egressPublisher.sendAdminResponse(session, session.encodedAdminResponse()))
+                if (egressPublisher.sendMembershipResponse(session, session.encodedMembershipQueryResponse()))
                 {
-                    session.encodedAdminResponse(null);
+                    session.encodedMembershipQueryResponse(null);
                 }
             }
         }

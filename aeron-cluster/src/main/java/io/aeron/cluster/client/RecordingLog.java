@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster.service;
+package io.aeron.cluster.client;
 
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanEncoder;
+import io.aeron.cluster.service.RecordingExtent;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;

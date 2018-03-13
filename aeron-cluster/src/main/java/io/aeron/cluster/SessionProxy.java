@@ -83,7 +83,7 @@ public class SessionProxy
      */
     public final boolean authenticate(final byte[] encodedPrincipal)
     {
-        return authenticate(encodedPrincipal, ClusterSession.Capability.CLIENT_PLUS_QUERY);
+        return authenticate(encodedPrincipal, ClusterSession.Capability.CLIENT_AND_MEMBER);
     }
 
     /**

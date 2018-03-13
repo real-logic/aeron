@@ -27,7 +27,7 @@ import io.aeron.cluster.client.EgressAdapter;
 import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import io.aeron.cluster.service.RecordingLog;
+import io.aeron.cluster.client.RecordingLog;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
@@ -200,7 +200,7 @@ public class ClusterTest
     @Test(timeout = 10_000)
     public void shouldQueryLeaderForEndpoints()
     {
-        final String endpoints = client.queryForEndpoints();
+        final String endpoints = client.getMemberEndpoints();
         final ClusterMember[] responseClusterMembers = ClusterMember.parse(endpoints);
         final int appointedLeaderId = 0;
         final ClusterMember responseLeader = responseClusterMembers[0];
@@ -220,7 +220,7 @@ public class ClusterTest
     @Test(timeout = 10_000)
     public void shouldQueryLeaderForRecoveryPlan()
     {
-        final ByteBuffer encodedPlan = client.queryForRecoveryPlan();
+        final ByteBuffer encodedPlan = client.getRecoveryPlan();
         final RecordingLog.RecoveryPlan recoveryPlan = new RecordingLog.RecoveryPlan(encodedPlan);
     }
 

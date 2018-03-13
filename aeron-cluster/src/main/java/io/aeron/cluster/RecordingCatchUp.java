@@ -20,7 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.service.RecordingLog;
+import io.aeron.cluster.client.RecordingLog;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -103,13 +103,13 @@ public final class RecordingCatchUp implements AutoCloseable
 
         try (AeronCluster aeronCluster = AeronCluster.connect(leaderContext))
         {
-            leaderRecoveryPlan = new RecordingLog.RecoveryPlan(aeronCluster.queryForRecoveryPlan());
+            leaderRecoveryPlan = new RecordingLog.RecoveryPlan(aeronCluster.getRecoveryPlan());
         }
 
         if (leaderRecoveryPlan.lastLeadershipTermId != localRecoveryPlan.lastLeadershipTermId)
         {
             throw new IllegalStateException(
-                "lastLeadershiptTermIds are not equal, can not catch up: leader=" +
+                "lastLeadershipTermIds are not equal, can not catch up: leader=" +
                 leaderRecoveryPlan.lastLeadershipTermId +
                 " local=" +
                 localRecoveryPlan.lastLeadershipTermId);
@@ -123,7 +123,7 @@ public final class RecordingCatchUp implements AutoCloseable
         if (localLastStep.entry.leadershipTermId != leaderLastStep.entry.leadershipTermId)
         {
             throw new IllegalStateException(
-                "last step leadershiptTermIds are not equal, can not catch up: leader=" +
+                "last step leadershipTermIds are not equal, can not catch up: leader=" +
                 leaderLastStep.entry.leadershipTermId +
                 " local=" +
                 localLastStep.entry.leadershipTermId);

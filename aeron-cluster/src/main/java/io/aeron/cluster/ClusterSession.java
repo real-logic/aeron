@@ -29,7 +29,7 @@ class ClusterSession implements AutoCloseable
 {
     public static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
     public static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
-    public static final int MAX_ENCODED_ADMIN_RESPONSE_LENGTH = 4 * 1024;
+    public static final int MAX_ENCODED_MEMBERSHIP_QUERY_LENGTH = 4 * 1024;
 
     enum State
     {
@@ -50,13 +50,13 @@ class ClusterSession implements AutoCloseable
          * Client can send/receive to/from cluster and can act as a normal client. Can not query endpoints and
          * recording log
          */
-        CLIENT_ONLY,
+        CLIENT,
 
         /**
          * Client can send/receive to/from cluster and can query cluster endpoints and recording log.
          * Normally reserved for cluster members only.
          */
-        CLIENT_PLUS_QUERY
+        CLIENT_AND_MEMBER
     }
 
     private long timeOfLastActivityMs;
@@ -69,7 +69,7 @@ class ClusterSession implements AutoCloseable
     private State state = State.INIT;
     private CloseReason closeReason = CloseReason.NULL_VAL;
     private byte[] encodedPrincipal = NULL_PRINCIPAL;
-    private byte[] encodedAdminResponse;
+    private byte[] encodedMembershipQueryResponse;
     private Capability capability = NONE;
 
     ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
@@ -195,14 +195,14 @@ class ClusterSession implements AutoCloseable
         return openedTermPosition;
     }
 
-    void encodedAdminResponse(final byte[] encodedResponse)
+    void encodedMembershipQueryResponse(final byte[] encodedResponse)
     {
-        encodedAdminResponse = encodedResponse;
+        encodedMembershipQueryResponse = encodedResponse;
     }
 
-    byte[] encodedAdminResponse()
+    byte[] encodedMembershipQueryResponse()
     {
-        return encodedAdminResponse;
+        return encodedMembershipQueryResponse;
     }
 
     static void checkEncodedPrincipalLength(final byte[] encodedPrincipal)
@@ -217,19 +217,6 @@ class ClusterSession implements AutoCloseable
         }
     }
 
-    static void checkEncodedAdminResponseLength(final byte[] encodedResponse)
-    {
-        if (null != encodedResponse &&
-            encodedResponse.length > MAX_ENCODED_ADMIN_RESPONSE_LENGTH)
-        {
-            throw new IllegalArgumentException(
-                "Encoded Admin Response max length " +
-                    MAX_ENCODED_ADMIN_RESPONSE_LENGTH +
-                " exceeded: length=" +
-                encodedResponse.length);
-        }
-    }
-
     public String toString()
     {
         return "ClusterSession{" +
@@ -241,7 +228,7 @@ class ClusterSession implements AutoCloseable
             ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +
             ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
-            ", encodedAdminResponse=" + Arrays.toString(encodedAdminResponse) +
+            ", encodedMembershipQueryResponse=" + Arrays.toString(encodedMembershipQueryResponse) +
             '}';
     }
 }

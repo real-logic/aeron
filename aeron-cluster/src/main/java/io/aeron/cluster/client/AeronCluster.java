@@ -55,7 +55,7 @@ public final class AeronCluster implements AutoCloseable
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionKeepAliveRequestEncoder keepAliveRequestEncoder = new SessionKeepAliveRequestEncoder();
-    private final AdminQueryEncoder adminQueryEncoder = new AdminQueryEncoder();
+    private final MembershipQueryEncoder membershipQueryEncoder = new MembershipQueryEncoder();
 
     /**
      * Connect to the cluster using default configuration.
@@ -245,13 +245,13 @@ public final class AeronCluster implements AutoCloseable
      *
      * @return result of query.
      */
-    public String queryForEndpoints()
+    public String getMemberEndpoints()
     {
         lock.lock();
         try
         {
             final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
-            final long correlationId = sendAdminQuery(AdminQueryType.ENDPOINTS, deadlineNs);
+            final long correlationId = sendMembershipQuery(MembershipQueryType.ENDPOINTS, deadlineNs);
             final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
 
             while (true)
@@ -260,9 +260,9 @@ public final class AeronCluster implements AutoCloseable
 
                 if (poller.correlationId() == correlationId)
                 {
-                    if (poller.templateId() == AdminResponseDecoder.TEMPLATE_ID)
+                    if (poller.templateId() == MembershipQueryResponseDecoder.TEMPLATE_ID)
                     {
-                        return new String(poller.encodedAdminResponse(), US_ASCII);
+                        return new String(poller.encodedQueryResponse(), US_ASCII);
                     }
                     else if (poller.eventCode() == EventCode.ERROR)
                     {
@@ -278,18 +278,17 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
-     * Query cluster member for recovery plan information.
+     * Query cluster member for encoded recovery plan.
      *
-     * @return serialized recovery plan
-     * @see io.aeron.cluster.service.RecordingLog.RecoveryPlan
+     * @return encoded {@link RecordingLog.RecoveryPlan}
      */
-    public ByteBuffer queryForRecoveryPlan()
+    public ByteBuffer getRecoveryPlan()
     {
         lock.lock();
         try
         {
             final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
-            final long correlationId = sendAdminQuery(AdminQueryType.RECOVERY_PLAN, deadlineNs);
+            final long correlationId = sendMembershipQuery(MembershipQueryType.RECOVERY_PLAN, deadlineNs);
             final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
 
             while (true)
@@ -298,9 +297,9 @@ public final class AeronCluster implements AutoCloseable
 
                 if (poller.correlationId() == correlationId)
                 {
-                    if (poller.templateId() == AdminResponseDecoder.TEMPLATE_ID)
+                    if (poller.templateId() == MembershipQueryResponseDecoder.TEMPLATE_ID)
                     {
-                        final byte[] recoveryPlan = poller.encodedAdminResponse();
+                        final byte[] recoveryPlan = poller.encodedQueryResponse();
 
                         return ByteBuffer.wrap(recoveryPlan);
                     }
@@ -534,10 +533,10 @@ public final class AeronCluster implements AutoCloseable
         return correlationId;
     }
 
-    private long sendAdminQuery(final AdminQueryType queryType, final long deadlineNs)
+    private long sendMembershipQuery(final MembershipQueryType queryType, final long deadlineNs)
     {
         final long correlationId = aeron.nextCorrelationId();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + AdminQueryEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + MembershipQueryEncoder.BLOCK_LENGTH;
         int attempts = SEND_ATTEMPTS;
 
         idleStrategy.reset();
@@ -548,7 +547,7 @@ public final class AeronCluster implements AutoCloseable
 
             if (result > 0)
             {
-                adminQueryEncoder
+                membershipQueryEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId)
                     .clusterSessionId(clusterSessionId)

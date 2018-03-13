@@ -20,18 +20,18 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
 
-import static io.aeron.cluster.ClusterSession.MAX_ENCODED_ADMIN_RESPONSE_LENGTH;
+import static io.aeron.cluster.ClusterSession.MAX_ENCODED_MEMBERSHIP_QUERY_LENGTH;
 
 class EgressPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
 
     private final BufferClaim bufferClaim = new BufferClaim();
-    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(MAX_ENCODED_ADMIN_RESPONSE_LENGTH);
+    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(MAX_ENCODED_MEMBERSHIP_QUERY_LENGTH);
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
     private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
-    private final AdminResponseEncoder adminResponseEncoder = new AdminResponseEncoder();
+    private final MembershipQueryResponseEncoder membershipQueryResponseEncoder = new MembershipQueryResponseEncoder();
 
     public boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
     {
@@ -94,7 +94,7 @@ class EgressPublisher
         return false;
     }
 
-    public boolean sendAdminResponse(final ClusterSession session, final byte[] encodedResponse)
+    public boolean sendMembershipResponse(final ClusterSession session, final byte[] encodedResponse)
     {
         final Publication publication = session.responsePublication();
         if (!publication.isConnected())
@@ -102,13 +102,13 @@ class EgressPublisher
             return false;
         }
 
-        adminResponseEncoder
+        membershipQueryResponseEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .clusterSessionId(session.id())
             .correlationId(session.lastCorrelationId())
             .putEncodedResponse(encodedResponse, 0, encodedResponse.length);
 
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + adminResponseEncoder.encodedLength();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + membershipQueryResponseEncoder.encodedLength();
 
         int attempts = SEND_ATTEMPTS;
         do

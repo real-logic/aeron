@@ -30,7 +30,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
-    private final AdminResponseDecoder adminResponseDecoder = new AdminResponseDecoder();
+    private final MembershipQueryResponseDecoder membershipQueryResponseDecoder = new MembershipQueryResponseDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
     private long clusterSessionId = -1;
@@ -40,7 +40,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private EventCode eventCode;
     private String detail = "";
     private byte[] encodedChallenge;
-    private byte[] encodedAdminResponse;
+    private byte[] encodedQueryResponse;
 
     public EgressPoller(final Subscription subscription, final int fragmentLimit)
     {
@@ -119,13 +119,13 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
-     * Get the encoded response from an admin query.
+     * Get the encoded response from an membership query.
      *
-     * @return the encoded response from an admin query or null if last message was not an admin response.
+     * @return the encoded response from an membership query or null if last message was not an query response.
      */
-    public byte[] encodedAdminResponse()
+    public byte[] encodedQueryResponse()
     {
-        return encodedAdminResponse;
+        return encodedQueryResponse;
     }
 
     /**
@@ -156,7 +156,7 @@ public class EgressPoller implements ControlledFragmentHandler
         eventCode = null;
         detail = "";
         encodedChallenge = null;
-        encodedAdminResponse = null;
+        encodedQueryResponse = null;
         pollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
@@ -218,19 +218,19 @@ public class EgressPoller implements ControlledFragmentHandler
                 correlationId = challengeDecoder.correlationId();
                 break;
 
-            case AdminResponseDecoder.TEMPLATE_ID:
-                adminResponseDecoder.wrap(
+            case MembershipQueryResponseDecoder.TEMPLATE_ID:
+                membershipQueryResponseDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                encodedAdminResponse = new byte[adminResponseDecoder.encodedResponseLength()];
-                adminResponseDecoder.getEncodedResponse(
-                    encodedAdminResponse, 0, adminResponseDecoder.encodedResponseLength());
+                encodedQueryResponse = new byte[membershipQueryResponseDecoder.encodedResponseLength()];
+                membershipQueryResponseDecoder.getEncodedResponse(
+                    encodedQueryResponse, 0, membershipQueryResponseDecoder.encodedResponseLength());
 
-                clusterSessionId = adminResponseDecoder.clusterSessionId();
-                correlationId = adminResponseDecoder.correlationId();
+                clusterSessionId = membershipQueryResponseDecoder.clusterSessionId();
+                correlationId = membershipQueryResponseDecoder.correlationId();
                 break;
 
             default:

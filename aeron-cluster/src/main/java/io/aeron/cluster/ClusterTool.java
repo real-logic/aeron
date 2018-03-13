@@ -16,7 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.service.RecordingLog;
+import io.aeron.cluster.client.RecordingLog;
 
 import java.io.File;
 import java.util.Date;
@@ -60,7 +60,7 @@ public class ClusterTool
                 }
                 break;
 
-            case "recovery":
+            case "recovery-plan":
                 try (AeronArchive archive = AeronArchive.connect())
                 {
                     final RecordingLog recordingLog = new RecordingLog(clusterDir);
@@ -95,7 +95,7 @@ public class ClusterTool
         System.out.println("Usage: <cluster-dir> <command>");
         System.out.println("  describe: prints out all descriptors in the file.");
         System.out.println("  pid: prints PID of cluster component.");
-        System.out.println("  recovery: prints recovery plan of cluster component.");
+        System.out.println("  recovery-plan: prints recovery plan of cluster component.");
         System.out.println("  recording-log: prints recording log of cluster component.");
     }
 }

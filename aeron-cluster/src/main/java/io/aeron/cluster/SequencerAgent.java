@@ -362,13 +362,13 @@ class SequencerAgent implements Agent, ServiceControlListener
         final long clusterSessionId,
         final long correlationId)
     {
-        final long nowMs = cachedEpochClock.time();
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null == session || session.state() == CLOSED)
         {
             return ControlledFragmentHandler.Action.CONTINUE;
         }
 
+        final long nowMs = cachedEpochClock.time();
         if (session.state() == OPEN && logPublisher.appendMessage(buffer, offset, length, nowMs))
         {
             session.lastActivity(nowMs, correlationId);
@@ -415,15 +415,8 @@ class SequencerAgent implements Agent, ServiceControlListener
                 switch (queryType)
                 {
                     case ENDPOINTS:
-                        final String endpointsDetail =
-                            thisMember.id() + "," +
-                            thisMember.clientFacingEndpoint() + "," +
-                            thisMember.memberFacingEndpoint() + "," +
-                            thisMember.logEndpoint() + "," +
-                            thisMember.archiveEndpoint();
-
                         session.lastActivity(cachedEpochClock.time(), correlationId);
-                        session.encodedMembershipQueryResponse(endpointsDetail.getBytes(US_ASCII));
+                        session.encodedMembershipQueryResponse(thisMember.endpointsDetail().getBytes(US_ASCII));
 
                         if (egressPublisher.sendMembershipResponse(session, session.encodedMembershipQueryResponse()))
                         {
@@ -445,7 +438,7 @@ class SequencerAgent implements Agent, ServiceControlListener
             else
             {
                 session.lastActivity(cachedEpochClock.time(), correlationId);
-                egressPublisher.sendEvent(session, EventCode.ERROR, "Principal does not have QUERY capability");
+                egressPublisher.sendEvent(session, EventCode.ERROR, "Principal does not have MEMBER capability");
             }
         }
     }

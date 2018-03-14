@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
 include(CheckSymbolExists)
 include(CheckIncludeFile)
 include(CheckTypeSize)
@@ -225,9 +223,18 @@ set(AGENT_HEADERS
     aeron_alloc.h)
 
 add_library(aeron_driver_agent SHARED ${AGENT_SOURCE} ${AGENT_HEADERS})
+target_include_directories(aeron_driver_agent
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})
+target_include_directories(aeron_driver
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+)
 add_executable(aeronmd aeronmd.c)
+target_include_directories(aeronmd
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 

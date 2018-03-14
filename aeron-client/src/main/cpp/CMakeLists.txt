@@ -14,8 +14,6 @@
 # limitations under the License.
 #
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
 SET(SOURCE
     Publication.cpp
     ExclusivePublication.cpp
@@ -123,6 +121,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS"
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
+
+target_include_directories(aeron_client
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 install(TARGETS aeron_client ARCHIVE DESTINATION lib)
 install(DIRECTORY . DESTINATION  include FILES_MATCHING PATTERN "*.h")

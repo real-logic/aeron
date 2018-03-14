@@ -673,6 +673,7 @@ public class ConsensusModule implements AutoCloseable
 
         private AeronArchive.Context archiveContext;
         private AuthenticatorSupplier authenticatorSupplier;
+        private RecordingCatchUpSupplier recordingCatchUpSupplier;
 
         /**
          * Perform a shallow copy of the object.
@@ -829,6 +830,11 @@ public class ConsensusModule implements AutoCloseable
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
 
+            if (null == recordingCatchUpSupplier)
+            {
+                recordingCatchUpSupplier = RecordingCatchUp::catchUp;
+            }
+
             concludeMarkFile();
         }
 
@@ -922,6 +928,28 @@ public class ConsensusModule implements AutoCloseable
         public RecordingLog recordingLog()
         {
             return recordingLog;
+        }
+
+        /**
+         * Set the {@link RecordingCatchUpSupplier} to use for catching up recordings.
+         *
+         * @param recordingCatchUpSupplier to use.
+         * @return this for a fluent API.
+         */
+        public Context recordingCatchUpSupplier(final RecordingCatchUpSupplier recordingCatchUpSupplier)
+        {
+            this.recordingCatchUpSupplier = recordingCatchUpSupplier;
+            return this;
+        }
+
+        /**
+         * The {@link RecordingCatchUpSupplier} to use for catching up recordings.
+         *
+         * @return {@link RecordingCatchUpSupplier} to use.
+         */
+        public RecordingCatchUpSupplier recordingCatchUpSupplier()
+        {
+            return recordingCatchUpSupplier;
         }
 
         /**

@@ -651,7 +651,7 @@ class SequencerAgent implements Agent, ServiceControlListener
                 if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
                 {
                     // initiate catch up
-                    recordingCatchUp = RecordingCatchUp.catchUp(
+                    recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
                         ctx.archiveContext(),
                         recoveryPlan,
                         leaderMember,

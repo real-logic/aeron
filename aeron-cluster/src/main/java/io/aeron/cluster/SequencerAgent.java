@@ -643,7 +643,6 @@ class SequencerAgent implements Agent, ServiceControlListener
                 votedForMemberId = candidateId;
                 if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
                 {
-                    // initiate catch up
                     recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
                         ctx.archiveContext(),
                         recoveryPlan,

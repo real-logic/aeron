@@ -19,40 +19,48 @@ import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.cluster.codecs.mark.VarAsciiEncodingEncoder;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.MarkFile;
-import org.agrona.SystemUtil;
+import org.agrona.*;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.errors.ErrorConsumer;
+import org.agrona.concurrent.errors.ErrorLogReader;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 public class ClusterMarkFile implements AutoCloseable
 {
     public static final String FILENAME = "cluster-mark.dat";
-    public static final int ALIGNMENT = 1024;
+    public static final int HEADER_LENGTH = 8 * 1024;
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
     private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();
     private final MarkFile markFile;
     private final UnsafeBuffer buffer;
+    private final UnsafeBuffer errorBuffer;
 
     public ClusterMarkFile(
         final File file,
         final ClusterComponentType type,
-        final int totalFileLength,
+        final int errorBufferLength,
         final EpochClock epochClock,
         final long timeoutMs)
     {
+        final boolean markFileExists = file.exists();
+
         this.markFile = new MarkFile(
             file,
-            file.exists(),
+            markFileExists,
             MarkFileHeaderDecoder.versionEncodingOffset(),
             MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
-            totalFileLength,
+            HEADER_LENGTH + errorBufferLength,
             timeoutMs,
             epochClock,
             (version) ->
@@ -66,9 +74,17 @@ public class ClusterMarkFile implements AutoCloseable
             null);
 
         this.buffer = markFile.buffer();
+        this.errorBuffer = new UnsafeBuffer(this.buffer, HEADER_LENGTH, errorBufferLength);
 
         headerEncoder.wrap(buffer, 0);
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
+
+        if (markFileExists)
+        {
+            saveExistingErrors(file, errorBuffer, System.err);
+
+            errorBuffer.setMemory(0, errorBufferLength, (byte)0);
+        }
 
         final ClusterComponentType existingType = headerDecoder.componentType();
 
@@ -79,6 +95,8 @@ public class ClusterMarkFile implements AutoCloseable
         }
 
         headerEncoder.componentType(type);
+        headerEncoder.headerLength(HEADER_LENGTH);
+        headerEncoder.errorBufferLength(errorBufferLength);
         headerEncoder.pid(SystemUtil.getPid());
     }
 
@@ -108,6 +126,8 @@ public class ClusterMarkFile implements AutoCloseable
 
         this.buffer = markFile.buffer();
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
+        this.errorBuffer = new UnsafeBuffer(
+            this.buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
     }
 
     public void close()
@@ -140,8 +160,64 @@ public class ClusterMarkFile implements AutoCloseable
         return headerDecoder;
     }
 
-    public static int alignedTotalFileLength(
-        final int alignment,
+    public UnsafeBuffer buffer()
+    {
+        return buffer;
+    }
+
+    public UnsafeBuffer errorBuffer()
+    {
+        return errorBuffer;
+    }
+
+    public static void saveExistingErrors(final File markFile, final AtomicBuffer errorBuffer, final PrintStream logger)
+    {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final int observations = saveErrorLog(new PrintStream(baos, false, "UTF-8"), errorBuffer);
+            if (observations > 0)
+            {
+                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
+                final String errorLogFilename =
+                    markFile.getParent() + '-' + dateFormat.format(new Date()) + "-error.log";
+
+                if (null != logger)
+                {
+                    logger.println("WARNING: Existing errors saved to: " + errorLogFilename);
+                }
+
+                try (FileOutputStream out = new FileOutputStream(errorLogFilename))
+                {
+                    baos.writeTo(out);
+                }
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    public static int saveErrorLog(final PrintStream out, final AtomicBuffer errorBuffer)
+    {
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+        final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->
+            out.format(
+            "***%n%d observations from %s to %s for:%n %s%n",
+            count,
+            dateFormat.format(new Date(firstTimestamp)),
+            dateFormat.format(new Date(lastTimestamp)),
+            ex);
+
+        final int distinctErrorCount = ErrorLogReader.read(errorBuffer, errorConsumer);
+
+        out.format("%n%d distinct errors observed.%n", distinctErrorCount);
+
+        return distinctErrorCount;
+    }
+
+    public static void checkHeaderLength(
         final String aeronDirectory,
         final String archiveChannel,
         final String serviceControlChannel,
@@ -153,14 +229,20 @@ public class ClusterMarkFile implements AutoCloseable
         Objects.requireNonNull(archiveChannel);
         Objects.requireNonNull(serviceControlChannel);
 
-        return BitUtil.align(
+        final int lengthRequired =
             MarkFileHeaderEncoder.BLOCK_LENGTH +
-                (6 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
-                aeronDirectory.length() +
-                archiveChannel.length() +
-                serviceControlChannel.length() +
-                (null == ingressChannel ? 0 : ingressChannel.length()) +
-                (null == serviceName ? 0 : serviceName.length()) +
-                (null == authenticator ? 0 : authenticator.length()), alignment);
+            (6 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
+            aeronDirectory.length() +
+            archiveChannel.length() +
+            serviceControlChannel.length() +
+            (null == ingressChannel ? 0 : ingressChannel.length()) +
+            (null == serviceName ? 0 : serviceName.length()) +
+            (null == authenticator ? 0 : authenticator.length());
+
+        if (lengthRequired > HEADER_LENGTH)
+        {
+            throw new IllegalArgumentException(
+                "MarkFile length required " + lengthRequired + " greater than " + HEADER_LENGTH);
+        }
     }
 }

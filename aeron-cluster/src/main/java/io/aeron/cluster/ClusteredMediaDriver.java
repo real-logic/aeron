@@ -87,9 +87,7 @@ public class ClusteredMediaDriver implements AutoCloseable
             .errorHandler(driverCtx.errorHandler())
             .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
 
-        final ConsensusModule consensusModule = ConsensusModule.launch(consensusModuleCtx
-            .errorHandler(driverCtx.errorHandler())
-            .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
+        final ConsensusModule consensusModule = ConsensusModule.launch(consensusModuleCtx);
 
         return new ClusteredMediaDriver(driver, archive, consensusModule);
     }

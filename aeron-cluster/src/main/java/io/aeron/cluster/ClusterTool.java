@@ -15,10 +15,15 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.CncFileDescriptor;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.RecordingLog;
+import org.agrona.DirectBuffer;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.AtomicBuffer;
 
 import java.io.File;
+import java.nio.MappedByteBuffer;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -72,6 +77,14 @@ public class ClusterTool
                 final RecordingLog recordingLog = new RecordingLog(clusterDir);
                 System.out.println(recordingLog.toString());
                 break;
+
+            case "errors":
+                try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+                {
+                    printTypeAndActivityTimestamp(markFile);
+                    printErrors(markFile);
+                }
+                break;
         }
     }
 
@@ -82,12 +95,36 @@ public class ClusterTool
 
     private static void printTypeAndActivityTimestamp(final ClusterMarkFile markFile)
     {
-        System.out.print("Type: " + markFile.decoder().componentType());
+        System.out.print("Type: " + markFile.decoder().componentType() + " ");
         System.out.format(
             "%1$tH:%1$tM:%1$tS (start: %2tF %2$tH:%2$tM:%2$tS, activity: %3tF %3$tH:%3$tM:%3$tS)%n",
             new Date(),
             new Date(markFile.decoder().startTimestamp()),
             new Date(markFile.activityTimestampVolatile()));
+    }
+
+    private static void printErrors(final ClusterMarkFile markFile)
+    {
+        System.out.println("Cluster component error log:");
+        ClusterMarkFile.saveErrorLog(System.out, markFile.errorBuffer());
+
+        final String aeronDirectory = markFile.decoder().aeronDirectory();
+        System.out.println("Aeron driver error log (directory: " + aeronDirectory + "):");
+        final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
+
+        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
+        final DirectBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+        if (CncFileDescriptor.CNC_VERSION != cncVersion)
+        {
+            throw new IllegalStateException(
+                "Aeron CnC version does not match: version=" + cncVersion +
+                    " required=" + CncFileDescriptor.CNC_VERSION);
+        }
+
+        final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
+        ClusterMarkFile.saveErrorLog(System.out, buffer);
     }
 
     private static void printHelp()
@@ -97,5 +134,6 @@ public class ClusterTool
         System.out.println("  pid: prints PID of cluster component.");
         System.out.println("  recovery-plan: prints recovery plan of cluster component.");
         System.out.println("  recording-log: prints recording log of cluster component.");
+        System.out.println("  errors: prints Aeron and cluster component error logs.");
     }
 }

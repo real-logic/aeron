@@ -27,6 +27,8 @@ import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.errors.DistinctErrorLog;
+import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
@@ -39,6 +41,7 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.S
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
+import static org.agrona.SystemUtil.getSizeAsInt;
 
 public class ConsensusModule implements AutoCloseable
 {
@@ -425,6 +428,17 @@ public class ConsensusModule implements AutoCloseable
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.cluster.DefaultAuthenticatorSupplier";
 
         /**
+         * Size in bytes of the error buffer for the cluster.
+         */
+        public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.cluster.error.buffer.length";
+
+        /**
+         * Size in bytes of the error buffer for the cluster.
+         * Default to 1MB.
+         */
+        public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+
+        /**
          * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
          * {@link #CLUSTER_MEMBER_ID_PROP_NAME} if set.
          *
@@ -572,6 +586,17 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Size in bytes of the error buffer in the mark file.
+         *
+         * @return length of error buffer in bytes.
+         * @see #ERROR_BUFFER_LENGTH_PROP_NAME
+         */
+        public static int errorBufferLength()
+        {
+            return getSizeAsInt(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
+        }
+
+        /**
          * The value {@link #AUTHENTICATOR_SUPPLIER_DEFAULT} or system property
          * {@link #AUTHENTICATOR_SUPPLIER_PROP_NAME} if set.
          *
@@ -650,6 +675,7 @@ public class ConsensusModule implements AutoCloseable
         private int memberStatusStreamId = Configuration.memberStatusStreamId();
 
         private int serviceCount = Configuration.serviceCount();
+        private int errorBufferLength = Configuration.errorBufferLength();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
         private long sessionTimeoutNs = Configuration.sessionTimeoutNs();
         private long heartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
@@ -659,6 +685,7 @@ public class ConsensusModule implements AutoCloseable
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
 
+        private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
@@ -718,19 +745,34 @@ public class ConsensusModule implements AutoCloseable
                     "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
-            if (null == recordingLog)
+            if (null == epochClock)
             {
-                recordingLog = new RecordingLog(clusterDir);
+                epochClock = new SystemEpochClock();
+            }
+
+            if (null == markFile)
+            {
+                markFile = new ClusterMarkFile(
+                    new File(clusterDir, ClusterMarkFile.FILENAME),
+                    ClusterComponentType.CONSENSUS_MODULE,
+                    errorBufferLength,
+                    epochClock,
+                    0);
+            }
+
+            if (null == errorLog)
+            {
+                errorLog = new DistinctErrorLog(markFile.errorBuffer(), epochClock);
             }
 
             if (null == errorHandler)
             {
-                throw new IllegalStateException("Error handler must be supplied");
+                errorHandler = new LoggingErrorHandler(errorLog);
             }
 
-            if (null == epochClock)
+            if (null == recordingLog)
             {
-                epochClock = new SystemEpochClock();
+                recordingLog = new RecordingLog(clusterDir);
             }
 
             if (null == aeron)
@@ -1916,42 +1958,31 @@ public class ConsensusModule implements AutoCloseable
 
         private void concludeMarkFile()
         {
-            if (null == markFile)
-            {
-                final int alignedTotalFileLength = ClusterMarkFile.alignedTotalFileLength(
-                    ClusterMarkFile.ALIGNMENT,
-                    aeron.context().aeronDirectoryName(),
-                    archiveContext.controlRequestChannel(),
-                    serviceControlChannel(),
-                    ingressChannel,
-                    null,
-                    authenticatorSupplier.getClass().toString());
+            ClusterMarkFile.checkHeaderLength(
+                aeron.context().aeronDirectoryName(),
+                archiveContext.controlRequestChannel(),
+                serviceControlChannel(),
+                ingressChannel,
+                null,
+                authenticatorSupplier.getClass().toString());
 
-                markFile = new ClusterMarkFile(
-                    new File(clusterDir, ClusterMarkFile.FILENAME),
-                    ClusterComponentType.CONSENSUS_MODULE,
-                    alignedTotalFileLength,
-                    epochClock,
-                    0);
+            final MarkFileHeaderEncoder encoder = markFile.encoder();
 
-                final MarkFileHeaderEncoder encoder = markFile.encoder();
+            encoder
+                .archiveStreamId(archiveContext.controlRequestStreamId())
+                .serviceControlStreamId(serviceControlStreamId)
+                .ingressStreamId(ingressStreamId)
+                .memberId(clusterMemberId)
+                .serviceId(-1)
+                .aeronDirectory(aeron.context().aeronDirectoryName())
+                .archiveChannel(archiveContext.controlRequestChannel())
+                .serviceControlChannel(serviceControlChannel)
+                .ingressChannel(ingressChannel)
+                .serviceName("")
+                .authenticator(authenticatorSupplier.getClass().toString());
 
-                encoder
-                    .archiveStreamId(archiveContext.controlRequestStreamId())
-                    .serviceControlStreamId(serviceControlStreamId)
-                    .ingressStreamId(ingressStreamId)
-                    .memberId(clusterMemberId)
-                    .serviceId(-1)
-                    .aeronDirectory(aeron.context().aeronDirectoryName())
-                    .archiveChannel(archiveContext.controlRequestChannel())
-                    .serviceControlChannel(serviceControlChannel)
-                    .ingressChannel(ingressChannel)
-                    .serviceName("")
-                    .authenticator(authenticatorSupplier.getClass().toString());
-
-                markFile.updateActivityTimestamp(epochClock.time());
-                markFile.signalReady();
-            }
+            markFile.updateActivityTimestamp(epochClock.time());
+            markFile.signalReady();
         }
     }
 }

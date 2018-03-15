@@ -35,6 +35,7 @@ option(CXX_WARNINGS_AS_ERRORS "Enable warnings as errors for C++" OFF)
 option(SANITISE_BUILD "Enable sanitise options" OFF)
 option(COVERAGE_BUILD "Enable code coverage" OFF)
 option(AERON_TESTS "Enable tests" ${STANDALONE_BUILD})
+option(AERON_BUILD_SAMPLES "Enable building the sample projects" ${STANDALONE_BUILD})
 
 unset(STANDALONE_BUILD)
 
@@ -81,23 +82,25 @@ endif()
 ##########################################################
 # HdrHistogram usage - use MD5 as means to identify snapshot
 
-ExternalProject_Add(
-    hdr_histogram
-    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c.zip
-    URL_MD5 8d1d6c6df1ee8342c180529a89568081
-    PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram"
-    BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram/src/hdr_histogram-build/src/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}"
-    INSTALL_COMMAND ""
-)
+if(AERON_BUILD_SAMPLES)
+    ExternalProject_Add(
+        hdr_histogram
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c.zip
+        URL_MD5 8d1d6c6df1ee8342c180529a89568081
+        PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram"
+        BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram/src/hdr_histogram-build/src/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        INSTALL_COMMAND ""
+    )
 
-ExternalProject_Get_Property(hdr_histogram source_dir)
-set(HDRHISTOGRAM_SOURCE_DIR ${source_dir})
-ExternalProject_Get_Property(hdr_histogram binary_dir)
-set(HDRHISTOGRAM_BINARY_DIR ${binary_dir})
+    ExternalProject_Get_Property(hdr_histogram source_dir)
+    set(HDRHISTOGRAM_SOURCE_DIR ${source_dir})
+    ExternalProject_Get_Property(hdr_histogram binary_dir)
+    set(HDRHISTOGRAM_BINARY_DIR ${binary_dir})
 
-set(HDRHISTOGRAM_LIBS
-    ${HDRHISTOGRAM_BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}
-)
+    set(HDRHISTOGRAM_LIBS
+        ${HDRHISTOGRAM_BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}
+    )
+endif()
 
 ##########################################################
 # Google benchmark
@@ -210,7 +213,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/binaries")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 
-set(AERON_SAMPLES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-samples/src/main/cpp")
+if(AERON_BUILD_SAMPLES)
+    set(AERON_SAMPLES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-samples/src/main/cpp")
+endif()
 
 set(AERON_CLIENT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/main/cpp")
 
@@ -225,8 +230,10 @@ if(AERON_TESTS)
     include_directories(${GMOCK_SOURCE_DIR}/googlemock/include)
 endif()
 
-# hdr_histogram
-include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
+if(AERON_BUILD_SAMPLES)
+   # hdr_histogram
+   include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
+endif()
 
 if(AERON_TESTS)
     # google benchmark
@@ -241,7 +248,9 @@ add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
 if(AERON_TESTS)
    add_subdirectory(${AERON_CLIENT_TEST_PATH})
 endif()
-add_subdirectory(${AERON_SAMPLES_PATH})
+if(AERON_BUILD_SAMPLES)
+   add_subdirectory(${AERON_SAMPLES_PATH})
+endif()
 
 if(BUILD_AERON_DRIVER)
    add_subdirectory(${AERON_DRIVER_SOURCE_PATH})

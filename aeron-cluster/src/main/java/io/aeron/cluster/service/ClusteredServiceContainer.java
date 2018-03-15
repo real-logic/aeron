@@ -1152,6 +1152,50 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
+         * Set the error buffer length in bytes to use.
+         *
+         * @param errorBufferLength in bytes to use.
+         * @return this for a fluent API.
+         */
+        public Context errorBufferLength(final int errorBufferLength)
+        {
+            this.errorBufferLength = errorBufferLength;
+            return this;
+        }
+
+        /**
+         * The error buffer length in bytes.
+         *
+         * @return error buffer length in bytes.
+         */
+        public int errorBufferLength()
+        {
+            return errorBufferLength;
+        }
+
+        /**
+         * Set the {@link DistinctErrorLog} in use.
+         *
+         * @param errorLog to use.
+         * @return this for a fluent API.
+         */
+        public Context errorLog(final DistinctErrorLog errorLog)
+        {
+            this.errorLog = errorLog;
+            return this;
+        }
+
+        /**
+         * The {@link DistinctErrorLog} in use.
+         *
+         * @return {@link DistinctErrorLog} in use.
+         */
+        public DistinctErrorLog errorLog()
+        {
+            return errorLog;
+        }
+
+        /**
          * Delete the cluster container directory.
          */
         public void deleteDirectory()

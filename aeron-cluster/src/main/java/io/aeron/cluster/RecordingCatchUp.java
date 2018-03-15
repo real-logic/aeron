@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.ChannelUriStringBuilder;
+import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
@@ -142,7 +143,7 @@ public final class RecordingCatchUp implements AutoCloseable
         final long extendStopPosition = leaderLastStep.recordingStopPosition;
 
         final ChannelUriStringBuilder archiveControlRequestChannel = new ChannelUriStringBuilder()
-            .media("udp")
+            .media(CommonContext.UDP_MEDIA)
             .endpoint(leader.archiveEndpoint());
 
         final AeronArchive.Context leaderArchiveContext = new AeronArchive.Context()

@@ -76,6 +76,16 @@ public class CommonContext implements AutoCloseable, Cloneable
     public static final String AERON_DIR_PROP_DEFAULT;
 
     /**
+     * Media type used for IPC shared memory from {@link Publication} to {@link Subscription} channels.
+     */
+    public static final String IPC_MEDIA = "ipc";
+
+    /**
+     * Media type used for UDP sockets from {@link Publication} to {@link Subscription} channels.
+     */
+    public static final String UDP_MEDIA = "udp";
+
+    /**
      * URI used for IPC {@link Publication}s and {@link Subscription}s
      */
     public static final String IPC_CHANNEL = "aeron:ipc";

@@ -87,7 +87,7 @@ public class ChannelUriStringBuilder
             throw new IllegalStateException("media type is mandatory");
         }
 
-        if ("udp".equals(media) && (null == endpoint && null == controlEndpoint))
+        if (CommonContext.UDP_MEDIA.equals(media) && (null == endpoint && null == controlEndpoint))
         {
             throw new IllegalStateException("Either 'endpoint' or 'control' must be specified for UDP.");
         }
@@ -144,8 +144,8 @@ public class ChannelUriStringBuilder
     {
         switch (media)
         {
-            case "udp":
-            case "ipc":
+            case CommonContext.UDP_MEDIA:
+            case CommonContext.IPC_MEDIA:
                 break;
 
             default:

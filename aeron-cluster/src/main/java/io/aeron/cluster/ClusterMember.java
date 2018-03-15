@@ -21,6 +21,7 @@ import io.aeron.Publication;
 import org.agrona.CloseHelper;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.CommonContext.UDP_MEDIA;
 
 /**
  * Represents a member of the cluster that participates in replication.
@@ -417,7 +418,7 @@ public final class ClusterMember
 
     public static void checkArchiveEndpoint(final ClusterMember thisMember, final ChannelUri archiveControlRequestUri)
     {
-        if (!archiveControlRequestUri.media().equals("udp"))
+        if (!UDP_MEDIA.equals(archiveControlRequestUri.media()))
         {
             throw new IllegalStateException("archive control request channel must be udp");
         }

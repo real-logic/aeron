@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterMember.NULL_MEMBER_ID;
 import static io.aeron.cluster.ClusterSession.State.*;
@@ -1039,9 +1040,9 @@ class SequencerAgent implements Agent, ServiceControlListener
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         final Publication publication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
-        if (!channelUri.containsKey(CommonContext.ENDPOINT_PARAM_NAME) && channelUri.media().equals("udp"))
+        if (!channelUri.containsKey(CommonContext.ENDPOINT_PARAM_NAME) && UDP_MEDIA.equals(channelUri.media()))
         {
-            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media("udp");
+            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media(UDP_MEDIA);
             for (final ClusterMember member : clusterMembers)
             {
                 if (member != thisMember)
@@ -1166,7 +1167,7 @@ class SequencerAgent implements Agent, ServiceControlListener
     {
         serviceAckCount = 0;
 
-        final String channel = isLeader && channelUri.media().equals("udp") ?
+        final String channel = isLeader && UDP_MEDIA.equals(channelUri.media()) ?
             channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
         serviceControlPublisher.joinLog(
             leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), channel);

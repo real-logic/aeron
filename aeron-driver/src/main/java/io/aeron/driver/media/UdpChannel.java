@@ -31,21 +31,14 @@ import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
 
 /**
- * Encapsulation of UDP Channels.
- * <p>
- * Format of URI as in {@link ChannelUri}.
+ * The media configuration for a Aeron UDP channel as an instantiation of the socket addresses for a {@link ChannelUri}.
  *
  * @see ChannelUri
  * @see io.aeron.ChannelUriStringBuilder
  */
 public final class UdpChannel
 {
-    /**
-     * Media type id for UDP channels.
-     */
-    public static final String MEDIA_ID = "udp";
-
-    private static final byte[] HEX_DIGIT_TABLE =
+    private static final byte[] HEX_TABLE =
     {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
     };
@@ -189,10 +182,11 @@ public final class UdpChannel
      * name and also as a method of hashing, etc.
      * <p>
      * A canonical form:
-     * - begins with the string "UDP-"
-     * - has all addresses converted to hexadecimal
-     * - uses "-" as all field separators
-     * <p>
+     * <ul>
+     *     <li>begins with the string "UDP-"</li>
+     *     <li>has all addresses converted to hexadecimal</li>
+     *     <li>uses "-" as all field separators</li>
+     * </ul>
      * The general format is:
      * UDP-interface-localPort-remoteAddress-remotePort
      *
@@ -206,13 +200,13 @@ public final class UdpChannel
 
         builder.append("UDP-");
 
-        toHexString(builder, localData.getAddress().getAddress())
+        toHex(builder, localData.getAddress().getAddress())
             .append('-')
             .append(localData.getPort());
 
         builder.append('-');
 
-        toHexString(builder, remoteData.getAddress().getAddress())
+        toHex(builder, remoteData.getAddress().getAddress())
             .append('-')
             .append(remoteData.getPort());
 
@@ -470,7 +464,7 @@ public final class UdpChannel
 
     private static void validateMedia(final ChannelUri uri)
     {
-        if (!MEDIA_ID.equals(uri.media()))
+        if (!CommonContext.UDP_MEDIA.equals(uri.media()))
         {
             throw new IllegalArgumentException("UdpChannel only supports UDP media: " + uri);
         }
@@ -537,14 +531,12 @@ public final class UdpChannel
         return builder.toString();
     }
 
-    private static StringBuilder toHexString(final StringBuilder builder, final byte[] bytes)
+    private static StringBuilder toHex(final StringBuilder builder, final byte[] bytes)
     {
-        for (int i = 0, length = bytes.length; i < length; i++)
+        for (final byte b : bytes)
         {
-            final byte b = bytes[i];
-
-            builder.append((char)(HEX_DIGIT_TABLE[(b >> 4) & 0x0F]));
-            builder.append((char)(HEX_DIGIT_TABLE[b & 0x0F]));
+            builder.append((char)(HEX_TABLE[(b >> 4) & 0x0F]));
+            builder.append((char)(HEX_TABLE[b & 0x0F]));
         }
 
         return builder;

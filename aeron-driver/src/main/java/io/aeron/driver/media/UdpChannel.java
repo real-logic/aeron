@@ -187,6 +187,7 @@ public final class UdpChannel
      *     <li>has all addresses converted to hexadecimal</li>
      *     <li>uses "-" as all field separators</li>
      * </ul>
+     * <p>
      * The general format is:
      * UDP-interface-localPort-remoteAddress-remotePort
      *

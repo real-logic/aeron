@@ -36,55 +36,44 @@ add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
 add_executable(PingPong PingPong.cpp ${HEADERS})
 
 target_link_libraries(AeronStat
-    aeron_client
-    ${CMAKE_THREAD_LIBS_INIT})
+    aeron_client)
 
 target_link_libraries(BasicPublisher
-    aeron_client
-    ${CMAKE_THREAD_LIBS_INIT})
+    aeron_client)
 
 target_link_libraries(TimeTests
     ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(BasicSubscriber
-    aeron_client
-    ${CMAKE_THREAD_LIBS_INIT})
+    aeron_client)
 
 target_link_libraries(StreamingPublisher
-    aeron_client
-    ${CMAKE_THREAD_LIBS_INIT})
+    aeron_client)
 
 target_link_libraries(RateSubscriber
-    aeron_client
-    ${CMAKE_THREAD_LIBS_INIT})
+    aeron_client)
 
 target_link_libraries(Pong
-    aeron_client
-    ${CMAKE_THREAD_LIBS_INIT})
+    aeron_client)
 
 target_link_libraries(Ping
     aeron_client
-    ${HDRHISTOGRAM_LIBS}
-    ${CMAKE_THREAD_LIBS_INIT})
+    ${HDRHISTOGRAM_LIBS})
 
 add_dependencies(Ping hdr_histogram)
 
 target_link_libraries(Throughput
-    aeron_client
-    ${CMAKE_THREAD_LIBS_INIT})
+    aeron_client)
 
 target_link_libraries(ErrorStat
-    aeron_client
-    ${CMAKE_THREAD_LIBS_INIT})
+    aeron_client)
 
 target_link_libraries(ExclusiveThroughput
-    aeron_client
-    ${CMAKE_THREAD_LIBS_INIT})
+    aeron_client)
 
 target_link_libraries(PingPong
     aeron_client
-    ${HDRHISTOGRAM_LIBS}
-    ${CMAKE_THREAD_LIBS_INIT})
+    ${HDRHISTOGRAM_LIBS})
 
 add_dependencies(PingPong hdr_histogram)
 

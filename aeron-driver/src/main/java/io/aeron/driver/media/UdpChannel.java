@@ -31,7 +31,7 @@ import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
 
 /**
- * The media configuration for a Aeron UDP channel as an instantiation of the socket addresses for a {@link ChannelUri}.
+ * The media configuration for Aeron UDP channels as an instantiation of the socket addresses for a {@link ChannelUri}.
  *
  * @see ChannelUri
  * @see io.aeron.ChannelUriStringBuilder

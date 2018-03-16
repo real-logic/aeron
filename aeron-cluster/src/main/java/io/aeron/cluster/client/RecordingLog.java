@@ -538,70 +538,6 @@ public class RecordingLog
             steps);
     }
 
-    static ReplayStep planRecovery(
-        final ArrayList<ReplayStep> steps, final ArrayList<Entry> entries, final AeronArchive archive)
-    {
-        if (entries.isEmpty())
-        {
-            return null;
-        }
-
-        int snapshotIndex = -1;
-        for (int i = entries.size() - 1; i >= 0; i--)
-        {
-            final Entry entry = entries.get(i);
-            if (ENTRY_TYPE_SNAPSHOT == entry.type)
-            {
-                snapshotIndex = i;
-            }
-        }
-
-        final ReplayStep snapshotStep;
-        final RecordingExtent recordingExtent = new RecordingExtent();
-
-        if (-1 != snapshotIndex)
-        {
-            final Entry snapshot = entries.get(snapshotIndex);
-            getRecordingExtent(archive, recordingExtent, snapshot);
-
-            snapshotStep = new ReplayStep(recordingExtent.startPosition, recordingExtent.stopPosition, snapshot);
-
-            if (snapshotIndex - 1 >= 0)
-            {
-                for (int i = snapshotIndex - 1; i >= 0; i--)
-                {
-                    final Entry entry = entries.get(i);
-                    if (ENTRY_TYPE_TERM == entry.type)
-                    {
-                        getRecordingExtent(archive, recordingExtent, entry);
-                        final long snapshotPosition = snapshot.termBaseLogPosition + snapshot.termPosition;
-
-                        if (recordingExtent.stopPosition == NULL_POSITION ||
-                            (entry.termBaseLogPosition + recordingExtent.stopPosition) > snapshotPosition)
-                        {
-                            steps.add(new ReplayStep(snapshot.termPosition, recordingExtent.stopPosition, entry));
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        else
-        {
-            snapshotStep = null;
-        }
-
-        for (int i = snapshotIndex + 1, length = entries.size(); i < length; i++)
-        {
-            final Entry entry = entries.get(i);
-            getRecordingExtent(archive, recordingExtent, entry);
-
-            steps.add(new ReplayStep(recordingExtent.startPosition, recordingExtent.stopPosition, entry));
-        }
-
-        return snapshotStep;
-    }
-
     /**
      * Get the latest snapshot for a given position within a leadership term.
      *
@@ -689,6 +625,17 @@ public class RecordingLog
     }
 
     /**
+     * Commit the recording id of the log for a leadership term.
+     *
+     * @param leadershipTermId for committing the recording id for the log.
+     * @param recordingId      for the log of the leadership term.
+     */
+    public void commitLeadershipRecordingId(final long leadershipTermId, final long recordingId)
+    {
+        commitEntryValue(leadershipTermId, recordingId, RECORDING_ID_OFFSET);
+    }
+
+    /**
      * Commit the position reached in a leadership term before a clean shutdown.
      *
      * @param leadershipTermId for committing the term position reached.
@@ -696,37 +643,7 @@ public class RecordingLog
      */
     public void commitLeadershipTermPosition(final long leadershipTermId, final long termPosition)
     {
-        int index = -1;
-        for (int i = 0, size = entries.size(); i < size; i++)
-        {
-            final Entry entry = entries.get(i);
-            if (entry.leadershipTermId == leadershipTermId && entry.type == ENTRY_TYPE_TERM)
-            {
-                index = entry.entryIndex;
-                break;
-            }
-        }
-
-        if (-1 == index)
-        {
-            throw new IllegalArgumentException("Unknown leadershipTermId: " + leadershipTermId);
-        }
-
-        buffer.putLong(0, termPosition, LITTLE_ENDIAN);
-        byteBuffer.limit(SIZE_OF_LONG).position(0);
-        final long filePosition = (index * ENTRY_LENGTH) + TERM_POSITION_OFFSET;
-
-        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
-        {
-            if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
-            {
-                throw new IllegalStateException("failed to write field atomically");
-            }
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        commitEntryValue(leadershipTermId, termPosition, TERM_POSITION_OFFSET);
     }
 
     /**
@@ -861,6 +778,105 @@ public class RecordingLog
         if (archive.listRecording(entry.recordingId, recordingExtent) == 0)
         {
             throw new IllegalStateException("Unknown recording id: " + entry.recordingId);
+        }
+    }
+
+    private int getLeadershipTermEntryIndex(final long leadershipTermId)
+    {
+        for (int i = 0, size = entries.size(); i < size; i++)
+        {
+            final Entry entry = entries.get(i);
+            if (entry.leadershipTermId == leadershipTermId && entry.type == ENTRY_TYPE_TERM)
+            {
+                return entry.entryIndex;
+            }
+        }
+
+        throw new IllegalArgumentException("Unknown leadershipTermId: " + leadershipTermId);
+    }
+
+    private static ReplayStep planRecovery(
+        final ArrayList<ReplayStep> steps, final ArrayList<Entry> entries, final AeronArchive archive)
+    {
+        if (entries.isEmpty())
+        {
+            return null;
+        }
+
+        int snapshotIndex = -1;
+        for (int i = entries.size() - 1; i >= 0; i--)
+        {
+            final Entry entry = entries.get(i);
+            if (ENTRY_TYPE_SNAPSHOT == entry.type)
+            {
+                snapshotIndex = i;
+            }
+        }
+
+        final ReplayStep snapshotStep;
+        final RecordingExtent recordingExtent = new RecordingExtent();
+
+        if (-1 != snapshotIndex)
+        {
+            final Entry snapshot = entries.get(snapshotIndex);
+            getRecordingExtent(archive, recordingExtent, snapshot);
+
+            snapshotStep = new ReplayStep(recordingExtent.startPosition, recordingExtent.stopPosition, snapshot);
+
+            if (snapshotIndex - 1 >= 0)
+            {
+                for (int i = snapshotIndex - 1; i >= 0; i--)
+                {
+                    final Entry entry = entries.get(i);
+                    if (ENTRY_TYPE_TERM == entry.type)
+                    {
+                        getRecordingExtent(archive, recordingExtent, entry);
+                        final long snapshotPosition = snapshot.termBaseLogPosition + snapshot.termPosition;
+
+                        if (recordingExtent.stopPosition == NULL_POSITION ||
+                            (entry.termBaseLogPosition + recordingExtent.stopPosition) > snapshotPosition)
+                        {
+                            steps.add(new ReplayStep(snapshot.termPosition, recordingExtent.stopPosition, entry));
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            snapshotStep = null;
+        }
+
+        for (int i = snapshotIndex + 1, length = entries.size(); i < length; i++)
+        {
+            final Entry entry = entries.get(i);
+            getRecordingExtent(archive, recordingExtent, entry);
+
+            steps.add(new ReplayStep(recordingExtent.startPosition, recordingExtent.stopPosition, entry));
+        }
+
+        return snapshotStep;
+    }
+
+    private void commitEntryValue(final long leadershipTermId, final long value, final int fieldOffset)
+    {
+        final int index = getLeadershipTermEntryIndex(leadershipTermId);
+
+        buffer.putLong(0, value, LITTLE_ENDIAN);
+        byteBuffer.limit(SIZE_OF_LONG).position(0);
+        final long filePosition = (index * ENTRY_LENGTH) + fieldOffset;
+
+        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
+        {
+            if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
+            {
+                throw new IllegalStateException("failed to write field atomically");
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 }

@@ -22,13 +22,15 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
-import java.nio.MappedByteBuffer;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -37,8 +39,57 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Receives files in chunks and saves them in the temporary directory.
+ * <p>
+ * Protocol is to receive a {@code file-create} followed by 1 or more {@code file-chunk} messages that are all
+ * linked via the correlation id. Messages are encoded in {@link java.nio.ByteOrder#LITTLE_ENDIAN}.
+ * <p>
+ * The chunk size if best determined by {@link io.aeron.Publication#maxPayloadLength()} minus header for the chunk.
  *
- * @see FileSender
+ * <b>file-create</b>
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                          Version                              |
+ *  +---------------------------------------------------------------+
+ *  |                      Message Type = 1                         |
+ *  +---------------------------------------------------------------+
+ *  |                       Correlation ID                          |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                        File Length                            |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                        Name Length                            |
+ *  +---------------------------------------------------------------+
+ *  |                           Name                                |
+ * ...                                                              |
+ *  |                                                              ...
+ *  +---------------------------------------------------------------+
+ * </pre>
+ * <b>file-chunk</b>
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                          Version                              |
+ *  +---------------------------------------------------------------+
+ *  |                      Message Type = 2                         |
+ *  +---------------------------------------------------------------+
+ *  |                       Correlation ID                          |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                        Chunk Offset                           |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                        Chunk Length                           |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                        Chunk Payload                          |
+ * ...                                                              |
+ *  |                                                              ...
+ *  +---------------------------------------------------------------+
+ * </pre> * @see FileSender
  */
 public class FileReceiver
 {
@@ -49,11 +100,11 @@ public class FileReceiver
     public static final int VERSION_OFFSET = 0;
     public static final int TYPE_OFFSET = VERSION_OFFSET + SIZE_OF_INT;
     public static final int CORRELATION_ID_OFFSET = TYPE_OFFSET + SIZE_OF_INT;
-
     public static final int FILE_LENGTH_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-    public static final int FILE_NAME_OFFSET = FILE_LENGTH_OFFSET + SIZE_OF_INT;
 
-    public static final int CHUNK_OFFSET_OFFSET = FILE_LENGTH_OFFSET + SIZE_OF_LONG;
+    public static final int FILE_NAME_OFFSET = FILE_LENGTH_OFFSET + SIZE_OF_LONG;
+
+    public static final int CHUNK_OFFSET_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     public static final int CHUNK_LENGTH_OFFSET = CHUNK_OFFSET_OFFSET + SIZE_OF_LONG;
     public static final int CHUNK_PAYLOAD_OFFSET = CHUNK_LENGTH_OFFSET + SIZE_OF_LONG;
 
@@ -61,10 +112,10 @@ public class FileReceiver
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
     private static final int FRAGMENT_LIMIT = 10;
 
-    private final File parentDirectory = new File(IoUtil.tmpDirName());
+    private final File downloadDir = new File(IoUtil.tmpDirName());
     private final Subscription subscription;
     private final FragmentAssembler assembler = new FragmentAssembler(this::onFragment);
-    private final Long2ObjectHashMap<MappedByteBuffer> fileSessionByIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<UnsafeBuffer> fileSessionByIdMap = new Long2ObjectHashMap<>();
 
     public FileReceiver(final Subscription subscription)
     {
@@ -114,7 +165,6 @@ public class FileReceiver
             case FILE_CHUNK_TYPE:
                 fileChunk(
                     buffer.getLong(offset + CORRELATION_ID_OFFSET, LITTLE_ENDIAN),
-                    buffer.getLong(offset + FILE_LENGTH_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(offset + CHUNK_OFFSET_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(offset + CHUNK_LENGTH_OFFSET, LITTLE_ENDIAN),
                     buffer,
@@ -133,34 +183,50 @@ public class FileReceiver
             throw new IllegalStateException("correlationId is in use: " + correlationId);
         }
 
-        final File file = new File(parentDirectory, filename);
+        final File file = new File(downloadDir, filename);
         if (file.exists() && !file.delete())
         {
             throw new IllegalStateException("failed to delete existing file: " + file);
         }
 
-        fileSessionByIdMap.put(correlationId, IoUtil.mapNewFile(file, length, false));
+        if (length == 0)
+        {
+            try
+            {
+                if (!file.createNewFile())
+                {
+                    throw new IllegalStateException("failed to create " + filename);
+                }
+            }
+            catch (final IOException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+        else
+        {
+            fileSessionByIdMap.put(correlationId, new UnsafeBuffer(IoUtil.mapNewFile(file, length, false)));
+        }
     }
 
     private void fileChunk(
         final long correlationId,
-        final long fileLength,
         final long chunkOffset,
         final long chunkLength,
         final DirectBuffer buffer,
         final int offset)
     {
-        final MappedByteBuffer byteBuffer = fileSessionByIdMap.get(correlationId);
+        final UnsafeBuffer fileBuffer = fileSessionByIdMap.get(correlationId);
         buffer.getBytes(
             offset + CHUNK_PAYLOAD_OFFSET,
-            byteBuffer,
+            fileBuffer,
             (int)chunkOffset,
             (int)chunkLength);
 
-        if ((chunkOffset + chunkLength) >= fileLength)
+        if ((chunkOffset + chunkLength) >= fileBuffer.capacity())
         {
             fileSessionByIdMap.remove(correlationId);
-            IoUtil.unmap(byteBuffer);
+            IoUtil.unmap(fileBuffer.byteBuffer());
         }
     }
 

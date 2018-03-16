@@ -81,7 +81,10 @@ public class ClusterMarkFile implements AutoCloseable
 
         if (markFileExists)
         {
-            saveExistingErrors(file, errorBuffer, System.err);
+            final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
+                this.buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
+
+            saveExistingErrors(file, existingErrorBuffer, System.err);
 
             errorBuffer.setMemory(0, errorBufferLength, (byte)0);
         }

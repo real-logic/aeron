@@ -64,7 +64,6 @@ class SequencerAgent implements Agent, ServiceControlListener
     private long lastRecordingPosition = 0;
     private long timeOfLastLogUpdateMs = 0;
     private long followerCommitPosition = 0;
-    private long logRecordingId;
     private ReadableCounter logRecordingPosition;
     private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -229,8 +228,6 @@ class SequencerAgent implements Agent, ServiceControlListener
         final long nowMs = epochClock.time();
         cachedEpochClock.update(nowMs);
         timeOfLastLogUpdateMs = nowMs;
-
-        recordingLog.appendTerm(logRecordingId, leadershipTermId, termBaseLogPosition, nowMs, votedForMemberId);
     }
 
     public int doWork()
@@ -631,17 +628,12 @@ class SequencerAgent implements Agent, ServiceControlListener
             candidateTermId == leadershipTermId &&
             lastBaseLogPosition == recoveryPlan.lastTermBaseLogPosition)
         {
-            final boolean vote = lastTermPosition >= recoveryPlan.lastTermPositionAppended;
-            sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, vote);
-
-            if (!vote)
-            {
-                // TODO: become candidate in new election
-                throw new IllegalStateException("Invalid member for cluster leader: " + candidateId);
-            }
-            else
+            if (lastTermPosition >= recoveryPlan.lastTermPositionAppended)
             {
                 votedForMemberId = candidateId;
+                recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, epochClock.time(), votedForMemberId);
+                sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, true);
+
                 if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
                 {
                     recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
@@ -652,12 +644,12 @@ class SequencerAgent implements Agent, ServiceControlListener
                         ctx.replayChannel(),
                         ctx.replayStreamId());
                 }
+
+                return;
             }
         }
-        else
-        {
-            sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, false);
-        }
+
+        sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, false);
     }
 
     void onVote(
@@ -985,12 +977,14 @@ class SequencerAgent implements Agent, ServiceControlListener
         {
             votedForMemberId = memberId;
             leaderMember = thisMember;
+            recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, epochClock.time(), votedForMemberId);
         }
         else if (ctx.appointedLeaderId() == memberId)
         {
             role(Cluster.Role.CANDIDATE);
             ClusterMember.becomeCandidate(clusterMembers, memberId);
             votedForMemberId = memberId;
+            recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, epochClock.time(), votedForMemberId);
 
             requestVotes(clusterMembers, recoveryPlan.lastTermBaseLogPosition, recoveryPlan.lastTermPositionAppended);
 
@@ -1060,7 +1054,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         final String recordingChannel = channelUri.toString();
         archive.startRecording(recordingChannel, ctx.logStreamId(), SourceLocation.LOCAL);
 
-        createPositionCounters();
+        final long recordingId = createPositionCounters();
+        recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);
 
         awaitServicesReady(channelUri, true);
         awaitFollowersReady();
@@ -1095,7 +1090,9 @@ class SequencerAgent implements Agent, ServiceControlListener
         final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, streamId));
         logAdapter = new LogAdapter(image, this);
 
-        createPositionCounters();
+        final long recordingId = createPositionCounters();
+        recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);
+
         awaitServicesReady(channelUri, false);
         notifyLeaderThatFollowerIsReady();
     }
@@ -1151,16 +1148,18 @@ class SequencerAgent implements Agent, ServiceControlListener
         while (!ClusterMember.hasReachedPosition(clusterMembers, 0));
     }
 
-    private void createPositionCounters()
+    private long createPositionCounters()
     {
         final CountersReader counters = aeron.countersReader();
         final int recordingCounterId = awaitRecordingCounter(counters, logSessionId);
 
         logRecordingPosition = new ReadableCounter(counters, recordingCounterId);
-        logRecordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
+        final long recordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
 
         commitPosition = CommitPos.allocate(
             aeron, tempBuffer, leadershipTermId, termBaseLogPosition, CommitPos.NULL_VALUE);
+
+        return recordingId;
     }
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader)

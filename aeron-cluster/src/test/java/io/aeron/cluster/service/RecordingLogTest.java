@@ -67,10 +67,9 @@ public class RecordingLogTest
     public void shouldAppendAndThenCommitTermPosition()
     {
         final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
-        final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, 0, ENTRY_TYPE_TERM, 0);
+        final RecordingLog.Entry entry = new RecordingLog.Entry(NULL_VALUE, 3, 2, 777, 4, 0, ENTRY_TYPE_TERM, 0);
 
         recordingLog.appendTerm(
-            entry.recordingId,
             entry.leadershipTermId,
             entry.termBaseLogPosition,
             entry.timestamp,
@@ -90,17 +89,17 @@ public class RecordingLogTest
     {
         final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
 
-        final RecordingLog.Entry entryOne = new RecordingLog.Entry(1, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, 0);
+        final RecordingLog.Entry entryOne = new RecordingLog.Entry(
+            NULL_VALUE, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, 0);
         recordingLog.appendTerm(
-            entryOne.recordingId,
             entryOne.leadershipTermId,
             entryOne.termBaseLogPosition,
             entryOne.timestamp,
             entryOne.votedForMemberId);
 
-        final RecordingLog.Entry entryTwo = new RecordingLog.Entry(2, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
+        final RecordingLog.Entry entryTwo = new RecordingLog.Entry(
+            NULL_VALUE, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
         recordingLog.appendTerm(
-            entryTwo.recordingId,
             entryTwo.leadershipTermId,
             entryTwo.termBaseLogPosition,
             entryTwo.timestamp,

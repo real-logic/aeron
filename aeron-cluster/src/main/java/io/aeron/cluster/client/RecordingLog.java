@@ -564,14 +564,12 @@ public class RecordingLog
     /**
      * Append a log entry for a Raft term.
      *
-     * @param recordingId      in the archive for the term.
      * @param leadershipTermId for the current term.
      * @param logPosition      reached at the beginning of the term.
      * @param timestamp        at the beginning of the term.
      * @param votedForMemberId in the leader election.
      */
     public void appendTerm(
-        final long recordingId,
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
@@ -590,7 +588,7 @@ public class RecordingLog
             }
         }
 
-        append(ENTRY_TYPE_TERM, recordingId, leadershipTermId, logPosition, NULL_POSITION, timestamp, votedForMemberId);
+        append(ENTRY_TYPE_TERM, NULL_VALUE, leadershipTermId, logPosition, NULL_POSITION, timestamp, votedForMemberId);
     }
 
     /**

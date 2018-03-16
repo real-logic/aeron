@@ -22,21 +22,16 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
-import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static java.nio.file.StandardOpenOption.WRITE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -103,7 +98,7 @@ public class FileReceiver
         final int version = buffer.getInt(offset + VERSION_OFFSET, LITTLE_ENDIAN);
         if (VERSION != version)
         {
-            throw new IllegalArgumentException("Unsupported version " + version + " expected " + VERSION);
+            throw new IllegalArgumentException("unsupported version " + version + " expected " + VERSION);
         }
 
         final int messageType = buffer.getInt(offset + TYPE_OFFSET, LITTLE_ENDIAN);
@@ -127,8 +122,24 @@ public class FileReceiver
                 break;
 
             default:
-                throw new IllegalArgumentException("Unknown message type: " + messageType);
+                throw new IllegalArgumentException("unknown message type: " + messageType);
         }
+    }
+
+    private void createFile(final long correlationId, final long length, final String filename)
+    {
+        if (fileSessionByIdMap.containsKey(correlationId))
+        {
+            throw new IllegalStateException("correlationId is in use: " + correlationId);
+        }
+
+        final File file = new File(parentDirectory, filename);
+        if (file.exists() && !file.delete())
+        {
+            throw new IllegalStateException("failed to delete existing file: " + file);
+        }
+
+        fileSessionByIdMap.put(correlationId, IoUtil.mapNewFile(file, length, false));
     }
 
     private void fileChunk(
@@ -150,30 +161,6 @@ public class FileReceiver
         {
             fileSessionByIdMap.remove(correlationId);
             IoUtil.unmap(byteBuffer);
-        }
-    }
-
-    private void createFile(final long correlationId, final long length, final String filename)
-    {
-        if (fileSessionByIdMap.containsKey(correlationId))
-        {
-            throw new IllegalStateException("correlationId is in use: " + correlationId);
-        }
-
-        final File file = new File(parentDirectory, filename);
-        if (file.exists() && !file.delete())
-        {
-            throw new IllegalStateException("Failed to delete existing file: " + file);
-        }
-
-        try (FileChannel channel = FileChannel.open(file.toPath(), CREATE_NEW, WRITE))
-        {
-            final MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, length);
-            fileSessionByIdMap.put(correlationId, byteBuffer);
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
         }
     }
 

@@ -1054,7 +1054,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         final String recordingChannel = channelUri.toString();
         archive.startRecording(recordingChannel, ctx.logStreamId(), SourceLocation.LOCAL);
 
-        final long recordingId = createPositionCounters();
+        createPositionCounters();
+        final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), logRecordingPosition.counterId());
         recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);
 
         awaitServicesReady(channelUri, true);
@@ -1090,7 +1091,8 @@ class SequencerAgent implements Agent, ServiceControlListener
         final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, streamId));
         logAdapter = new LogAdapter(image, this);
 
-        final long recordingId = createPositionCounters();
+        createPositionCounters();
+        final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), logRecordingPosition.counterId());
         recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);
 
         awaitServicesReady(channelUri, false);
@@ -1148,18 +1150,15 @@ class SequencerAgent implements Agent, ServiceControlListener
         while (!ClusterMember.hasReachedPosition(clusterMembers, 0));
     }
 
-    private long createPositionCounters()
+    private void createPositionCounters()
     {
         final CountersReader counters = aeron.countersReader();
         final int recordingCounterId = awaitRecordingCounter(counters, logSessionId);
 
         logRecordingPosition = new ReadableCounter(counters, recordingCounterId);
-        final long recordingId = RecordingPos.getRecordingId(counters, logRecordingPosition.counterId());
 
         commitPosition = CommitPos.allocate(
             aeron, tempBuffer, leadershipTermId, termBaseLogPosition, CommitPos.NULL_VALUE);
-
-        return recordingId;
     }
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader)

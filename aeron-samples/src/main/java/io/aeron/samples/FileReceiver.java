@@ -22,11 +22,13 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+import org.agrona.IoUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
+import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -58,6 +60,7 @@ public class FileReceiver implements FragmentHandler
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
     private static final int FRAGMENT_LIMIT = 10;
 
+    private final File parentDirectory = new File(IoUtil.tmpDirName());
     private final Subscription subscription;
     private final FragmentAssembler assembler = new FragmentAssembler(this);
     private final Long2ObjectHashMap<FileSession> fileSessionByIdMap = new Long2ObjectHashMap<>();
@@ -101,6 +104,7 @@ public class FileReceiver implements FragmentHandler
         {
             case FILE_CREATE_TYPE:
                 createFile(
+                    buffer.getLong(offset + CORRELATION_ID_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(offset + FILE_LENGTH_OFFSET, LITTLE_ENDIAN),
                     buffer.getStringUtf8(offset + FILE_NAME_OFFSET, LITTLE_ENDIAN));
                 break;
@@ -113,8 +117,12 @@ public class FileReceiver implements FragmentHandler
         }
     }
 
-    private void createFile(final long length, final String filename)
+    private void createFile(final long correlationId, final long length, final String filename)
     {
+        if (fileSessionByIdMap.containsKey(correlationId))
+        {
+            throw new IllegalStateException("correlationId is in use: " + correlationId);
+        }
     }
 
     private int doWork()

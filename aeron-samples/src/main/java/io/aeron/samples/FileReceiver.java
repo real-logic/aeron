@@ -19,19 +19,24 @@ import io.aeron.Aeron;
 import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -40,7 +45,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *
  * @see FileSender
  */
-public class FileReceiver implements FragmentHandler
+public class FileReceiver
 {
     public static final int VERSION = 0;
     public static final int FILE_CREATE_TYPE = 1;
@@ -55,6 +60,7 @@ public class FileReceiver implements FragmentHandler
 
     public static final int CHUNK_OFFSET_OFFSET = FILE_LENGTH_OFFSET + SIZE_OF_LONG;
     public static final int CHUNK_LENGTH_OFFSET = CHUNK_OFFSET_OFFSET + SIZE_OF_LONG;
+    public static final int CHUNK_PAYLOAD_OFFSET = CHUNK_LENGTH_OFFSET + SIZE_OF_LONG;
 
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
@@ -62,8 +68,8 @@ public class FileReceiver implements FragmentHandler
 
     private final File parentDirectory = new File(IoUtil.tmpDirName());
     private final Subscription subscription;
-    private final FragmentAssembler assembler = new FragmentAssembler(this);
-    private final Long2ObjectHashMap<FileSession> fileSessionByIdMap = new Long2ObjectHashMap<>();
+    private final FragmentAssembler assembler = new FragmentAssembler(this::onFragment);
+    private final Long2ObjectHashMap<MappedByteBuffer> fileSessionByIdMap = new Long2ObjectHashMap<>();
 
     public FileReceiver(final Subscription subscription)
     {
@@ -91,6 +97,7 @@ public class FileReceiver implements FragmentHandler
         }
     }
 
+    @SuppressWarnings("unused")
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final int version = buffer.getInt(offset + VERSION_OFFSET, LITTLE_ENDIAN);
@@ -110,10 +117,39 @@ public class FileReceiver implements FragmentHandler
                 break;
 
             case FILE_CHUNK_TYPE:
+                fileChunk(
+                    buffer.getLong(offset + CORRELATION_ID_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(offset + FILE_LENGTH_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(offset + CHUNK_OFFSET_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(offset + CHUNK_LENGTH_OFFSET, LITTLE_ENDIAN),
+                    buffer,
+                    offset);
                 break;
 
             default:
                 throw new IllegalArgumentException("Unknown message type: " + messageType);
+        }
+    }
+
+    private void fileChunk(
+        final long correlationId,
+        final long fileLength,
+        final long chunkOffset,
+        final long chunkLength,
+        final DirectBuffer buffer,
+        final int offset)
+    {
+        final MappedByteBuffer byteBuffer = fileSessionByIdMap.get(correlationId);
+        buffer.getBytes(
+            offset + CHUNK_PAYLOAD_OFFSET,
+            byteBuffer,
+            (int)chunkOffset,
+            (int)chunkLength);
+
+        if ((chunkOffset + chunkLength) >= fileLength)
+        {
+            fileSessionByIdMap.remove(correlationId);
+            IoUtil.unmap(byteBuffer);
         }
     }
 
@@ -123,15 +159,26 @@ public class FileReceiver implements FragmentHandler
         {
             throw new IllegalStateException("correlationId is in use: " + correlationId);
         }
+
+        final File file = new File(parentDirectory, filename);
+        if (file.exists() && !file.delete())
+        {
+            throw new IllegalStateException("Failed to delete existing file: " + file);
+        }
+
+        try (FileChannel channel = FileChannel.open(file.toPath(), CREATE_NEW, WRITE))
+        {
+            final MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, length);
+            fileSessionByIdMap.put(correlationId, byteBuffer);
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 
     private int doWork()
     {
         return subscription.poll(assembler, FRAGMENT_LIMIT);
-    }
-
-    static class FileSession
-    {
-
     }
 }

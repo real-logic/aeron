@@ -38,6 +38,7 @@
 typedef struct aeron_publication_link_stct
 {
     aeron_driver_managed_resource_t *resource;
+    int64_t registration_id;
 }
 aeron_publication_link_t;
 

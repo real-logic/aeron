@@ -703,8 +703,11 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                         is_exclusive,
                         &conductor->system_counters) >= 0)
                 {
-                    client->publication_links.array[client->publication_links.length++].resource =
-                        &publication->conductor_fields.managed_resource;
+                    aeron_publication_link_t *link = &client->publication_links.array[client->publication_links.length];
+
+                    link->resource = &publication->conductor_fields.managed_resource;
+                    link->registration_id = registration_id;
+                    client->publication_links.length++;
 
                     conductor->ipc_publications.array[conductor->ipc_publications.length++].publication = publication;
 
@@ -715,8 +718,11 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
         }
         else
         {
-            client->publication_links.array[client->publication_links.length++].resource =
-                &publication->conductor_fields.managed_resource;
+            aeron_publication_link_t *link = &client->publication_links.array[client->publication_links.length];
+
+            link->resource = &publication->conductor_fields.managed_resource;
+            link->registration_id = registration_id;
+            client->publication_links.length++;
 
             publication->conductor_fields.managed_resource.incref(publication->conductor_fields.managed_resource.clientd);
         }
@@ -833,8 +839,11 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     endpoint->conductor_fields.managed_resource.incref(endpoint->conductor_fields.managed_resource.clientd);
                     aeron_driver_sender_proxy_on_add_publication(conductor->context->sender_proxy, publication);
 
-                    client->publication_links.array[client->publication_links.length++].resource =
-                        &publication->conductor_fields.managed_resource;
+                    aeron_publication_link_t *link = &client->publication_links.array[client->publication_links.length];
+
+                    link->resource = &publication->conductor_fields.managed_resource;
+                    link->registration_id = registration_id;
+                    client->publication_links.length++;
 
                     conductor->network_publications.array[conductor->network_publications.length++].publication = publication;
 
@@ -845,8 +854,11 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
         }
         else
         {
-            client->publication_links.array[client->publication_links.length++].resource =
-                &publication->conductor_fields.managed_resource;
+            aeron_publication_link_t *link = &client->publication_links.array[client->publication_links.length];
+
+            link->resource = &publication->conductor_fields.managed_resource;
+            link->registration_id = registration_id;
+            client->publication_links.length++;
 
             publication->conductor_fields.managed_resource.incref(publication->conductor_fields.managed_resource.clientd);
         }
@@ -1822,7 +1834,7 @@ int aeron_driver_conductor_on_remove_publication(
         {
             aeron_driver_managed_resource_t *resource = client->publication_links.array[i].resource;
 
-            if (command->registration_id == resource->registration_id)
+            if (command->registration_id == client->publication_links.array[i].registration_id)
             {
                 resource->decref(resource->clientd);
 

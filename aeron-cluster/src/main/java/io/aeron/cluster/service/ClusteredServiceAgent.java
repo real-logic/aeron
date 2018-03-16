@@ -96,6 +96,8 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         checkForReplay(counters, recoveryCounterId);
         isRecovering = false;
 
+        service.onReady();
+
         joinActiveLog(counters);
 
         roleCounter = awaitClusterRoleCounter(counters);

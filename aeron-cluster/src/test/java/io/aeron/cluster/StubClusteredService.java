@@ -75,4 +75,8 @@ public class StubClusteredService implements ClusteredService
     public void onRoleChange(final Cluster.Role newRole)
     {
     }
+
+    public void onReady()
+    {
+    }
 }

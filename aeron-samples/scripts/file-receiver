@@ -17,4 +17,4 @@
 
 ${JAVA_HOME}/bin/java \
     -cp ../build/libs/samples.jar \
-    ${JVM_OPTS} io.aeron.samples.FileReceiver
+    ${JVM_OPTS} io.aeron.samples.FileReceiver "$@"

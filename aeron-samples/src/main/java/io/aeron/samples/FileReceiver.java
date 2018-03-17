@@ -38,7 +38,8 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Receives files in chunks and saves them in the temporary directory.
+ * Receives files in chunks and saves them in a directory provided as the first command line option or the
+ * temporary directory if no command line arguments are provided.
  * <p>
  * Protocol is to receive a {@code file-create} followed by 1 or more {@code file-chunk} messages that are all
  * linked via the correlation id. Messages are encoded in {@link java.nio.ByteOrder#LITTLE_ENDIAN}.
@@ -60,11 +61,10 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  |                        File Length                            |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                        Name Length                            |
+ *  |                      File Name Length                         |
  *  +---------------------------------------------------------------+
- *  |                           Name                                |
+ *  |                         File Name                            ...
  * ...                                                              |
- *  |                                                              ...
  *  +---------------------------------------------------------------+
  * </pre>
  * <b>file-chunk</b>
@@ -85,9 +85,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  |                        Chunk Length                           |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                        Chunk Payload                          |
+ *  |                        Chunk Payload                         ...
  * ...                                                              |
- *  |                                                              ...
  *  +---------------------------------------------------------------+
  * </pre> * @see FileSender
  */
@@ -112,19 +111,35 @@ public class FileReceiver
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
     private static final int FRAGMENT_LIMIT = 10;
 
-    private final File downloadDir = new File(IoUtil.tmpDirName());
+    private final File storageDir;
     private final Subscription subscription;
     private final FragmentAssembler assembler = new FragmentAssembler(this::onFragment);
     private final Long2ObjectHashMap<UnsafeBuffer> fileSessionByIdMap = new Long2ObjectHashMap<>();
 
-    public FileReceiver(final Subscription subscription)
+    public FileReceiver(final File storageDir, final Subscription subscription)
     {
+        this.storageDir = storageDir;
         this.subscription = subscription;
     }
 
     public static void main(final String[] args)
     {
-        System.out.println("Receiving from " + CHANNEL + " on stream Id " + STREAM_ID);
+        final File storageDir;
+        if (args.length > 1)
+        {
+            storageDir = new File(args[0]);
+            if (!storageDir.isDirectory())
+            {
+                System.out.println(args[0] + " is not a directory");
+                System.exit(1);
+            }
+        }
+        else
+        {
+            storageDir = new File(IoUtil.tmpDirName());
+        }
+
+        System.out.println("Files stored to " + storageDir.getAbsolutePath());
 
         final IdleStrategy idleStrategy = new SleepingMillisIdleStrategy(1);
         final AtomicBoolean running = new AtomicBoolean(true);
@@ -134,7 +149,8 @@ public class FileReceiver
             Aeron aeron = Aeron.connect();
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            final FileReceiver fileReceiver = new FileReceiver(subscription);
+            System.out.println("Receiving from " + CHANNEL + " on stream Id " + STREAM_ID);
+            final FileReceiver fileReceiver = new FileReceiver(storageDir, subscription);
 
             while (running.get())
             {
@@ -183,7 +199,7 @@ public class FileReceiver
             throw new IllegalStateException("correlationId is in use: " + correlationId);
         }
 
-        final File file = new File(downloadDir, filename);
+        final File file = new File(storageDir, filename);
         if (file.exists() && !file.delete())
         {
             throw new IllegalStateException("failed to delete existing file: " + file);

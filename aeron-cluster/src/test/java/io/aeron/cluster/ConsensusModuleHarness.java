@@ -143,7 +143,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
     }
 
-    public void pollMemberStatusAdaptors()
+    public void pollMemberStatusAdapters()
     {
         for (final MemberStatusAdapter adapter : memberStatusAdapters)
         {

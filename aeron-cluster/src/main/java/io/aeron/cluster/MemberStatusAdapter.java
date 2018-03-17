@@ -35,12 +35,12 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
-    private final SequencerAgent sequencerAgent;
+    private final MemberStatusListener memberStatusListener;
 
-    MemberStatusAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
+    MemberStatusAdapter(final Subscription subscription, final MemberStatusListener memberStatusListener)
     {
         this.subscription = subscription;
-        this.sequencerAgent = sequencerAgent;
+        this.memberStatusListener = memberStatusListener;
     }
 
     public void close()
@@ -67,7 +67,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onRequestVote(
+                memberStatusListener.onRequestVote(
                     requestVoteDecoder.candidateTermId(),
                     requestVoteDecoder.lastBaseLogPosition(),
                     requestVoteDecoder.lastTermPosition(),
@@ -81,7 +81,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onVote(
+                memberStatusListener.onVote(
                     voteDecoder.candidateTermId(),
                     voteDecoder.lastBaseLogPosition(),
                     voteDecoder.lastTermPosition(),
@@ -97,7 +97,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onAppendedPosition(
+                memberStatusListener.onAppendedPosition(
                     appendedPositionDecoder.termPosition(),
                     appendedPositionDecoder.leadershipTermId(),
                     appendedPositionDecoder.followerMemberId());
@@ -110,7 +110,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onCommitPosition(
+                memberStatusListener.onCommitPosition(
                     commitPositionDecoder.termPosition(),
                     commitPositionDecoder.leadershipTermId(),
                     commitPositionDecoder.leaderMemberId(),

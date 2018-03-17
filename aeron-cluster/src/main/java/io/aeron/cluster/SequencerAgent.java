@@ -48,7 +48,7 @@ import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
-class SequencerAgent implements Agent, ServiceControlListener
+class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListener
 {
     private boolean isRecovering;
     private final int memberId;
@@ -618,7 +618,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         this.nextSessionId = nextSessionId;
     }
 
-    void onRequestVote(
+    public void onRequestVote(
         final long candidateTermId,
         final long lastBaseLogPosition,
         final long lastTermPosition,
@@ -652,7 +652,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, false);
     }
 
-    void onVote(
+    public void onVote(
         final long candidateTermId,
         final long lastBaseLogPosition,
         final long lastTermPosition,
@@ -678,7 +678,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-    void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
+    public void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
     {
         if (leadershipTermId == this.leadershipTermId)
         {
@@ -686,7 +686,7 @@ class SequencerAgent implements Agent, ServiceControlListener
         }
     }
 
-    void onCommitPosition(
+    public void onCommitPosition(
         final long termPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
     {
         if (leadershipTermId == this.leadershipTermId)

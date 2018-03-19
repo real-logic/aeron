@@ -47,6 +47,12 @@ public class SocketAddressUtilTest
     }
 
     @Test(expected = IllegalArgumentException.class)
+    public void shouldRejectOnInvalidPort2()
+    {
+        SocketAddressUtil.parse("192.168.1.20::123");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void shouldRejectOnMissingPort()
     {
         SocketAddressUtil.parse("192.168.1.20");
@@ -58,10 +64,30 @@ public class SocketAddressUtilTest
         SocketAddressUtil.parse("192.168.1.20:");
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldRejectOnEmptyIpV6Port()
+    {
+        SocketAddressUtil.parse("[::1]:");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldRejectOnInvalidIpV6()
+    {
+        SocketAddressUtil.parse("[FG07::789:1:0:0:3]:111");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldRejectOnInvalidIpV6Scope()
+    {
+        SocketAddressUtil.parse("[FC07::789:1:0:0:3%^]:111");
+    }
+
     @Test
     public void shouldParseIpV6() throws Exception
     {
         assertCorrectParseIpV6("::1", 54321);
+        assertCorrectParseIpV6("FC07::789:1:0:0:3", 54321);
+        assertCorrectParseIpV6("fc07::789:1:0:0:3", 54321);
     }
 
     @Test

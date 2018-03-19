@@ -16,14 +16,13 @@
 package io.aeron.driver.media;
 
 import java.net.InetSocketAddress;
-import java.util.regex.Pattern;
 
 import static java.lang.Integer.parseInt;
 
 class SocketAddressUtil
 {
     /**
-     * Utility for parsing socket addresses from a {@link CharSequence}.  Supports
+     * Utility for parsing socket addresses from a {@link CharSequence}. Supports
      * hostname:port, ipV4Address:port and [ipV6Address]:port
      *
      * @param cs to be parsed for the socket address.
@@ -36,33 +35,36 @@ class SocketAddressUtil
             throw new NullPointerException("Input string must not be null or empty");
         }
 
-        InetSocketAddress addr = tryParseIpV4(cs);
+        InetSocketAddress address = tryParseIpV4(cs);
 
-        if (null == addr)
+        if (null == address)
         {
-            addr = tryParseIpV6(cs);
+            address = tryParseIpV6(cs);
         }
 
-        if (null == addr)
+        if (null == address)
         {
             throw new IllegalArgumentException("Invalid format: " + cs);
         }
 
-        return addr;
+        return address;
     }
 
-    enum IpV6State { START_ADDR, HOST, SCOPE, END_ADDR, PORT }
+    enum IpV6State
+    {
+        START_ADDR, HOST, SCOPE, END_ADDR, PORT
+    }
 
-    private static InetSocketAddress tryParseIpV6(CharSequence cs)
+    private static InetSocketAddress tryParseIpV6(final CharSequence cs)
     {
         IpV6State state = IpV6State.START_ADDR;
-
         int portIndex = -1;
         int scopeIndex = -1;
+        final int length = cs.length();
 
-        for (int i = 0, n = cs.length(); i < n; i++)
+        for (int i = 0; i < length; i++)
         {
-            char c = cs.charAt(i);
+            final char c = cs.charAt(i);
 
             switch (state)
             {
@@ -129,29 +131,28 @@ class SocketAddressUtil
             }
         }
 
-        if (-1 != portIndex && 1 < cs.length() - portIndex)
+        if (-1 != portIndex && 1 < length - portIndex)
         {
-            final int endAddressIndex = scopeIndex != -1 ? scopeIndex : portIndex - 1;
             return newSocketAddress(
-                cs.subSequence(1, endAddressIndex).toString(),
-                cs.subSequence(portIndex + 1, cs.length()).toString()
-            );
+                cs.subSequence(1, scopeIndex != -1 ? scopeIndex : portIndex - 1).toString(),
+                cs.subSequence(portIndex + 1, length).toString());
         }
-        else
-        {
-            throw new IllegalArgumentException("The 'port' portion of the address is required");
-        }
+
+        throw new IllegalArgumentException("The 'port' portion of the address is required");
     }
 
-    enum IpV4State { HOST, PORT }
+    enum IpV4State
+    {
+        HOST, PORT
+    }
 
-    private static InetSocketAddress tryParseIpV4(CharSequence cs)
+    private static InetSocketAddress tryParseIpV4(final CharSequence cs)
     {
         IpV4State state = IpV4State.HOST;
-
         int separatorIndex = -1;
+        final int length = cs.length();
 
-        for (int i = 0, n = cs.length(); i < n; i++)
+        for (int i = 0; i < length; i++)
         {
             final char c = cs.charAt(i);
             switch (state)
@@ -176,17 +177,14 @@ class SocketAddressUtil
             }
         }
 
-        if (-1 != separatorIndex && 1 < cs.length() - separatorIndex)
+        if (-1 != separatorIndex && 1 < length - separatorIndex)
         {
             return newSocketAddress(
                 cs.subSequence(0, separatorIndex).toString(),
-                cs.subSequence(separatorIndex + 1, cs.length()).toString()
-            );
+                cs.subSequence(separatorIndex + 1, length).toString());
         }
-        else
-        {
-            throw new IllegalArgumentException("The 'port' portion of the address is required");
-        }
+
+        throw new IllegalArgumentException("The 'port' portion of the address is required");
     }
 
     private static InetSocketAddress newSocketAddress(final String host, final String port)

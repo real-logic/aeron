@@ -67,7 +67,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     {
         int workCount = commandQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
         final int bytesReceived = dataTransportPoller.pollTransports();
-
+        totalBytesReceived.getAndAddOrdered(bytesReceived);
         final long nowNs = nanoClock.nanoTime();
 
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
@@ -88,8 +88,6 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         }
 
         checkPendingSetupMessages(nowNs);
-
-        totalBytesReceived.getAndAddOrdered(bytesReceived);
 
         return workCount + bytesReceived;
     }

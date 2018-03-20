@@ -238,8 +238,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         final long nowMs = epochClock.time();
         if (cachedEpochClock.time() != nowMs)
         {
-            isSlowTickCycle = true;
             cachedEpochClock.update(nowMs);
+            isSlowTickCycle = true;
         }
 
         if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)

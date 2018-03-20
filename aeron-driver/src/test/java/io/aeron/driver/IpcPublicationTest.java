@@ -31,6 +31,7 @@ import org.agrona.concurrent.status.UnsafeBufferPosition;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -71,6 +72,7 @@ public class IpcPublicationTest
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .toDriverCommands(fromClientCommands)
             .rawLogBuffersFactory(mockRawLogFactory)

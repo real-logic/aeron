@@ -27,6 +27,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.Collection;
@@ -35,8 +36,9 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.codecs.ClusterAction.READY;
 import static io.aeron.cluster.codecs.ClusterAction.REPLAY;
 import static java.util.Collections.unmodifiableCollection;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
-final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
+class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 {
     private final int serviceId;
     private boolean isRecovering;
@@ -61,6 +63,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     private BoundedLogAdapter logAdapter;
     private ActiveLog activeLog;
     private ReadableCounter roleCounter;
+    private AtomicCounter heartbeatCounter;
     private Role role = Role.FOLLOWER;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
@@ -77,11 +80,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         epochClock = ctx.epochClock();
         markFile = ctx.clusterMarkFile();
 
-        serviceControlPublisher = new ServiceControlPublisher(
-            aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceControlStreamId()));
-
-        serviceControlAdapter = new ServiceControlAdapter(
-            aeron.addSubscription(ctx.serviceControlChannel(), ctx.serviceControlStreamId()), this);
+        final String channel = ctx.serviceControlChannel();
+        final int streamId = ctx.serviceControlStreamId();
+        serviceControlPublisher = new ServiceControlPublisher(aeron.addPublication(channel, streamId));
+        serviceControlAdapter = new ServiceControlAdapter(aeron.addSubscription(channel, streamId), this);
     }
 
     public void onStart()
@@ -90,6 +92,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
         final CountersReader counters = aeron.countersReader();
         final int recoveryCounterId = awaitRecoveryCounter(counters);
+        findHeartbeatCounter(counters);
 
         isRecovering = true;
         checkForSnapshot(counters, recoveryCounterId);
@@ -134,6 +137,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         {
             markFile.updateActivityTimestamp(nowMs);
             cachedEpochClock.update(nowMs);
+            heartbeatCounter.setOrdered(nowMs);
         }
 
         int workCount = logAdapter.poll();
@@ -421,7 +425,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     {
         idleStrategy.reset();
         int counterId = RecoveryState.findCounterId(counters);
-        while (CountersReader.NULL_COUNTER_ID == counterId)
+        while (NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
@@ -448,6 +452,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
         final Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
         final Image image = awaitImage(logSessionId, logSubscription);
+        heartbeatCounter.setOrdered(epochClock.time());
 
         serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
 
@@ -472,7 +477,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     {
         idleStrategy.reset();
         int counterId = ClusterNodeRole.findCounterId(counters);
-        while (CountersReader.NULL_COUNTER_ID == counterId)
+        while (NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
@@ -632,7 +637,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     {
         idleStrategy.reset();
         int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-        while (CountersReader.NULL_COUNTER_ID == counterId)
+        while (NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
@@ -640,6 +645,17 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         }
 
         return counterId;
+    }
+
+    private void findHeartbeatCounter(final CountersReader counters)
+    {
+        final int heartbeatCounterId = ServiceHeartbeat.findCounterId(counters, ctx.serviceId());
+        if (NULL_COUNTER_ID == heartbeatCounterId)
+        {
+            throw new IllegalStateException("Failed to find heartbeat counter");
+        }
+
+        heartbeatCounter = new AtomicCounter(counters.valuesBuffer(), heartbeatCounterId);
     }
 
     private static void checkInterruptedStatus()

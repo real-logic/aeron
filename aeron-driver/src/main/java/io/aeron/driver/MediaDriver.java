@@ -424,7 +424,7 @@ public final class MediaDriver implements AutoCloseable
         private SendChannelEndpointSupplier sendChannelEndpointSupplier;
         private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
         private ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals;
-        private MutableDirectBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+        private MutableDirectBuffer tempBuffer;
         private FlowControlSupplier unicastFlowControlSupplier;
         private FlowControlSupplier multicastFlowControlSupplier;
         private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
@@ -1894,6 +1894,11 @@ public final class MediaDriver implements AutoCloseable
         @SuppressWarnings("MethodLength")
         private void concludeNullProperties()
         {
+            if (null == tempBuffer)
+            {
+                tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+            }
+
             if (null == epochClock)
             {
                 epochClock = new SystemEpochClock();

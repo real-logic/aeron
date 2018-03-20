@@ -62,6 +62,7 @@ public class SequencerAgentTest
         .idleStrategySupplier(NoOpIdleStrategy::new)
         .aeron(mockAeron)
         .clusterMemberId(0)
+        .serviceHeartbeatCounters(mock(Counter.class))
         .epochClock(new SystemEpochClock())
         .authenticatorSupplier(new DefaultAuthenticatorSupplier())
         .clusterMarkFile(mock(ClusterMarkFile.class))

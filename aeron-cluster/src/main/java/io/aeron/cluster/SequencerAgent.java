@@ -22,11 +22,13 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.RecordingLog;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
@@ -46,7 +48,6 @@ import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListener
 {
@@ -56,8 +57,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private int serviceAckCount = 0;
     private int logSessionId;
     private final long sessionTimeoutMs;
-    private final long heartbeatIntervalMs;
-    private final long heartbeatTimeoutMs;
+    private final long leaderHeartbeatIntervalMs;
+    private final long leaderHeartbeatTimeoutMs;
+    private final long serviceHeartbeatTimeoutMs;
     private long nextSessionId = 1;
     private long termBaseLogPosition = 0;
     private long leadershipTermId = -1;
@@ -96,7 +98,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private final Aeron aeron;
     private AeronArchive archive;
     private final ConsensusModule.Context ctx;
-    private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+    private final MutableDirectBuffer tempBuffer;
+    private final Counter[] serviceHeartbeats;
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private RecordingLog.RecoveryPlan recoveryPlan;
@@ -111,8 +114,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         this.aeron = ctx.aeron();
         this.epochClock = ctx.epochClock();
         this.sessionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.sessionTimeoutNs());
-        this.heartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.heartbeatIntervalNs());
-        this.heartbeatTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.heartbeatTimeoutNs());
+        this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
+        this.leaderHeartbeatTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatTimeoutNs());
+        this.serviceHeartbeatTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.serviceHeartbeatTimeoutNs());
         this.egressPublisher = egressPublisher;
         this.moduleState = ctx.moduleStateCounter();
         this.controlToggle = ctx.controlToggleCounter();
@@ -126,6 +130,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         this.clusterRoleCounter = ctx.clusterNodeCounter();
         this.markFile = ctx.clusterMarkFile();
         this.recordingLog = ctx.recordingLog();
+        this.tempBuffer = ctx.tempBuffer();
+        this.serviceHeartbeats = ctx.serviceHeartbeatCounters();
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -712,6 +718,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         int workCount = 0;
 
         markFile.updateActivityTimestamp(nowMs);
+        checkServiceHeartbeats(nowMs);
         workCount += aeronClientInvoker.invoke();
         workCount += serviceControlAdapter.poll();
 
@@ -734,6 +741,19 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
 
         return workCount;
+    }
+
+    private void checkServiceHeartbeats(final long nowMs)
+    {
+        final long heartbeatThreshold = nowMs - serviceHeartbeatTimeoutMs;
+        for (final Counter serviceHeartbeat : serviceHeartbeats)
+        {
+            if (serviceHeartbeat.get() < heartbeatThreshold)
+            {
+                ctx.errorHandler().onError(new TimeoutException("No heartbeat from clustered service"));
+                ctx.terminationHook().run();
+            }
+        }
     }
 
     private int checkControlToggle(final long nowMs)
@@ -1131,7 +1151,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         do
         {
             final long nowMs = epochClock.time();
-            if (nowMs > (timeOfLastLogUpdateMs + heartbeatIntervalMs))
+            if (nowMs > (timeOfLastLogUpdateMs + leaderHeartbeatIntervalMs))
             {
                 timeOfLastLogUpdateMs = nowMs;
 
@@ -1387,7 +1407,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             thisMember.termPosition(logRecordingPosition.get());
 
             final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
-            if (position > commitPosition.getWeak() || nowMs >= (timeOfLastLogUpdateMs + heartbeatIntervalMs))
+            if (position > commitPosition.getWeak() || nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatIntervalMs))
             {
                 for (final ClusterMember member : clusterMembers)
                 {
@@ -1430,7 +1450,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             commitPosition.proposeMaxOrdered(logAdapter.position());
 
-            if (nowMs >= (timeOfLastLogUpdateMs + heartbeatTimeoutMs))
+            if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
             {
                 throw new AgentTerminationException("No heartbeat detected from cluster leader");
             }
@@ -1483,6 +1503,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             {
                 archive.stopRecording(publication);
             }
+
             ctx.snapshotCounter().incrementOrdered();
         }
     }

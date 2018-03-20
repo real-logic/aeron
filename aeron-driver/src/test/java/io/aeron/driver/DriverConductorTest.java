@@ -51,6 +51,7 @@ import java.util.function.LongConsumer;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
+import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
@@ -137,6 +138,7 @@ public class DriverConductorTest
             new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer, StandardCharsets.US_ASCII));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .unicastFlowControlSupplier(Configuration.unicastFlowControlSupplier())

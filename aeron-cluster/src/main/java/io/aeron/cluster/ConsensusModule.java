@@ -42,6 +42,7 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.S
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
+import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 public class ConsensusModule implements AutoCloseable
 {
@@ -356,6 +357,11 @@ public class ConsensusModule implements AutoCloseable
         public static final int SNAPSHOT_COUNTER_TYPE_ID = 205;
 
         /**
+         * Type id for the clustered services heartbeat counter.
+         */
+        public static final int SERVICE_HEARTBEAT_TYPE_ID = ServiceHeartbeat.SERVICE_HEARTBEAT_TYPE_ID;
+
+        /**
          * Directory to use for the aeron cluster.
          */
         public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
@@ -398,23 +404,33 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Timeout for a leader if no heartbeat is received by an other member.
          */
-        public static final String HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.heartbeat.timeout";
+        public static final String LEADER_HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.leader.heartbeat.timeout";
 
         /**
          * Timeout for a leader if no heartbeat is received by an other member.
          */
-        public static final long HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+        public static final long LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Interval at which a leader will send heartbeats if the log is not progressing.
          */
-        public static final String HEARTBEAT_INTERVAL_PROP_NAME = "aeron.cluster.heartbeat.interval";
+        public static final String LEADER_HEARTBEAT_INTERVAL_PROP_NAME = "aeron.cluster.leader.heartbeat.interval";
 
         /**
          * Interval at which a leader will send heartbeats if the log is not progressing.
          * Default to 500 milliseconds in nanoseconds.
          */
-        public static final long HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
+        public static final long LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
+
+        /**
+         * Timeout after which a clustered service is considered inactive or not present.
+         */
+        public static final String SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.service.heartbeat.timeout";
+
+        /**
+         * Timeout after which a clustered service is considered inactive or not present..
+         */
+        public static final long SERVICE_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.
@@ -567,22 +583,33 @@ public class ConsensusModule implements AutoCloseable
          * Timeout for a leader if no heartbeat is received by an other member.
          *
          * @return timeout in nanoseconds to wait for heartbeat from a leader.
-         * @see #HEARTBEAT_TIMEOUT_PROP_NAME
+         * @see #LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
          */
         public static long leaderHeartbeatTimeoutNs()
         {
-            return getDurationInNanos(HEARTBEAT_TIMEOUT_PROP_NAME, HEARTBEAT_TIMEOUT_DEFAULT_NS);
+            return getDurationInNanos(LEADER_HEARTBEAT_TIMEOUT_PROP_NAME, LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS);
         }
 
         /**
          * Interval at which a leader will send a heartbeat if the log is not progressing.
          *
          * @return timeout in nanoseconds to for leader heartbeats when no log being appended.
-         * @see #HEARTBEAT_INTERVAL_PROP_NAME
+         * @see #LEADER_HEARTBEAT_INTERVAL_PROP_NAME
          */
         public static long leaderHeartbeatIntervalNs()
         {
-            return getDurationInNanos(HEARTBEAT_INTERVAL_PROP_NAME, HEARTBEAT_INTERVAL_DEFAULT_NS);
+            return getDurationInNanos(LEADER_HEARTBEAT_INTERVAL_PROP_NAME, LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS);
+        }
+
+        /**
+         * Timeout after which a service will be considered inactive or not present.
+         *
+         * @return timeout in nanoseconds after which a service will be considered inactive or not present.
+         * @see #SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public static long serviceHeartbeatTimeoutNs()
+        {
+            return getDurationInNanos(SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME, SERVICE_HEARTBEAT_TIMEOUT_DEFAULT_NS);
         }
 
         /**
@@ -657,6 +684,7 @@ public class ConsensusModule implements AutoCloseable
         private File clusterDir;
         private RecordingLog recordingLog;
         private ClusterMarkFile markFile;
+        private MutableDirectBuffer tempBuffer;
 
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
@@ -675,11 +703,13 @@ public class ConsensusModule implements AutoCloseable
         private int memberStatusStreamId = Configuration.memberStatusStreamId();
 
         private int serviceCount = Configuration.serviceCount();
+        private Counter[] serviceHeartbeatCounters;
         private int errorBufferLength = Configuration.errorBufferLength();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
         private long sessionTimeoutNs = Configuration.sessionTimeoutNs();
-        private long heartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
-        private long heartbeatIntervalNs = Configuration.leaderHeartbeatIntervalNs();
+        private long leaderHeartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
+        private long leaderHeartbeatIntervalNs = Configuration.leaderHeartbeatIntervalNs();
+        private long serviceHeartbeatTimeoutNs = Configuration.serviceHeartbeatTimeoutNs();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -743,6 +773,11 @@ public class ConsensusModule implements AutoCloseable
             {
                 throw new IllegalStateException(
                     "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
+            }
+
+            if (null == tempBuffer)
+            {
+                tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
             }
 
             if (null == epochClock)
@@ -837,6 +872,15 @@ public class ConsensusModule implements AutoCloseable
                 invalidRequestCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Invalid cluster request count");
             }
 
+            if (null == serviceHeartbeatCounters)
+            {
+                serviceHeartbeatCounters = new Counter[serviceCount];
+                for (int i = 0; i < serviceCount; i++)
+                {
+                    serviceHeartbeatCounters[i] = ServiceHeartbeat.allocate(aeron, tempBuffer, i);
+                }
+            }
+
             if (null == threadFactory)
             {
                 threadFactory = Thread::new;
@@ -878,6 +922,28 @@ public class ConsensusModule implements AutoCloseable
             }
 
             concludeMarkFile();
+        }
+
+        /**
+         * The temporary buffer than can be used to build up counter labels to avoid allocation.
+         *
+         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
+         */
+        public MutableDirectBuffer tempBuffer()
+        {
+            return tempBuffer;
+        }
+
+        /**
+         * Set the temporary buffer than can be used to build up counter labels to avoid allocation.
+         *
+         * @param tempBuffer to be used to avoid allocation.
+         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
+         */
+        public Context tempBuffer(final MutableDirectBuffer tempBuffer)
+        {
+            this.tempBuffer = tempBuffer;
+            return this;
         }
 
         /**
@@ -1393,6 +1459,28 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Set the array of counters which represent the heartbeats of the clustered services.
+         *
+         * @param serviceHeartbeatCounters which represent the heartbeats of the clustered services.
+         * @return this for a fluent API.
+         */
+        public Context serviceHeartbeatCounters(final Counter... serviceHeartbeatCounters)
+        {
+            this.serviceHeartbeatCounters = serviceHeartbeatCounters;
+            return this;
+        }
+
+        /**
+         * Get the array of counters which represent the heartbeats of the clustered services.
+         *
+         * @return the array of counters which represent the heartbeats of the clustered services.
+         */
+        public Counter[] serviceHeartbeatCounters()
+        {
+            return serviceHeartbeatCounters;
+        }
+
+        /**
          * Set the limit for the maximum number of concurrent cluster sessions.
          *
          * @param maxSessions after which new sessions will be rejected.
@@ -1445,11 +1533,11 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param heartbeatTimeoutNs to wait for heartbeat from a leader.
          * @return this for a fluent API.
-         * @see Configuration#HEARTBEAT_TIMEOUT_PROP_NAME
+         * @see Configuration#LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
          */
-        public Context heartbeatTimeoutNs(final long heartbeatTimeoutNs)
+        public Context leaderHeartbeatTimeoutNs(final long heartbeatTimeoutNs)
         {
-            this.heartbeatTimeoutNs = heartbeatTimeoutNs;
+            this.leaderHeartbeatTimeoutNs = heartbeatTimeoutNs;
             return this;
         }
 
@@ -1457,11 +1545,11 @@ public class ConsensusModule implements AutoCloseable
          * Timeout for a leader if no heartbeat is received by an other member.
          *
          * @return the timeout for a leader if no heartbeat is received by an other member.
-         * @see Configuration#HEARTBEAT_TIMEOUT_PROP_NAME
+         * @see Configuration#LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
          */
-        public long heartbeatTimeoutNs()
+        public long leaderHeartbeatTimeoutNs()
         {
-            return heartbeatTimeoutNs;
+            return leaderHeartbeatTimeoutNs;
         }
 
         /**
@@ -1469,11 +1557,11 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param heartbeatIntervalNs between leader heartbeats.
          * @return this for a fluent API.
-         * @see Configuration#HEARTBEAT_INTERVAL_PROP_NAME
+         * @see Configuration#LEADER_HEARTBEAT_INTERVAL_PROP_NAME
          */
-        public Context heartbeatIntervalNs(final long heartbeatIntervalNs)
+        public Context leaderHeartbeatIntervalNs(final long heartbeatIntervalNs)
         {
-            this.heartbeatIntervalNs = heartbeatIntervalNs;
+            this.leaderHeartbeatIntervalNs = heartbeatIntervalNs;
             return this;
         }
 
@@ -1481,11 +1569,35 @@ public class ConsensusModule implements AutoCloseable
          * Interval at which a leader will send heartbeats if the log is not progressing.
          *
          * @return the interval at which a leader will send heartbeats if the log is not progressing.
-         * @see Configuration#HEARTBEAT_INTERVAL_PROP_NAME
+         * @see Configuration#LEADER_HEARTBEAT_INTERVAL_PROP_NAME
          */
-        public long heartbeatIntervalNs()
+        public long leaderHeartbeatIntervalNs()
         {
-            return heartbeatIntervalNs;
+            return leaderHeartbeatIntervalNs;
+        }
+
+        /**
+         * Timeout after which a service will be considered inactive or not present.
+         *
+         * @param heartbeatTimeoutNs after which a service will be considered inactive or not present.
+         * @return this for a fluent API.
+         * @see Configuration#SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public Context serviceHeartbeatTimeoutNs(final long heartbeatTimeoutNs)
+        {
+            this.serviceHeartbeatTimeoutNs = heartbeatTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout after which a service will be considered inactive or not present.
+         *
+         * @return the timeout after which a service will be consider inactive or not present.
+         * @see Configuration#SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public long serviceHeartbeatTimeoutNs()
+        {
+            return serviceHeartbeatTimeoutNs;
         }
 
         /**

@@ -119,9 +119,9 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
-     * Get the encoded response from an membership query.
+     * Get the encoded response from a membership query.
      *
-     * @return the encoded response from an membership query or null if last message was not an query response.
+     * @return the encoded response from a membership query or null if last message was not a query response.
      */
     public byte[] encodedQueryResponse()
     {
@@ -131,7 +131,7 @@ public class EgressPoller implements ControlledFragmentHandler
     /**
      * Has the last polling action received a complete event?
      *
-     * @return true of the last polling action received a complete event?
+     * @return true if the last polling action received a complete event.
      */
     public boolean isPollComplete()
     {
@@ -139,7 +139,7 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
-     * Was last message a challenge or not.
+     * Was last message a challenge or not?
      *
      * @return true if last message was a challenge or false if not.
      */

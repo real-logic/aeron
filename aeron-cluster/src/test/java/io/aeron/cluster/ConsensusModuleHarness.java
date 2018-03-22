@@ -15,10 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUri;
-import io.aeron.Image;
-import io.aeron.Publication;
+import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.codecs.CloseReason;
@@ -48,6 +45,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final AtomicBoolean serviceOnStart = new AtomicBoolean();
     private final IdleStrategy idleStrategy = new SleepingIdleStrategy(1);
     private final ClusterMember[] members;
+    private final Subscription[] memberStatusSubscriptions;
     private final MemberStatusAdapter[] memberStatusAdapters;
     private final Publication[] memberStatusPublications;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
@@ -60,6 +58,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final MemberStatusListener[] memberStatusListeners,
         final boolean isCleanStart)
     {
+        members = ClusterMember.parse(context.clusterMembers());
+
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
                 .warnIfDirectoryExists(isCleanStart)
@@ -85,8 +85,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         this.service = service;
         aeron = Aeron.connect();
 
-        members = ClusterMember.parse(context.clusterMembers());
-
+        memberStatusSubscriptions = new Subscription[members.length];
         memberStatusAdapters = new MemberStatusAdapter[members.length];
         memberStatusPublications = new Publication[members.length];
 
@@ -98,10 +97,20 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 memberStatusUri.put(ENDPOINT_PARAM_NAME, members[i].memberFacingEndpoint());
 
                 final int statusStreamId = context.memberStatusStreamId();
+
+                memberStatusSubscriptions[i] =
+                    aeron.addSubscription(memberStatusUri.toString(), statusStreamId);
+
                 memberStatusAdapters[i] = new MemberStatusAdapter(
-                    aeron.addSubscription(memberStatusUri.toString(), statusStreamId), memberStatusListeners[i]);
+                    memberStatusSubscriptions[i], memberStatusListeners[i]);
                 memberStatusPublications[i] =
                     aeron.addExclusivePublication(context.memberStatusChannel(), context.memberStatusStreamId());
+
+                idleStrategy.reset();
+                while (!memberStatusSubscriptions[i].isConnected())
+                {
+                    idleStrategy.idle();
+                }
             }
             else
             {
@@ -143,14 +152,22 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
     }
 
-    public void pollMemberStatusAdapters()
+    public int pollMemberStatusAdapters(final int index)
     {
-        for (final MemberStatusAdapter adapter : memberStatusAdapters)
+        if (null != memberStatusAdapters[index])
         {
-            if (null != adapter)
-            {
-                adapter.poll();
-            }
+            return memberStatusAdapters[index].poll();
+        }
+
+        return 0;
+    }
+
+    public void awaitMemberStatusMessage(final int index)
+    {
+        idleStrategy.reset();
+        while (memberStatusAdapters[index].poll() == 0)
+        {
+            idleStrategy.idle();
         }
     }
 
@@ -167,7 +184,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     public void awaitServiceOnStart()
     {
         idleStrategy.reset();
-        while (serviceOnStart.get())
+        while (!serviceOnStart.get())
         {
             idleStrategy.idle();
         }

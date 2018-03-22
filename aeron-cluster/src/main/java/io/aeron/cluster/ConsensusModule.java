@@ -428,9 +428,43 @@ public class ConsensusModule implements AutoCloseable
         public static final String SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.service.heartbeat.timeout";
 
         /**
-         * Timeout after which a clustered service is considered inactive or not present..
+         * Timeout after which a clustered service is considered inactive or not present.
          */
         public static final long SERVICE_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
+        /**
+         * Timeout after which an election vote will be attempted after startup and recovery is complete
+         * while waiting to hear the status of all members if a majority has been heard from.
+         */
+        public static final String STARTUP_STATUS_TIMEOUT_PROP_NAME = "aeron.cluster.startup.status.timeout";
+
+        /**
+         * Default timeout after which an election vote will be attempted after startup and recovery is complete
+         * while waiting to hear the status of all members if a majority has been heard from.
+         */
+        public static final long STARTUP_STATUS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
+        /**
+         * Timeout after which an election vote will be attempted after a leader failure is suspected
+         * while waiting to hear the status of all remaining members if a majority has been heard from.
+         */
+        public static final String FAILURE_STATUS_TIMEOUT_PROP_NAME = "aeron.cluster.failure.status.timeout";
+
+        /**
+         * Default timeout after which an election vote will be attempted after a leader failure is suspected
+         * while waiting to hear the status of all remaining members if a majority has been heard from.
+         */
+        public static final long FAILURE_STATUS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
+
+        /**
+         * Timeout after which an election fails if the candidate does not get a majority of votes.
+         */
+        public static final String ELECTION_TIMEOUT_PROP_NAME = "aeron.cluster.election.timeout";
+
+        /**
+         * Default timeout after which an election fails if the candidate does not get a majority of votes.
+         */
+        public static final long ELECTION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
         /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.
@@ -613,6 +647,40 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Timeout waiting to hear the status of all cluster members before voting if a majority have been heard from.
+         *
+         * @return timeout in nanoseconds to wait for the status of other cluster members before voting.
+         * @see #STARTUP_STATUS_TIMEOUT_PROP_NAME
+         */
+        public static long startupStatusTimeoutNs()
+        {
+            return getDurationInNanos(STARTUP_STATUS_TIMEOUT_PROP_NAME, STARTUP_STATUS_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Timeout waiting to hear the status of all remaining cluster members before voting if a majority have been
+         * heard from.
+         *
+         * @return timeout in nanoseconds to wait for the status of other cluster members before voting.
+         * @see #FAILURE_STATUS_TIMEOUT_PROP_NAME
+         */
+        public static long failureStatusTimeoutNs()
+        {
+            return getDurationInNanos(FAILURE_STATUS_TIMEOUT_PROP_NAME, FAILURE_STATUS_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Timeout waiting for votes to become leader in an election.
+         *
+         * @return timeout in nanoseconds to wait for votes to become leader in an election.
+         * @see #ELECTION_TIMEOUT_PROP_NAME
+         */
+        public static long electionTimeoutNs()
+        {
+            return getDurationInNanos(ELECTION_TIMEOUT_PROP_NAME, ELECTION_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
          * Size in bytes of the error buffer in the mark file.
          *
          * @return length of error buffer in bytes.
@@ -710,6 +778,9 @@ public class ConsensusModule implements AutoCloseable
         private long leaderHeartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
         private long leaderHeartbeatIntervalNs = Configuration.leaderHeartbeatIntervalNs();
         private long serviceHeartbeatTimeoutNs = Configuration.serviceHeartbeatTimeoutNs();
+        private long startupStatusTimeoutNs = Configuration.startupStatusTimeoutNs();
+        private long failureStatusTimeoutNs = Configuration.failureStatusTimeoutNs();
+        private long electionTimeoutNs = Configuration.electionTimeoutNs();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -1598,6 +1669,82 @@ public class ConsensusModule implements AutoCloseable
         public long serviceHeartbeatTimeoutNs()
         {
             return serviceHeartbeatTimeoutNs;
+        }
+
+        /**
+         * Timeout to wait for hearing the status of all cluster members on startup after recovery before commencing an
+         * election if a majority of members has been heard from.
+         *
+         * @param timeoutNs to wait on startup after recovery before commencing an election.
+         * @return this for a fluent API.
+         * @see Configuration#STARTUP_STATUS_TIMEOUT_PROP_NAME
+         */
+        public Context startupStatusTimeoutNs(final long timeoutNs)
+        {
+            this.startupStatusTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout to wait for hearing the status of all cluster members on startup after recovery before commencing an
+         * election if a majority of members has been heard from.
+         *
+         * @return the timeout to wait on startup after recovery before commencing an election.
+         * @see Configuration#STARTUP_STATUS_TIMEOUT_PROP_NAME
+         */
+        public long startupStatusTimeoutNs()
+        {
+            return startupStatusTimeoutNs;
+        }
+
+        /**
+         * Timeout to wait for hearing the status of all remaining cluster members on startup after recovery before
+         * commencing an election if a majority of members has been heard from.
+         *
+         * @param timeoutNs to wait after detecting a leader failure before commencing an election.
+         * @return this for a fluent API.
+         * @see Configuration#FAILURE_STATUS_TIMEOUT_PROP_NAME
+         */
+        public Context failureStatusTimeoutNs(final long timeoutNs)
+        {
+            this.failureStatusTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout to wait for hearing the status of all remaining cluster members on startup after recovery before
+         * commencing an election if a majority of members has been heard from.
+         *
+         * @return the timeout to wait after detecting a leader failure before commencing an election.
+         * @see Configuration#FAILURE_STATUS_TIMEOUT_PROP_NAME
+         */
+        public long failureStatusTimeoutNs()
+        {
+            return failureStatusTimeoutNs;
+        }
+
+        /**
+         * Timeout to wait for votes in an election before declaring the election void and starting over.
+         *
+         * @param timeoutNs to wait for votes in an elections.
+         * @return this for a fluent API.
+         * @see Configuration#ELECTION_TIMEOUT_PROP_NAME
+         */
+        public Context electionTimeoutNs(final long timeoutNs)
+        {
+            this.electionTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout to wait for votes in an election before declaring the election void and starting over.
+         *
+         * @return the timeout to wait for votes in an elections.
+         * @see Configuration#ELECTION_TIMEOUT_PROP_NAME
+         */
+        public long electionTimeoutNs()
+        {
+            return electionTimeoutNs;
         }
 
         /**

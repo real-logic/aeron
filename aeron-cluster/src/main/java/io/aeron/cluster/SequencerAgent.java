@@ -219,17 +219,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             state(ConsensusModule.State.ACTIVE);
         }
 
-        leadershipTermId++;
         electLeader();
-
-        if (memberId == votedForMemberId)
-        {
-            becomeLeader();
-        }
-        else
-        {
-            becomeFollower();
-        }
 
         final long nowMs = epochClock.time();
         cachedEpochClock.update(nowMs);
@@ -993,6 +983,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     private void electLeader()
     {
+        leadershipTermId++;
+
         if (clusterMembers.length == 1)
         {
             votedForMemberId = memberId;
@@ -1023,6 +1015,15 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             {
                 idle(memberStatusAdapter.poll());
             }
+        }
+
+        if (memberId == votedForMemberId)
+        {
+            becomeLeader();
+        }
+        else
+        {
+            becomeFollower();
         }
     }
 

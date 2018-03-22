@@ -219,7 +219,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             state(ConsensusModule.State.ACTIVE);
         }
 
-        electLeader();
+        establishLeader();
 
         final long nowMs = epochClock.time();
         cachedEpochClock.update(nowMs);
@@ -981,7 +981,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         return false;
     }
 
-    private void electLeader()
+    private void establishLeader()
     {
         leadershipTermId++;
 
@@ -991,30 +991,38 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             leaderMember = thisMember;
             recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, epochClock.time(), votedForMemberId);
         }
-        else if (ctx.appointedLeaderId() == memberId)
+        else if (ctx.appointedLeaderId() != NULL_MEMBER_ID)
         {
-            role(Cluster.Role.CANDIDATE);
-            ClusterMember.becomeCandidate(clusterMembers, memberId);
-            votedForMemberId = memberId;
-            recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, epochClock.time(), votedForMemberId);
-
-            requestVotes(clusterMembers, recoveryPlan.lastTermBaseLogPosition, recoveryPlan.lastTermPositionAppended);
-
-            do
+            if (ctx.appointedLeaderId() == memberId)
             {
-                idle(memberStatusAdapter.poll());
-            }
-            while (ClusterMember.awaitingVotes(clusterMembers));
+                role(Cluster.Role.CANDIDATE);
+                ClusterMember.becomeCandidate(clusterMembers, memberId);
+                votedForMemberId = memberId;
+                recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, epochClock.time(), votedForMemberId);
 
-            leaderMember = thisMember;
+                requestVotes(
+                    clusterMembers, recoveryPlan.lastTermBaseLogPosition, recoveryPlan.lastTermPositionAppended);
+
+                do
+                {
+                    idle(memberStatusAdapter.poll());
+                }
+                while (ClusterMember.awaitingVotes(clusterMembers));
+
+                leaderMember = thisMember;
+            }
+            else
+            {
+                votedForMemberId = NULL_MEMBER_ID;
+                while (NULL_MEMBER_ID == votedForMemberId)
+                {
+                    idle(memberStatusAdapter.poll());
+                }
+            }
         }
         else
         {
-            votedForMemberId = NULL_MEMBER_ID;
-            while (NULL_MEMBER_ID == votedForMemberId)
-            {
-                idle(memberStatusAdapter.poll());
-            }
+            electLeader();
         }
 
         if (memberId == votedForMemberId)
@@ -1025,6 +1033,11 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         {
             becomeFollower();
         }
+    }
+
+    private void electLeader()
+    {
+        throw new IllegalStateException("Elections not yet supported");
     }
 
     private void requestVotes(

@@ -157,8 +157,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         workCount += serviceControlAdapter.poll();
         if (activeLog != null)
         {
-            // TODO: handle new log case
-            activeLog = null;
+            switchActiveLog();
         }
 
         return workCount;
@@ -418,6 +417,33 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
             }
 
             idleStrategy.idle(workCount);
+        }
+    }
+
+    private void switchActiveLog()
+    {
+        final CountersReader counters = aeron.countersReader();
+        final int counterId = activeLog.commitPositionId;
+
+        if (logAdapter.isCaughtUp())
+        {
+            leadershipTermId = CommitPos.getLeadershipTermId(counters, counterId);
+            termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, counterId);
+
+            if (CommitPos.getLeadershipTermLength(counters, counterId) > 0)
+            {
+                try (Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId))
+                {
+                    serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+
+                    final Image image = awaitImage(activeLog.sessionId, subscription);
+                    final ReadableCounter limit = new ReadableCounter(counters, counterId);
+
+                    logAdapter = new BoundedLogAdapter(image, limit, this);
+                }
+            }
+
+            activeLog = null;
         }
     }
 

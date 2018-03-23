@@ -1113,6 +1113,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         updateMemberDetails(votedForMemberId);
         role(Cluster.Role.FOLLOWER);
 
+        awaitCatchUp();
         awaitLogSessionIdFromLeader();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
@@ -1140,6 +1141,74 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         {
             final int fragments = memberStatusAdapter.poll();
             idle(fragments);
+        }
+    }
+
+    private void awaitCatchUp()
+    {
+        if (null != recordingCatchUp)
+        {
+            while (!recordingCatchUp.isCaughtUp())
+            {
+                idle();
+            }
+
+            recordingCatchUp.close();
+
+            final int streamId = ctx.replayStreamId();
+            final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
+
+            final long startPosition = recordingCatchUp.fromPosition();
+            final long stopPosition = recordingCatchUp.caughtUpPosition();
+            final long length = stopPosition - startPosition;
+
+            final int lastStepIndex = recoveryPlan.termSteps.size() - 1;
+            final RecordingLog.ReplayStep lastStep = recoveryPlan.termSteps.get(lastStepIndex);
+            final RecordingLog.Entry entry = lastStep.entry;
+
+            termBaseLogPosition = entry.termBaseLogPosition;
+            leadershipTermId = entry.leadershipTermId;
+
+            final int logSessionId = lastStepIndex + 1;
+            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+            final String channel = channelUri.toString();
+            final long recordingId = recordingCatchUp.recordingIdToExtend();
+
+            try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
+            {
+                serviceAckCount = 0;
+                logAdapter = null;
+
+                if (length > 0)
+                {
+                    try (Subscription subscription = aeron.addSubscription(channel, streamId))
+                    {
+                        serviceControlPublisher.joinLog(
+                            leadershipTermId, counter.id(), logSessionId, streamId, channel);
+                        awaitServiceAcks();
+
+                        final int replaySessionId = (int)archive.startReplay(
+                            recordingId, startPosition, length, channel, streamId);
+
+                        final Image image = awaitImage(replaySessionId, subscription);
+
+                        serviceAckCount = 0;
+                        replayTerm(image, stopPosition, counter);
+
+                        final long termPosition = image.position();
+                        if (lastStep.entry.termPosition < termPosition)
+                        {
+                            recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
+                        }
+
+                        termBaseLogPosition = entry.termBaseLogPosition + termPosition;
+
+                        // TODO: fix up recordingLog entry for last step for on disk in case we reload
+                    }
+                }
+            }
+
+            recordingCatchUp = null;
         }
     }
 
@@ -1445,15 +1514,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             final long recordingPosition = logRecordingPosition.get();
             if (recordingPosition != lastRecordingPosition)
             {
-                if (null != recordingCatchUp)
-                {
-                    if (recordingCatchUp.isCaughtUp())
-                    {
-                        recordingCatchUp.close();
-                        recordingCatchUp = null;
-                    }
-                }
-
                 final Publication publication = leaderMember.publication();
                 if (memberStatusPublisher.appendedPosition(
                     publication, recordingPosition, leadershipTermId, memberId))

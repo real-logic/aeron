@@ -31,7 +31,9 @@ public final class RecordingCatchUp implements AutoCloseable
     private final AeronArchive replayArchive;
     private final CountersReader countersReader;
     private final long caughtUpPosition;
+    private final long fromPosition;
     private final long replaySessionId;
+    private final long recordingIdToExtend;
     private int counterId;
 
     private final String replayChannel;
@@ -54,6 +56,8 @@ public final class RecordingCatchUp implements AutoCloseable
         this.caughtUpPosition = toPosition;
         this.replayChannel = replayChannel;
         this.replayStreamId = replayStreamId;
+        this.fromPosition = fromPosition;
+        this.recordingIdToExtend = recordingIdToExtend;
 
         targetArchive.extendRecording(recordingIdToExtend, replayChannel, replayStreamId, SourceLocation.REMOTE);
 
@@ -88,6 +92,21 @@ public final class RecordingCatchUp implements AutoCloseable
     public long currentPosition()
     {
         return countersReader.getCounterValue(counterId);
+    }
+
+    public long fromPosition()
+    {
+        return fromPosition;
+    }
+
+    public long caughtUpPosition()
+    {
+        return caughtUpPosition;
+    }
+
+    public long recordingIdToExtend()
+    {
+        return recordingIdToExtend;
     }
 
     public static RecordingCatchUp catchUp(

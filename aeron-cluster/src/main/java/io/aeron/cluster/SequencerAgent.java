@@ -1166,6 +1166,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             final RecordingLog.ReplayStep lastStep = recoveryPlan.termSteps.get(lastStepIndex);
             final RecordingLog.Entry entry = lastStep.entry;
 
+            // TODO: fix up recordingLog entry for last step for on disk in case we recover again
+
             termBaseLogPosition = entry.termBaseLogPosition;
             leadershipTermId = entry.leadershipTermId;
 
@@ -1202,8 +1204,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                         }
 
                         termBaseLogPosition = entry.termBaseLogPosition + termPosition;
-
-                        // TODO: fix up recordingLog entry for last step for on disk in case we reload
                     }
                 }
             }

@@ -1300,6 +1300,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
             {
                 serviceAckCount = 0;
+                logAdapter = null;
+
                 if (length > 0)
                 {
                     try (Subscription subscription = aeron.addSubscription(channel, streamId))

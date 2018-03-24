@@ -34,6 +34,8 @@ class ControlRequestAdapter implements FragmentHandler
         new ListRecordingsForUriRequestDecoder();
     private final ListRecordingRequestDecoder listRecordingRequestDecoder = new ListRecordingRequestDecoder();
     private final ExtendRecordingRequestDecoder extendRecordingRequestDecoder = new ExtendRecordingRequestDecoder();
+    private final RecordingPositionRequestDecoder recordingPositionRequestDecoder =
+        new RecordingPositionRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -187,6 +189,19 @@ class ControlRequestAdapter implements FragmentHandler
                     extendRecordingRequestDecoder.streamId(),
                     extendRecordingRequestDecoder.channel(),
                     extendRecordingRequestDecoder.sourceLocation());
+                break;
+
+            case RecordingPositionRequestDecoder.TEMPLATE_ID:
+                recordingPositionRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onGetRecordingPosition(
+                    recordingPositionRequestDecoder.controlSessionId(),
+                    recordingPositionRequestDecoder.correlationId(),
+                    recordingPositionRequestDecoder.recordingId());
                 break;
 
             default:

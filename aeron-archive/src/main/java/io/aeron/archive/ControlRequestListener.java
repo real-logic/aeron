@@ -65,4 +65,6 @@ interface ControlRequestListener
         int streamId,
         String channel,
         SourceLocation sourceLocation);
+
+    void onGetRecordingPosition(long controlSessionId, long correlationId, long recordingId);
 }

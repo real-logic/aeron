@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
@@ -130,6 +131,8 @@ public class BasicArchiveTest
                 SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
+
+            assertThat(aeronArchive.getRecordingPosition(recordingIdFromCounter), is(stopPosition));
         }
 
         aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
@@ -175,7 +178,9 @@ public class BasicArchiveTest
                 Thread.yield();
             }
 
+            assertThat(aeronArchive.getRecordingPosition(recordingId), is(stopPosition));
             aeronArchive.stopRecording(publication);
+            assertThat(aeronArchive.getRecordingPosition(recordingId), is(NULL_POSITION));
         }
 
         final long fromPosition = 0L;

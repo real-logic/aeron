@@ -710,6 +710,32 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    /**
+     * Get the position recorded for an active recording.
+     *
+     * @param recordingId of the active recording for which the position is required.
+     * @return the recorded position for the active recording or {@link #NULL_POSITION} if recording not active.
+     */
+    public long getRecordingPosition(final long recordingId)
+    {
+        lock.lock();
+        try
+        {
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.getRecordingPosition(recordingId, correlationId, controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send get recording position request");
+            }
+
+            return pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     private long awaitSessionOpened(final long correlationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;

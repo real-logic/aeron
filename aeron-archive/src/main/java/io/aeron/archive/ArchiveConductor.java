@@ -544,6 +544,15 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
     }
 
+    public void getRecordingPosition(
+        final long correlationId, final ControlSession controlSession, final long recordingId)
+    {
+        final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
+        final long position = null == recordingSession ? NULL_POSITION : recordingSession.recordingPosition().get();
+
+        controlSession.sendOkResponse(correlationId, position, controlResponseProxy);
+    }
+
     ControlSession newControlSession(
         final long correlationId,
         final int streamId,

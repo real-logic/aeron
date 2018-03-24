@@ -142,6 +142,14 @@
         <data  name="channel"              id="6" type="varAsciiEncoding"/>
     </sbe:message>
 
+    <sbe:message name="RecordingPositionRequest"
+                 id="12"
+                 description="Request the recorded position of an active recording">
+        <field name="controlSessionId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="recordingId"          id="3" type="int64"/>
+    </sbe:message>
+
     <!-- Archive Catalog Metadata -->
 
     <sbe:message name="CatalogHeader"

@@ -51,6 +51,8 @@ public class ArchiveProxy
         new ListRecordingsForUriRequestEncoder();
     private final ListRecordingRequestEncoder listRecordingRequestEncoder = new ListRecordingRequestEncoder();
     private final ExtendRecordingRequestEncoder extendRecordingRequestEncoder = new ExtendRecordingRequestEncoder();
+    private final RecordingPositionRequestEncoder recordingPositionRequestEncoder =
+        new RecordingPositionRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -375,6 +377,25 @@ public class ArchiveProxy
             .channel(channel);
 
         return offer(extendRecordingRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Get the recorded position of an active recording.
+     *
+     * @param recordingId      of the active recording that the position is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean getRecordingPosition(final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        recordingPositionRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(recordingPositionRequestEncoder.encodedLength());
     }
 
     private boolean offer(final int length)

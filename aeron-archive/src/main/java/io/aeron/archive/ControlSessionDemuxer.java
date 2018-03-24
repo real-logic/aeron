@@ -221,6 +221,17 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         controlSession.onExtendRecording(correlationId, recordingId, channel, streamId, sourceLocation);
     }
 
+    public void onGetRecordingPosition(final long controlSessionId, final long correlationId, final long recordingId)
+    {
+        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
+        if (controlSession == null)
+        {
+            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
+        }
+
+        controlSession.onGetRecordingPosition(correlationId, recordingId);
+    }
+
     void removeControlSession(final ControlSession controlSession)
     {
         controlSessionByIdMap.remove(controlSession.sessionId());

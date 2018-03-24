@@ -194,6 +194,11 @@ class ControlSession implements Session
         conductor.extendRecording(correlationId, this, recordingId, streamId, channel, sourceLocation);
     }
 
+    public void onGetRecordingPosition(final long correlationId, final long recordingId)
+    {
+        conductor.getRecordingPosition(correlationId, this, recordingId);
+    }
+
     void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)
     {
         if (listRecordingsSession != activeListRecordingsSession)

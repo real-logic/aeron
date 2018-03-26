@@ -34,8 +34,7 @@ public class MultiNodeTest
         "2,localhost:9012,localhost:9022,localhost:9032,localhost:8012";
 
     private final MemberStatusListener[] mockMemberStatusListeners = new MemberStatusListener[3];
-    final MemberStatusListener[] printStatusListeners =
-        ConsensusModuleHarness.printMemberStatusMixIn(System.out, mockMemberStatusListeners);
+    private final MemberStatusListener[] printStatusListeners = new MemberStatusListener[3];
 
     @Before
     public void before()
@@ -43,6 +42,8 @@ public class MultiNodeTest
         for (int i = 0; i < mockMemberStatusListeners.length; i++)
         {
             mockMemberStatusListeners[i] = mock(MemberStatusListener.class);
+            printStatusListeners[i] =
+                ConsensusModuleHarness.printMemberStatusMixIn(System.out, mockMemberStatusListeners[i]);
         }
     }
 

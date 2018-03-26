@@ -612,7 +612,7 @@ public class RecordingLog
         {
             final Entry entry = entries.get(size - 1);
 
-            if (entry.leadershipTermId != leadershipTermId)
+            if (entry.type == ENTRY_TYPE_TERM && entry.leadershipTermId != leadershipTermId)
             {
                 throw new IllegalStateException("leadershipTermId out of sequence: previous " +
                     entry.leadershipTermId + " this " + leadershipTermId);

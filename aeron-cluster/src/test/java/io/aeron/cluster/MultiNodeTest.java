@@ -54,6 +54,9 @@ public class MultiNodeTest
             .memberStatusChannel("aeron:udp?endpoint=localhost:9020")
             .appointedLeaderId(0);
 
+        final MemberStatusListener[] printStatusListeners =
+            ConsensusModuleHarness.printMemberStatusMixIn(System.out, mockMemberStatusListeners);
+
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
             context, mockService, mockMemberStatusListeners, true, true))
         {

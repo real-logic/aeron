@@ -35,6 +35,7 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.SleepingIdleStrategy;
 
+import java.io.PrintStream;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -320,6 +321,74 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
             harness.awaitServiceOnMessageCounter(numMessages);
         }
+    }
+
+    public static MemberStatusListener printMemberStatusMixIn(
+        final PrintStream stream, final MemberStatusListener nextListener)
+    {
+        return new MemberStatusListener()
+        {
+            public void onRequestVote(
+                final long candidateTermId,
+                final long lastBaseLogPosition,
+                final long lastTermPosition,
+                final int candidateId)
+            {
+                stream.format(
+                    "onRequestVote %d %d %d %d%n", candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId);
+
+                nextListener.onRequestVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId);
+            }
+
+            public void onVote(
+                final long candidateTermId,
+                final long lastBaseLogPosition,
+                final long lastTermPosition,
+                final int candidateMemberId,
+                final int followerMemberId,
+                final boolean vote)
+            {
+                stream.format(
+                    "onVote %d %d %d %d %d %s%n",
+                    candidateTermId,
+                    lastBaseLogPosition,
+                    lastTermPosition,
+                    candidateMemberId,
+                    followerMemberId,
+                    vote);
+
+                nextListener.onVote(
+                    candidateTermId, lastBaseLogPosition, lastTermPosition, candidateMemberId, followerMemberId, vote);
+            }
+
+            public void onAppendedPosition(
+                final long termPosition, final long leadershipTermId, final int followerMemberId)
+            {
+                stream.format("onAppenedPosition %d %d %d%n", termPosition, leadershipTermId, followerMemberId);
+                nextListener.onAppendedPosition(termPosition, leadershipTermId, followerMemberId);
+            }
+
+            public void onCommitPosition(
+                final long termPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
+            {
+                stream.format(
+                    "onCommitPosition %d %d %d %d%n", termPosition, leadershipTermId, leaderMemberId, logSessionId);
+                nextListener.onCommitPosition(termPosition, leadershipTermId, leaderMemberId, logSessionId);
+            }
+        };
+    }
+
+    public static MemberStatusListener[] printMemberStatusMixIn(
+        final PrintStream stream, final MemberStatusListener[] listeners)
+    {
+        final MemberStatusListener[] printMixIns = new MemberStatusListener[listeners.length];
+
+        for (int i = 0; i < listeners.length; i++)
+        {
+            printMixIns[i] = printMemberStatusMixIn(stream, listeners[i]);
+        }
+
+        return printMixIns;
     }
 
     private static void checkOfferResult(final long result)

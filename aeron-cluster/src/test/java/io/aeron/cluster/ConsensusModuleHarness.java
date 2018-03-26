@@ -278,7 +278,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         service.onReady();
     }
 
-    public static void makeRecordingLog(final int numMessages, final int maxMessageLength, final Random random)
+    public static long makeRecordingLog(final int numMessages, final int maxMessageLength, final Random random)
     {
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
             new ConsensusModule.Context(),
@@ -320,6 +320,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
 
             harness.awaitServiceOnMessageCounter(numMessages);
+
+            return publication.position();
         }
     }
 

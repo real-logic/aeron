@@ -37,6 +37,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.ChannelUriStringBuilder.integerValueOf;
 import static io.aeron.CommonContext.SPY_PREFIX;
+import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
@@ -192,13 +193,14 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         try
         {
-            final String strippedChannel = strippedChannelBuilder(originalChannel).build();
+            final ChannelUri channelUri = ChannelUri.parse(originalChannel);
+            final String strippedChannel = strippedChannelBuilder(channelUri).build();
             final String key = makeKey(streamId, strippedChannel);
             final Subscription oldSubscription = recordingSubscriptionMap.get(key);
 
             if (oldSubscription == null)
             {
-                final String channel = originalChannel.contains("udp") && sourceLocation == SourceLocation.LOCAL ?
+                final String channel = channelUri.media().equals(UDP_MEDIA) && sourceLocation == SourceLocation.LOCAL ?
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
                 final AvailableImageHandler handler = (image) ->
@@ -233,7 +235,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     {
         try
         {
-            final String key = makeKey(streamId, strippedChannelBuilder(channel).build());
+            final String key = makeKey(streamId, strippedChannelBuilder(ChannelUri.parse(channel)).build());
             final Subscription oldSubscription = recordingSubscriptionMap.remove(key);
 
             if (oldSubscription != null)
@@ -303,7 +305,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 correlationId,
                 fromRecordingId,
                 count,
-                channel,
+                strippedChannelBuilder(ChannelUri.parse(channel)).build(),
                 streamId,
                 catalog,
                 controlResponseProxy,
@@ -562,7 +564,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final String controlChannel;
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
         {
-            controlChannel = strippedChannelBuilder(channel)
+            controlChannel = strippedChannelBuilder(ChannelUri.parse(channel))
                 .termLength(CONTROL_TERM_LENGTH)
                 .mtu(CONTROL_MTU)
                 .build();
@@ -586,24 +588,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         return controlSession;
     }
 
-    ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
-    {
-        channelBuilder
-            .clear()
-            .media(channelUri.media())
-            .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
-            .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
-            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME))
-            .sessionId(integerValueOf(channelUri.get(CommonContext.SESSION_ID_PARAM_NAME)));
-
-        return channelBuilder;
-    }
-
-    ChannelUriStringBuilder strippedChannelBuilder(final String channel)
-    {
-        return strippedChannelBuilder(ChannelUri.parse(channel));
-    }
-
     void closeRecordingSession(final RecordingSession session)
     {
         final long recordingId = session.sessionId();
@@ -616,6 +600,19 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     {
         replaySessionByIdMap.remove(session.sessionId());
         closeSession(session);
+    }
+
+    private ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
+    {
+        channelBuilder
+            .clear()
+            .media(channelUri.media())
+            .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
+            .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
+            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME))
+            .sessionId(integerValueOf(channelUri.get(CommonContext.SESSION_ID_PARAM_NAME)));
+
+        return channelBuilder;
     }
 
     private void startRecordingSession(
@@ -736,7 +733,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
         final int termOffset = (int)(position & (termBufferLength - 1));
 
-        final String channel = strippedChannelBuilder(replayChannel)
+        final String channel = strippedChannelBuilder(ChannelUri.parse(replayChannel))
             .mtu(recording.mtuLength)
             .termLength(termBufferLength)
             .initialTermId(initialTermId)

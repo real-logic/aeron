@@ -147,7 +147,7 @@ class ControlSession implements Session
             fromRecordingId,
             recordCount,
             streamId,
-            conductor.strippedChannelBuilder(channel).build(),
+            channel,
             this);
     }
 

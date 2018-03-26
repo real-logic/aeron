@@ -55,7 +55,7 @@ public class MultiNodeTest
             .appointedLeaderId(0);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, mockMemberStatusListeners, true))
+            context, mockService, mockMemberStatusListeners, true, true))
         {
             harness.awaitMemberStatusMessage(1);
             harness.awaitMemberStatusMessage(2);

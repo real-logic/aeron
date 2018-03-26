@@ -18,6 +18,8 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
+import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
@@ -28,10 +30,14 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.SleepingIdleStrategy;
 
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 
@@ -43,12 +49,14 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final Aeron aeron;
     private final ClusteredService service;
     private final AtomicBoolean serviceOnStart = new AtomicBoolean();
+    private final AtomicInteger serviceOnMessageCounter = new AtomicInteger(0);
     private final IdleStrategy idleStrategy = new SleepingIdleStrategy(1);
     private final ClusterMember[] members;
     private final Subscription[] memberStatusSubscriptions;
     private final MemberStatusAdapter[] memberStatusAdapters;
     private final Publication[] memberStatusPublications;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
+    private final boolean cleanOnClose;
     private int thisMemberIndex = -1;
     private int leaderIndex = -1;
 
@@ -56,7 +64,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final ConsensusModule.Context context,
         final ClusteredService service,
         final MemberStatusListener[] memberStatusListeners,
-        final boolean isCleanStart)
+        final boolean isCleanStart,
+        final boolean cleanOnClose)
     {
         members = ClusterMember.parse(context.clusterMembers());
 
@@ -82,6 +91,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(isCleanStart));
 
+        this.cleanOnClose = cleanOnClose;
         this.service = service;
         aeron = Aeron.connect();
 
@@ -134,7 +144,11 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         CloseHelper.close(aeron);
         CloseHelper.close(clusteredServiceContainer);
         CloseHelper.close(clusteredMediaDriver);
-        deleteDirectories();
+
+        if (cleanOnClose)
+        {
+            deleteDirectories();
+        }
     }
 
     public void deleteDirectories()
@@ -190,6 +204,15 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
     }
 
+    public void awaitServiceOnMessageCounter(final int value)
+    {
+        idleStrategy.reset();
+        while (serviceOnMessageCounter.get() < value)
+        {
+            idleStrategy.idle();
+        }
+    }
+
     public void onStart(final Cluster cluster)
     {
         service.onStart(cluster);
@@ -216,6 +239,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final Header header)
     {
         service.onSessionMessage(clusterSessionId, correlationId, timestampMs, buffer, offset, length, header);
+        serviceOnMessageCounter.getAndIncrement();
     }
 
     public void onTimerEvent(final long correlationId, final long timestampMs)
@@ -251,5 +275,60 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     public void onReady()
     {
         service.onReady();
+    }
+
+    public static void makeRecordingLog(final int numMessages, final int maxMessageLength, final Random random)
+    {
+        try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
+            new ConsensusModule.Context(),
+            new StubClusteredService(),
+            null,
+            true,
+            false))
+        {
+            harness.awaitServiceOnStart();
+
+            final AeronCluster aeronCluster = AeronCluster.connect(
+                new AeronCluster.Context().lock(new NoOpLock()));
+
+            final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
+            final Publication publication = aeronCluster.ingressPublication();
+            final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer(maxMessageLength);
+
+            for (int i = 0; i < numMessages; i++)
+            {
+                final long messageCorrelationId = aeronCluster.context().aeron().nextCorrelationId();
+                final int length = (null == random) ? maxMessageLength : random.nextInt(maxMessageLength);
+                msgBuffer.putInt(0, i);
+
+                while (true)
+                {
+                    final long result = sessionDecorator.offer(
+                        publication, messageCorrelationId, msgBuffer, 0, length);
+                    if (result > 0)
+                    {
+                        break;
+                    }
+
+                    checkOfferResult(result);
+                    TestUtil.checkInterruptedStatus();
+
+                    Thread.yield();
+                }
+            }
+
+
+            harness.awaitServiceOnMessageCounter(numMessages);
+        }
+    }
+
+    private static void checkOfferResult(final long result)
+    {
+        if (result == Publication.NOT_CONNECTED ||
+            result == Publication.CLOSED ||
+            result == Publication.MAX_POSITION_EXCEEDED)
+        {
+            throw new IllegalStateException("Unexpected publication state: " + result);
+        }
     }
 }

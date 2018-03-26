@@ -19,7 +19,10 @@ import io.aeron.cluster.service.ClusteredService;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @Ignore
 public class SingleNodeTest
@@ -30,9 +33,27 @@ public class SingleNodeTest
         final ClusteredService mockService = mock(ClusteredService.class);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            new ConsensusModule.Context(), mockService, null, true))
+            new ConsensusModule.Context(), mockService, null, true, true))
         {
             harness.awaitServiceOnStart();
+        }
+    }
+
+    @Test(timeout = 10_000L)
+    public void shouldBeAbleToLoadUpFromPreviousLog()
+    {
+        ConsensusModuleHarness.makeRecordingLog(10, 100, null);
+
+        final ClusteredService mockService = mock(ClusteredService.class);
+
+        try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
+            new ConsensusModule.Context(), mockService, null, false, true))
+        {
+            harness.awaitServiceOnStart();
+            harness.awaitServiceOnMessageCounter(10);
+
+            verify(mockService, times(10))
+                .onSessionMessage(anyLong(), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
         }
     }
 }

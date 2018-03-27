@@ -114,7 +114,7 @@ public class MultiNodeTest
             .appointedLeaderId(1);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, printStatusListeners, true, true))
+            context, mockService, mockMemberStatusListeners, true, true))
         {
             harness.memberStatusPublisher().requestVote(
                 harness.memberStatusPublication(1), 0, 0, 0, 1);

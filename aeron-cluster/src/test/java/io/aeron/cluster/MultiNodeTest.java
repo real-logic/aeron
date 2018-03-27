@@ -23,9 +23,10 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @Ignore
@@ -192,6 +193,10 @@ public class MultiNodeTest
                 harness.memberStatusPublication(2), position, 1, 2);
 
             harness.awaitServiceOnStart();
+            harness.awaitServiceOnMessageCounter(10);
+
+            verify(mockService, times(10))
+                .onSessionMessage(anyLong(), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
         }
     }
 
@@ -231,6 +236,10 @@ public class MultiNodeTest
             verify(mockMemberStatusListeners[1]).onAppendedPosition(position, 1, 0);
 
             harness.awaitServiceOnStart();
+            harness.awaitServiceOnMessageCounter(10);
+
+            verify(mockService, times(10))
+                .onSessionMessage(anyLong(), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
         }
     }
 

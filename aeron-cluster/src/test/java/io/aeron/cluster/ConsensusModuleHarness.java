@@ -167,6 +167,16 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
     }
 
+    public Aeron aeron()
+    {
+        return aeron;
+    }
+
+    public ClusterMember member(final int index)
+    {
+        return members[index];
+    }
+
     public int pollMemberStatusAdapters(final int index)
     {
         if (null != memberStatusAdapters[index])

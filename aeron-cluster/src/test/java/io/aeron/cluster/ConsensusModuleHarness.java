@@ -68,6 +68,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final boolean isCleanStart,
         final boolean cleanOnClose)
     {
+        this.service = service;
         members = ClusterMember.parse(context.clusterMembers());
 
         clusteredMediaDriver = ClusteredMediaDriver.launch(
@@ -93,7 +94,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .deleteDirOnStart(isCleanStart));
 
         this.cleanOnClose = cleanOnClose;
-        this.service = service;
         aeron = Aeron.connect();
 
         memberStatusSubscriptions = new Subscription[members.length];

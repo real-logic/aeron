@@ -693,7 +693,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                     this.votedForMemberId + " received=" + leaderMemberId);
             }
 
-            if (0 == termPosition)
+            if (0 == this.logSessionId)
             {
                 this.logSessionId = logSessionId;
             }
@@ -1218,7 +1218,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         final Publication publication = leaderMember.publication();
 
         while (!memberStatusPublisher.appendedPosition(
-            publication, 0L, leadershipTermId, memberId))
+            publication, followerCommitPosition, leadershipTermId, memberId))
         {
             idle();
         }

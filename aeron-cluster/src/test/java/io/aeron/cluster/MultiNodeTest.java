@@ -194,4 +194,44 @@ public class MultiNodeTest
             harness.awaitServiceOnStart();
         }
     }
+
+    @Test(timeout = 10_000L)
+    public void shouldBecomeFollowerStaticThreeNodeConfigWithElectionFromPreviousLog()
+    {
+        final long position = ConsensusModuleHarness.makeRecordingLog(10, 100, null);
+        final ClusteredService mockService = mock(ClusteredService.class);
+
+        final ConsensusModule.Context context = new ConsensusModule.Context()
+            .clusterMembers(THREE_NODE_MEMBERS)
+            .memberStatusChannel("aeron:udp?endpoint=localhost:9020")
+            .appointedLeaderId(1);
+
+        try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
+            context, mockService, printStatusListeners, false, true))
+        {
+            harness.memberStatusPublisher().requestVote(
+                harness.memberStatusPublication(1), 1, 0, position, 1);
+
+            harness.awaitMemberStatusMessage(1);
+
+            verify(mockMemberStatusListeners[1]).onVote(1, 0, position, 1, 0, true);
+
+            final int logSessionId = 123456;
+            final ChannelUri channelUri = ChannelUri.parse(context.logChannel());
+            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, harness.member(0).logEndpoint());
+            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+            final Publication logPublication =
+                harness.aeron().addExclusivePublication(channelUri.toString(), context.logStreamId());
+
+            harness.memberStatusPublisher().commitPosition(
+                harness.memberStatusPublication(1), position, 1, 1, logSessionId);
+
+            harness.awaitMemberStatusMessage(1);
+
+            verify(mockMemberStatusListeners[1]).onAppendedPosition(position, 1, 0);
+
+            harness.awaitServiceOnStart();
+        }
+    }
+
 }

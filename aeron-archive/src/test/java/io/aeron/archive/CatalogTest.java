@@ -40,6 +40,7 @@ import static org.junit.Assert.*;
 
 public class CatalogTest
 {
+    private static final long MAX_ENTRIES = 1024;
     private static final int TERM_BUFFER_LENGTH = 2 * Catalog.PAGE_SIZE;
     private static final int SEGMENT_FILE_SIZE = 2 * TERM_BUFFER_LENGTH;
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
@@ -56,7 +57,7 @@ public class CatalogTest
     @Before
     public void before()
     {
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             recordingOneId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
@@ -108,7 +109,7 @@ public class CatalogTest
     public void shouldAppendToExistingIndex()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, () -> 3L))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, () -> 3L))
         {
             newRecordingId = catalog.addNewRecording(
                 0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 9, 4, "channelJ", "channelJ?tag=f", "sourceN");
@@ -144,7 +145,7 @@ public class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) -> assertThat(decoder.stopTimestamp(), is(42L)), newRecordingId);
@@ -187,7 +188,7 @@ public class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) ->
@@ -232,7 +233,7 @@ public class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             assertTrue(catalog.forEntry(
                 (he, hd, e, decoder) ->
@@ -247,7 +248,7 @@ public class CatalogTest
     private long newRecording()
     {
         final long newRecordingId;
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             newRecordingId = catalog.addNewRecording(
                 0L,
@@ -301,7 +302,7 @@ public class CatalogTest
 
         currentTimeMs = 42L;
 
-        try (Catalog catalog = new Catalog(archiveDir, null, 0, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             catalog.forEntry(
                 (he, hd, e, decoder) ->

@@ -52,6 +52,7 @@ public class CatalogTool
                 ArchiveMarkFile markFile = openMarkFile(System.out::println))
             {
                 printMarkInformation(markFile);
+                System.out.println("Catalog Max Entries: " + catalog.maxEntries());
                 catalog.forEach((he, hd, e, d) -> System.out.println(d));
             }
         }

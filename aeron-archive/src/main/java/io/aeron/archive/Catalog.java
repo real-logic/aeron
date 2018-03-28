@@ -94,6 +94,8 @@ class Catalog implements AutoCloseable
 
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     static final int DEFAULT_RECORD_LENGTH = 1024;
+    static final long MAX_ENTRIES = calculateMaxEntries(Integer.MAX_VALUE, DEFAULT_RECORD_LENGTH);
+    static final long DEFAULT_MAX_ENTRIES = MAX_ENTRIES;
     static final byte VALID = 1;
     static final byte INVALID = 0;
 
@@ -121,21 +123,25 @@ class Catalog implements AutoCloseable
         final File archiveDir,
         final FileChannel archiveDirChannel,
         final int fileSyncLevel,
+        final long maxNumEntries,
         final EpochClock epochClock)
     {
         this.archiveDir = archiveDir;
         this.fileSyncLevel = fileSyncLevel;
         this.epochClock = epochClock;
 
+        validateMaxEntries(maxNumEntries);
+
         try
         {
             final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
             final boolean catalogPreExists = catalogFile.exists();
             MappedByteBuffer catalogMappedByteBuffer = null;
+            final long catalogLength = calculateCatalogLength(maxNumEntries);
 
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE))
             {
-                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, Integer.MAX_VALUE);
+                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, catalogLength);
             }
             catch (final Exception ex)
             {
@@ -191,7 +197,7 @@ class Catalog implements AutoCloseable
 
             maxDescriptorStringsCombinedLength =
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
-            maxRecordingId = (Integer.MAX_VALUE - (2 * recordLength - 1)) / recordLength;
+            maxRecordingId = (int)maxNumEntries - 1;
 
             refreshCatalog(true);
         }
@@ -212,10 +218,12 @@ class Catalog implements AutoCloseable
         {
             final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
             MappedByteBuffer catalogMappedByteBuffer = null;
+            final long catalogLength;
 
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE))
             {
-                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
+                catalogLength = channel.size();
+                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, catalogLength);
             }
             catch (final Exception ex)
             {
@@ -245,7 +253,7 @@ class Catalog implements AutoCloseable
             recordLength = catalogHeaderDecoder.entryLength();
             maxDescriptorStringsCombinedLength =
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
-            maxRecordingId = (Integer.MAX_VALUE - (2 * recordLength - 1)) / recordLength;
+            maxRecordingId = (int)calculateMaxEntries(catalogLength, recordLength) - 1;
 
             refreshCatalog(false);
         }
@@ -259,6 +267,11 @@ class Catalog implements AutoCloseable
     public void close()
     {
         IoUtil.unmap(catalogByteBuffer);
+    }
+
+    public int maxEntries()
+    {
+        return maxRecordingId + 1;
     }
 
     long addNewRecording(
@@ -513,9 +526,33 @@ class Catalog implements AutoCloseable
         return descriptorBuffer.getByte(RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
+    public static long calculateCatalogLength(final long maxEntries)
+    {
+        return Math.min((maxEntries * DEFAULT_RECORD_LENGTH) + DEFAULT_RECORD_LENGTH, Integer.MAX_VALUE);
+    }
+
+    public static long calculateMaxEntries(final long catalogLength, final long recordLength)
+    {
+        if (Integer.MAX_VALUE == catalogLength)
+        {
+            return (Integer.MAX_VALUE - (recordLength - 1)) / recordLength;
+        }
+
+        return (catalogLength / recordLength) - 1;
+    }
+
     int recordingDescriptorOffset(final long recordingId)
     {
         return (int)(recordingId * recordLength) + recordLength;
+    }
+
+    public static void validateMaxEntries(final long maxEntries)
+    {
+        if (maxEntries < 1 || maxEntries > MAX_ENTRIES)
+        {
+            throw new IllegalArgumentException(
+                "Catalog max entries must be between 1 and " + MAX_ENTRIES + ": maxEntries=" + maxEntries);
+        }
     }
 
     /**

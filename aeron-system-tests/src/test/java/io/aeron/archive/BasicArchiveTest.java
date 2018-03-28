@@ -43,6 +43,7 @@ import static org.junit.Assert.assertThat;
 
 public class BasicArchiveTest
 {
+    private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int FRAGMENT_LIMIT = 10;
     private static final int TERM_BUFFER_LENGTH = 64 * 1024;
 
@@ -77,6 +78,7 @@ public class BasicArchiveTest
                 .spiesSimulateConnection(false)
                 .dirDeleteOnStart(true),
             new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(IoUtil.tmpDirName(), "archive"))

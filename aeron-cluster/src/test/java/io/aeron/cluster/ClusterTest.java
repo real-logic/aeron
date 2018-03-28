@@ -49,6 +49,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ClusterTest
 {
+    private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int MEMBER_COUNT = 3;
     private static final int MESSAGE_COUNT = 1000;
     private static final String MSG = "Hello World!";
@@ -95,6 +96,7 @@ public class ClusterTest
                     .errorHandler(Throwable::printStackTrace)
                     .dirDeleteOnStart(true),
                 new Archive.Context()
+                    .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                     .aeronDirectoryName(baseDirName)
                     .archiveDir(new File(baseDirName, "archive"))
                     .controlChannel(archiveCtx.controlRequestChannel())

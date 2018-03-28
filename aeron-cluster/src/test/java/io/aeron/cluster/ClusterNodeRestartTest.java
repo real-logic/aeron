@@ -49,6 +49,8 @@ import static org.mockito.Mockito.when;
 
 public class ClusterNodeRestartTest
 {
+    private static final long MAX_CATALOG_ENTRIES = 1024;
+
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
 
@@ -409,6 +411,7 @@ public class ClusterNodeRestartTest
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true),
             new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()

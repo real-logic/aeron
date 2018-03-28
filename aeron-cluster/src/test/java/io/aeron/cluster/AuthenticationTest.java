@@ -47,6 +47,7 @@ import static org.mockito.Mockito.spy;
 
 public class AuthenticationTest
 {
+    private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final String CREDENTIALS_STRING = "username=\"admin\"|password=\"secret\"";
     private static final String CHALLENGE_STRING = "I challenge you!";
     private static final String PRINCIPAL_STRING = "I am THE Principal!";
@@ -504,6 +505,7 @@ public class AuthenticationTest
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true),
             new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()

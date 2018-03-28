@@ -46,6 +46,8 @@ import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 
 public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 {
+    private static final long MAX_CATALOG_ENTRIES = 1024;
+
     private final ClusteredMediaDriver clusteredMediaDriver;
     private final ClusteredServiceContainer clusteredServiceContainer;
     private final AtomicBoolean isTerminated = new AtomicBoolean();
@@ -87,6 +89,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true),
             new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .archiveDir(archiveDir)
                 .deleteArchiveOnStart(isCleanStart),

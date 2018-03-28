@@ -145,7 +145,7 @@ public class MultiNodeTest
     @Test(timeout = 10_000L)
     public void shouldBecomeLeaderStaticThreeNodeConfigWithElectionFromPreviousLog()
     {
-        final long position = ConsensusModuleHarness.makeRecordingLog(10, 100, null);
+        final long position = ConsensusModuleHarness.makeRecordingLog(10, 100, null, new ConsensusModule.Context());
         final ClusteredService mockService = mock(ClusteredService.class);
 
         final ConsensusModule.Context context = new ConsensusModule.Context()
@@ -203,7 +203,7 @@ public class MultiNodeTest
     @Test(timeout = 10_000L)
     public void shouldBecomeFollowerStaticThreeNodeConfigWithElectionFromPreviousLog()
     {
-        final long position = ConsensusModuleHarness.makeRecordingLog(10, 100, null);
+        final long position = ConsensusModuleHarness.makeRecordingLog(10, 100, null, new ConsensusModule.Context());
         final ClusteredService mockService = mock(ClusteredService.class);
 
         final ConsensusModule.Context context = new ConsensusModule.Context()

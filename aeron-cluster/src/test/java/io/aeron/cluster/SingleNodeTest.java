@@ -42,7 +42,7 @@ public class SingleNodeTest
     @Test(timeout = 10_000L)
     public void shouldBeAbleToLoadUpFromPreviousLog()
     {
-        ConsensusModuleHarness.makeRecordingLog(10, 100, null);
+        ConsensusModuleHarness.makeRecordingLog(10, 100, null, new ConsensusModule.Context());
 
         final ClusteredService mockService = mock(ClusteredService.class);
 

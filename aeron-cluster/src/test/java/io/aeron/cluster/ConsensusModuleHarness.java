@@ -31,10 +31,12 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.SleepingIdleStrategy;
 
+import java.io.File;
 import java.io.PrintStream;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,6 +60,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final Publication[] memberStatusPublications;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final boolean cleanOnClose;
+    private final File harnessDir;
     private int thisMemberIndex = -1;
     private int leaderIndex = -1;
 
@@ -71,6 +74,11 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         this.service = service;
         members = ClusterMember.parse(context.clusterMembers());
 
+        harnessDir = new File(IoUtil.tmpDirName(), "aeron-cluster-" + context.clusterMemberId());
+        final File clusterDir = new File(harnessDir, "aeron-cluster");
+        final File archiveDir = new File(harnessDir, "aeron-archive");
+        final File serviceDir = new File(harnessDir, "clustered-service");
+
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
                 .warnIfDirectoryExists(isCleanStart)
@@ -80,13 +88,16 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .threadingMode(ArchiveThreadingMode.SHARED)
+                .archiveDir(archiveDir)
                 .deleteArchiveOnStart(isCleanStart),
             context
+                .clusterDir(clusterDir)
                 .terminationHook(() -> isTerminated.set(true))
                 .deleteDirOnStart(isCleanStart));
 
         clusteredServiceContainer = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
+                .clusteredServiceDir(serviceDir)
                 .idleStrategySupplier(() -> new SleepingIdleStrategy(1))
                 .clusteredService(this)
                 .terminationHook(() -> {})
@@ -165,6 +176,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
             clusteredMediaDriver.archive().context().deleteArchiveDirectory();
         }
+
+        IoUtil.delete(harnessDir, true);
     }
 
     public Aeron aeron()
@@ -288,10 +301,14 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         service.onReady();
     }
 
-    public static long makeRecordingLog(final int numMessages, final int maxMessageLength, final Random random)
+    public static long makeRecordingLog(
+        final int numMessages,
+        final int maxMessageLength,
+        final Random random,
+        final ConsensusModule.Context context)
     {
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            new ConsensusModule.Context(),
+            context,
             new StubClusteredService(),
             null,
             true,

@@ -55,7 +55,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private final int memberId;
     private int votedForMemberId;
     private int serviceAckCount = 0;
-    private int logSessionId;
+    private int logSessionId = CommonContext.NULL_SESSION_ID;
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
     private final long leaderHeartbeatTimeoutMs;
@@ -693,7 +693,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                     this.votedForMemberId + " received=" + leaderMemberId);
             }
 
-            if (0 == this.logSessionId)
+            if (CommonContext.NULL_SESSION_ID == this.logSessionId)
             {
                 this.logSessionId = logSessionId;
             }

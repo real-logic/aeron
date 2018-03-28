@@ -712,7 +712,7 @@ public class Configuration
     /**
      * Low end of the publication reserved session id range which will not be automatically assigned.
      */
-    public static final int PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT = 0;
+    public static final int PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT = -1;
 
     /**
      * Low end of the publication reserved session id range which will not be automatically assigned.

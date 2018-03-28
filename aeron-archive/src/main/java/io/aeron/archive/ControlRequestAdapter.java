@@ -36,6 +36,8 @@ class ControlRequestAdapter implements FragmentHandler
     private final ExtendRecordingRequestDecoder extendRecordingRequestDecoder = new ExtendRecordingRequestDecoder();
     private final RecordingPositionRequestDecoder recordingPositionRequestDecoder =
         new RecordingPositionRequestDecoder();
+    private final TruncateRecordingRequestDecoder truncateRecordingRequestDecoder =
+        new TruncateRecordingRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -202,6 +204,20 @@ class ControlRequestAdapter implements FragmentHandler
                     recordingPositionRequestDecoder.controlSessionId(),
                     recordingPositionRequestDecoder.correlationId(),
                     recordingPositionRequestDecoder.recordingId());
+                break;
+
+            case TruncateRecordingRequestDecoder.TEMPLATE_ID:
+                truncateRecordingRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onTruncateRecording(
+                    truncateRecordingRequestDecoder.controlSessionId(),
+                    truncateRecordingRequestDecoder.correlationId(),
+                    truncateRecordingRequestDecoder.recordingId(),
+                    truncateRecordingRequestDecoder.position());
                 break;
 
             default:

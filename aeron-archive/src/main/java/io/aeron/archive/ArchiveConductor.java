@@ -20,9 +20,10 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.CachedEpochClock;
@@ -30,7 +31,12 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -38,12 +44,20 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.aeron.ChannelUriStringBuilder.integerValueOf;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.CommonContext.UDP_MEDIA;
+import static io.aeron.archive.Archive.segmentFileIndex;
+import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.ControlResponseCode.ERROR;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 abstract class ArchiveConductor extends SessionWorker<Session> implements AvailableImageHandler
 {
+    private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
+    private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
+
     private static final int CONTROL_TERM_LENGTH = AeronArchive.Configuration.controlTermBufferLength();
     private static final int CONTROL_MTU = AeronArchive.Configuration.controlMtuLength();
 
@@ -55,6 +69,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final RecordingSummary recordingSummary = new RecordingSummary();
     private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
+    private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight(byteBuffer);
 
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -182,11 +198,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     {
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
-            controlSession.sendResponse(
-                correlationId,
-                ERROR,
-                "Max concurrent recordings reached: " + maxConcurrentRecordings,
-                controlResponseProxy);
+            final String errorMessage = "Max concurrent recordings reached: " + maxConcurrentRecordings;
+            controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
 
             return;
         }
@@ -213,11 +226,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             }
             else
             {
-                controlSession.sendResponse(
-                    correlationId,
-                    ERROR,
-                    "Recording already setup for subscription: " + key,
-                    controlResponseProxy);
+                final String errorMessage = "Recording already setup for subscription: " + key;
+                controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
             }
         }
         catch (final Exception ex)
@@ -245,11 +255,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             }
             else
             {
-                controlSession.sendResponse(
-                    correlationId,
-                    ERROR,
-                    "No recording subscription found for: " + key,
-                    controlResponseProxy);
+                final String errorMessage = "No recording subscription found for: " + key;
+                controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
             }
         }
         catch (final Exception ex)
@@ -346,11 +353,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     {
         if (replaySessionByIdMap.size() >= maxConcurrentReplays)
         {
-            controlSession.sendResponse(
-                correlationId,
-                ERROR,
-                "Max concurrent replays reached: " + maxConcurrentReplays,
-                controlResponseProxy);
+            final String errorMessage = "Max concurrent replays reached: " + maxConcurrentReplays;
+            controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
 
             return;
         }
@@ -403,11 +407,10 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long position,
         final RecordingSummary recordingSummary)
     {
-        if ((position & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
+        if ((position & (FRAME_ALIGNMENT - 1)) != 0)
         {
             final String msg = "requested replay start position(=" + position +
-                ") is not a multiple of FRAME_ALIGNMENT (=" + FrameDescriptor.FRAME_ALIGNMENT + ")";
-
+                ") is not a multiple of FRAME_ALIGNMENT (=" + FRAME_ALIGNMENT + ")";
             controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
 
             return false;
@@ -418,7 +421,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         {
             final String msg = "requested replay start position(=" + position +
                 ") is before recording start position(=" + startPosition + ")";
-
             controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
 
             return false;
@@ -429,7 +431,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         {
             final String msg = "requested replay start position(=" + position +
                 ") must be before current highest recorded position(=" + stopPosition + ")";
-
             controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
 
             return false;
@@ -443,8 +444,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final ReplaySession replaySession = replaySessionByIdMap.get(replaySessionId);
         if (null == replaySession)
         {
-            controlSession.sendResponse(
-                correlationId, ERROR, "Replay session not known: id=" + replaySessionId, controlResponseProxy);
+            final String errorMessage = "Replay session not known: id=" + replaySessionId;
+            controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
         }
         else
         {
@@ -463,27 +464,24 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     {
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
-            controlSession.sendResponse(
-                correlationId,
-                ERROR,
-                "Max concurrent recordings reached: " + maxConcurrentRecordings,
-                controlResponseProxy);
+            final String errorMessage = "Max concurrent recordings reached: " + maxConcurrentRecordings;
+            controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
 
             return;
         }
 
         if (!catalog.hasRecording(recordingId))
         {
-            controlSession.sendResponse(
-                correlationId, ERROR, "Unknown recording : " + recordingId, controlResponseProxy);
+            final String errorMessage = "Unknown recording : " + recordingId;
+            controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
 
             return;
         }
 
         if (recordingSessionByIdMap.containsKey(recordingId))
         {
-            controlSession.sendResponse(
-                correlationId, ERROR, "Can not extend active recording : " + recordingId, controlResponseProxy);
+            final String errorMessage = "Can not extend active recording : " + recordingId;
+            controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
 
             return;
         }
@@ -496,11 +494,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         if (null == sessionIdStr || originalRecordingSummary.sessionId != Integer.parseInt(sessionIdStr))
         {
-            controlSession.sendResponse(
-                correlationId,
-                ERROR,
-                "Extend recording channel must contain correct sessionId: " + recordingId,
-                controlResponseProxy);
+            final String errorMessage = "Extend recording channel must contain correct sessionId: " + recordingId;
+            controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
 
             return;
         }
@@ -532,11 +527,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             }
             else
             {
-                controlSession.sendResponse(
-                    correlationId,
-                    ERROR,
-                    "Recording already setup for subscription: " + key,
-                    controlResponseProxy);
+                final String errorMessage = "Recording already setup for subscription: " + key;
+                controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
             }
         }
         catch (final Exception ex)
@@ -553,6 +545,80 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long position = null == recordingSession ? NULL_POSITION : recordingSession.recordingPosition().get();
 
         controlSession.sendOkResponse(correlationId, position, controlResponseProxy);
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void truncateRecording(
+        final long correlationId, final ControlSession controlSession, final long recordingId, final long position)
+    {
+        final RecordingSummary summary = validateFramePosition(correlationId, controlSession, recordingId, position);
+        if (null != summary)
+        {
+            final long stopPosition = summary.stopPosition;
+            if (stopPosition == position)
+            {
+                controlSession.sendOkResponse(correlationId, controlResponseProxy);
+                return;
+            }
+
+            final long startPosition = summary.startPosition;
+            final int segmentLength = summary.segmentFileLength;
+            final int segmentIndex = segmentFileIndex(startPosition, position, segmentLength);
+            final File file = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
+
+            if (position >= startPosition)
+            {
+                final long segmentOffset = position & (segmentLength - 1);
+                final int termLength = summary.termBufferLength;
+                final int termOffset = (int)(position & (termLength - 1));
+
+                if (termOffset > 0)
+                {
+                    try (FileChannel fileChannel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
+                    {
+                        byteBuffer.clear();
+                        if (DataHeaderFlyweight.HEADER_LENGTH != fileChannel.read(byteBuffer, segmentOffset))
+                        {
+                            throw new IllegalStateException("failed to read fragment header");
+                        }
+
+                        final long termCount = position >> LogBufferDescriptor.positionBitsToShift(termLength);
+                        final int termId = summary.initialTermId + (int)termCount;
+
+                        if (dataHeaderFlyweight.termOffset() != termOffset ||
+                            dataHeaderFlyweight.termId() != termId ||
+                            dataHeaderFlyweight.streamId() != summary.streamId)
+                        {
+                            final String msg = "position " + position + " does not match header " + dataHeaderFlyweight;
+                            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
+                            return;
+                        }
+
+                        catalog.recordingStopped(recordingId, position);
+
+                        fileChannel.truncate(segmentOffset);
+                        byteBuffer.put(0, (byte)0).limit(1).position(0);
+                        fileChannel.write(byteBuffer, segmentLength - 1);
+                    }
+                    catch (final IOException ex)
+                    {
+                        LangUtil.rethrowUnchecked(ex);
+                    }
+                }
+                else
+                {
+                    catalog.recordingStopped(recordingId, position);
+                    file.delete();
+                }
+
+                for (int i = segmentIndex + 1; (i * (long)segmentLength) <= stopPosition; i++)
+                {
+                    new File(archiveDir, segmentFileName(recordingId, i)).delete();
+                }
+            }
+
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        }
     }
 
     ControlSession newControlSession(
@@ -809,5 +875,49 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private static String makeKey(final int streamId, final String strippedChannel)
     {
         return streamId + ":" + strippedChannel;
+    }
+
+    private RecordingSummary validateFramePosition(
+        final long correlationId, final ControlSession controlSession, final long recordingId, final long position)
+    {
+        if (!catalog.hasRecording(recordingId))
+        {
+            final String errorMessage = "Unknown recording: " + recordingId;
+            controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
+
+            return null;
+        }
+
+        for (final ReplaySession replaySession : replaySessionByIdMap.values())
+        {
+            if (replaySession.recordingId() == recordingId)
+            {
+                final String errorMessage = "Cannot truncate recording with active replay: " + recordingId;
+                controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
+
+                return null;
+            }
+        }
+
+        catalog.recordingSummary(recordingId, recordingSummary);
+        final long stopPosition = recordingSummary.stopPosition;
+        final long startPosition = recordingSummary.startPosition;
+
+        if (stopPosition == NULL_POSITION)
+        {
+            controlSession.sendResponse(
+                correlationId, ERROR, "Cannot truncate active recording", controlResponseProxy);
+
+            return null;
+        }
+
+        if (position < startPosition || position > stopPosition || ((position & (FRAME_ALIGNMENT - 1)) != 0))
+        {
+            controlSession.sendResponse(correlationId, ERROR, "Invalid position: " + position, controlResponseProxy);
+
+            return null;
+        }
+
+        return recordingSummary;
     }
 }

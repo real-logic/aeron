@@ -448,6 +448,18 @@ class Catalog implements AutoCloseable
         }
     }
 
+    void recordingStopped(final long recordingId, final long position)
+    {
+        final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
+        final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
+        fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
+
+        if (fileSyncLevel > 0)
+        {
+            catalogByteBuffer.force();
+        }
+    }
+
     void extendRecording(final long recordingId)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;

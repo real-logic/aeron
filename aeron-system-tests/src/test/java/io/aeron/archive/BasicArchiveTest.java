@@ -140,15 +140,17 @@ public class BasicArchiveTest
         final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, stopPosition);
         assertEquals(recordingIdFromCounter, recordingId);
 
-        final long fromPosition = 0L;
-        final long length = stopPosition - fromPosition;
+        final long position = 0L;
+        final long length = stopPosition - position;
 
         try (Subscription subscription = aeronArchive.replay(
-            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+            recordingId, position, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
             consume(subscription, messageCount, messagePrefix);
             assertEquals(stopPosition, subscription.imageAtIndex(0).position());
         }
+
+        aeronArchive.truncateRecording(recordingId, position);
     }
 
     @Test(timeout = 10_000)
@@ -183,11 +185,11 @@ public class BasicArchiveTest
             assertThat(aeronArchive.getRecordingPosition(recordingId), is(NULL_POSITION));
         }
 
-        final long fromPosition = 0L;
-        final long length = stopPosition - fromPosition;
+        final long position = 0L;
+        final long length = stopPosition - position;
 
         final long replaySessionId = aeronArchive.startReplay(
-            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID);
+            recordingId, position, length, REPLAY_CHANNEL, REPLAY_STREAM_ID);
 
         aeronArchive.stopReplay(replaySessionId);
     }

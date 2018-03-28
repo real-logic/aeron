@@ -53,6 +53,8 @@ public class ArchiveProxy
     private final ExtendRecordingRequestEncoder extendRecordingRequestEncoder = new ExtendRecordingRequestEncoder();
     private final RecordingPositionRequestEncoder recordingPositionRequestEncoder =
         new RecordingPositionRequestEncoder();
+    private final TruncateRecordingRequestEncoder truncateRecordingRequestEncoder =
+        new TruncateRecordingRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -396,6 +398,29 @@ public class ArchiveProxy
             .recordingId(recordingId);
 
         return offer(recordingPositionRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
+     * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
+     *
+     * @param recordingId      of the stopped recording to be truncated.
+     * @param position         to which the recording will be truncated.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean truncateRecording(
+        final long recordingId, final long position, final long correlationId, final long controlSessionId)
+    {
+        truncateRecordingRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .position(position);
+
+        return offer(truncateRecordingRequestEncoder.encodedLength());
     }
 
     private boolean offer(final int length)

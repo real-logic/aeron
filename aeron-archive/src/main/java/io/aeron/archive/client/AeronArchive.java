@@ -736,6 +736,33 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    /**
+     * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
+     * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
+     *
+     * @param recordingId of the stopped recording to be truncated.
+     * @param position    to which the recording will be truncated.
+     */
+    public void truncateRecording(final long recordingId, final long position)
+    {
+        lock.lock();
+        try
+        {
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.truncateRecording(recordingId, position, correlationId, controlSessionId))
+            {
+                throw new IllegalStateException("Failed to send truncate recording request");
+            }
+
+            pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     private long awaitSessionOpened(final long correlationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;

@@ -188,6 +188,11 @@ class ReplaySession implements Session, SimpleFragmentHandler
         return false;
     }
 
+    long recordingId()
+    {
+        return cursor.recordingId();
+    }
+
     State state()
     {
         return state;

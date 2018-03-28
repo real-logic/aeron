@@ -67,4 +67,6 @@ interface ControlRequestListener
         SourceLocation sourceLocation);
 
     void onGetRecordingPosition(long controlSessionId, long correlationId, long recordingId);
+
+    void onTruncateRecording(long controlSessionId, long correlationId, long recordingId, long position);
 }

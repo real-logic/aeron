@@ -95,7 +95,7 @@ class Catalog implements AutoCloseable
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     static final int DEFAULT_RECORD_LENGTH = 1024;
     static final long MAX_ENTRIES = calculateMaxEntries(Integer.MAX_VALUE, DEFAULT_RECORD_LENGTH);
-    static final long DEFAULT_MAX_ENTRIES = MAX_ENTRIES;
+    static final long DEFAULT_MAX_ENTRIES = 8 * 1024;
     static final byte VALID = 1;
     static final byte INVALID = 0;
 
@@ -137,10 +137,19 @@ class Catalog implements AutoCloseable
             final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
             final boolean catalogPreExists = catalogFile.exists();
             MappedByteBuffer catalogMappedByteBuffer = null;
-            final long catalogLength = calculateCatalogLength(maxNumEntries);
+            final long catalogLength;
 
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE))
             {
+                if (catalogPreExists)
+                {
+                    catalogLength = channel.size();
+                }
+                else
+                {
+                    catalogLength = calculateCatalogLength(maxNumEntries);
+                }
+
                 catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, catalogLength);
             }
             catch (final Exception ex)
@@ -197,7 +206,7 @@ class Catalog implements AutoCloseable
 
             maxDescriptorStringsCombinedLength =
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
-            maxRecordingId = (int)maxNumEntries - 1;
+            maxRecordingId = (int)calculateMaxEntries(catalogLength, recordLength) - 1;
 
             refreshCatalog(true);
         }

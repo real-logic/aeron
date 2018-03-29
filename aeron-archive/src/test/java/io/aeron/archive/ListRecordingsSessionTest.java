@@ -20,6 +20,7 @@ import static org.mockito.Mockito.*;
 
 public class ListRecordingsSessionTest
 {
+    private static final int MAX_ENTRIES = 1024;
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private long[] recordingIds = new long[3];
@@ -35,7 +36,7 @@ public class ListRecordingsSessionTest
     @Before
     public void before()
     {
-        catalog = new Catalog(archiveDir, null, 0, Catalog.DEFAULT_MAX_ENTRIES, clock);
+        catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock);
         recordingIds[0] = catalog.addNewRecording(
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
         recordingIds[1] = catalog.addNewRecording(

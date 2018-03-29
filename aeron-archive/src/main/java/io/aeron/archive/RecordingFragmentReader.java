@@ -230,7 +230,7 @@ class RecordingFragmentReader implements AutoCloseable
             segmentFileIndex++;
             if (!openRecordingSegment())
             {
-                throw new IllegalStateException("Failed to open segment file: " +
+                throw new IllegalStateException("failed to open segment file: " +
                     segmentFileName(recordingId, segmentFileIndex));
             }
 

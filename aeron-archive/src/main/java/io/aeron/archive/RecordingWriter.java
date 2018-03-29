@@ -127,7 +127,7 @@ class RecordingWriter implements BlockHandler
         {
             Thread.interrupted();
             close();
-            throw new IllegalStateException("File channel closed by interrupt, recording aborted.", ex);
+            throw new IllegalStateException("file closed by interrupt, recording aborted.", ex);
         }
         catch (final Exception ex)
         {

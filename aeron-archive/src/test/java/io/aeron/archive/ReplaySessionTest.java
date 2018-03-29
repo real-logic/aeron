@@ -430,7 +430,7 @@ public class ReplaySessionTest
 
         header.offset(offset);
 
-        recordingWriter.writeFragment(buffer, header);
+        recordingWriter.onBlock(buffer, offset, FRAME_LENGTH, SESSION_ID, INITIAL_TERM_ID);
     }
 
     private void mockPublication(final ExclusivePublication replay, final UnsafeBuffer termBuffer)

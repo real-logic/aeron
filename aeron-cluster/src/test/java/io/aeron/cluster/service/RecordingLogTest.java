@@ -67,21 +67,42 @@ public class RecordingLogTest
     public void shouldAppendAndThenCommitTermPosition()
     {
         final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
-        final RecordingLog.Entry entry = new RecordingLog.Entry(NULL_VALUE, 3, 2, 777, 4, 0, ENTRY_TYPE_TERM, 0);
+        final long leadershipTermId = 1111L;
+        final long termBaseLogPosition = 2222L;
+        final long timestamp = 3333L;
+        final int votedForMemberId = 1;
 
-        recordingLog.appendTerm(
-            entry.leadershipTermId,
-            entry.termBaseLogPosition,
-            entry.timestamp,
-            entry.votedForMemberId);
+        recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, timestamp, votedForMemberId);
 
-        recordingLog.commitLeadershipTermPosition(entry.leadershipTermId, 777);
+        final long newPosition = 9999L;
+        recordingLog.commitLeadershipTermPosition(leadershipTermId, newPosition);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
         assertThat(recordingLogTwo.entries().size(), is(1));
 
         final RecordingLog.Entry actualEntry = recordingLogTwo.entries().get(0);
-        assertEquals(entry.toString(), actualEntry.toString());
+        assertEquals(newPosition, actualEntry.termPosition);
+    }
+
+    @Test
+    public void shouldAppendAndThenCommitLogPosition()
+    {
+        final long leadershipTermId = 1111L;
+        final long termBaseLogPosition = 2222L;
+        final long timestamp = 3333L;
+        final int votedForMemberId = 1;
+
+        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
+        recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, timestamp, votedForMemberId);
+
+        final long newLogPosition = 7777L;
+        recordingLog.commitLeadershipLogPosition(leadershipTermId, newLogPosition);
+
+        final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
+        assertThat(recordingLogTwo.entries().size(), is(1));
+
+        final RecordingLog.Entry actualEntry = recordingLogTwo.entries().get(0);
+        assertEquals(newLogPosition, actualEntry.termBaseLogPosition);
     }
 
     @Test

@@ -645,6 +645,17 @@ public class RecordingLog
     }
 
     /**
+     * Commit the position for the base of a leadership term.
+     *
+     * @param leadershipTermId for committing the base position..
+     * @param logPosition      for the base of a leadership term.
+     */
+    public void commitLeadershipLogPosition(final long leadershipTermId, final long logPosition)
+    {
+        commitEntryValue(leadershipTermId, logPosition, TERM_BASE_LOG_POSITION_OFFSET);
+    }
+
+    /**
      * Tombstone an entry in the log so it is no longer valid.
      *
      * @param leadershipTermId to match for validation.

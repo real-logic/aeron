@@ -438,10 +438,9 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
                 final Image image = awaitImage(activeLog.sessionId, subscription);
                 serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
 
-                final ReadableCounter limit = new ReadableCounter(counters, counterId);
-
-                logAdapter = new BoundedLogAdapter(image, limit, this);
+                logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, counterId), this);
                 activeLog = null;
+                role(Role.get((int)roleCounter.get()));
             }
         }
     }

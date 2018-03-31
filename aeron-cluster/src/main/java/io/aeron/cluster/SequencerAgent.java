@@ -1210,8 +1210,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         idleStrategy.reset();
         final Publication publication = leaderMember.publication();
 
-        while (!memberStatusPublisher.appendedPosition(
-            publication, followerCommitPosition, leadershipTermId, memberId))
+        while (!memberStatusPublisher.appendedPosition(publication, followerCommitPosition, leadershipTermId, memberId))
         {
             idle();
         }
@@ -1371,10 +1370,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                         serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, channel);
                         awaitServiceAcks();
 
-                        final int sessionId = (int)archive.startReplay(
-                            recordingId, startPosition, length, channel, streamId);
-
-                        final Image image = awaitImage(sessionId, subscription);
+                        final Image image = awaitImage(
+                            (int)archive.startReplay(recordingId, startPosition, length, channel, streamId),
+                            subscription);
 
                         serviceAckCount = 0;
                         replayTerm(image, stopPosition, counter);

@@ -25,68 +25,58 @@ import io.aeron.cluster.client.RecordingLog;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.CountersReader;
 
-public final class RecordingCatchUp implements AutoCloseable
+class RecordingCatchUp implements AutoCloseable
 {
-    private final AeronArchive targetArchive;
-    private final AeronArchive replayArchive;
+    private final AeronArchive dstArchive;
+    private final AeronArchive srcArchive;
     private final CountersReader countersReader;
-    private final long caughtUpPosition;
+    private final long targetPosition;
     private final long fromPosition;
-    private final long replaySessionId;
     private final long recordingIdToExtend;
-    private int counterId;
+    private final int counterId;
 
-    private final String replayChannel;
-    private final int replayStreamId;
-
-    private RecordingCatchUp(
-        final AeronArchive targetArchive,
+    RecordingCatchUp(
+        final AeronArchive dstArchive,
         final CountersReader targetCounters,
         final long recordingIdToExtend,
-        final AeronArchive replayArchive,
+        final AeronArchive srcArchive,
         final long recordingIdToReplay,
         final long fromPosition,
         final long toPosition,
         final String replayChannel,
         final int replayStreamId)
     {
-        this.targetArchive = targetArchive;
-        this.replayArchive = replayArchive;
+        this.dstArchive = dstArchive;
+        this.srcArchive = srcArchive;
         this.countersReader = targetCounters;
-        this.caughtUpPosition = toPosition;
-        this.replayChannel = replayChannel;
-        this.replayStreamId = replayStreamId;
+        this.targetPosition = toPosition;
         this.fromPosition = fromPosition;
         this.recordingIdToExtend = recordingIdToExtend;
 
-        targetArchive.extendRecording(recordingIdToExtend, replayChannel, replayStreamId, SourceLocation.REMOTE);
+        dstArchive.extendRecording(recordingIdToExtend, replayChannel, replayStreamId, SourceLocation.REMOTE);
 
-        replaySessionId = replayArchive.startReplay(
+        srcArchive.startReplay(
             recordingIdToReplay, fromPosition, toPosition - fromPosition, replayChannel, replayStreamId);
 
-        counterId = RecordingPos.findCounterIdByRecording(targetCounters, recordingIdToExtend);
+        int counterId = RecordingPos.findCounterIdByRecording(targetCounters, recordingIdToExtend);
         while (CountersReader.NULL_COUNTER_ID == counterId)
         {
             Thread.yield();
             counterId = RecordingPos.findCounterIdByRecording(targetCounters, recordingIdToExtend);
         }
+
+        this.counterId = counterId;
     }
 
     public void close()
     {
-        CloseHelper.close(replayArchive);
-        CloseHelper.close(targetArchive);
-    }
-
-    public void cancel()
-    {
-        replayArchive.stopReplay(replaySessionId);
-        targetArchive.stopRecording(replayChannel, replayStreamId);
+        CloseHelper.close(srcArchive);
+        CloseHelper.close(dstArchive);
     }
 
     public boolean isCaughtUp()
     {
-        return currentPosition() >= caughtUpPosition;
+        return currentPosition() >= targetPosition;
     }
 
     public long currentPosition()
@@ -99,9 +89,9 @@ public final class RecordingCatchUp implements AutoCloseable
         return fromPosition;
     }
 
-    public long caughtUpPosition()
+    public long targetPosition()
     {
-        return caughtUpPosition;
+        return targetPosition;
     }
 
     public long recordingIdToExtend()

@@ -19,7 +19,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.RecordingLog;
 import org.agrona.concurrent.status.CountersReader;
 
-public interface RecordingCatchUpSupplier
+interface RecordingCatchUpSupplier
 {
     RecordingCatchUp catchUp(
         AeronArchive.Context localArchiveContext,

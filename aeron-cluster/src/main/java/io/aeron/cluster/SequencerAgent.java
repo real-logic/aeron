@@ -1158,9 +1158,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             final int streamId = ctx.replayStreamId();
             final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
 
-            final long startPosition = recordingCatchUp.fromPosition();
-            final long stopPosition = recordingCatchUp.caughtUpPosition();
-            final long length = stopPosition - startPosition;
+            final long fromPosition = recordingCatchUp.fromPosition();
+            final long targetPosition = recordingCatchUp.targetPosition();
+            final long length = targetPosition - fromPosition;
 
             final int lastStepIndex = recoveryPlan.termSteps.size() - 1;
             final RecordingLog.ReplayStep lastStep = recoveryPlan.termSteps.get(lastStepIndex);
@@ -1186,12 +1186,12 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                     awaitServiceAcks();
 
                     final int replaySessionId = (int)archive.startReplay(
-                        recordingId, startPosition, length, channel, streamId);
+                        recordingId, fromPosition, length, channel, streamId);
 
                     final Image image = awaitImage(replaySessionId, subscription);
 
                     serviceAckCount = 0;
-                    replayTerm(image, stopPosition, counter);
+                    replayTerm(image, targetPosition, counter);
 
                     final long termPosition = image.position();
                     recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);

@@ -1166,8 +1166,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             final RecordingLog.ReplayStep lastStep = recoveryPlan.termSteps.get(lastStepIndex);
             final RecordingLog.Entry entry = lastStep.entry;
 
-            // TODO: fix up recordingLog entry for last step for on disk in case we recover again
-
             termBaseLogPosition = entry.termBaseLogPosition;
             leadershipTermId = entry.leadershipTermId;
 
@@ -1175,6 +1173,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
             final String channel = channelUri.toString();
             final long recordingId = recordingCatchUp.recordingIdToExtend();
+            recordingCatchUp = null;
 
             try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
             {
@@ -1198,17 +1197,11 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                         replayTerm(image, stopPosition, counter);
 
                         final long termPosition = image.position();
-                        if (lastStep.entry.termPosition < termPosition)
-                        {
-                            recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
-                        }
-
+                        recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
                         termBaseLogPosition = entry.termBaseLogPosition + termPosition;
                     }
                 }
             }
-
-            recordingCatchUp = null;
         }
     }
 

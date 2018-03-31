@@ -424,24 +424,21 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
     {
         if (logAdapter.isCaughtUp())
         {
+            logAdapter.close();
+
             final CountersReader counters = aeron.countersReader();
             final int counterId = activeLog.commitPositionId;
 
             leadershipTermId = activeLog.leadershipTermId;
             termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, counterId);
 
-            if (CommitPos.getLeadershipTermLength(counters, counterId) > 0)
-            {
-                logAdapter.close();
+            final Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
+            final Image image = awaitImage(activeLog.sessionId, subscription);
+            serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
 
-                final Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
-                final Image image = awaitImage(activeLog.sessionId, subscription);
-                serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
-
-                logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, counterId), this);
-                activeLog = null;
-                role(Role.get((int)roleCounter.get()));
-            }
+            logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, counterId), this);
+            activeLog = null;
+            role(Role.get((int)roleCounter.get()));
         }
     }
 

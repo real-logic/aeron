@@ -1180,26 +1180,22 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 serviceAckCount = 0;
                 logAdapter = null;
 
-                if (length > 0)
+                try (Subscription subscription = aeron.addSubscription(channel, streamId))
                 {
-                    try (Subscription subscription = aeron.addSubscription(channel, streamId))
-                    {
-                        serviceControlPublisher.joinLog(
-                            leadershipTermId, counter.id(), logSessionId, streamId, channel);
-                        awaitServiceAcks();
+                    serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, channel);
+                    awaitServiceAcks();
 
-                        final int replaySessionId = (int)archive.startReplay(
-                            recordingId, startPosition, length, channel, streamId);
+                    final int replaySessionId = (int)archive.startReplay(
+                        recordingId, startPosition, length, channel, streamId);
 
-                        final Image image = awaitImage(replaySessionId, subscription);
+                    final Image image = awaitImage(replaySessionId, subscription);
 
-                        serviceAckCount = 0;
-                        replayTerm(image, stopPosition, counter);
+                    serviceAckCount = 0;
+                    replayTerm(image, stopPosition, counter);
 
-                        final long termPosition = image.position();
-                        recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
-                        termBaseLogPosition = entry.termBaseLogPosition + termPosition;
-                    }
+                    final long termPosition = image.position();
+                    recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
+                    termBaseLogPosition = entry.termBaseLogPosition + termPosition;
                 }
             }
         }

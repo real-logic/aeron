@@ -63,7 +63,10 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final boolean cleanOnClose;
     private final File harnessDir;
-    private long lastTermPosition = -1;
+
+    private ClusteredMediaDriver leaderCluster;
+    private ClusteredServiceContainer leaderContainer;
+    private File leaderHarnessDir;
     private int thisMemberIndex = -1;
     private int leaderIndex = -1;
 
@@ -75,32 +78,39 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final boolean cleanOnClose)
     {
         this.service = service;
-        members = ClusterMember.parse(context.clusterMembers());
+        this.members = ClusterMember.parse(context.clusterMembers());
+        this.leaderIndex = context.appointedLeaderId();
+        this.thisMemberIndex = context.clusterMemberId();
 
         harnessDir = new File(IoUtil.tmpDirName(), "aeron-cluster-" + context.clusterMemberId());
+        final String mediaDriverPath = new File(harnessDir, "driver").getPath();
         final File clusterDir = new File(harnessDir, "aeron-cluster");
         final File archiveDir = new File(harnessDir, "aeron-archive");
         final File serviceDir = new File(harnessDir, "clustered-service");
 
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
+                .aeronDirectoryName(mediaDriverPath)
                 .warnIfDirectoryExists(isCleanStart)
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true),
             new Archive.Context()
+                .aeronDirectoryName(mediaDriverPath)
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .archiveDir(archiveDir)
                 .deleteArchiveOnStart(isCleanStart),
             context
+                .aeronDirectoryName(mediaDriverPath)
                 .clusterDir(clusterDir)
                 .terminationHook(() -> isTerminated.set(true))
                 .deleteDirOnStart(isCleanStart));
 
         clusteredServiceContainer = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
+                .aeronDirectoryName(mediaDriverPath)
                 .clusteredServiceDir(serviceDir)
                 .idleStrategySupplier(() -> new SleepingMillisIdleStrategy(1))
                 .clusteredService(this)
@@ -109,11 +119,73 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .deleteDirOnStart(isCleanStart));
 
         this.cleanOnClose = cleanOnClose;
-        aeron = Aeron.connect();
+        aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriverPath));
 
         memberStatusSubscriptions = new Subscription[members.length];
         memberStatusAdapters = new MemberStatusAdapter[members.length];
         memberStatusPublications = new Publication[members.length];
+
+        boolean activeLeader = false;
+
+        if (!isCleanStart && this.members.length > 1 && thisMemberIndex != leaderIndex)
+        {
+            leaderHarnessDir = new File(IoUtil.tmpDirName(), "aeron-cluster-" + leaderIndex);
+            final String leaderMediaDriverPath = new File(leaderHarnessDir, "driver").getPath();
+            final File leaderClusterDir = new File(leaderHarnessDir, "aeron-cluster");
+            final File leaderArchiveDir = new File(leaderHarnessDir, "aeron-archive");
+            final File leaderServiceDir = new File(leaderHarnessDir, "clustered-service");
+
+            if (leaderClusterDir.exists() && leaderArchiveDir.exists())
+            {
+                activeLeader = true;
+
+                final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
+                final Archive.Context archiveContext = new Archive.Context();
+                final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context();
+                final ClusteredServiceContainer.Context containerContext = new ClusteredServiceContainer.Context();
+                final ClusterMember leader = this.members[leaderIndex];
+
+                ChannelUri channelUri = ChannelUri.parse(archiveContext.controlChannel());
+                channelUri.put(ENDPOINT_PARAM_NAME, leader.archiveEndpoint());
+                archiveContext.controlChannel(channelUri.toString());
+
+                channelUri = ChannelUri.parse(consensusModuleContext.memberStatusChannel());
+                channelUri.put(ENDPOINT_PARAM_NAME, leader.memberFacingEndpoint());
+                consensusModuleContext.memberStatusChannel(channelUri.toString());
+
+                leaderCluster = ClusteredMediaDriver.launch(
+                    mediaDriverContext
+                        .aeronDirectoryName(leaderMediaDriverPath)
+                        .warnIfDirectoryExists(false)
+                        .threadingMode(ThreadingMode.SHARED)
+                        .termBufferSparseFile(true)
+                        .errorHandler(Throwable::printStackTrace)
+                        .dirDeleteOnStart(true),
+                    archiveContext
+                        .aeronDirectoryName(leaderMediaDriverPath)
+                        .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                        .threadingMode(ArchiveThreadingMode.SHARED)
+                        .archiveDir(leaderArchiveDir)
+                        .deleteArchiveOnStart(false),
+                    consensusModuleContext
+                        .clusterMembers(context.clusterMembers())
+                        .appointedLeaderId(leaderIndex)
+                        .aeronDirectoryName(leaderMediaDriverPath)
+                        .clusterDir(leaderClusterDir)
+                        .terminationHook(() -> isTerminated.set(true))
+                        .deleteDirOnStart(false));
+
+                leaderContainer = ClusteredServiceContainer.launch(
+                    containerContext
+                        .aeronDirectoryName(leaderMediaDriverPath)
+                        .clusteredServiceDir(leaderServiceDir)
+                        .idleStrategySupplier(() -> new SleepingMillisIdleStrategy(1))
+                        .clusteredService(this)
+                        .terminationHook(() -> {})
+                        .errorHandler(Throwable::printStackTrace)
+                        .deleteDirOnStart(false));
+            }
+        }
 
         for (int i = 0; i < members.length; i++)
         {
@@ -140,23 +212,24 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             }
             else
             {
-                thisMemberIndex = i;
+                if (i != thisMemberIndex)
+                {
+                    throw new IllegalStateException("this member index not equal to members array element");
+                }
             }
 
-            if (members[i].id() == context.appointedLeaderId())
+            if (members[i].id() == context.appointedLeaderId() && i != leaderIndex)
             {
-                leaderIndex = i;
+                throw new IllegalStateException("leader index not equal to members array element");
             }
-        }
-
-        if (members.length > 0 && thisMemberIndex != leaderIndex)
-        {
-            // TODO: need to create Leader archive for possible catchUp
         }
     }
 
     public void close()
     {
+        CloseHelper.close(leaderContainer);
+        CloseHelper.close(leaderCluster);
+
         CloseHelper.close(clusteredServiceContainer);
         CloseHelper.close(clusteredMediaDriver);
         CloseHelper.close(aeron);
@@ -179,6 +252,23 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
             clusteredMediaDriver.archive().context().deleteArchiveDirectory();
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
+        }
+
+        if (null != leaderContainer)
+        {
+            leaderContainer.context().deleteDirectory();
+        }
+
+        if (null != leaderCluster)
+        {
+            leaderCluster.mediaDriver().context().deleteAeronDirectory();
+            leaderCluster.archive().context().deleteArchiveDirectory();
+            leaderCluster.consensusModule().context().deleteDirectory();
+        }
+
+        if (null != leaderHarnessDir)
+        {
+            IoUtil.delete(leaderHarnessDir, true);
         }
 
         IoUtil.delete(harnessDir, true);
@@ -320,7 +410,11 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         {
             harness.awaitServiceOnStart();
 
-            try (AeronCluster aeronCluster = AeronCluster.connect(new AeronCluster.Context().lock(new NoOpLock())))
+            final AeronCluster.Context clusterContext = new AeronCluster.Context()
+                .aeronDirectoryName(harness.aeron().context().aeronDirectoryName())
+                .lock(new NoOpLock());
+
+            try (AeronCluster aeronCluster = AeronCluster.connect(clusterContext))
             {
                 final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
                 final Publication publication = aeronCluster.ingressPublication();

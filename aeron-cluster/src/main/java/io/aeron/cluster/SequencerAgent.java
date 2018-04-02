@@ -467,6 +467,61 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
     }
 
+    public void onVote(
+        final long candidateTermId,
+        final long lastBaseLogPosition,
+        final long lastTermPosition,
+        final int candidateMemberId,
+        final int followerMemberId,
+        final boolean vote)
+    {
+        if (Cluster.Role.CANDIDATE == role &&
+            candidateTermId == leadershipTermId &&
+            lastBaseLogPosition == recoveryPlan.lastTermBaseLogPosition &&
+            lastTermPosition == recoveryPlan.lastTermPositionAppended &&
+            candidateMemberId == memberId)
+        {
+            if (vote)
+            {
+                clusterMembers[followerMemberId].votedForId(candidateMemberId);
+            }
+            else
+            {
+                // TODO: Have to deal with failed candidacy
+                throw new IllegalStateException("Rejected vote from: " + followerMemberId);
+            }
+        }
+    }
+
+    public void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
+    {
+        if (leadershipTermId == this.leadershipTermId)
+        {
+            clusterMembers[followerMemberId].termPosition(termPosition);
+        }
+    }
+
+    public void onCommitPosition(
+        final long termPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
+    {
+        if (leadershipTermId == this.leadershipTermId)
+        {
+            if (leaderMemberId != votedForMemberId)
+            {
+                throw new IllegalStateException("Commit position not for current leader: expected=" +
+                    this.votedForMemberId + " received=" + leaderMemberId);
+            }
+
+            if (CommonContext.NULL_SESSION_ID == this.logSessionId)
+            {
+                this.logSessionId = logSessionId;
+            }
+
+            timeOfLastLogUpdateMs = cachedEpochClock.time();
+            followerCommitPosition = termPosition;
+        }
+    }
+
     void state(final ConsensusModule.State state)
     {
         this.state = state;
@@ -477,6 +532,11 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     {
         this.role = role;
         clusterRoleCounter.setOrdered(role.code());
+    }
+
+    Cluster.Role role()
+    {
+        return role;
     }
 
     void logRecordingPositionCounter(final ReadableCounter logRecordingPosition)
@@ -614,6 +674,52 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         this.nextSessionId = nextSessionId;
     }
 
+    void catchupLog(final RecordingCatchUp recordingCatchUp)
+    {
+        final int streamId = ctx.replayStreamId();
+        final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
+
+        final long fromPosition = recordingCatchUp.fromPosition();
+        final long targetPosition = recordingCatchUp.targetPosition();
+        final long length = targetPosition - fromPosition;
+
+        final int lastStepIndex = recoveryPlan.termSteps.size() - 1;
+        final RecordingLog.ReplayStep lastStep = recoveryPlan.termSteps.get(lastStepIndex);
+        final RecordingLog.Entry entry = lastStep.entry;
+
+        termBaseLogPosition = entry.termBaseLogPosition;
+        leadershipTermId = entry.leadershipTermId;
+
+        final int logSessionId = lastStepIndex + 1;
+        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+        final String channel = channelUri.toString();
+        final long recordingId = recordingCatchUp.recordingIdToExtend();
+
+        try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
+        {
+            serviceAckCount = 0;
+            logAdapter = null;
+
+            try (Subscription subscription = aeron.addSubscription(channel, streamId))
+            {
+                serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, channel);
+                awaitServiceAcks();
+
+                final int replaySessionId = (int)archive.startReplay(
+                    recordingId, fromPosition, length, channel, streamId);
+
+                final Image image = awaitImage(replaySessionId, subscription);
+
+                serviceAckCount = 0;
+                replayTerm(image, targetPosition, counter);
+
+                final long termPosition = image.position();
+                recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
+                termBaseLogPosition = entry.termBaseLogPosition + termPosition;
+            }
+        }
+    }
+
     public void onRequestVote(
         final long candidateTermId,
         final long lastBaseLogPosition,
@@ -646,61 +752,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
 
         sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, false);
-    }
-
-    public void onVote(
-        final long candidateTermId,
-        final long lastBaseLogPosition,
-        final long lastTermPosition,
-        final int candidateMemberId,
-        final int followerMemberId,
-        final boolean vote)
-    {
-        if (Cluster.Role.CANDIDATE == role &&
-            candidateTermId == leadershipTermId &&
-            lastBaseLogPosition == recoveryPlan.lastTermBaseLogPosition &&
-            lastTermPosition == recoveryPlan.lastTermPositionAppended &&
-            candidateMemberId == memberId)
-        {
-            if (vote)
-            {
-                clusterMembers[followerMemberId].votedForId(candidateMemberId);
-            }
-            else
-            {
-                // TODO: Have to deal with failed candidacy
-                throw new IllegalStateException("Rejected vote from: " + followerMemberId);
-            }
-        }
-    }
-
-    public void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
-    {
-        if (leadershipTermId == this.leadershipTermId)
-        {
-            clusterMembers[followerMemberId].termPosition(termPosition);
-        }
-    }
-
-    public void onCommitPosition(
-        final long termPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
-    {
-        if (leadershipTermId == this.leadershipTermId)
-        {
-            if (leaderMemberId != votedForMemberId)
-            {
-                throw new IllegalStateException("Commit position not for current leader: expected=" +
-                    this.votedForMemberId + " received=" + leaderMemberId);
-            }
-
-            if (CommonContext.NULL_SESSION_ID == this.logSessionId)
-            {
-                this.logSessionId = logSessionId;
-            }
-
-            timeOfLastLogUpdateMs = cachedEpochClock.time();
-            followerCommitPosition = termPosition;
-        }
     }
 
     private int slowTickCycle(final long nowMs)
@@ -1155,49 +1206,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             recordingCatchUp.close();
 
-            final int streamId = ctx.replayStreamId();
-            final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
-
-            final long fromPosition = recordingCatchUp.fromPosition();
-            final long targetPosition = recordingCatchUp.targetPosition();
-            final long length = targetPosition - fromPosition;
-
-            final int lastStepIndex = recoveryPlan.termSteps.size() - 1;
-            final RecordingLog.ReplayStep lastStep = recoveryPlan.termSteps.get(lastStepIndex);
-            final RecordingLog.Entry entry = lastStep.entry;
-
-            termBaseLogPosition = entry.termBaseLogPosition;
-            leadershipTermId = entry.leadershipTermId;
-
-            final int logSessionId = lastStepIndex + 1;
-            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-            final String channel = channelUri.toString();
-            final long recordingId = recordingCatchUp.recordingIdToExtend();
+            catchupLog(recordingCatchUp);
             recordingCatchUp = null;
-
-            try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
-            {
-                serviceAckCount = 0;
-                logAdapter = null;
-
-                try (Subscription subscription = aeron.addSubscription(channel, streamId))
-                {
-                    serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, channel);
-                    awaitServiceAcks();
-
-                    final int replaySessionId = (int)archive.startReplay(
-                        recordingId, fromPosition, length, channel, streamId);
-
-                    final Image image = awaitImage(replaySessionId, subscription);
-
-                    serviceAckCount = 0;
-                    replayTerm(image, targetPosition, counter);
-
-                    final long termPosition = image.position();
-                    recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
-                    termBaseLogPosition = entry.termBaseLogPosition + termPosition;
-                }
-            }
         }
     }
 

@@ -234,5 +234,4 @@ public class MultiNodeTest
                 .onSessionMessage(anyLong(), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
         }
     }
-
 }

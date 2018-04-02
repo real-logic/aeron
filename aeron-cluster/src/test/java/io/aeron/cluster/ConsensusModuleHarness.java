@@ -176,8 +176,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         if (null != clusteredMediaDriver)
         {
             clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
-            clusteredMediaDriver.consensusModule().context().deleteDirectory();
             clusteredMediaDriver.archive().context().deleteArchiveDirectory();
+            clusteredMediaDriver.consensusModule().context().deleteDirectory();
         }
 
         IoUtil.delete(harnessDir, true);
@@ -319,39 +319,38 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         {
             harness.awaitServiceOnStart();
 
-            final AeronCluster aeronCluster = AeronCluster.connect(
-                new AeronCluster.Context().lock(new NoOpLock()));
-
-            final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
-            final Publication publication = aeronCluster.ingressPublication();
-            final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer(maxMessageLength);
-
-            for (int i = 0; i < numMessages; i++)
+            try (AeronCluster aeronCluster = AeronCluster.connect(new AeronCluster.Context().lock(new NoOpLock())))
             {
-                final long messageCorrelationId = aeronCluster.context().aeron().nextCorrelationId();
-                final int length = (null == random) ? maxMessageLength : random.nextInt(maxMessageLength);
-                msgBuffer.putInt(0, i);
+                final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
+                final Publication publication = aeronCluster.ingressPublication();
+                final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer(maxMessageLength);
 
-                while (true)
+                for (int i = 0; i < numMessages; i++)
                 {
-                    final long result = sessionDecorator.offer(
-                        publication, messageCorrelationId, msgBuffer, 0, length);
-                    if (result > 0)
+                    final long messageCorrelationId = aeronCluster.context().aeron().nextCorrelationId();
+                    final int length = null == random ? maxMessageLength : random.nextInt(maxMessageLength);
+                    msgBuffer.putInt(0, i);
+
+                    while (true)
                     {
-                        break;
+                        final long result = sessionDecorator.offer(
+                            publication, messageCorrelationId, msgBuffer, 0, length);
+                        if (result > 0)
+                        {
+                            break;
+                        }
+
+                        checkOfferResult(result);
+                        TestUtil.checkInterruptedStatus();
+
+                        Thread.yield();
                     }
-
-                    checkOfferResult(result);
-                    TestUtil.checkInterruptedStatus();
-
-                    Thread.yield();
                 }
+
+                harness.awaitServiceOnMessageCounter(numMessages);
+
+                return publication.position();
             }
-
-
-            harness.awaitServiceOnMessageCounter(numMessages);
-
-            return publication.position();
         }
     }
 
@@ -378,12 +377,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 final int followerMemberId,
                 final boolean vote)
             {
-                stream.format(
-                    "onVote %d %d %d %s%n",
-                    candidateTermId,
-                    candidateMemberId,
-                    followerMemberId,
-                    vote);
+                stream.format("onVote %d %d %d %s%n", candidateTermId, candidateMemberId, followerMemberId, vote);
 
                 nextListener.onVote(candidateTermId, candidateMemberId, followerMemberId, vote);
             }

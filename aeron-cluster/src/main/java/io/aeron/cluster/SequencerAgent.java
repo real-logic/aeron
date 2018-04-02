@@ -720,7 +720,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             final int logSessionId = lastStepIndex + 1;
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
             final String channel = channelUri.toString();
-            final long recordingId = recordingCatchUp.recordingIdToExtend();
 
             try (Subscription subscription = aeron.addSubscription(channel, streamId))
             {
@@ -729,7 +728,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 awaitServiceAcks();
 
                 final int replaySessionId = (int)archive.startReplay(
-                    recordingId, fromPosition, length, channel, streamId);
+                    recordingCatchUp.recordingIdToExtend(), fromPosition, length, channel, streamId);
 
                 final Image image = awaitImage(replaySessionId, subscription);
                 replayTerm(image, targetPosition, counter);

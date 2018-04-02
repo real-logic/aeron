@@ -67,8 +67,6 @@ class MemberStatusPublisher
     public boolean vote(
         final Publication publication,
         final long candidateTermId,
-        final long lastBaseLogPosition,
-        final long lastTermPosition,
         final int candidateMemberId,
         final int followerMemberId,
         final boolean vote)
@@ -84,8 +82,6 @@ class MemberStatusPublisher
                 voteEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .candidateTermId(candidateTermId)
-                    .lastBaseLogPosition(lastBaseLogPosition)
-                    .lastTermPosition(lastTermPosition)
                     .candidateMemberId(candidateMemberId)
                     .followerMemberId(followerMemberId)
                     .vote(vote ? BooleanType.TRUE : BooleanType.FALSE);

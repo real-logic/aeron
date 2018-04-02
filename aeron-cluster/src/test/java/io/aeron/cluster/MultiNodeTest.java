@@ -74,15 +74,11 @@ public class MultiNodeTest
                 harness.memberStatusPublication(1),
                 0,
                 0,
-                0,
-                0,
                 1,
                 true);
 
             harness.memberStatusPublisher().vote(
                 harness.memberStatusPublication(2),
-                0,
-                0,
                 0,
                 0,
                 2,
@@ -122,7 +118,7 @@ public class MultiNodeTest
 
             harness.awaitMemberStatusMessage(1);
 
-            verify(mockMemberStatusListeners[1]).onVote(0, 0, 0, 1, 0, true);
+            verify(mockMemberStatusListeners[1]).onVote(0, 1, 0, true);
 
             final int logSessionId = 123456;
             final ChannelUri channelUri = ChannelUri.parse(context.logChannel());
@@ -166,16 +162,12 @@ public class MultiNodeTest
                 harness.memberStatusPublication(1),
                 1,
                 0,
-                position,
-                0,
                 1,
                 true);
 
             harness.memberStatusPublisher().vote(
                 harness.memberStatusPublication(2),
                 1,
-                0,
-                position,
                 0,
                 2,
                 true);
@@ -219,7 +211,7 @@ public class MultiNodeTest
 
             harness.awaitMemberStatusMessage(1);
 
-            verify(mockMemberStatusListeners[1]).onVote(1, 0, position, 1, 0, true);
+            verify(mockMemberStatusListeners[1]).onVote(1, 1, 0, true);
 
             final int logSessionId = 123456;
             final ChannelUri channelUri = ChannelUri.parse(context.logChannel());

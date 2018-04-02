@@ -17,22 +17,11 @@ package io.aeron.cluster;
 
 public interface MemberStatusListener
 {
-    void onRequestVote(
-        long candidateTermId,
-        long lastBaseLogPosition,
-        long lastTermPosition,
-        int candidateId);
+    void onRequestVote(long candidateTermId, long lastBaseLogPosition, long lastTermPosition, int candidateId);
 
-    void onVote(
-        long candidateTermId,
-        long lastBaseLogPosition,
-        long lastTermPosition,
-        int candidateMemberId,
-        int followerMemberId,
-        boolean vote);
+    void onVote(long candidateTermId, int candidateMemberId, int followerMemberId, boolean vote);
 
     void onAppendedPosition(long termPosition, long leadershipTermId, int followerMemberId);
 
-    void onCommitPosition(
-        long termPosition, long leadershipTermId, int leaderMemberId, int logSessionId);
+    void onCommitPosition(long termPosition, long leadershipTermId, int leaderMemberId, int logSessionId);
 }

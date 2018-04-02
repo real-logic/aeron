@@ -467,19 +467,44 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
     }
 
-    public void onVote(
+    public void onRequestVote(
         final long candidateTermId,
         final long lastBaseLogPosition,
         final long lastTermPosition,
-        final int candidateMemberId,
-        final int followerMemberId,
-        final boolean vote)
+        final int candidateId)
     {
-        if (Cluster.Role.CANDIDATE == role &&
+        if (Cluster.Role.FOLLOWER == role &&
             candidateTermId == leadershipTermId &&
-            lastBaseLogPosition == recoveryPlan.lastTermBaseLogPosition &&
-            lastTermPosition == recoveryPlan.lastTermPositionAppended &&
-            candidateMemberId == memberId)
+            lastBaseLogPosition == recoveryPlan.lastTermBaseLogPosition)
+        {
+            if (lastTermPosition >= recoveryPlan.lastTermPositionAppended)
+            {
+                votedForMemberId = candidateId;
+                recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, epochClock.time(), votedForMemberId);
+                sendVote(candidateTermId, candidateId, true);
+
+                if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
+                {
+                    recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
+                        ctx.archiveContext(),
+                        recoveryPlan,
+                        leaderMember,
+                        aeron.countersReader(),
+                        ctx.replayChannel(),
+                        ctx.replayStreamId());
+                }
+
+                return;
+            }
+        }
+
+        sendVote(candidateTermId, candidateId, false);
+    }
+
+    public void onVote(
+        final long candidateTermId, final int candidateMemberId, final int followerMemberId, final boolean vote)
+    {
+        if (Cluster.Role.CANDIDATE == role && candidateTermId == leadershipTermId && candidateMemberId == memberId)
         {
             if (vote)
             {
@@ -720,40 +745,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
     }
 
-    public void onRequestVote(
-        final long candidateTermId,
-        final long lastBaseLogPosition,
-        final long lastTermPosition,
-        final int candidateId)
-    {
-        if (Cluster.Role.FOLLOWER == role &&
-            candidateTermId == leadershipTermId &&
-            lastBaseLogPosition == recoveryPlan.lastTermBaseLogPosition)
-        {
-            if (lastTermPosition >= recoveryPlan.lastTermPositionAppended)
-            {
-                votedForMemberId = candidateId;
-                recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, epochClock.time(), votedForMemberId);
-                sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, true);
-
-                if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
-                {
-                    recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
-                        ctx.archiveContext(),
-                        recoveryPlan,
-                        leaderMember,
-                        aeron.countersReader(),
-                        ctx.replayChannel(),
-                        ctx.replayStreamId());
-                }
-
-                return;
-            }
-        }
-
-        sendVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId, false);
-    }
-
     private int slowTickCycle(final long nowMs)
     {
         int workCount = 0;
@@ -848,20 +839,13 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         return 1;
     }
 
-    private void sendVote(
-        final long candidateTermId,
-        final long lastBaseLogPosition,
-        final long lastTermPosition,
-        final int candidateId,
-        final boolean vote)
+    private void sendVote(final long candidateTermId, final int candidateId, final boolean vote)
     {
         idleStrategy.reset();
 
         while (!memberStatusPublisher.vote(
             clusterMembers[candidateId].publication(),
             candidateTermId,
-            lastBaseLogPosition,
-            lastTermPosition,
             candidateId,
             memberId,
             vote))

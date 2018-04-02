@@ -374,29 +374,24 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
             public void onVote(
                 final long candidateTermId,
-                final long lastBaseLogPosition,
-                final long lastTermPosition,
                 final int candidateMemberId,
                 final int followerMemberId,
                 final boolean vote)
             {
                 stream.format(
-                    "onVote %d %d %d %d %d %s%n",
+                    "onVote %d %d %d %s%n",
                     candidateTermId,
-                    lastBaseLogPosition,
-                    lastTermPosition,
                     candidateMemberId,
                     followerMemberId,
                     vote);
 
-                nextListener.onVote(
-                    candidateTermId, lastBaseLogPosition, lastTermPosition, candidateMemberId, followerMemberId, vote);
+                nextListener.onVote(candidateTermId, candidateMemberId, followerMemberId, vote);
             }
 
             public void onAppendedPosition(
                 final long termPosition, final long leadershipTermId, final int followerMemberId)
             {
-                stream.format("onAppenedPosition %d %d %d%n", termPosition, leadershipTermId, followerMemberId);
+                stream.format("onAppendedPosition %d %d %d%n", termPosition, leadershipTermId, followerMemberId);
                 nextListener.onAppendedPosition(termPosition, leadershipTermId, followerMemberId);
             }
 

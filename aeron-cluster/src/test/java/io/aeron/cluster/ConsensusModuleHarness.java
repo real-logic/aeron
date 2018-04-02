@@ -34,7 +34,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpLock;
-import org.agrona.concurrent.SleepingIdleStrategy;
+import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -55,7 +55,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final ClusteredService service;
     private final AtomicBoolean serviceOnStart = new AtomicBoolean();
     private final AtomicInteger serviceOnMessageCounter = new AtomicInteger(0);
-    private final IdleStrategy idleStrategy = new SleepingIdleStrategy(1);
+    private final IdleStrategy idleStrategy = new SleepingMillisIdleStrategy(1);
     private final ClusterMember[] members;
     private final Subscription[] memberStatusSubscriptions;
     private final MemberStatusAdapter[] memberStatusAdapters;
@@ -101,7 +101,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         clusteredServiceContainer = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredServiceDir(serviceDir)
-                .idleStrategySupplier(() -> new SleepingIdleStrategy(1))
+                .idleStrategySupplier(() -> new SleepingMillisIdleStrategy(1))
                 .clusteredService(this)
                 .terminationHook(() -> {})
                 .errorHandler(Throwable::printStackTrace)

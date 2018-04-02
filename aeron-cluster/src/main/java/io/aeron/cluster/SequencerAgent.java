@@ -480,7 +480,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             if (lastTermPosition >= recoveryPlan.lastTermPositionAppended)
             {
                 votedForMemberId = candidateId;
-                recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, epochClock.time(), votedForMemberId);
+                final long logPosition = lastBaseLogPosition + lastTermPosition;
+                recordingLog.appendTerm(leadershipTermId, logPosition, epochClock.time(), votedForMemberId);
                 sendVote(candidateTermId, candidateId, true);
 
                 if (recoveryPlan.lastTermPositionAppended < lastTermPosition)

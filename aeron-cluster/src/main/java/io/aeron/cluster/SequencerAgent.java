@@ -701,9 +701,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     void catchupLog(final RecordingCatchUp recordingCatchUp)
     {
-        final int streamId = ctx.replayStreamId();
-        final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
-
         final long fromPosition = recordingCatchUp.fromPosition();
         final long targetPosition = recordingCatchUp.targetPosition();
         final long length = targetPosition - fromPosition;
@@ -715,18 +712,18 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         termBaseLogPosition = entry.termBaseLogPosition;
         leadershipTermId = entry.leadershipTermId;
 
-        final int logSessionId = lastStepIndex + 1;
-        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        final String channel = channelUri.toString();
-        final long recordingId = recordingCatchUp.recordingIdToExtend();
-
         try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
         {
-            serviceAckCount = 0;
-            logAdapter = null;
+            final int streamId = ctx.replayStreamId();
+            final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
+            final int logSessionId = lastStepIndex + 1;
+            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+            final String channel = channelUri.toString();
+            final long recordingId = recordingCatchUp.recordingIdToExtend();
 
             try (Subscription subscription = aeron.addSubscription(channel, streamId))
             {
+                serviceAckCount = 0;
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, channel);
                 awaitServiceAcks();
 
@@ -734,8 +731,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                     recordingId, fromPosition, length, channel, streamId);
 
                 final Image image = awaitImage(replaySessionId, subscription);
-
-                serviceAckCount = 0;
                 replayTerm(image, targetPosition, counter);
 
                 final long termPosition = image.position();

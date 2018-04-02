@@ -143,11 +143,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         int workCount = logAdapter.poll();
         if (0 == workCount)
         {
-            if (logAdapter.image().isClosed())
-            {
-                throw new AgentTerminationException("Image closed unexpectedly");
-            }
-
             if (!CommitPos.isActive(aeron.countersReader(), logAdapter.upperBoundCounterId()))
             {
                 throw new AgentTerminationException("Commit position is not active");

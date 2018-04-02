@@ -63,6 +63,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final boolean cleanOnClose;
     private final File harnessDir;
+    private long lastTermPosition = -1;
     private int thisMemberIndex = -1;
     private int leaderIndex = -1;
 
@@ -156,9 +157,9 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
     public void close()
     {
-        CloseHelper.close(aeron);
         CloseHelper.close(clusteredServiceContainer);
         CloseHelper.close(clusteredMediaDriver);
+        CloseHelper.close(aeron);
 
         if (cleanOnClose)
         {
@@ -349,7 +350,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
                 harness.awaitServiceOnMessageCounter(numMessages);
 
-                return publication.position();
+                return publication.position() + 96; // 96 is for the close session appended at the end.
             }
         }
     }

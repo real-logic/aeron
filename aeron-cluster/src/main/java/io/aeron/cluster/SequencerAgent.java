@@ -106,9 +106,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private RecordingCatchUp recordingCatchUp;
 
     SequencerAgent(
-        final ConsensusModule.Context ctx,
-        final EgressPublisher egressPublisher,
-        final LogPublisher logPublisher)
+        final ConsensusModule.Context ctx, final EgressPublisher egressPublisher, final LogPublisher logPublisher)
     {
         this.ctx = ctx;
         this.aeron = ctx.aeron();
@@ -468,10 +466,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     }
 
     public void onRequestVote(
-        final long candidateTermId,
-        final long lastBaseLogPosition,
-        final long lastTermPosition,
-        final int candidateId)
+        final long candidateTermId, final long lastBaseLogPosition, final long lastTermPosition, final int candidateId)
     {
         if (Cluster.Role.FOLLOWER == role &&
             candidateTermId == leadershipTermId &&
@@ -560,11 +555,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         clusterRoleCounter.setOrdered(role.code());
     }
 
-    Cluster.Role role()
-    {
-        return role;
-    }
-
     void logRecordingPositionCounter(final ReadableCounter logRecordingPosition)
     {
         this.logRecordingPosition = logRecordingPosition;
@@ -643,10 +633,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     @SuppressWarnings("unused")
     void onReplaySessionClose(
-        final long correlationId,
-        final long clusterSessionId,
-        final long timestamp,
-        final CloseReason closeReason)
+        final long correlationId, final long clusterSessionId, final long timestamp, final CloseReason closeReason)
     {
         cachedEpochClock.update(timestamp);
         sessionByIdMap.remove(clusterSessionId).close();
@@ -839,11 +826,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         idleStrategy.reset();
 
         while (!memberStatusPublisher.vote(
-            clusterMembers[candidateId].publication(),
-            candidateTermId,
-            candidateId,
-            memberId,
-            vote))
+            clusterMembers[candidateId].publication(), candidateTermId, candidateId, memberId, vote))
         {
             idle();
         }
@@ -1079,11 +1062,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             if (member != thisMember)
             {
                 while (!memberStatusPublisher.requestVote(
-                    member.publication(),
-                    leadershipTermId,
-                    lastLogPosition,
-                    lastTermPosition,
-                    memberId))
+                    member.publication(), leadershipTermId, lastLogPosition, lastTermPosition, memberId))
                 {
                     idle();
                 }

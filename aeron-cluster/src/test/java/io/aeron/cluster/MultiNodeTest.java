@@ -280,14 +280,14 @@ public class MultiNodeTest
         final MemberStatusListener[] mockLeaderStatusListeners = new MemberStatusListener[3];
 
         mockFollowerStatusListeners[2] = mock(MemberStatusListener.class);
-        mockLeaderStatusListeners[2] = mock(MemberStatusListener.class);
 
-//        try (ConsensusModuleHarness leaderHarness = new ConsensusModuleHarness(
-//            leaderContext, mockLeaderService, mockLeaderStatusListeners, false, true);
-//            ConsensusModuleHarness followerHarness = new ConsensusModuleHarness(
-//            followerContext, mockFollowerService, mockFollowerStatusListeners, false, true))
-//        {
-//
-//        }
+        try (ConsensusModuleHarness leaderHarness = new ConsensusModuleHarness(
+            leaderContext, mockLeaderService, mockLeaderStatusListeners, false, true);
+            ConsensusModuleHarness followerHarness = new ConsensusModuleHarness(
+                followerContext, mockFollowerService, mockFollowerStatusListeners, false, true))
+        {
+            leaderHarness.awaitServiceOnStart();
+            followerHarness.awaitServiceOnStart();
+        }
     }
 }

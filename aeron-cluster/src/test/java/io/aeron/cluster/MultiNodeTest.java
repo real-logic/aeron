@@ -19,9 +19,14 @@ import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.Publication;
 import io.aeron.cluster.service.ClusteredService;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.io.File;
+import java.nio.file.Files;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -58,7 +63,6 @@ public class MultiNodeTest
 
         final ConsensusModule.Context context = new ConsensusModule.Context()
             .clusterMembers(THREE_NODE_MEMBERS)
-            .memberStatusChannel("aeron:udp?endpoint=localhost:9020")
             .appointedLeaderId(0);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
@@ -107,7 +111,6 @@ public class MultiNodeTest
 
         final ConsensusModule.Context context = new ConsensusModule.Context()
             .clusterMembers(THREE_NODE_MEMBERS)
-            .memberStatusChannel("aeron:udp?endpoint=localhost:9020")
             .appointedLeaderId(1);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
@@ -141,12 +144,12 @@ public class MultiNodeTest
     @Test(timeout = 10_000L)
     public void shouldBecomeLeaderStaticThreeNodeConfigWithElectionFromPreviousLog()
     {
-        final long position = ConsensusModuleHarness.makeRecordingLog(10, 100, null, new ConsensusModule.Context());
+        final long position = ConsensusModuleHarness.makeRecordingLog(
+            10, 100, null, null, new ConsensusModule.Context());
         final ClusteredService mockService = mock(ClusteredService.class);
 
         final ConsensusModule.Context context = new ConsensusModule.Context()
             .clusterMembers(THREE_NODE_MEMBERS)
-            .memberStatusChannel("aeron:udp?endpoint=localhost:9020")
             .appointedLeaderId(0);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
@@ -195,12 +198,12 @@ public class MultiNodeTest
     @Test(timeout = 10_000L)
     public void shouldBecomeFollowerStaticThreeNodeConfigWithElectionFromPreviousLog()
     {
-        final long position = ConsensusModuleHarness.makeRecordingLog(10, 100, null, new ConsensusModule.Context());
+        final long position = ConsensusModuleHarness.makeRecordingLog(
+            10, 100, null, null, new ConsensusModule.Context());
         final ClusteredService mockService = mock(ClusteredService.class);
 
         final ConsensusModule.Context context = new ConsensusModule.Context()
             .clusterMembers(THREE_NODE_MEMBERS)
-            .memberStatusChannel("aeron:udp?endpoint=localhost:9020")
             .appointedLeaderId(1);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
@@ -233,5 +236,58 @@ public class MultiNodeTest
             verify(mockService, times(10))
                 .onSessionMessage(anyLong(), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
         }
+    }
+
+    @Ignore
+    @Test(timeout = 10_000L)
+    public void shouldBecomeFollowerStaticThreeNodeConfigWithElectionFromPreviousLogWithCatchUp()
+    {
+        final ConsensusModule.Context followerContext = new ConsensusModule.Context()
+            .clusterMembers(THREE_NODE_MEMBERS)
+            .clusterMemberId(0)
+            .appointedLeaderId(1);
+
+        final ConsensusModule.Context leaderContext = new ConsensusModule.Context()
+            .clusterMembers(THREE_NODE_MEMBERS)
+            .clusterMemberId(1)
+            .appointedLeaderId(1);
+
+        final File followerHarnessDir = ConsensusModuleHarness.harnessDirectory(0);
+        final File leaderHarnessDir = ConsensusModuleHarness.harnessDirectory(1);
+
+        IoUtil.delete(followerHarnessDir, true);
+        IoUtil.delete(leaderHarnessDir, true);
+
+        ConsensusModuleHarness.makeRecordingLog(
+            10, 100, null, null, new ConsensusModule.Context());
+
+        try
+        {
+            Files.move(followerHarnessDir.toPath(), leaderHarnessDir.toPath());
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        ConsensusModuleHarness.makeTruncatedRecordingLog(
+            10, 5, 100, null, new ConsensusModule.Context());
+
+        final ClusteredService mockFollowerService = mock(ClusteredService.class);
+        final ClusteredService mockLeaderService = mock(ClusteredService.class);
+
+        final MemberStatusListener[] mockFollowerStatusListeners = new MemberStatusListener[3];
+        final MemberStatusListener[] mockLeaderStatusListeners = new MemberStatusListener[3];
+
+        mockFollowerStatusListeners[2] = mock(MemberStatusListener.class);
+        mockLeaderStatusListeners[2] = mock(MemberStatusListener.class);
+
+//        try (ConsensusModuleHarness leaderHarness = new ConsensusModuleHarness(
+//            leaderContext, mockLeaderService, mockLeaderStatusListeners, false, true);
+//            ConsensusModuleHarness followerHarness = new ConsensusModuleHarness(
+//            followerContext, mockFollowerService, mockFollowerStatusListeners, false, true))
+//        {
+//
+//        }
     }
 }

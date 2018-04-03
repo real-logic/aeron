@@ -141,15 +141,8 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         }
 
         int workCount = logAdapter.poll();
-        if (0 == workCount)
-        {
-            if (!CommitPos.isActive(aeron.countersReader(), logAdapter.upperBoundCounterId()))
-            {
-                throw new AgentTerminationException("Commit position is not active");
-            }
-        }
-
         workCount += serviceControlAdapter.poll();
+
         if (activeLog != null)
         {
             switchActiveLog();

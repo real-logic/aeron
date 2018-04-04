@@ -77,18 +77,18 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private int leaderIndex = -1;
 
     ConsensusModuleHarness(
-        final ConsensusModule.Context consenusModuleContext,
+        final ConsensusModule.Context consensusModuleContext,
         final ClusteredService service,
         final MemberStatusListener[] memberStatusListeners,
         final boolean isCleanStart,
         final boolean cleanOnClose)
     {
         this.service = service;
-        this.members = ClusterMember.parse(consenusModuleContext.clusterMembers());
-        this.leaderIndex = consenusModuleContext.appointedLeaderId();
-        this.thisMemberIndex = consenusModuleContext.clusterMemberId();
+        this.members = ClusterMember.parse(consensusModuleContext.clusterMembers());
+        this.leaderIndex = consensusModuleContext.appointedLeaderId();
+        this.thisMemberIndex = consensusModuleContext.clusterMemberId();
 
-        harnessDir = harnessDirectory(consenusModuleContext.clusterMemberId());
+        harnessDir = harnessDirectory(consensusModuleContext.clusterMemberId());
         final String mediaDriverPath = new File(harnessDir, DRIVER_DIRECTORY).getPath();
         final File clusterDir = new File(harnessDir, CONSENSUS_MODULE_DIRECTORY);
         final File archiveDir = new File(harnessDir, ARCHIVE_DIRECTORY);
@@ -103,10 +103,10 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         {
             ChannelUri channelUri;
 
-            channelUri = ChannelUri.parse(consenusModuleContext.memberStatusChannel());
+            channelUri = ChannelUri.parse(consensusModuleContext.memberStatusChannel());
             channelUri.put(ENDPOINT_PARAM_NAME, thisMember.memberFacingEndpoint());
 
-            consenusModuleContext.memberStatusChannel(channelUri.toString());
+            consensusModuleContext.memberStatusChannel(channelUri.toString());
 
             channelUri = ChannelUri.parse(archiveContext.controlChannel());
             channelUri.put(ENDPOINT_PARAM_NAME, thisMember.archiveEndpoint());
@@ -123,15 +123,15 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
             aeronArchiveContext.controlResponseChannel(controlResponseChannel);
 
-            channelUri = ChannelUri.parse(consenusModuleContext.ingressChannel());
+            channelUri = ChannelUri.parse(consensusModuleContext.ingressChannel());
             channelUri.put(ENDPOINT_PARAM_NAME, thisMember.clientFacingEndpoint());
 
-            consenusModuleContext.ingressChannel(channelUri.toString());
+            consensusModuleContext.ingressChannel(channelUri.toString());
 
-            channelUri = ChannelUri.parse(consenusModuleContext.logChannel());
+            channelUri = ChannelUri.parse(consensusModuleContext.logChannel());
             channelUri.put(ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
 
-            consenusModuleContext.logChannel(channelUri.toString());
+            consensusModuleContext.logChannel(channelUri.toString());
         }
 
         clusteredMediaDriver = ClusteredMediaDriver.launch(
@@ -148,7 +148,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .archiveDir(archiveDir)
                 .deleteArchiveOnStart(isCleanStart),
-            consenusModuleContext
+            consensusModuleContext
                 .aeronDirectoryName(mediaDriverPath)
                 .clusterDir(clusterDir)
                 .archiveContext(aeronArchiveContext.clone())
@@ -175,12 +175,12 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
         for (int i = 0; i < members.length; i++)
         {
-            if (consenusModuleContext.clusterMemberId() != members[i].id() && null != memberStatusListeners[i])
+            if (consensusModuleContext.clusterMemberId() != members[i].id() && null != memberStatusListeners[i])
             {
-                final ChannelUri memberStatusUri = ChannelUri.parse(consenusModuleContext.memberStatusChannel());
+                final ChannelUri memberStatusUri = ChannelUri.parse(consensusModuleContext.memberStatusChannel());
                 memberStatusUri.put(ENDPOINT_PARAM_NAME, members[i].memberFacingEndpoint());
 
-                final int statusStreamId = consenusModuleContext.memberStatusStreamId();
+                final int statusStreamId = consensusModuleContext.memberStatusStreamId();
 
                 memberStatusSubscriptions[i] =
                     aeron.addSubscription(memberStatusUri.toString(), statusStreamId);
@@ -188,7 +188,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 memberStatusAdapters[i] = new MemberStatusAdapter(
                     memberStatusSubscriptions[i], memberStatusListeners[i]);
                 memberStatusPublications[i] = aeron.addExclusivePublication(
-                    consenusModuleContext.memberStatusChannel(), consenusModuleContext.memberStatusStreamId());
+                    consensusModuleContext.memberStatusChannel(), consensusModuleContext.memberStatusStreamId());
 
                 idleStrategy.reset();
                 while (!memberStatusSubscriptions[i].isConnected())

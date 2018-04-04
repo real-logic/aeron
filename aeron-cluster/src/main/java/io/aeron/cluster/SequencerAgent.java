@@ -695,7 +695,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         this.nextSessionId = nextSessionId;
     }
 
-    void catchupLog(final RecordingCatchUp recordingCatchUp)
+    private void catchupLog(final RecordingCatchUp recordingCatchUp)
     {
         final long fromPosition = recordingCatchUp.fromPosition();
         final long targetPosition = recordingCatchUp.targetPosition();

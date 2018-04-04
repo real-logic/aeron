@@ -184,6 +184,8 @@ class RecordingCatchUp implements AutoCloseable
         {
             final RecordingLog.RecoveryPlan leaderRecoveryPlan = new RecordingLog.RecoveryPlan(data, offset);
 
+            System.out.println(leaderRecoveryPlan);
+
             final RecordingLog.ReplayStep localLastStep =
                 localRecoveryPlan.termSteps.get(localRecoveryPlan.termSteps.size() - 1);
             final RecordingLog.ReplayStep leaderLastStep =
@@ -222,7 +224,10 @@ class RecordingCatchUp implements AutoCloseable
                 .endpoint(clusterMembers[leaderMemberId].archiveEndpoint());
 
             final AeronArchive.Context leaderArchiveContext = new AeronArchive.Context()
-                .controlRequestChannel(archiveControlRequestChannel.build());
+                .aeron(context.aeron())
+                .controlRequestChannel(archiveControlRequestChannel.build())
+                .controlResponseChannel(dstArchive.context().controlResponseChannel())
+                .controlResponseStreamId(dstArchive.context().controlResponseStreamId() + 1);
 
             // TODO: use non-blocking connect
 

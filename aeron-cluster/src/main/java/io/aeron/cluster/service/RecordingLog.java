@@ -284,14 +284,14 @@ public class RecordingLog
 
             if (null != snapshotStep)
             {
-                snapshotStep.encode(stepEncoder);
                 stepEncoder.next();
+                snapshotStep.encode(stepEncoder);
             }
 
             for (int i = 0, size = termSteps.size(); i < size; i++)
             {
-                termSteps.get(i).encode(stepEncoder);
                 stepEncoder.next();
+                termSteps.get(i).encode(stepEncoder);
             }
 
             return encoder.encodedLength();

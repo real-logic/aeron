@@ -260,7 +260,7 @@ public class MultiNodeTest
         IoUtil.delete(followerHarnessDir, true);
         IoUtil.delete(leaderHarnessDir, true);
 
-        ConsensusModuleHarness.makeRecordingLog(
+        final long position = ConsensusModuleHarness.makeRecordingLog(
             10, 100, null, null, new ConsensusModule.Context());
 
         try
@@ -281,13 +281,29 @@ public class MultiNodeTest
         final MemberStatusListener[] mockFollowerStatusListeners = new MemberStatusListener[3];
         final MemberStatusListener[] mockLeaderStatusListeners = new MemberStatusListener[3];
 
-        mockFollowerStatusListeners[2] = mock(MemberStatusListener.class);
+        mockLeaderStatusListeners[2] = mock(MemberStatusListener.class);
 
         try (ConsensusModuleHarness leaderHarness = new ConsensusModuleHarness(
             leaderContext, mockLeaderService, mockLeaderStatusListeners, false, true);
             ConsensusModuleHarness followerHarness = new ConsensusModuleHarness(
                 followerContext, mockFollowerService, mockFollowerStatusListeners, false, true))
         {
+            leaderHarness.awaitMemberStatusMessage(2);
+
+            verify(mockLeaderStatusListeners[2]).onRequestVote(1, 0, position, 1);
+
+            leaderHarness.memberStatusPublisher().placeVote(
+                leaderHarness.memberStatusPublication(2),
+                1,
+                1,
+                2,
+                true);
+
+            leaderHarness.awaitMemberStatusMessage(2);
+
+            verify(mockLeaderStatusListeners[2]).onNewLeadershipTerm(
+                eq(0L), eq(position), eq(1L), eq(0), anyInt());
+
             leaderHarness.awaitServiceOnStart();
             followerHarness.awaitServiceOnStart();
             followerHarness.awaitServiceOnMessageCounter(10);

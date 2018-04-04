@@ -1174,7 +1174,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                     if (member != thisMember)
                     {
                         memberStatusPublisher.commitPosition(
-                            member.publication(), termBaseLogPosition, leadershipTermId, memberId, logSessionId);
+                            member.publication(), 0, leadershipTermId, memberId, logSessionId);
                     }
                 }
             }

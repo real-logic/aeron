@@ -178,8 +178,8 @@ public class MultiNodeTest
             harness.awaitMemberStatusMessage(1);
             harness.awaitMemberStatusMessage(2);
 
-            verify(mockMemberStatusListeners[1]).onCommitPosition(eq(position), eq(1L), eq(0), anyInt());
-            verify(mockMemberStatusListeners[2]).onCommitPosition(eq(position), eq(1L), eq(0), anyInt());
+            verify(mockMemberStatusListeners[1]).onCommitPosition(eq(0L), eq(1L), eq(0), anyInt());
+            verify(mockMemberStatusListeners[2]).onCommitPosition(eq(0L), eq(1L), eq(0), anyInt());
 
             harness.memberStatusPublisher().appendedPosition(
                 harness.memberStatusPublication(1), position, 1, 1);

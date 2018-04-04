@@ -31,7 +31,6 @@ class EgressPublisher
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
     private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
-    private final MembershipQueryResponseEncoder membershipQueryResponseEncoder = new MembershipQueryResponseEncoder();
 
     public boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
     {
@@ -79,36 +78,6 @@ class EgressPublisher
             .putEncodedChallenge(encodedChallenge, 0, encodedChallenge.length);
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + challengeEncoder.encodedLength();
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.offer(buffer, 0, length);
-            if (result > 0)
-            {
-                return true;
-            }
-        }
-        while (--attempts > 0);
-
-        return false;
-    }
-
-    public boolean sendMembershipResponse(final ClusterSession session, final byte[] encodedResponse)
-    {
-        final Publication publication = session.responsePublication();
-        if (!publication.isConnected())
-        {
-            return false;
-        }
-
-        membershipQueryResponseEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .clusterSessionId(session.id())
-            .correlationId(session.lastCorrelationId())
-            .putEncodedResponse(encodedResponse, 0, encodedResponse.length);
-
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + membershipQueryResponseEncoder.encodedLength();
 
         int attempts = SEND_ATTEMPTS;
         do

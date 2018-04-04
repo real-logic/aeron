@@ -23,12 +23,10 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.*;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -55,7 +53,6 @@ public final class AeronCluster implements AutoCloseable
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionKeepAliveRequestEncoder keepAliveRequestEncoder = new SessionKeepAliveRequestEncoder();
-    private final MembershipQueryEncoder membershipQueryEncoder = new MembershipQueryEncoder();
 
     /**
      * Connect to the cluster using default configuration.
@@ -229,86 +226,6 @@ public final class AeronCluster implements AutoCloseable
             }
 
             return false;
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Query cluster member for endpoint information.
-     * <p>
-     * <code>
-     * id=num,memberStatus=member-facing:port,log=log:port,archive=archive:port
-     * </code>
-     *
-     * @return result of query.
-     */
-    public String getMemberEndpoints()
-    {
-        lock.lock();
-        try
-        {
-            final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
-            final long correlationId = sendMembershipQuery(MembershipQueryType.ENDPOINTS, deadlineNs);
-            final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
-
-            while (true)
-            {
-                pollNextResponse(deadlineNs, correlationId, poller);
-
-                if (poller.correlationId() == correlationId)
-                {
-                    if (poller.templateId() == MembershipQueryResponseDecoder.TEMPLATE_ID)
-                    {
-                        return new String(poller.encodedQueryResponse(), US_ASCII);
-                    }
-                    else if (poller.eventCode() == EventCode.ERROR)
-                    {
-                        throw new IllegalStateException(poller.detail());
-                    }
-                }
-            }
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Query cluster member for encoded recovery plan.
-     *
-     * @return encoded {@link RecordingLog.RecoveryPlan}
-     */
-    public ByteBuffer getRecoveryPlan()
-    {
-        lock.lock();
-        try
-        {
-            final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
-            final long correlationId = sendMembershipQuery(MembershipQueryType.RECOVERY_PLAN, deadlineNs);
-            final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
-
-            while (true)
-            {
-                pollNextResponse(deadlineNs, correlationId, poller);
-
-                if (poller.correlationId() == correlationId)
-                {
-                    if (poller.templateId() == MembershipQueryResponseDecoder.TEMPLATE_ID)
-                    {
-                        final byte[] recoveryPlan = poller.encodedQueryResponse();
-
-                        return ByteBuffer.wrap(recoveryPlan);
-                    }
-                    else if (poller.eventCode() == EventCode.ERROR)
-                    {
-                        throw new IllegalStateException(poller.detail());
-                    }
-                }
-            }
         }
         finally
         {
@@ -525,44 +442,6 @@ public final class AeronCluster implements AutoCloseable
             if (nanoClock.nanoTime() > deadlineNs)
             {
                 throw new TimeoutException("Failed to connect to cluster");
-            }
-
-            idleStrategy.idle();
-        }
-
-        return correlationId;
-    }
-
-    private long sendMembershipQuery(final MembershipQueryType queryType, final long deadlineNs)
-    {
-        final long correlationId = aeron.nextCorrelationId();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + MembershipQueryEncoder.BLOCK_LENGTH;
-        int attempts = SEND_ATTEMPTS;
-
-        idleStrategy.reset();
-
-        while (true)
-        {
-            final long result = publication.tryClaim(length, bufferClaim);
-
-            if (result > 0)
-            {
-                membershipQueryEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .clusterSessionId(clusterSessionId)
-                    .queryType(queryType);
-
-                bufferClaim.commit();
-
-                break;
-            }
-
-            checkResult(result);
-
-            if (--attempts <= 0 || nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("Failed to send query");
             }
 
             idleStrategy.idle();

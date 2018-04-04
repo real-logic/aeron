@@ -23,8 +23,6 @@ import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
 
-import static io.aeron.cluster.ClusterSession.Capability.NONE;
-
 class ClusterSession implements AutoCloseable
 {
     public static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
@@ -34,29 +32,6 @@ class ClusterSession implements AutoCloseable
     enum State
     {
         INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSED
-    }
-
-    /**
-     * What a client is capable of doing.
-     */
-    enum Capability
-    {
-        /**
-         * No capability.
-         */
-        NONE,
-
-        /**
-         * Client can send/receive to/from cluster and can act as a normal client. Can not query endpoints and
-         * recording log
-         */
-        CLIENT,
-
-        /**
-         * Client can send/receive to/from cluster and can query cluster endpoints and recording log.
-         * Normally reserved for cluster members only.
-         */
-        CLIENT_AND_MEMBER
     }
 
     private long timeOfLastActivityMs;
@@ -69,8 +44,6 @@ class ClusterSession implements AutoCloseable
     private State state = State.INIT;
     private CloseReason closeReason = CloseReason.NULL_VAL;
     private byte[] encodedPrincipal = NULL_PRINCIPAL;
-    private byte[] encodedMembershipQueryResponse;
-    private Capability capability = NONE;
 
     ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
     {
@@ -141,12 +114,7 @@ class ClusterSession implements AutoCloseable
         this.state = state;
     }
 
-    Capability capability()
-    {
-        return capability;
-    }
-
-    void authenticate(final byte[] encodedPrincipal, final Capability capability)
+    void authenticate(final byte[] encodedPrincipal)
     {
         if (encodedPrincipal != null)
         {
@@ -154,7 +122,6 @@ class ClusterSession implements AutoCloseable
         }
 
         this.state = State.AUTHENTICATED;
-        this.capability = capability;
     }
 
     void open(final long openedTermPosition)
@@ -195,16 +162,6 @@ class ClusterSession implements AutoCloseable
         return openedTermPosition;
     }
 
-    void encodedMembershipQueryResponse(final byte[] encodedResponse)
-    {
-        encodedMembershipQueryResponse = encodedResponse;
-    }
-
-    byte[] encodedMembershipQueryResponse()
-    {
-        return encodedMembershipQueryResponse;
-    }
-
     static void checkEncodedPrincipalLength(final byte[] encodedPrincipal)
     {
         if (null != encodedPrincipal && encodedPrincipal.length > MAX_ENCODED_PRINCIPAL_LENGTH)
@@ -228,7 +185,6 @@ class ClusterSession implements AutoCloseable
             ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +
             ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
-            ", encodedMembershipQueryResponse=" + Arrays.toString(encodedMembershipQueryResponse) +
             '}';
     }
 }

@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster;
 
+import org.agrona.DirectBuffer;
+
 public interface MemberStatusListener
 {
     void onRequestVote(long candidateTermId, long lastBaseLogPosition, long lastTermPosition, int candidateId);
@@ -24,4 +26,9 @@ public interface MemberStatusListener
     void onAppendedPosition(long termPosition, long leadershipTermId, int followerMemberId);
 
     void onCommitPosition(long termPosition, long leadershipTermId, int leaderMemberId, int logSessionId);
+
+    void onQueryResponse(
+        long correlationId, int requestMemberId, int responseMemberId, DirectBuffer data, int offset, int length);
+
+    void onRecoveryPlanQuery(long correlationId, int leaderMemberId, int requestMemberId);
 }

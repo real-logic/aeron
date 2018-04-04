@@ -27,7 +27,6 @@ import io.aeron.cluster.client.EgressAdapter;
 import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import io.aeron.cluster.client.RecordingLog;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
@@ -40,7 +39,6 @@ import org.agrona.concurrent.NoOpLock;
 import org.junit.*;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.core.Is.is;
@@ -197,33 +195,6 @@ public class ClusterTest
         {
             assertThat(service.messageCount(), is(MESSAGE_COUNT));
         }
-    }
-
-    @Test(timeout = 10_000)
-    public void shouldQueryLeaderForEndpoints()
-    {
-        final String endpoints = client.getMemberEndpoints();
-        final ClusterMember[] responseClusterMembers = ClusterMember.parse(endpoints);
-        final int appointedLeaderId = 0;
-        final ClusterMember responseLeader = responseClusterMembers[0];
-
-        assertThat(responseClusterMembers.length, is(1));
-        assertThat(responseLeader.id(), is(appointedLeaderId));
-
-        final ClusterMember[] configuredClusterMembers = ClusterMember.parse(CLUSTER_MEMBERS);
-        final ClusterMember configuredLeader = configuredClusterMembers[appointedLeaderId];
-
-        assertThat(responseLeader.clientFacingEndpoint(), is(configuredLeader.clientFacingEndpoint()));
-        assertThat(responseLeader.memberFacingEndpoint(), is(configuredLeader.memberFacingEndpoint()));
-        assertThat(responseLeader.logEndpoint(), is(configuredLeader.logEndpoint()));
-        assertThat(responseLeader.archiveEndpoint(), is(configuredLeader.archiveEndpoint()));
-    }
-
-    @Test(timeout = 10_000)
-    public void shouldQueryLeaderForRecoveryPlan()
-    {
-        final ByteBuffer encodedPlan = client.getRecoveryPlan();
-        final RecordingLog.RecoveryPlan recoveryPlan = new RecordingLog.RecoveryPlan(encodedPlan);
     }
 
     private static String memberSpecificPort(final String channel, final int memberId)

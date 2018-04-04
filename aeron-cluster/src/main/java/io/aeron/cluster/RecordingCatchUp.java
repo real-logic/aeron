@@ -20,8 +20,7 @@ import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.RecordingLog;
+import io.aeron.cluster.service.RecordingLog;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -102,20 +101,12 @@ class RecordingCatchUp implements AutoCloseable
     public static RecordingCatchUp catchUp(
         final AeronArchive.Context localArchiveContext,
         final RecordingLog.RecoveryPlan localRecoveryPlan,
-        final ClusterMember leader,
+        final RecordingLog.RecoveryPlan leaderRecoveryPlan,
+        final String leaderArchiveEndpoint,
         final CountersReader localCounters,
         final String replayChannel,
         final int replayStreamId)
     {
-        final AeronCluster.Context leaderContext = new AeronCluster.Context()
-            .clusterMemberEndpoints(leader.clientFacingEndpoint());
-        final RecordingLog.RecoveryPlan leaderRecoveryPlan;
-
-        try (AeronCluster aeronCluster = AeronCluster.connect(leaderContext))
-        {
-            leaderRecoveryPlan = new RecordingLog.RecoveryPlan(aeronCluster.getRecoveryPlan());
-        }
-
         if (leaderRecoveryPlan.lastLeadershipTermId != localRecoveryPlan.lastLeadershipTermId)
         {
             throw new IllegalStateException(
@@ -153,7 +144,7 @@ class RecordingCatchUp implements AutoCloseable
 
         final ChannelUriStringBuilder archiveControlRequestChannel = new ChannelUriStringBuilder()
             .media(CommonContext.UDP_MEDIA)
-            .endpoint(leader.archiveEndpoint());
+            .endpoint(leaderArchiveEndpoint);
 
         final AeronArchive.Context leaderArchiveContext = new AeronArchive.Context()
             .controlRequestChannel(archiveControlRequestChannel.build());

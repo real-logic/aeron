@@ -30,7 +30,6 @@ public class EgressPoller implements ControlledFragmentHandler
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
-    private final MembershipQueryResponseDecoder membershipQueryResponseDecoder = new MembershipQueryResponseDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
     private long clusterSessionId = -1;
@@ -40,7 +39,6 @@ public class EgressPoller implements ControlledFragmentHandler
     private EventCode eventCode;
     private String detail = "";
     private byte[] encodedChallenge;
-    private byte[] encodedQueryResponse;
 
     public EgressPoller(final Subscription subscription, final int fragmentLimit)
     {
@@ -119,16 +117,6 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
-     * Get the encoded response from a membership query.
-     *
-     * @return the encoded response from a membership query or null if last message was not a query response.
-     */
-    public byte[] encodedQueryResponse()
-    {
-        return encodedQueryResponse;
-    }
-
-    /**
      * Has the last polling action received a complete event?
      *
      * @return true if the last polling action received a complete event.
@@ -156,7 +144,6 @@ public class EgressPoller implements ControlledFragmentHandler
         eventCode = null;
         detail = "";
         encodedChallenge = null;
-        encodedQueryResponse = null;
         pollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
@@ -216,21 +203,6 @@ public class EgressPoller implements ControlledFragmentHandler
 
                 clusterSessionId = challengeDecoder.clusterSessionId();
                 correlationId = challengeDecoder.correlationId();
-                break;
-
-            case MembershipQueryResponseDecoder.TEMPLATE_ID:
-                membershipQueryResponseDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                encodedQueryResponse = new byte[membershipQueryResponseDecoder.encodedResponseLength()];
-                membershipQueryResponseDecoder.getEncodedResponse(
-                    encodedQueryResponse, 0, membershipQueryResponseDecoder.encodedResponseLength());
-
-                clusterSessionId = membershipQueryResponseDecoder.clusterSessionId();
-                correlationId = membershipQueryResponseDecoder.correlationId();
                 break;
 
             default:

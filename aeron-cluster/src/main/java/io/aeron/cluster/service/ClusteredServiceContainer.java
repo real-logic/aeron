@@ -18,7 +18,6 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.client.RecordingLog;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.ClusterMarkFile;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;

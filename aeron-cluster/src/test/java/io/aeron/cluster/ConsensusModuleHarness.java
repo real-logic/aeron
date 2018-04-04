@@ -506,6 +506,23 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                     "onCommitPosition %d %d %d %d%n", termPosition, leadershipTermId, leaderMemberId, logSessionId);
                 nextListener.onCommitPosition(termPosition, leadershipTermId, leaderMemberId, logSessionId);
             }
+
+            public void onQueryResponse(
+                final long correlationId,
+                final int requestMemberId,
+                final int responseMemberId,
+                final DirectBuffer data,
+                final int offset,
+                final int length)
+            {
+                nextListener.onQueryResponse(correlationId, requestMemberId, responseMemberId, data, offset, length);
+            }
+
+            public void onRecoveryPlanQuery(
+                final long correlationId, final int leaderMemberId, final int requestMemberId)
+            {
+                nextListener.onRecoveryPlanQuery(correlationId, leaderMemberId, requestMemberId);
+            }
         };
     }
 

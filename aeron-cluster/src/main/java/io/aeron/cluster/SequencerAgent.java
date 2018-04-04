@@ -19,7 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.client.RecordingLog;
+import io.aeron.cluster.service.RecordingLog;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
 import io.aeron.exceptions.TimeoutException;
@@ -47,7 +47,6 @@ import static io.aeron.cluster.ClusterMember.NULL_MEMBER_ID;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 
 class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListener
 {
@@ -103,6 +102,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private RecordingLog.RecoveryPlan recoveryPlan;
+    private UnsafeBuffer recoveryPlanBuffer;
     private RecordingCatchUp recordingCatchUp;
 
     SequencerAgent(
@@ -194,6 +194,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     {
         archive = AeronArchive.connect(ctx.archiveContext());
         recoveryPlan = recordingLog.createRecoveryPlan(archive);
+        recoveryPlanBuffer = new UnsafeBuffer(new byte[recoveryPlan.encodedLength()]);
+        recoveryPlan.encode(recoveryPlanBuffer, 0);
 
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
@@ -396,42 +398,28 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
     }
 
-    public void onMembershipQuery(
-        final long correlationId, final long clusterSessionId, final MembershipQueryType queryType)
+    public void onQueryResponse(
+        final long correlationId,
+        final int requestMemberId,
+        final int responseMemberId,
+        final DirectBuffer data,
+        final int offset,
+        final int length)
     {
-        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session && session.state() == OPEN)
+    }
+
+    public void onRecoveryPlanQuery(final long correlationId, final int leaderMemberId, final int requestMemberId)
+    {
+        if (leaderMemberId == memberId)
         {
-            if (session.capability() == ClusterSession.Capability.CLIENT_AND_MEMBER)
-            {
-                switch (queryType)
-                {
-                    case ENDPOINTS:
-                        session.lastActivity(cachedEpochClock.time(), correlationId);
-                        session.encodedMembershipQueryResponse(thisMember.endpointsDetail().getBytes(US_ASCII));
-
-                        if (egressPublisher.sendMembershipResponse(session, session.encodedMembershipQueryResponse()))
-                        {
-                            session.encodedMembershipQueryResponse(null);
-                        }
-                        break;
-
-                    case RECOVERY_PLAN:
-                        session.lastActivity(cachedEpochClock.time(), correlationId);
-                        session.encodedMembershipQueryResponse(recoveryPlan.encode());
-
-                        if (egressPublisher.sendMembershipResponse(session, session.encodedMembershipQueryResponse()))
-                        {
-                            session.encodedMembershipQueryResponse(null);
-                        }
-                        break;
-                }
-            }
-            else
-            {
-                session.lastActivity(cachedEpochClock.time(), correlationId);
-                egressPublisher.sendEvent(session, EventCode.ERROR, "Principal does not have MEMBER capability");
-            }
+            memberStatusPublisher.queryResponse(
+                clusterMembers[requestMemberId].publication(),
+                correlationId,
+                requestMemberId,
+                memberId,
+                recoveryPlanBuffer,
+                0,
+                recoveryPlanBuffer.capacity());
         }
     }
 
@@ -481,13 +469,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
                 if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
                 {
-                    recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
-                        ctx.archiveContext(),
-                        recoveryPlan,
-                        leaderMember,
-                        aeron.countersReader(),
-                        ctx.replayChannel(),
-                        ctx.replayStreamId());
+                    // TODO: do recovery catch up.
                 }
 
                 return;
@@ -825,7 +807,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     {
         idleStrategy.reset();
 
-        while (!memberStatusPublisher.vote(
+        while (!memberStatusPublisher.placeVote(
             clusterMembers[candidateId].publication(), candidateTermId, candidateId, memberId, vote))
         {
             idle();
@@ -961,13 +943,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             {
                 appendConnectedSession(session, nowMs);
                 workCount += 1;
-            }
-            else if (state == OPEN && session.encodedMembershipQueryResponse() != null)
-            {
-                if (egressPublisher.sendMembershipResponse(session, session.encodedMembershipQueryResponse()))
-                {
-                    session.encodedMembershipQueryResponse(null);
-                }
             }
         }
 

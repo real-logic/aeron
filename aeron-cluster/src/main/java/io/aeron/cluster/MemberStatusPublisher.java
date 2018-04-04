@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
+import org.agrona.DirectBuffer;
 
 class MemberStatusPublisher
 {
@@ -29,6 +30,8 @@ class MemberStatusPublisher
     private final VoteEncoder voteEncoder = new VoteEncoder();
     private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
+    private final QueryResponseEncoder queryResponseEncoder = new QueryResponseEncoder();
+    private final RecoveryPlanQueryEncoder recoveryPlanQueryEncoder = new RecoveryPlanQueryEncoder();
 
     public boolean requestVote(
         final Publication publication,
@@ -64,7 +67,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean vote(
+    public boolean placeVote(
         final Publication publication,
         final long candidateTermId,
         final int candidateMemberId,
@@ -148,6 +151,74 @@ class MemberStatusPublisher
                     .leadershipTermId(leadershipTermId)
                     .leaderMemberId(leaderMemberId)
                     .logSessionId(logSessionId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean queryResponse(
+        final Publication publication,
+        final long correlationId,
+        final int requestMemberId,
+        final int responseMemberId,
+        final DirectBuffer dataBuffer,
+        final int dataOffset,
+        final int dataLength)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            QueryResponseEncoder.BLOCK_LENGTH +
+            QueryResponseEncoder.encodedResponseHeaderLength() +
+            dataLength;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                queryResponseEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .requestMemberId(requestMemberId)
+                    .responseMemberId(responseMemberId)
+                    .putEncodedResponse(dataBuffer, dataOffset, dataLength);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean recoveryPlanQuery(
+        final Publication publication, final long correlationId, final int leaderMemberId, final int memberId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecoveryPlanQueryEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                recoveryPlanQueryEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .leaderMemberId(leaderMemberId)
+                    .requestMemberId(memberId);
 
                 bufferClaim.commit();
 

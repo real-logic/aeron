@@ -32,6 +32,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final VoteDecoder voteDecoder = new VoteDecoder();
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
     private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
+    private final QueryResponseDecoder queryResponseDecoder = new QueryResponseDecoder();
+    private final RecoveryPlanQueryDecoder recoveryPlanQueryDecoder = new RecoveryPlanQueryDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -113,6 +115,40 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     commitPositionDecoder.leadershipTermId(),
                     commitPositionDecoder.leaderMemberId(),
                     commitPositionDecoder.logSessionId());
+                break;
+
+            case QueryResponseDecoder.TEMPLATE_ID:
+                queryResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final int dataOffset = offset +
+                    MessageHeaderDecoder.ENCODED_LENGTH +
+                    QueryResponseDecoder.BLOCK_LENGTH +
+                    QueryResponseDecoder.encodedResponseHeaderLength();
+
+                memberStatusListener.onQueryResponse(
+                    queryResponseDecoder.correlationId(),
+                    queryResponseDecoder.requestMemberId(),
+                    queryResponseDecoder.responseMemberId(),
+                    buffer,
+                    dataOffset,
+                    queryResponseDecoder.encodedResponseLength());
+                break;
+
+            case RecoveryPlanQueryDecoder.TEMPLATE_ID:
+                recoveryPlanQueryDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onRecoveryPlanQuery(
+                    recoveryPlanQueryDecoder.correlationId(),
+                    recoveryPlanQueryDecoder.leaderMemberId(),
+                    recoveryPlanQueryDecoder.requestMemberId());
                 break;
 
             default:

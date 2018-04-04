@@ -74,14 +74,14 @@ public class MultiNodeTest
             verify(mockMemberStatusListeners[1]).onRequestVote(0, 0, 0, 0);
             verify(mockMemberStatusListeners[2]).onRequestVote(0, 0, 0, 0);
 
-            harness.memberStatusPublisher().vote(
+            harness.memberStatusPublisher().placeVote(
                 harness.memberStatusPublication(1),
                 0,
                 0,
                 1,
                 true);
 
-            harness.memberStatusPublisher().vote(
+            harness.memberStatusPublisher().placeVote(
                 harness.memberStatusPublication(2),
                 0,
                 0,
@@ -161,14 +161,14 @@ public class MultiNodeTest
             verify(mockMemberStatusListeners[1]).onRequestVote(1, 0, position, 0);
             verify(mockMemberStatusListeners[2]).onRequestVote(1, 0, position, 0);
 
-            harness.memberStatusPublisher().vote(
+            harness.memberStatusPublisher().placeVote(
                 harness.memberStatusPublication(1),
                 1,
                 0,
                 1,
                 true);
 
-            harness.memberStatusPublisher().vote(
+            harness.memberStatusPublisher().placeVote(
                 harness.memberStatusPublication(2),
                 1,
                 0,

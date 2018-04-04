@@ -55,11 +55,6 @@
             <validValue name="SECTION">1</validValue>
             <validValue name="END">2</validValue>
         </enum>
-        <enum name="MembershipQueryType" encodingType="int32" description="Type of cluster membership query">
-            <validValue name="ENDPOINTS">0</validValue>
-            <validValue name="RECOVERY_PLAN">1</validValue>
-            <validValue name="RECORDING_LOG">2</validValue>
-        </enum>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
     </types>
 
@@ -187,22 +182,6 @@
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
         <data  name="encodedCredentials"   id="3" type="varDataEncoding"/>
-    </sbe:message>
-
-    <sbe:message name="MembershipQuery"
-                 id="9"
-                 description="Query the cluster for membership information">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="clusterSessionId"     id="2" type="int64"/>
-        <field name="queryType"            id="3" type="MembershipQueryType"/>
-    </sbe:message>
-
-    <sbe:message name="MembershipQueryResponse"
-                 id="10"
-                 description="Query response from the cluster">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="clusterSessionId"     id="2" type="int64"/>
-        <data  name="encodedResponse"      id="3" type="varDataEncoding"/>
     </sbe:message>
 
     <!-- Events from the Consensus Module to the clustered services which get appended to the log  -->
@@ -336,6 +315,23 @@
         <field name="leadershipTermId"     id="2" type="int64"/>
         <field name="leaderMemberId"       id="3" type="int32"/>
         <field name="logSessionId"         id="4" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="QueryResponse"
+                 id="60"
+                 description="Query response from a member">
+        <field name="correlationId"        id="1" type="int64"/>
+        <field name="requestMemberId"      id="2" type="int32"/>
+        <field name="responseMemberId"     id="3" type="int32"/>
+        <data  name="encodedResponse"      id="4" type="varDataEncoding"/>
+    </sbe:message>
+
+    <sbe:message name="RecoveryPlanQuery"
+                 id="61"
+                 description="Query a leader for their recovery plan">
+        <field name="correlationId"        id="1" type="int64"/>
+        <field name="leaderMemberId"       id="2" type="int32"/>
+        <field name="requestMemberId"      id="3" type="int32"/>
     </sbe:message>
 
     <!-- Serialisation of major Entities -->

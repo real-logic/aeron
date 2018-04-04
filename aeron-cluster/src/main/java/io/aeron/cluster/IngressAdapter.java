@@ -34,7 +34,6 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final SessionKeepAliveRequestDecoder keepAliveRequestDecoder = new SessionKeepAliveRequestDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
-    private final MembershipQueryDecoder membershipQueryDecoder = new MembershipQueryDecoder();
 
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
@@ -135,19 +134,6 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     challengeResponseDecoder.correlationId(),
                     challengeResponseDecoder.clusterSessionId(),
                     credentials);
-                break;
-
-            case MembershipQueryDecoder.TEMPLATE_ID:
-                membershipQueryDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                sequencerAgent.onMembershipQuery(
-                    membershipQueryDecoder.correlationId(),
-                    membershipQueryDecoder.clusterSessionId(),
-                    membershipQueryDecoder.queryType());
                 break;
 
             default:

@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster.client;
+package io.aeron.cluster.service;
 
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanEncoder;
-import io.aeron.cluster.service.RecordingExtent;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.LangUtil;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -218,7 +215,6 @@ public class RecordingLog
         public final ArrayList<ReplayStep> termSteps;
         public final RecoveryPlanEncoder encoder = new RecoveryPlanEncoder();
         public final RecoveryPlanDecoder decoder = new RecoveryPlanDecoder();
-        public final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
 
         public RecoveryPlan(
             final long lastLeadershipTermId,
@@ -236,15 +232,9 @@ public class RecordingLog
             this.termSteps = termSteps;
         }
 
-        public RecoveryPlan(final byte[] bytes)
+        public RecoveryPlan(final DirectBuffer buffer, final int offset)
         {
-            this(ByteBuffer.wrap(bytes));
-        }
-
-        public RecoveryPlan(final ByteBuffer byteBuffer)
-        {
-            unsafeBuffer.wrap(byteBuffer);
-            decoder.wrap(unsafeBuffer, 0, RecoveryPlanDecoder.BLOCK_LENGTH, RecoveryPlanDecoder.SCHEMA_VERSION);
+            decoder.wrap(buffer, offset, RecoveryPlanDecoder.BLOCK_LENGTH, RecoveryPlanDecoder.SCHEMA_VERSION);
 
             this.lastLeadershipTermId = decoder.lastLeadershipTermId();
             this.lastTermBaseLogPosition = decoder.lastTermBaseLogPosition();
@@ -272,23 +262,24 @@ public class RecordingLog
             this.snapshotStep = snapshot;
         }
 
-        public byte[] encode()
+        public int encodedLength()
         {
             final int stepsCount = termSteps.size() + (null != snapshotStep ? 1 : 0);
-            final int length = RecoveryPlanEncoder.BLOCK_LENGTH +
+
+            return RecoveryPlanEncoder.BLOCK_LENGTH +
                 RecoveryPlanEncoder.StepsEncoder.sbeHeaderSize() +
                 stepsCount * RecoveryPlanEncoder.StepsEncoder.sbeBlockLength();
-            final byte[] bytes = new byte[length];
+        }
 
-            unsafeBuffer.wrap(bytes);
-            encoder.wrap(unsafeBuffer, 0);
-
-            encoder
+        public int encode(final MutableDirectBuffer buffer, final int offset)
+        {
+            encoder.wrap(buffer, offset)
                 .lastLeadershipTermId(lastLeadershipTermId)
                 .lastTermBaseLogPosition(lastTermBaseLogPosition)
                 .lastTermPositionCommitted(lastTermPositionCommitted)
                 .lastTermPositionAppended(lastTermPositionAppended);
 
+            final int stepsCount = termSteps.size() + (null != snapshotStep ? 1 : 0);
             final RecoveryPlanEncoder.StepsEncoder stepEncoder = encoder.stepsCount(stepsCount);
 
             if (null != snapshotStep)
@@ -297,13 +288,13 @@ public class RecordingLog
                 stepEncoder.next();
             }
 
-            for (final ReplayStep step : termSteps)
+            for (int i = 0, size = termSteps.size(); i < size; i++)
             {
-                step.encode(stepEncoder);
+                termSteps.get(i).encode(stepEncoder);
                 stepEncoder.next();
             }
 
-            return bytes;
+            return encoder.encodedLength();
         }
 
         public String toString()

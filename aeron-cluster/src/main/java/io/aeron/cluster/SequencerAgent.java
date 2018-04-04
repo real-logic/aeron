@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.CommonContext.NULL_SESSION_ID;
 import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterMember.NULL_MEMBER_ID;
@@ -398,31 +399,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
     }
 
-    public void onQueryResponse(
-        final long correlationId,
-        final int requestMemberId,
-        final int responseMemberId,
-        final DirectBuffer data,
-        final int offset,
-        final int length)
-    {
-    }
-
-    public void onRecoveryPlanQuery(final long correlationId, final int leaderMemberId, final int requestMemberId)
-    {
-        if (leaderMemberId == memberId)
-        {
-            memberStatusPublisher.queryResponse(
-                clusterMembers[requestMemberId].publication(),
-                correlationId,
-                requestMemberId,
-                memberId,
-                recoveryPlanBuffer,
-                0,
-                recoveryPlanBuffer.capacity());
-        }
-    }
-
     public boolean onTimerEvent(final long correlationId, final long nowMs)
     {
         return Cluster.Role.LEADER != role || logPublisher.appendTimerEvent(correlationId, nowMs);
@@ -467,16 +443,35 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 recordingLog.appendTerm(leadershipTermId, logPosition, epochClock.time(), votedForMemberId);
                 sendVote(candidateTermId, candidateId, true);
 
-                if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
-                {
-                    // TODO: do recovery catch up.
-                }
-
                 return;
             }
         }
 
         sendVote(candidateTermId, candidateId, false);
+    }
+
+    public void onNewLeadershipTerm(
+        final long lastBaseLogPosition,
+        final long lastTermPosition,
+        final long leadershipTermId,
+        final int leaderMemberId,
+        final int logSessionId)
+    {
+        if (leadershipTermId == this.leadershipTermId)
+        {
+            if (leaderMemberId != votedForMemberId)
+            {
+                throw new IllegalStateException("Not who I voted for: expected=" +
+                    this.votedForMemberId + " received=" + leaderMemberId);
+            }
+
+            this.logSessionId = logSessionId;
+
+            if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
+            {
+                // TODO: do recovery catch up.
+            }
+        }
     }
 
     public void onVote(
@@ -504,24 +499,37 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
     }
 
-    public void onCommitPosition(
-        final long termPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
+    public void onCommitPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
     {
         if (leadershipTermId == this.leadershipTermId)
         {
-            if (leaderMemberId != votedForMemberId)
-            {
-                throw new IllegalStateException("Commit position not for current leader: expected=" +
-                    this.votedForMemberId + " received=" + leaderMemberId);
-            }
-
-            if (CommonContext.NULL_SESSION_ID == this.logSessionId)
-            {
-                this.logSessionId = logSessionId;
-            }
-
             timeOfLastLogUpdateMs = cachedEpochClock.time();
             followerCommitPosition = termPosition;
+        }
+    }
+
+    public void onQueryResponse(
+        final long correlationId,
+        final int requestMemberId,
+        final int responseMemberId,
+        final DirectBuffer data,
+        final int offset,
+        final int length)
+    {
+    }
+
+    public void onRecoveryPlanQuery(final long correlationId, final int leaderMemberId, final int requestMemberId)
+    {
+        if (leaderMemberId == memberId)
+        {
+            memberStatusPublisher.queryResponse(
+                clusterMembers[requestMemberId].publication(),
+                correlationId,
+                requestMemberId,
+                memberId,
+                recoveryPlanBuffer,
+                0,
+                recoveryPlanBuffer.capacity());
         }
     }
 
@@ -1098,6 +1106,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         role(Cluster.Role.FOLLOWER);
 
         awaitCatchUp();
+
+        followerCommitPosition = 0;
+        logSessionId = NULL_SESSION_ID;
         awaitLogSessionIdFromLeader();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
@@ -1120,8 +1131,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     private void awaitLogSessionIdFromLeader()
     {
-        followerCommitPosition = NULL_POSITION;
-        while (NULL_POSITION == followerCommitPosition)
+        while (NULL_SESSION_ID == logSessionId)
         {
             final int fragments = memberStatusAdapter.poll();
             idle(fragments);
@@ -1162,6 +1172,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         ClusterMember.resetTermPositions(clusterMembers, NULL_POSITION);
         clusterMembers[memberId].termPosition(0);
 
+        final long lastBaseLogPosition = recoveryPlan.lastTermBaseLogPosition;
+        final long lastTermPosition = recoveryPlan.lastTermPositionAppended;
+
         do
         {
             final long nowMs = epochClock.time();
@@ -1173,8 +1186,13 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 {
                     if (member != thisMember)
                     {
-                        memberStatusPublisher.commitPosition(
-                            member.publication(), 0, leadershipTermId, memberId, logSessionId);
+                        memberStatusPublisher.newLeadershipTerm(
+                            member.publication(),
+                            lastBaseLogPosition,
+                            lastTermPosition,
+                            leadershipTermId,
+                            memberId,
+                            logSessionId);
                     }
                 }
             }
@@ -1428,8 +1446,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 {
                     if (member != thisMember)
                     {
-                        memberStatusPublisher.commitPosition(
-                            member.publication(), position, leadershipTermId, memberId, logSessionId);
+                        final Publication publication = member.publication();
+                        memberStatusPublisher.commitPosition(publication, position, leadershipTermId, memberId);
                     }
                 }
 

@@ -30,6 +30,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final RequestVoteDecoder requestVoteDecoder = new RequestVoteDecoder();
     private final VoteDecoder voteDecoder = new VoteDecoder();
+    private final NewLeadershipTermDecoder newLeadershipTermDecoder = new NewLeadershipTermDecoder();
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
     private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
     private final QueryResponseDecoder queryResponseDecoder = new QueryResponseDecoder();
@@ -55,6 +56,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
         return subscription.poll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
     }
 
+    @SuppressWarnings("MethodLength")
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -90,6 +92,21 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     voteDecoder.vote() == BooleanType.TRUE);
                 break;
 
+            case NewLeadershipTermDecoder.TEMPLATE_ID:
+                newLeadershipTermDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onNewLeadershipTerm(
+                    newLeadershipTermDecoder.lastBaseLogPosition(),
+                    newLeadershipTermDecoder.lastTermPosition(),
+                    newLeadershipTermDecoder.leadershipTermId(),
+                    newLeadershipTermDecoder.leaderMemberId(),
+                    newLeadershipTermDecoder.logSessionId());
+                break;
+
             case AppendedPositionDecoder.TEMPLATE_ID:
                 appendedPositionDecoder.wrap(
                     buffer,
@@ -113,8 +130,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                 memberStatusListener.onCommitPosition(
                     commitPositionDecoder.termPosition(),
                     commitPositionDecoder.leadershipTermId(),
-                    commitPositionDecoder.leaderMemberId(),
-                    commitPositionDecoder.logSessionId());
+                    commitPositionDecoder.leaderMemberId());
                 break;
 
             case QueryResponseDecoder.TEMPLATE_ID:

@@ -91,8 +91,8 @@ public class MultiNodeTest
             harness.awaitMemberStatusMessage(1);
             harness.awaitMemberStatusMessage(2);
 
-            verify(mockMemberStatusListeners[1]).onCommitPosition(eq(0L), eq(0L), eq(0), anyInt());
-            verify(mockMemberStatusListeners[2]).onCommitPosition(eq(0L), eq(0L), eq(0), anyInt());
+            verify(mockMemberStatusListeners[1]).onNewLeadershipTerm(eq(0L), eq(0L), eq(0L), eq(0), anyInt());
+            verify(mockMemberStatusListeners[2]).onNewLeadershipTerm(eq(0L), eq(0L), eq(0L), eq(0), anyInt());
 
             harness.memberStatusPublisher().appendedPosition(
                 harness.memberStatusPublication(1), 0, 0, 1);
@@ -130,8 +130,8 @@ public class MultiNodeTest
             final Publication logPublication =
                 harness.aeron().addExclusivePublication(channelUri.toString(), context.logStreamId());
 
-            harness.memberStatusPublisher().commitPosition(
-                harness.memberStatusPublication(1), 0, 0, 1, logSessionId);
+            harness.memberStatusPublisher().newLeadershipTerm(
+                harness.memberStatusPublication(1), 0, 0, 1L, 0, logSessionId);
 
             harness.awaitMemberStatusMessage(1);
 
@@ -178,8 +178,10 @@ public class MultiNodeTest
             harness.awaitMemberStatusMessage(1);
             harness.awaitMemberStatusMessage(2);
 
-            verify(mockMemberStatusListeners[1]).onCommitPosition(eq(0L), eq(1L), eq(0), anyInt());
-            verify(mockMemberStatusListeners[2]).onCommitPosition(eq(0L), eq(1L), eq(0), anyInt());
+            verify(mockMemberStatusListeners[1]).onNewLeadershipTerm(
+                eq(0L), eq(position), eq(1L), eq(0), anyInt());
+            verify(mockMemberStatusListeners[2]).onNewLeadershipTerm(
+                eq(0L), eq(position), eq(1L), eq(0), anyInt());
 
             harness.memberStatusPublisher().appendedPosition(
                 harness.memberStatusPublication(1), position, 1, 1);
@@ -223,8 +225,8 @@ public class MultiNodeTest
             final Publication logPublication =
                 harness.aeron().addExclusivePublication(channelUri.toString(), context.logStreamId());
 
-            harness.memberStatusPublisher().commitPosition(
-                harness.memberStatusPublication(1), position, 1, 1, logSessionId);
+            harness.memberStatusPublisher().newLeadershipTerm(
+                harness.memberStatusPublication(1), 0, position, 1L, 1, logSessionId);
 
             harness.awaitMemberStatusMessage(1);
 

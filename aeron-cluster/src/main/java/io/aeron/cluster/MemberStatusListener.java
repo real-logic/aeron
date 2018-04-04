@@ -23,9 +23,12 @@ public interface MemberStatusListener
 
     void onVote(long candidateTermId, int candidateMemberId, int followerMemberId, boolean vote);
 
+    void onNewLeadershipTerm(
+        long lastBaseLogPosition, long lastTermPosition, long leadershipTermId, int leaderMemberId, int logSessionId);
+
     void onAppendedPosition(long termPosition, long leadershipTermId, int followerMemberId);
 
-    void onCommitPosition(long termPosition, long leadershipTermId, int leaderMemberId, int logSessionId);
+    void onCommitPosition(long termPosition, long leadershipTermId, int leaderMemberId);
 
     void onQueryResponse(
         long correlationId, int requestMemberId, int responseMemberId, DirectBuffer data, int offset, int length);

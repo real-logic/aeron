@@ -28,6 +28,7 @@ class MemberStatusPublisher
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final RequestVoteEncoder requestVoteEncoder = new RequestVoteEncoder();
     private final VoteEncoder voteEncoder = new VoteEncoder();
+    private final NewLeadershipTermEncoder newLeadershipTermEncoder = new NewLeadershipTermEncoder();
     private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
     private final QueryResponseEncoder queryResponseEncoder = new QueryResponseEncoder();
@@ -101,6 +102,42 @@ class MemberStatusPublisher
         return false;
     }
 
+    public boolean newLeadershipTerm(
+        final Publication publication,
+        final long lastBaseLogPosition,
+        final long lastTermPosition,
+        final long leadershipTermId,
+        final int leaderMemberId,
+        final int logSessionId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                newLeadershipTermEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .lastBaseLogPosition(lastBaseLogPosition)
+                    .lastTermPosition(lastTermPosition)
+                    .leadershipTermId(leadershipTermId)
+                    .leaderMemberId(leaderMemberId)
+                    .logSessionId(logSessionId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
     public boolean appendedPosition(
         final Publication publication, final long termPosition, final long leadershipTermId, final int followerMemberId)
     {
@@ -131,11 +168,7 @@ class MemberStatusPublisher
     }
 
     public boolean commitPosition(
-        final Publication publication,
-        final long termPosition,
-        final long leadershipTermId,
-        final int leaderMemberId,
-        final int logSessionId)
+        final Publication publication, final long termPosition, final long leadershipTermId, final int leaderMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CommitPositionEncoder.BLOCK_LENGTH;
 
@@ -149,8 +182,7 @@ class MemberStatusPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .termPosition(termPosition)
                     .leadershipTermId(leadershipTermId)
-                    .leaderMemberId(leaderMemberId)
-                    .logSessionId(logSessionId);
+                    .leaderMemberId(leaderMemberId);
 
                 bufferClaim.commit();
 

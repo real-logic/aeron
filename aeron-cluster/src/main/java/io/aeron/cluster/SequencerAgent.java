@@ -1159,7 +1159,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     private void awaitFollowersReady()
     {
-        ClusterMember.resetTermPositions(clusterMembers, -1);
+        ClusterMember.resetTermPositions(clusterMembers, NULL_POSITION);
         clusterMembers[memberId].termPosition(0);
 
         do

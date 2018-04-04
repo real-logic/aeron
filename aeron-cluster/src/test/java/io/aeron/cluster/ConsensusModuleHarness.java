@@ -99,6 +99,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context();
         final ClusteredServiceContainer.Context serviceContext = new ClusteredServiceContainer.Context();
 
+        aeronArchiveContext.aeronDirectoryName(mediaDriverPath);
+
         if (members.length > 1)
         {
             ChannelUri channelUri;
@@ -153,6 +155,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .clusterDir(clusterDir)
                 .archiveContext(aeronArchiveContext.clone())
                 .terminationHook(() -> isTerminated.set(true))
+                .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(isCleanStart));
 
         clusteredServiceContainer = ClusteredServiceContainer.launch(

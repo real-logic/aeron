@@ -17,16 +17,16 @@ package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.service.RecordingLog;
-import org.agrona.concurrent.status.CountersReader;
 
 interface RecordingCatchUpSupplier
 {
     RecordingCatchUp catchUp(
-        AeronArchive.Context localArchiveContext,
+        AeronArchive localArchive,
+        MemberStatusPublisher memberStatusPublisher,
+        ClusterMember[] clusterMembers,
+        int leaderMemberId,
+        int memberId,
         RecordingLog.RecoveryPlan localRecoveryPlan,
-        RecordingLog.RecoveryPlan leaderRecoveryPlan,
-        String leaderArchiveEndpoint,
-        CountersReader localCounters,
-        String replayChannel,
-        int replayStreamId);
+        ConsensusModule.Context context,
+        long leaderLastTermPosition);
 }

@@ -989,7 +989,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == recordingCatchUpSupplier)
             {
-                recordingCatchUpSupplier = RecordingCatchUp::catchUp;
+                recordingCatchUpSupplier = RecordingCatchUp::new;
             }
 
             concludeMarkFile();

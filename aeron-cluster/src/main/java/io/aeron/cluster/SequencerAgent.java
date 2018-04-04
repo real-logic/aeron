@@ -443,6 +443,19 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 recordingLog.appendTerm(leadershipTermId, logPosition, epochClock.time(), votedForMemberId);
                 sendVote(candidateTermId, candidateId, true);
 
+                if (recoveryPlan.lastTermPositionAppended < lastTermPosition && null == recordingCatchUp)
+                {
+                    recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
+                        archive,
+                        memberStatusPublisher,
+                        clusterMembers,
+                        votedForMemberId,
+                        memberId,
+                        recoveryPlan,
+                        ctx,
+                        lastTermPosition);
+                }
+
                 return;
             }
         }
@@ -516,6 +529,11 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         final int offset,
         final int length)
     {
+        if (null != recordingCatchUp)
+        {
+            recordingCatchUp.onLeaderRecoveryPlan(
+                correlationId, requestMemberId, responseMemberId, data, offset, length);
+        }
     }
 
     public void onRecoveryPlanQuery(final long correlationId, final int leaderMemberId, final int requestMemberId)
@@ -1105,11 +1123,10 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         updateMemberDetails(votedForMemberId);
         role(Cluster.Role.FOLLOWER);
 
-        awaitCatchUp();
-
         followerCommitPosition = 0;
         logSessionId = NULL_SESSION_ID;
         awaitLogSessionIdFromLeader();
+        awaitCatchUp();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
@@ -1142,14 +1159,14 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     {
         if (null != recordingCatchUp)
         {
-            while (!recordingCatchUp.isCaughtUp())
+            do
             {
-                idle();
+                idle(memberStatusAdapter.poll() + recordingCatchUp.doWork(epochClock.time()));
             }
-
-            recordingCatchUp.close();
+            while (!recordingCatchUp.isCaughtUp());
 
             catchupLog(recordingCatchUp);
+            recordingCatchUp.close();
             recordingCatchUp = null;
         }
     }

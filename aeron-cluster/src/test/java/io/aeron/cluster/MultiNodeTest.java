@@ -131,7 +131,7 @@ public class MultiNodeTest
                 harness.aeron().addExclusivePublication(channelUri.toString(), context.logStreamId());
 
             harness.memberStatusPublisher().newLeadershipTerm(
-                harness.memberStatusPublication(1), 0, 0, 1L, 0, logSessionId);
+                harness.memberStatusPublication(1), 0, 0, 0, 1, logSessionId);
 
             harness.awaitMemberStatusMessage(1);
 
@@ -184,10 +184,10 @@ public class MultiNodeTest
                 eq(0L), eq(position), eq(1L), eq(0), anyInt());
 
             harness.memberStatusPublisher().appendedPosition(
-                harness.memberStatusPublication(1), position, 1, 1);
+                harness.memberStatusPublication(1), 0, 1, 1);
 
             harness.memberStatusPublisher().appendedPosition(
-                harness.memberStatusPublication(2), position, 1, 2);
+                harness.memberStatusPublication(2), 0, 1, 2);
 
             harness.awaitServiceOnStart();
             harness.awaitServiceOnMessageCounter(10);
@@ -230,7 +230,7 @@ public class MultiNodeTest
 
             harness.awaitMemberStatusMessage(1);
 
-            verify(mockMemberStatusListeners[1]).onAppendedPosition(position, 1, 0);
+            verify(mockMemberStatusListeners[1]).onAppendedPosition(0, 1, 0);
 
             harness.awaitServiceOnStart();
             harness.awaitServiceOnMessageCounter(10);
@@ -290,6 +290,7 @@ public class MultiNodeTest
         {
             leaderHarness.awaitServiceOnStart();
             followerHarness.awaitServiceOnStart();
+            followerHarness.awaitServiceOnMessageCounter(10);
         }
     }
 }

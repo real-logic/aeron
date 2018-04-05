@@ -35,7 +35,7 @@ class RecordingCatchUp implements AutoCloseable
 
     enum State
     {
-        INITIALIZED,
+        INIT,
         AWAITING_LEADER_RECOVERY_PLAN,
         AWAITING_ARCHIVE_CONNECTS,
         AWAITING_EXTEND_RECORDING,
@@ -59,7 +59,7 @@ class RecordingCatchUp implements AutoCloseable
     private String replayChannel;
     private String extendChannel;
 
-    private State state = State.INITIALIZED;
+    private State state = State.INIT;
 
     private long queryRecoveryPlanCorrelationId = NULL_CORRELATION_ID;
     private long targetPosition = AeronArchive.NULL_POSITION;
@@ -115,7 +115,7 @@ class RecordingCatchUp implements AutoCloseable
 
         switch (state)
         {
-            case INITIALIZED:
+            case INIT:
                 workCount += queryRecoveryPlan();
                 break;
 

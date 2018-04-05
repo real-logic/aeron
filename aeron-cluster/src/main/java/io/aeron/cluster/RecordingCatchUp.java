@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ChannelUri;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
@@ -53,6 +54,11 @@ class RecordingCatchUp implements AutoCloseable
     private final int leaderMemberId;
     private final int memberId;
 
+    private AeronArchive dstArchive;
+    private AeronArchive srcArchive;
+    private String replayChannel;
+    private String extendChannel;
+
     private State state = State.INITIALIZED;
 
     private long queryRecoveryPlanCorrelationId = NULL_CORRELATION_ID;
@@ -64,9 +70,6 @@ class RecordingCatchUp implements AutoCloseable
     private long replayCorrelationId = NULL_CORRELATION_ID;
     private int recPosCounterId = CountersReader.NULL_COUNTER_ID;
     private boolean archiveResponded = false;
-
-    private AeronArchive dstArchive;
-    private AeronArchive srcArchive;
 
     RecordingCatchUp(
         final AeronArchive localArchive,
@@ -184,8 +187,6 @@ class RecordingCatchUp implements AutoCloseable
         {
             final RecordingLog.RecoveryPlan leaderRecoveryPlan = new RecordingLog.RecoveryPlan(data, offset);
 
-            System.out.println(leaderRecoveryPlan);
-
             final RecordingLog.ReplayStep localLastStep =
                 localRecoveryPlan.termSteps.get(localRecoveryPlan.termSteps.size() - 1);
             final RecordingLog.ReplayStep leaderLastStep =
@@ -196,8 +197,30 @@ class RecordingCatchUp implements AutoCloseable
             leaderRecordingId = leaderLastStep.entry.recordingId;
             recordingIdToExtend = localLastStep.entry.recordingId;
 
-            fromPosition = localLastStep.recordingStopPosition;  // TODO: probably needs to be queried
+            fromPosition = localLastStep.recordingStopPosition;
             targetPosition = leaderLastStep.recordingStopPosition;
+
+            // TODO: raise this channel as a configuration option
+            final ChannelUri channelUri = ChannelUri.parse("aeron:udp?endpoint=localhost:3333");
+            final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+
+            final ChannelUriStringBuilder uriStringBuilder = new ChannelUriStringBuilder();
+
+            // TODO: need the other params from the local recording
+
+            uriStringBuilder
+                .media(CommonContext.UDP_MEDIA)
+                .endpoint(endpoint)
+                .sessionId(localLastStep.recordingSessionId);
+
+            extendChannel = uriStringBuilder.build();
+
+            uriStringBuilder.clear()
+                .media(CommonContext.UDP_MEDIA)
+                .endpoint(endpoint)
+                .sessionId(localLastStep.recordingSessionId);
+
+            replayChannel = uriStringBuilder.build();
         }
     }
 
@@ -253,7 +276,7 @@ class RecordingCatchUp implements AutoCloseable
             final long correlationId = context.aeron().nextCorrelationId();
 
             if (dstArchive.archiveProxy().extendRecording(
-                context.replayChannel(),
+                extendChannel,
                 context.replayStreamId(),
                 SourceLocation.REMOTE,
                 recordingIdToExtend,
@@ -289,14 +312,14 @@ class RecordingCatchUp implements AutoCloseable
                 leaderRecordingId,
                 fromPosition,
                 targetPosition - fromPosition,
-                context.replayChannel(),
+                replayChannel,
                 context.replayStreamId(),
                 correlationId,
                 srcArchive.controlSessionId()))
             {
                 replayCorrelationId = correlationId;
                 archiveResponded = false;
-                state = State.AWAITING_CATCH_UP;
+                state = State.AWAITING_START_REPLAY;
                 workCount = 1;
             }
         }

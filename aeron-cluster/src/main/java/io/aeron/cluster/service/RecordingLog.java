@@ -168,12 +168,18 @@ public class RecordingLog
     {
         public final long recordingStartPosition;
         public final long recordingStopPosition;
+        public final int recordingSessionId;
         public final Entry entry;
 
-        public ReplayStep(final long recordingStartPosition, final long recordingStopPosition, final Entry entry)
+        public ReplayStep(
+            final long recordingStartPosition,
+            final long recordingStopPosition,
+            final int recordingSessionId,
+            final Entry entry)
         {
             this.recordingStartPosition = recordingStartPosition;
             this.recordingStopPosition = recordingStopPosition;
+            this.recordingSessionId = recordingSessionId;
             this.entry = entry;
         }
 
@@ -181,6 +187,7 @@ public class RecordingLog
         {
             this.recordingStartPosition = decoder.recordingStartPosition();
             this.recordingStopPosition = decoder.recordingStopPosition();
+            this.recordingSessionId = decoder.recordingSessionId();
             entry = new Entry(decoder);
         }
 
@@ -188,7 +195,8 @@ public class RecordingLog
         {
             encoder
                 .recordingStartPosition(recordingStartPosition)
-                .recordingStopPosition(recordingStopPosition);
+                .recordingStopPosition(recordingStopPosition)
+                .recordingSessionId(recordingSessionId);
             entry.encode(encoder);
         }
 
@@ -197,6 +205,7 @@ public class RecordingLog
             return "ReplayStep{" +
                 "recordingStartPosition=" + recordingStartPosition +
                 ", recordingStopPosition=" + recordingStopPosition +
+                ", recordingSessionId=" + recordingSessionId +
                 ", entry=" + entry +
                 '}';
         }
@@ -822,7 +831,8 @@ public class RecordingLog
             final Entry snapshot = entries.get(snapshotIndex);
             getRecordingExtent(archive, recordingExtent, snapshot);
 
-            snapshotStep = new ReplayStep(recordingExtent.startPosition, recordingExtent.stopPosition, snapshot);
+            snapshotStep = new ReplayStep(
+                recordingExtent.startPosition, recordingExtent.stopPosition, recordingExtent.sessionId, snapshot);
 
             if (snapshotIndex - 1 >= 0)
             {
@@ -837,7 +847,8 @@ public class RecordingLog
                         if (recordingExtent.stopPosition == NULL_POSITION ||
                             (entry.termBaseLogPosition + recordingExtent.stopPosition) > snapshotPosition)
                         {
-                            steps.add(new ReplayStep(snapshot.termPosition, recordingExtent.stopPosition, entry));
+                            steps.add(new ReplayStep(
+                                snapshot.termPosition, recordingExtent.stopPosition, recordingExtent.sessionId, entry));
                         }
                         break;
                     }
@@ -854,7 +865,8 @@ public class RecordingLog
             final Entry entry = entries.get(i);
             getRecordingExtent(archive, recordingExtent, entry);
 
-            steps.add(new ReplayStep(recordingExtent.startPosition, recordingExtent.stopPosition, entry));
+            steps.add(new ReplayStep(
+                recordingExtent.startPosition, recordingExtent.stopPosition, recordingExtent.sessionId, entry));
         }
 
         return snapshotStep;

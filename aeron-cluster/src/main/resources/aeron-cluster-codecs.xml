@@ -407,6 +407,7 @@
             <field name="votedForMemberId"       id="13" type="int32"/>
             <field name="entryType"              id="14" type="int32"/>
             <field name="entryIndex"             id="15" type="int32"/>
+            <field name="recordingSessionId"     id="16" type="int32"/>
         </group>
     </sbe:message>
 

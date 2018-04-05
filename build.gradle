@@ -124,7 +124,7 @@ subprojects {
     [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:8.8'
+        checkstyle 'com.puppycrawl.tools:checkstyle:8.9'
 
         testCompile 'junit:junit:4.12'
         testCompile 'org.mockito:mockito-core:2.17.0'
@@ -133,7 +133,7 @@ subprojects {
 
     checkstyle {
         configFile = new File(rootDir, 'config/checkstyle/checkstyle.xml')
-        toolVersion = '8.8'
+        toolVersion = '8.9'
     }
 
     test {

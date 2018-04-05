@@ -96,7 +96,6 @@ class RecordingCatchUp implements AutoCloseable
     public void close()
     {
         CloseHelper.close(srcArchive);
-        CloseHelper.close(dstArchive);
     }
 
     public int doWork(final long nowMs)
@@ -277,7 +276,7 @@ class RecordingCatchUp implements AutoCloseable
 
             if (dstArchive.archiveProxy().extendRecording(
                 extendChannel,
-                context.replayStreamId(),
+                context.logStreamId(),
                 SourceLocation.REMOTE,
                 recordingIdToExtend,
                 correlationId,
@@ -313,7 +312,7 @@ class RecordingCatchUp implements AutoCloseable
                 fromPosition,
                 targetPosition - fromPosition,
                 replayChannel,
-                context.replayStreamId(),
+                context.logStreamId(),
                 correlationId,
                 srcArchive.controlSessionId()))
             {

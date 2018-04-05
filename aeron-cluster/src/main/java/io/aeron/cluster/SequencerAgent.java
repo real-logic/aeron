@@ -705,6 +705,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         final RecordingLog.ReplayStep lastStep = recoveryPlan.termSteps.get(lastStepIndex);
         final RecordingLog.Entry entry = lastStep.entry;
 
+        final long originalLeadershipTermId = leadershipTermId;
+
         termBaseLogPosition = entry.termBaseLogPosition;
         leadershipTermId = entry.leadershipTermId;
 
@@ -719,7 +721,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             try (Subscription subscription = aeron.addSubscription(channel, streamId))
             {
                 serviceAckCount = 0;
-                serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, channel);
+                logAdapter = null;
+
+                serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, true, channel);
                 awaitServiceAcks();
 
                 final int replaySessionId = (int)archive.startReplay(
@@ -733,6 +737,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 termBaseLogPosition = entry.termBaseLogPosition + termPosition;
             }
         }
+
+        leadershipTermId = originalLeadershipTermId;
     }
 
     private int slowTickCycle(final long nowMs)
@@ -1085,7 +1091,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             {
                 if (member != thisMember)
                 {
-                    publication.addDestination(builder.endpoint(member.logEndpoint()).build());
+                    final String destination = builder.endpoint(member.logEndpoint()).build();
+                    publication.addDestination(destination);
                 }
             }
         }
@@ -1165,8 +1172,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             }
             while (!recordingCatchUp.isCaughtUp());
 
-            catchupLog(recordingCatchUp);
             recordingCatchUp.close();
+
+            catchupLog(recordingCatchUp);
             recordingCatchUp = null;
         }
     }
@@ -1237,7 +1245,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         final String channel = isLeader && UDP_MEDIA.equals(channelUri.media()) ?
             channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
         serviceControlPublisher.joinLog(
-            leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), channel);
+            leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
 
         awaitServiceAcks();
     }
@@ -1341,7 +1349,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 {
                     try (Subscription subscription = aeron.addSubscription(channel, streamId))
                     {
-                        serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, channel);
+                        serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, true, channel);
                         awaitServiceAcks();
 
                         final Image image = awaitImage(

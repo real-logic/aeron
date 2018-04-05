@@ -16,17 +16,19 @@
 package io.aeron.cluster;
 
 import io.aeron.ChannelUri;
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
 import io.aeron.Publication;
 import io.aeron.cluster.service.ClusteredService;
 import org.agrona.IoUtil;
-import org.agrona.LangUtil;
+import org.agrona.collections.Long2LongHashMap;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
-import java.nio.file.Files;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -125,10 +127,16 @@ public class MultiNodeTest
 
             final int logSessionId = 123456;
             final ChannelUri channelUri = ChannelUri.parse(context.logChannel());
-            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, harness.member(0).logEndpoint());
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+            System.out.println("leader logPublication " + channelUri.toString());
             final Publication logPublication =
                 harness.aeron().addExclusivePublication(channelUri.toString(), context.logStreamId());
+
+            final ChannelUriStringBuilder destinationUri = new ChannelUriStringBuilder()
+                .media("udp")
+                .endpoint(harness.member(0).logEndpoint());
+
+            logPublication.addDestination(destinationUri.build());
 
             harness.memberStatusPublisher().newLeadershipTerm(
                 harness.memberStatusPublication(1), 0, 0, 0, 1, logSessionId);
@@ -220,10 +228,16 @@ public class MultiNodeTest
 
             final int logSessionId = 123456;
             final ChannelUri channelUri = ChannelUri.parse(context.logChannel());
-            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, harness.member(0).logEndpoint());
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+            System.out.println("leader logPublication " + channelUri.toString());
             final Publication logPublication =
                 harness.aeron().addExclusivePublication(channelUri.toString(), context.logStreamId());
+
+            final ChannelUriStringBuilder destinationUri = new ChannelUriStringBuilder()
+                .media("udp")
+                .endpoint(harness.member(0).logEndpoint());
+
+            logPublication.addDestination(destinationUri.build());
 
             harness.memberStatusPublisher().newLeadershipTerm(
                 harness.memberStatusPublication(1), 0, position, 1L, 1, logSessionId);
@@ -246,34 +260,29 @@ public class MultiNodeTest
     {
         final ConsensusModule.Context followerContext = new ConsensusModule.Context()
             .clusterMembers(THREE_NODE_MEMBERS)
-            .clusterMemberId(0)
-            .appointedLeaderId(1);
+            .clusterMemberId(1)
+            .appointedLeaderId(0);
 
         final ConsensusModule.Context leaderContext = new ConsensusModule.Context()
             .clusterMembers(THREE_NODE_MEMBERS)
-            .clusterMemberId(1)
-            .appointedLeaderId(1);
+            .clusterMemberId(0)
+            .appointedLeaderId(0);
 
-        final File followerHarnessDir = ConsensusModuleHarness.harnessDirectory(0);
-        final File leaderHarnessDir = ConsensusModuleHarness.harnessDirectory(1);
+        final File followerHarnessDir = ConsensusModuleHarness.harnessDirectory(1);
+        final File leaderHarnessDir = ConsensusModuleHarness.harnessDirectory(0);
+        final Long2LongHashMap positionMap = new Long2LongHashMap(-1);
 
         IoUtil.delete(followerHarnessDir, true);
         IoUtil.delete(leaderHarnessDir, true);
 
         final long position = ConsensusModuleHarness.makeRecordingLog(
-            10, 100, null, null, new ConsensusModule.Context());
+            10, 100, null, positionMap, new ConsensusModule.Context());
 
-        try
-        {
-            Files.move(followerHarnessDir.toPath(), leaderHarnessDir.toPath());
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        ConsensusModuleHarness.copyDirectory(leaderHarnessDir, followerHarnessDir);
 
-        ConsensusModuleHarness.makeTruncatedRecordingLog(
-            10, 5, 100, null, new ConsensusModule.Context());
+        final long truncatePosition = positionMap.get(5);
+
+        ConsensusModuleHarness.truncateRecordingLog(followerHarnessDir, 0, truncatePosition);
 
         final ClusteredService mockFollowerService = mock(ClusteredService.class);
         final ClusteredService mockLeaderService = mock(ClusteredService.class);
@@ -290,12 +299,12 @@ public class MultiNodeTest
         {
             leaderHarness.awaitMemberStatusMessage(2);
 
-            verify(mockLeaderStatusListeners[2]).onRequestVote(1, 0, position, 1);
+            verify(mockLeaderStatusListeners[2]).onRequestVote(1, 0, position, 0);
 
             leaderHarness.memberStatusPublisher().placeVote(
                 leaderHarness.memberStatusPublication(2),
                 1,
-                1,
+                0,
                 2,
                 true);
 
@@ -304,9 +313,19 @@ public class MultiNodeTest
             verify(mockLeaderStatusListeners[2]).onNewLeadershipTerm(
                 eq(0L), eq(position), eq(1L), eq(0), anyInt());
 
+            leaderHarness.memberStatusPublisher().appendedPosition(
+                leaderHarness.memberStatusPublication(2), 0, 1, 2);
+
             leaderHarness.awaitServiceOnStart();
             followerHarness.awaitServiceOnStart();
             followerHarness.awaitServiceOnMessageCounter(10);
+
+            verify(mockFollowerService, times(10))
+                .onSessionMessage(anyLong(), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
+
+            // TODO: a total hack to avoid this thread from closing and shutting down the follower service
+            // container while it is switching to live log.
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
         }
     }
 }

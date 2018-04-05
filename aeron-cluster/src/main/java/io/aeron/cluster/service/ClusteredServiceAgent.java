@@ -206,9 +206,11 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         final int commitPositionId,
         final int logSessionId,
         final int logStreamId,
+        final boolean ackBeforeImage,
         final String logChannel)
     {
-        activeLog = new ActiveLog(leadershipTermId, commitPositionId, logSessionId, logStreamId, logChannel);
+        activeLog = new ActiveLog(
+            leadershipTermId, commitPositionId, logSessionId, logStreamId, ackBeforeImage, logChannel);
     }
 
     void onSessionMessage(
@@ -459,10 +461,19 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, commitPositionId);
 
         final Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
+
+        if (activeLog.ackBeforeImage)
+        {
+            serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+        }
+
         final Image image = awaitImage(logSessionId, logSubscription);
         heartbeatCounter.setOrdered(epochClock.time());
 
-        serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+        if (!activeLog.ackBeforeImage)
+        {
+            serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+        }
 
         logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, commitPositionId), this);
         activeLog = null;
@@ -680,6 +691,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         final int commitPositionId;
         final int sessionId;
         final int streamId;
+        final boolean ackBeforeImage;
         final String channel;
 
         ActiveLog(
@@ -687,12 +699,14 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
             final int commitPositionId,
             final int sessionId,
             final int streamId,
+            final boolean ackBeforeImage,
             final String channel)
         {
             this.leadershipTermId = leadershipTermId;
             this.commitPositionId = commitPositionId;
             this.sessionId = sessionId;
             this.streamId = streamId;
+            this.ackBeforeImage = ackBeforeImage;
             this.channel = channel;
         }
     }

@@ -20,7 +20,6 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.codecs.CloseReason;
@@ -31,22 +30,24 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.IoUtil;
+import org.agrona.*;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static java.util.stream.Collectors.toList;
 
 public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 {
@@ -54,6 +55,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     public static final String CONSENSUS_MODULE_DIRECTORY = ConsensusModule.Configuration.clusterDirName();
     public static final String ARCHIVE_DIRECTORY = Archive.Configuration.archiveDirName();
     public static final String SERVICE_DIRECTORY = ClusteredServiceContainer.Configuration.clusteredServiceDirName();
+    private static final String LOG_CHANNEL =
+        "aeron:udp?term-length=64k|control-mode=manual|control=localhost:55550";
 
     private static final long MAX_CATALOG_ENTRIES = 1024;
 
@@ -130,8 +133,10 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
             consensusModuleContext.ingressChannel(channelUri.toString());
 
-            channelUri = ChannelUri.parse(consensusModuleContext.logChannel());
-            channelUri.put(ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
+            channelUri = ChannelUri.parse(LOG_CHANNEL);
+            String logControl = channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
+            logControl = logControl.substring(0, logControl.length() - 1) + thisMemberIndex;
+            channelUri.put(CommonContext.MDC_CONTROL_PARAM_NAME, logControl);
 
             consensusModuleContext.logChannel(channelUri.toString());
         }
@@ -431,6 +436,14 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
         final long truncatePosition = positionMap.get(truncateAtNumMessage);
 
+        return truncateRecordingLog(harnessDir, 0, truncatePosition);
+    }
+
+    public static long truncateRecordingLog(
+        final File harnessDir,
+        final long truncateRecordingId,
+        final long truncatePosition)
+    {
         final Archive.Context archiveContext = new Archive.Context()
             .archiveDir(new File(harnessDir, ARCHIVE_DIRECTORY));
 
@@ -438,30 +451,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             ArchivingMediaDriver.launch(new MediaDriver.Context(), archiveContext);
             AeronArchive archive = AeronArchive.connect())
         {
-            final RecordingDescriptorConsumer consumer =
-                (controlSessionId,
-                correlationId,
-                recordingId,
-                startTimestamp,
-                stopTimestamp,
-                startPosition,
-                stopPosition,
-                initialTermId,
-                segmentFileLength,
-                termBufferLength,
-                mtuLength,
-                sessionId,
-                streamId,
-                strippedChannel,
-                originalChannel,
-                sourceIdentity) ->
-                {
-                    System.out.println("id " + recordingId + " " + stopPosition);
-                };
-
-            archive.listRecording(0, consumer);
-            archive.truncateRecording(0, truncatePosition);
-            archive.listRecording(0, consumer);
+            archive.truncateRecording(truncateRecordingId, truncatePosition);
         }
 
         return truncatePosition;
@@ -553,6 +543,32 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
 
         return printMixIns;
+    }
+
+    public static void copyDirectory(final File srcDirectory, final File dstDirectory)
+    {
+        final Path srcDir = srcDirectory.toPath();
+        final Path dstDir = dstDirectory.toPath();
+
+        try
+        {
+            // inspired by
+            // https://stackoverflow.com/questions/1146153/copying-files-from-one-directory-to-another-in-java
+            final List<Path> sources = Files.walk(srcDir).collect(toList());
+            final List<Path> destinations = sources.stream()
+                .map(srcDir::relativize)
+                .map(dstDir::resolve)
+                .collect(toList());
+
+            for (int i = 0; i < sources.size(); i++)
+            {
+                Files.copy(sources.get(i), destinations.get(i));
+            }
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 
     private static void checkOfferResult(final long result)

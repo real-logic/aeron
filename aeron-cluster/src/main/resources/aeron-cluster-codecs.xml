@@ -253,6 +253,7 @@
         <field name="commitPositionId"     id="2" type="int32"/>
         <field name="logSessionId"         id="3" type="int32"/>
         <field name="logStreamId"          id="4" type="int32"/>
+        <field name="ackBeforeImage"       id="5" type="BooleanType"/>
         <data  name="logChannel"           id="5" type="varAsciiEncoding"/>
     </sbe:message>
 

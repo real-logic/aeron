@@ -131,6 +131,7 @@ public class ServiceControlPublisher implements AutoCloseable
         final int commitPositionId,
         final int logSessionId,
         final int logStreamId,
+        final boolean ackBeforeImage,
         final String channel)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinLogEncoder.BLOCK_LENGTH +
@@ -148,6 +149,7 @@ public class ServiceControlPublisher implements AutoCloseable
                     .commitPositionId(commitPositionId)
                     .logSessionId(logSessionId)
                     .logStreamId(logStreamId)
+                    .ackBeforeImage((ackBeforeImage ? BooleanType.TRUE : BooleanType.FALSE))
                     .logChannel(channel);
 
                 bufferClaim.commit();

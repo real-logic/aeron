@@ -105,6 +105,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                     joinLogDecoder.commitPositionId(),
                     joinLogDecoder.logSessionId(),
                     joinLogDecoder.logStreamId(),
+                    joinLogDecoder.ackBeforeImage() == BooleanType.TRUE,
                     joinLogDecoder.logChannel());
                 break;
 

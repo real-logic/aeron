@@ -54,6 +54,7 @@ class RecordingCatchUp implements AutoCloseable
     private final int leaderMemberId;
     private final int memberId;
 
+    private AeronArchive.AsyncConnect srcAsyncConnect;
     private AeronArchive dstArchive;
     private AeronArchive srcArchive;
     private String replayChannel;
@@ -251,9 +252,7 @@ class RecordingCatchUp implements AutoCloseable
                 .controlResponseChannel(dstArchive.context().controlResponseChannel())
                 .controlResponseStreamId(dstArchive.context().controlResponseStreamId() + 1);
 
-            // TODO: use non-blocking connect
-
-            srcArchive = AeronArchive.connect(leaderArchiveContext);
+            srcAsyncConnect = AeronArchive.asyncConnect(leaderArchiveContext);
 
             state = State.AWAITING_ARCHIVE_CONNECTS;
         }
@@ -267,6 +266,11 @@ class RecordingCatchUp implements AutoCloseable
 
         if (null == dstArchive || null == srcArchive)
         {
+            if (null == srcArchive)
+            {
+                srcArchive = srcAsyncConnect.poll();
+            }
+
             return workCount;
         }
 

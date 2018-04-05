@@ -1693,8 +1693,7 @@ public class AeronArchive implements AutoCloseable
          */
         public AeronArchive poll()
         {
-            final Subscription responseSubscription = controlResponsePoller.subscription();
-            if (!archiveProxy.publication().isConnected() || !responseSubscription.isConnected())
+            if (!archiveProxy.publication().isConnected())
             {
                 return null;
             }
@@ -1714,6 +1713,12 @@ public class AeronArchive implements AutoCloseable
             }
 
             isConnected = true;
+
+            final Subscription responseSubscription = controlResponsePoller.subscription();
+            if (!responseSubscription.isConnected())
+            {
+                return null;
+            }
 
             controlResponsePoller.poll();
             if (controlResponsePoller.isPollComplete() &&

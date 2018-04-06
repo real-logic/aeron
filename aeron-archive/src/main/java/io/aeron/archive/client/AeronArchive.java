@@ -1666,7 +1666,7 @@ public class AeronArchive implements AutoCloseable
         private final ControlResponsePoller controlResponsePoller;
         private final ArchiveProxy archiveProxy;
         private long connectCorrelationId = -1;
-        private boolean isConnected = false;
+        private int step = 0;
 
         AsyncConnect(
             final Context ctx, final ControlResponsePoller controlResponsePoller, final ArchiveProxy archiveProxy)
@@ -1693,31 +1693,42 @@ public class AeronArchive implements AutoCloseable
          */
         public AeronArchive poll()
         {
-            if (!archiveProxy.publication().isConnected())
+            if (0 == step)
             {
-                return null;
+                if (!archiveProxy.publication().isConnected())
+                {
+                    return null;
+                }
+
+                step = 1;
             }
 
-            if (-1 == connectCorrelationId)
+            if (1 == step)
             {
                 connectCorrelationId = ctx.aeron.nextCorrelationId();
+
+                step = 2;
             }
 
-            if (!isConnected && !archiveProxy.connect(
-                ctx.controlResponseChannel(),
-                ctx.controlResponseStreamId(),
-                connectCorrelationId,
-                ctx.aeron().conductorAgentInvoker()))
+            if (2 == step)
             {
-                throw new IllegalStateException("cannot connect to archive: " + ctx.controlRequestChannel());
+                if (!archiveProxy.tryConnect(
+                    ctx.controlResponseChannel(), ctx.controlResponseStreamId(), connectCorrelationId))
+                {
+                    return null;
+                }
+
+                step = 3;
             }
 
-            isConnected = true;
-
-            final Subscription responseSubscription = controlResponsePoller.subscription();
-            if (!responseSubscription.isConnected())
+            if (3 == step)
             {
-                return null;
+                if (!controlResponsePoller.subscription().isConnected())
+                {
+                    return null;
+                }
+
+                step = 4;
             }
 
             controlResponsePoller.poll();
@@ -1737,11 +1748,12 @@ public class AeronArchive implements AutoCloseable
                 }
 
                 final long controlSessionId = controlResponsePoller.controlSessionId();
+                final Subscription subscription = controlResponsePoller.subscription();
                 return new AeronArchive(
                     ctx,
                     controlResponsePoller,
                     archiveProxy,
-                    new RecordingDescriptorPoller(responseSubscription, FRAGMENT_LIMIT, controlSessionId),
+                    new RecordingDescriptorPoller(subscription, FRAGMENT_LIMIT, controlSessionId),
                     controlSessionId);
             }
 

@@ -17,7 +17,7 @@ package io.aeron.archive.client;
 
 import io.aeron.Publication;
 import io.aeron.archive.codecs.*;
-import org.agrona.ExpandableDirectByteBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.*;
 
 import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT_DEFAULT_NS;
@@ -37,7 +37,7 @@ public class ArchiveProxy
     private final IdleStrategy retryIdleStrategy;
     private final NanoClock nanoClock;
 
-    private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(1024);
+    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(124);
     private final Publication publication;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
@@ -125,6 +125,28 @@ public class ArchiveProxy
             .responseChannel(responseChannel);
 
         return offerWithTimeout(connectRequestEncoder.encodedLength(), null);
+    }
+
+    /**
+     * Try Connect to an archive on its control interface providing the response stream details. Only one attempt will
+     * be made to offer the request.
+     *
+     * @param responseChannel  for the control message responses.
+     * @param responseStreamId for the control message responses.
+     * @param correlationId    for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean tryConnect(final String responseChannel, final int responseStreamId, final long correlationId)
+    {
+        connectRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .responseStreamId(responseStreamId)
+            .responseChannel(responseChannel);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + connectRequestEncoder.encodedLength();
+
+        return publication.offer(buffer, 0, length) > 0;
     }
 
     /**
@@ -492,6 +514,7 @@ public class ArchiveProxy
             {
                 aeronClientInvoker.invoke();
             }
+
             retryIdleStrategy.idle();
         }
     }

@@ -259,12 +259,9 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (null == dstArchive || null == srcArchive)
+        if (null == srcArchive)
         {
-            if (null == srcArchive)
-            {
-                srcArchive = srcAsyncConnect.poll();
-            }
+            srcArchive = srcAsyncConnect.poll();
 
             return workCount;
         }

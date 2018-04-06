@@ -28,7 +28,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -291,6 +290,9 @@ public class MultiNodeTest
         final MemberStatusListener[] mockLeaderStatusListeners = new MemberStatusListener[3];
 
         mockLeaderStatusListeners[2] = mock(MemberStatusListener.class);
+        final MemberStatusListener[] printLeaderStatusListeners = new MemberStatusListener[3];
+        printLeaderStatusListeners[2] =
+            ConsensusModuleHarness.printMemberStatusMixIn(System.out, mockLeaderStatusListeners[2]);
 
         try (ConsensusModuleHarness leaderHarness = new ConsensusModuleHarness(
             leaderContext, mockLeaderService, mockLeaderStatusListeners, false, true);
@@ -325,7 +327,7 @@ public class MultiNodeTest
 
             // TODO: a total hack to avoid this thread from closing and shutting down the follower service
             // container while it is switching to live log.
-            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(3));
+            leaderHarness.pollMemberStatusAdapter(2, TimeUnit.SECONDS.toMillis(3));
         }
     }
 }

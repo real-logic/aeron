@@ -32,6 +32,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import org.agrona.*;
 import org.agrona.collections.Long2LongHashMap;
+import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
@@ -75,6 +76,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final boolean cleanOnClose;
     private final File harnessDir;
+    private final EpochClock epochClock = System::currentTimeMillis;
 
     private int thisMemberIndex = -1;
     private int leaderIndex = -1;
@@ -246,7 +248,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return members[index];
     }
 
-    public int pollMemberStatusAdapters(final int index)
+    public int pollMemberStatusAdapter(final int index)
     {
         if (null != memberStatusAdapters[index])
         {
@@ -262,6 +264,25 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         while (memberStatusAdapters[index].poll() == 0)
         {
             idleStrategy.idle();
+        }
+    }
+
+    public void pollMemberStatusAdapter(final int index, final long durationMs)
+    {
+        final long deadlineMs = epochClock.time() + durationMs;
+        final MemberStatusAdapter memberStatusAdapter = memberStatusAdapters[index];
+        idleStrategy.reset();
+
+        while (epochClock.time() < deadlineMs)
+        {
+            if (null != memberStatusAdapter)
+            {
+                idleStrategy.idle(memberStatusAdapter.poll());
+            }
+            else
+            {
+                idleStrategy.idle();
+            }
         }
     }
 

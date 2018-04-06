@@ -164,7 +164,6 @@ public class ListRecordingsForUriSessionTest
         verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
         session.doWork();
         verify(controlSession, times(3)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
-
     }
 
     @Test
@@ -200,7 +199,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             1,
             3,
-            "notchannel",
+            "notChannel",
             1,
             catalog,
             controlResponseProxy,

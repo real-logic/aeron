@@ -174,9 +174,9 @@ public class ConsensusModule implements AutoCloseable
     {
         loadPropertiesFiles(args);
 
-        try (ConsensusModule ignore = launch())
+        try (ConsensusModule consensusModule = launch())
         {
-            new ShutdownSignalBarrier().await();
+            consensusModule.context().shutdownSignalBarrier().await();
 
             System.out.println("Shutdown ConsensusModule...");
         }

@@ -27,6 +27,5 @@ interface RecordingCatchUpSupplier
         int leaderMemberId,
         int memberId,
         RecordingLog.RecoveryPlan localRecoveryPlan,
-        ConsensusModule.Context context,
-        long leaderLastTermPosition);
+        ConsensusModule.Context context);
 }

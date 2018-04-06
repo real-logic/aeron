@@ -452,8 +452,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                         votedForMemberId,
                         memberId,
                         recoveryPlan,
-                        ctx,
-                        lastTermPosition);
+                        ctx);
                 }
 
                 return;
@@ -556,6 +555,11 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     {
         this.role = role;
         clusterRoleCounter.setOrdered(role.code());
+    }
+
+    Cluster.Role role()
+    {
+        return role;
     }
 
     void logRecordingPositionCounter(final ReadableCounter logRecordingPosition)
@@ -690,7 +694,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         this.nextSessionId = nextSessionId;
     }
 
-    private void catchupLog(final RecordingCatchUp recordingCatchUp)
+    void catchupLog(final RecordingCatchUp recordingCatchUp)
     {
         final long fromPosition = recordingCatchUp.fromPosition();
         final long targetPosition = recordingCatchUp.targetPosition();
@@ -1152,8 +1156,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     {
         while (NULL_SESSION_ID == logSessionId)
         {
-            final int fragments = memberStatusAdapter.poll();
-            idle(fragments);
+            idle(memberStatusAdapter.poll());
         }
     }
 
@@ -1163,7 +1166,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         {
             do
             {
-                idle(memberStatusAdapter.poll() + recordingCatchUp.doWork(epochClock.time()));
+                idle(memberStatusAdapter.poll() + recordingCatchUp.doWork());
             }
             while (!recordingCatchUp.isCaughtUp());
 

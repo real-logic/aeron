@@ -49,8 +49,6 @@ class RecordingCatchUp implements AutoCloseable
     private final RecordingLog.RecoveryPlan localRecoveryPlan;
     private final CountersReader localCountersReader;
     private final ConsensusModule.Context context;
-    private final long lastTermPositionAppended;
-    private final long leaderLastTermPosition;
     private final int leaderMemberId;
     private final int memberId;
 
@@ -79,8 +77,7 @@ class RecordingCatchUp implements AutoCloseable
         final int leaderMemberId,
         final int memberId,
         final RecordingLog.RecoveryPlan localRecoveryPlan,
-        final ConsensusModule.Context context,
-        final long leaderLastTermPosition)
+        final ConsensusModule.Context context)
     {
         this.dstArchive = localArchive;
         this.memberStatusPublisher = memberStatusPublisher;
@@ -88,8 +85,6 @@ class RecordingCatchUp implements AutoCloseable
         this.localRecoveryPlan = localRecoveryPlan;
         this.localCountersReader = context.aeron().countersReader();
         this.context = context;
-        this.lastTermPositionAppended = localRecoveryPlan.lastTermPositionAppended;
-        this.leaderLastTermPosition = leaderLastTermPosition;
         this.leaderMemberId = leaderMemberId;
         this.memberId = memberId;
     }
@@ -99,7 +94,7 @@ class RecordingCatchUp implements AutoCloseable
         CloseHelper.close(srcArchive);
     }
 
-    public int doWork(final long nowMs)
+    public int doWork()
     {
         int workCount = 0;
 

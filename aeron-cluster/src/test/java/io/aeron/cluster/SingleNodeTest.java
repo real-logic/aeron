@@ -33,7 +33,7 @@ public class SingleNodeTest
         final ClusteredService mockService = mock(ClusteredService.class);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            new ConsensusModule.Context(), mockService, null, true, true))
+            new ConsensusModule.Context(), mockService, null, true, true, false))
         {
             harness.awaitServiceOnStart();
         }
@@ -47,7 +47,7 @@ public class SingleNodeTest
         final ClusteredService mockService = mock(ClusteredService.class);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            new ConsensusModule.Context(), mockService, null, false, true))
+            new ConsensusModule.Context(), mockService, null, false, true, false))
         {
             harness.awaitServiceOnStart();
             harness.awaitServiceOnMessageCounter(10);

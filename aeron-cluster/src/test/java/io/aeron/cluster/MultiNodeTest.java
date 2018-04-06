@@ -27,7 +27,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -44,7 +43,6 @@ public class MultiNodeTest
         "2,localhost:9012,localhost:9022,localhost:9032,localhost:8012";
 
     private final MemberStatusListener[] mockMemberStatusListeners = new MemberStatusListener[3];
-    private final MemberStatusListener[] printStatusListeners = new MemberStatusListener[3];
 
     @Before
     public void before()
@@ -52,8 +50,6 @@ public class MultiNodeTest
         for (int i = 0; i < mockMemberStatusListeners.length; i++)
         {
             mockMemberStatusListeners[i] = mock(MemberStatusListener.class);
-            printStatusListeners[i] =
-                ConsensusModuleHarness.printMemberStatusMixIn(System.out, mockMemberStatusListeners[i]);
         }
     }
 
@@ -67,7 +63,7 @@ public class MultiNodeTest
             .appointedLeaderId(0);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, mockMemberStatusListeners, true, true))
+            context, mockService, mockMemberStatusListeners, true, true, false))
         {
             harness.awaitMemberStatusMessage(1);
             harness.awaitMemberStatusMessage(2);
@@ -115,7 +111,7 @@ public class MultiNodeTest
             .appointedLeaderId(1);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, mockMemberStatusListeners, true, true))
+            context, mockService, mockMemberStatusListeners, true, true, false))
         {
             harness.memberStatusPublisher().requestVote(
                 harness.memberStatusPublication(1), 0, 0, 0, 1);
@@ -127,7 +123,6 @@ public class MultiNodeTest
             final int logSessionId = 123456;
             final ChannelUri channelUri = ChannelUri.parse(context.logChannel());
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-            System.out.println("leader logPublication " + channelUri.toString());
             final Publication logPublication =
                 harness.aeron().addExclusivePublication(channelUri.toString(), context.logStreamId());
 
@@ -160,7 +155,7 @@ public class MultiNodeTest
             .appointedLeaderId(0);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, mockMemberStatusListeners, false, true))
+            context, mockService, mockMemberStatusListeners, false, true, false))
         {
             harness.awaitMemberStatusMessage(1);
             harness.awaitMemberStatusMessage(2);
@@ -216,7 +211,7 @@ public class MultiNodeTest
             .appointedLeaderId(1);
 
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, mockMemberStatusListeners, false, true))
+            context, mockService, mockMemberStatusListeners, false, true, false))
         {
             harness.memberStatusPublisher().requestVote(
                 harness.memberStatusPublication(1), 1, 0, position, 1);
@@ -228,7 +223,6 @@ public class MultiNodeTest
             final int logSessionId = 123456;
             final ChannelUri channelUri = ChannelUri.parse(context.logChannel());
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-            System.out.println("leader logPublication " + channelUri.toString());
             final Publication logPublication =
                 harness.aeron().addExclusivePublication(channelUri.toString(), context.logStreamId());
 
@@ -277,6 +271,7 @@ public class MultiNodeTest
         final long position = ConsensusModuleHarness.makeRecordingLog(
             10, 100, null, positionMap, new ConsensusModule.Context());
 
+        IoUtil.delete(new File(leaderHarnessDir, ConsensusModuleHarness.DRIVER_DIRECTORY), true);
         ConsensusModuleHarness.copyDirectory(leaderHarnessDir, followerHarnessDir);
 
         final long truncatePosition = positionMap.get(5);
@@ -290,14 +285,11 @@ public class MultiNodeTest
         final MemberStatusListener[] mockLeaderStatusListeners = new MemberStatusListener[3];
 
         mockLeaderStatusListeners[2] = mock(MemberStatusListener.class);
-        final MemberStatusListener[] printLeaderStatusListeners = new MemberStatusListener[3];
-        printLeaderStatusListeners[2] =
-            ConsensusModuleHarness.printMemberStatusMixIn(System.out, mockLeaderStatusListeners[2]);
 
         try (ConsensusModuleHarness leaderHarness = new ConsensusModuleHarness(
-            leaderContext, mockLeaderService, mockLeaderStatusListeners, false, true);
+            leaderContext, mockLeaderService, mockLeaderStatusListeners, false, true, false);
             ConsensusModuleHarness followerHarness = new ConsensusModuleHarness(
-                followerContext, mockFollowerService, mockFollowerStatusListeners, false, true))
+                followerContext, mockFollowerService, mockFollowerStatusListeners, false, true, false))
         {
             leaderHarness.awaitMemberStatusMessage(2);
 
@@ -325,9 +317,16 @@ public class MultiNodeTest
             verify(mockFollowerService, times(10))
                 .onSessionMessage(anyLong(), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
 
-            // TODO: a total hack to avoid this thread from closing and shutting down the follower service
-            // container while it is switching to live log.
-            leaderHarness.pollMemberStatusAdapter(2, TimeUnit.SECONDS.toMillis(3));
+            // wait until Leader sends commitPosition after election. This will only work while Leader waits for
+            // all followers.
+            while (true)
+            {
+                leaderHarness.awaitMemberStatusMessage(2);
+                if (leaderHarness.memberStatusCounters(2).onCommitPositionCounter > 0)
+                {
+                    break;
+                }
+            }
         }
     }
 }

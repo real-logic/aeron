@@ -474,16 +474,11 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         {
             if (leaderMemberId != votedForMemberId)
             {
-                throw new IllegalStateException("Not who I voted for: expected=" +
-                    this.votedForMemberId + " received=" + leaderMemberId);
+                throw new IllegalStateException(
+                    "not my candidate: expected=" + votedForMemberId + " received=" + leaderMemberId);
             }
 
             this.logSessionId = logSessionId;
-
-            if (recoveryPlan.lastTermPositionAppended < lastTermPosition)
-            {
-                // TODO: do recovery catch up.
-            }
         }
     }
 
@@ -499,7 +494,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             else
             {
                 // TODO: Have to deal with failed candidacy
-                throw new IllegalStateException("Rejected vote from: " + followerMemberId);
+                throw new IllegalStateException("rejected vote from: " + followerMemberId);
             }
         }
     }
@@ -778,7 +773,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         {
             if (serviceHeartbeat.get() < heartbeatThreshold)
             {
-                ctx.errorHandler().onError(new TimeoutException("No heartbeat from clustered service"));
+                ctx.errorHandler().onError(new TimeoutException("no heartbeat from clustered service"));
                 ctx.terminationHook().run();
             }
         }
@@ -1057,7 +1052,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     private void electLeader()
     {
-        throw new IllegalStateException("Elections not yet supported");
+        throw new IllegalStateException("elections not yet supported");
     }
 
     private void requestVotes(
@@ -1272,7 +1267,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         final RecordingExtent recordingExtent = new RecordingExtent();
         if (0 == archive.listRecording(recordingId, recordingExtent))
         {
-            throw new IllegalStateException("Could not find recordingId: " + recordingId);
+            throw new IllegalStateException("unknown recordingId: " + recordingId);
         }
 
         final String channel = ctx.replayChannel();
@@ -1299,7 +1294,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
                     if (image.isClosed())
                     {
-                        throw new IllegalStateException("Snapshot ended unexpectedly");
+                        throw new IllegalStateException("snapshot ended unexpectedly");
                     }
                 }
 
@@ -1421,7 +1416,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
         if (!state.isValid(action))
         {
-            throw new IllegalStateException("invalid service ACK given state " + state + ", action " + action);
+            throw new IllegalStateException("invalid service ACK for state " + state + ", action " + action);
         }
     }
 
@@ -1501,7 +1496,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
             {
-                throw new AgentTerminationException("No heartbeat detected from cluster leader");
+                throw new AgentTerminationException("no heartbeat from cluster leader");
             }
         }
 
@@ -1526,7 +1521,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     {
         if (Thread.currentThread().isInterrupted())
         {
-            throw new RuntimeException("Unexpected interrupt");
+            throw new RuntimeException("unexpected interrupt");
         }
     }
 
@@ -1567,7 +1562,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             if (!RecordingPos.isActive(counters, counterId, recordingId))
             {
-                throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
+                throw new IllegalStateException("recording has stopped unexpectedly: " + recordingId);
             }
         }
         while (counters.getCounterValue(counterId) < completePosition);
@@ -1622,7 +1617,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 {
                     if (!image.isEndOfStream())
                     {
-                        throw new IllegalStateException("Unexpected close of image when replaying");
+                        throw new IllegalStateException("unexpected close of image when replaying");
                     }
 
                     break;

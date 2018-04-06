@@ -485,6 +485,7 @@ public final class MediaDriver implements AutoCloseable
                 validateMtuLength(mtuLength);
                 validateMtuLength(ipcMtuLength);
                 validatePageSize(filePageSize);
+                validateSessionIdRange(publicationReservedSessionIdLow, publicationReservedSessionIdHigh);
 
                 LogBufferDescriptor.checkTermLength(publicationTermBufferLength);
                 LogBufferDescriptor.checkTermLength(ipcPublicationTermBufferLength);
@@ -2132,6 +2133,19 @@ public final class MediaDriver implements AutoCloseable
 
                 case INVOKER:
                     break;
+            }
+        }
+
+        private static void validateSessionIdRange(final int low, final int high)
+        {
+            if (low > high)
+            {
+                throw new IllegalArgumentException("low session id value " + low + " must be <= high value " + high);
+            }
+
+            if (Math.abs((long)high - low) > Integer.MAX_VALUE)
+            {
+                throw new IllegalArgumentException("Reserved range to too large");
             }
         }
     }

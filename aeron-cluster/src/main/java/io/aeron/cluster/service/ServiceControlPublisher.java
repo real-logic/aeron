@@ -149,7 +149,7 @@ public class ServiceControlPublisher implements AutoCloseable
                     .commitPositionId(commitPositionId)
                     .logSessionId(logSessionId)
                     .logStreamId(logStreamId)
-                    .ackBeforeImage((ackBeforeImage ? BooleanType.TRUE : BooleanType.FALSE))
+                    .ackBeforeImage(ackBeforeImage ? BooleanType.TRUE : BooleanType.FALSE)
                     .logChannel(channel);
 
                 bufferClaim.commit();

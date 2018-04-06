@@ -447,7 +447,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final Archive.Context archiveContext = new Archive.Context()
             .archiveDir(new File(harnessDir, ARCHIVE_DIRECTORY));
 
-        try (ArchivingMediaDriver archivingMediaDriver =
+        try (ArchivingMediaDriver ignore =
             ArchivingMediaDriver.launch(new MediaDriver.Context(), archiveContext);
             AeronArchive archive = AeronArchive.connect())
         {
@@ -470,7 +470,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             {
                 stream.format(
                     "onRequestVote %d %d %d %d%n", candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId);
-
                 nextListener.onRequestVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId);
             }
 
@@ -481,7 +480,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 final boolean vote)
             {
                 stream.format("onVote %d %d %d %s%n", candidateTermId, candidateMemberId, followerMemberId, vote);
-
                 nextListener.onVote(candidateTermId, candidateMemberId, followerMemberId, vote);
             }
 
@@ -492,6 +490,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 final int leaderMemberId,
                 final int logSessionId)
             {
+                stream.format("onNewLeadershipTerm %d %d %d %d %d%n",
+                    lastBaseLogPosition, lastTermPosition, leadershipTermId, leaderMemberId, logSessionId);
                 nextListener.onNewLeadershipTerm(
                     lastBaseLogPosition, lastTermPosition, leadershipTermId, leaderMemberId, logSessionId);
             }
@@ -518,12 +518,16 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 final int offset,
                 final int length)
             {
+                stream.format(
+                    "onQueryResponse %d %d %d%n", correlationId, requestMemberId, responseMemberId);
                 nextListener.onQueryResponse(correlationId, requestMemberId, responseMemberId, data, offset, length);
             }
 
             public void onRecoveryPlanQuery(
                 final long correlationId, final int leaderMemberId, final int requestMemberId)
             {
+                stream.format(
+                    "onRecoveryPlanQuery %d %d %d%n", correlationId, leaderMemberId, requestMemberId);
                 nextListener.onRecoveryPlanQuery(correlationId, leaderMemberId, requestMemberId);
             }
         };

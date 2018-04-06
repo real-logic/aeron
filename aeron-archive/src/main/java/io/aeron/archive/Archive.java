@@ -75,8 +75,8 @@ public class Archive implements AutoCloseable
     }
 
     /**
-     * Launch an {@link Archive} with that communicates with an out of process Media Driver and await a
-     * shutdown signal.
+     * Launch an {@link Archive} with that communicates with an out of process {@link io.aeron.driver.MediaDriver}
+     * and await a shutdown signal.
      *
      * @param args command line argument which is a list for properties files as URLs or filenames.
      */

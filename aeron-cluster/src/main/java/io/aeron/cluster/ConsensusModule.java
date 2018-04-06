@@ -42,6 +42,7 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.S
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 public class ConsensusModule implements AutoCloseable
@@ -160,6 +161,24 @@ public class ConsensusModule implements AutoCloseable
             }
 
             return STATES[(int)code];
+        }
+    }
+
+    /**
+     * Launch an {@link ConsensusModule} with that communicates with an out of process {@link io.aeron.archive.Archive}
+     * and {@link io.aeron.driver.MediaDriver} then awaits shutdown signal.
+     *
+     * @param args command line argument which is a list for properties files as URLs or filenames.
+     */
+    public static void main(final String[] args)
+    {
+        loadPropertiesFiles(args);
+
+        try (ConsensusModule ignore = launch())
+        {
+            new ShutdownSignalBarrier().await();
+
+            System.out.println("Shutdown ConsensusModule...");
         }
     }
 

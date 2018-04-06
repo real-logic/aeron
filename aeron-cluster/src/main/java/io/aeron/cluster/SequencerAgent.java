@@ -443,18 +443,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 recordingLog.appendTerm(leadershipTermId, logPosition, epochClock.time(), votedForMemberId);
                 sendVote(candidateTermId, candidateId, true);
 
-                if (recoveryPlan.lastTermPositionAppended < lastTermPosition && null == recordingCatchUp)
-                {
-                    recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
-                        archive,
-                        memberStatusPublisher,
-                        clusterMembers,
-                        votedForMemberId,
-                        memberId,
-                        recoveryPlan,
-                        ctx);
-                }
-
                 return;
             }
         }
@@ -478,6 +466,18 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             }
 
             this.logSessionId = logSessionId;
+
+            if (recoveryPlan.lastTermPositionAppended < lastTermPosition && null == recordingCatchUp)
+            {
+                recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
+                    archive,
+                    memberStatusPublisher,
+                    clusterMembers,
+                    votedForMemberId,
+                    memberId,
+                    recoveryPlan,
+                    ctx);
+            }
         }
     }
 

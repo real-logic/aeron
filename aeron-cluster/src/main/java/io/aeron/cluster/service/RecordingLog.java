@@ -630,7 +630,20 @@ public class RecordingLog
      */
     public void commitLeadershipRecordingId(final long leadershipTermId, final long recordingId)
     {
-        commitEntryValue(leadershipTermId, recordingId, RECORDING_ID_OFFSET);
+        final int index = getLeadershipTermEntryIndex(leadershipTermId);
+
+        commitEntryValue(index, recordingId, RECORDING_ID_OFFSET);
+
+        final Entry entry = entries.get(index);
+        entries.set(index, new Entry(
+            recordingId,
+            entry.leadershipTermId,
+            entry.termBaseLogPosition,
+            entry.termPosition,
+            entry.timestamp,
+            entry.votedForMemberId,
+            entry.type,
+            entry.entryIndex));
     }
 
     /**
@@ -641,18 +654,44 @@ public class RecordingLog
      */
     public void commitLeadershipTermPosition(final long leadershipTermId, final long termPosition)
     {
-        commitEntryValue(leadershipTermId, termPosition, TERM_POSITION_OFFSET);
+        final int index = getLeadershipTermEntryIndex(leadershipTermId);
+
+        commitEntryValue(index, termPosition, TERM_POSITION_OFFSET);
+
+        final Entry entry = entries.get(index);
+        entries.set(index, new Entry(
+            entry.recordingId,
+            entry.leadershipTermId,
+            entry.termBaseLogPosition,
+            termPosition,
+            entry.timestamp,
+            entry.votedForMemberId,
+            entry.type,
+            entry.entryIndex));
     }
 
     /**
      * Commit the position for the base of a leadership term.
      *
-     * @param leadershipTermId for committing the base position..
+     * @param leadershipTermId for committing the base position.
      * @param logPosition      for the base of a leadership term.
      */
     public void commitLeadershipLogPosition(final long leadershipTermId, final long logPosition)
     {
-        commitEntryValue(leadershipTermId, logPosition, TERM_BASE_LOG_POSITION_OFFSET);
+        final int index = getLeadershipTermEntryIndex(leadershipTermId);
+
+        commitEntryValue(index, logPosition, TERM_BASE_LOG_POSITION_OFFSET);
+
+        final Entry entry = entries.get(index);
+        entries.set(index, new Entry(
+            entry.recordingId,
+            entry.leadershipTermId,
+            logPosition,
+            entry.termPosition,
+            entry.timestamp,
+            entry.votedForMemberId,
+            entry.type,
+            entry.entryIndex));
     }
 
     /**
@@ -872,13 +911,11 @@ public class RecordingLog
         return snapshotStep;
     }
 
-    private void commitEntryValue(final long leadershipTermId, final long value, final int fieldOffset)
+    private void commitEntryValue(final int entryIndex, final long value, final int fieldOffset)
     {
-        final int index = getLeadershipTermEntryIndex(leadershipTermId);
-
         buffer.putLong(0, value, LITTLE_ENDIAN);
         byteBuffer.limit(SIZE_OF_LONG).position(0);
-        final long filePosition = (index * ENTRY_LENGTH) + fieldOffset;
+        final long filePosition = (entryIndex * ENTRY_LENGTH) + fieldOffset;
 
         try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
         {

@@ -1033,10 +1033,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 }
             }
         }
-        else
-        {
-            electLeader();
-        }
 
         if (memberId == votedForMemberId)
         {
@@ -1046,11 +1042,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         {
             becomeFollower();
         }
-    }
-
-    private void electLeader()
-    {
-        throw new IllegalStateException("elections not yet supported");
     }
 
     private void requestVotes(

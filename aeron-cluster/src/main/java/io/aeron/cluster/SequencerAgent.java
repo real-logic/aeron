@@ -1180,9 +1180,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         ClusterMember.resetTermPositions(clusterMembers, NULL_POSITION);
         clusterMembers[memberId].termPosition(0);
 
-        final long lastBaseLogPosition = recoveryPlan.lastTermBaseLogPosition;
-        final long lastTermPosition = recoveryPlan.lastTermPositionAppended;
-
         do
         {
             final long nowMs = epochClock.time();
@@ -1196,8 +1193,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                     {
                         memberStatusPublisher.newLeadershipTerm(
                             member.publication(),
-                            lastBaseLogPosition,
-                            lastTermPosition,
+                            recoveryPlan.lastTermBaseLogPosition,
+                            recoveryPlan.lastTermPositionAppended,
                             leadershipTermId,
                             memberId,
                             logSessionId);

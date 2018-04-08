@@ -459,12 +459,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     {
         if (leadershipTermId == this.leadershipTermId)
         {
-            if (leaderMemberId != votedForMemberId)
-            {
-                throw new IllegalStateException(
-                    "not my candidate: expected=" + votedForMemberId + " received=" + leaderMemberId);
-            }
-
             this.logSessionId = logSessionId;
 
             if (recoveryPlan.lastTermPositionAppended < lastTermPosition && null == recordingCatchUp)

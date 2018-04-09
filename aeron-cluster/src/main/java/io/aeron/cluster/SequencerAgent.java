@@ -251,6 +251,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
         workCount += memberStatusAdapter.poll();
         workCount += updateMemberPosition(nowMs);
+        workCount += serviceControlAdapter.poll();
 
         if (isSlowTickCycle)
         {
@@ -741,7 +742,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         markFile.updateActivityTimestamp(nowMs);
         checkServiceHeartbeats(nowMs);
         workCount += aeronClientInvoker.invoke();
-        workCount += serviceControlAdapter.poll();
 
         if (Cluster.Role.LEADER == role)
         {

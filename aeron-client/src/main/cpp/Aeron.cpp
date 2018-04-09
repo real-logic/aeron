@@ -95,7 +95,7 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
 
     while (true)
     {
-        while (MemoryMappedFile::getFileSize(context.cncFileName().c_str()) == -1)
+        while (MemoryMappedFile::getFileSize(context.cncFileName().c_str()) <= 0)
         {
             if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
             {

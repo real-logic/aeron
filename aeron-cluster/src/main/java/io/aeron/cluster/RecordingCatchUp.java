@@ -137,6 +137,11 @@ class RecordingCatchUp implements AutoCloseable
         return workCount;
     }
 
+    public boolean isInInit()
+    {
+        return State.INIT == state;
+    }
+
     public boolean isCaughtUp()
     {
         return State.CAUGHT_UP == state;

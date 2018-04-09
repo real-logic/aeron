@@ -100,7 +100,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private final RecordingLog recordingLog;
     private RecordingLog.RecoveryPlan recoveryPlan;
     private UnsafeBuffer recoveryPlanBuffer;
-    private RecordingCatchUp recordingCatchUp;
     private Election election;
 
     SequencerAgent(
@@ -728,22 +727,17 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         awaitServicesReady(channelUri, true, logSessionId);
     }
 
-    void becomeFollower(final RecordingCatchUp recordingCatchUp)
+    void followerUpdateMemberDetails()
     {
         leadershipTermId = election.leadershipTermId();
-        final int logSessionId = election.logSessionId();
-        this.recordingCatchUp = recordingCatchUp;
         leaderMember = election.leader();
         updateMemberDetails(leaderMember.id());
 
         followerCommitPosition = 0;
-        awaitCatchUp();
+    }
 
-        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, thisMember.logEndpoint());
-        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        final String logChannel = channelUri.toString();
-
+    void followerRecordActiveLog(final String logChannel, final int logSessionId)
+    {
         archive.startRecording(logChannel, ctx.logStreamId(), SourceLocation.REMOTE);
         final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, ctx.logStreamId()));
         logAdapter = new LogAdapter(image, this);
@@ -752,7 +746,10 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), logRecordingPosition.counterId());
         recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);
         lastRecordingPosition = 0;
+    }
 
+    void followerAwaitServicesReady(final ChannelUri channelUri, final int logSessionId)
+    {
         awaitServicesReady(channelUri, false, logSessionId);
     }
 
@@ -1072,23 +1069,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
 
         return false;
-    }
-
-    private void awaitCatchUp()
-    {
-        if (null != recordingCatchUp)
-        {
-            do
-            {
-                idle(memberStatusAdapter.poll() + recordingCatchUp.doWork());
-            }
-            while (!recordingCatchUp.isCaughtUp());
-
-            recordingCatchUp.close();
-
-            catchupLog(recordingCatchUp);
-            recordingCatchUp = null;
-        }
     }
 
     private void createPositionCounters(final int logSessionId)

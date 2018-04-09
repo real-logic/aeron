@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
@@ -460,10 +461,46 @@ class Election implements MemberStatusListener, AutoCloseable
 
     private int followerTransition(final long nowMs)
     {
-        sequencerAgent.becomeFollower(recordingCatchUp);
-        state(State.FOLLOWER_READY);
+        int workCount = 1;
 
-        return 1;
+        if (null == recordingCatchUp)
+        {
+            sequencerAgent.followerUpdateMemberDetails();
+
+            final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember, logSessionId);
+
+            sequencerAgent.followerRecordActiveLog(channelUri.toString(), logSessionId);
+            sequencerAgent.followerAwaitServicesReady(channelUri, logSessionId);
+            state(State.FOLLOWER_READY);
+        }
+        else
+        {
+            if (recordingCatchUp.isInInit())
+            {
+                sequencerAgent.followerUpdateMemberDetails();
+            }
+
+            if (!recordingCatchUp.isCaughtUp())
+            {
+                workCount += memberStatusAdapter.poll();
+                workCount += recordingCatchUp.doWork();
+            }
+            else
+            {
+                recordingCatchUp.close();
+
+                sequencerAgent.catchupLog(recordingCatchUp);
+                recordingCatchUp = null;
+
+                final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember, logSessionId);
+
+                sequencerAgent.followerRecordActiveLog(channelUri.toString(), logSessionId);
+                sequencerAgent.followerAwaitServicesReady(channelUri, logSessionId);
+                state(State.FOLLOWER_READY);
+            }
+        }
+
+        return workCount;
     }
 
     private int leaderTransition(final long nowMs)
@@ -528,5 +565,14 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         //System.out.println(this.state + " -> " + state);
         this.state = state;
+    }
+
+    private ChannelUri followerLogChannel(final String logChannel, final ClusterMember member, final int sessionId)
+    {
+        final ChannelUri channelUri = ChannelUri.parse(logChannel);
+        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.logEndpoint());
+        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
+
+        return channelUri;
     }
 }

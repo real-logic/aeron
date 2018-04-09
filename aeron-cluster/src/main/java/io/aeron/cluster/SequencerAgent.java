@@ -727,7 +727,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         awaitServicesReady(channelUri, true, logSessionId);
     }
 
-    void followerUpdateMemberDetails()
+    void updateFollowerMemberDetails()
     {
         leadershipTermId = election.leadershipTermId();
         leaderMember = election.leader();
@@ -736,7 +736,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         followerCommitPosition = 0;
     }
 
-    void followerRecordActiveLog(final String logChannel, final int logSessionId)
+    void recordFollowerActiveLog(final String logChannel, final int logSessionId)
     {
         archive.startRecording(logChannel, ctx.logStreamId(), SourceLocation.REMOTE);
         final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, ctx.logStreamId()));
@@ -748,7 +748,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         lastRecordingPosition = 0;
     }
 
-    void followerAwaitServicesReady(final ChannelUri channelUri, final int logSessionId)
+    void awaitFollowerServicesReady(final ChannelUri channelUri, final int logSessionId)
     {
         awaitServicesReady(channelUri, false, logSessionId);
     }

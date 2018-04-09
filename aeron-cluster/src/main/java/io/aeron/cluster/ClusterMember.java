@@ -30,6 +30,7 @@ public final class ClusterMember
 {
     public static final int NULL_MEMBER_ID = -1;
 
+    private boolean isBallotSent;
     private boolean isLeader;
     private final int id;
     private int votedForId = NULL_MEMBER_ID;
@@ -85,6 +86,26 @@ public final class ClusterMember
     public boolean isLeader()
     {
         return isLeader;
+    }
+
+    /**
+     * Is the ballot for the current election sent to this member?
+     *
+     * @param isBallotSent is the ballot for the current election sent to this member?
+     */
+    public void isBallotSent(final boolean isBallotSent)
+    {
+        this.isBallotSent = isBallotSent;
+    }
+
+    /**
+     * Is the ballot for the current election sent to this member?
+     *
+     * @return true if the ballot has been sent for this member in the current election.
+     */
+    public boolean isBallotSent()
+    {
+        return isBallotSent;
     }
 
     /**
@@ -394,6 +415,7 @@ public final class ClusterMember
         for (final ClusterMember member : clusterMembers)
         {
             member.votedForId(member.id == candidateMemberId ? candidateMemberId : NULL_MEMBER_ID);
+            member.isBallotSent(member.id == candidateMemberId);
         }
     }
 

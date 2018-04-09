@@ -980,7 +980,7 @@ public class Aeron implements AutoCloseable
                 {
                     if (epochClock.time() > (startTimeMs + driverTimeoutMs()))
                     {
-                        throw new DriverTimeoutException("CnC file not found: " + cncFile.getAbsolutePath());
+                        throw new DriverTimeoutException("CnC file not created: " + cncFile.getAbsolutePath());
                     }
 
                     sleep(16);

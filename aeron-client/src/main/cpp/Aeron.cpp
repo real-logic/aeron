@@ -100,7 +100,7 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
             if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
             {
                 throw DriverTimeoutException(
-                    util::strPrintf("CnC file not found: %s", context.cncFileName().c_str()), SOURCEINFO);
+                    util::strPrintf("CnC file not created: %s", context.cncFileName().c_str()), SOURCEINFO);
             }
 
             std::this_thread::sleep_for(IDLE_SLEEP_MS_16);

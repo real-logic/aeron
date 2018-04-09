@@ -465,7 +465,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
         if (null == recordingCatchUp)
         {
-            sequencerAgent.updateFollowerMemberDetails();
+            sequencerAgent.updateFollowersMemberDetails();
 
             final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember, logSessionId);
 
@@ -477,7 +477,7 @@ class Election implements MemberStatusListener, AutoCloseable
         {
             if (recordingCatchUp.isInInit())
             {
-                sequencerAgent.updateFollowerMemberDetails();
+                sequencerAgent.updateFollowersMemberDetails();
             }
 
             if (!recordingCatchUp.isCaughtUp())

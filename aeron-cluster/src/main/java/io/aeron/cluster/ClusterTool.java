@@ -23,6 +23,7 @@ import org.agrona.IoUtil;
 import org.agrona.concurrent.AtomicBuffer;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +37,7 @@ public class ClusterTool
     {
         if (args.length != 2)
         {
-            printHelp();
+            printHelp(System.out);
             System.exit(-1);
         }
 
@@ -44,47 +45,72 @@ public class ClusterTool
         if (!clusterDir.exists())
         {
             System.err.println("ERR: cluster folder not found: " + clusterDir.getAbsolutePath());
-            printHelp();
+            printHelp(System.out);
             System.exit(-1);
         }
 
         switch (args[1])
         {
             case "describe":
-                try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
-                {
-                    printTypeAndActivityTimestamp(markFile);
-                    System.out.println(markFile.decoder());
-                }
+                describe(System.out, clusterDir);
                 break;
 
             case "pid":
-                try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
-                {
-                    System.out.println(markFile.decoder().pid());
-                }
+                pid(System.out, clusterDir);
                 break;
 
             case "recovery-plan":
-                try (AeronArchive archive = AeronArchive.connect())
-                {
-                    final RecordingLog recordingLog = new RecordingLog(clusterDir);
-                    System.out.println(recordingLog.createRecoveryPlan(archive));
-                }
+                recoveryPlan(System.out, clusterDir);
                 break;
 
             case "recording-log":
-                final RecordingLog recordingLog = new RecordingLog(clusterDir);
-                System.out.println(recordingLog.toString());
+                recordingLog(System.out, clusterDir);
                 break;
 
             case "errors":
-                try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
-                {
-                    printTypeAndActivityTimestamp(markFile);
-                    printErrors(markFile);
-                }
+                errors(System.out, clusterDir);
                 break;
+        }
+    }
+
+    public static void describe(final PrintStream stream, final File clusterDir)
+    {
+        try (ClusterMarkFile markFile = openMarkFile(clusterDir, stream::println))
+        {
+            printTypeAndActivityTimestamp(stream, markFile);
+            stream.println(markFile.decoder());
+        }
+    }
+
+    public static void pid(final PrintStream stream, final File clusterDir)
+    {
+        try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+        {
+            stream.println(markFile.decoder().pid());
+        }
+    }
+
+    public static void recoveryPlan(final PrintStream stream, final File clusterDir)
+    {
+        try (AeronArchive archive = AeronArchive.connect())
+        {
+            final RecordingLog recordingLog = new RecordingLog(clusterDir);
+            stream.println(recordingLog.createRecoveryPlan(archive));
+        }
+    }
+
+    public static void recordingLog(final PrintStream stream, final File clusterDir)
+    {
+        final RecordingLog recordingLog = new RecordingLog(clusterDir);
+        stream.println(recordingLog.toString());
+    }
+
+    public static void errors(final PrintStream stream, final File clusterDir)
+    {
+        try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+        {
+            printTypeAndActivityTimestamp(stream, markFile);
+            printErrors(stream, markFile);
         }
     }
 
@@ -93,23 +119,23 @@ public class ClusterTool
         return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
 
-    private static void printTypeAndActivityTimestamp(final ClusterMarkFile markFile)
+    private static void printTypeAndActivityTimestamp(final PrintStream stream, final ClusterMarkFile markFile)
     {
-        System.out.print("Type: " + markFile.decoder().componentType() + " ");
-        System.out.format(
+        stream.print("Type: " + markFile.decoder().componentType() + " ");
+        stream.format(
             "%1$tH:%1$tM:%1$tS (start: %2tF %2$tH:%2$tM:%2$tS, activity: %3tF %3$tH:%3$tM:%3$tS)%n",
             new Date(),
             new Date(markFile.decoder().startTimestamp()),
             new Date(markFile.activityTimestampVolatile()));
     }
 
-    private static void printErrors(final ClusterMarkFile markFile)
+    private static void printErrors(final PrintStream stream, final ClusterMarkFile markFile)
     {
-        System.out.println("Cluster component error log:");
-        ClusterMarkFile.saveErrorLog(System.out, markFile.errorBuffer());
+        stream.println("Cluster component error log:");
+        ClusterMarkFile.saveErrorLog(stream, markFile.errorBuffer());
 
         final String aeronDirectory = markFile.decoder().aeronDirectory();
-        System.out.println("Aeron driver error log (directory: " + aeronDirectory + "):");
+        stream.println("Aeron driver error log (directory: " + aeronDirectory + "):");
         final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
         final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
@@ -124,16 +150,16 @@ public class ClusterTool
         }
 
         final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
-        ClusterMarkFile.saveErrorLog(System.out, buffer);
+        ClusterMarkFile.saveErrorLog(stream, buffer);
     }
 
-    private static void printHelp()
+    private static void printHelp(final PrintStream stream)
     {
-        System.out.println("Usage: <cluster-dir> <command>");
-        System.out.println("  describe: prints out all descriptors in the file.");
-        System.out.println("  pid: prints PID of cluster component.");
-        System.out.println("  recovery-plan: prints recovery plan of cluster component.");
-        System.out.println("  recording-log: prints recording log of cluster component.");
-        System.out.println("  errors: prints Aeron and cluster component error logs.");
+        stream.println("Usage: <cluster-dir> <command>");
+        stream.println("  describe: prints out all descriptors in the file.");
+        stream.println("  pid: prints PID of cluster component.");
+        stream.println("  recovery-plan: prints recovery plan of cluster component.");
+        stream.println("  recording-log: prints recording log of cluster component.");
+        stream.println("  errors: prints Aeron and cluster component error logs.");
     }
 }

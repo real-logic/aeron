@@ -727,7 +727,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         awaitServicesReady(channelUri, true, logSessionId);
     }
 
-    void updateFollowerMemberDetails()
+    void updateFollowersMemberDetails()
     {
         leadershipTermId = election.leadershipTermId();
         leaderMember = election.leader();

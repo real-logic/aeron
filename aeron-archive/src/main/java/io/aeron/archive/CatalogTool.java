@@ -126,7 +126,7 @@ public class CatalogTool
 
         final int recordingFileCount = (int)((dataLength + segmentFileLength - 1) / segmentFileLength);
 
-        final String prefix = recordingId + ".";
+        final String prefix = recordingId + "-";
         final boolean[] filesFound = new boolean[recordingFileCount];
         for (final String fileName : archiveDir.list((dir, name) -> name.startsWith(prefix)))
         {
@@ -139,7 +139,6 @@ public class CatalogTool
             catch (final Exception ex)
             {
                 System.err.println("(recordingId=" + recordingId + ") ERR: malformed recording filename:" + fileName);
-                ex.printStackTrace(System.err);
                 headerEncoder.valid(INVALID);
                 return;
             }

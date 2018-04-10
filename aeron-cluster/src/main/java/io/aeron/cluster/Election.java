@@ -50,9 +50,7 @@ class Election implements MemberStatusListener, AutoCloseable
         LEADER_TRANSITION(7),
         FOLLOWER_READY(8),
         LEADER_READY(9),
-        LEADER_COMPLETE(10),
-        FOLLOWER_COMPLETE(11),
-        FAILED(12);
+        FAILED(10);
 
         static final State[] STATES;
 
@@ -509,7 +507,8 @@ class Election implements MemberStatusListener, AutoCloseable
         if (memberStatusPublisher.appendedPosition(publication, 0, leadershipTermId, thisMember.id()))
         {
             sequencerAgent.electionComplete(Cluster.Role.FOLLOWER);
-            state(State.FOLLOWER_COMPLETE);
+            close();
+
             return 1;
         }
 
@@ -523,7 +522,8 @@ class Election implements MemberStatusListener, AutoCloseable
         if (ClusterMember.hasReachedPosition(clusterMembers, 0))
         {
             sequencerAgent.electionComplete(Cluster.Role.LEADER);
-            state(State.LEADER_COMPLETE);
+            close();
+
             workCount += 1;
         }
         else if (nowMs > (timeOfLastUpdateMs + leaderHeartbeatIntervalMs))

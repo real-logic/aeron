@@ -146,6 +146,59 @@ class Election implements MemberStatusListener, AutoCloseable
         CloseHelper.close(stateCounter);
     }
 
+    public int doWork(final long nowMs)
+    {
+        int workCount = 0;
+
+        switch (state)
+        {
+            case INIT:
+                workCount += init(nowMs);
+                break;
+
+            case CANVASS:
+                workCount += canvass(nowMs);
+                break;
+
+            case NOMINATE:
+                workCount += nominate(nowMs);
+                break;
+
+            case FOLLOWER_BALLOT:
+                workCount += followerBallot(nowMs);
+                break;
+
+            case CANDIDATE_BALLOT:
+                workCount += candidateBallot(nowMs);
+                break;
+
+            case FOLLOWER_AWAITING_RESULT:
+                workCount += followerAwaitingResult(nowMs);
+                break;
+
+            case FOLLOWER_TRANSITION:
+                workCount += followerTransition(nowMs);
+                break;
+
+            case LEADER_TRANSITION:
+                workCount += leaderTransition(nowMs);
+                break;
+
+            case FOLLOWER_READY:
+                workCount += followerReady(nowMs);
+                break;
+
+            case LEADER_READY:
+                workCount += leaderReady(nowMs);
+                break;
+
+            case FAILED:
+                break;
+        }
+
+        return workCount;
+    }
+
     public void onRequestVote(
         final long candidateTermId,
         final long lastBaseLogPosition,
@@ -290,59 +343,6 @@ class Election implements MemberStatusListener, AutoCloseable
     void logSessionId(final int logSessionId)
     {
         this.logSessionId = logSessionId;
-    }
-
-    int doWork(final long nowMs)
-    {
-        int workCount = 0;
-
-        switch (state)
-        {
-            case INIT:
-                workCount += init(nowMs);
-                break;
-
-            case CANVASS:
-                workCount += canvass(nowMs);
-                break;
-
-            case NOMINATE:
-                workCount += nominate(nowMs);
-                break;
-
-            case FOLLOWER_BALLOT:
-                workCount += followerBallot(nowMs);
-                break;
-
-            case CANDIDATE_BALLOT:
-                workCount += candidateBallot(nowMs);
-                break;
-
-            case FOLLOWER_AWAITING_RESULT:
-                workCount += followerAwaitingResult(nowMs);
-                break;
-
-            case FOLLOWER_TRANSITION:
-                workCount += followerTransition(nowMs);
-                break;
-
-            case LEADER_TRANSITION:
-                workCount += leaderTransition(nowMs);
-                break;
-
-            case FOLLOWER_READY:
-                workCount += followerReady(nowMs);
-                break;
-
-            case LEADER_READY:
-                workCount += leaderReady(nowMs);
-                break;
-
-            case FAILED:
-                break;
-        }
-
-        return workCount;
     }
 
     private int init(final long nowMs)

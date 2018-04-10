@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
+import io.aeron.Counter;
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.service.RecordingLog;
@@ -35,72 +36,63 @@ import static io.aeron.cluster.ClusterMember.NULL_MEMBER_ID;
  */
 class Election implements MemberStatusListener, AutoCloseable
 {
+    public static final int ELECTION_STATE_TYPE_ID = 207;
+
     enum State
     {
-        /**
-         * Initialising state to determine what type of election is required.
-         */
-        INIT,
+        INIT(0),
+        CANVASS(1),
+        NOMINATE(2),
+        FOLLOWER_BALLOT(3),
+        CANDIDATE_BALLOT(4),
+        FOLLOWER_AWAITING_RESULT(5),
+        FOLLOWER_TRANSITION(6),
+        LEADER_TRANSITION(7),
+        FOLLOWER_READY(8),
+        LEADER_READY(9),
+        LEADER_COMPLETE(10),
+        FOLLOWER_COMPLETE(11),
+        FAILED(12);
 
-        /**
-         * Canvass the other members for likelihood of a successful leadership bid in automated elections.
-         */
-        CANVASS,
+        static final State[] STATES;
 
-        /**
-         * Nominate this member as a candidate if it is believed it can successfully become leader.
-         */
-        NOMINATE,
+        static
+        {
+            final State[] states = values();
+            STATES = new State[states.length];
+            for (final State state : states)
+            {
+                final int code = state.code();
+                if (null != STATES[code])
+                {
+                    throw new IllegalStateException("Code already in use: " + code);
+                }
 
-        /**
-         * Listen for vote requests and vote as appropriate.
-         */
-        FOLLOWER_BALLOT,
+                STATES[code] = state;
+            }
+        }
 
-        /**
-         * Listen for votes and vote requests from other potential candidates.
-         */
-        CANDIDATE_BALLOT,
+        private final int code;
 
-        /**
-         * Listen for the result of an election as a follower.
-         */
-        AWAITING_RESULT,
+        State(final int code)
+        {
+            this.code = code;
+        }
 
-        /**
-         * Successful election with a new leader. Followers transition to the new leadership term.
-         */
-        FOLLOWER_TRANSITION,
+        public int code()
+        {
+            return code;
+        }
 
-        /**
-         * Successful election with a new leader. Leader establishes new leadership term and coordinates followers.
-         */
-        LEADER_TRANSITION,
+        public static State get(final int code)
+        {
+            if (code < 0 || code > (STATES.length - 1))
+            {
+                throw new IllegalStateException("Invalid state counter code: " + code);
+            }
 
-        /**
-         * Follower is ready and notifying the leader.
-         */
-        FOLLOWER_READY,
-
-        /**
-         * Leader is ready and waiting for followers to be ready.
-         */
-        LEADER_READY,
-
-        /**
-         * Leader has completed the election cycle.
-         */
-        LEADER_COMPLETE,
-
-        /**
-         * Follower has completed the election cycle.
-         */
-        FOLLOWER_COMPLETE,
-
-        /**
-         * State of the current election when no leader has been elected due to timeout or lack of majority support.
-         */
-        FAILED,
+            return STATES[code];
+        }
     }
 
     private final long leaderHeartbeatIntervalMs;
@@ -120,6 +112,7 @@ class Election implements MemberStatusListener, AutoCloseable
     private int logSessionId = CommonContext.NULL_SESSION_ID;
     private ClusterMember leaderMember = null;
     private State state = State.INIT;
+    private Counter stateCounter;
     private RecordingCatchUp recordingCatchUp;
 
     Election(
@@ -150,6 +143,7 @@ class Election implements MemberStatusListener, AutoCloseable
     public void close()
     {
         CloseHelper.close(recordingCatchUp);
+        CloseHelper.close(stateCounter);
     }
 
     public void onRequestVote(
@@ -172,7 +166,7 @@ class Election implements MemberStatusListener, AutoCloseable
                     thisMember.id(),
                     true);
 
-                state(State.AWAITING_RESULT);
+                state(State.FOLLOWER_AWAITING_RESULT);
                 return;
             }
             else
@@ -293,11 +287,6 @@ class Election implements MemberStatusListener, AutoCloseable
         return leadershipTermId;
     }
 
-    int logSessionId()
-    {
-        return logSessionId;
-    }
-
     void logSessionId(final int logSessionId)
     {
         this.logSessionId = logSessionId;
@@ -329,8 +318,8 @@ class Election implements MemberStatusListener, AutoCloseable
                 workCount += candidateBallot(nowMs);
                 break;
 
-            case AWAITING_RESULT:
-                workCount += awaitingResult(nowMs);
+            case FOLLOWER_AWAITING_RESULT:
+                workCount += followerAwaitingResult(nowMs);
                 break;
 
             case FOLLOWER_TRANSITION:
@@ -358,6 +347,8 @@ class Election implements MemberStatusListener, AutoCloseable
 
     private int init(final long nowMs)
     {
+        stateCounter = ctx.aeron().addCounter(0, "Election State");
+
         if (clusterMembers.length == 1)
         {
             ++leadershipTermId;
@@ -439,14 +430,12 @@ class Election implements MemberStatusListener, AutoCloseable
             {
                 if (!member.isBallotSent())
                 {
-                    final boolean isSent = memberStatusPublisher.requestVote(
+                    member.isBallotSent(memberStatusPublisher.requestVote(
                         member.publication(),
                         leadershipTermId,
                         recoveryPlan.lastTermBaseLogPosition,
                         recoveryPlan.lastTermPositionAppended,
-                        thisMember.id());
-
-                    member.isBallotSent(isSent);
+                        thisMember.id()));
                 }
             }
         }
@@ -454,7 +443,7 @@ class Election implements MemberStatusListener, AutoCloseable
         return workCount;
     }
 
-    private int awaitingResult(final long nowMs)
+    private int followerAwaitingResult(final long nowMs)
     {
         return memberStatusAdapter.poll();
     }
@@ -565,6 +554,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         //System.out.println(this.state + " -> " + state);
         this.state = state;
+        stateCounter.setOrdered(state.code());
     }
 
     private ChannelUri followerLogChannel(final String logChannel, final ClusterMember member, final int sessionId)

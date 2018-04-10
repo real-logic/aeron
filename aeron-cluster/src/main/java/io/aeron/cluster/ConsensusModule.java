@@ -381,6 +381,11 @@ public class ConsensusModule implements AutoCloseable
         public static final int SERVICE_HEARTBEAT_TYPE_ID = ServiceHeartbeat.SERVICE_HEARTBEAT_TYPE_ID;
 
         /**
+         * Type id for election state counter.
+         */
+        public static final int ELECTION_STATE_TYPE_ID = Election.ELECTION_STATE_TYPE_ID;
+
+        /**
          * Directory to use for the aeron cluster.
          */
         public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";

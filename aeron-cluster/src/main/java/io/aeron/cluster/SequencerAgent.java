@@ -769,6 +769,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             }
         }
 
+        election.close();
         election = null;
     }
 

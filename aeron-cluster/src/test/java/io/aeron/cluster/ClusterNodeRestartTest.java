@@ -415,6 +415,7 @@ public class ClusterNodeRestartTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
+                .errorHandler(Throwable::printStackTrace)
                 .snapshotCounter(mockSnapshotCounter)
                 .terminationHook(() -> isTerminated.set(true))
                 .deleteDirOnStart(initialLaunch));

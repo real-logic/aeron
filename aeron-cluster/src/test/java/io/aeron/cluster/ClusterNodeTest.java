@@ -64,6 +64,7 @@ public class ClusterNodeTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
+                .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(true));
     }
 

@@ -104,6 +104,7 @@ public class ClusterTest
                     .threadingMode(ArchiveThreadingMode.SHARED)
                     .deleteArchiveOnStart(true),
                 new ConsensusModule.Context()
+                    .errorHandler(Throwable::printStackTrace)
                     .clusterMemberId(i)
                     .clusterMembers(CLUSTER_MEMBERS)
                     .appointedLeaderId(0)

@@ -509,6 +509,7 @@ public class AuthenticationTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
+                .errorHandler(Throwable::printStackTrace)
                 .authenticatorSupplier(authenticatorSupplier)
                 .deleteDirOnStart(true));
     }

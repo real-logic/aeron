@@ -380,6 +380,17 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             replayPosition = position;
         }
 
+        if (!RecordingFragmentReader.initialSegmentFileExists(recordingSummary, archiveDir, replayPosition))
+        {
+            controlSession.sendResponse(
+                correlationId,
+                ERROR,
+                "initial segment file does not exist for recording: " + recordingId,
+                controlResponseProxy);
+
+            return;
+        }
+
         final ExclusivePublication replayPublication = newReplayPublication(
             correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
 

@@ -121,10 +121,10 @@ public class CatalogTool
         final int termBufferLength = decoder.termBufferLength();
         final long startPosition = decoder.startPosition();
         final long startSegmentOffset = startPosition & (termBufferLength - 1);
+        final long stopSegmentOffset;
         final File maxSegmentFile;
 
         long stopPosition = decoder.stopPosition();
-        long stopSegmentOffset = NULL_POSITION;
         int maxSegmentIndex = -1;
 
         if (NULL_POSITION == stopPosition)
@@ -191,7 +191,8 @@ public class CatalogTool
             return;
         }
 
-        if (verifyLastFile(recordingId, maxSegmentFile, stopSegmentOffset, decoder))
+        final long startOffset = ((stopPosition - startPosition) > segmentFileLength) ? 0L : startSegmentOffset;
+        if (verifyLastFile(recordingId, maxSegmentFile, startOffset, stopSegmentOffset, decoder))
         {
             headerEncoder.valid(INVALID);
             return;
@@ -203,13 +204,15 @@ public class CatalogTool
 
     private static boolean verifyLastFile(
         final long recordingId,
-        final File lastSegmentFile, final long endSegmentOffset,
+        final File lastSegmentFile,
+        final long startOffset,
+        final long endSegmentOffset,
         final RecordingDescriptorDecoder decoder)
     {
         try (FileChannel lastFile = FileChannel.open(lastSegmentFile.toPath(), READ))
         {
             TEMP_BUFFER.clear();
-            long position = 0L;
+            long position = startOffset;
             do
             {
                 TEMP_BUFFER.clear().limit(DataHeaderFlyweight.HEADER_LENGTH);

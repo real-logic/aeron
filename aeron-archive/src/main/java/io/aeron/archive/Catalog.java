@@ -19,6 +19,7 @@ import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -28,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -91,6 +93,8 @@ class Catalog implements AutoCloseable
 
     static final int PAGE_SIZE = 4096;
     static final int NULL_RECORD_ID = -1;
+
+    static final String SEGMENT_FILE_EXTENSION = ".rec";
 
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     static final int DEFAULT_RECORD_LENGTH = 1024;
@@ -564,64 +568,7 @@ class Catalog implements AutoCloseable
         }
     }
 
-    /**
-     * On catalog load we verify entries are in coherent state and attempt to recover entries data where untimely
-     * termination of recording has resulted in an unaccounted for stopPosition/stopTimestamp. This operation may be
-     * expensive for large catalogs.
-     */
-    private void refreshCatalog(final boolean fixOnRefresh)
-    {
-        if (fixOnRefresh)
-        {
-            forEach(this::refreshAndFixDescriptor);
-        }
-        else
-        {
-            forEach(((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> nextRecordingId++));
-        }
-    }
-
-    private void refreshAndFixDescriptor(
-        @SuppressWarnings("unused") final RecordingDescriptorHeaderEncoder unused,
-        final RecordingDescriptorHeaderDecoder headerDecoder,
-        final RecordingDescriptorEncoder encoder,
-        final RecordingDescriptorDecoder decoder)
-    {
-        final long recordingId = decoder.recordingId();
-        if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIMESTAMP)
-        {
-            int segmentIndex = 0;
-            File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
-            final long startPosition = decoder.startPosition();
-
-            if (!segmentFile.exists())
-            {
-                encoder.stopPosition(startPosition);
-            }
-            else
-            {
-                File nextSegmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex + 1));
-                while (nextSegmentFile.exists())
-                {
-                    segmentIndex++;
-                    segmentFile = nextSegmentFile;
-                    nextSegmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex + 1));
-                }
-                final int segmentFileLength = decoder.segmentFileLength();
-                final long stopOffset = recoverStopOffset(segmentFile, segmentFileLength);
-                final int termBufferLength = decoder.termBufferLength();
-                final long recordingLength =
-                    (startPosition & (termBufferLength - 1)) + (segmentIndex * segmentFileLength) + stopOffset;
-                encoder.stopPosition(startPosition + recordingLength);
-            }
-
-            encoder.stopTimestamp(epochClock.time());
-        }
-
-        nextRecordingId = recordingId + 1;
-    }
-
-    private long recoverStopOffset(final File segmentFile, final int segmentFileLength)
+    public static long recoverStopOffset(final File segmentFile, final int segmentFileLength)
     {
         long lastFragmentOffset = 0;
         try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))
@@ -662,5 +609,77 @@ class Catalog implements AutoCloseable
         }
 
         return lastFragmentOffset;
+    }
+
+    /**
+     * On catalog load we verify entries are in coherent state and attempt to recover entries data where untimely
+     * termination of recording has resulted in an unaccounted for stopPosition/stopTimestamp. This operation may be
+     * expensive for large catalogs.
+     */
+    private void refreshCatalog(final boolean fixOnRefresh)
+    {
+        if (fixOnRefresh)
+        {
+            forEach(this::refreshAndFixDescriptor);
+        }
+        else
+        {
+            forEach(((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> nextRecordingId++));
+        }
+    }
+
+    private void refreshAndFixDescriptor(
+        @SuppressWarnings("unused") final RecordingDescriptorHeaderEncoder unused,
+        final RecordingDescriptorHeaderDecoder headerDecoder,
+        final RecordingDescriptorEncoder encoder,
+        final RecordingDescriptorDecoder decoder)
+    {
+        final long recordingId = decoder.recordingId();
+        if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIMESTAMP)
+        {
+            final String prefix = recordingId + "-";
+            String[] segmentFiles =
+                archiveDir.list((dir, name) -> name.endsWith(RECORDING_SEGMENT_POSTFIX));
+            int maxSegmentIndex = -1;
+
+            if (null == segmentFiles)
+            {
+                segmentFiles = ArrayUtil.EMPTY_STRING_ARRAY;
+            }
+
+            for (final String filename : segmentFiles)
+            {
+                try
+                {
+                    final int index = Integer.valueOf(
+                        filename.substring(prefix.length(), filename.length() - RECORDING_SEGMENT_POSTFIX.length()));
+                    maxSegmentIndex = Math.max(index, maxSegmentIndex);
+                }
+                catch (final Exception ignore)
+                {
+                }
+            }
+
+            final File maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentIndex));
+            final long startPosition = decoder.startPosition();
+
+            if (maxSegmentIndex < 0)
+            {
+                encoder.stopPosition(startPosition);
+            }
+            else
+            {
+                final int segmentFileLength = decoder.segmentFileLength();
+                final long stopOffset = recoverStopOffset(maxSegmentFile, segmentFileLength);
+                final int termBufferLength = decoder.termBufferLength();
+                final long recordingLength =
+                    (startPosition & (termBufferLength - 1)) + (maxSegmentIndex * segmentFileLength) + stopOffset;
+                encoder.stopPosition(startPosition + recordingLength);
+            }
+
+            encoder.stopTimestamp(epochClock.time());
+        }
+
+        nextRecordingId = recordingId + 1;
     }
 }

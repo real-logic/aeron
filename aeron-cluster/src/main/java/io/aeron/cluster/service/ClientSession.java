@@ -98,8 +98,7 @@ public class ClientSession
     }
 
     /**
-     * Cluster session encoded principal passed from {@link io.aeron.cluster.Authenticator}
-     * when the session was authenticated.
+     * Cluster session encoded principal from when the session was authenticated.
      *
      * @return The encoded Principal passed. May be 0 length to indicate none present.
      */

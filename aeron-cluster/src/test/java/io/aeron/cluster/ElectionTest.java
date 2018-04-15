@@ -184,8 +184,8 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.LEADER_READY));
 
         final long t7 = t6 + 1;
-        clusterMembers[1].termPosition(0);
-        clusterMembers[2].termPosition(0);
+        election.onAppendedPosition(0, candidateTermId, 1);
+        election.onAppendedPosition(0, candidateTermId, 2);
         election.doWork(t7);
         verify(sequencerAgent).electionComplete(Cluster.Role.LEADER);
         verify(electionStateCounter).close();

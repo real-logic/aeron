@@ -20,8 +20,10 @@ import io.aeron.Counter;
 import io.aeron.Publication;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.RecordingLog;
+import org.agrona.concurrent.CachedEpochClock;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import java.util.concurrent.TimeUnit;
 
@@ -30,9 +32,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("MethodLength")
 public class ElectionTest
@@ -149,8 +149,8 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
         when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
-        election.onVote(candidateTermId, candidateMember.id(), 1, true);
-        election.onVote(candidateTermId, candidateMember.id(), 2, true);
+        election.onVote(candidateTermId, candidateMember.id(), clusterMembers[1].id(), true);
+        election.onVote(candidateTermId, candidateMember.id(), clusterMembers[2].id(), true);
 
         final long t4 = 4;
         election.doWork(t4);
@@ -184,10 +184,84 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.LEADER_READY));
 
         final long t7 = t6 + 1;
-        election.onAppendedPosition(0, candidateTermId, 1);
-        election.onAppendedPosition(0, candidateTermId, 2);
+        election.onAppendedPosition(0, candidateTermId, clusterMembers[1].id());
+        election.onAppendedPosition(0, candidateTermId, clusterMembers[2].id());
         election.doWork(t7);
-        verify(sequencerAgent).electionComplete(Cluster.Role.LEADER);
-        verify(electionStateCounter).close();
+        final InOrder inOrder = inOrder(sequencerAgent, electionStateCounter);
+        inOrder.verify(sequencerAgent).electionComplete(Cluster.Role.LEADER);
+        inOrder.verify(electionStateCounter).close();
+    }
+
+    @Test
+    public void shouldVoteForAppointedLeader()
+    {
+        final long initialLeaderShipTermId = -1;
+        final int candidateId = 0;
+        final ClusterMember[] clusterMembers = ClusterMember.parse(
+            "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
+            "1,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
+            "2,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|");
+
+        clusterMembers[candidateId].publication(mock(Publication.class));
+
+        final ClusterMember followerMember = clusterMembers[1];
+        final CachedEpochClock clock = new CachedEpochClock();
+        final ConsensusModule.Context ctx = new ConsensusModule.Context()
+            .recordingLog(recordingLog)
+            .appointedLeaderId(candidateId)
+            .epochClock(clock)
+            .aeron(aeron);
+
+        final Election election = new Election(
+            initialLeaderShipTermId,
+            clusterMembers,
+            followerMember,
+            memberStatusAdapter,
+            memberStatusPublisher,
+            recoveryPlan,
+            null,
+            ctx,
+            null,
+            sequencerAgent);
+
+        assertThat(election.state(), is(Election.State.INIT));
+
+        final long t1 = 1;
+        assertThat(election.doWork(t1), is(1));
+        assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
+
+        final long candidateTermId = initialLeaderShipTermId + 1;
+        final long t2 = 2;
+        clock.update(t2);
+        election.onRequestVote(
+            candidateTermId, recoveryPlan.lastTermBaseLogPosition, recoveryPlan.lastTermPositionAppended, candidateId);
+        verify(recordingLog).appendTerm(candidateTermId, 0, t2, candidateId);
+        verify(memberStatusPublisher).placeVote(
+            clusterMembers[candidateId].publication(), candidateTermId, candidateId, followerMember.id(), true);
+        election.doWork(t1);
+        assertThat(election.state(), is(Election.State.FOLLOWER_AWAITING_RESULT));
+
+        final int logSessionId = -7;
+        election.onNewLeadershipTerm(
+            recoveryPlan.lastTermBaseLogPosition,
+            recoveryPlan.lastTermPositionAppended,
+            candidateTermId,
+            candidateId,
+            logSessionId);
+        assertThat(election.state(), is(Election.State.FOLLOWER_TRANSITION));
+
+        final long t3 = 3;
+        election.doWork(t3);
+        assertThat(election.state(), is(Election.State.FOLLOWER_READY));
+
+        when(memberStatusPublisher.appendedPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
+
+        final long t4 = 4;
+        election.doWork(t4);
+        final InOrder inOrder = inOrder(memberStatusPublisher, sequencerAgent, electionStateCounter);
+        inOrder.verify(memberStatusPublisher).appendedPosition(
+            clusterMembers[candidateId].publication(), 0, candidateTermId, followerMember.id());
+        inOrder.verify(sequencerAgent).electionComplete(Cluster.Role.FOLLOWER);
+        inOrder.verify(electionStateCounter).close();
     }
 }

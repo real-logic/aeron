@@ -18,7 +18,6 @@ package io.aeron.cluster.service;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.ClusterMarkFile;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;

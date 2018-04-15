@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.cluster.service;
 
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
@@ -35,6 +35,10 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * Used to indicate if a cluster service is running and what configuration it is using. Errors encountered by
+ * the service are recorded in within this file by a {@link org.agrona.concurrent.errors.DistinctErrorLog}.
+ */
 public class ClusterMarkFile implements AutoCloseable
 {
     public static final String FILENAME = "cluster-mark.dat";
@@ -55,7 +59,7 @@ public class ClusterMarkFile implements AutoCloseable
     {
         final boolean markFileExists = file.exists();
 
-        this.markFile = new MarkFile(
+        markFile = new MarkFile(
             file,
             markFileExists,
             MarkFileHeaderDecoder.versionEncodingOffset(),
@@ -73,8 +77,8 @@ public class ClusterMarkFile implements AutoCloseable
             },
             null);
 
-        this.buffer = markFile.buffer();
-        this.errorBuffer = new UnsafeBuffer(this.buffer, HEADER_LENGTH, errorBufferLength);
+        buffer = markFile.buffer();
+        errorBuffer = new UnsafeBuffer(this.buffer, HEADER_LENGTH, errorBufferLength);
 
         headerEncoder.wrap(buffer, 0);
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
@@ -127,10 +131,9 @@ public class ClusterMarkFile implements AutoCloseable
             },
             logger);
 
-        this.buffer = markFile.buffer();
+        buffer = markFile.buffer();
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
-        this.errorBuffer = new UnsafeBuffer(
-            this.buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
+        errorBuffer = new UnsafeBuffer(buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
     }
 
     public void close()

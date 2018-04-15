@@ -19,7 +19,6 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
-import io.aeron.cluster.ClusterMarkFile;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;

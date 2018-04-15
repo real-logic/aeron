@@ -17,9 +17,15 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
+import io.aeron.Publication;
+import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.RecordingLog;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -28,24 +34,30 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("MethodLength")
 public class ElectionTest
 {
-    @Test
-    public void shouldElectSingleNodeClusterAsLeader()
-    {
-        final RecordingLog recordingLog = mock(RecordingLog.class);
-        final RecordingLog.RecoveryPlan recoveryPlan = mock(RecordingLog.RecoveryPlan.class);
+    private final Aeron aeron = mock(Aeron.class);
+    private final Counter electionStateCounter = mock(Counter.class);
+    private final RecordingLog recordingLog = mock(RecordingLog.class);
+    private final RecordingLog.RecoveryPlan recoveryPlan = mock(RecordingLog.RecoveryPlan.class);
+    private final MemberStatusAdapter memberStatusAdapter = mock(MemberStatusAdapter.class);
+    private final MemberStatusPublisher memberStatusPublisher = mock(MemberStatusPublisher.class);
+    private final SequencerAgent sequencerAgent = mock(SequencerAgent.class);
 
+    @Before
+    public void before()
+    {
+        when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);
+    }
+
+    @Test
+    public void shouldElectSingleNodeClusterLeader()
+    {
         final long initialLeaderShipTermId = -1;
         final ClusterMember[] clusterMembers = ClusterMember.parse(
-            "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|");
+            "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint");
 
-        final Aeron aeron = mock(Aeron.class);
-        when(aeron.addCounter(anyInt(), anyString())).thenReturn(mock(Counter.class));
-
-        final MemberStatusAdapter memberStatusAdapter = mock(MemberStatusAdapter.class);
-        final MemberStatusPublisher memberStatusPublisher = mock(MemberStatusPublisher.class);
-        final SequencerAgent sequencerAgent = mock(SequencerAgent.class);
         final ConsensusModule.Context ctx = new ConsensusModule.Context()
             .recordingLog(recordingLog)
             .aeron(aeron);
@@ -73,5 +85,109 @@ public class ElectionTest
         assertThat(election.doWork(t2), is(1));
         verify(sequencerAgent).becomeLeader(t2);
         assertThat(election.state(), is(Election.State.LEADER_READY));
+    }
+
+    @Test
+    public void shouldElectAppointedLeader()
+    {
+        final long initialLeaderShipTermId = -1;
+        final ClusterMember[] clusterMembers = ClusterMember.parse(
+            "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
+            "1,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
+            "2,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|");
+
+        clusterMembers[1].publication(mock(Publication.class));
+        clusterMembers[2].publication(mock(Publication.class));
+
+        final ClusterMember candidateMember = clusterMembers[0];
+        final ConsensusModule.Context ctx = new ConsensusModule.Context()
+            .recordingLog(recordingLog)
+            .appointedLeaderId(candidateMember.id())
+            .aeron(aeron);
+
+        final Election election = new Election(
+            initialLeaderShipTermId,
+            clusterMembers,
+            candidateMember,
+            memberStatusAdapter,
+            memberStatusPublisher,
+            recoveryPlan,
+            null,
+            ctx,
+            null,
+            sequencerAgent);
+
+        assertThat(election.state(), is(Election.State.INIT));
+
+        final long t1 = 1;
+        assertThat(election.doWork(t1), is(1));
+        assertThat(election.state(), is(Election.State.NOMINATE));
+
+        final long candidateTermId = initialLeaderShipTermId + 1;
+        final long t2 = 2;
+        election.doWork(t2);
+        verify(sequencerAgent).role(Cluster.Role.CANDIDATE);
+        verify(recordingLog).appendTerm(0L, 0L, t2, candidateMember.id());
+        assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
+        assertThat(election.leadershipTermId(), is(candidateTermId));
+
+        final long t3 = 3;
+        election.doWork(t3);
+        verify(memberStatusAdapter).poll();
+        verify(memberStatusPublisher).requestVote(
+            clusterMembers[1].publication(),
+            candidateTermId,
+            recoveryPlan.lastTermBaseLogPosition,
+            recoveryPlan.lastTermPositionAppended,
+            candidateMember.id());
+        verify(memberStatusPublisher).requestVote(
+            clusterMembers[2].publication(),
+            candidateTermId,
+            recoveryPlan.lastTermBaseLogPosition,
+            recoveryPlan.lastTermPositionAppended,
+            candidateMember.id());
+        assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
+
+        when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
+        election.onVote(candidateTermId, candidateMember.id(), 1, true);
+        election.onVote(candidateTermId, candidateMember.id(), 2, true);
+
+        final long t4 = 4;
+        election.doWork(t4);
+        assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
+
+        final long t5 = 5;
+        election.doWork(t5);
+        verify(sequencerAgent).becomeLeader(t5);
+        assertThat(clusterMembers[1].termPosition(), is(NULL_POSITION));
+        assertThat(clusterMembers[2].termPosition(), is(NULL_POSITION));
+        assertThat(election.state(), is(Election.State.LEADER_READY));
+
+        final long t6 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
+        final int logSessionId = -7;
+        election.logSessionId(logSessionId);
+        election.doWork(t6);
+        verify(memberStatusPublisher).newLeadershipTerm(
+            clusterMembers[1].publication(),
+            recoveryPlan.lastTermBaseLogPosition,
+            recoveryPlan.lastTermPositionAppended,
+            candidateTermId,
+            candidateMember.id(),
+            logSessionId);
+        verify(memberStatusPublisher).newLeadershipTerm(
+            clusterMembers[2].publication(),
+            recoveryPlan.lastTermBaseLogPosition,
+            recoveryPlan.lastTermPositionAppended,
+            candidateTermId,
+            candidateMember.id(),
+            logSessionId);
+        assertThat(election.state(), is(Election.State.LEADER_READY));
+
+        final long t7 = t6 + 1;
+        clusterMembers[1].termPosition(0);
+        clusterMembers[2].termPosition(0);
+        election.doWork(t7);
+        verify(sequencerAgent).electionComplete(Cluster.Role.LEADER);
+        verify(electionStateCounter).close();
     }
 }

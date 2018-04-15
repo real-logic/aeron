@@ -319,14 +319,11 @@ public class MultiNodeTest
 
             // wait until Leader sends commitPosition after election. This will only work while Leader waits for
             // all followers.
-            while (true)
+            do
             {
                 leaderHarness.awaitMemberStatusMessage(2);
-                if (leaderHarness.memberStatusCounters(2).onCommitPositionCounter > 0)
-                {
-                    break;
-                }
             }
+            while (leaderHarness.memberStatusCounters(2).onCommitPositionCounter == 0);
         }
     }
 }

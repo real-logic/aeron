@@ -16,7 +16,6 @@
 package io.aeron.cluster.client;
 
 import io.aeron.*;
-import io.aeron.cluster.AuthenticationException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;

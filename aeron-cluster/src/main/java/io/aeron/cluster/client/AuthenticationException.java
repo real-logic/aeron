@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.cluster.client;
 
+/**
+ * Used to indicated a failed authentication attempt when connecting to the cluster.
+ */
 public class AuthenticationException extends RuntimeException
 {
     public AuthenticationException()

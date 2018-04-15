@@ -19,6 +19,7 @@ import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.AuthenticationException;
 import io.aeron.cluster.client.CredentialsSupplier;
 import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;

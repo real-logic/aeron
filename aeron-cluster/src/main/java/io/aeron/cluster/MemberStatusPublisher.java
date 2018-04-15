@@ -36,9 +36,9 @@ class MemberStatusPublisher
 
     public boolean requestVote(
         final Publication publication,
-        final long candidateTermId,
         final long lastBaseLogPosition,
         final long lastTermPosition,
+        final long candidateTermId,
         final int candidateMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + RequestVoteEncoder.BLOCK_LENGTH;
@@ -51,9 +51,9 @@ class MemberStatusPublisher
             {
                 requestVoteEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .candidateTermId(candidateTermId)
                     .lastBaseLogPosition(lastBaseLogPosition)
                     .lastTermPosition(lastTermPosition)
+                    .candidateTermId(candidateTermId)
                     .candidateMemberId(candidateMemberId);
 
                 bufferClaim.commit();

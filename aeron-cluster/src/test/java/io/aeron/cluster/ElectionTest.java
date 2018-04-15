@@ -136,15 +136,15 @@ public class ElectionTest
         verify(memberStatusAdapter).poll();
         verify(memberStatusPublisher).requestVote(
             clusterMembers[1].publication(),
-            candidateTermId,
             recoveryPlan.lastTermBaseLogPosition,
             recoveryPlan.lastTermPositionAppended,
+            candidateTermId,
             candidateMember.id());
         verify(memberStatusPublisher).requestVote(
             clusterMembers[2].publication(),
-            candidateTermId,
             recoveryPlan.lastTermBaseLogPosition,
             recoveryPlan.lastTermPositionAppended,
+            candidateTermId,
             candidateMember.id());
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 

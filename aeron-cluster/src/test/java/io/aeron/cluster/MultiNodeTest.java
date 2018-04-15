@@ -214,7 +214,7 @@ public class MultiNodeTest
             context, mockService, mockMemberStatusListeners, false, true, false))
         {
             harness.memberStatusPublisher().requestVote(
-                harness.memberStatusPublication(1), 1, 0, position, 1);
+                harness.memberStatusPublication(1), 0, position, 1, 1);
 
             harness.awaitMemberStatusMessage(1);
 

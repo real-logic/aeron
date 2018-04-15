@@ -430,9 +430,9 @@ class Election implements MemberStatusListener, AutoCloseable
                 {
                     member.isBallotSent(memberStatusPublisher.requestVote(
                         member.publication(),
-                        leadershipTermId,
                         recoveryPlan.lastTermBaseLogPosition,
                         recoveryPlan.lastTermPositionAppended,
+                        leadershipTermId,
                         thisMember.id()));
                 }
             }

@@ -15,9 +15,9 @@
  */
 package io.aeron.driver.media;
 
-import java.net.InetSocketAddress;
+import org.agrona.AsciiEncoding;
 
-import static java.lang.Integer.parseInt;
+import java.net.InetSocketAddress;
 
 class SocketAddressUtil
 {
@@ -94,7 +94,9 @@ class SocketAddressUtil
         if (-1 != separatorIndex && 1 < length - separatorIndex)
         {
             final String hostname = cs.subSequence(0, separatorIndex).toString();
-            final int port = parseInt(cs.subSequence(separatorIndex + 1, length).toString());
+            final int portIndex = separatorIndex + 1;
+            final int port = AsciiEncoding.parseIntAscii(cs, portIndex, length - portIndex);
+
             return new InetSocketAddress(hostname, port);
         }
 
@@ -180,7 +182,9 @@ class SocketAddressUtil
         if (-1 != portIndex && 1 < length - portIndex)
         {
             final String hostname = cs.subSequence(1, scopeIndex != -1 ? scopeIndex : portIndex - 1).toString();
-            final int port = parseInt(cs.subSequence(portIndex + 1, length).toString());
+            portIndex++;
+            final int port = AsciiEncoding.parseIntAscii(cs, portIndex, length - portIndex);
+
             return new InetSocketAddress(hostname, port);
         }
 

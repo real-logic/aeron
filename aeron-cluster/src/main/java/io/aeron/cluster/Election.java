@@ -324,7 +324,12 @@ class Election implements MemberStatusListener, AutoCloseable
                 clusterMembers[followerMemberId]
                     .termPosition(termPosition)
                     .leadershipTermId(leadershipTermId);
-                if (ClusterMember.isSuitableCandidate(clusterMembers, thisMember))
+
+                if (leadershipTermId > thisMember.leadershipTermId() || termPosition > thisMember.termPosition())
+                {
+                    state(State.FOLLOWER_BALLOT);
+                }
+                else if (ClusterMember.isSuitableCandidate(clusterMembers, thisMember))
                 {
                     nominationDeadlineMs = ctx.epochClock().time() + random.nextInt((int)statusIntervalMs);
                     state(State.NOMINATE);

@@ -310,6 +310,49 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.NOMINATE));
     }
 
+    @Test
+    public void shouldCanvassMembersForUnSuccessfulLeadershipBid()
+    {
+        final long initialLeaderShipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+
+        final ClusterMember followerMember = clusterMembers[0];
+        final CachedEpochClock clock = new CachedEpochClock();
+        final ConsensusModule.Context ctx = new ConsensusModule.Context()
+            .random(new Random())
+            .recordingLog(recordingLog)
+            .epochClock(clock)
+            .aeron(aeron);
+
+        final Election election = new Election(
+            initialLeaderShipTermId,
+            clusterMembers,
+            followerMember,
+            memberStatusAdapter,
+            memberStatusPublisher,
+            recoveryPlan,
+            null,
+            ctx,
+            null,
+            sequencerAgent);
+
+        assertThat(election.state(), is(Election.State.INIT));
+
+        final long t1 = 1;
+        assertThat(election.doWork(t1), is(1));
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        election.doWork(t2);
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        election.onAppendedPosition(0, initialLeaderShipTermId + 1, 1);
+        election.onAppendedPosition(0, initialLeaderShipTermId, 2);
+        assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
+    }
+
     private static ClusterMember[] prepareClusterMembers()
     {
         final ClusterMember[] clusterMembers = ClusterMember.parse(

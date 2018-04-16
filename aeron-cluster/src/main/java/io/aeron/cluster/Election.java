@@ -208,35 +208,40 @@ class Election implements MemberStatusListener, AutoCloseable
         final long lastTermPosition,
         final int candidateId)
     {
-        if (State.FOLLOWER_BALLOT == state && candidateTermId == (leadershipTermId + 1))
+        switch (state)
         {
-            if (lastTermPosition >= recoveryPlan.lastTermPositionAppended)
-            {
-                final long logPosition = lastBaseLogPosition + lastTermPosition;
-                ctx.recordingLog().appendTerm(candidateTermId, logPosition, ctx.epochClock().time(), candidateId);
+            case FOLLOWER_BALLOT:
+                if (candidateTermId == (leadershipTermId + 1))
+                {
+                    final boolean voteFor = lastTermPosition >= recoveryPlan.lastTermPositionAppended;
+                    if (voteFor)
+                    {
+                        final long logPosition = lastBaseLogPosition + lastTermPosition;
+                        ctx.recordingLog().appendTerm(
+                            candidateTermId, logPosition, ctx.epochClock().time(), candidateId);
+                        state(State.FOLLOWER_AWAITING_RESULT);
+                    }
+                    else
+                    {
+                        state(State.FAILED);
+                    }
 
-                memberStatusPublisher.placeVote(
-                    clusterMembers[candidateId].publication(),
-                    candidateTermId,
-                    candidateId,
-                    thisMember.id(),
-                    true);
+                    memberStatusPublisher.placeVote(
+                        clusterMembers[candidateId].publication(),
+                        candidateTermId,
+                        candidateId,
+                        thisMember.id(),
+                        voteFor);
+                }
+                break;
 
-                state(State.FOLLOWER_AWAITING_RESULT);
-                return;
-            }
-            else
-            {
-                state(State.FAILED);
-            }
+            case CANDIDATE_BALLOT:
+                if (candidateTermId >= leadershipTermId)
+                {
+                    state(State.FAILED);
+                }
+                break;
         }
-
-        memberStatusPublisher.placeVote(
-            clusterMembers[candidateId].publication(),
-            candidateTermId,
-            candidateId,
-            thisMember.id(),
-            false);
     }
 
     public void onVote(
@@ -246,11 +251,9 @@ class Election implements MemberStatusListener, AutoCloseable
             candidateTermId == leadershipTermId &&
             candidateMemberId == thisMember.id())
         {
-            if (vote)
-            {
-                clusterMembers[followerMemberId].votedForId(candidateMemberId);
-            }
-            else
+            clusterMembers[followerMemberId].votedForId(candidateMemberId);
+
+            if (!vote)
             {
                 state(State.FAILED);
             }

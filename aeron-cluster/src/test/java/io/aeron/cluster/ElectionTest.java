@@ -25,6 +25,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -34,13 +36,11 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings("MethodLength")
 public class ElectionTest
 {
     private final Aeron aeron = mock(Aeron.class);
     private final Counter electionStateCounter = mock(Counter.class);
     private final RecordingLog recordingLog = mock(RecordingLog.class);
-    private final RecordingLog.RecoveryPlan recoveryPlan = mock(RecordingLog.RecoveryPlan.class);
     private final MemberStatusAdapter memberStatusAdapter = mock(MemberStatusAdapter.class);
     private final MemberStatusPublisher memberStatusPublisher = mock(MemberStatusPublisher.class);
     private final SequencerAgent sequencerAgent = mock(SequencerAgent.class);
@@ -55,6 +55,7 @@ public class ElectionTest
     public void shouldElectSingleNodeClusterLeader()
     {
         final long initialLeaderShipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
         final ClusterMember[] clusterMembers = ClusterMember.parse(
             "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint");
 
@@ -91,13 +92,8 @@ public class ElectionTest
     public void shouldElectAppointedLeader()
     {
         final long initialLeaderShipTermId = -1;
-        final ClusterMember[] clusterMembers = ClusterMember.parse(
-            "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
-            "1,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
-            "2,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|");
-
-        clusterMembers[1].publication(mock(Publication.class));
-        clusterMembers[2].publication(mock(Publication.class));
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember candidateMember = clusterMembers[0];
         final ConsensusModule.Context ctx = new ConsensusModule.Context()
@@ -197,12 +193,8 @@ public class ElectionTest
     {
         final long initialLeaderShipTermId = -1;
         final int candidateId = 0;
-        final ClusterMember[] clusterMembers = ClusterMember.parse(
-            "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
-            "1,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
-            "2,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|");
-
-        clusterMembers[candidateId].publication(mock(Publication.class));
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[1];
         final CachedEpochClock clock = new CachedEpochClock();
@@ -263,5 +255,89 @@ public class ElectionTest
             clusterMembers[candidateId].publication(), 0, candidateTermId, followerMember.id());
         inOrder.verify(sequencerAgent).electionComplete(Cluster.Role.FOLLOWER);
         inOrder.verify(electionStateCounter).close();
+    }
+
+    @Test
+    public void shouldCanvassMembersForSuccessfulLeadershipBid()
+    {
+        final long initialLeaderShipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+
+        final ClusterMember followerMember = clusterMembers[1];
+        final CachedEpochClock clock = new CachedEpochClock();
+        final ConsensusModule.Context ctx = new ConsensusModule.Context()
+            .random(new Random())
+            .recordingLog(recordingLog)
+            .epochClock(clock)
+            .aeron(aeron);
+
+        final Election election = new Election(
+            initialLeaderShipTermId,
+            clusterMembers,
+            followerMember,
+            memberStatusAdapter,
+            memberStatusPublisher,
+            recoveryPlan,
+            null,
+            ctx,
+            null,
+            sequencerAgent);
+
+        assertThat(election.state(), is(Election.State.INIT));
+
+        final long t1 = 1;
+        assertThat(election.doWork(t1), is(1));
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        election.doWork(t2);
+        verify(memberStatusPublisher).appendedPosition(
+            clusterMembers[0].publication(),
+            recoveryPlan.lastTermPositionAppended,
+            initialLeaderShipTermId,
+            followerMember.id());
+        verify(memberStatusPublisher).appendedPosition(
+            clusterMembers[2].publication(),
+            recoveryPlan.lastTermPositionAppended,
+            initialLeaderShipTermId,
+            followerMember.id());
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        election.onAppendedPosition(0, initialLeaderShipTermId, 0);
+        election.onAppendedPosition(0, initialLeaderShipTermId, 2);
+        assertThat(election.state(), is(Election.State.NOMINATE));
+    }
+
+    private static ClusterMember[] prepareClusterMembers()
+    {
+        final ClusterMember[] clusterMembers = ClusterMember.parse(
+            "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
+                "1,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
+                "2,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|");
+
+        clusterMembers[0].publication(mock(Publication.class));
+        clusterMembers[1].publication(mock(Publication.class));
+        clusterMembers[2].publication(mock(Publication.class));
+
+        return clusterMembers;
+    }
+
+    private static RecordingLog.RecoveryPlan recoveryPlan(final long leadershipTermId)
+    {
+        final long lastTermBaseLogPosition = 0;
+        final long lastTermPositionCommitted = 0;
+        final long lastTermPositionAppended = 0;
+        final RecordingLog.ReplayStep snapshotStep = null;
+        final ArrayList<RecordingLog.ReplayStep> termSteps = new ArrayList<>();
+
+        return new RecordingLog.RecoveryPlan(
+            leadershipTermId,
+            lastTermBaseLogPosition,
+            lastTermPositionCommitted,
+            lastTermPositionAppended,
+            snapshotStep,
+            termSteps);
     }
 }

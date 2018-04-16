@@ -22,9 +22,10 @@ import org.agrona.CloseHelper;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.CommonContext.UDP_MEDIA;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 /**
- * Represents a member of the cluster that participates in replication.
+ * Represents a member of the cluster that participates in consensus.
  */
 public final class ClusterMember
 {
@@ -34,7 +35,8 @@ public final class ClusterMember
     private boolean isLeader;
     private final int id;
     private int votedForId = NULL_MEMBER_ID;
-    private long termPosition;
+    private long leadershipTermId;
+    private long termPosition = NULL_POSITION;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
@@ -72,10 +74,12 @@ public final class ClusterMember
      * Set if this member should be leader.
      *
      * @param isLeader value.
+     * @return this for a fluent API.
      */
-    public void isLeader(final boolean isLeader)
+    public ClusterMember isLeader(final boolean isLeader)
     {
         this.isLeader = isLeader;
+        return this;
     }
 
     /**
@@ -92,10 +96,12 @@ public final class ClusterMember
      * Is the ballot for the current election sent to this member?
      *
      * @param isBallotSent is the ballot for the current election sent to this member?
+     * @return this for a fluent API.
      */
-    public void isBallotSent(final boolean isBallotSent)
+    public ClusterMember isBallotSent(final boolean isBallotSent)
     {
         this.isBallotSent = isBallotSent;
+        return this;
     }
 
     /**
@@ -122,10 +128,12 @@ public final class ClusterMember
      * Set this member voted for in the election.
      *
      * @param votedForId in the election.
+     * @return this for a fluent API.
      */
-    public void votedForId(final int votedForId)
+    public ClusterMember votedForId(final int votedForId)
     {
         this.votedForId = votedForId;
+        return this;
     }
 
     /**
@@ -139,13 +147,37 @@ public final class ClusterMember
     }
 
     /**
+     * The leadership term reached for the cluster member.
+     *
+     * @param leadershipTermId leadership term reached for the cluster member.
+     * @return this for a fluent API.
+     */
+    public ClusterMember leadershipTermId(final long leadershipTermId)
+    {
+        this.leadershipTermId = leadershipTermId;
+        return this;
+    }
+
+    /**
+     * The leadership term reached for the cluster member.
+     *
+     * @return The leadership term reached for the cluster member.
+     */
+    public long leadershipTermId()
+    {
+        return leadershipTermId;
+    }
+
+    /**
      * The log position this member has persisted within the current leadership term.
      *
      * @param termPosition in the log this member has persisted within the current leadership term.
+     * @return this for a fluent API.
      */
-    public void termPosition(final long termPosition)
+    public ClusterMember termPosition(final long termPosition)
     {
         this.termPosition = termPosition;
+        return this;
     }
 
     /**
@@ -386,25 +418,6 @@ public final class ClusterMember
     }
 
     /**
-     * Are the publications connected if set? Null publications are ignored.
-     *
-     * @param clusterMembers to check for connected publications.
-     * @return true if all the publications are connected.
-     */
-    public static boolean arePublicationsConnected(final ClusterMember[] clusterMembers)
-    {
-        for (final ClusterMember member : clusterMembers)
-        {
-            if (member.publication() != null && !member.publication.isConnected())
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
      * Become a candidate by voting for yourself and resetting the other votes to {@link #NULL_MEMBER_ID}.
      *
      * @param clusterMembers    to reset the votes for.
@@ -453,5 +466,35 @@ public final class ClusterMember
                 "archive control request endpoint must match cluster members configuration: " + archiveEndpoint +
                 " != " + thisMember.archiveEndpoint);
         }
+    }
+
+    /**
+     * Is the candidate suitable to become the next leader by having a sufficiently current log.
+     *
+     * @param clusterMembers to compare the candidate against.
+     * @param candidate      for leadership.
+     * @return true if the candidate is suitable otherwise false.
+     */
+    public static boolean isSuitableCandidate(final ClusterMember[] clusterMembers, final ClusterMember candidate)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member == candidate)
+            {
+                continue;
+            }
+
+            if (NULL_POSITION == member.termPosition)
+            {
+                return false;
+            }
+
+            if (candidate.leadershipTermId < member.leadershipTermId || candidate.termPosition < member.termPosition)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

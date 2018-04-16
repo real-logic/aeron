@@ -26,6 +26,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -93,6 +94,7 @@ class Election implements MemberStatusListener, AutoCloseable
         }
     }
 
+    private final long statusIntervalMs;
     private final long leaderHeartbeatIntervalMs;
     private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
@@ -103,6 +105,7 @@ class Election implements MemberStatusListener, AutoCloseable
     private final UnsafeBuffer recoveryPlanBuffer;
     private final AeronArchive localArchive;
     private final SequencerAgent sequencerAgent;
+    private final Random random;
 
     private long timeOfLastUpdateMs;
     private long nominationDeadlineMs;
@@ -125,6 +128,7 @@ class Election implements MemberStatusListener, AutoCloseable
         final AeronArchive localArchive,
         final SequencerAgent sequencerAgent)
     {
+        this.statusIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
         this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
         this.leadershipTermId = leadershipTermId;
         this.clusterMembers = clusterMembers;
@@ -136,6 +140,7 @@ class Election implements MemberStatusListener, AutoCloseable
         this.ctx = ctx;
         this.localArchive = localArchive;
         this.sequencerAgent = sequencerAgent;
+        this.random = ctx.random();
     }
 
     public void close()
@@ -313,9 +318,25 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
     {
-        if (leadershipTermId == this.leadershipTermId)
+        switch (state)
         {
-            clusterMembers[followerMemberId].termPosition(termPosition);
+            case CANVASS:
+                clusterMembers[followerMemberId]
+                    .termPosition(termPosition)
+                    .leadershipTermId(leadershipTermId);
+                if (ClusterMember.isSuitableCandidate(clusterMembers, thisMember))
+                {
+                    nominationDeadlineMs = ctx.epochClock().time() + random.nextInt((int)statusIntervalMs);
+                    state(State.NOMINATE);
+                }
+                break;
+
+            case LEADER_READY:
+                if (leadershipTermId == this.leadershipTermId)
+                {
+                    clusterMembers[followerMemberId].termPosition(termPosition);
+                }
+                break;
         }
     }
 
@@ -375,6 +396,9 @@ class Election implements MemberStatusListener, AutoCloseable
         }
         else
         {
+            thisMember
+                .leadershipTermId(recoveryPlan.lastLeadershipTermId)
+                .termPosition(recoveryPlan.lastTermPositionAppended);
             state(State.CANVASS);
         }
 
@@ -383,7 +407,25 @@ class Election implements MemberStatusListener, AutoCloseable
 
     private int canvass(final long nowMs)
     {
-        return 0;
+        final int workCount = memberStatusAdapter.poll();
+
+        if (nowMs >= (timeOfLastUpdateMs + statusIntervalMs))
+        {
+            timeOfLastUpdateMs = nowMs;
+            for (final ClusterMember member : clusterMembers)
+            {
+                if (member != thisMember)
+                {
+                    memberStatusPublisher.appendedPosition(
+                        member.publication(),
+                        recoveryPlan.lastTermPositionAppended,
+                        recoveryPlan.lastLeadershipTermId,
+                        thisMember.id());
+                }
+            }
+        }
+
+        return workCount;
     }
 
     private int nominate(final long nowMs)

@@ -32,6 +32,7 @@ import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
+import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -491,6 +492,17 @@ public class ConsensusModule implements AutoCloseable
         public static final long ELECTION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
         /**
+         * Interval at which a member will send out status updates during election phases.
+         */
+        public static final String STATUS_INTERVAL_PROP_NAME = "aeron.cluster.status.interval";
+
+        /**
+         * Interval at which a member will send out status updates during election phases.
+         * Default to 10 milliseconds in nanoseconds.
+         */
+        public static final long STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(10);
+
+        /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.
          */
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.Authenticator.supplier";
@@ -705,6 +717,17 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Interval at which a member will send out status messages during the election phases.
+         *
+         * @return interval at which a member will send out status messages during the election phases.
+         * @see #STATUS_INTERVAL_PROP_NAME
+         */
+        public static long statusIntervalNs()
+        {
+            return getDurationInNanos(STATUS_INTERVAL_PROP_NAME, STATUS_INTERVAL_DEFAULT_NS);
+        }
+
+        /**
          * Size in bytes of the error buffer in the mark file.
          *
          * @return length of error buffer in bytes.
@@ -805,10 +828,12 @@ public class ConsensusModule implements AutoCloseable
         private long startupStatusTimeoutNs = Configuration.startupStatusTimeoutNs();
         private long failureStatusTimeoutNs = Configuration.failureStatusTimeoutNs();
         private long electionTimeoutNs = Configuration.electionTimeoutNs();
+        private long statusIntervalNs = Configuration.statusIntervalNs();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
+        private Random random;
 
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
@@ -1014,6 +1039,11 @@ public class ConsensusModule implements AutoCloseable
             if (null == recordingCatchUpSupplier)
             {
                 recordingCatchUpSupplier = RecordingCatchUp::new;
+            }
+
+            if (null == random)
+            {
+                random = new Random();
             }
 
             concludeMarkFile();
@@ -1772,6 +1802,32 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Interval at which a member will send out status messages during the election phases.
+         *
+         * @param statusIntervalNs between status message updates.
+         * @return this for a fluent API.
+         * @see Configuration#STATUS_INTERVAL_PROP_NAME
+         * @see Configuration#STATUS_INTERVAL_DEFAULT_NS
+         */
+        public Context statusIntervalNs(final long statusIntervalNs)
+        {
+            this.statusIntervalNs = statusIntervalNs;
+            return this;
+        }
+
+        /**
+         * Interval at which a member will send out status messages during the election phases.
+         *
+         * @return the interval at which a member will send out status messages during the election phases.
+         * @see Configuration#STATUS_INTERVAL_PROP_NAME
+         * @see Configuration#STATUS_INTERVAL_DEFAULT_NS
+         */
+        public long statusIntervalNs()
+        {
+            return statusIntervalNs;
+        }
+
+        /**
          * Get the thread factory used for creating threads.
          *
          * @return thread factory used for creating threads.
@@ -2248,6 +2304,28 @@ public class ConsensusModule implements AutoCloseable
         public DistinctErrorLog errorLog()
         {
             return errorLog;
+        }
+
+        /**
+         * The source of random values for timeouts used in elections.
+         *
+         * @param random source of random values for timeouts used in elections.
+         * @return this for a fluent API.
+         */
+        public Context random(final Random random)
+        {
+            this.random = random;
+            return this;
+        }
+
+        /**
+         * The source of random values for timeouts used in elections.
+         *
+         * @return source of random values for timeouts used in elections.
+         */
+        public Random random()
+        {
+            return random;
         }
 
         /**

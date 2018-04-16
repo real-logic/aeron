@@ -129,7 +129,6 @@ public class ElectionTest
 
         final long t3 = 3;
         election.doWork(t3);
-        verify(memberStatusAdapter).poll();
         verify(memberStatusPublisher).requestVote(
             clusterMembers[1].publication(),
             recoveryPlan.lastTermBaseLogPosition,
@@ -351,6 +350,56 @@ public class ElectionTest
         election.onAppendedPosition(0, initialLeaderShipTermId + 1, 1);
         election.onAppendedPosition(0, initialLeaderShipTermId, 2);
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
+    }
+
+    @Test
+    public void shouldVoteForCandidateDuringNomination()
+    {
+        final long initialLeaderShipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+
+        final ClusterMember followerMember = clusterMembers[1];
+        final CachedEpochClock clock = new CachedEpochClock();
+        final ConsensusModule.Context ctx = new ConsensusModule.Context()
+            .random(new Random())
+            .recordingLog(recordingLog)
+            .epochClock(clock)
+            .aeron(aeron);
+
+        final Election election = new Election(
+            initialLeaderShipTermId,
+            clusterMembers,
+            followerMember,
+            memberStatusAdapter,
+            memberStatusPublisher,
+            recoveryPlan,
+            null,
+            ctx,
+            null,
+            sequencerAgent);
+
+        assertThat(election.state(), is(Election.State.INIT));
+
+        final long t1 = 1;
+        assertThat(election.doWork(t1), is(1));
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        election.doWork(t2);
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        election.onAppendedPosition(0, initialLeaderShipTermId, 0);
+        election.onAppendedPosition(0, initialLeaderShipTermId, 2);
+        assertThat(election.state(), is(Election.State.NOMINATE));
+
+        final long t3 = t2 + 1;
+        final long candidateTermId = initialLeaderShipTermId + 1;
+        election.onRequestVote(
+            candidateTermId, recoveryPlan.lastTermBaseLogPosition, recoveryPlan.lastTermBaseLogPosition, 0);
+        election.doWork(t3);
+        assertThat(election.state(), is(Election.State.FOLLOWER_AWAITING_RESULT));
     }
 
     private static ClusterMember[] prepareClusterMembers()

@@ -210,6 +210,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         switch (state)
         {
+            case NOMINATE:
             case FOLLOWER_BALLOT:
                 if (candidateTermId == (leadershipTermId + 1))
                 {
@@ -438,9 +439,9 @@ class Election implements MemberStatusListener, AutoCloseable
 
     private int nominate(final long nowMs)
     {
-        int workCount = 0;
+        int workCount = memberStatusAdapter.poll();
 
-        if (nowMs >= nominationDeadlineMs)
+        if (State.NOMINATE == state && nowMs >= nominationDeadlineMs)
         {
             ++leadershipTermId;
             sequencerAgent.role(Cluster.Role.CANDIDATE);

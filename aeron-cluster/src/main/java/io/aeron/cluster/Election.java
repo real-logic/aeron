@@ -94,6 +94,7 @@ class Election implements MemberStatusListener, AutoCloseable
         }
     }
 
+    private final boolean isStartup;
     private final long statusIntervalMs;
     private final long leaderHeartbeatIntervalMs;
     private final ClusterMember[] clusterMembers;
@@ -107,6 +108,7 @@ class Election implements MemberStatusListener, AutoCloseable
     private final SequencerAgent sequencerAgent;
     private final Random random;
 
+    private long timeOfLastStateChangeMs;
     private long timeOfLastUpdateMs;
     private long nominationDeadlineMs;
     private long leadershipTermId;
@@ -117,6 +119,7 @@ class Election implements MemberStatusListener, AutoCloseable
     private RecordingCatchUp recordingCatchUp;
 
     Election(
+        final boolean isStartup,
         final long leadershipTermId,
         final ClusterMember[] clusterMembers,
         final ClusterMember thisMember,
@@ -128,6 +131,7 @@ class Election implements MemberStatusListener, AutoCloseable
         final AeronArchive localArchive,
         final SequencerAgent sequencerAgent)
     {
+        this.isStartup = isStartup;
         this.statusIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
         this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
         this.leadershipTermId = leadershipTermId;
@@ -212,16 +216,16 @@ class Election implements MemberStatusListener, AutoCloseable
                 if (candidateTermId == (leadershipTermId + 1))
                 {
                     final boolean voteFor = lastTermPosition >= recoveryPlan.lastTermPositionAppended;
+                    final long nowMs = ctx.epochClock().time();
                     if (voteFor)
                     {
                         final long logPosition = lastBaseLogPosition + lastTermPosition;
-                        ctx.recordingLog().appendTerm(
-                            candidateTermId, logPosition, ctx.epochClock().time(), candidateId);
-                        state(State.FOLLOWER_AWAITING_RESULT);
+                        ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs, candidateId);
+                        state(State.FOLLOWER_AWAITING_RESULT, nowMs);
                     }
                     else
                     {
-                        state(State.FAILED);
+                        state(State.FAILED, nowMs);
                     }
 
                     memberStatusPublisher.placeVote(
@@ -236,7 +240,7 @@ class Election implements MemberStatusListener, AutoCloseable
             case CANDIDATE_BALLOT:
                 if (candidateTermId >= leadershipTermId)
                 {
-                    state(State.FAILED);
+                    state(State.FAILED, ctx.epochClock().time());
                 }
                 break;
         }
@@ -253,7 +257,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
             if (!vote)
             {
-                state(State.FAILED);
+                state(State.FAILED, ctx.epochClock().time());
             }
         }
     }
@@ -283,7 +287,7 @@ class Election implements MemberStatusListener, AutoCloseable
                     ctx);
             }
 
-            state(State.FOLLOWER_TRANSITION);
+            state(State.FOLLOWER_TRANSITION, ctx.epochClock().time());
         }
     }
 
@@ -328,12 +332,12 @@ class Election implements MemberStatusListener, AutoCloseable
 
                 if (leadershipTermId > thisMember.leadershipTermId() || termPosition > thisMember.termPosition())
                 {
-                    state(State.FOLLOWER_BALLOT);
+                    state(State.FOLLOWER_BALLOT, ctx.epochClock().time());
                 }
-                else if (ClusterMember.isSuitableCandidate(clusterMembers, thisMember))
+                else if (ClusterMember.isCertainCandidate(clusterMembers, thisMember))
                 {
                     nominationDeadlineMs = ctx.epochClock().time() + random.nextInt((int)statusIntervalMs);
-                    state(State.NOMINATE);
+                    state(State.NOMINATE, ctx.epochClock().time());
                 }
                 break;
 
@@ -385,7 +389,7 @@ class Election implements MemberStatusListener, AutoCloseable
             final long logPosition = recoveryPlan.lastTermBaseLogPosition + recoveryPlan.lastTermPositionAppended;
             ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, thisMember.id());
 
-            state(State.LEADER_TRANSITION);
+            state(State.LEADER_TRANSITION, nowMs);
         }
         else if (ctx.appointedLeaderId() != NULL_MEMBER_ID)
         {
@@ -393,11 +397,11 @@ class Election implements MemberStatusListener, AutoCloseable
             if (ctx.appointedLeaderId() == memberId)
             {
                 nominationDeadlineMs = nowMs;
-                state(State.NOMINATE);
+                state(State.NOMINATE, nowMs);
             }
             else
             {
-                state(State.FOLLOWER_BALLOT);
+                state(State.FOLLOWER_BALLOT, nowMs);
             }
         }
         else
@@ -405,7 +409,7 @@ class Election implements MemberStatusListener, AutoCloseable
             thisMember
                 .leadershipTermId(recoveryPlan.lastLeadershipTermId)
                 .termPosition(recoveryPlan.lastTermPositionAppended);
-            state(State.CANVASS);
+            state(State.CANVASS, nowMs);
         }
 
         return 1;
@@ -413,6 +417,8 @@ class Election implements MemberStatusListener, AutoCloseable
 
     private int canvass(final long nowMs)
     {
+        int workCount = 0;
+
         if (nowMs >= (timeOfLastUpdateMs + statusIntervalMs))
         {
             timeOfLastUpdateMs = nowMs;
@@ -428,10 +434,22 @@ class Election implements MemberStatusListener, AutoCloseable
                 }
             }
 
-            return 1;
+            workCount += 1;
         }
 
-        return 0;
+        final long canvassDeadlineMs = isStartup ?
+            TimeUnit.NANOSECONDS.toMillis(ctx.startupStatusTimeoutNs()) :
+            TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+
+        if (nowMs >= (timeOfLastStateChangeMs + canvassDeadlineMs) &&
+            ClusterMember.isQuorumCandidate(clusterMembers, thisMember))
+        {
+            nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs);
+            state(State.NOMINATE, nowMs);
+            workCount += 1;
+        }
+
+        return workCount;
     }
 
     private int nominate(final long nowMs)
@@ -447,7 +465,7 @@ class Election implements MemberStatusListener, AutoCloseable
             final long logPosition = recoveryPlan.lastTermBaseLogPosition + recoveryPlan.lastTermPositionAppended;
             ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, memberId);
 
-            state(State.CANDIDATE_BALLOT);
+            state(State.CANDIDATE_BALLOT, nowMs);
             return 1;
         }
 
@@ -465,7 +483,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
         if (!ClusterMember.awaitingVotes(clusterMembers))
         {
-            state(State.LEADER_TRANSITION);
+            state(State.LEADER_TRANSITION, nowMs);
             leaderMember = thisMember;
             workCount += 1;
         }
@@ -506,7 +524,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
             sequencerAgent.recordFollowerActiveLog(channelUri.toString(), logSessionId);
             sequencerAgent.awaitFollowerServicesReady(channelUri, logSessionId);
-            state(State.FOLLOWER_READY);
+            state(State.FOLLOWER_READY, nowMs);
         }
         else
         {
@@ -531,7 +549,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
                 sequencerAgent.recordFollowerActiveLog(channelUri.toString(), logSessionId);
                 sequencerAgent.awaitFollowerServicesReady(channelUri, logSessionId);
-                state(State.FOLLOWER_READY);
+                state(State.FOLLOWER_READY, nowMs);
             }
         }
 
@@ -543,7 +561,7 @@ class Election implements MemberStatusListener, AutoCloseable
         sequencerAgent.becomeLeader(nowMs);
         ClusterMember.resetTermPositions(clusterMembers, NULL_POSITION);
         clusterMembers[thisMember.id()].termPosition(0);
-        state(State.LEADER_READY);
+        state(State.LEADER_READY, nowMs);
 
         return 1;
     }
@@ -598,9 +616,10 @@ class Election implements MemberStatusListener, AutoCloseable
         return workCount;
     }
 
-    private void state(final State state)
+    private void state(final State state, final long nowMs)
     {
         //System.out.println(this.state + " -> " + state);
+        timeOfLastStateChangeMs = nowMs;
         this.state = state;
         stateCounter.setOrdered(state.code());
     }

@@ -469,13 +469,13 @@ public final class ClusterMember
     }
 
     /**
-     * Is the candidate suitable to become the next leader by having a sufficiently current log.
+     * Is the member certain to be a suitable candidate in an election.
      *
      * @param clusterMembers to compare the candidate against.
      * @param candidate      for leadership.
      * @return true if the candidate is suitable otherwise false.
      */
-    public static boolean isSuitableCandidate(final ClusterMember[] clusterMembers, final ClusterMember candidate)
+    public static boolean isCertainCandidate(final ClusterMember[] clusterMembers, final ClusterMember candidate)
     {
         for (final ClusterMember member : clusterMembers)
         {
@@ -496,5 +496,30 @@ public final class ClusterMember
         }
 
         return true;
+    }
+
+    /**
+     * Is the member achieved a quorum view to be a suitable candidate in an election.
+     *
+     * @param clusterMembers to compare the candidate against.
+     * @param candidate      for leadership.
+     * @return true if the candidate is suitable otherwise false.
+     */
+    public static boolean isQuorumCandidate(final ClusterMember[] clusterMembers, final ClusterMember candidate)
+    {
+        int possibleVotes = 0;
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (NULL_POSITION == member.termPosition ||
+                candidate.leadershipTermId < member.leadershipTermId ||
+                candidate.termPosition < member.termPosition)
+            {
+                continue;
+            }
+
+            ++possibleVotes;
+        }
+
+        return possibleVotes >= ClusterMember.quorumThreshold(clusterMembers.length);
     }
 }

@@ -54,8 +54,8 @@ public class ElectionTest
     @Test
     public void shouldElectSingleNodeClusterLeader()
     {
-        final long initialLeaderShipTermId = -1;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+        final long leadershipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = ClusterMember.parse(
             "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint");
 
@@ -63,23 +63,14 @@ public class ElectionTest
             .recordingLog(recordingLog)
             .aeron(aeron);
 
-        final Election election = new Election(
-            initialLeaderShipTermId,
-            clusterMembers,
-            clusterMembers[0],
-            memberStatusAdapter,
-            memberStatusPublisher,
-            recoveryPlan,
-            null,
-            ctx,
-            null,
-            sequencerAgent);
+        final ClusterMember thisMember = clusterMembers[0];
+        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, thisMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
         final long t1 = 0;
         election.doWork(t1);
-        verify(recordingLog).appendTerm(0L, 0L, t1, clusterMembers[0].id());
+        verify(recordingLog).appendTerm(0L, 0L, t1, thisMember.id());
         verify(sequencerAgent).becomeLeader(t1);
         assertThat(election.state(), is(Election.State.LEADER_READY));
     }
@@ -87,8 +78,8 @@ public class ElectionTest
     @Test
     public void shouldElectAppointedLeader()
     {
-        final long initialLeaderShipTermId = -1;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+        final long leadershipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember candidateMember = clusterMembers[0];
@@ -97,21 +88,11 @@ public class ElectionTest
             .appointedLeaderId(candidateMember.id())
             .aeron(aeron);
 
-        final Election election = new Election(
-            initialLeaderShipTermId,
-            clusterMembers,
-            candidateMember,
-            memberStatusAdapter,
-            memberStatusPublisher,
-            recoveryPlan,
-            null,
-            ctx,
-            null,
-            sequencerAgent);
+        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, candidateMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
-        final long candidateTermId = initialLeaderShipTermId + 1;
+        final long candidateTermId = leadershipTermId + 1;
         final long t1 = 1;
         election.doWork(t1);
         verify(sequencerAgent).role(Cluster.Role.CANDIDATE);
@@ -182,9 +163,9 @@ public class ElectionTest
     @Test
     public void shouldVoteForAppointedLeader()
     {
-        final long initialLeaderShipTermId = -1;
+        final long leadershipTermId = -1;
         final int candidateId = 0;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[1];
@@ -195,17 +176,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = new Election(
-            initialLeaderShipTermId,
-            clusterMembers,
-            followerMember,
-            memberStatusAdapter,
-            memberStatusPublisher,
-            recoveryPlan,
-            null,
-            ctx,
-            null,
-            sequencerAgent);
+        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -213,7 +184,7 @@ public class ElectionTest
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
 
-        final long candidateTermId = initialLeaderShipTermId + 1;
+        final long candidateTermId = leadershipTermId + 1;
         final long t2 = 2;
         clock.update(t2);
         election.onRequestVote(
@@ -251,8 +222,8 @@ public class ElectionTest
     @Test
     public void shouldCanvassMembersForSuccessfulLeadershipBid()
     {
-        final long initialLeaderShipTermId = -1;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+        final long leaderShipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leaderShipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[1];
@@ -263,17 +234,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = new Election(
-            initialLeaderShipTermId,
-            clusterMembers,
-            followerMember,
-            memberStatusAdapter,
-            memberStatusPublisher,
-            recoveryPlan,
-            null,
-            ctx,
-            null,
-            sequencerAgent);
+        final Election election = newElection(leaderShipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -286,25 +247,25 @@ public class ElectionTest
         verify(memberStatusPublisher).appendedPosition(
             clusterMembers[0].publication(),
             recoveryPlan.lastTermPositionAppended,
-            initialLeaderShipTermId,
+            leaderShipTermId,
             followerMember.id());
         verify(memberStatusPublisher).appendedPosition(
             clusterMembers[2].publication(),
             recoveryPlan.lastTermPositionAppended,
-            initialLeaderShipTermId,
+            leaderShipTermId,
             followerMember.id());
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onAppendedPosition(0, initialLeaderShipTermId, 0);
-        election.onAppendedPosition(0, initialLeaderShipTermId, 2);
+        election.onAppendedPosition(0, leaderShipTermId, 0);
+        election.onAppendedPosition(0, leaderShipTermId, 2);
         assertThat(election.state(), is(Election.State.NOMINATE));
     }
 
     @Test
     public void shouldCanvassMembersForUnSuccessfulLeadershipBid()
     {
-        final long initialLeaderShipTermId = -1;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+        final long leadershipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[0];
@@ -315,17 +276,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = new Election(
-            initialLeaderShipTermId,
-            clusterMembers,
-            followerMember,
-            memberStatusAdapter,
-            memberStatusPublisher,
-            recoveryPlan,
-            null,
-            ctx,
-            null,
-            sequencerAgent);
+        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -337,16 +288,16 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onAppendedPosition(0, initialLeaderShipTermId + 1, 1);
-        election.onAppendedPosition(0, initialLeaderShipTermId, 2);
+        election.onAppendedPosition(0, leadershipTermId + 1, 1);
+        election.onAppendedPosition(0, leadershipTermId, 2);
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
     }
 
     @Test
     public void shouldVoteForCandidateDuringNomination()
     {
-        final long initialLeaderShipTermId = -1;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
+        final long leadershipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[1];
@@ -357,17 +308,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = new Election(
-            initialLeaderShipTermId,
-            clusterMembers,
-            followerMember,
-            memberStatusAdapter,
-            memberStatusPublisher,
-            recoveryPlan,
-            null,
-            ctx,
-            null,
-            sequencerAgent);
+        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -379,16 +320,72 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onAppendedPosition(0, initialLeaderShipTermId, 0);
-        election.onAppendedPosition(0, initialLeaderShipTermId, 2);
+        election.onAppendedPosition(0, leadershipTermId, 0);
+        election.onAppendedPosition(0, leadershipTermId, 2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
         final long t3 = t2 + 1;
-        final long candidateTermId = initialLeaderShipTermId + 1;
+        final long candidateTermId = leadershipTermId + 1;
         election.onRequestVote(
             candidateTermId, recoveryPlan.lastTermBaseLogPosition, recoveryPlan.lastTermBaseLogPosition, 0);
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.FOLLOWER_AWAITING_RESULT));
+    }
+
+    @Test
+    public void shouldTimeoutCanvassWithQuorum()
+    {
+        final long leadershipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+
+        final ClusterMember followerMember = clusterMembers[1];
+        final CachedEpochClock clock = new CachedEpochClock();
+        final ConsensusModule.Context ctx = new ConsensusModule.Context()
+            .random(new Random())
+            .recordingLog(recordingLog)
+            .epochClock(clock)
+            .aeron(aeron);
+
+        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
+
+        assertThat(election.state(), is(Election.State.INIT));
+
+        final long t1 = 1;
+        election.doWork(t1);
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        election.onAppendedPosition(0, leadershipTermId, 0);
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        final long t2 = t1 + 1;
+        election.doWork(t2);
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.startupStatusTimeoutNs());
+        election.doWork(t3);
+        assertThat(election.state(), is(Election.State.NOMINATE));
+    }
+
+    private Election newElection(
+        final long leadershipTermId,
+        final RecordingLog.RecoveryPlan recoveryPlan,
+        final ClusterMember[] clusterMembers,
+        final ClusterMember thisMember,
+        final ConsensusModule.Context ctx)
+    {
+        return new Election(
+            true,
+            leadershipTermId,
+            clusterMembers,
+            thisMember,
+            memberStatusAdapter,
+            memberStatusPublisher,
+            recoveryPlan,
+            null,
+            ctx,
+            null,
+            sequencerAgent);
     }
 
     private static ClusterMember[] prepareClusterMembers()

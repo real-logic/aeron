@@ -220,6 +220,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         timeOfLastLogUpdateMs = nowMs;
 
         election = new Election(
+            true,
             leadershipTermId,
             clusterMembers,
             thisMember,

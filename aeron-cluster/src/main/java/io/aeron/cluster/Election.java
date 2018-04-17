@@ -493,8 +493,13 @@ class Election implements MemberStatusListener, AutoCloseable
             {
                 state(State.LEADER_TRANSITION, nowMs);
                 leaderMember = thisMember;
-                workCount += 1;
             }
+            else
+            {
+                state(State.FAILED, nowMs);
+            }
+
+            workCount += 1;
         }
         else
         {

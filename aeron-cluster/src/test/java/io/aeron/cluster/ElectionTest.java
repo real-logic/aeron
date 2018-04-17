@@ -333,7 +333,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldTimeoutCanvassWithQuorum()
+    public void shouldTimeoutCanvassWithMajority()
     {
         final long leadershipTermId = -1;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
@@ -365,6 +365,48 @@ public class ElectionTest
         final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.startupStatusTimeoutNs());
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.NOMINATE));
+    }
+
+    @Test
+    public void shouldTimeoutCandidateBallotWithMajority()
+    {
+        final long leadershipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+
+        final ClusterMember candidateMember = clusterMembers[1];
+        final CachedEpochClock clock = new CachedEpochClock();
+        final ConsensusModule.Context ctx = new ConsensusModule.Context()
+            .random(new Random())
+            .recordingLog(recordingLog)
+            .epochClock(clock)
+            .aeron(aeron);
+
+        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, candidateMember, ctx);
+
+        assertThat(election.state(), is(Election.State.INIT));
+
+        final long t1 = 1;
+        election.doWork(t1);
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        election.onAppendedPosition(0, leadershipTermId, 0);
+        election.onAppendedPosition(0, leadershipTermId, 2);
+        assertThat(election.state(), is(Election.State.NOMINATE));
+
+        final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        election.doWork(t2);
+        assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
+
+        final long t3 = t2 + 1;
+        when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
+        election.onVote(leadershipTermId + 1, candidateMember.id(), clusterMembers[2].id(), true);
+        election.doWork(t3);
+        assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
+
+        final long t4 = t3 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+        election.doWork(t4);
+        assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
     }
 
     private Election newElection(

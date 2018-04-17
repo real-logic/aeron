@@ -433,22 +433,44 @@ public final class ClusterMember
     }
 
     /**
-     * Are we still awaiting votes from some cluster members?
+     * Has the candidate got unanimous support of the cluster?
      *
      * @param clusterMembers to check for votes.
-     * @return true if votes are outstanding.
+     * @param candidate      to be leader.
+     * @return false if any member has not voted for the candidate.
      */
-    public static boolean awaitingVotes(final ClusterMember[] clusterMembers)
+    public static boolean hasUnanimousVote(final ClusterMember[] clusterMembers, final ClusterMember candidate)
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.votedForId() == NULL_MEMBER_ID)
+            if (member.votedForId() != candidate.id())
             {
-                return true;
+                return false;
             }
         }
 
-        return false;
+        return true;
+    }
+
+    /**
+     * Has sufficient votes being counted for a majority?
+     *
+     * @param clusterMembers to check for votes.
+     * @param candidate      to be leader.
+     * @return true if a majority of positive votes.
+     */
+    public static boolean hasMajorityVote(final ClusterMember[] clusterMembers, final ClusterMember candidate)
+    {
+        int votes = 0;
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member.votedForId() == candidate.id())
+            {
+                ++votes;
+            }
+        }
+
+        return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
     }
 
     public static void checkArchiveEndpoint(final ClusterMember thisMember, final ChannelUri archiveControlRequestUri)

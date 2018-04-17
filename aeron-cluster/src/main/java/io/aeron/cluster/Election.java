@@ -481,11 +481,20 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         int workCount = 0;
 
-        if (!ClusterMember.awaitingVotes(clusterMembers))
+        if (ClusterMember.hasUnanimousVote(clusterMembers, thisMember))
         {
             state(State.LEADER_TRANSITION, nowMs);
             leaderMember = thisMember;
             workCount += 1;
+        }
+        else if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())))
+        {
+            if (ClusterMember.hasMajorityVote(clusterMembers, thisMember))
+            {
+                state(State.LEADER_TRANSITION, nowMs);
+                leaderMember = thisMember;
+                workCount += 1;
+            }
         }
         else
         {

@@ -78,13 +78,9 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.INIT));
 
         final long t1 = 0;
-        assertThat(election.doWork(t1), is(1));
+        election.doWork(t1);
         verify(recordingLog).appendTerm(0L, 0L, t1, clusterMembers[0].id());
-        assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
-
-        final long t2 = 1;
-        assertThat(election.doWork(t2), is(1));
-        verify(sequencerAgent).becomeLeader(t2);
+        verify(sequencerAgent).becomeLeader(t1);
         assertThat(election.state(), is(Election.State.LEADER_READY));
     }
 
@@ -115,20 +111,16 @@ public class ElectionTest
 
         assertThat(election.state(), is(Election.State.INIT));
 
-        final long t1 = 1;
-        assertThat(election.doWork(t1), is(1));
-        assertThat(election.state(), is(Election.State.NOMINATE));
-
         final long candidateTermId = initialLeaderShipTermId + 1;
-        final long t2 = 2;
-        election.doWork(t2);
+        final long t1 = 1;
+        election.doWork(t1);
         verify(sequencerAgent).role(Cluster.Role.CANDIDATE);
-        verify(recordingLog).appendTerm(0L, 0L, t2, candidateMember.id());
+        verify(recordingLog).appendTerm(0L, 0L, t1, candidateMember.id());
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
         assertThat(election.leadershipTermId(), is(candidateTermId));
 
-        final long t3 = 3;
-        election.doWork(t3);
+        final long t2 = 2;
+        election.doWork(t2);
         verify(memberStatusPublisher).requestVote(
             clusterMembers[1].publication(),
             recoveryPlan.lastTermBaseLogPosition,
@@ -147,21 +139,21 @@ public class ElectionTest
         election.onVote(candidateTermId, candidateMember.id(), clusterMembers[1].id(), true);
         election.onVote(candidateTermId, candidateMember.id(), clusterMembers[2].id(), true);
 
-        final long t4 = 4;
-        election.doWork(t4);
+        final long t3 = 3;
+        election.doWork(t3);
         assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
 
-        final long t5 = 5;
-        election.doWork(t5);
-        verify(sequencerAgent).becomeLeader(t5);
+        final long t4 = 4;
+        election.doWork(t4);
+        verify(sequencerAgent).becomeLeader(t4);
         assertThat(clusterMembers[1].termPosition(), is(NULL_POSITION));
         assertThat(clusterMembers[2].termPosition(), is(NULL_POSITION));
         assertThat(election.state(), is(Election.State.LEADER_READY));
 
-        final long t6 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
+        final long t5 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
         final int logSessionId = -7;
         election.logSessionId(logSessionId);
-        election.doWork(t6);
+        election.doWork(t5);
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
             recoveryPlan.lastTermBaseLogPosition,
@@ -178,10 +170,10 @@ public class ElectionTest
             logSessionId);
         assertThat(election.state(), is(Election.State.LEADER_READY));
 
-        final long t7 = t6 + 1;
+        final long t6 = t5 + 1;
         election.onAppendedPosition(0, candidateTermId, clusterMembers[1].id());
         election.onAppendedPosition(0, candidateTermId, clusterMembers[2].id());
-        election.doWork(t7);
+        election.doWork(t6);
         final InOrder inOrder = inOrder(sequencerAgent, electionStateCounter);
         inOrder.verify(sequencerAgent).electionComplete(Cluster.Role.LEADER);
         inOrder.verify(electionStateCounter).close();
@@ -218,7 +210,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.INIT));
 
         final long t1 = 1;
-        assertThat(election.doWork(t1), is(1));
+        election.doWork(t1);
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
 
         final long candidateTermId = initialLeaderShipTermId + 1;
@@ -261,7 +253,6 @@ public class ElectionTest
     {
         final long initialLeaderShipTermId = -1;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
-
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[1];
@@ -287,7 +278,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.INIT));
 
         final long t1 = 1;
-        assertThat(election.doWork(t1), is(1));
+        election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
         final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
@@ -314,7 +305,6 @@ public class ElectionTest
     {
         final long initialLeaderShipTermId = -1;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
-
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[0];
@@ -340,7 +330,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.INIT));
 
         final long t1 = 1;
-        assertThat(election.doWork(t1), is(1));
+        election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
         final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
@@ -357,7 +347,6 @@ public class ElectionTest
     {
         final long initialLeaderShipTermId = -1;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(initialLeaderShipTermId);
-
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[1];
@@ -383,7 +372,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.INIT));
 
         final long t1 = 1;
-        assertThat(election.doWork(t1), is(1));
+        election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
         final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());

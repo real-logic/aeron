@@ -151,14 +151,11 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public int doWork(final long nowMs)
     {
-        int workCount = 0;
+        int workCount = State.INIT == state ? init(nowMs) : 0;
+        workCount += memberStatusAdapter.poll();
 
         switch (state)
         {
-            case INIT:
-                workCount += init(nowMs);
-                break;
-
             case CANVASS:
                 workCount += canvass(nowMs);
                 break;
@@ -416,8 +413,6 @@ class Election implements MemberStatusListener, AutoCloseable
 
     private int canvass(final long nowMs)
     {
-        final int workCount = memberStatusAdapter.poll();
-
         if (nowMs >= (timeOfLastUpdateMs + statusIntervalMs))
         {
             timeOfLastUpdateMs = nowMs;
@@ -432,15 +427,15 @@ class Election implements MemberStatusListener, AutoCloseable
                         thisMember.id());
                 }
             }
+
+            return 1;
         }
 
-        return workCount;
+        return 0;
     }
 
     private int nominate(final long nowMs)
     {
-        int workCount = memberStatusAdapter.poll();
-
         if (State.NOMINATE == state && nowMs >= nominationDeadlineMs)
         {
             ++leadershipTermId;
@@ -453,10 +448,10 @@ class Election implements MemberStatusListener, AutoCloseable
             ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, memberId);
 
             state(State.CANDIDATE_BALLOT);
-            workCount += 1;
+            return 1;
         }
 
-        return workCount;
+        return 0;
     }
 
     private int followerBallot(final long nowMs)
@@ -466,12 +461,13 @@ class Election implements MemberStatusListener, AutoCloseable
 
     private int candidateBallot(final long nowMs)
     {
-        final int workCount = memberStatusAdapter.poll();
+        int workCount = 0;
 
         if (!ClusterMember.awaitingVotes(clusterMembers))
         {
             state(State.LEADER_TRANSITION);
             leaderMember = thisMember;
+            workCount += 1;
         }
         else
         {
@@ -479,6 +475,7 @@ class Election implements MemberStatusListener, AutoCloseable
             {
                 if (!member.isBallotSent())
                 {
+                    workCount += 1;
                     member.isBallotSent(memberStatusPublisher.requestVote(
                         member.publication(),
                         recoveryPlan.lastTermBaseLogPosition,
@@ -568,7 +565,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
     private int leaderReady(final long nowMs)
     {
-        int workCount = memberStatusAdapter.poll();
+        int workCount = 0;
 
         if (ClusterMember.hasReachedPosition(clusterMembers, 0))
         {

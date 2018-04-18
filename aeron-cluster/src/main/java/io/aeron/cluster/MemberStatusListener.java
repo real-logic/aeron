@@ -19,16 +19,15 @@ import org.agrona.DirectBuffer;
 
 public interface MemberStatusListener
 {
-    void onRequestVote(long candidateTermId, long lastBaseLogPosition, long lastTermPosition, int candidateId);
+    void onRequestVote(long logPosition, long candidateTermId, int candidateId);
 
     void onVote(long candidateTermId, int candidateMemberId, int followerMemberId, boolean vote);
 
-    void onNewLeadershipTerm(
-        long lastBaseLogPosition, long lastTermPosition, long leadershipTermId, int leaderMemberId, int logSessionId);
+    void onNewLeadershipTerm(long logPosition, long leadershipTermId, int leaderMemberId, int logSessionId);
 
-    void onAppendedPosition(long termPosition, long leadershipTermId, int followerMemberId);
+    void onAppendedPosition(long logPosition, long leadershipTermId, int followerMemberId);
 
-    void onCommitPosition(long termPosition, long leadershipTermId, int leaderMemberId);
+    void onCommitPosition(long logPosition, long leadershipTermId, int leaderMemberId);
 
     void onQueryResponse(
         long correlationId, int requestMemberId, int responseMemberId, DirectBuffer data, int offset, int length);

@@ -36,7 +36,7 @@ public final class ClusterMember
     private final int id;
     private int votedForId = NULL_MEMBER_ID;
     private long leadershipTermId = -1;
-    private long termPosition = NULL_POSITION;
+    private long logPosition = NULL_POSITION;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
@@ -79,7 +79,7 @@ public final class ClusterMember
         isLeader = false;
         votedForId = NULL_MEMBER_ID;
         leadershipTermId = -1;
-        termPosition = NULL_POSITION;
+        logPosition = NULL_POSITION;
     }
 
     /**
@@ -181,25 +181,25 @@ public final class ClusterMember
     }
 
     /**
-     * The log position this member has persisted within the current leadership term.
+     * The log position this member has persisted.
      *
-     * @param termPosition in the log this member has persisted within the current leadership term.
+     * @param logPosition this member has persisted.
      * @return this for a fluent API.
      */
-    public ClusterMember termPosition(final long termPosition)
+    public ClusterMember logPosition(final long logPosition)
     {
-        this.termPosition = termPosition;
+        this.logPosition = logPosition;
         return this;
     }
 
     /**
-     * The log position this member has persisted within the current leadership term.
+     * The log position this member has persisted.
      *
-     * @return the log position this member has persisted within the current leadership term.
+     * @return the log position this member has persisted.
      */
-    public long termPosition()
+    public long logPosition()
     {
-        return termPosition;
+        return logPosition;
     }
 
     /**
@@ -378,7 +378,7 @@ public final class ClusterMember
 
         for (final ClusterMember member : members)
         {
-            long newPosition = member.termPosition;
+            long newPosition = member.logPosition;
 
             for (int i = 0; i < length; i++)
             {
@@ -396,16 +396,16 @@ public final class ClusterMember
     }
 
     /**
-     * Reset the term position of all the members to the provided value.
+     * Reset the log position of all the members to the provided value.
      *
      * @param clusterMembers to be reset.
-     * @param termPosition   to set for them all.
+     * @param logPosition    to set for them all.
      */
-    public static void resetTermPositions(final ClusterMember[] clusterMembers, final long termPosition)
+    public static void resetLogPositions(final ClusterMember[] clusterMembers, final long logPosition)
     {
         for (final ClusterMember member : clusterMembers)
         {
-            member.termPosition(termPosition);
+            member.logPosition(logPosition);
         }
     }
 
@@ -413,14 +413,14 @@ public final class ClusterMember
      * Has the members of the cluster all reached the provided position in their log.
      *
      * @param clusterMembers to check.
-     * @param position       to compare the {@link #termPosition()} against.
+     * @param position       to compare the {@link #logPosition()} against.
      * @return true if all members have reached this position otherwise false.
      */
-    public static boolean hasReachedPosition(final ClusterMember[] clusterMembers, final int position)
+    public static boolean hasReachedPosition(final ClusterMember[] clusterMembers, final long position)
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.termPosition() < position)
+            if (member.logPosition() < position)
             {
                 return false;
             }
@@ -531,9 +531,9 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (NULL_POSITION == member.termPosition ||
+            if (NULL_POSITION == member.logPosition ||
                 candidate.leadershipTermId < member.leadershipTermId ||
-                candidate.termPosition < member.termPosition)
+                candidate.logPosition < member.logPosition)
             {
                 return false;
             }
@@ -554,9 +554,9 @@ public final class ClusterMember
         int possibleVotes = 0;
         for (final ClusterMember member : clusterMembers)
         {
-            if (NULL_POSITION == member.termPosition ||
+            if (NULL_POSITION == member.logPosition ||
                 candidate.leadershipTermId < member.leadershipTermId ||
-                candidate.termPosition < member.termPosition)
+                candidate.logPosition < member.logPosition)
             {
                 continue;
             }

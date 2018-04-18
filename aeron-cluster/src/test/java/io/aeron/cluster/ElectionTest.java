@@ -71,7 +71,7 @@ public class ElectionTest
         final long t1 = 0;
         election.doWork(t1);
         verify(recordingLog).appendTerm(0L, 0L, t1, thisMember.id());
-        verify(sequencerAgent).becomeLeader(t1);
+        verify(sequencerAgent).becomeLeader();
         assertThat(election.state(), is(Election.State.LEADER_READY));
     }
 
@@ -79,6 +79,7 @@ public class ElectionTest
     public void shouldElectAppointedLeader()
     {
         final long leadershipTermId = -1;
+        final long logPosition = 0;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
@@ -104,14 +105,12 @@ public class ElectionTest
         election.doWork(t2);
         verify(memberStatusPublisher).requestVote(
             clusterMembers[1].publication(),
-            recoveryPlan.lastTermBaseLogPosition,
-            recoveryPlan.lastTermPositionAppended,
+            logPosition,
             candidateTermId,
             candidateMember.id());
         verify(memberStatusPublisher).requestVote(
             clusterMembers[2].publication(),
-            recoveryPlan.lastTermBaseLogPosition,
-            recoveryPlan.lastTermPositionAppended,
+            logPosition,
             candidateTermId,
             candidateMember.id());
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
@@ -126,9 +125,9 @@ public class ElectionTest
 
         final long t4 = 4;
         election.doWork(t4);
-        verify(sequencerAgent).becomeLeader(t4);
-        assertThat(clusterMembers[1].termPosition(), is(NULL_POSITION));
-        assertThat(clusterMembers[2].termPosition(), is(NULL_POSITION));
+        verify(sequencerAgent).becomeLeader();
+        assertThat(clusterMembers[1].logPosition(), is(NULL_POSITION));
+        assertThat(clusterMembers[2].logPosition(), is(NULL_POSITION));
         assertThat(election.state(), is(Election.State.LEADER_READY));
 
         final long t5 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
@@ -137,15 +136,13 @@ public class ElectionTest
         election.doWork(t5);
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
-            recoveryPlan.lastTermBaseLogPosition,
-            recoveryPlan.lastTermPositionAppended,
+            logPosition,
             candidateTermId,
             candidateMember.id(),
             logSessionId);
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[2].publication(),
-            recoveryPlan.lastTermBaseLogPosition,
-            recoveryPlan.lastTermPositionAppended,
+            logPosition,
             candidateTermId,
             candidateMember.id(),
             logSessionId);
@@ -164,6 +161,7 @@ public class ElectionTest
     public void shouldVoteForAppointedLeader()
     {
         final long leadershipTermId = -1;
+        final long logPosition = 0;
         final int candidateId = 0;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
@@ -187,8 +185,7 @@ public class ElectionTest
         final long candidateTermId = leadershipTermId + 1;
         final long t2 = 2;
         clock.update(t2);
-        election.onRequestVote(
-            candidateTermId, recoveryPlan.lastTermBaseLogPosition, recoveryPlan.lastTermPositionAppended, candidateId);
+        election.onRequestVote(logPosition, candidateTermId, candidateId);
         verify(recordingLog).appendTerm(candidateTermId, 0, t2, candidateId);
         verify(memberStatusPublisher).placeVote(
             clusterMembers[candidateId].publication(), candidateTermId, candidateId, followerMember.id(), true);
@@ -196,12 +193,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.FOLLOWER_AWAITING_RESULT));
 
         final int logSessionId = -7;
-        election.onNewLeadershipTerm(
-            recoveryPlan.lastTermBaseLogPosition,
-            recoveryPlan.lastTermPositionAppended,
-            candidateTermId,
-            candidateId,
-            logSessionId);
+        election.onNewLeadershipTerm(logPosition, candidateTermId, candidateId, logSessionId);
         assertThat(election.state(), is(Election.State.FOLLOWER_TRANSITION));
 
         final long t3 = 3;
@@ -222,6 +214,7 @@ public class ElectionTest
     @Test
     public void shouldCanvassMembersForSuccessfulLeadershipBid()
     {
+        final long logPosition = 0;
         final long leaderShipTermId = -1;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leaderShipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
@@ -245,15 +238,9 @@ public class ElectionTest
         final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
         election.doWork(t2);
         verify(memberStatusPublisher).appendedPosition(
-            clusterMembers[0].publication(),
-            recoveryPlan.lastTermPositionAppended,
-            leaderShipTermId,
-            followerMember.id());
+            clusterMembers[0].publication(), logPosition, leaderShipTermId, followerMember.id());
         verify(memberStatusPublisher).appendedPosition(
-            clusterMembers[2].publication(),
-            recoveryPlan.lastTermPositionAppended,
-            leaderShipTermId,
-            followerMember.id());
+            clusterMembers[2].publication(), logPosition, leaderShipTermId, followerMember.id());
         assertThat(election.state(), is(Election.State.CANVASS));
 
         election.onAppendedPosition(0, leaderShipTermId, 0);
@@ -296,6 +283,7 @@ public class ElectionTest
     @Test
     public void shouldVoteForCandidateDuringNomination()
     {
+        final long logPosition = 0;
         final long leadershipTermId = -1;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
@@ -326,8 +314,7 @@ public class ElectionTest
 
         final long t3 = t2 + 1;
         final long candidateTermId = leadershipTermId + 1;
-        election.onRequestVote(
-            candidateTermId, recoveryPlan.lastTermBaseLogPosition, recoveryPlan.lastTermBaseLogPosition, 0);
+        election.onRequestVote(logPosition, candidateTermId, 0);
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.FOLLOWER_AWAITING_RESULT));
     }

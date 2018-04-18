@@ -507,23 +507,15 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     {
         return new MemberStatusListener()
         {
-            public void onRequestVote(
-                final long candidateTermId,
-                final long lastBaseLogPosition,
-                final long lastTermPosition,
-                final int candidateId)
+            public void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
             {
                 counters.onRequestVoteCounter++;
-                stream.format("onRequestVote[%d] %d %d %d %d%n",
-                    index, candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId);
-                nextListener.onRequestVote(candidateTermId, lastBaseLogPosition, lastTermPosition, candidateId);
+                stream.format("onRequestVote[%d] %d %d %d%n", index, candidateTermId, logPosition, candidateId);
+                nextListener.onRequestVote(logPosition, candidateTermId, candidateId);
             }
 
             public void onVote(
-                final long candidateTermId,
-                final int candidateMemberId,
-                final int followerMemberId,
-                final boolean vote)
+                final long candidateTermId, final int candidateMemberId, final int followerMemberId, final boolean vote)
             {
                 counters.onVoteCounter++;
                 stream.format("onVote[%d] %d %d %d %s%n",
@@ -532,34 +524,29 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             }
 
             public void onNewLeadershipTerm(
-                final long lastBaseLogPosition,
-                final long lastTermPosition,
-                final long leadershipTermId,
-                final int leaderMemberId,
-                final int logSessionId)
+                final long logPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
             {
                 counters.onNewLeadershipTermCounter++;
-                stream.format("onNewLeadershipTerm[%d] %d %d %d %d %d%n",
-                    index, lastBaseLogPosition, lastTermPosition, leadershipTermId, leaderMemberId, logSessionId);
-                nextListener.onNewLeadershipTerm(
-                    lastBaseLogPosition, lastTermPosition, leadershipTermId, leaderMemberId, logSessionId);
+                stream.format("onNewLeadershipTerm[%d] %d %d %d %d%n",
+                    index, logPosition, leadershipTermId, leaderMemberId, logSessionId);
+                nextListener.onNewLeadershipTerm(logPosition, leadershipTermId, leaderMemberId, logSessionId);
             }
 
             public void onAppendedPosition(
-                final long termPosition, final long leadershipTermId, final int followerMemberId)
+                final long logPosition, final long leadershipTermId, final int followerMemberId)
             {
                 counters.onAppendedPositionCounter++;
                 stream.format("onAppendedPosition[%d] %d %d %d%n",
-                    index, termPosition, leadershipTermId, followerMemberId);
-                nextListener.onAppendedPosition(termPosition, leadershipTermId, followerMemberId);
+                    index, logPosition, leadershipTermId, followerMemberId);
+                nextListener.onAppendedPosition(logPosition, leadershipTermId, followerMemberId);
             }
 
-            public void onCommitPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
+            public void onCommitPosition(final long logPosition, final long leadershipTermId, final int leaderMemberId)
             {
                 counters.onCommitPositionCounter++;
                 stream.format("onCommitPosition[%d] %d %d %d%n",
-                    index, termPosition, leadershipTermId, leaderMemberId);
-                nextListener.onCommitPosition(termPosition, leadershipTermId, leaderMemberId);
+                    index, logPosition, leadershipTermId, leaderMemberId);
+                nextListener.onCommitPosition(logPosition, leadershipTermId, leaderMemberId);
             }
 
             public void onQueryResponse(

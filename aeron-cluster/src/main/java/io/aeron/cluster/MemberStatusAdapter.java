@@ -72,9 +72,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onRequestVote(
+                    requestVoteDecoder.logPosition(),
                     requestVoteDecoder.candidateTermId(),
-                    requestVoteDecoder.lastBaseLogPosition(),
-                    requestVoteDecoder.lastTermPosition(),
                     requestVoteDecoder.candidateMemberId());
                 break;
 
@@ -100,8 +99,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onNewLeadershipTerm(
-                    newLeadershipTermDecoder.lastBaseLogPosition(),
-                    newLeadershipTermDecoder.lastTermPosition(),
+                    newLeadershipTermDecoder.logPosition(),
                     newLeadershipTermDecoder.leadershipTermId(),
                     newLeadershipTermDecoder.leaderMemberId(),
                     newLeadershipTermDecoder.logSessionId());
@@ -115,7 +113,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onAppendedPosition(
-                    appendedPositionDecoder.termPosition(),
+                    appendedPositionDecoder.logPosition(),
                     appendedPositionDecoder.leadershipTermId(),
                     appendedPositionDecoder.followerMemberId());
                 break;
@@ -128,7 +126,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onCommitPosition(
-                    commitPositionDecoder.termPosition(),
+                    commitPositionDecoder.logPosition(),
                     commitPositionDecoder.leadershipTermId(),
                     commitPositionDecoder.leaderMemberId());
                 break;

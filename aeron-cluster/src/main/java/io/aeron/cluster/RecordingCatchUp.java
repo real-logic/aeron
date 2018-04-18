@@ -28,6 +28,8 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+
 class RecordingCatchUp implements AutoCloseable
 {
     private static final long NULL_RECORDING_ID = -1;
@@ -60,9 +62,10 @@ class RecordingCatchUp implements AutoCloseable
 
     private State state = State.INIT;
 
+    private long logPosition = NULL_POSITION;
     private long queryRecoveryPlanCorrelationId = NULL_CORRELATION_ID;
-    private long targetPosition = AeronArchive.NULL_POSITION;
-    private long fromPosition = AeronArchive.NULL_POSITION;
+    private long targetPosition = NULL_POSITION;
+    private long fromPosition = NULL_POSITION;
     private long leaderRecordingId = NULL_RECORDING_ID;
     private long recordingIdToExtend = NULL_RECORDING_ID;
     private long extendRecordingCorrelationId = NULL_CORRELATION_ID;
@@ -154,7 +157,7 @@ class RecordingCatchUp implements AutoCloseable
             return localCountersReader.getCounterValue(recPosCounterId);
         }
 
-        return AeronArchive.NULL_POSITION;
+        return NULL_POSITION;
     }
 
     public long fromPosition()
@@ -165,6 +168,11 @@ class RecordingCatchUp implements AutoCloseable
     public long targetPosition()
     {
         return targetPosition;
+    }
+
+    public long logPosition()
+    {
+        return logPosition;
     }
 
     public long recordingIdToExtend()
@@ -199,6 +207,7 @@ class RecordingCatchUp implements AutoCloseable
 
             fromPosition = localLastStep.recordingStopPosition;
             targetPosition = leaderLastStep.recordingStopPosition;
+            logPosition = leaderRecoveryPlan.lastTermBaseLogPosition + leaderRecoveryPlan.lastTermPositionAppended;
 
             // TODO: raise this channel as a configuration option
             final ChannelUri channelUri = ChannelUri.parse("aeron:udp?endpoint=localhost:3333");

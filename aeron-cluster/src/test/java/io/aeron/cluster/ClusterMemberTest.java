@@ -70,7 +70,7 @@ public class ClusterMemberTest
             final long[] memberPositions = positions[i];
             for (int j = 0; j < memberPositions.length; j++)
             {
-                members[j].termPosition(memberPositions[j]);
+                members[j].logPosition(memberPositions[j]);
             }
 
             final long quorumPosition = quorumPosition(members, rankedPositions);

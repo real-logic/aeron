@@ -107,6 +107,7 @@ class Election implements MemberStatusListener, AutoCloseable
     private final SequencerAgent sequencerAgent;
     private final Random random;
 
+    private long logPosition;
     private long timeOfLastStateChangeMs;
     private long timeOfLastUpdateMs;
     private long nominationDeadlineMs;
@@ -144,6 +145,7 @@ class Election implements MemberStatusListener, AutoCloseable
         this.localArchive = localArchive;
         this.sequencerAgent = sequencerAgent;
         this.random = ctx.random();
+        logPosition = recoveryPlan.lastTermBaseLogPosition + recoveryPlan.lastTermPositionAppended;
     }
 
     public void close()
@@ -197,11 +199,7 @@ class Election implements MemberStatusListener, AutoCloseable
         return workCount;
     }
 
-    public void onRequestVote(
-        final long candidateTermId,
-        final long lastBaseLogPosition,
-        final long lastTermPosition,
-        final int candidateId)
+    public void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
     {
         switch (state)
         {
@@ -210,11 +208,10 @@ class Election implements MemberStatusListener, AutoCloseable
             case FOLLOWER_BALLOT:
                 if (candidateTermId == (leadershipTermId + 1))
                 {
-                    final boolean voteFor = lastTermPosition >= recoveryPlan.lastTermPositionAppended;
+                    final boolean voteFor = logPosition >= this.logPosition;
                     final long nowMs = ctx.epochClock().time();
                     if (voteFor)
                     {
-                        final long logPosition = lastBaseLogPosition + lastTermPosition;
                         ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs, candidateId);
                         state(State.FOLLOWER_AWAITING_RESULT, nowMs);
                     }
@@ -232,7 +229,7 @@ class Election implements MemberStatusListener, AutoCloseable
                 if (candidateTermId > leadershipTermId)
                 {
                     ClusterMember.reset(clusterMembers);
-                    thisMember.leadershipTermId(leadershipTermId).termPosition(0);
+                    thisMember.leadershipTermId(leadershipTermId);
                     state(State.CANVASS, ctx.epochClock().time());
                 }
                 break;
@@ -256,11 +253,7 @@ class Election implements MemberStatusListener, AutoCloseable
     }
 
     public void onNewLeadershipTerm(
-        final long lastBaseLogPosition,
-        final long lastTermPosition,
-        final long leadershipTermId,
-        final int leaderMemberId,
-        final int logSessionId)
+        final long logPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
     {
         if (leadershipTermId == (this.leadershipTermId + 1))
         {
@@ -268,7 +261,7 @@ class Election implements MemberStatusListener, AutoCloseable
             this.leadershipTermId = leadershipTermId;
             this.logSessionId = logSessionId;
 
-            if (recoveryPlan.lastTermPositionAppended < lastTermPosition && null == recordingCatchUp)
+            if (this.logPosition < logPosition && null == recordingCatchUp)
             {
                 recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
                     localArchive,
@@ -314,17 +307,17 @@ class Election implements MemberStatusListener, AutoCloseable
         }
     }
 
-    public void onAppendedPosition(final long termPosition, final long leadershipTermId, final int followerMemberId)
+    public void onAppendedPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
     {
         switch (state)
         {
             case CANVASS:
                 clusterMembers[followerMemberId]
-                    .termPosition(termPosition)
+                    .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId);
 
                 final long nowMs = ctx.epochClock().time();
-                if (leadershipTermId > thisMember.leadershipTermId() || termPosition > thisMember.termPosition())
+                if (leadershipTermId > this.leadershipTermId || logPosition > this.logPosition)
                 {
                     state(State.FOLLOWER_BALLOT, nowMs);
                 }
@@ -338,7 +331,7 @@ class Election implements MemberStatusListener, AutoCloseable
             case LEADER_READY:
                 if (leadershipTermId == this.leadershipTermId)
                 {
-                    clusterMembers[followerMemberId].termPosition(termPosition);
+                    clusterMembers[followerMemberId].logPosition(logPosition);
                 }
                 break;
         }
@@ -369,6 +362,11 @@ class Election implements MemberStatusListener, AutoCloseable
         this.logSessionId = logSessionId;
     }
 
+    long logPosition()
+    {
+        return logPosition;
+    }
+
     private int init(final long nowMs)
     {
         stateCounter = ctx.aeron().addCounter(0, "Election State");
@@ -379,8 +377,6 @@ class Election implements MemberStatusListener, AutoCloseable
 
             sequencerAgent.role(Cluster.Role.LEADER);
             leaderMember = thisMember;
-
-            final long logPosition = recoveryPlan.lastTermBaseLogPosition + recoveryPlan.lastTermPositionAppended;
             ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, thisMember.id());
 
             state(State.LEADER_TRANSITION, nowMs);
@@ -403,7 +399,7 @@ class Election implements MemberStatusListener, AutoCloseable
             thisMember
                 .votedForId(thisMember.id())
                 .leadershipTermId(recoveryPlan.lastLeadershipTermId)
-                .termPosition(recoveryPlan.lastTermPositionAppended);
+                .logPosition(logPosition);
 
             state(State.CANVASS, nowMs);
         }
@@ -424,8 +420,8 @@ class Election implements MemberStatusListener, AutoCloseable
                 {
                     memberStatusPublisher.appendedPosition(
                         member.publication(),
-                        recoveryPlan.lastTermPositionAppended,
-                        recoveryPlan.lastLeadershipTermId,
+                        logPosition,
+                        leadershipTermId,
                         thisMember.id());
                 }
             }
@@ -457,8 +453,6 @@ class Election implements MemberStatusListener, AutoCloseable
 
             final int memberId = thisMember.id();
             ClusterMember.becomeCandidate(clusterMembers, memberId);
-
-            final long logPosition = recoveryPlan.lastTermBaseLogPosition + recoveryPlan.lastTermPositionAppended;
             ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, memberId);
 
             state(State.CANDIDATE_BALLOT, nowMs);
@@ -488,7 +482,7 @@ class Election implements MemberStatusListener, AutoCloseable
             else
             {
                 ClusterMember.reset(clusterMembers);
-                thisMember.leadershipTermId(leadershipTermId).termPosition(0);
+                thisMember.leadershipTermId(leadershipTermId);
                 state(State.CANVASS, nowMs);
             }
 
@@ -502,11 +496,7 @@ class Election implements MemberStatusListener, AutoCloseable
                 {
                     workCount += 1;
                     member.isBallotSent(memberStatusPublisher.requestVote(
-                        member.publication(),
-                        recoveryPlan.lastTermBaseLogPosition,
-                        recoveryPlan.lastTermPositionAppended,
-                        leadershipTermId,
-                        thisMember.id()));
+                        member.publication(), logPosition, leadershipTermId, thisMember.id()));
                 }
             }
         }
@@ -543,7 +533,7 @@ class Election implements MemberStatusListener, AutoCloseable
             else
             {
                 recordingCatchUp.close();
-
+                logPosition = recordingCatchUp.targetPosition();
                 sequencerAgent.catchupLog(recordingCatchUp);
                 recordingCatchUp = null;
 
@@ -560,9 +550,9 @@ class Election implements MemberStatusListener, AutoCloseable
 
     private int leaderTransition(final long nowMs)
     {
-        sequencerAgent.becomeLeader(nowMs);
-        ClusterMember.resetTermPositions(clusterMembers, NULL_POSITION);
-        clusterMembers[thisMember.id()].termPosition(0);
+        sequencerAgent.becomeLeader();
+        ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
+        clusterMembers[thisMember.id()].logPosition(logPosition);
         state(State.LEADER_READY, nowMs);
 
         return 1;
@@ -572,7 +562,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         final Publication publication = leaderMember.publication();
 
-        if (memberStatusPublisher.appendedPosition(publication, 0, leadershipTermId, thisMember.id()))
+        if (memberStatusPublisher.appendedPosition(publication, logPosition, leadershipTermId, thisMember.id()))
         {
             sequencerAgent.electionComplete(Cluster.Role.FOLLOWER);
             close();
@@ -587,7 +577,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         int workCount = 0;
 
-        if (ClusterMember.hasReachedPosition(clusterMembers, 0))
+        if (ClusterMember.hasReachedPosition(clusterMembers, logPosition))
         {
             sequencerAgent.electionComplete(Cluster.Role.LEADER);
             close();
@@ -603,12 +593,7 @@ class Election implements MemberStatusListener, AutoCloseable
                 if (member != thisMember)
                 {
                     memberStatusPublisher.newLeadershipTerm(
-                        member.publication(),
-                        recoveryPlan.lastTermBaseLogPosition,
-                        recoveryPlan.lastTermPositionAppended,
-                        leadershipTermId,
-                        thisMember.id(),
-                        logSessionId);
+                        member.publication(), logPosition, leadershipTermId, thisMember.id(), logSessionId);
                 }
             }
 

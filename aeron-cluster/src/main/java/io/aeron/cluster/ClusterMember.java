@@ -35,7 +35,7 @@ public final class ClusterMember
     private boolean isLeader;
     private final int id;
     private int votedForId = NULL_MEMBER_ID;
-    private long leadershipTermId;
+    private long leadershipTermId = -1;
     private long termPosition = NULL_POSITION;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
@@ -68,6 +68,18 @@ public final class ClusterMember
         this.logEndpoint = logEndpoint;
         this.archiveEndpoint = archiveEndpoint;
         this.endpointsDetail = endpointsDetail;
+    }
+
+    /**
+     * Reset the state of a cluster member so it can be canvassed and reestablished.
+     */
+    public void reset()
+    {
+        isBallotSent = false;
+        isLeader = false;
+        votedForId = NULL_MEMBER_ID;
+        leadershipTermId = -1;
+        termPosition = NULL_POSITION;
     }
 
     /**
@@ -418,6 +430,19 @@ public final class ClusterMember
     }
 
     /**
+     * Reset the state of all cluster members.
+     *
+     * @param clusterMembers to reset.
+     */
+    public static void reset(final ClusterMember[] clusterMembers)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            member.reset();
+        }
+    }
+
+    /**
      * Become a candidate by voting for yourself and resetting the other votes to {@link #NULL_MEMBER_ID}.
      *
      * @param clusterMembers    to reset the votes for.
@@ -506,17 +531,9 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member == candidate)
-            {
-                continue;
-            }
-
-            if (NULL_POSITION == member.termPosition)
-            {
-                return false;
-            }
-
-            if (candidate.leadershipTermId < member.leadershipTermId || candidate.termPosition < member.termPosition)
+            if (NULL_POSITION == member.termPosition ||
+                candidate.leadershipTermId < member.leadershipTermId ||
+                candidate.termPosition < member.termPosition)
             {
                 return false;
             }

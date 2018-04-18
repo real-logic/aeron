@@ -44,14 +44,13 @@ class Election implements MemberStatusListener, AutoCloseable
         INIT(0),
         CANVASS(1),
         NOMINATE(2),
-        FOLLOWER_BALLOT(3),
-        CANDIDATE_BALLOT(4),
+        CANDIDATE_BALLOT(3),
+        FOLLOWER_BALLOT(4),
         FOLLOWER_AWAITING_RESULT(5),
         FOLLOWER_TRANSITION(6),
         LEADER_TRANSITION(7),
-        FOLLOWER_READY(8),
-        LEADER_READY(9),
-        FAILED(10);
+        LEADER_READY(8),
+        FOLLOWER_READY(9);
 
         static final State[] STATES;
 
@@ -168,11 +167,11 @@ class Election implements MemberStatusListener, AutoCloseable
                 workCount += nominate(nowMs);
                 break;
 
-            case FOLLOWER_BALLOT:
-                break;
-
             case CANDIDATE_BALLOT:
                 workCount += candidateBallot(nowMs);
+                break;
+
+            case FOLLOWER_BALLOT:
                 break;
 
             case FOLLOWER_AWAITING_RESULT:
@@ -186,15 +185,12 @@ class Election implements MemberStatusListener, AutoCloseable
                 workCount += leaderTransition(nowMs);
                 break;
 
-            case FOLLOWER_READY:
-                workCount += followerReady(nowMs);
-                break;
-
             case LEADER_READY:
                 workCount += leaderReady(nowMs);
                 break;
 
-            case FAILED:
+            case FOLLOWER_READY:
+                workCount += followerReady(nowMs);
                 break;
         }
 
@@ -209,6 +205,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         switch (state)
         {
+            case CANVASS:
             case NOMINATE:
             case FOLLOWER_BALLOT:
                 if (candidateTermId == (leadershipTermId + 1))
@@ -221,10 +218,6 @@ class Election implements MemberStatusListener, AutoCloseable
                         ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs, candidateId);
                         state(State.FOLLOWER_AWAITING_RESULT, nowMs);
                     }
-                    else
-                    {
-                        state(State.FAILED, nowMs);
-                    }
 
                     memberStatusPublisher.placeVote(
                         clusterMembers[candidateId].publication(),
@@ -236,9 +229,11 @@ class Election implements MemberStatusListener, AutoCloseable
                 break;
 
             case CANDIDATE_BALLOT:
-                if (candidateTermId >= leadershipTermId)
+                if (candidateTermId > leadershipTermId)
                 {
-                    state(State.FAILED, ctx.epochClock().time());
+                    ClusterMember.reset(clusterMembers);
+                    thisMember.leadershipTermId(leadershipTermId).termPosition(0);
+                    state(State.CANVASS, ctx.epochClock().time());
                 }
                 break;
         }
@@ -255,7 +250,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
             if (!vote)
             {
-                state(State.FAILED, ctx.epochClock().time());
+                state(State.FOLLOWER_BALLOT, ctx.epochClock().time());
             }
         }
     }
@@ -351,6 +346,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public void onCommitPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
     {
+        // TODO: Need to catch up with current leader.
     }
 
     State state()
@@ -405,6 +401,7 @@ class Election implements MemberStatusListener, AutoCloseable
         else
         {
             thisMember
+                .votedForId(thisMember.id())
                 .leadershipTermId(recoveryPlan.lastLeadershipTermId)
                 .termPosition(recoveryPlan.lastTermPositionAppended);
 
@@ -490,7 +487,9 @@ class Election implements MemberStatusListener, AutoCloseable
             }
             else
             {
-                state(State.FAILED, nowMs);
+                ClusterMember.reset(clusterMembers);
+                thisMember.leadershipTermId(leadershipTermId).termPosition(0);
+                state(State.CANVASS, nowMs);
             }
 
             workCount += 1;

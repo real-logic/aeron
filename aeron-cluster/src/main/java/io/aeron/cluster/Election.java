@@ -169,7 +169,6 @@ class Election implements MemberStatusListener, AutoCloseable
                 break;
 
             case FOLLOWER_BALLOT:
-                workCount += followerBallot(nowMs);
                 break;
 
             case CANDIDATE_BALLOT:
@@ -177,7 +176,6 @@ class Election implements MemberStatusListener, AutoCloseable
                 break;
 
             case FOLLOWER_AWAITING_RESULT:
-                workCount += followerAwaitingResult(nowMs);
                 break;
 
             case FOLLOWER_TRANSITION:
@@ -330,14 +328,15 @@ class Election implements MemberStatusListener, AutoCloseable
                     .termPosition(termPosition)
                     .leadershipTermId(leadershipTermId);
 
+                final long nowMs = ctx.epochClock().time();
                 if (leadershipTermId > thisMember.leadershipTermId() || termPosition > thisMember.termPosition())
                 {
-                    state(State.FOLLOWER_BALLOT, ctx.epochClock().time());
+                    state(State.FOLLOWER_BALLOT, nowMs);
                 }
                 else if (ClusterMember.isCertainCandidate(clusterMembers, thisMember))
                 {
-                    nominationDeadlineMs = ctx.epochClock().time() + random.nextInt((int)statusIntervalMs);
-                    state(State.NOMINATE, ctx.epochClock().time());
+                    nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs);
+                    state(State.NOMINATE, nowMs);
                 }
                 break;
 
@@ -385,7 +384,6 @@ class Election implements MemberStatusListener, AutoCloseable
             sequencerAgent.role(Cluster.Role.LEADER);
             leaderMember = thisMember;
 
-
             final long logPosition = recoveryPlan.lastTermBaseLogPosition + recoveryPlan.lastTermPositionAppended;
             ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, thisMember.id());
 
@@ -409,6 +407,7 @@ class Election implements MemberStatusListener, AutoCloseable
             thisMember
                 .leadershipTermId(recoveryPlan.lastLeadershipTermId)
                 .termPosition(recoveryPlan.lastTermPositionAppended);
+
             state(State.CANVASS, nowMs);
         }
 
@@ -472,11 +471,6 @@ class Election implements MemberStatusListener, AutoCloseable
         return 0;
     }
 
-    private int followerBallot(final long nowMs)
-    {
-        return memberStatusAdapter.poll();
-    }
-
     private int candidateBallot(final long nowMs)
     {
         int workCount = 0;
@@ -519,11 +513,6 @@ class Election implements MemberStatusListener, AutoCloseable
         }
 
         return workCount;
-    }
-
-    private int followerAwaitingResult(final long nowMs)
-    {
-        return memberStatusAdapter.poll();
     }
 
     private int followerTransition(final long nowMs)

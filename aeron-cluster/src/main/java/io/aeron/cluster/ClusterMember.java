@@ -473,7 +473,13 @@ public final class ClusterMember
         return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
     }
 
-    public static void checkArchiveEndpoint(final ClusterMember thisMember, final ChannelUri archiveControlRequestUri)
+    /**
+     * Check that the archive endpoint is correctly configured for the cluster member.
+     *
+     * @param member                   to check the configuration.
+     * @param archiveControlRequestUri for the parsed URI string.
+     */
+    public static void checkArchiveEndpoint(final ClusterMember member, final ChannelUri archiveControlRequestUri)
     {
         if (!UDP_MEDIA.equals(archiveControlRequestUri.media()))
         {
@@ -481,12 +487,11 @@ public final class ClusterMember
         }
 
         final String archiveEndpoint = archiveControlRequestUri.get(ENDPOINT_PARAM_NAME);
-
-        if (archiveEndpoint != null && !archiveEndpoint.equals(thisMember.archiveEndpoint))
+        if (archiveEndpoint != null && !archiveEndpoint.equals(member.archiveEndpoint))
         {
             throw new IllegalStateException(
-                "archive control request endpoint must match cluster members configuration: " + archiveEndpoint +
-                " != " + thisMember.archiveEndpoint);
+                "archive control request endpoint must match cluster member configuration: " + archiveEndpoint +
+                " != " + member.archiveEndpoint);
         }
     }
 

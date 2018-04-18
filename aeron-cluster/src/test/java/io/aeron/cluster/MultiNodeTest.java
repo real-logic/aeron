@@ -308,7 +308,7 @@ public class MultiNodeTest
                 eq(position), eq(1L), eq(0), anyInt());
 
             leaderHarness.memberStatusPublisher().appendedPosition(
-                leaderHarness.memberStatusPublication(2), 0, 1, 2);
+                leaderHarness.memberStatusPublication(2), position, 1, 2);
 
             leaderHarness.awaitServiceOnStart();
             followerHarness.awaitServiceOnStart();

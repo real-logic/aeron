@@ -465,9 +465,9 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * Default timeout after which an election vote will be attempted after startup and recovery is complete
-         * while waiting to hear the status of all members if a majority has been heard from.
+         * while waiting to hear the status of all members before going for a majority if possible.
          */
-        public static final long STARTUP_STATUS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+        public static final long STARTUP_STATUS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(60);
 
         /**
          * Timeout after which an election vote will be attempted after a leader failure is suspected
@@ -498,9 +498,9 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * Interval at which a member will send out status updates during election phases.
-         * Default to 10 milliseconds in nanoseconds.
+         * Default to 20 milliseconds in nanoseconds.
          */
-        public static final long STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(10);
+        public static final long STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(20);
 
         /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.

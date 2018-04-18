@@ -187,7 +187,7 @@ public class ServiceControlPublisher implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to schedule timer");
+        throw new IllegalStateException("Failed to close session");
     }
 
     private static void checkResult(final long result)

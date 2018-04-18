@@ -255,7 +255,7 @@ class Election implements MemberStatusListener, AutoCloseable
     public void onNewLeadershipTerm(
         final long logPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
     {
-        if (leadershipTermId == (this.leadershipTermId + 1))
+        if (leadershipTermId > this.leadershipTermId)
         {
             leaderMember = clusterMembers[leaderMemberId];
             this.leadershipTermId = leadershipTermId;
@@ -309,13 +309,13 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public void onAppendedPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
     {
+        clusterMembers[followerMemberId]
+            .logPosition(logPosition)
+            .leadershipTermId(leadershipTermId);
+
         switch (state)
         {
             case CANVASS:
-                clusterMembers[followerMemberId]
-                    .logPosition(logPosition)
-                    .leadershipTermId(leadershipTermId);
-
                 final long nowMs = ctx.epochClock().time();
                 if (leadershipTermId > this.leadershipTermId || logPosition > this.logPosition)
                 {
@@ -325,13 +325,6 @@ class Election implements MemberStatusListener, AutoCloseable
                 {
                     nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs);
                     state(State.NOMINATE, nowMs);
-                }
-                break;
-
-            case LEADER_READY:
-                if (leadershipTermId == this.leadershipTermId)
-                {
-                    clusterMembers[followerMemberId].logPosition(logPosition);
                 }
                 break;
         }
@@ -577,7 +570,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         int workCount = 0;
 
-        if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition))
+        if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition, leadershipTermId))
         {
             sequencerAgent.electionComplete(Cluster.Role.LEADER);
             close();

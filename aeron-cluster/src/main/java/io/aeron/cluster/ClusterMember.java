@@ -412,11 +412,13 @@ public final class ClusterMember
     /**
      * Has the members of the cluster the voted reached the provided position in their log.
      *
-     * @param clusterMembers to check.
-     * @param position       to compare the {@link #logPosition()} against.
+     * @param clusterMembers   to check.
+     * @param position         to compare the {@link #logPosition()} against.
+     * @param leadershipTermId expected of the members.
      * @return true if all members have reached this position otherwise false.
      */
-    public static boolean haveVotersReachedPosition(final ClusterMember[] clusterMembers, final long position)
+    public static boolean haveVotersReachedPosition(
+        final ClusterMember[] clusterMembers, final long position, final long leadershipTermId)
     {
         for (final ClusterMember member : clusterMembers)
         {

@@ -135,7 +135,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         {
             markFile.updateActivityTimestamp(nowMs);
             cachedEpochClock.update(nowMs);
-            heartbeatCounter.setOrdered(nowMs);
+            checkHealthAndUpdateHeartbeat(nowMs);
         }
 
         int workCount = logAdapter.poll();
@@ -193,6 +193,14 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
     public void scheduleTimer(final long correlationId, final long deadlineMs)
     {
         serviceControlPublisher.scheduleTimer(correlationId, deadlineMs);
+    }
+
+    public void checkHealthAndUpdateHeartbeat(final long nowMs)
+    {
+        if (null != logAdapter && !logAdapter.image().isClosed())
+        {
+            heartbeatCounter.setOrdered(nowMs);
+        }
     }
 
     public void cancelTimer(final long correlationId)

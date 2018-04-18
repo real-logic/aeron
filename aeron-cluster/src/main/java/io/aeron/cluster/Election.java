@@ -577,7 +577,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         int workCount = 0;
 
-        if (ClusterMember.hasReachedPosition(clusterMembers, logPosition))
+        if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition))
         {
             sequencerAgent.electionComplete(Cluster.Role.LEADER);
             close();

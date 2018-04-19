@@ -1182,12 +1182,12 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             {
                 serviceAckCount = 0;
                 logAdapter = null;
+                serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, true, channel);
 
                 if (length > 0)
                 {
                     try (Subscription subscription = aeron.addSubscription(channel, streamId))
                     {
-                        serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, true, channel);
                         awaitServiceAcks();
 
                         final Image image = awaitImage(

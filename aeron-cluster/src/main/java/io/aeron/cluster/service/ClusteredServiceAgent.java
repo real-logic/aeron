@@ -348,7 +348,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         for (int i = 0; i < replayTermCount; i++)
         {
             awaitActiveLog();
-
             final int counterId = activeLog.commitPositionId;
             leadershipTermId = CommitPos.getLeadershipTermId(counters, counterId);
             termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, counterId);

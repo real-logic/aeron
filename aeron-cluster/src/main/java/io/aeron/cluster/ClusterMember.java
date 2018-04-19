@@ -523,13 +523,13 @@ public final class ClusterMember
     }
 
     /**
-     * Is the member certain to be a suitable candidate in an election.
+     * Has the member achieved a unanimous view to be a suitable candidate in an election.
      *
      * @param clusterMembers to compare the candidate against.
      * @param candidate      for leadership.
      * @return true if the candidate is suitable otherwise false.
      */
-    public static boolean isCertainCandidate(final ClusterMember[] clusterMembers, final ClusterMember candidate)
+    public static boolean isUnanimousCandidate(final ClusterMember[] clusterMembers, final ClusterMember candidate)
     {
         for (final ClusterMember member : clusterMembers)
         {
@@ -545,7 +545,7 @@ public final class ClusterMember
     }
 
     /**
-     * Is the member achieved a quorum view to be a suitable candidate in an election.
+     * Has the member achieved a quorum view to be a suitable candidate in an election.
      *
      * @param clusterMembers to compare the candidate against.
      * @param candidate      for leadership.

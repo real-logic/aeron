@@ -228,8 +228,6 @@ class Election implements MemberStatusListener, AutoCloseable
             case CANDIDATE_BALLOT:
                 if (candidateTermId > leadershipTermId)
                 {
-                    ClusterMember.reset(clusterMembers);
-                    thisMember.leadershipTermId(leadershipTermId);
                     state(State.CANVASS, ctx.epochClock().time());
                 }
                 break;
@@ -321,7 +319,7 @@ class Election implements MemberStatusListener, AutoCloseable
                 {
                     state(State.FOLLOWER_BALLOT, nowMs);
                 }
-                else if (ClusterMember.isCertainCandidate(clusterMembers, thisMember))
+                else if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember))
                 {
                     nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs);
                     state(State.NOMINATE, nowMs);
@@ -389,11 +387,6 @@ class Election implements MemberStatusListener, AutoCloseable
         }
         else
         {
-            thisMember
-                .votedForId(thisMember.id())
-                .leadershipTermId(recoveryPlan.lastLeadershipTermId)
-                .logPosition(logPosition);
-
             state(State.CANVASS, nowMs);
         }
 
@@ -474,8 +467,6 @@ class Election implements MemberStatusListener, AutoCloseable
             }
             else
             {
-                ClusterMember.reset(clusterMembers);
-                thisMember.leadershipTermId(leadershipTermId);
                 state(State.CANVASS, nowMs);
             }
 
@@ -505,7 +496,7 @@ class Election implements MemberStatusListener, AutoCloseable
         {
             sequencerAgent.updateFollowersMemberDetails();
 
-            final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember, logSessionId);
+            final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
 
             sequencerAgent.recordFollowerActiveLog(channelUri.toString(), logSessionId);
             sequencerAgent.awaitFollowerServicesReady(channelUri, logSessionId);
@@ -530,7 +521,8 @@ class Election implements MemberStatusListener, AutoCloseable
                 sequencerAgent.catchupLog(recordingCatchUp);
                 recordingCatchUp = null;
 
-                final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember, logSessionId);
+                final ChannelUri channelUri = followerLogChannel(
+                    ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
 
                 sequencerAgent.recordFollowerActiveLog(channelUri.toString(), logSessionId);
                 sequencerAgent.awaitFollowerServicesReady(channelUri, logSessionId);
@@ -602,12 +594,19 @@ class Election implements MemberStatusListener, AutoCloseable
         timeOfLastStateChangeMs = nowMs;
         this.state = state;
         stateCounter.setOrdered(state.code());
+
+        if (State.CANVASS == state)
+        {
+            ClusterMember.reset(clusterMembers);
+            thisMember.leadershipTermId(leadershipTermId).logPosition(logPosition);
+            sequencerAgent.role(Cluster.Role.FOLLOWER);
+        }
     }
 
-    private ChannelUri followerLogChannel(final String logChannel, final ClusterMember member, final int sessionId)
+    private static ChannelUri followerLogChannel(final String logChannel, final String logEndpoint, final int sessionId)
     {
         final ChannelUri channelUri = ChannelUri.parse(logChannel);
-        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.logEndpoint());
+        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, logEndpoint);
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
 
         return channelUri;

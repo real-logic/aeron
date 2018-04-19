@@ -62,7 +62,7 @@ public class PublicationLink implements DriverManagedResource
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        if (client.hasTimedOut(timeNs))
+        if (client.hasTimedOut())
         {
             reachedEndOfLife = true;
         }

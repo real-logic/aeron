@@ -15,25 +15,41 @@
  */
 package io.aeron.driver;
 
+import org.agrona.concurrent.status.AtomicCounter;
+
+import java.util.concurrent.TimeUnit;
+
 /**
  * Aeron client library tracker.
  */
 public class AeronClient implements DriverManagedResource
 {
     private final long clientId;
-    private final long clientLivenessTimeoutNs;
-    private long timeOfLastKeepaliveNs;
+    private final long clientLivenessTimeoutMs;
+    private final AtomicCounter heartbeatStatus;
+    private long timeOfLastKeepaliveMs;
     private boolean reachedEndOfLife = false;
 
-    public AeronClient(final long clientId, final long clientLivenessTimeoutNs, final long nowNs)
+    public AeronClient(
+        final long clientId,
+        final long clientLivenessTimeoutNs,
+        final long nowMs,
+        final AtomicCounter heartbeatStatus)
     {
         this.clientId = clientId;
-        this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
-        this.timeOfLastKeepaliveNs = nowNs;
+        this.clientLivenessTimeoutMs = Math.max(1, TimeUnit.NANOSECONDS.toMillis(clientLivenessTimeoutNs));
+        this.timeOfLastKeepaliveMs = nowMs;
+        this.heartbeatStatus = heartbeatStatus;
+
+        heartbeatStatus.setOrdered(nowMs);
     }
 
     public void close()
     {
+        if (!heartbeatStatus.isClosed())
+        {
+            heartbeatStatus.close();
+        }
     }
 
     public long clientId()
@@ -41,24 +57,20 @@ public class AeronClient implements DriverManagedResource
         return clientId;
     }
 
-    public long timeOfLastKeepalive()
+    public void timeOfLastKeepaliveMs(final long nowMs)
     {
-        return timeOfLastKeepaliveNs;
+        timeOfLastKeepaliveMs = nowMs;
+        heartbeatStatus.setOrdered(nowMs);
     }
 
-    public void timeOfLastKeepalive(final long nowNs)
+    public boolean hasTimedOut()
     {
-        timeOfLastKeepaliveNs = nowNs;
-    }
-
-    public boolean hasTimedOut(final long nowNs)
-    {
-        return nowNs > (timeOfLastKeepaliveNs + clientLivenessTimeoutNs);
+        return reachedEndOfLife;
     }
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        if (timeNs > (timeOfLastKeepaliveNs + clientLivenessTimeoutNs))
+        if (timeMs > (timeOfLastKeepaliveMs + clientLivenessTimeoutMs))
         {
             reachedEndOfLife = true;
         }

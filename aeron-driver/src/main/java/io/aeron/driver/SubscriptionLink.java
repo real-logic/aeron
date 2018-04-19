@@ -28,7 +28,6 @@ import java.util.Map;
 public abstract class SubscriptionLink implements DriverManagedResource
 {
     protected final long registrationId;
-    protected final long clientLivenessTimeoutNs;
     protected final int streamId;
     protected final int sessionId;
     protected final boolean hasSessionId;
@@ -43,14 +42,12 @@ public abstract class SubscriptionLink implements DriverManagedResource
         final int streamId,
         final String channel,
         final AeronClient aeronClient,
-        final long clientLivenessTimeoutNs,
         final SubscriptionParams params)
     {
         this.registrationId = registrationId;
         this.streamId = streamId;
         this.channel = channel;
         this.aeronClient = aeronClient;
-        this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
         this.hasSessionId = params.hasSessionId;
         this.sessionId = params.sessionId;
     }
@@ -138,7 +135,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        if (timeNs > (aeronClient.timeOfLastKeepalive() + clientLivenessTimeoutNs))
+        if (aeronClient.hasTimedOut())
         {
             reachedEndOfLife = true;
             conductor.cleanupSubscriptionLink(this);
@@ -167,10 +164,9 @@ class NetworkSubscriptionLink extends SubscriptionLink
         final int streamId,
         final String channelUri,
         final AeronClient aeronClient,
-        final long clientLivenessTimeoutNs,
         final SubscriptionParams params)
     {
-        super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs, params);
+        super(registrationId, streamId, channelUri, aeronClient, params);
 
         this.isReliable = params.isReliable;
         this.channelEndpoint = channelEndpoint;
@@ -219,10 +215,9 @@ class IpcSubscriptionLink extends SubscriptionLink
         final int streamId,
         final String channelUri,
         final AeronClient aeronClient,
-        final long clientLivenessTimeoutNs,
         final SubscriptionParams params)
     {
-        super(registrationId, streamId, channelUri, aeronClient, clientLivenessTimeoutNs, params);
+        super(registrationId, streamId, channelUri, aeronClient, params);
     }
 
     public boolean matches(final IpcPublication publication)
@@ -240,10 +235,9 @@ class SpySubscriptionLink extends SubscriptionLink
         final UdpChannel spiedChannel,
         final int streamId,
         final AeronClient aeronClient,
-        final long clientLivenessTimeoutNs,
         final SubscriptionParams params)
     {
-        super(registrationId, streamId, spiedChannel.originalUriString(), aeronClient, clientLivenessTimeoutNs, params);
+        super(registrationId, streamId, spiedChannel.originalUriString(), aeronClient, params);
 
         this.udpChannel = spiedChannel;
     }

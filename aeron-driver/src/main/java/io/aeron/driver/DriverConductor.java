@@ -616,7 +616,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscription = new NetworkSubscriptionLink(
-            registrationId, channelEndpoint, streamId, channel, client, clientLivenessTimeoutNs, params);
+            registrationId, channelEndpoint, streamId, channel, client, params);
 
         subscriptionLinks.add(subscription);
         clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId());
@@ -629,7 +629,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel));
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
-            registrationId, streamId, channel, getOrAddClient(clientId), clientLivenessTimeoutNs, params);
+            registrationId, streamId, channel, getOrAddClient(clientId), params);
 
         subscriptionLinks.add(subscriptionLink);
 
@@ -668,7 +668,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri());
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
-            registrationId, udpChannel, streamId, client, clientLivenessTimeoutNs, params);
+            registrationId, udpChannel, streamId, client, params);
 
         subscriptionLinks.add(subscriptionLink);
 
@@ -748,7 +748,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {
-            client.timeOfLastKeepalive(cachedNanoClock.nanoTime());
+            client.timeOfLastKeepaliveMs(cachedEpochClock.time());
         }
     }
 
@@ -803,7 +803,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {
-            client.timeOfLastKeepalive(0);
+            client.timeOfLastKeepaliveMs(0);
 
             clientProxy.operationSucceeded(correlationId);
         }
@@ -1223,7 +1223,11 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         AeronClient client = findClient(clients, clientId);
         if (null == client)
         {
-            client = new AeronClient(clientId, clientLivenessTimeoutNs, cachedNanoClock.nanoTime());
+            client = new AeronClient(
+                clientId,
+                clientLivenessTimeoutNs,
+                cachedEpochClock.time(),
+                ClientHeartbeatStatus.allocate(tempBuffer, countersManager, clientId));
             clients.add(client);
         }
 

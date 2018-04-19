@@ -422,7 +422,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
     private int nominate(final long nowMs)
     {
-        if (State.NOMINATE == state && nowMs >= nominationDeadlineMs)
+        if (nowMs >= nominationDeadlineMs)
         {
             ++leadershipTermId;
             sequencerAgent.role(Cluster.Role.CANDIDATE);

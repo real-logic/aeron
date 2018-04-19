@@ -310,22 +310,6 @@ class Election implements MemberStatusListener, AutoCloseable
         clusterMembers[followerMemberId]
             .logPosition(logPosition)
             .leadershipTermId(leadershipTermId);
-
-        switch (state)
-        {
-            case CANVASS:
-                final long nowMs = ctx.epochClock().time();
-                if (leadershipTermId > this.leadershipTermId || logPosition > this.logPosition)
-                {
-                    state(State.FOLLOWER_BALLOT, nowMs);
-                }
-                else if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember))
-                {
-                    nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs);
-                    state(State.NOMINATE, nowMs);
-                }
-                break;
-        }
     }
 
     public void onCommitPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
@@ -419,7 +403,13 @@ class Election implements MemberStatusListener, AutoCloseable
             TimeUnit.NANOSECONDS.toMillis(ctx.startupStatusTimeoutNs()) :
             TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
 
-        if (nowMs >= (timeOfLastStateChangeMs + canvassDeadlineMs) &&
+        if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember))
+        {
+            nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs);
+            state(State.NOMINATE, nowMs);
+            workCount += 1;
+        }
+        else if (nowMs >= (timeOfLastStateChangeMs + canvassDeadlineMs) &&
             ClusterMember.isQuorumCandidate(clusterMembers, thisMember))
         {
             nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs);

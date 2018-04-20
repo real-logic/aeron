@@ -316,6 +316,11 @@ public final class AeronCluster implements AutoCloseable
 
                 if (nanoClock.nanoTime() > deadlineNs)
                 {
+                    for (int i = 0; i < memberCount; i++)
+                    {
+                        publications[i].close();
+                    }
+
                     throw new TimeoutException("Awaiting connection to cluster");
                 }
 

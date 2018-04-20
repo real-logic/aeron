@@ -225,7 +225,7 @@ public class StreamStat
     }
 
     /**
-     * Represents a position withing a particular stream of messages.
+     * Represents a position within a particular stream of messages.
      */
     public static class StreamPosition
     {

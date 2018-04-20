@@ -701,6 +701,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                 int32_t session_id = conductor->next_session_id++;
                 int32_t initial_term_id = aeron_randomised_int32();
                 aeron_position_t pub_lmt_position;
+                aeron_position_t pub_pos_position;
 
                 pub_lmt_position.counter_id =
                     aeron_counter_publisher_limit_allocate(
@@ -708,7 +709,14 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                 pub_lmt_position.value_addr =
                     aeron_counter_addr(&conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
 
+                pub_pos_position.counter_id =
+                    aeron_counter_publisher_position_allocate(
+                        &conductor->counters_manager, registration_id, session_id, stream_id, AERON_IPC_CHANNEL);
+                pub_pos_position.value_addr =
+                    aeron_counter_addr(&conductor->counters_manager, (int32_t)pub_pos_position.counter_id);
+
                 if (pub_lmt_position.counter_id >= 0 &&
+                    pub_pos_position.counter_id >= 0 &&
                     aeron_ipc_publication_create(
                         &publication,
                         conductor->context,
@@ -716,6 +724,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                         stream_id,
                         registration_id,
                         &pub_lmt_position,
+                        &pub_pos_position,
                         initial_term_id,
                         conductor->context->ipc_term_buffer_length,
                         conductor->context->ipc_mtu_length,
@@ -793,6 +802,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 int32_t session_id = conductor->next_session_id++;
                 int32_t initial_term_id = aeron_randomised_int32();
                 aeron_position_t pub_lmt_position;
+                aeron_position_t pub_pos_position;
                 aeron_position_t snd_pos_position;
                 aeron_position_t snd_lmt_position;
                 aeron_flow_control_strategy_supplier_func_t flow_control_strategy_supplier_func =
@@ -804,6 +814,9 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 pub_lmt_position.counter_id =
                     aeron_counter_publisher_limit_allocate(
                         &conductor->counters_manager, registration_id, session_id, stream_id, channel);
+                pub_pos_position.counter_id =
+                    aeron_counter_publisher_position_allocate(
+                        &conductor->counters_manager, registration_id, session_id, stream_id, channel);
                 snd_pos_position.counter_id =
                     aeron_counter_sender_position_allocate(
                         &conductor->counters_manager, registration_id, session_id, stream_id, channel);
@@ -812,6 +825,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                         &conductor->counters_manager, registration_id, session_id, stream_id, channel);
 
                 if (pub_lmt_position.counter_id < 0 ||
+                    pub_pos_position.counter_id < 0 ||
                     snd_pos_position.counter_id < 0 ||
                     snd_lmt_position.counter_id < 0)
                 {
@@ -820,6 +834,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
                 pub_lmt_position.value_addr =
                     aeron_counter_addr(&conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
+                pub_pos_position.value_addr =
+                    aeron_counter_addr(&conductor->counters_manager, (int32_t)pub_pos_position.counter_id);
                 snd_pos_position.value_addr =
                     aeron_counter_addr(&conductor->counters_manager, (int32_t)snd_pos_position.counter_id);
                 snd_lmt_position.value_addr =
@@ -847,6 +863,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                         initial_term_id,
                         conductor->context->mtu_length,
                         &pub_lmt_position,
+                        &pub_pos_position,
                         &snd_pos_position,
                         &snd_lmt_position,
                         flow_control_strategy,

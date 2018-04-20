@@ -257,3 +257,21 @@ int32_t aeron_counter_client_heartbeat_status_allocate(
         AERON_COUNTER_CLIENT_HEARTBEAT_STATUS_TYPE_ID,
         client_id);
 }
+
+int32_t aeron_counter_publisher_position_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel)
+{
+    return aeron_stream_position_counter_allocate(
+        counters_manager,
+        AERON_COUNTER_PUBLISHER_POSITION_NAME,
+        AERON_COUNTER_PUBLISHER_POSITION_TYPE_ID,
+        registration_id,
+        session_id,
+        stream_id,
+        channel,
+        "");
+}

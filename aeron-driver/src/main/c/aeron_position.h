@@ -128,4 +128,14 @@ int32_t aeron_counter_client_heartbeat_status_allocate(
     aeron_counters_manager_t *counters_manager,
     int64_t client_id);
 
+#define AERON_COUNTER_PUBLISHER_POSITION_NAME "pub-pos"
+#define AERON_COUNTER_PUBLISHER_POSITION_TYPE_ID (12)
+
+int32_t aeron_counter_publisher_position_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    const char *channel);
+
 #endif //AERON_AERON_POSITION_H

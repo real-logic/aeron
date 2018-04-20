@@ -53,6 +53,7 @@ typedef struct aeron_ipc_publication_stct
 
     aeron_mapped_raw_log_t mapped_raw_log;
     aeron_position_t pub_lmt_position;
+    aeron_position_t pub_pos_position;
     aeron_logbuffer_metadata_t *log_meta_data;
     aeron_clock_func_t nano_clock;
 
@@ -80,6 +81,7 @@ int aeron_ipc_publication_create(
     int32_t stream_id,
     int64_t registration_id,
     aeron_position_t *pub_lmt_position,
+    aeron_position_t *pub_pos_position,
     int32_t initial_term_id,
     size_t term_buffer_length,
     size_t mtu_length,
@@ -97,7 +99,8 @@ void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, i
 void aeron_ipc_publication_incref(void *clientd);
 void aeron_ipc_publication_decref(void *clientd);
 
-void aeron_ipc_publication_check_for_blocked_publisher(aeron_ipc_publication_t *publication, int64_t now_ns);
+void aeron_ipc_publication_check_for_blocked_publisher(
+    aeron_ipc_publication_t *publication, int64_t producer_position, int64_t now_ns);
 
 inline void aeron_ipc_publication_add_subscriber_hook(void *clientd, int64_t *value_addr)
 {
@@ -122,7 +125,7 @@ inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t 
 }
 
 inline bool aeron_ipc_publication_is_possibly_blocked(
-    aeron_ipc_publication_t *publication, int64_t consumer_position)
+    aeron_ipc_publication_t *publication, int64_t producer_position, int64_t consumer_position)
 {
     int32_t producer_term_count;
 
@@ -133,17 +136,6 @@ inline bool aeron_ipc_publication_is_possibly_blocked(
     {
         return true;
     }
-
-    int64_t raw_tail;
-
-    AERON_GET_VOLATILE(
-        raw_tail,
-        publication->log_meta_data->term_tail_counters[aeron_logbuffer_index_by_term_count(producer_term_count)]);
-    const int64_t producer_position = aeron_logbuffer_compute_position(
-        aeron_logbuffer_term_id(raw_tail),
-        aeron_logbuffer_term_offset(raw_tail, (int32_t)publication->mapped_raw_log.term_length),
-        publication->position_bits_to_shift,
-        publication->initial_term_id);
 
     return producer_position > consumer_position;
 }

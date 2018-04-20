@@ -42,7 +42,7 @@ import static io.aeron.driver.status.StreamPositionCounter.*;
  * output per stream with each of the position counters for that stream.
  * <p>
  * Each counter has the format:
- * {@code <label-name>-<registration id>:<position value>}
+ * {@code <label-name>:<registration id>:<position value>}
  */
 public class StreamStat
 {
@@ -143,7 +143,7 @@ public class StreamStat
                 builder
                     .append(' ')
                     .append(StreamPositionCounter.labelName(streamPosition.typeId()))
-                    .append('-').append(streamPosition.id())
+                    .append(':').append(streamPosition.id())
                     .append(':').append(streamPosition.value());
             }
 

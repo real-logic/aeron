@@ -700,6 +700,7 @@ project(':aeron-all') {
         compile project(':aeron-client')
         compile project(':aeron-driver')
         compile project(':aeron-archive')
+        compile project(':aeron-cluster')
         compile project(':aeron-samples')
     }
 
@@ -708,12 +709,15 @@ project(':aeron-all') {
         source += project(':aeron-driver').sourceSets.main.allJava
         source += project(':aeron-archive').sourceSets.main.allJava
         source += project(':aeron-archive').sourceSets.generated.allJava
+        source += project(':aeron-cluster').sourceSets.main.allJava
+        source += project(':aeron-cluster').sourceSets.generated.allJava
         source += project(':aeron-agent').sourceSets.main.allJava
         source += project(':aeron-samples').sourceSets.main.allJava
 
         classpath += project(':aeron-client').configurations.compile
         classpath += project(':aeron-driver').configurations.compile
         classpath += project(':aeron-archive').configurations.compile
+        classpath += project(':aeron-cluster').configurations.compile
         classpath += project(':aeron-agent').configurations.compile
         classpath += project(':aeron-samples').configurations.compile
     }
@@ -774,6 +778,8 @@ project(':aeron-all') {
         from project(':aeron-agent').sourceSets.main.allSource
         from project(':aeron-archive').sourceSets.main.allSource
         from project(':aeron-archive').sourceSets.generated.allSource
+        from project(':aeron-cluster').sourceSets.main.allSource
+        from project(':aeron-cluster').sourceSets.generated.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {

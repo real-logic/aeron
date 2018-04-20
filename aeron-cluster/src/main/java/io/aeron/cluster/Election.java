@@ -212,6 +212,7 @@ class Election implements MemberStatusListener, AutoCloseable
                     final long nowMs = ctx.epochClock().time();
                     if (voteFor)
                     {
+                        leadershipTermId = candidateTermId;
                         ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs, candidateId);
                         state(State.FOLLOWER_AWAITING_RESULT, nowMs);
                     }
@@ -245,7 +246,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
             if (!vote)
             {
-                state(State.FOLLOWER_BALLOT, ctx.epochClock().time());
+                state(State.CANVASS, ctx.epochClock().time());
             }
         }
     }
@@ -253,7 +254,7 @@ class Election implements MemberStatusListener, AutoCloseable
     public void onNewLeadershipTerm(
         final long logPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
     {
-        if (leadershipTermId > this.leadershipTermId)
+        if (leadershipTermId >= this.leadershipTermId && logPosition >= this.logPosition)
         {
             leaderMember = clusterMembers[leaderMemberId];
             this.leadershipTermId = leadershipTermId;
@@ -424,9 +425,8 @@ class Election implements MemberStatusListener, AutoCloseable
             ++leadershipTermId;
             sequencerAgent.role(Cluster.Role.CANDIDATE);
 
-            final int memberId = thisMember.id();
-            ClusterMember.becomeCandidate(clusterMembers, memberId);
-            ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, memberId);
+            ClusterMember.becomeCandidate(clusterMembers, thisMember.id());
+            ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, thisMember.id());
 
             state(State.CANDIDATE_BALLOT, nowMs);
             return 1;

@@ -43,7 +43,7 @@ public class ServiceControlPublisher implements AutoCloseable
         CloseHelper.close(publication);
     }
 
-    public void scheduleTimer(final long correlationId, final long deadlineMs)
+    public boolean scheduleTimer(final long correlationId, final long deadlineMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerEncoder.BLOCK_LENGTH;
 
@@ -60,17 +60,17 @@ public class ServiceControlPublisher implements AutoCloseable
 
                 bufferClaim.commit();
 
-                return;
+                return true;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to schedule timer");
+        return false;
     }
 
-    public void cancelTimer(final long correlationId)
+    public boolean cancelTimer(final long correlationId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerEncoder.BLOCK_LENGTH;
 
@@ -86,14 +86,14 @@ public class ServiceControlPublisher implements AutoCloseable
 
                 bufferClaim.commit();
 
-                return;
+                return true;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to cancel timer");
+        return false;
     }
 
     public void ackAction(
@@ -164,7 +164,7 @@ public class ServiceControlPublisher implements AutoCloseable
         throw new IllegalStateException("Failed to send log connect request");
     }
 
-    public void closeSession(final long clusterSessionId)
+    public boolean closeSession(final long clusterSessionId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CloseSessionEncoder.BLOCK_LENGTH;
 
@@ -180,14 +180,14 @@ public class ServiceControlPublisher implements AutoCloseable
 
                 bufferClaim.commit();
 
-                return;
+                return true;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to close session");
+        return false;
     }
 
     private static void checkResult(final long result)

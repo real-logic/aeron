@@ -89,7 +89,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     private final CachedEpochClock cachedEpochClock;
     private final CachedNanoClock cachedNanoClock;
     private final CountersManager countersManager;
-    private final AtomicCounter clientKeepAlives;
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final MutableDirectBuffer tempBuffer;
 
@@ -114,7 +113,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         tempBuffer = ctx.tempBuffer();
 
         countersManager = context.countersManager();
-        clientKeepAlives = context.systemCounters().get(CLIENT_KEEP_ALIVES);
 
         clientCommandAdapter = new ClientCommandAdapter(
             context.systemCounters().get(ERRORS),
@@ -743,8 +741,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void onClientKeepalive(final long clientId)
     {
-        clientKeepAlives.incrementOrdered();
-
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {

@@ -40,7 +40,6 @@ public enum SystemCounterDescriptor
     INVALID_PACKETS(14, "Invalid packets"),
     ERRORS(15, "Errors"),
     SHORT_SENDS(16, "Short sends"),
-    CLIENT_KEEP_ALIVES(17, "Client keep-alives"),
     SENDER_FLOW_CONTROL_LIMITS(18, "Sender flow control limits applied"),
     UNBLOCKED_PUBLICATIONS(19, "Unblocked Publications"),
     UNBLOCKED_COMMANDS(20, "Unblocked Control Commands"),

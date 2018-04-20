@@ -106,6 +106,9 @@ public class EgressAdapter implements FragmentHandler
                     header);
                 break;
 
+            case ChallengeDecoder.TEMPLATE_ID:
+                break;
+
             default:
                 throw new IllegalStateException("Unknown templateId: " + templateId);
         }

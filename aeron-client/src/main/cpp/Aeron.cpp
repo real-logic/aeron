@@ -53,6 +53,7 @@ Aeron::Aeron(Context &context) :
         m_countersMetadataBuffer,
         m_countersValueBuffer,
         context.m_onNewPublicationHandler,
+        context.m_onNewExclusivePublicationHandler,
         context.m_onNewSubscriptionHandler,
         context.m_exceptionHandler,
         context.m_onAvailableCounterHandler,

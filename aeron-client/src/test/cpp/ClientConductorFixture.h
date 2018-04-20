@@ -86,6 +86,7 @@ public:
             m_counterMetadataBuffer,
             m_counterValuesBuffer,
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewPub, &m_handlers, _1, _2, _3, _4),
+            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewPub, &m_handlers, _1, _2, _3, _4),
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewSub, &m_handlers, _1, _2, _3),
             [&](const std::exception& exception) { m_errorHandler(exception); },
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onAvailableCounter, &m_handlers, _1, _2, _3),

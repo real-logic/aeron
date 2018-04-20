@@ -184,6 +184,11 @@ public:
             m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
         }
 
+        if (!m_isOnNewExclusivePublicationHandlerSet)
+        {
+            m_onNewExclusivePublicationHandler = m_onNewPublicationHandler;
+        }
+
         return *this;
     }
     /// @endcond
@@ -233,6 +238,21 @@ public:
     inline this_t& newPublicationHandler(const on_new_publication_t& handler)
     {
         m_onNewPublicationHandler = handler;
+        return *this;
+    }
+
+    /**
+     * Set the handler for successful Aeron::addExclusivePublication notifications
+     *
+     * If not set, then will use newPublicationHandler instead.
+     *
+     * @param handler called when add is completed successfully
+     * @return reference to this Context instance
+     */
+    inline this_t& newExclusivePublicationHandler(const on_new_publication_t& handler)
+    {
+        m_onNewExclusivePublicationHandler = handler;
+        m_isOnNewExclusivePublicationHandlerSet = true;
         return *this;
     }
 
@@ -396,6 +416,7 @@ private:
     std::string m_dirName = defaultAeronPath();
     exception_handler_t m_exceptionHandler = defaultErrorHandler;
     on_new_publication_t m_onNewPublicationHandler = defaultOnNewPublicationHandler;
+    on_new_publication_t m_onNewExclusivePublicationHandler = defaultOnNewPublicationHandler;
     on_new_subscription_t m_onNewSubscriptionHandler = defaultOnNewSubscriptionHandler;
     on_available_image_t m_onAvailableImageHandler = defaultOnAvailableImageHandler;
     on_unavailable_image_t m_onUnavailableImageHandler = defaultOnUnavailableImageHandler;
@@ -404,6 +425,7 @@ private:
     long m_mediaDriverTimeout = NULL_TIMEOUT;
     long m_resourceLingerTimeout = NULL_TIMEOUT;
     bool m_useConductorAgentInvoker = false;
+    bool m_isOnNewExclusivePublicationHandlerSet = false;
 };
 
 }

@@ -213,9 +213,6 @@ public class StreamPositionCounter
             case SenderPos.SENDER_POSITION_TYPE_ID:
                 return SenderPos.NAME;
 
-            case SenderLimit.SENDER_LIMIT_TYPE_ID:
-                return SenderLimit.NAME;
-
             case ReceiverHwm.RECEIVER_HWM_TYPE_ID:
                 return ReceiverHwm.NAME;
 
@@ -224,6 +221,12 @@ public class StreamPositionCounter
 
             case ReceiverPos.RECEIVER_POS_TYPE_ID:
                 return ReceiverPos.NAME;
+
+            case SenderLimit.SENDER_LIMIT_TYPE_ID:
+                return SenderLimit.NAME;
+
+            case PublisherPos.PUBLISHER_POS_TYPE_ID:
+                return PublisherPos.NAME;
 
             default:
                 return "<unknown>";

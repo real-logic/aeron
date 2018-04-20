@@ -38,12 +38,13 @@ public class ClientSession
     private final long id;
     private final int responseStreamId;
     private final String responseChannel;
-    private Publication responsePublication;
     private final byte[] encodedPrincipal;
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
     private final Cluster cluster;
+    private Publication responsePublication;
+    private boolean isClosing;
 
     ClientSession(
         final long sessionId,
@@ -108,6 +109,16 @@ public class ClientSession
     }
 
     /**
+     * Indicates that a request to close this session has been made.
+     *
+     * @return whether a request to close this session has been made.
+     */
+    public boolean isClosing()
+    {
+        return isClosing;
+    }
+
+    /**
      * Non-blocking publish of a partial buffer containing a message to a cluster.
      *
      * @param correlationId to be used to identify the message to the cluster.
@@ -143,6 +154,11 @@ public class ClientSession
         }
 
         responsePublication = aeron.addPublication(responseChannel, responseStreamId);
+    }
+
+    void markClosing()
+    {
+        this.isClosing = true;
     }
 
     void disconnect()

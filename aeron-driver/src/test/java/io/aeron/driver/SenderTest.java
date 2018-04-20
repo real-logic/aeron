@@ -140,6 +140,7 @@ public class SenderTest
             () -> currentTimestamp,
             rawLog,
             mock(Position.class),
+            mock(Position.class),
             new AtomicLongPosition(),
             new AtomicLongPosition(),
             SESSION_ID,

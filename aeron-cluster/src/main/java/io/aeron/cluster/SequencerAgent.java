@@ -687,6 +687,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     void becomeLeader()
     {
+        role(Cluster.Role.LEADER);
         leadershipTermId = election.leadershipTermId();
         leaderMember = election.leader();
         updateMemberDetails(leaderMember.id());
@@ -747,11 +748,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         awaitServicesReady(channelUri, false, logSessionId);
     }
 
-    void electionComplete(final Cluster.Role memberRole)
+    void electionComplete()
     {
-        role(memberRole);
-
-        if (Cluster.Role.LEADER == memberRole)
+        if (Cluster.Role.LEADER == role)
         {
             for (final ClusterSession session : sessionByIdMap.values())
             {

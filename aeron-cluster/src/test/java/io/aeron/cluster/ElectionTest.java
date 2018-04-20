@@ -153,7 +153,7 @@ public class ElectionTest
         election.onAppendedPosition(0, candidateTermId, clusterMembers[2].id());
         election.doWork(t6);
         final InOrder inOrder = inOrder(sequencerAgent, electionStateCounter);
-        inOrder.verify(sequencerAgent).electionComplete(Cluster.Role.LEADER);
+        inOrder.verify(sequencerAgent).electionComplete();
         inOrder.verify(electionStateCounter).close();
     }
 
@@ -207,7 +207,7 @@ public class ElectionTest
         final InOrder inOrder = inOrder(memberStatusPublisher, sequencerAgent, electionStateCounter);
         inOrder.verify(memberStatusPublisher).appendedPosition(
             clusterMembers[candidateId].publication(), 0, candidateTermId, followerMember.id());
-        inOrder.verify(sequencerAgent).electionComplete(Cluster.Role.FOLLOWER);
+        inOrder.verify(sequencerAgent).electionComplete();
         inOrder.verify(electionStateCounter).close();
     }
 

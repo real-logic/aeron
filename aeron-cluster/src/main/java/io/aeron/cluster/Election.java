@@ -349,11 +349,8 @@ class Election implements MemberStatusListener, AutoCloseable
         if (clusterMembers.length == 1)
         {
             ++leadershipTermId;
-
-            sequencerAgent.role(Cluster.Role.LEADER);
             leaderMember = thisMember;
             ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, thisMember.id());
-
             state(State.LEADER_TRANSITION, nowMs);
         }
         else if (ctx.appointedLeaderId() != NULL_MEMBER_ID)
@@ -539,7 +536,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
         if (memberStatusPublisher.appendedPosition(publication, logPosition, leadershipTermId, thisMember.id()))
         {
-            sequencerAgent.electionComplete(Cluster.Role.FOLLOWER);
+            sequencerAgent.electionComplete();
             close();
 
             return 1;
@@ -554,7 +551,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
         if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition, leadershipTermId))
         {
-            sequencerAgent.electionComplete(Cluster.Role.LEADER);
+            sequencerAgent.electionComplete();
             close();
 
             workCount += 1;

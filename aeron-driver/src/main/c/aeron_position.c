@@ -39,6 +39,12 @@ typedef struct aeron_channel_endpoint_status_key_layout_stct
     char channel[sizeof(((aeron_counter_metadata_descriptor_t *)0)->key)];
 }
 aeron_channel_endpoint_status_key_layout_t;
+
+typedef struct aeron_heartbeat_status_key_layout_stct
+{
+    int64_t registration_id;
+}
+aeron_heartbeat_status_key_layout_t;
 #pragma pack(pop)
 
 int32_t aeron_stream_position_counter_allocate(
@@ -222,4 +228,32 @@ int32_t aeron_counter_receive_channel_status_allocate(
         AERON_COUNTER_RECEIVE_CHANNEL_STATUS_NAME,
         AERON_COUNTER_RECEIVE_CHANNEL_STATUS_TYPE_ID,
         channel);
+}
+
+int32_t aeron_heartbeat_status_allocate(
+    aeron_counters_manager_t *counters_manager,
+    const char *name,
+    int32_t type_id,
+    int64_t registration_id)
+{
+    char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
+    int label_length = snprintf(label, sizeof(label), "%s: %" PRId64, name, registration_id);
+    aeron_heartbeat_status_key_layout_t layout =
+        {
+            .registration_id = registration_id
+        };
+
+    return aeron_counters_manager_allocate(
+        counters_manager, type_id, (const uint8_t *)&layout, sizeof(layout), label, (size_t)label_length);
+}
+
+int32_t aeron_counter_client_heartbeat_status_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t client_id)
+{
+    return aeron_heartbeat_status_allocate(
+        counters_manager,
+        AERON_COUNTER_CLIENT_HEARTBEAT_STATUS_NAME,
+        AERON_COUNTER_CLIENT_HEARTBEAT_STATUS_TYPE_ID,
+        client_id);
 }

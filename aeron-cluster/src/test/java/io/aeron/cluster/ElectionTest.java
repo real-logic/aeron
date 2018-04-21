@@ -180,7 +180,7 @@ public class ElectionTest
 
         final long t1 = 1;
         election.doWork(t1);
-        assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
+        assertThat(election.state(), is(Election.State.CANVASS));
 
         final long candidateTermId = leadershipTermId + 1;
         final long t2 = 2;
@@ -190,7 +190,7 @@ public class ElectionTest
         verify(memberStatusPublisher).placeVote(
             clusterMembers[candidateId].publication(), candidateTermId, candidateId, followerMember.id(), true);
         election.doWork(t1);
-        assertThat(election.state(), is(Election.State.FOLLOWER_AWAITING_RESULT));
+        assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
 
         final int logSessionId = -7;
         election.onNewLeadershipTerm(logPosition, candidateTermId, candidateId, logSessionId);
@@ -325,7 +325,7 @@ public class ElectionTest
         final long candidateTermId = leadershipTermId + 1;
         election.onRequestVote(logPosition, candidateTermId, 0);
         election.doWork(t4);
-        assertThat(election.state(), is(Election.State.FOLLOWER_AWAITING_RESULT));
+        assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
     }
 
     @Test

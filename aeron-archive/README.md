@@ -7,17 +7,17 @@ The aeron-archive is an service which enables Aeron data stream recording
 and replay support from an archive. 
 
 Currently implemented functionality:
-- **Record:** service can record a particular subscription, described
-by `<channel, streamId>`. Each resulting image for the subscription
-will be recorded under a new `recordingId`. Local network publications are
-recorded using the spy feature for efficiency.
+- **Record:** service can record a particular subscription, described by `<channel, streamId>`. Each resulting image
+for the subscription will be recorded under a new `recordingId`. Local network publications are recorded using the spy
+feature for efficiency.
 
-- **Replay:** service can replay a recorded `recordingId` from
-a particular `termId + termOffset`, and for a particular length.
+- **Replay:** service can replay a recorded `recordingId` from a particular `position`, and for a particular length.
 
-- **Query:** service provides a rudimentary query interface which
-allows `recordingId` discovery and description. Currently this
-supports a query for all descriptors, filtered by `<channel, streamId>`, or by specific `recordingId`.
+- **Query:** service provides a rudimentary query interface which allows `recordingId` discovery and description. 
+Currently this supports a query for all descriptors, filtered by `<channel, streamId>`, or by specific `recordingId`.
+
+- **Truncate:** allows a stopped recording to have its length truncated, and if truncated to the start position then it
+is effectively deleted.
 
 Usage
 =====

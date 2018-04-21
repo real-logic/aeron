@@ -28,6 +28,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.File;
 import java.util.function.Consumer;
 
+/**
+ * Used to mark the presence of a running {@link Archive} in a directory to guard it.
+ */
 public class ArchiveMarkFile implements AutoCloseable
 {
     public static final String FILENAME = "archive-mark.dat";

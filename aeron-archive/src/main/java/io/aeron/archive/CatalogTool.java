@@ -24,6 +24,9 @@ import static io.aeron.archive.Catalog.VALID;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.file.StandardOpenOption.READ;
 
+/**
+ * Tool for getting a listing from or verifying the archive catalog.
+ */
 public class CatalogTool
 {
     private static final ByteBuffer TEMP_BUFFER =

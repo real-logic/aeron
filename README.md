@@ -158,7 +158,7 @@ Running Samples
 ---------------
 
 Start up a media driver which will create the data and conductor directories. On Linux, this will probably be in
- /dev/shm/aeron` or `/tmp/aeron`.
+`/dev/shm/aeron` or `/tmp/aeron`.
 
 ```shell
     $ java -cp aeron-samples/build/libs/samples.jar io.aeron.driver.MediaDriver

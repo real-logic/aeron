@@ -123,10 +123,11 @@ public interface Cluster
     Collection<ClientSession> clientSessions();
 
     /**
-     * Close a cluster session.
+     * Request the close of a {@link ClientSession} by sending the request to the consensus module.
      *
      * @param clusterSessionId to be closed.
-     * @return true if the instruction is successfully or false if the session id does not exist.
+     * @return true if the event to close a session was sent or false if back pressure was applied.
+     * @throws IllegalArgumentException if the clusterSessionId is not recognised.
      */
     boolean closeSession(long clusterSessionId);
 

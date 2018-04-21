@@ -177,18 +177,20 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
     public boolean closeSession(final long clusterSessionId)
     {
         final ClientSession clientSession = sessionByIdMap.get(clusterSessionId);
-        if (clientSession != null)
+        if (clientSession == null)
         {
-            if (clientSession.isClosing())
-            {
-                return true;
-            }
+            throw new IllegalArgumentException("unknown clusterSessionId: " + clusterSessionId);
+        }
 
-            if (serviceControlPublisher.closeSession(clusterSessionId))
-            {
-                clientSession.markClosing();
-                return true;
-            }
+        if (clientSession.isClosing())
+        {
+            return true;
+        }
+
+        if (serviceControlPublisher.closeSession(clusterSessionId))
+        {
+            clientSession.markClosing();
+            return true;
         }
 
         return false;

@@ -123,7 +123,7 @@ public class ServiceControlPublisher implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to send ACK");
+        throw new IllegalStateException("failed to send ACK");
     }
 
     public void joinLog(
@@ -161,7 +161,7 @@ public class ServiceControlPublisher implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to send log connect request");
+        throw new IllegalStateException("failed to send log connect request");
     }
 
     public boolean closeSession(final long clusterSessionId)
@@ -196,7 +196,7 @@ public class ServiceControlPublisher implements AutoCloseable
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("Unexpected publication state: " + result);
+            throw new IllegalStateException("unexpected publication state: " + result);
         }
     }
 }

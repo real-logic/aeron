@@ -336,7 +336,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
             final RecordingLog.Entry snapshotEntry = recordingLog.getSnapshot(leadershipTermId, termPosition);
             if (null == snapshotEntry)
             {
-                throw new IllegalStateException("No snapshot available for term position: " + termPosition);
+                throw new IllegalStateException("no snapshot available for term position: " + termPosition);
             }
 
             termBaseLogPosition = snapshotEntry.termBaseLogPosition + snapshotEntry.termPosition;
@@ -413,7 +413,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
                 {
                     if (!image.isEndOfStream())
                     {
-                        throw new IllegalStateException("Unexpected close of replay");
+                        throw new IllegalStateException("unexpected close of replay");
                     }
 
                     break;
@@ -530,7 +530,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
             final RecordingExtent recordingExtent = new RecordingExtent();
             if (0 == archive.listRecording(recordingId, recordingExtent))
             {
-                throw new IllegalStateException("Could not find recordingId: " + recordingId);
+                throw new IllegalStateException("could not find recordingId: " + recordingId);
             }
 
             final String channel = ctx.replayChannel();
@@ -566,7 +566,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
                 if (image.isClosed())
                 {
-                    throw new IllegalStateException("Snapshot ended unexpectedly");
+                    throw new IllegalStateException("snapshot ended unexpectedly");
                 }
 
                 idleStrategy.idle(fragments);
@@ -618,7 +618,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
             if (!RecordingPos.isActive(counters, counterId, recordingId))
             {
-                throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
+                throw new IllegalStateException("recording has stopped unexpectedly: " + recordingId);
             }
 
             archive.checkForErrorResponse();
@@ -688,7 +688,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         final int heartbeatCounterId = ServiceHeartbeat.findCounterId(counters, ctx.serviceId());
         if (NULL_COUNTER_ID == heartbeatCounterId)
         {
-            throw new IllegalStateException("Failed to find heartbeat counter");
+            throw new IllegalStateException("failed to find heartbeat counter");
         }
 
         heartbeatCounter = new AtomicCounter(counters.valuesBuffer(), heartbeatCounterId);
@@ -698,7 +698,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
     {
         if (Thread.currentThread().isInterrupted())
         {
-            throw new AgentTerminationException("Unexpected interrupt during operation");
+            throw new AgentTerminationException("unexpected interrupt during operation");
         }
     }
 

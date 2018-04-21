@@ -63,7 +63,7 @@ class Election implements MemberStatusListener, AutoCloseable
                 final int code = state.code();
                 if (null != STATES[code])
                 {
-                    throw new IllegalStateException("Code already in use: " + code);
+                    throw new IllegalStateException("code already in use: " + code);
                 }
 
                 STATES[code] = state;
@@ -86,7 +86,7 @@ class Election implements MemberStatusListener, AutoCloseable
         {
             if (code < 0 || code > (STATES.length - 1))
             {
-                throw new IllegalStateException("Invalid state counter code: " + code);
+                throw new IllegalStateException("invalid state counter code: " + code);
             }
 
             return STATES[code];

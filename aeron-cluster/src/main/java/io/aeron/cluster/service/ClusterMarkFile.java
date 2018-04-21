@@ -71,7 +71,7 @@ public class ClusterMarkFile implements AutoCloseable
             {
                 if (version != MarkFileHeaderDecoder.SCHEMA_VERSION)
                 {
-                    throw new IllegalArgumentException("Mark file version " + version +
+                    throw new IllegalArgumentException("mark file version " + version +
                         " does not match software:" + MarkFileHeaderDecoder.SCHEMA_VERSION);
                 }
             },
@@ -125,7 +125,7 @@ public class ClusterMarkFile implements AutoCloseable
             {
                 if (version != MarkFileHeaderDecoder.SCHEMA_VERSION)
                 {
-                    throw new IllegalArgumentException("Mark file version " + version +
+                    throw new IllegalArgumentException("mark file version " + version +
                         " does not match software:" + MarkFileHeaderDecoder.SCHEMA_VERSION);
                 }
             },

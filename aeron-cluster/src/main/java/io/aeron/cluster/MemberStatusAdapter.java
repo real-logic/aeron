@@ -166,7 +166,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                 break;
 
             default:
-                throw new IllegalStateException("Unknown template id: " + templateId);
+                throw new IllegalStateException("unknown template id: " + templateId);
         }
     }
 }

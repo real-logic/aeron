@@ -295,7 +295,7 @@ public final class ClusterMember
             final String[] memberAttributes = endpointsDetail.split(",");
             if (memberAttributes.length != 5)
             {
-                throw new IllegalStateException("Invalid member value: " + endpointsDetail + " within: " + value);
+                throw new IllegalStateException("invalid member value: " + endpointsDetail + " within: " + value);
             }
 
             members[i] = new ClusterMember(

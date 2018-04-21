@@ -120,7 +120,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                 break;
 
             default:
-                throw new IllegalArgumentException("Unknown template id: " + templateId);
+                throw new IllegalArgumentException("unknown template id: " + templateId);
         }
     }
 }

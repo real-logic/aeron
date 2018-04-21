@@ -68,7 +68,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
                 final long typeId = snapshotMarkerDecoder.typeId();
                 if (typeId != SNAPSHOT_TYPE_ID)
                 {
-                    throw new IllegalStateException("Unexpected snapshot type: " + typeId);
+                    throw new IllegalStateException("unexpected snapshot type: " + typeId);
                 }
 
                 switch (snapshotMarkerDecoder.mark())
@@ -76,7 +76,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
                     case BEGIN:
                         if (inSnapshot)
                         {
-                            throw new IllegalStateException("Already in snapshot");
+                            throw new IllegalStateException("already in snapshot");
                         }
                         inSnapshot = true;
                         return Action.CONTINUE;
@@ -84,7 +84,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
                     case END:
                         if (!inSnapshot)
                         {
-                            throw new IllegalStateException("Missing begin snapshot");
+                            throw new IllegalStateException("missing begin snapshot");
                         }
                         isDone = true;
                         return Action.BREAK;
@@ -111,7 +111,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
 
             default:
                 System.out.println("offset = " + offset);
-                throw new IllegalStateException("Unknown template id: " + templateId);
+                throw new IllegalStateException("unknown template id: " + templateId);
         }
 
         return Action.CONTINUE;

@@ -322,7 +322,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
         else if (serviceAckCount > ctx.serviceCount())
         {
-            throw new IllegalStateException("Service count exceeded: " + serviceAckCount);
+            throw new IllegalStateException("service count ACK exceeded: " + serviceAckCount);
         }
     }
 

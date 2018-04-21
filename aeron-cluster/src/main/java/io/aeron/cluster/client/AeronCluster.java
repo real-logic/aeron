@@ -321,7 +321,7 @@ public final class AeronCluster implements AutoCloseable
                         publications[i].close();
                     }
 
-                    throw new TimeoutException("Awaiting connection to cluster");
+                    throw new TimeoutException("awaiting connection to cluster");
                 }
 
                 idleStrategy.idle();
@@ -336,7 +336,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 if (nanoClock.nanoTime() > deadlineNs)
                 {
-                    throw new TimeoutException("Awaiting connection to cluster");
+                    throw new TimeoutException("awaiting connection to cluster");
                 }
 
                 idleStrategy.idle();
@@ -400,7 +400,7 @@ public final class AeronCluster implements AutoCloseable
         {
             if (nanoClock.nanoTime() > deadlineNs)
             {
-                throw new TimeoutException("Awaiting response for correlationId=" + correlationId);
+                throw new TimeoutException("awaiting response for correlationId=" + correlationId);
             }
 
             idleStrategy.idle();
@@ -440,12 +440,12 @@ public final class AeronCluster implements AutoCloseable
 
             if (Publication.CLOSED == result)
             {
-                throw new IllegalStateException("Unexpected close from cluster");
+                throw new IllegalStateException("unexpected close from cluster");
             }
 
             if (nanoClock.nanoTime() > deadlineNs)
             {
-                throw new TimeoutException("Failed to connect to cluster");
+                throw new TimeoutException("failed to connect to cluster");
             }
 
             idleStrategy.idle();
@@ -486,7 +486,7 @@ public final class AeronCluster implements AutoCloseable
 
             if (nanoClock.nanoTime() > deadlineNs)
             {
-                throw new TimeoutException("Failed to connect to cluster");
+                throw new TimeoutException("failed to connect to cluster");
             }
 
             idleStrategy.idle();
@@ -501,7 +501,7 @@ public final class AeronCluster implements AutoCloseable
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("Unexpected publication state: " + result);
+            throw new IllegalStateException("unexpected publication state: " + result);
         }
     }
 

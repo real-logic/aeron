@@ -617,7 +617,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("Unexpected publication state: " + result);
+            throw new IllegalStateException("unexpected publication state: " + result);
         }
     }
 }

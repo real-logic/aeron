@@ -715,7 +715,7 @@ public class RecordingLog
 
         if (-1 == index)
         {
-            throw new IllegalArgumentException("Unknown entry index: " + entryIndex);
+            throw new IllegalArgumentException("unknown entry index: " + entryIndex);
         }
 
         buffer.putInt(0, NULL_VALUE, LITTLE_ENDIAN);
@@ -825,7 +825,7 @@ public class RecordingLog
     {
         if (archive.listRecording(entry.recordingId, recordingExtent) == 0)
         {
-            throw new IllegalStateException("Unknown recording id: " + entry.recordingId);
+            throw new IllegalStateException("unknown recording id: " + entry.recordingId);
         }
     }
 
@@ -840,7 +840,7 @@ public class RecordingLog
             }
         }
 
-        throw new IllegalArgumentException("Unknown leadershipTermId: " + leadershipTermId);
+        throw new IllegalArgumentException("unknown leadershipTermId: " + leadershipTermId);
     }
 
     private static ReplayStep planRecovery(

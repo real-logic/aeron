@@ -88,7 +88,7 @@ class ClusterSession implements AutoCloseable
     {
         if (null != responsePublication)
         {
-            throw new IllegalStateException("Response publication already present");
+            throw new IllegalStateException("response publication already added");
         }
 
         responsePublication = aeron.addPublication(responseChannel, responseStreamId);

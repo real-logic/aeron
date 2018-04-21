@@ -488,7 +488,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == errorCounter)
             {
-                throw new IllegalStateException("Error counter must be supplied");
+                throw new IllegalStateException("error counter must be supplied");
             }
 
             if (null == countedErrorHandler)

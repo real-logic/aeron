@@ -105,7 +105,7 @@ public class ConsensusModule implements AutoCloseable
                 final int code = state.code();
                 if (null != STATES[code])
                 {
-                    throw new IllegalStateException("Code already in use: " + code);
+                    throw new IllegalStateException("code already in use: " + code);
                 }
 
                 STATES[code] = state;
@@ -158,7 +158,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (code < 0 || code > (STATES.length - 1))
             {
-                throw new IllegalStateException("Invalid state counter code: " + code);
+                throw new IllegalStateException("invalid state counter code: " + code);
             }
 
             return STATES[(int)code];
@@ -892,7 +892,7 @@ public class ConsensusModule implements AutoCloseable
             if (!clusterDir.exists() && !clusterDir.mkdirs())
             {
                 throw new IllegalStateException(
-                    "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
+                    "failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
             if (null == tempBuffer)
@@ -955,7 +955,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == errorCounter)
             {
-                throw new IllegalStateException("Error counter must be supplied if aeron client is");
+                throw new IllegalStateException("error counter must be supplied if aeron client is");
             }
 
             if (null == countedErrorHandler)

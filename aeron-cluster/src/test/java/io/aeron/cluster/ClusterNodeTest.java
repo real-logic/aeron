@@ -256,7 +256,7 @@ public class ClusterNodeTest
 
                 if (!cluster.scheduleTimer(correlationId, timestampMs + 100))
                 {
-                    throw new IllegalStateException("Unexpected back pressure");
+                    throw new IllegalStateException("unexpected back pressure");
                 }
             }
 

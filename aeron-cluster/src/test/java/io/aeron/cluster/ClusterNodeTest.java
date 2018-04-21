@@ -254,7 +254,10 @@ public class ClusterNodeTest
                 this.correlationId = correlationId;
                 this.msg = buffer.getStringWithoutLengthAscii(offset, length);
 
-                cluster.scheduleTimer(correlationId, timestampMs + 100);
+                if (!cluster.scheduleTimer(correlationId, timestampMs + 100))
+                {
+                    throw new IllegalStateException("Unexpected back pressure");
+                }
             }
 
             public void onTimerEvent(final long correlationId, final long timestampMs)

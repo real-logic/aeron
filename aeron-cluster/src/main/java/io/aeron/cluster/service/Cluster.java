@@ -27,7 +27,7 @@ public interface Cluster
     enum Role
     {
         /**
-         * The cluster node is a follower of the current leader.
+         * The cluster node is a follower in the current leadership term.
          */
         FOLLOWER(0),
 
@@ -37,7 +37,7 @@ public interface Cluster
         CANDIDATE(1),
 
         /**
-         * The cluster node is the leader of the current leadership term.
+         * The cluster node is the leader for the current leadership term.
          */
         LEADER(2);
 
@@ -52,7 +52,7 @@ public interface Cluster
                 final int code = role.code();
                 if (null != ROLES[code])
                 {
-                    throw new IllegalStateException("Code already in use: " + code);
+                    throw new IllegalStateException("code already in use: " + code);
                 }
 
                 ROLES[code] = role;
@@ -138,19 +138,24 @@ public interface Cluster
     long timeMs();
 
     /**
-     * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires.
+     * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires or
+     * for cancellation.
      * <p>
      * If the correlationId is for an existing scheduled timer then it will be reschedule to the new deadline.
      *
      * @param correlationId to identify the timer when it expires.
      * @param deadlineMs after which the timer will fire.
+     * @return true if the event to schedule a timer has been sent or false if back pressure is applied.
+     * @see #cancelTimer(long)
      */
-    void scheduleTimer(long correlationId, long deadlineMs);
+    boolean scheduleTimer(long correlationId, long deadlineMs);
 
     /**
      * Cancel a previous scheduled timer.
      *
-     * @param correlationId for the scheduled timer.
+     * @param correlationId for the timer provided when it was scheduled.
+     * @return true if the event to cancel a scheduled timer has been sent or false if back pressure is applied.
+     * @see #scheduleTimer(long, long)
      */
-    void cancelTimer(long correlationId);
+    boolean cancelTimer(long correlationId);
 }

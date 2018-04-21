@@ -199,22 +199,14 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         return timestampMs;
     }
 
-    public void scheduleTimer(final long correlationId, final long deadlineMs)
+    public boolean scheduleTimer(final long correlationId, final long deadlineMs)
     {
-        serviceControlPublisher.scheduleTimer(correlationId, deadlineMs);
+        return serviceControlPublisher.scheduleTimer(correlationId, deadlineMs);
     }
 
-    public void checkHealthAndUpdateHeartbeat(final long nowMs)
+    public boolean cancelTimer(final long correlationId)
     {
-        if (null != logAdapter && !logAdapter.image().isClosed())
-        {
-            heartbeatCounter.setOrdered(nowMs);
-        }
-    }
-
-    public void cancelTimer(final long correlationId)
-    {
-        serviceControlPublisher.cancelTimer(correlationId);
+        return serviceControlPublisher.cancelTimer(correlationId);
     }
 
     public void onJoinLog(
@@ -312,6 +304,14 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
             ClusteredServiceAgent.this);
 
         sessionByIdMap.put(clusterSessionId, session);
+    }
+
+    private void checkHealthAndUpdateHeartbeat(final long nowMs)
+    {
+        if (null != logAdapter && !logAdapter.image().isClosed())
+        {
+            heartbeatCounter.setOrdered(nowMs);
+        }
     }
 
     private void role(final Role newRole)

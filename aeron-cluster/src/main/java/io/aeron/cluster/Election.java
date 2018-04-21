@@ -198,7 +198,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
     {
-        if (logPosition < this.logPosition)
+        if (logPosition < this.logPosition || candidateTermId < leadershipTermId)
         {
             memberStatusPublisher.placeVote(
                 clusterMembers[candidateId].publication(),
@@ -210,33 +210,25 @@ class Election implements MemberStatusListener, AutoCloseable
             return;
         }
 
-        switch (state)
+        if (candidateTermId == (leadershipTermId + 1))
         {
-            case CANVASS:
-            case NOMINATE:
-                if (candidateTermId == (leadershipTermId + 1))
-                {
-                    leadershipTermId = candidateTermId;
-                    final long nowMs = ctx.epochClock().time();
-                    ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs, candidateId);
-                    state(State.FOLLOWER_BALLOT, nowMs);
+            leadershipTermId = candidateTermId;
+            final long nowMs = ctx.epochClock().time();
+            ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs, candidateId);
+            state(State.FOLLOWER_BALLOT, nowMs);
 
-                    memberStatusPublisher.placeVote(
-                        clusterMembers[candidateId].publication(),
-                        candidateTermId,
-                        candidateId,
-                        thisMember.id(),
-                        true);
-                }
-                break;
-
-            case FOLLOWER_BALLOT:
-            case CANDIDATE_BALLOT:
-                if (candidateTermId > leadershipTermId)
-                {
-                    state(State.CANVASS, ctx.epochClock().time());
-                }
-                break;
+            memberStatusPublisher.placeVote(
+                clusterMembers[candidateId].publication(),
+                candidateTermId,
+                candidateId,
+                thisMember.id(),
+                true);
+        }
+        else if (candidateTermId > (leadershipTermId + 1))
+        {
+            System.out.println(
+                "Missed term: leadershipTermId=" + leadershipTermId + " candidateTermId=" + candidateTermId);
+            state(State.CANVASS, ctx.epochClock().time());
         }
     }
 
@@ -259,10 +251,10 @@ class Election implements MemberStatusListener, AutoCloseable
     public void onNewLeadershipTerm(
         final long logPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
     {
-        if (leadershipTermId >= this.leadershipTermId && logPosition >= this.logPosition)
+        if ((State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state) &&
+            leadershipTermId == this.leadershipTermId)
         {
             leaderMember = clusterMembers[leaderMemberId];
-            this.leadershipTermId = leadershipTermId;
             this.logSessionId = logSessionId;
 
             if (this.logPosition < logPosition && null == recordingCatchUp)
@@ -278,6 +270,12 @@ class Election implements MemberStatusListener, AutoCloseable
             }
 
             state(State.FOLLOWER_TRANSITION, ctx.epochClock().time());
+        }
+        else if (leadershipTermId > this.leadershipTermId)
+        {
+            System.out.println(
+                "this.leadershipTermId=" + this.leadershipTermId + " leadershipTermId=" + leadershipTermId);
+            // TODO: need to catch up with new leader.
         }
     }
 
@@ -320,7 +318,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public void onCommitPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
     {
-        // TODO: Need to catch up with current leader.
+        // TODO: Need to catch up with leader.
     }
 
     State state()

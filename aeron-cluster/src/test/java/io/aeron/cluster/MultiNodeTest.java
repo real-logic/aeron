@@ -247,7 +247,6 @@ public class MultiNodeTest
         }
     }
 
-    @Ignore
     @Test(timeout = 10_000L)
     public void shouldBecomeFollowerStaticThreeNodeConfigWithElectionFromPreviousLogWithCatchUp()
     {

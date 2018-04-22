@@ -26,7 +26,7 @@ Usage
 The cluster can run in various configurations:
 
  - **Single Node:** For development, debugging, or when a sequenced and archived log on a single node is sufficient.
- - **Appointed Leader:**: A leader of the cluster can be appointed via configuration without requiring an election.
+ - **Appointed Leader:** A leader of the cluster can be appointed via configuration without requiring an election.
     In the event of a leader failure then a follower will have to be manually appointed the new leader.
  - **Automatic Elections:** Automatic elections can be enabled to have a leader elected at random from the members with
     with the most up to date log.

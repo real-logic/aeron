@@ -46,9 +46,9 @@ class Election implements MemberStatusListener, AutoCloseable
         NOMINATE(2),
         CANDIDATE_BALLOT(3),
         FOLLOWER_BALLOT(4),
-        FOLLOWER_TRANSITION(5),
-        LEADER_TRANSITION(6),
-        LEADER_READY(7),
+        LEADER_TRANSITION(5),
+        LEADER_READY(6),
+        FOLLOWER_TRANSITION(7),
         FOLLOWER_READY(8);
 
         static final State[] STATES;
@@ -176,16 +176,16 @@ class Election implements MemberStatusListener, AutoCloseable
                 workCount += followerBallot(nowMs);
                 break;
 
-            case FOLLOWER_TRANSITION:
-                workCount += followerTransition(nowMs);
-                break;
-
             case LEADER_TRANSITION:
                 workCount += leaderTransition(nowMs);
                 break;
 
             case LEADER_READY:
                 workCount += leaderReady(nowMs);
+                break;
+
+            case FOLLOWER_TRANSITION:
+                workCount += followerTransition(nowMs);
                 break;
 
             case FOLLOWER_READY:
@@ -202,7 +202,7 @@ class Election implements MemberStatusListener, AutoCloseable
             .logPosition(logPosition)
             .leadershipTermId(leadershipTermId);
 
-        if (leadershipTermId == this.leadershipTermId && State.LEADER_READY == state)
+        if (State.LEADER_READY == state && leadershipTermId == this.leadershipTermId)
         {
             memberStatusPublisher.newLeadershipTerm(
                 clusterMembers[followerMemberId].publication(),
@@ -211,7 +211,7 @@ class Election implements MemberStatusListener, AutoCloseable
                 thisMember.id(),
                 logSessionId);
         }
-        else if (leadershipTermId > this.leadershipTermId && State.CANVASS != state)
+        else if (State.CANVASS != state && leadershipTermId > this.leadershipTermId)
         {
             state(State.CANVASS, ctx.epochClock().time());
         }
@@ -286,9 +286,7 @@ class Election implements MemberStatusListener, AutoCloseable
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
-            System.out.println(
-                "this.leadershipTermId=" + this.leadershipTermId + " leadershipTermId=" + leadershipTermId);
-            // TODO: need to catch up with new leader.
+            catchupToLeader(logPosition, leadershipTermId, leaderMemberId);
         }
     }
 
@@ -329,9 +327,9 @@ class Election implements MemberStatusListener, AutoCloseable
             .leadershipTermId(leadershipTermId);
     }
 
-    public void onCommitPosition(final long termPosition, final long leadershipTermId, final int leaderMemberId)
+    public void onCommitPosition(final long logPosition, final long leadershipTermId, final int leaderMemberId)
     {
-        // TODO: Need to catch up with leader.
+        catchupToLeader(logPosition, leadershipTermId, leaderMemberId);
     }
 
     State state()
@@ -492,6 +490,46 @@ class Election implements MemberStatusListener, AutoCloseable
         return workCount;
     }
 
+    private int leaderTransition(final long nowMs)
+    {
+        sequencerAgent.becomeLeader();
+        ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
+        clusterMembers[thisMember.id()].logPosition(logPosition);
+        state(State.LEADER_READY, nowMs);
+
+        return 1;
+    }
+
+    private int leaderReady(final long nowMs)
+    {
+        int workCount = 0;
+
+        if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition, leadershipTermId))
+        {
+            sequencerAgent.electionComplete();
+            close();
+
+            workCount += 1;
+        }
+        else if (nowMs > (timeOfLastUpdateMs + leaderHeartbeatIntervalMs))
+        {
+            timeOfLastUpdateMs = nowMs;
+
+            for (final ClusterMember member : clusterMembers)
+            {
+                if (member != thisMember)
+                {
+                    memberStatusPublisher.newLeadershipTerm(
+                        member.publication(), logPosition, leadershipTermId, thisMember.id(), logSessionId);
+                }
+            }
+
+            workCount += 1;
+        }
+
+        return workCount;
+    }
+
     private int followerTransition(final long nowMs)
     {
         int workCount = 1;
@@ -537,16 +575,6 @@ class Election implements MemberStatusListener, AutoCloseable
         return workCount;
     }
 
-    private int leaderTransition(final long nowMs)
-    {
-        sequencerAgent.becomeLeader();
-        ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
-        clusterMembers[thisMember.id()].logPosition(logPosition);
-        state(State.LEADER_READY, nowMs);
-
-        return 1;
-    }
-
     private int followerReady(final long nowMs)
     {
         int workCount = 1;
@@ -562,36 +590,6 @@ class Election implements MemberStatusListener, AutoCloseable
         else if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())))
         {
             state(State.CANVASS, nowMs);
-            workCount += 1;
-        }
-
-        return workCount;
-    }
-
-    private int leaderReady(final long nowMs)
-    {
-        int workCount = 0;
-
-        if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition, leadershipTermId))
-        {
-            sequencerAgent.electionComplete();
-            close();
-
-            workCount += 1;
-        }
-        else if (nowMs > (timeOfLastUpdateMs + leaderHeartbeatIntervalMs))
-        {
-            timeOfLastUpdateMs = nowMs;
-
-            for (final ClusterMember member : clusterMembers)
-            {
-                if (member != thisMember)
-                {
-                    memberStatusPublisher.newLeadershipTerm(
-                        member.publication(), logPosition, leadershipTermId, thisMember.id(), logSessionId);
-                }
-            }
-
             workCount += 1;
         }
 
@@ -620,5 +618,10 @@ class Election implements MemberStatusListener, AutoCloseable
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
 
         return channelUri;
+    }
+
+    private void catchupToLeader(final long logPosition, final long leadershipTermId, final int leaderMemberId)
+    {
+        // TODO: Need to implement catchup logic
     }
 }

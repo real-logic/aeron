@@ -34,7 +34,6 @@ public final class ClusterMember
     private boolean isBallotSent;
     private boolean isLeader;
     private final int id;
-    private int votedForId = NULL_MEMBER_ID;
     private long leadershipTermId = -1;
     private long logPosition = NULL_POSITION;
     private final String clientFacingEndpoint;
@@ -43,6 +42,7 @@ public final class ClusterMember
     private final String archiveEndpoint;
     private final String endpointsDetail;
     private Publication publication;
+    private Boolean votedFor = null;
 
     /**
      * Construct a new member of the cluster.
@@ -77,7 +77,7 @@ public final class ClusterMember
     {
         isBallotSent = false;
         isLeader = false;
-        votedForId = NULL_MEMBER_ID;
+        votedFor = null;
         leadershipTermId = -1;
         logPosition = NULL_POSITION;
     }
@@ -137,25 +137,27 @@ public final class ClusterMember
     }
 
     /**
-     * Set this member voted for in the election.
+     * Set the result of the vote for this member. {@link Boolean#TRUE} means they voted for this member,
+     * {@link Boolean#FALSE} means they voted against this member, and null means no vote was received.
      *
-     * @param votedForId in the election.
+     * @param votedFor this member in the election.
      * @return this for a fluent API.
      */
-    public ClusterMember votedForId(final int votedForId)
+    public ClusterMember votedFor(final Boolean votedFor)
     {
-        this.votedForId = votedForId;
+        this.votedFor = votedFor;
         return this;
     }
 
     /**
-     * Who this member voted for in the last election.
+     * The status of the vote for this member in an election. {@link Boolean#TRUE} means they voted for this member,
+     * {@link Boolean#FALSE} means they voted against this member, and null means no vote was received.
      *
-     * @return who this member voted for in the last election.
+     * @return the status of the vote for this member in an election.
      */
-    public int votedForId()
+    public Boolean votedFor()
     {
-        return votedForId;
+        return votedFor;
     }
 
     /**
@@ -346,7 +348,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            CloseHelper.close(member.publication());
+            CloseHelper.close(member.publication);
         }
     }
 
@@ -422,7 +424,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.votedForId() != NULL_MEMBER_ID && member.logPosition() < position)
+            if (member.votedFor != null && member.logPosition < position && member.leadershipTermId == leadershipTermId)
             {
                 return false;
             }
@@ -454,7 +456,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            member.votedForId(member.id == candidateMemberId ? candidateMemberId : NULL_MEMBER_ID);
+            member.votedFor(member.id == candidateMemberId ? Boolean.TRUE : null);
             member.isBallotSent(member.id == candidateMemberId);
         }
     }
@@ -462,36 +464,40 @@ public final class ClusterMember
     /**
      * Has the candidate got unanimous support of the cluster?
      *
-     * @param clusterMembers to check for votes.
-     * @param candidate      to be leader.
+     * @param clusterMembers  to check for votes.
+     * @param candidateTermId for the vote.
      * @return false if any member has not voted for the candidate.
      */
-    public static boolean hasUnanimousVote(final ClusterMember[] clusterMembers, final ClusterMember candidate)
+    public static boolean hasWonOnCompleteVote(final ClusterMember[] clusterMembers, final long candidateTermId)
     {
+        int votes = 0;
+
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.votedForId() != candidate.id())
+            if (null == member.votedFor || member.leadershipTermId != candidateTermId)
             {
                 return false;
             }
+
+            votes += member.votedFor ? 1 : 0;
         }
 
-        return true;
+        return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
     }
 
     /**
      * Has sufficient votes being counted for a majority?
      *
-     * @param clusterMembers to check for votes.
-     * @param candidate      to be leader.
+     * @param clusterMembers  to check for votes.
+     * @param candidateTermId for the vote.
      * @return true if a majority of positive votes.
      */
-    public static boolean hasMajorityVote(final ClusterMember[] clusterMembers, final ClusterMember candidate)
+    public static boolean hasMajorityVote(final ClusterMember[] clusterMembers, final long candidateTermId)
     {
         int votes = 0;
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.votedForId() == candidate.id())
+            if (Boolean.TRUE.equals(member.votedFor) && member.leadershipTermId == candidateTermId)
             {
                 ++votes;
             }

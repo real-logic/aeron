@@ -409,6 +409,49 @@ public class ElectionTest
     }
 
     @Test
+    public void shouldElectCandidateWithMajorityOfFullVote()
+    {
+        final long leadershipTermId = -1;
+        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+
+        final ClusterMember candidateMember = clusterMembers[1];
+        final CachedEpochClock clock = new CachedEpochClock();
+        final ConsensusModule.Context ctx = new ConsensusModule.Context()
+            .random(new Random())
+            .recordingLog(recordingLog)
+            .epochClock(clock)
+            .aeron(aeron);
+
+        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, candidateMember, ctx);
+
+        assertThat(election.state(), is(Election.State.INIT));
+
+        final long t1 = 1;
+        election.doWork(t1);
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        election.onCanvassPosition(0, leadershipTermId, 0);
+        election.onCanvassPosition(0, leadershipTermId, 2);
+
+        final long t2 = t1 + 1;
+        election.doWork(t2);
+        assertThat(election.state(), is(Election.State.NOMINATE));
+
+        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        election.doWork(t3);
+        assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
+
+        final long t4 = t3 + 1;
+        final long candidateTermId = leadershipTermId + 1;
+        when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
+        election.onVote(candidateTermId, candidateMember.id(), clusterMembers[0].id(), false);
+        election.onVote(candidateTermId, candidateMember.id(), clusterMembers[2].id(), true);
+        election.doWork(t4);
+        assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
+    }
+
+    @Test
     public void shouldTimeoutCandidateBallotWithoutMajority()
     {
         final long leadershipTermId = -1;

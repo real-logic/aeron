@@ -395,10 +395,7 @@ class Election implements MemberStatusListener, AutoCloseable
                 if (member != thisMember)
                 {
                     memberStatusPublisher.canvassPosition(
-                        member.publication(),
-                        logPosition,
-                        leadershipTermId,
-                        thisMember.id());
+                        member.publication(), logPosition, leadershipTermId, thisMember.id());
                 }
             }
 
@@ -410,18 +407,13 @@ class Election implements MemberStatusListener, AutoCloseable
             return  workCount;
         }
 
-        final long canvassDeadlineMs = isStartup ?
+        final long canvassDeadlineMs = (isStartup ?
             TimeUnit.NANOSECONDS.toMillis(ctx.startupStatusTimeoutNs()) :
-            TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+            TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())) +
+            timeOfLastStateChangeMs;
 
-        if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember))
-        {
-            nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs);
-            state(State.NOMINATE, nowMs);
-            workCount += 1;
-        }
-        else if (nowMs >= (timeOfLastStateChangeMs + canvassDeadlineMs) &&
-            ClusterMember.isQuorumCandidate(clusterMembers, thisMember))
+        if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember) ||
+            (ClusterMember.isQuorumCandidate(clusterMembers, thisMember) && nowMs >= canvassDeadlineMs))
         {
             nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs);
             state(State.NOMINATE, nowMs);
@@ -451,7 +443,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         int workCount = 0;
 
-        if (ClusterMember.hasWonOnCompleteVote(clusterMembers, leadershipTermId))
+        if (ClusterMember.hasWonVoteOnFullCount(clusterMembers, leadershipTermId))
         {
             state(State.LEADER_TRANSITION, nowMs);
             leaderMember = thisMember;

@@ -468,7 +468,7 @@ public final class ClusterMember
      * @param candidateTermId for the vote.
      * @return false if any member has not voted for the candidate.
      */
-    public static boolean hasWonOnCompleteVote(final ClusterMember[] clusterMembers, final long candidateTermId)
+    public static boolean hasWonVoteOnFullCount(final ClusterMember[] clusterMembers, final long candidateTermId)
     {
         int votes = 0;
 

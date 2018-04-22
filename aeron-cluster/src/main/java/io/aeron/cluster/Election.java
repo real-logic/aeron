@@ -196,6 +196,13 @@ class Election implements MemberStatusListener, AutoCloseable
         return workCount;
     }
 
+    public void onCanvassPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
+    {
+        clusterMembers[followerMemberId]
+            .logPosition(logPosition)
+            .leadershipTermId(leadershipTermId);
+    }
+
     public void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
     {
         if (logPosition < this.logPosition || candidateTermId < leadershipTermId)
@@ -381,7 +388,7 @@ class Election implements MemberStatusListener, AutoCloseable
             {
                 if (member != thisMember)
                 {
-                    memberStatusPublisher.appendedPosition(
+                    memberStatusPublisher.canvassPosition(
                         member.publication(),
                         logPosition,
                         leadershipTermId,

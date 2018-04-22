@@ -28,6 +28,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final CanvassPositionDecoder canvassPositionDecoder = new CanvassPositionDecoder();
     private final RequestVoteDecoder requestVoteDecoder = new RequestVoteDecoder();
     private final VoteDecoder voteDecoder = new VoteDecoder();
     private final NewLeadershipTermDecoder newLeadershipTermDecoder = new NewLeadershipTermDecoder();
@@ -64,6 +65,19 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
+            case CanvassPositionDecoder.TEMPLATE_ID:
+                canvassPositionDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onCanvassPosition(
+                    canvassPositionDecoder.logPosition(),
+                    canvassPositionDecoder.leadershipTermId(),
+                    canvassPositionDecoder.followerMemberId());
+                break;
+
             case RequestVoteDecoder.TEMPLATE_ID:
                 requestVoteDecoder.wrap(
                     buffer,

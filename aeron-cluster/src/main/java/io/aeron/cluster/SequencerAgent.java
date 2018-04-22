@@ -443,6 +443,18 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
     }
 
+    public void onCanvassPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
+    {
+        if (null != election)
+        {
+            election.onAppendedPosition(logPosition, leadershipTermId, followerMemberId);
+        }
+        else
+        {
+            // TODO: Respond to member
+        }
+    }
+
     public void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
     {
         if (null != election)

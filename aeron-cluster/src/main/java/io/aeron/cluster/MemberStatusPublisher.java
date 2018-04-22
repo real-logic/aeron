@@ -26,6 +26,7 @@ class MemberStatusPublisher
 
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    private final CanvassPositionEncoder canvassPositionEncoder = new CanvassPositionEncoder();
     private final RequestVoteEncoder requestVoteEncoder = new RequestVoteEncoder();
     private final VoteEncoder voteEncoder = new VoteEncoder();
     private final NewLeadershipTermEncoder newLeadershipTermEncoder = new NewLeadershipTermEncoder();
@@ -33,6 +34,35 @@ class MemberStatusPublisher
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
     private final QueryResponseEncoder queryResponseEncoder = new QueryResponseEncoder();
     private final RecoveryPlanQueryEncoder recoveryPlanQueryEncoder = new RecoveryPlanQueryEncoder();
+
+    public boolean canvassPosition(
+        final Publication publication, final long logPosition, final long leadershipTermId, final int followerMemberId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + CanvassPositionEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                canvassPositionEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .logPosition(logPosition)
+                    .leadershipTermId(leadershipTermId)
+                    .followerMemberId(followerMemberId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
 
     public boolean requestVote(
         final Publication publication, final long logPosition, final long candidateTermId, final int candidateMemberId)

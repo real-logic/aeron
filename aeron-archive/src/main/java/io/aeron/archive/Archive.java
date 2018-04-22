@@ -429,18 +429,18 @@ public class Archive implements AutoCloseable
             if (!archiveDir.exists() && !archiveDir.mkdirs())
             {
                 throw new IllegalArgumentException(
-                    "Failed to create archive dir: " + archiveDir.getAbsolutePath());
+                    "failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
             archiveDirChannel = channelForDirectorySync(archiveDir, fileSyncLevel);
 
             if (!BitUtil.isPowerOfTwo(segmentFileLength))
             {
-                throw new ConfigurationException("Segment file length not a power of 2: " + segmentFileLength);
+                throw new ConfigurationException("segment file length not a power of 2: " + segmentFileLength);
             }
             else if (segmentFileLength < TERM_MIN_LENGTH || segmentFileLength > TERM_MAX_LENGTH)
             {
-                throw new ConfigurationException("Segment file length not in valid range: " + segmentFileLength);
+                throw new ConfigurationException("segment file length not in valid range: " + segmentFileLength);
             }
 
             if (null == markFile)

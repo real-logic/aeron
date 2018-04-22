@@ -182,7 +182,7 @@ class Catalog implements AutoCloseable
             {
                 if (catalogHeaderDecoder.version() != CatalogHeaderDecoder.SCHEMA_VERSION)
                 {
-                    throw new IllegalArgumentException("Catalog file version " + catalogHeaderDecoder.version() +
+                    throw new IllegalArgumentException("catalog file version " + catalogHeaderDecoder.version() +
                         " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
                 }
 
@@ -259,7 +259,7 @@ class Catalog implements AutoCloseable
 
             if (catalogHeaderDecoder.version() != CatalogHeaderDecoder.SCHEMA_VERSION)
             {
-                throw new IllegalArgumentException("Catalog file version " + catalogHeaderDecoder.version() +
+                throw new IllegalArgumentException("catalog file version " + catalogHeaderDecoder.version() +
                     " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
             }
 
@@ -302,13 +302,13 @@ class Catalog implements AutoCloseable
     {
         if (nextRecordingId > maxRecordingId)
         {
-            throw new IllegalStateException("Catalog is full, max recordings reached: " + maxRecordingId);
+            throw new IllegalStateException("catalog is full, max recordings reached: " + maxRecordingId);
         }
 
         final int combinedStringsLen = strippedChannel.length() + sourceIdentity.length() + originalChannel.length();
         if (combinedStringsLen > maxDescriptorStringsCombinedLength)
         {
-            throw new IllegalArgumentException("Combined length of channel:'" + strippedChannel +
+            throw new IllegalArgumentException("combined length of channel:'" + strippedChannel +
                 "' and sourceIdentity:'" + sourceIdentity +
                 "' and originalChannel:'" + originalChannel +
                 "' exceeds max allowed:" + maxDescriptorStringsCombinedLength);
@@ -582,7 +582,7 @@ class Catalog implements AutoCloseable
                 buffer.clear();
                 if (HEADER_LENGTH != segment.read(buffer, nextFragmentOffset))
                 {
-                    throw new IllegalStateException("Unexpected read failure from file: " +
+                    throw new IllegalStateException("unexpected read failure from file: " +
                         segmentFile.getAbsolutePath() + " at position:" + nextFragmentOffset);
                 }
 

@@ -795,7 +795,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.getRecordingPosition(recordingId, correlationId, controlSessionId))
             {
-                throw new IllegalStateException("Failed to send get recording position request");
+                throw new IllegalStateException("failed to send get recording position request");
             }
 
             return pollForResponse(correlationId);

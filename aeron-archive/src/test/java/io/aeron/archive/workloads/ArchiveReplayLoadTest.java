@@ -224,7 +224,7 @@ public class ArchiveReplayLoadTest
 
                 if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
                 {
-                    throw new IllegalStateException("Publication unexpected not connected");
+                    throw new IllegalStateException("publication unexpectedly not connected");
                 }
 
                 Thread.yield();

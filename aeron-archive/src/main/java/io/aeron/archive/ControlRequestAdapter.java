@@ -221,7 +221,7 @@ class ControlRequestAdapter implements FragmentHandler
                 break;
 
             default:
-                throw new IllegalArgumentException("Unexpected template id:" + templateId);
+                throw new IllegalArgumentException("unexpected template id:" + templateId);
         }
     }
 }

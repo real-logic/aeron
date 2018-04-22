@@ -201,7 +201,7 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
                 break;
 
             default:
-                throw new IllegalStateException("Unknown templateId: " + templateId);
+                throw new IllegalStateException("unknown templateId: " + templateId);
         }
 
         return Action.CONTINUE;

@@ -108,11 +108,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final String channel,
         final SourceLocation sourceLocation)
     {
-        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
-        {
-            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
-        }
+        final ControlSession controlSession = getControlSession(controlSessionId);
 
         controlSession.onStartRecording(correlationId, channel, streamId, sourceLocation);
     }
@@ -123,11 +119,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final int streamId,
         final String channel)
     {
-        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
-        {
-            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
-        }
+        final ControlSession controlSession = getControlSession(controlSessionId);
 
         controlSession.onStopRecording(correlationId, streamId, channel);
     }
@@ -141,22 +133,14 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final int replayStreamId,
         final String replayChannel)
     {
-        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
-        {
-            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
-        }
+        final ControlSession controlSession = getControlSession(controlSessionId);
 
         controlSession.onStartReplay(correlationId, recordingId, position, length, replayStreamId, replayChannel);
     }
 
     public void onStopReplay(final long controlSessionId, final long correlationId, final long replaySessionId)
     {
-        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
-        {
-            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
-        }
+        final ControlSession controlSession = getControlSession(controlSessionId);
 
         controlSession.onStopReplay(correlationId, replaySessionId);
     }
@@ -169,11 +153,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final int streamId,
         final String channel)
     {
-        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
-        {
-            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
-        }
+        final ControlSession controlSession = getControlSession(controlSessionId);
 
         controlSession.onListRecordingsForUri(correlationId, fromRecordingId, recordCount, streamId, channel);
     }
@@ -184,22 +164,14 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final long fromRecordingId,
         final int recordCount)
     {
-        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
-        {
-            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
-        }
+        final ControlSession controlSession = getControlSession(controlSessionId);
 
         controlSession.onListRecordings(correlationId, fromRecordingId, recordCount);
     }
 
     public void onListRecording(final long controlSessionId, final long correlationId, final long recordingId)
     {
-        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
-        {
-            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
-        }
+        final ControlSession controlSession = getControlSession(controlSessionId);
 
         controlSession.onListRecording(correlationId, recordingId);
     }
@@ -212,22 +184,14 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final String channel,
         final SourceLocation sourceLocation)
     {
-        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
-        {
-            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
-        }
+        final ControlSession controlSession = getControlSession(controlSessionId);
 
         controlSession.onExtendRecording(correlationId, recordingId, channel, streamId, sourceLocation);
     }
 
     public void onGetRecordingPosition(final long controlSessionId, final long correlationId, final long recordingId)
     {
-        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
-        {
-            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
-        }
+        final ControlSession controlSession = getControlSession(controlSessionId);
 
         controlSession.onGetRecordingPosition(correlationId, recordingId);
     }
@@ -235,11 +199,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
     public void onTruncateRecording(
         final long controlSessionId, final long correlationId, final long recordingId, final long position)
     {
-        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
-        if (controlSession == null)
-        {
-            throw new IllegalArgumentException("Unknown controlSessionId: " + controlSessionId);
-        }
+        final ControlSession controlSession = getControlSession(controlSessionId);
 
         controlSession.onTruncateRecording(correlationId, recordingId, position);
     }
@@ -247,5 +207,16 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
     void removeControlSession(final ControlSession controlSession)
     {
         controlSessionByIdMap.remove(controlSession.sessionId());
+    }
+
+    private ControlSession getControlSession(final long controlSessionId)
+    {
+        final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
+        if (controlSession == null)
+        {
+            throw new IllegalArgumentException("unknown controlSessionId: " + controlSessionId);
+        }
+
+        return controlSession;
     }
 }

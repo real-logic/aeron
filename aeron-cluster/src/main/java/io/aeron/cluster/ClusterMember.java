@@ -540,7 +540,7 @@ public final class ClusterMember
         for (final ClusterMember member : clusterMembers)
         {
             if (NULL_POSITION == member.logPosition ||
-                candidate.leadershipTermId < member.leadershipTermId ||
+                candidate.leadershipTermId != member.leadershipTermId ||
                 candidate.logPosition < member.logPosition)
             {
                 return false;
@@ -563,7 +563,7 @@ public final class ClusterMember
         for (final ClusterMember member : clusterMembers)
         {
             if (NULL_POSITION == member.logPosition ||
-                candidate.leadershipTermId < member.leadershipTermId ||
+                candidate.leadershipTermId != member.leadershipTermId ||
                 candidate.logPosition < member.logPosition)
             {
                 continue;

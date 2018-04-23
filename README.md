@@ -34,7 +34,7 @@ with **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7
 1. [Monitoring and Debugging](https://github.com/real-logic/aeron/wiki/Monitoring-and-Debugging)
 1. [Configuration Options](https://github.com/real-logic/aeron/wiki/Configuration-Options)
 1. [Channel Specific Configuration](https://github.com/real-logic/aeron/wiki/Channel-Configuration)
-1. [Aeron Archive](https://github.com/real-logic/aeron/wiki/Aeron-Archive)
+1. [Aeron Archive (Persistent Stream Storage)](https://github.com/real-logic/aeron/wiki/Aeron-Archive)
 
 ### How does Aeron work?
 

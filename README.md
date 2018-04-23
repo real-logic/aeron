@@ -63,7 +63,9 @@ You require the following to build Aeron:
    and can cause tests to fail.
 
 You must first build and install [Agrona](https://github.com/real-logic/agrona) and
-[Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) into the local maven repository
+[Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) into the local maven repository 
+**if** the current master for Aeron depends on changes to Agrona or SBE. However we will try to not have this as the
+normal case.
 
 ```shell
     $ ./gradlew

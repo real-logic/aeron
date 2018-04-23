@@ -116,7 +116,11 @@ public class MultiNodeTest
             harness.memberStatusPublisher().requestVote(
                 harness.memberStatusPublication(1), 0, 0, 1);
 
-            harness.awaitMemberStatusMessage(1);
+            do
+            {
+                harness.awaitMemberStatusMessage(1);
+            }
+            while (harness.memberStatusCounters(1).onVoteCounter == 0);
 
             verify(mockMemberStatusListeners[1]).onVote(0, 1, 0, true);
 

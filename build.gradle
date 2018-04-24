@@ -29,8 +29,8 @@ defaultTasks 'clean', 'build', 'shadowJar', 'install'
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '0.9.16-SNAPSHOT'
-def sbeVersion = '1.7.9'
+def agronaVersion = '0.9.16'
+def sbeVersion = '1.7.10'
 
 group = aeronGroup
 version = aeronVersion
@@ -812,7 +812,8 @@ task uploadToMavenCentral {
         'aeron-all:uploadArchives',
         'aeron-all:uploadShadow',
         'aeron-agent:uploadArchives',
-        'aeron-agent:uploadShadow'
+        'aeron-agent:uploadShadow',
+        'aeron-cluster:uploadArchives'
 }
 
 task wrapper(type: Wrapper) {

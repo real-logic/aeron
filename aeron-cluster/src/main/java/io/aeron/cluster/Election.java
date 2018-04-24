@@ -417,17 +417,6 @@ class Election implements MemberStatusListener, AutoCloseable
             state(State.NOMINATE, nowMs);
             workCount += 1;
         }
-        else
-        {
-            for (final ClusterMember member : clusterMembers)
-            {
-                if (NULL_POSITION != member.logPosition() || leadershipTermId < member.leadershipTermId())
-                {
-                    catchupToLeader(member.logPosition(), member.leadershipTermId(), member.id());
-                    workCount += 1;
-                }
-            }
-        }
 
         return workCount;
     }

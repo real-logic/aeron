@@ -137,6 +137,7 @@ public class ClusterNodeTest
                     messageCount.value += 1;
                 }
             },
+            aeronCluster.clusterSessionId(),
             aeronCluster.egressSubscription(),
             FRAGMENT_LIMIT);
 
@@ -190,6 +191,7 @@ public class ClusterNodeTest
                     messageCount.value += 1;
                 }
             },
+            aeronCluster.clusterSessionId(),
             aeronCluster.egressSubscription(),
             FRAGMENT_LIMIT);
 

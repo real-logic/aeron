@@ -175,7 +175,7 @@ public class AppointedLeaderClusterTest
         final long msgCorrelationId = aeron.nextCorrelationId();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
 
-        final EchoConsumer consumer = new EchoConsumer(client.egressSubscription());
+        final EchoConsumer consumer = new EchoConsumer(client.egressSubscription(), client.clusterSessionId());
         final Thread thread = new Thread(consumer);
         thread.setName("consumer");
         thread.setDaemon(true);
@@ -227,9 +227,9 @@ public class AppointedLeaderClusterTest
         private int messageCount;
         private final EgressAdapter egressAdapter;
 
-        EchoConsumer(final Subscription egressSubscription)
+        EchoConsumer(final Subscription egressSubscription, final long clusterSessionId)
         {
-            egressAdapter = new EgressAdapter(this, egressSubscription, 10);
+            egressAdapter = new EgressAdapter(this, clusterSessionId, egressSubscription, 10);
         }
 
         public void run()

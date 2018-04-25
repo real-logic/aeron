@@ -638,8 +638,8 @@ class Catalog implements AutoCloseable
         if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIMESTAMP)
         {
             final String prefix = recordingId + "-";
-            String[] segmentFiles =
-                archiveDir.list((dir, name) -> name.endsWith(RECORDING_SEGMENT_POSTFIX));
+            String[] segmentFiles = // Only the segments for recordingId
+                archiveDir.list((dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_POSTFIX));
             int maxSegmentIndex = -1;
 
             if (null == segmentFiles)

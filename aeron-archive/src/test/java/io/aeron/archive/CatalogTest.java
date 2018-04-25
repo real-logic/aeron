@@ -22,7 +22,6 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -308,7 +307,6 @@ public class CatalogTest
     }
 
     @Test
-    @Ignore
     public void shouldNotThrowWhenOldRecordingLogsAreDeleted() throws IOException
     {
         // Simulate the scenario where old recordings have been deleted. Here those are the
@@ -320,8 +318,7 @@ public class CatalogTest
         final boolean segmentFileExists = Files.exists(archiveDir.toPath().resolve(segmentFilePath));
         assumeThat(segmentFileExists, is(true));
 
-        // This should pass but it throws
-        // java.nio.file.NoSuchFileException: /tmp/archive-test/0-0.rec
+        // Check creating a Catalog does not throw
         try (Catalog ignored = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
         }

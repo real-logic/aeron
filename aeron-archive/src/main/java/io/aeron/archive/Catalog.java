@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.AsciiEncoding;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
@@ -93,8 +94,6 @@ class Catalog implements AutoCloseable
 
     static final int PAGE_SIZE = 4096;
     static final int NULL_RECORD_ID = -1;
-
-    static final String SEGMENT_FILE_EXTENSION = ".rec";
 
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     static final int DEFAULT_RECORD_LENGTH = 1024;
@@ -638,25 +637,32 @@ class Catalog implements AutoCloseable
         if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIMESTAMP)
         {
             final String prefix = recordingId + "-";
-            String[] segmentFiles = // Only the segments for recordingId
-                archiveDir.list((dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_POSTFIX));
-            int maxSegmentIndex = -1;
+            String[] segmentFiles = archiveDir.list(
+                (dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_POSTFIX));
 
             if (null == segmentFiles)
             {
                 segmentFiles = ArrayUtil.EMPTY_STRING_ARRAY;
             }
 
+            int maxSegmentIndex = -1;
             for (final String filename : segmentFiles)
             {
-                try
+                final int length = filename.length();
+                final int offset = prefix.length();
+                final int remaining = length - offset - RECORDING_SEGMENT_POSTFIX.length();
+
+                if (remaining > 0)
                 {
-                    final int index = Integer.valueOf(
-                        filename.substring(prefix.length(), filename.length() - RECORDING_SEGMENT_POSTFIX.length()));
-                    maxSegmentIndex = Math.max(index, maxSegmentIndex);
-                }
-                catch (final Exception ignore)
-                {
+                    try
+                    {
+                        maxSegmentIndex = Math.max(
+                            AsciiEncoding.parseIntAscii(filename, offset, remaining),
+                            maxSegmentIndex);
+                    }
+                    catch (final Exception ignore)
+                    {
+                    }
                 }
             }
 

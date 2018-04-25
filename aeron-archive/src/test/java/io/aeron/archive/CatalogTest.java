@@ -309,19 +309,14 @@ public class CatalogTest
     @Test
     public void shouldNotThrowWhenOldRecordingLogsAreDeleted() throws IOException
     {
-        // Simulate the scenario where old recordings have been deleted. Here those are the
-        // recordings 1 and 2.
         createSegmentFile(recordingThreeId);
 
-        // Check the new recording is in place
         final Path segmentFilePath = Paths.get(segmentFileName(recordingThreeId, 0));
         final boolean segmentFileExists = Files.exists(archiveDir.toPath().resolve(segmentFilePath));
         assumeThat(segmentFileExists, is(true));
 
-        // Check creating a Catalog does not throw
-        try (Catalog ignored = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
-        {
-        }
+        final Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock);
+        catalog.close();
     }
 
     private void createSegmentFile(final long newRecordingId) throws IOException

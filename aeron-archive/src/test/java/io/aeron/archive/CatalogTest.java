@@ -22,11 +22,16 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.PAGE_SIZE;
@@ -37,6 +42,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.*;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeThat;
 
 public class CatalogTest
 {
@@ -205,20 +211,7 @@ public class CatalogTest
     {
         final long newRecordingId = newRecording();
 
-        final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
-        try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
-        {
-            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
-            final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
-            flyweight.frameLength(PAGE_SIZE - 32);
-            log.write(bb);
-            bb.clear();
-            flyweight.frameLength(128);
-            log.write(bb, PAGE_SIZE - 32);
-            bb.clear();
-            flyweight.frameLength(0);
-            log.write(bb, PAGE_SIZE - 32 + 128);
-        }
+        createSegmentFile(newRecordingId);
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
@@ -311,6 +304,44 @@ public class CatalogTest
                     assertThat(decoder.stopPosition(), is(expectedLastFrame));
                 },
                 newRecordingId);
+        }
+    }
+
+    @Test
+    @Ignore
+    public void shouldNotThrowWhenOldRecordingLogsAreDeleted() throws IOException
+    {
+        // Simulate the scenario where old recordings have been deleted. Here those are the
+        // recordings 1 and 2.
+        createSegmentFile(recordingThreeId);
+
+        // Check the new recording is in place
+        final Path segmentFilePath = Paths.get(segmentFileName(recordingThreeId, 0));
+        final boolean segmentFileExists = Files.exists(archiveDir.toPath().resolve(segmentFilePath));
+        assumeThat(segmentFileExists, is(true));
+
+        // This should pass but it throws
+        // java.nio.file.NoSuchFileException: /tmp/archive-test/0-0.rec
+        try (Catalog ignored = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
+        {
+        }
+    }
+
+    private void createSegmentFile(final long newRecordingId) throws IOException
+    {
+        final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));
+        try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
+        {
+            final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
+            flyweight.frameLength(PAGE_SIZE - 32);
+            log.write(bb);
+            bb.clear();
+            flyweight.frameLength(128);
+            log.write(bb, PAGE_SIZE - 32);
+            bb.clear();
+            flyweight.frameLength(0);
+            log.write(bb, PAGE_SIZE - 32 + 128);
         }
     }
 }

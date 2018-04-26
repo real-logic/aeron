@@ -19,6 +19,7 @@ import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.AuthenticationException;
 import io.aeron.cluster.client.CredentialsSupplier;
 import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
@@ -47,7 +48,8 @@ import static org.mockito.Mockito.spy;
 
 public class AuthenticationTest
 {
-    private static final String CREDENTIAL_STRING = "username=\"admin\"|password=\"secret\"";
+    private static final long MAX_CATALOG_ENTRIES = 1024;
+    private static final String CREDENTIALS_STRING = "username=\"admin\"|password=\"secret\"";
     private static final String CHALLENGE_STRING = "I challenge you!";
     private static final String PRINCIPAL_STRING = "I am THE Principal!";
 
@@ -59,8 +61,8 @@ public class AuthenticationTest
     private SessionDecorator sessionDecorator;
     private Publication publication;
 
-    private final byte[] credentialData = CREDENTIAL_STRING.getBytes();
-    private final byte[] challengeData = CHALLENGE_STRING.getBytes();
+    private final byte[] encodedCredentials = CREDENTIALS_STRING.getBytes();
+    private final byte[] encodedChallenge = CHALLENGE_STRING.getBytes();
 
     @After
     public void after()
@@ -83,7 +85,7 @@ public class AuthenticationTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldAuthenticateOnConnectRequestWithEmptyCredentialData()
+    public void shouldAuthenticateOnConnectRequestWithEmptyCredentials()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
@@ -93,12 +95,12 @@ public class AuthenticationTest
         final CredentialsSupplier credentialsSupplier =
             spy(new CredentialsSupplier()
             {
-                public byte[] connectRequestCredentialData()
+                public byte[] encodedCredentials()
                 {
                     return NULL_CREDENTIAL;
                 }
 
-                public byte[] onChallenge(final byte[] challengeData)
+                public byte[] onChallenge(final byte[] encodedChallenge)
                 {
                     fail();
                     return null;
@@ -108,13 +110,13 @@ public class AuthenticationTest
         final Authenticator authenticator =
             spy(new Authenticator()
             {
-                public void onConnectRequest(final long sessionId, final byte[] credentialData, final long nowMs)
+                public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     authenticatorSessionId.value = sessionId;
-                    assertThat(credentialData.length, is(0));
+                    assertThat(encodedCredentials.length, is(0));
                 }
 
-                public void onChallengeResponse(final long sessionId, final byte[] credentialData, final long nowMs)
+                public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     fail();
                 }
@@ -148,7 +150,7 @@ public class AuthenticationTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldAuthenticateOnConnectRequestWithCredentialData()
+    public void shouldAuthenticateOnConnectRequestWithCredentials()
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0L);
         final MutableLong serviceSessionId = new MutableLong(-1L);
@@ -158,12 +160,12 @@ public class AuthenticationTest
         final CredentialsSupplier credentialsSupplier =
             spy(new CredentialsSupplier()
             {
-                public byte[] connectRequestCredentialData()
+                public byte[] encodedCredentials()
                 {
-                    return credentialData;
+                    return encodedCredentials;
                 }
 
-                public byte[] onChallenge(final byte[] challengeData)
+                public byte[] onChallenge(final byte[] encodedChallenge)
                 {
                     fail();
                     return null;
@@ -173,13 +175,13 @@ public class AuthenticationTest
         final Authenticator authenticator =
             spy(new Authenticator()
             {
-                public void onConnectRequest(final long sessionId, final byte[] credentialData, final long nowMs)
+                public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     authenticatorSessionId.value = sessionId;
-                    assertThat(new String(credentialData), is(CREDENTIAL_STRING));
+                    assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
                 }
 
-                public void onChallengeResponse(final long sessionId, final byte[] credentialData, final long nowMs)
+                public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     fail();
                 }
@@ -223,15 +225,15 @@ public class AuthenticationTest
         final CredentialsSupplier credentialsSupplier =
             spy(new CredentialsSupplier()
             {
-                public byte[] connectRequestCredentialData()
+                public byte[] encodedCredentials()
                 {
                     return NULL_CREDENTIAL;
                 }
 
-                public byte[] onChallenge(final byte[] challengeData)
+                public byte[] onChallenge(final byte[] encodedChallenge)
                 {
-                    assertThat(new String(challengeData), is(CHALLENGE_STRING));
-                    return credentialData;
+                    assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                    return encodedCredentials;
                 }
             });
 
@@ -240,23 +242,23 @@ public class AuthenticationTest
             {
                 boolean challengeSuccessful = false;
 
-                public void onConnectRequest(final long sessionId, final byte[] credentialData, final long nowMs)
+                public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     authenticatorSessionId.value = sessionId;
-                    assertThat(credentialData.length, is(0));
+                    assertThat(encodedCredentials.length, is(0));
                 }
 
-                public void onChallengeResponse(final long sessionId, final byte[] credentialData, final long nowMs)
+                public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionId));
-                    assertThat(new String(credentialData), is(CREDENTIAL_STRING));
+                    assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
                     challengeSuccessful = true;
                 }
 
                 public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
-                    sessionProxy.challenge(challengeData);
+                    sessionProxy.challenge(encodedChallenge);
                 }
 
                 public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
@@ -296,28 +298,28 @@ public class AuthenticationTest
         final CredentialsSupplier credentialsSupplier =
             spy(new CredentialsSupplier()
             {
-                public byte[] connectRequestCredentialData()
+                public byte[] encodedCredentials()
                 {
                     return NULL_CREDENTIAL;
                 }
 
-                public byte[] onChallenge(final byte[] challengeData)
+                public byte[] onChallenge(final byte[] encodedChallenge)
                 {
-                    assertThat(new String(challengeData), is(CHALLENGE_STRING));
-                    return credentialData;
+                    assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                    return encodedCredentials;
                 }
             });
 
         final Authenticator authenticator =
             spy(new Authenticator()
             {
-                public void onConnectRequest(final long sessionId, final byte[] credentialData, final long nowMs)
+                public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     authenticatorSessionId.value = sessionId;
-                    assertThat(credentialData.length, is(0));
+                    assertThat(encodedCredentials.length, is(0));
                 }
 
-                public void onChallengeResponse(final long sessionId, final byte[] credentialData, final long nowMs)
+                public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     fail();
                 }
@@ -361,15 +363,15 @@ public class AuthenticationTest
         final CredentialsSupplier credentialsSupplier =
             spy(new CredentialsSupplier()
             {
-                public byte[] connectRequestCredentialData()
+                public byte[] encodedCredentials()
                 {
                     return NULL_CREDENTIAL;
                 }
 
-                public byte[] onChallenge(final byte[] challengeData)
+                public byte[] onChallenge(final byte[] encodedChallenge)
                 {
-                    assertThat(new String(challengeData), is(CHALLENGE_STRING));
-                    return credentialData;
+                    assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                    return encodedCredentials;
                 }
             });
 
@@ -378,23 +380,23 @@ public class AuthenticationTest
             {
                 boolean challengeRespondedTo = false;
 
-                public void onConnectRequest(final long sessionId, final byte[] credentialData, final long nowMs)
+                public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     authenticatorSessionId.value = sessionId;
-                    assertThat(credentialData.length, is(0));
+                    assertThat(encodedCredentials.length, is(0));
                 }
 
-                public void onChallengeResponse(final long sessionId, final byte[] credentialData, final long nowMs)
+                public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionId));
-                    assertThat(new String(credentialData), is(CREDENTIAL_STRING));
+                    assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
                     challengeRespondedTo = true;
                 }
 
                 public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
-                    sessionProxy.challenge(challengeData);
+                    sessionProxy.challenge(encodedChallenge);
                 }
 
                 public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
@@ -504,9 +506,11 @@ public class AuthenticationTest
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true),
             new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
+                .errorHandler(Throwable::printStackTrace)
                 .authenticatorSupplier(authenticatorSupplier)
                 .deleteDirOnStart(true));
     }

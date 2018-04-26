@@ -23,6 +23,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.status.ReadableCounter;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
@@ -62,6 +63,7 @@ public class SequencerAgentTest
         .idleStrategySupplier(NoOpIdleStrategy::new)
         .aeron(mockAeron)
         .clusterMemberId(0)
+        .serviceHeartbeatCounters(mock(Counter.class))
         .epochClock(new SystemEpochClock())
         .authenticatorSupplier(new DefaultAuthenticatorSupplier())
         .clusterMarkFile(mock(ClusterMarkFile.class))

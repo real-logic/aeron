@@ -62,10 +62,16 @@ public interface ServiceControlListener
      * @param commitPositionId for counter that gives the bound for consumption of the log.
      * @param logSessionId     for the log to confirm subscription.
      * @param logStreamId      to subscribe to for the log.
+     * @param ackBeforeImage   or after Image.
      * @param logChannel       to subscribe to for the log.
      */
     default void onJoinLog(
-        long leadershipTermId, int commitPositionId, int logSessionId, int logStreamId, String logChannel)
+        long leadershipTermId,
+        int commitPositionId,
+        int logSessionId,
+        int logStreamId,
+        boolean ackBeforeImage,
+        String logChannel)
     {
     }
 

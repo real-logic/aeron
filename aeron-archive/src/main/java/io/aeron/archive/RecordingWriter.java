@@ -17,9 +17,6 @@ package io.aeron.archive;
 
 import io.aeron.Counter;
 import io.aeron.logbuffer.BlockHandler;
-import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.logbuffer.Header;
-import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
@@ -39,12 +36,12 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
  * written into the archive folder.
  * <p>
- * Design note: While this class is notionally closely related to the {@link RecordingSession} it is separated from it
- * for the following reasons:
+ * <b>Design note:</b> While this class is notionally closely related to the {@link RecordingSession} it is separated
+ * from it for the following reasons:
  * <ul>
- * <li> Easier testing and in particular simplified re-use in testing. </li>
- * <li> Isolation of an external relationship, namely the FS</li>
- * <li> While a {@link RecordingWriter} is part of a {@link RecordingSession}, a session may transition without actually
+ * <li>Easier testing and in particular simplified re-use in testing.</li>
+ * <li>Isolation of an external relationship, namely the file system.</li>
+ * <li>While a {@link RecordingWriter} is part of a {@link RecordingSession}, a session may transition without actually
  * creating a {@link RecordingWriter}.</li>
  * </ul>
  */
@@ -130,7 +127,7 @@ class RecordingWriter implements BlockHandler
         {
             Thread.interrupted();
             close();
-            throw new IllegalStateException("File channel closed by interrupt, recording aborted.", ex);
+            throw new IllegalStateException("file closed by interrupt, recording aborted.", ex);
         }
         catch (final Exception ex)
         {
@@ -158,52 +155,6 @@ class RecordingWriter implements BlockHandler
     boolean isClosed()
     {
         return isClosed;
-    }
-
-    /**
-     * Convenience method for testing purposes only.
-     */
-    void writeFragment(final DirectBuffer buffer, final Header header)
-    {
-        final int termOffset = header.termOffset();
-        final int frameLength = header.frameLength();
-        final int alignedLength = BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
-
-        try
-        {
-            if (NULL_POSITION == segmentPosition)
-            {
-                onFirstWrite(termOffset);
-            }
-
-            if (segmentFileLength == segmentPosition)
-            {
-                onFileRollOver();
-            }
-
-            final ByteBuffer src = buffer.byteBuffer().duplicate();
-            src.position(termOffset).limit(termOffset + frameLength);
-
-            final int written = recordingFileChannel.write(src, segmentPosition);
-            recordingFileChannel.position(segmentPosition + alignedLength);
-
-            if (written != frameLength)
-            {
-                throw new IllegalStateException();
-            }
-
-            if (forceWrites)
-            {
-                recordingFileChannel.force(forceMetadata);
-            }
-
-            afterWrite(alignedLength);
-        }
-        catch (final Exception ex)
-        {
-            close();
-            LangUtil.rethrowUnchecked(ex);
-        }
     }
 
     private void newRecordingSegmentFile()

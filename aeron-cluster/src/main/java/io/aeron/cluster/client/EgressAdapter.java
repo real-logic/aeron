@@ -30,6 +30,8 @@ public class EgressAdapter implements FragmentHandler
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
 
+    private final long clusterSessionId;
+    private final int fragmentLimit;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
@@ -37,10 +39,14 @@ public class EgressAdapter implements FragmentHandler
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final EgressListener listener;
     private final Subscription subscription;
-    private final int fragmentLimit;
 
-    public EgressAdapter(final EgressListener listener, final Subscription subscription, final int fragmentLimit)
+    public EgressAdapter(
+        final EgressListener listener,
+        final long clusterSessionId,
+        final Subscription subscription,
+        final int fragmentLimit)
     {
+        this.clusterSessionId = clusterSessionId;
         this.listener = listener;
         this.subscription = subscription;
         this.fragmentLimit = fragmentLimit;
@@ -59,55 +65,76 @@ public class EgressAdapter implements FragmentHandler
         switch (templateId)
         {
             case SessionEventDecoder.TEMPLATE_ID:
+            {
                 sessionEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.sessionEvent(
-                    sessionEventDecoder.correlationId(),
-                    sessionEventDecoder.clusterSessionId(),
-                    sessionEventDecoder.code(),
-                    sessionEventDecoder.detail());
+                final long sessionId = sessionEventDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    listener.sessionEvent(
+                        sessionEventDecoder.correlationId(),
+                        sessionId,
+                        sessionEventDecoder.code(),
+                        sessionEventDecoder.detail());
+                }
                 break;
+            }
 
             case NewLeaderEventDecoder.TEMPLATE_ID:
+            {
                 newLeaderEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.newLeader(
-                    newLeaderEventDecoder.lastCorrelationId(),
-                    newLeaderEventDecoder.clusterSessionId(),
-                    newLeaderEventDecoder.lastMessageTimestamp(),
-                    newLeaderEventDecoder.leadershipTimestamp(),
-                    newLeaderEventDecoder.leadershipTermId(),
-                    newLeaderEventDecoder.leaderMemberId(),
-                    newLeaderEventDecoder.memberEndpoints());
+                final long sessionId = newLeaderEventDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    listener.newLeader(
+                        newLeaderEventDecoder.lastCorrelationId(),
+                        sessionId,
+                        newLeaderEventDecoder.lastMessageTimestamp(),
+                        newLeaderEventDecoder.leadershipTimestamp(),
+                        newLeaderEventDecoder.leadershipTermId(),
+                        newLeaderEventDecoder.leaderMemberId(),
+                        newLeaderEventDecoder.memberEndpoints());
+                }
                 break;
+            }
 
             case SessionHeaderDecoder.TEMPLATE_ID:
+            {
                 sessionHeaderDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                listener.onMessage(
-                    sessionHeaderDecoder.correlationId(),
-                    sessionHeaderDecoder.clusterSessionId(),
-                    sessionHeaderDecoder.timestamp(),
-                    buffer,
-                    offset + SESSION_HEADER_LENGTH,
-                    length - SESSION_HEADER_LENGTH,
-                    header);
+                final long sessionId = sessionHeaderDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    listener.onMessage(
+                        sessionHeaderDecoder.correlationId(),
+                        sessionId,
+                        sessionHeaderDecoder.timestamp(),
+                        buffer,
+                        offset + SESSION_HEADER_LENGTH,
+                        length - SESSION_HEADER_LENGTH,
+                        header);
+                }
+                break;
+            }
+
+            case ChallengeDecoder.TEMPLATE_ID:
                 break;
 
             default:
-                throw new IllegalStateException("Unknown templateId: " + templateId);
+                throw new IllegalStateException("unknown templateId: " + templateId);
         }
     }
 }

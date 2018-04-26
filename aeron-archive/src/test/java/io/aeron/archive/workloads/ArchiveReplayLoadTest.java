@@ -196,17 +196,17 @@ public class ArchiveReplayLoadTest
         final CountDownLatch recordingStopped = new CountDownLatch(1);
 
         trackRecordingProgress(recordingEvents, recordingStopped);
-        publishDataToBeRecorded(publication, MESSAGE_COUNT);
+        publishDataToBeRecorded(publication);
 
         return recordingStopped;
     }
 
-    private void publishDataToBeRecorded(final Publication publication, final int messageCount)
+    private void publishDataToBeRecorded(final Publication publication)
     {
         startPosition = publication.position();
         buffer.setMemory(0, 1024, (byte)'z');
 
-        for (int i = 0; i < messageCount; i++)
+        for (int i = 0; i < MESSAGE_COUNT; i++)
         {
             final int messageLength = 64 + (rnd.nextInt((MAX_FRAGMENT_SIZE - 64) / 4) * 4);
 
@@ -224,7 +224,7 @@ public class ArchiveReplayLoadTest
 
                 if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
                 {
-                    throw new IllegalStateException("Publication unexpected not connected");
+                    throw new IllegalStateException("publication unexpectedly not connected");
                 }
 
                 Thread.yield();

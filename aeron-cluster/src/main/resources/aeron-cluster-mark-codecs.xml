@@ -45,12 +45,14 @@
         <field name="ingressStreamId"        id="8"  type="int32"/>
         <field name="memberId"               id="9"  type="int32"/>
         <field name="serviceId"              id="10" type="int32"/>
-        <data  name="aeronDirectory"         id="11" type="varAsciiEncoding"/>
-        <data  name="archiveChannel"         id="12" type="varAsciiEncoding"/>
-        <data  name="serviceControlChannel"  id="13" type="varAsciiEncoding"/>
-        <data  name="ingressChannel"         id="14" type="varAsciiEncoding"/>
-        <data  name="serviceName"            id="15" type="varAsciiEncoding"/>
-        <data  name="authenticator"          id="16" type="varAsciiEncoding"/>
+        <field name="headerLength"           id="11" type="int32"/>
+        <field name="errorBufferLength"      id="12" type="int32"/>
+        <data  name="aeronDirectory"         id="13" type="varAsciiEncoding"/>
+        <data  name="archiveChannel"         id="14" type="varAsciiEncoding"/>
+        <data  name="serviceControlChannel"  id="15" type="varAsciiEncoding"/>
+        <data  name="ingressChannel"         id="16" type="varAsciiEncoding"/>
+        <data  name="serviceName"            id="17" type="varAsciiEncoding"/>
+        <data  name="authenticator"          id="18" type="varAsciiEncoding"/>
     </sbe:message>
 
 </sbe:messageSchema>

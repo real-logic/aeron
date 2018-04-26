@@ -81,7 +81,7 @@ public enum EventCode
             final int id = code.id();
             if (null != EVENT_CODE_BY_ID[id])
             {
-                throw new IllegalArgumentException("Id already in use: " + id);
+                throw new IllegalArgumentException("id already in use: " + id);
             }
 
             EVENT_CODE_BY_ID[id] = code;
@@ -115,14 +115,14 @@ public enum EventCode
     {
         if (id < 0 || id > MAX_ID)
         {
-            throw new IllegalArgumentException("No EventCode for ID: " + id);
+            throw new IllegalArgumentException("no EventCode for id: " + id);
         }
 
         final EventCode code = EVENT_CODE_BY_ID[id];
 
         if (null == code)
         {
-            throw new IllegalArgumentException("No EventCode for ID: " + id);
+            throw new IllegalArgumentException("no EventCode for id: " + id);
         }
 
         return code;

@@ -18,7 +18,6 @@ package io.aeron.cluster.service;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.ClusterMarkFile;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
@@ -26,14 +25,18 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.Collection;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.cluster.codecs.ClusterAction.READY;
+import static io.aeron.cluster.codecs.ClusterAction.REPLAY;
 import static java.util.Collections.unmodifiableCollection;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
-final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
+class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 {
     private final int serviceId;
     private boolean isRecovering;
@@ -52,12 +55,13 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private final ClusterMarkFile markFile;
 
-    private long baseLogPosition;
+    private long termBaseLogPosition;
     private long leadershipTermId;
     private long timestampMs;
     private BoundedLogAdapter logAdapter;
     private ActiveLog activeLog;
     private ReadableCounter roleCounter;
+    private AtomicCounter heartbeatCounter;
     private Role role = Role.FOLLOWER;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
@@ -74,11 +78,10 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         epochClock = ctx.epochClock();
         markFile = ctx.clusterMarkFile();
 
-        serviceControlPublisher = new ServiceControlPublisher(
-            aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceControlStreamId()));
-
-        serviceControlAdapter = new ServiceControlAdapter(
-            aeron.addSubscription(ctx.serviceControlChannel(), ctx.serviceControlStreamId()), this);
+        final String channel = ctx.serviceControlChannel();
+        final int streamId = ctx.serviceControlStreamId();
+        serviceControlPublisher = new ServiceControlPublisher(aeron.addPublication(channel, streamId));
+        serviceControlAdapter = new ServiceControlAdapter(aeron.addSubscription(channel, streamId), this);
     }
 
     public void onStart()
@@ -87,11 +90,14 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
         final CountersReader counters = aeron.countersReader();
         final int recoveryCounterId = awaitRecoveryCounter(counters);
+        findHeartbeatCounter(counters);
 
         isRecovering = true;
         checkForSnapshot(counters, recoveryCounterId);
         checkForReplay(counters, recoveryCounterId);
         isRecovering = false;
+
+        service.onReady();
 
         joinActiveLog(counters);
 
@@ -129,27 +135,15 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         {
             markFile.updateActivityTimestamp(nowMs);
             cachedEpochClock.update(nowMs);
+            checkHealthAndUpdateHeartbeat(nowMs);
         }
 
         int workCount = logAdapter.poll();
-        if (0 == workCount)
-        {
-            if (logAdapter.image().isClosed())
-            {
-                throw new AgentTerminationException("Image closed unexpectedly");
-            }
-
-            if (!CommitPos.isActive(aeron.countersReader(), logAdapter.upperBoundCounterId()))
-            {
-                throw new AgentTerminationException("Commit position is not active");
-            }
-        }
-
         workCount += serviceControlAdapter.poll();
+
         if (activeLog != null)
         {
-            // TODO: handle new log case
-            activeLog = null;
+            switchActiveLog();
         }
 
         return workCount;
@@ -182,9 +176,20 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
     public boolean closeSession(final long clusterSessionId)
     {
-        if (sessionByIdMap.containsKey(clusterSessionId))
+        final ClientSession clientSession = sessionByIdMap.get(clusterSessionId);
+        if (clientSession == null)
         {
-            serviceControlPublisher.closeSession(clusterSessionId);
+            throw new IllegalArgumentException("unknown clusterSessionId: " + clusterSessionId);
+        }
+
+        if (clientSession.isClosing())
+        {
+            return true;
+        }
+
+        if (serviceControlPublisher.closeSession(clusterSessionId))
+        {
+            clientSession.markClosing();
             return true;
         }
 
@@ -196,14 +201,14 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         return timestampMs;
     }
 
-    public void scheduleTimer(final long correlationId, final long deadlineMs)
+    public boolean scheduleTimer(final long correlationId, final long deadlineMs)
     {
-        serviceControlPublisher.scheduleTimer(correlationId, deadlineMs);
+        return serviceControlPublisher.scheduleTimer(correlationId, deadlineMs);
     }
 
-    public void cancelTimer(final long correlationId)
+    public boolean cancelTimer(final long correlationId)
     {
-        serviceControlPublisher.cancelTimer(correlationId);
+        return serviceControlPublisher.cancelTimer(correlationId);
     }
 
     public void onJoinLog(
@@ -211,9 +216,11 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         final int commitPositionId,
         final int logSessionId,
         final int logStreamId,
+        final boolean ackBeforeImage,
         final String logChannel)
     {
-        activeLog = new ActiveLog(leadershipTermId, commitPositionId, logSessionId, logStreamId, logChannel);
+        activeLog = new ActiveLog(
+            leadershipTermId, commitPositionId, logSessionId, logStreamId, ackBeforeImage, logChannel);
     }
 
     void onSessionMessage(
@@ -301,6 +308,14 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         sessionByIdMap.put(clusterSessionId, session);
     }
 
+    private void checkHealthAndUpdateHeartbeat(final long nowMs)
+    {
+        if (null != logAdapter && !logAdapter.image().isClosed())
+        {
+            heartbeatCounter.setOrdered(nowMs);
+        }
+    }
+
     private void role(final Role newRole)
     {
         if (newRole != role)
@@ -321,14 +336,14 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             final RecordingLog.Entry snapshotEntry = recordingLog.getSnapshot(leadershipTermId, termPosition);
             if (null == snapshotEntry)
             {
-                throw new IllegalStateException("No snapshot available for term position: " + termPosition);
+                throw new IllegalStateException("no snapshot available for term position: " + termPosition);
             }
 
-            baseLogPosition = snapshotEntry.logPosition;
+            termBaseLogPosition = snapshotEntry.termBaseLogPosition + snapshotEntry.termPosition;
             loadSnapshot(snapshotEntry.recordingId);
         }
 
-        serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.INIT);
+        serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, ClusterAction.INIT);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
@@ -344,24 +359,27 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         for (int i = 0; i < replayTermCount; i++)
         {
             awaitActiveLog();
-
             final int counterId = activeLog.commitPositionId;
-            baseLogPosition = CommitPos.getBaseLogPosition(counters, counterId);
             leadershipTermId = CommitPos.getLeadershipTermId(counters, counterId);
+            termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, counterId);
 
-            try (Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId))
+            if (CommitPos.getLeadershipTermLength(counters, counterId) > 0)
             {
-                serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.READY);
+                try (Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId))
+                {
+                    serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
 
-                final Image image = awaitImage(activeLog.sessionId, subscription);
-                final ReadableCounter limit = new ReadableCounter(counters, counterId);
-                final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
+                    final Image image = awaitImage(activeLog.sessionId, subscription);
+                    final ReadableCounter limit = new ReadableCounter(counters, counterId);
+                    final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
 
-                consumeImage(image, adapter);
+                    consumeImage(image, adapter);
 
-                final long logPosition = baseLogPosition + image.position();
-                serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, ClusterAction.REPLAY);
+                    termBaseLogPosition += image.position();
+                }
             }
+
+            serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, REPLAY);
         }
 
         service.onReplayEnd();
@@ -395,7 +413,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
                 {
                     if (!image.isEndOfStream())
                     {
-                        throw new IllegalStateException("Unexpected close of replay");
+                        throw new IllegalStateException("unexpected close of replay");
                     }
 
                     break;
@@ -408,11 +426,33 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         }
     }
 
+    private void switchActiveLog()
+    {
+        if (logAdapter.isCaughtUp())
+        {
+            logAdapter.close();
+
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = activeLog.commitPositionId;
+
+            leadershipTermId = activeLog.leadershipTermId;
+            termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, counterId);
+
+            final Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
+            final Image image = awaitImage(activeLog.sessionId, subscription);
+            serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+
+            logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, counterId), this);
+            activeLog = null;
+            role(Role.get((int)roleCounter.get()));
+        }
+    }
+
     private int awaitRecoveryCounter(final CountersReader counters)
     {
         idleStrategy.reset();
         int counterId = RecoveryState.findCounterId(counters);
-        while (CountersReader.NULL_COUNTER_ID == counterId)
+        while (NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
@@ -435,12 +475,22 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
         final int logSessionId = activeLog.sessionId;
         leadershipTermId = activeLog.leadershipTermId;
-        baseLogPosition = CommitPos.getBaseLogPosition(counters, commitPositionId);
+        termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, commitPositionId);
 
         final Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
-        final Image image = awaitImage(logSessionId, logSubscription);
 
-        serviceControlPublisher.ackAction(baseLogPosition, leadershipTermId, serviceId, ClusterAction.READY);
+        if (activeLog.ackBeforeImage)
+        {
+            serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+        }
+
+        final Image image = awaitImage(logSessionId, logSubscription);
+        heartbeatCounter.setOrdered(epochClock.time());
+
+        if (!activeLog.ackBeforeImage)
+        {
+            serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+        }
 
         logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, commitPositionId), this);
         activeLog = null;
@@ -463,7 +513,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     {
         idleStrategy.reset();
         int counterId = ClusterNodeRole.findCounterId(counters);
-        while (CountersReader.NULL_COUNTER_ID == counterId)
+        while (NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
@@ -480,7 +530,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             final RecordingExtent recordingExtent = new RecordingExtent();
             if (0 == archive.listRecording(recordingId, recordingExtent))
             {
-                throw new IllegalStateException("Could not find recordingId: " + recordingId);
+                throw new IllegalStateException("could not find recordingId: " + recordingId);
             }
 
             final String channel = ctx.replayChannel();
@@ -516,7 +566,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
                 if (image.isClosed())
                 {
-                    throw new IllegalStateException("Snapshot ended unexpectedly");
+                    throw new IllegalStateException("snapshot ended unexpectedly");
                 }
 
                 idleStrategy.idle(fragments);
@@ -539,7 +589,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
                 final int counterId = awaitRecordingCounter(publication, counters);
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
-                snapshotState(publication, baseLogPosition + termPosition);
+                snapshotState(publication, termBaseLogPosition + termPosition);
                 service.onTakeSnapshot(publication);
 
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
@@ -550,7 +600,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             }
         }
 
-        recordingLog.appendSnapshot(recordingId, leadershipTermId, baseLogPosition, termPosition, timestampMs);
+        recordingLog.appendSnapshot(recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs);
     }
 
     private void awaitRecordingComplete(
@@ -568,7 +618,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
 
             if (!RecordingPos.isActive(counters, counterId, recordingId))
             {
-                throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
+                throw new IllegalStateException("recording has stopped unexpectedly: " + recordingId);
             }
 
             archive.checkForErrorResponse();
@@ -597,7 +647,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             return;
         }
 
-        final long logPosition = baseLogPosition + termPosition;
+        final long logPosition = termBaseLogPosition + termPosition;
 
         switch (action)
         {
@@ -623,7 +673,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
     {
         idleStrategy.reset();
         int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-        while (CountersReader.NULL_COUNTER_ID == counterId)
+        while (NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
@@ -633,11 +683,22 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         return counterId;
     }
 
+    private void findHeartbeatCounter(final CountersReader counters)
+    {
+        final int heartbeatCounterId = ServiceHeartbeat.findCounterId(counters, ctx.serviceId());
+        if (NULL_COUNTER_ID == heartbeatCounterId)
+        {
+            throw new IllegalStateException("failed to find heartbeat counter");
+        }
+
+        heartbeatCounter = new AtomicCounter(counters.valuesBuffer(), heartbeatCounterId);
+    }
+
     private static void checkInterruptedStatus()
     {
         if (Thread.currentThread().isInterrupted())
         {
-            throw new AgentTerminationException("Unexpected interrupt during operation");
+            throw new AgentTerminationException("unexpected interrupt during operation");
         }
     }
 
@@ -647,6 +708,7 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
         final int commitPositionId;
         final int sessionId;
         final int streamId;
+        final boolean ackBeforeImage;
         final String channel;
 
         ActiveLog(
@@ -654,12 +716,14 @@ final class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListe
             final int commitPositionId,
             final int sessionId,
             final int streamId,
+            final boolean ackBeforeImage,
             final String channel)
         {
             this.leadershipTermId = leadershipTermId;
             this.commitPositionId = commitPositionId;
             this.sessionId = sessionId;
             this.streamId = streamId;
+            this.ackBeforeImage = ackBeforeImage;
             this.channel = channel;
         }
     }

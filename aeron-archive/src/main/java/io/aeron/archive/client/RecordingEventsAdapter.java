@@ -115,7 +115,7 @@ public class RecordingEventsAdapter implements FragmentHandler
                 break;
 
             default:
-                throw new IllegalStateException("Unknown templateId: " + templateId);
+                throw new IllegalStateException("unknown templateId: " + templateId);
         }
     }
 }

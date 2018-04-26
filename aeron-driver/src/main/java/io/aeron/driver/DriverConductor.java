@@ -89,7 +89,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     private final CachedEpochClock cachedEpochClock;
     private final CachedNanoClock cachedNanoClock;
     private final CountersManager countersManager;
-    private final AtomicCounter clientKeepAlives;
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final MutableDirectBuffer tempBuffer;
 
@@ -114,7 +113,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         tempBuffer = ctx.tempBuffer();
 
         countersManager = context.countersManager();
-        clientKeepAlives = context.systemCounters().get(CLIENT_KEEP_ALIVES);
 
         clientCommandAdapter = new ClientCommandAdapter(
             context.systemCounters().get(ERRORS),
@@ -207,10 +205,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         Configuration.validateMtuLength(senderMtuLength);
         Configuration.validateInitialWindowLength(context.initialWindowLength(), senderMtuLength);
 
-        final UdpChannel udpChannel = channelEndpoint.udpChannel();
-        final String channel = udpChannel.originalUriString();
-        final long registrationId = toDriverCommands.nextCorrelationId();
-
         final long joinPosition = computePosition(
             activeTermId, initialTermOffset, LogBufferDescriptor.positionBitsToShift(termBufferLength), initialTermId);
 
@@ -219,6 +213,9 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         if (subscriberPositions.size() > 0)
         {
+            final UdpChannel udpChannel = channelEndpoint.udpChannel();
+            final String channel = udpChannel.originalUriString();
+            final long registrationId = toDriverCommands.nextCorrelationId();
             final RawLog rawLog = newPublicationImageLog(
                 sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, registrationId);
 
@@ -260,6 +257,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             publicationImages.add(image);
             receiverProxy.newPublicationImage(channelEndpoint, image);
 
+            final String sourceIdentity = generateSourceIdentity(sourceAddress);
             for (int i = 0, size = subscriberPositions.size(); i < size; i++)
             {
                 final SubscriberPosition position = subscriberPositions.get(i);
@@ -273,7 +271,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                     position.subscription().registrationId(),
                     position.positionCounterId(),
                     rawLog.fileName(),
-                    generateSourceIdentity(sourceAddress));
+                    sourceIdentity);
             }
         }
     }
@@ -616,7 +614,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscription = new NetworkSubscriptionLink(
-            registrationId, channelEndpoint, streamId, channel, client, clientLivenessTimeoutNs, params);
+            registrationId, channelEndpoint, streamId, channel, client, params);
 
         subscriptionLinks.add(subscription);
         clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId());
@@ -629,7 +627,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel));
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
-            registrationId, streamId, channel, getOrAddClient(clientId), clientLivenessTimeoutNs, params);
+            registrationId, streamId, channel, getOrAddClient(clientId), params);
 
         subscriptionLinks.add(subscriptionLink);
 
@@ -668,7 +666,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri());
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
-            registrationId, udpChannel, streamId, client, clientLivenessTimeoutNs, params);
+            registrationId, udpChannel, streamId, client, params);
 
         subscriptionLinks.add(subscriptionLink);
 
@@ -743,12 +741,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     void onClientKeepalive(final long clientId)
     {
-        clientKeepAlives.incrementOrdered();
-
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {
-            client.timeOfLastKeepalive(cachedNanoClock.nanoTime());
+            client.timeOfLastKeepaliveMs(cachedEpochClock.time());
         }
     }
 
@@ -803,7 +799,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {
-            client.timeOfLastKeepalive(0);
+            client.timeOfLastKeepaliveMs(0);
 
             clientProxy.operationSucceeded(correlationId);
         }
@@ -846,10 +842,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     }
 
     private List<SubscriberPosition> createSubscriberPositions(
-        final int sessionId,
-        final int streamId,
-        final ReceiveChannelEndpoint channelEndpoint,
-        final long joinPosition)
+        final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint, final long joinPosition)
     {
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
 
@@ -935,6 +928,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             channelEndpoint,
             cachedNanoClock,
             newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
+            PublisherPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
             PublisherLimit.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
             senderPosition,
             senderLimit,
@@ -1226,7 +1220,11 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         AeronClient client = findClient(clients, clientId);
         if (null == client)
         {
-            client = new AeronClient(clientId, clientLivenessTimeoutNs, cachedNanoClock.nanoTime());
+            client = new AeronClient(
+                clientId,
+                clientLivenessTimeoutNs,
+                cachedEpochClock.time(),
+                ClientHeartbeatStatus.allocate(tempBuffer, countersManager, clientId));
             clients.add(client);
         }
 
@@ -1278,6 +1276,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
             registrationId,
             sessionId,
             streamId,
+            PublisherPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
             PublisherLimit.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
             rawLog,
             publicationUnblockTimeoutNs,

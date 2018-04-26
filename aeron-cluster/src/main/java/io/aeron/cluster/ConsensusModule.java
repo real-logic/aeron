@@ -20,15 +20,19 @@ import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.service.RecordingLog;
 import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.errors.DistinctErrorLog;
+import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
+import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -38,6 +42,9 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.S
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static org.agrona.SystemUtil.getDurationInNanos;
+import static org.agrona.SystemUtil.getSizeAsInt;
+import static org.agrona.SystemUtil.loadPropertiesFiles;
+import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 public class ConsensusModule implements AutoCloseable
 {
@@ -98,7 +105,7 @@ public class ConsensusModule implements AutoCloseable
                 final int code = state.code();
                 if (null != STATES[code])
                 {
-                    throw new IllegalStateException("Code already in use: " + code);
+                    throw new IllegalStateException("code already in use: " + code);
                 }
 
                 STATES[code] = state;
@@ -151,10 +158,28 @@ public class ConsensusModule implements AutoCloseable
 
             if (code < 0 || code > (STATES.length - 1))
             {
-                throw new IllegalStateException("Invalid state counter code: " + code);
+                throw new IllegalStateException("invalid state counter code: " + code);
             }
 
             return STATES[(int)code];
+        }
+    }
+
+    /**
+     * Launch an {@link ConsensusModule} with that communicates with an out of process {@link io.aeron.archive.Archive}
+     * and {@link io.aeron.driver.MediaDriver} then awaits shutdown signal.
+     *
+     * @param args command line argument which is a list for properties files as URLs or filenames.
+     */
+    public static void main(final String[] args)
+    {
+        loadPropertiesFiles(args);
+
+        try (ConsensusModule consensusModule = launch())
+        {
+            consensusModule.context().shutdownSignalBarrier().await();
+
+            System.out.println("Shutdown ConsensusModule...");
         }
     }
 
@@ -252,7 +277,7 @@ public class ConsensusModule implements AutoCloseable
          * Default property for the list of cluster member endpoints.
          */
         public static final String CLUSTER_MEMBERS_DEFAULT =
-            "0,localhost:10000,localhost:20000,localhost:30000,localhost:40000";
+            "0,localhost:10000,localhost:20000,localhost:30000,localhost:8010";
 
         /**
          * Channel for the clustered log.
@@ -352,6 +377,16 @@ public class ConsensusModule implements AutoCloseable
         public static final int SNAPSHOT_COUNTER_TYPE_ID = 205;
 
         /**
+         * Type id for the clustered services heartbeat counter.
+         */
+        public static final int SERVICE_HEARTBEAT_TYPE_ID = ServiceHeartbeat.SERVICE_HEARTBEAT_TYPE_ID;
+
+        /**
+         * Type id for election state counter.
+         */
+        public static final int ELECTION_STATE_TYPE_ID = Election.ELECTION_STATE_TYPE_ID;
+
+        /**
          * Directory to use for the aeron cluster.
          */
         public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
@@ -394,23 +429,78 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Timeout for a leader if no heartbeat is received by an other member.
          */
-        public static final String HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.heartbeat.timeout";
+        public static final String LEADER_HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.leader.heartbeat.timeout";
 
         /**
          * Timeout for a leader if no heartbeat is received by an other member.
          */
-        public static final long HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+        public static final long LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Interval at which a leader will send heartbeats if the log is not progressing.
          */
-        public static final String HEARTBEAT_INTERVAL_PROP_NAME = "aeron.cluster.heartbeat.interval";
+        public static final String LEADER_HEARTBEAT_INTERVAL_PROP_NAME = "aeron.cluster.leader.heartbeat.interval";
 
         /**
          * Interval at which a leader will send heartbeats if the log is not progressing.
          * Default to 500 milliseconds in nanoseconds.
          */
-        public static final long HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
+        public static final long LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
+
+        /**
+         * Timeout after which a clustered service is considered inactive or not present.
+         */
+        public static final String SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.service.heartbeat.timeout";
+
+        /**
+         * Timeout after which a clustered service is considered inactive or not present.
+         */
+        public static final long SERVICE_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
+        /**
+         * Timeout after which an election vote will be attempted after startup and recovery is complete
+         * while waiting to hear the status of all members if a majority has been heard from.
+         */
+        public static final String STARTUP_STATUS_TIMEOUT_PROP_NAME = "aeron.cluster.startup.status.timeout";
+
+        /**
+         * Default timeout after which an election vote will be attempted after startup and recovery is complete
+         * while waiting to hear the status of all members before going for a majority if possible.
+         */
+        public static final long STARTUP_STATUS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(60);
+
+        /**
+         * Timeout after which an election vote will be attempted after a leader failure is suspected
+         * while waiting to hear the status of all remaining members if a majority has been heard from.
+         */
+        public static final String FAILURE_STATUS_TIMEOUT_PROP_NAME = "aeron.cluster.failure.status.timeout";
+
+        /**
+         * Default timeout after which an election vote will be attempted after a leader failure is suspected
+         * while waiting to hear the status of all remaining members if a majority has been heard from.
+         */
+        public static final long FAILURE_STATUS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
+
+        /**
+         * Timeout after which an election fails if the candidate does not get a majority of votes.
+         */
+        public static final String ELECTION_TIMEOUT_PROP_NAME = "aeron.cluster.election.timeout";
+
+        /**
+         * Default timeout after which an election fails if the candidate does not get a majority of votes.
+         */
+        public static final long ELECTION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
+
+        /**
+         * Interval at which a member will send out status updates during election phases.
+         */
+        public static final String STATUS_INTERVAL_PROP_NAME = "aeron.cluster.status.interval";
+
+        /**
+         * Interval at which a member will send out status updates during election phases.
+         * Default to 20 milliseconds in nanoseconds.
+         */
+        public static final long STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(20);
 
         /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.
@@ -422,6 +512,17 @@ public class ConsensusModule implements AutoCloseable
          * a non-authenticating option.
          */
         public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.cluster.DefaultAuthenticatorSupplier";
+
+        /**
+         * Size in bytes of the error buffer for the cluster.
+         */
+        public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.cluster.error.buffer.length";
+
+        /**
+         * Size in bytes of the error buffer for the cluster.
+         * Default to 1MB.
+         */
+        public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
         /**
          * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
@@ -552,22 +653,89 @@ public class ConsensusModule implements AutoCloseable
          * Timeout for a leader if no heartbeat is received by an other member.
          *
          * @return timeout in nanoseconds to wait for heartbeat from a leader.
-         * @see #HEARTBEAT_TIMEOUT_PROP_NAME
+         * @see #LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
          */
         public static long leaderHeartbeatTimeoutNs()
         {
-            return getDurationInNanos(HEARTBEAT_TIMEOUT_PROP_NAME, HEARTBEAT_TIMEOUT_DEFAULT_NS);
+            return getDurationInNanos(LEADER_HEARTBEAT_TIMEOUT_PROP_NAME, LEADER_HEARTBEAT_TIMEOUT_DEFAULT_NS);
         }
 
         /**
          * Interval at which a leader will send a heartbeat if the log is not progressing.
          *
          * @return timeout in nanoseconds to for leader heartbeats when no log being appended.
-         * @see #HEARTBEAT_INTERVAL_PROP_NAME
+         * @see #LEADER_HEARTBEAT_INTERVAL_PROP_NAME
          */
         public static long leaderHeartbeatIntervalNs()
         {
-            return getDurationInNanos(HEARTBEAT_INTERVAL_PROP_NAME, HEARTBEAT_INTERVAL_DEFAULT_NS);
+            return getDurationInNanos(LEADER_HEARTBEAT_INTERVAL_PROP_NAME, LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS);
+        }
+
+        /**
+         * Timeout after which a service will be considered inactive or not present.
+         *
+         * @return timeout in nanoseconds after which a service will be considered inactive or not present.
+         * @see #SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public static long serviceHeartbeatTimeoutNs()
+        {
+            return getDurationInNanos(SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME, SERVICE_HEARTBEAT_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Timeout waiting to hear the status of all cluster members before voting if a majority have been heard from.
+         *
+         * @return timeout in nanoseconds to wait for the status of other cluster members before voting.
+         * @see #STARTUP_STATUS_TIMEOUT_PROP_NAME
+         */
+        public static long startupStatusTimeoutNs()
+        {
+            return getDurationInNanos(STARTUP_STATUS_TIMEOUT_PROP_NAME, STARTUP_STATUS_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Timeout waiting to hear the status of all remaining cluster members before voting if a majority have been
+         * heard from.
+         *
+         * @return timeout in nanoseconds to wait for the status of other cluster members before voting.
+         * @see #FAILURE_STATUS_TIMEOUT_PROP_NAME
+         */
+        public static long failureStatusTimeoutNs()
+        {
+            return getDurationInNanos(FAILURE_STATUS_TIMEOUT_PROP_NAME, FAILURE_STATUS_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Timeout waiting for votes to become leader in an election.
+         *
+         * @return timeout in nanoseconds to wait for votes to become leader in an election.
+         * @see #ELECTION_TIMEOUT_PROP_NAME
+         */
+        public static long electionTimeoutNs()
+        {
+            return getDurationInNanos(ELECTION_TIMEOUT_PROP_NAME, ELECTION_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Interval at which a member will send out status messages during the election phases.
+         *
+         * @return interval at which a member will send out status messages during the election phases.
+         * @see #STATUS_INTERVAL_PROP_NAME
+         */
+        public static long statusIntervalNs()
+        {
+            return getDurationInNanos(STATUS_INTERVAL_PROP_NAME, STATUS_INTERVAL_DEFAULT_NS);
+        }
+
+        /**
+         * Size in bytes of the error buffer in the mark file.
+         *
+         * @return length of error buffer in bytes.
+         * @see #ERROR_BUFFER_LENGTH_PROP_NAME
+         */
+        public static int errorBufferLength()
+        {
+            return getSizeAsInt(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
         }
 
         /**
@@ -631,6 +799,7 @@ public class ConsensusModule implements AutoCloseable
         private File clusterDir;
         private RecordingLog recordingLog;
         private ClusterMarkFile markFile;
+        private MutableDirectBuffer tempBuffer;
 
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
@@ -649,15 +818,24 @@ public class ConsensusModule implements AutoCloseable
         private int memberStatusStreamId = Configuration.memberStatusStreamId();
 
         private int serviceCount = Configuration.serviceCount();
+        private Counter[] serviceHeartbeatCounters;
+        private int errorBufferLength = Configuration.errorBufferLength();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
         private long sessionTimeoutNs = Configuration.sessionTimeoutNs();
-        private long heartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
-        private long heartbeatIntervalNs = Configuration.leaderHeartbeatIntervalNs();
+        private long leaderHeartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
+        private long leaderHeartbeatIntervalNs = Configuration.leaderHeartbeatIntervalNs();
+        private long serviceHeartbeatTimeoutNs = Configuration.serviceHeartbeatTimeoutNs();
+        private long startupStatusTimeoutNs = Configuration.startupStatusTimeoutNs();
+        private long failureStatusTimeoutNs = Configuration.failureStatusTimeoutNs();
+        private long electionTimeoutNs = Configuration.electionTimeoutNs();
+        private long statusIntervalNs = Configuration.statusIntervalNs();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
+        private Random random;
 
+        private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
@@ -672,6 +850,7 @@ public class ConsensusModule implements AutoCloseable
 
         private AeronArchive.Context archiveContext;
         private AuthenticatorSupplier authenticatorSupplier;
+        private RecordingCatchUpSupplier recordingCatchUpSupplier;
 
         /**
          * Perform a shallow copy of the object.
@@ -713,22 +892,42 @@ public class ConsensusModule implements AutoCloseable
             if (!clusterDir.exists() && !clusterDir.mkdirs())
             {
                 throw new IllegalStateException(
-                    "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
+                    "failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
-            if (null == recordingLog)
+            if (null == tempBuffer)
             {
-                recordingLog = new RecordingLog(clusterDir);
-            }
-
-            if (null == errorHandler)
-            {
-                throw new IllegalStateException("Error handler must be supplied");
+                tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
             }
 
             if (null == epochClock)
             {
                 epochClock = new SystemEpochClock();
+            }
+
+            if (null == markFile)
+            {
+                markFile = new ClusterMarkFile(
+                    new File(clusterDir, ClusterMarkFile.FILENAME),
+                    ClusterComponentType.CONSENSUS_MODULE,
+                    errorBufferLength,
+                    epochClock,
+                    0);
+            }
+
+            if (null == errorLog)
+            {
+                errorLog = new DistinctErrorLog(markFile.errorBuffer(), epochClock);
+            }
+
+            if (null == errorHandler)
+            {
+                errorHandler = new LoggingErrorHandler(errorLog);
+            }
+
+            if (null == recordingLog)
+            {
+                recordingLog = new RecordingLog(clusterDir);
             }
 
             if (null == aeron)
@@ -756,7 +955,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == errorCounter)
             {
-                throw new IllegalStateException("Error counter must be supplied if aeron client is");
+                throw new IllegalStateException("error counter must be supplied if aeron client is");
             }
 
             if (null == countedErrorHandler)
@@ -793,6 +992,15 @@ public class ConsensusModule implements AutoCloseable
                 invalidRequestCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Invalid cluster request count");
             }
 
+            if (null == serviceHeartbeatCounters)
+            {
+                serviceHeartbeatCounters = new Counter[serviceCount];
+                for (int i = 0; i < serviceCount; i++)
+                {
+                    serviceHeartbeatCounters[i] = ServiceHeartbeat.allocate(aeron, tempBuffer, i);
+                }
+            }
+
             if (null == threadFactory)
             {
                 threadFactory = Thread::new;
@@ -805,10 +1013,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == archiveContext)
             {
-                archiveContext = new AeronArchive.Context()
-                    .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
+                archiveContext = new AeronArchive.Context();
             }
 
             archiveContext
@@ -831,7 +1036,39 @@ public class ConsensusModule implements AutoCloseable
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
 
+            if (null == recordingCatchUpSupplier)
+            {
+                recordingCatchUpSupplier = RecordingCatchUp::new;
+            }
+
+            if (null == random)
+            {
+                random = new Random();
+            }
+
             concludeMarkFile();
+        }
+
+        /**
+         * The temporary buffer than can be used to build up counter labels to avoid allocation.
+         *
+         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
+         */
+        public MutableDirectBuffer tempBuffer()
+        {
+            return tempBuffer;
+        }
+
+        /**
+         * Set the temporary buffer than can be used to build up counter labels to avoid allocation.
+         *
+         * @param tempBuffer to be used to avoid allocation.
+         * @return the temporary buffer than can be used to build up counter labels to avoid allocation.
+         */
+        public Context tempBuffer(final MutableDirectBuffer tempBuffer)
+        {
+            this.tempBuffer = tempBuffer;
+            return this;
         }
 
         /**
@@ -924,6 +1161,28 @@ public class ConsensusModule implements AutoCloseable
         public RecordingLog recordingLog()
         {
             return recordingLog;
+        }
+
+        /**
+         * Set the {@link RecordingCatchUpSupplier} to use for catching up recordings.
+         *
+         * @param recordingCatchUpSupplier to use.
+         * @return this for a fluent API.
+         */
+        public Context recordingCatchUpSupplier(final RecordingCatchUpSupplier recordingCatchUpSupplier)
+        {
+            this.recordingCatchUpSupplier = recordingCatchUpSupplier;
+            return this;
+        }
+
+        /**
+         * The {@link RecordingCatchUpSupplier} to use for catching up recordings.
+         *
+         * @return {@link RecordingCatchUpSupplier} to use.
+         */
+        public RecordingCatchUpSupplier recordingCatchUpSupplier()
+        {
+            return recordingCatchUpSupplier;
         }
 
         /**
@@ -1325,6 +1584,28 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Set the array of counters which represent the heartbeats of the clustered services.
+         *
+         * @param serviceHeartbeatCounters which represent the heartbeats of the clustered services.
+         * @return this for a fluent API.
+         */
+        public Context serviceHeartbeatCounters(final Counter... serviceHeartbeatCounters)
+        {
+            this.serviceHeartbeatCounters = serviceHeartbeatCounters;
+            return this;
+        }
+
+        /**
+         * Get the array of counters which represent the heartbeats of the clustered services.
+         *
+         * @return the array of counters which represent the heartbeats of the clustered services.
+         */
+        public Counter[] serviceHeartbeatCounters()
+        {
+            return serviceHeartbeatCounters;
+        }
+
+        /**
          * Set the limit for the maximum number of concurrent cluster sessions.
          *
          * @param maxSessions after which new sessions will be rejected.
@@ -1377,11 +1658,11 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param heartbeatTimeoutNs to wait for heartbeat from a leader.
          * @return this for a fluent API.
-         * @see Configuration#HEARTBEAT_TIMEOUT_PROP_NAME
+         * @see Configuration#LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
          */
-        public Context heartbeatTimeoutNs(final long heartbeatTimeoutNs)
+        public Context leaderHeartbeatTimeoutNs(final long heartbeatTimeoutNs)
         {
-            this.heartbeatTimeoutNs = heartbeatTimeoutNs;
+            this.leaderHeartbeatTimeoutNs = heartbeatTimeoutNs;
             return this;
         }
 
@@ -1389,11 +1670,11 @@ public class ConsensusModule implements AutoCloseable
          * Timeout for a leader if no heartbeat is received by an other member.
          *
          * @return the timeout for a leader if no heartbeat is received by an other member.
-         * @see Configuration#HEARTBEAT_TIMEOUT_PROP_NAME
+         * @see Configuration#LEADER_HEARTBEAT_TIMEOUT_PROP_NAME
          */
-        public long heartbeatTimeoutNs()
+        public long leaderHeartbeatTimeoutNs()
         {
-            return heartbeatTimeoutNs;
+            return leaderHeartbeatTimeoutNs;
         }
 
         /**
@@ -1401,11 +1682,11 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param heartbeatIntervalNs between leader heartbeats.
          * @return this for a fluent API.
-         * @see Configuration#HEARTBEAT_INTERVAL_PROP_NAME
+         * @see Configuration#LEADER_HEARTBEAT_INTERVAL_PROP_NAME
          */
-        public Context heartbeatIntervalNs(final long heartbeatIntervalNs)
+        public Context leaderHeartbeatIntervalNs(final long heartbeatIntervalNs)
         {
-            this.heartbeatIntervalNs = heartbeatIntervalNs;
+            this.leaderHeartbeatIntervalNs = heartbeatIntervalNs;
             return this;
         }
 
@@ -1413,11 +1694,137 @@ public class ConsensusModule implements AutoCloseable
          * Interval at which a leader will send heartbeats if the log is not progressing.
          *
          * @return the interval at which a leader will send heartbeats if the log is not progressing.
-         * @see Configuration#HEARTBEAT_INTERVAL_PROP_NAME
+         * @see Configuration#LEADER_HEARTBEAT_INTERVAL_PROP_NAME
          */
-        public long heartbeatIntervalNs()
+        public long leaderHeartbeatIntervalNs()
         {
-            return heartbeatIntervalNs;
+            return leaderHeartbeatIntervalNs;
+        }
+
+        /**
+         * Timeout after which a service will be considered inactive or not present.
+         *
+         * @param heartbeatTimeoutNs after which a service will be considered inactive or not present.
+         * @return this for a fluent API.
+         * @see Configuration#SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public Context serviceHeartbeatTimeoutNs(final long heartbeatTimeoutNs)
+        {
+            this.serviceHeartbeatTimeoutNs = heartbeatTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout after which a service will be considered inactive or not present.
+         *
+         * @return the timeout after which a service will be consider inactive or not present.
+         * @see Configuration#SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME
+         */
+        public long serviceHeartbeatTimeoutNs()
+        {
+            return serviceHeartbeatTimeoutNs;
+        }
+
+        /**
+         * Timeout to wait for hearing the status of all cluster members on startup after recovery before commencing an
+         * election if a majority of members has been heard from.
+         *
+         * @param timeoutNs to wait on startup after recovery before commencing an election.
+         * @return this for a fluent API.
+         * @see Configuration#STARTUP_STATUS_TIMEOUT_PROP_NAME
+         */
+        public Context startupStatusTimeoutNs(final long timeoutNs)
+        {
+            this.startupStatusTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout to wait for hearing the status of all cluster members on startup after recovery before commencing an
+         * election if a majority of members has been heard from.
+         *
+         * @return the timeout to wait on startup after recovery before commencing an election.
+         * @see Configuration#STARTUP_STATUS_TIMEOUT_PROP_NAME
+         */
+        public long startupStatusTimeoutNs()
+        {
+            return startupStatusTimeoutNs;
+        }
+
+        /**
+         * Timeout to wait for hearing the status of all remaining cluster members on startup after recovery before
+         * commencing an election if a majority of members has been heard from.
+         *
+         * @param timeoutNs to wait after detecting a leader failure before commencing an election.
+         * @return this for a fluent API.
+         * @see Configuration#FAILURE_STATUS_TIMEOUT_PROP_NAME
+         */
+        public Context failureStatusTimeoutNs(final long timeoutNs)
+        {
+            this.failureStatusTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout to wait for hearing the status of all remaining cluster members on startup after recovery before
+         * commencing an election if a majority of members has been heard from.
+         *
+         * @return the timeout to wait after detecting a leader failure before commencing an election.
+         * @see Configuration#FAILURE_STATUS_TIMEOUT_PROP_NAME
+         */
+        public long failureStatusTimeoutNs()
+        {
+            return failureStatusTimeoutNs;
+        }
+
+        /**
+         * Timeout to wait for votes in an election before declaring the election void and starting over.
+         *
+         * @param timeoutNs to wait for votes in an elections.
+         * @return this for a fluent API.
+         * @see Configuration#ELECTION_TIMEOUT_PROP_NAME
+         */
+        public Context electionTimeoutNs(final long timeoutNs)
+        {
+            this.electionTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout to wait for votes in an election before declaring the election void and starting over.
+         *
+         * @return the timeout to wait for votes in an elections.
+         * @see Configuration#ELECTION_TIMEOUT_PROP_NAME
+         */
+        public long electionTimeoutNs()
+        {
+            return electionTimeoutNs;
+        }
+
+        /**
+         * Interval at which a member will send out status messages during the election phases.
+         *
+         * @param statusIntervalNs between status message updates.
+         * @return this for a fluent API.
+         * @see Configuration#STATUS_INTERVAL_PROP_NAME
+         * @see Configuration#STATUS_INTERVAL_DEFAULT_NS
+         */
+        public Context statusIntervalNs(final long statusIntervalNs)
+        {
+            this.statusIntervalNs = statusIntervalNs;
+            return this;
+        }
+
+        /**
+         * Interval at which a member will send out status messages during the election phases.
+         *
+         * @return the interval at which a member will send out status messages during the election phases.
+         * @see Configuration#STATUS_INTERVAL_PROP_NAME
+         * @see Configuration#STATUS_INTERVAL_DEFAULT_NS
+         */
+        public long statusIntervalNs()
+        {
+            return statusIntervalNs;
         }
 
         /**
@@ -1856,6 +2263,72 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Set the error buffer length in bytes to use.
+         *
+         * @param errorBufferLength in bytes to use.
+         * @return this for a fluent API.
+         */
+        public Context errorBufferLength(final int errorBufferLength)
+        {
+            this.errorBufferLength = errorBufferLength;
+            return this;
+        }
+
+        /**
+         * The error buffer length in bytes.
+         *
+         * @return error buffer length in bytes.
+         */
+        public int errorBufferLength()
+        {
+            return errorBufferLength;
+        }
+
+        /**
+         * Set the {@link DistinctErrorLog} in use.
+         *
+         * @param errorLog to use.
+         * @return this for a fluent API.
+         */
+        public Context errorLog(final DistinctErrorLog errorLog)
+        {
+            this.errorLog = errorLog;
+            return this;
+        }
+
+        /**
+         * The {@link DistinctErrorLog} in use.
+         *
+         * @return {@link DistinctErrorLog} in use.
+         */
+        public DistinctErrorLog errorLog()
+        {
+            return errorLog;
+        }
+
+        /**
+         * The source of random values for timeouts used in elections.
+         *
+         * @param random source of random values for timeouts used in elections.
+         * @return this for a fluent API.
+         */
+        public Context random(final Random random)
+        {
+            this.random = random;
+            return this;
+        }
+
+        /**
+         * The source of random values for timeouts used in elections.
+         *
+         * @return source of random values for timeouts used in elections.
+         */
+        public Random random()
+        {
+            return random;
+        }
+
+        /**
          * Delete the cluster directory.
          */
         public void deleteDirectory()
@@ -1890,42 +2363,31 @@ public class ConsensusModule implements AutoCloseable
 
         private void concludeMarkFile()
         {
-            if (null == markFile)
-            {
-                final int alignedTotalFileLength = ClusterMarkFile.alignedTotalFileLength(
-                    ClusterMarkFile.ALIGNMENT,
-                    aeron.context().aeronDirectoryName(),
-                    archiveContext.controlRequestChannel(),
-                    serviceControlChannel(),
-                    ingressChannel,
-                    null,
-                    authenticatorSupplier.getClass().toString());
+            ClusterMarkFile.checkHeaderLength(
+                aeron.context().aeronDirectoryName(),
+                archiveContext.controlRequestChannel(),
+                serviceControlChannel(),
+                ingressChannel,
+                null,
+                authenticatorSupplier.getClass().toString());
 
-                markFile = new ClusterMarkFile(
-                    new File(clusterDir, ClusterMarkFile.FILENAME),
-                    ClusterComponentType.CONSENSUS_MODULE,
-                    alignedTotalFileLength,
-                    epochClock,
-                    0);
+            final MarkFileHeaderEncoder encoder = markFile.encoder();
 
-                final MarkFileHeaderEncoder encoder = markFile.encoder();
+            encoder
+                .archiveStreamId(archiveContext.controlRequestStreamId())
+                .serviceControlStreamId(serviceControlStreamId)
+                .ingressStreamId(ingressStreamId)
+                .memberId(clusterMemberId)
+                .serviceId(-1)
+                .aeronDirectory(aeron.context().aeronDirectoryName())
+                .archiveChannel(archiveContext.controlRequestChannel())
+                .serviceControlChannel(serviceControlChannel)
+                .ingressChannel(ingressChannel)
+                .serviceName("")
+                .authenticator(authenticatorSupplier.getClass().toString());
 
-                encoder
-                    .archiveStreamId(archiveContext.controlRequestStreamId())
-                    .serviceControlStreamId(serviceControlStreamId)
-                    .ingressStreamId(ingressStreamId)
-                    .memberId(clusterMemberId)
-                    .serviceId(-1)
-                    .aeronDirectory(aeron.context().aeronDirectoryName())
-                    .archiveChannel(archiveContext.controlRequestChannel())
-                    .serviceControlChannel(serviceControlChannel)
-                    .ingressChannel(ingressChannel)
-                    .serviceName("")
-                    .authenticator(authenticatorSupplier.getClass().toString());
-
-                markFile.updateActivityTimestamp(epochClock.time());
-                markFile.signalReady();
-            }
+            markFile.updateActivityTimestamp(epochClock.time());
+            markFile.signalReady();
         }
     }
 }

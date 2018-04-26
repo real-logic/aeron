@@ -93,6 +93,7 @@ int main (int argc, char** argv)
         }
 
         const std::int64_t clientLivenessTimeoutNs = CncFileDescriptor::clientLivenessTimeout(cncFile);
+        const std::int64_t pid = CncFileDescriptor::pid(cncFile);
 
         AtomicBuffer metadataBuffer = CncFileDescriptor::createCounterMetadataBuffer(cncFile);
         AtomicBuffer valuesBuffer = CncFileDescriptor::createCounterValuesBuffer(cncFile);
@@ -110,8 +111,8 @@ int main (int argc, char** argv)
             std::printf("\033[H\033[2J");
 
             std::printf(
-                "%s - Aeron Stat (CnC v%" PRId32 "), client liveness %s ns\n",
-                currentTime, cncVersion, toStringWithCommas(clientLivenessTimeoutNs).c_str());
+                "%s - Aeron Stat (CnC v%" PRId32 "), pid %" PRId64 ", client liveness %s ns\n",
+                currentTime, cncVersion, pid, toStringWithCommas(clientLivenessTimeoutNs).c_str());
             std::printf("===========================\n");
 
             counters.forEach([&](std::int32_t counterId, std::int32_t, const AtomicBuffer&, const std::string& l)

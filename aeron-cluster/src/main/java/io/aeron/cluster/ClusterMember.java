@@ -21,23 +21,28 @@ import io.aeron.Publication;
 import org.agrona.CloseHelper;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.CommonContext.UDP_MEDIA;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 /**
- * Represents a member of the cluster that participates in replication.
+ * Represents a member of the cluster that participates in consensus.
  */
 public final class ClusterMember
 {
     public static final int NULL_MEMBER_ID = -1;
 
+    private boolean isBallotSent;
     private boolean isLeader;
     private final int id;
-    private int votedForId = NULL_MEMBER_ID;
-    private long termPosition;
+    private long leadershipTermId = -1;
+    private long logPosition = NULL_POSITION;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
     private final String archiveEndpoint;
+    private final String endpointsDetail;
     private Publication publication;
+    private Boolean votedFor = null;
 
     /**
      * Construct a new member of the cluster.
@@ -47,29 +52,46 @@ public final class ClusterMember
      * @param memberFacingEndpoint address and port endpoint to which other cluster members connect.
      * @param logEndpoint          address and port endpoint to which the log is replicated.
      * @param archiveEndpoint      address and port endpoint to which the archive control channel can be reached.
+     * @param endpointsDetail      comma separated list of endpoints.
      */
     public ClusterMember(
         final int id,
         final String clientFacingEndpoint,
         final String memberFacingEndpoint,
         final String logEndpoint,
-        final String archiveEndpoint)
+        final String archiveEndpoint,
+        final String endpointsDetail)
     {
         this.id = id;
         this.clientFacingEndpoint = clientFacingEndpoint;
         this.memberFacingEndpoint = memberFacingEndpoint;
         this.logEndpoint = logEndpoint;
         this.archiveEndpoint = archiveEndpoint;
+        this.endpointsDetail = endpointsDetail;
+    }
+
+    /**
+     * Reset the state of a cluster member so it can be canvassed and reestablished.
+     */
+    public void reset()
+    {
+        isBallotSent = false;
+        isLeader = false;
+        votedFor = null;
+        leadershipTermId = -1;
+        logPosition = NULL_POSITION;
     }
 
     /**
      * Set if this member should be leader.
      *
      * @param isLeader value.
+     * @return this for a fluent API.
      */
-    public void isLeader(final boolean isLeader)
+    public ClusterMember isLeader(final boolean isLeader)
     {
         this.isLeader = isLeader;
+        return this;
     }
 
     /**
@@ -83,6 +105,28 @@ public final class ClusterMember
     }
 
     /**
+     * Is the ballot for the current election sent to this member?
+     *
+     * @param isBallotSent is the ballot for the current election sent to this member?
+     * @return this for a fluent API.
+     */
+    public ClusterMember isBallotSent(final boolean isBallotSent)
+    {
+        this.isBallotSent = isBallotSent;
+        return this;
+    }
+
+    /**
+     * Is the ballot for the current election sent to this member?
+     *
+     * @return true if the ballot has been sent for this member in the current election.
+     */
+    public boolean isBallotSent()
+    {
+        return isBallotSent;
+    }
+
+    /**
      * Unique identity for this member in the cluster.
      *
      * @return the unique identity for this member in the cluster.
@@ -93,43 +137,71 @@ public final class ClusterMember
     }
 
     /**
-     * Set this member voted for in the election.
+     * Set the result of the vote for this member. {@link Boolean#TRUE} means they voted for this member,
+     * {@link Boolean#FALSE} means they voted against this member, and null means no vote was received.
      *
-     * @param votedForId in the election.
+     * @param votedFor this member in the election.
+     * @return this for a fluent API.
      */
-    public void votedForId(final int votedForId)
+    public ClusterMember votedFor(final Boolean votedFor)
     {
-        this.votedForId = votedForId;
+        this.votedFor = votedFor;
+        return this;
     }
 
     /**
-     * Who this member voted for in the last election.
+     * The status of the vote for this member in an election. {@link Boolean#TRUE} means they voted for this member,
+     * {@link Boolean#FALSE} means they voted against this member, and null means no vote was received.
      *
-     * @return who this member voted for in the last election.
+     * @return the status of the vote for this member in an election.
      */
-    public int votedForId()
+    public Boolean votedFor()
     {
-        return votedForId;
+        return votedFor;
     }
 
     /**
-     * The log position this member has persisted within the current leadership term.
+     * The leadership term reached for the cluster member.
      *
-     * @param termPosition in the log this member has persisted within the current leadership term.
+     * @param leadershipTermId leadership term reached for the cluster member.
+     * @return this for a fluent API.
      */
-    public void termPosition(final long termPosition)
+    public ClusterMember leadershipTermId(final long leadershipTermId)
     {
-        this.termPosition = termPosition;
+        this.leadershipTermId = leadershipTermId;
+        return this;
     }
 
     /**
-     * The log position this member has persisted within the current leadership term.
+     * The leadership term reached for the cluster member.
      *
-     * @return the log position this member has persisted within the current leadership term.
+     * @return The leadership term reached for the cluster member.
      */
-    public long termPosition()
+    public long leadershipTermId()
     {
-        return termPosition;
+        return leadershipTermId;
+    }
+
+    /**
+     * The log position this member has persisted.
+     *
+     * @param logPosition this member has persisted.
+     * @return this for a fluent API.
+     */
+    public ClusterMember logPosition(final long logPosition)
+    {
+        this.logPosition = logPosition;
+        return this;
+    }
+
+    /**
+     * The log position this member has persisted.
+     *
+     * @return the log position this member has persisted.
+     */
+    public long logPosition()
+    {
+        return logPosition;
     }
 
     /**
@@ -173,6 +245,17 @@ public final class ClusterMember
     }
 
     /**
+     * The string of endpoints for this member in a comma separated list in the same order they are parsed.
+     *
+     * @return list of endpoints for this member in a comma separated list.
+     * @see #parse(String)
+     */
+    public String endpointsDetail()
+    {
+        return endpointsDetail;
+    }
+
+    /**
      * The {@link Publication} used for send status updates to the member.
      *
      * @return {@link Publication} used for send status updates to the member.
@@ -196,7 +279,7 @@ public final class ClusterMember
      * Parse the details for a cluster members from a string.
      * <p>
      * <code>
-     * 0,client-facing:port,member-facing:port,log:port,archive:port|1,...
+     * member-id,client-facing:port,member-facing:port,log:port,archive:port|1,...
      * </code>
      *
      * @param value of the string to be parsed.
@@ -210,10 +293,11 @@ public final class ClusterMember
 
         for (int i = 0; i < length; i++)
         {
-            final String[] memberAttributes = memberValues[i].split(",");
+            final String endpointsDetail = memberValues[i];
+            final String[] memberAttributes = endpointsDetail.split(",");
             if (memberAttributes.length != 5)
             {
-                throw new IllegalStateException("Invalid member value: " + memberValues[i]);
+                throw new IllegalStateException("invalid member value: " + endpointsDetail + " within: " + value);
             }
 
             members[i] = new ClusterMember(
@@ -221,7 +305,8 @@ public final class ClusterMember
                 memberAttributes[1],
                 memberAttributes[2],
                 memberAttributes[3],
-                memberAttributes[4]);
+                memberAttributes[4],
+                endpointsDetail);
         }
 
         return members;
@@ -263,7 +348,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            CloseHelper.close(member.publication());
+            CloseHelper.close(member.publication);
         }
     }
 
@@ -295,7 +380,7 @@ public final class ClusterMember
 
         for (final ClusterMember member : members)
         {
-            long newPosition = member.termPosition;
+            long newPosition = member.logPosition;
 
             for (int i = 0; i < length; i++)
             {
@@ -313,31 +398,33 @@ public final class ClusterMember
     }
 
     /**
-     * Reset the term position of all the members to the provided value.
+     * Reset the log position of all the members to the provided value.
      *
      * @param clusterMembers to be reset.
-     * @param termPosition   to set for them all.
+     * @param logPosition    to set for them all.
      */
-    public static void resetTermPositions(final ClusterMember[] clusterMembers, final long termPosition)
+    public static void resetLogPositions(final ClusterMember[] clusterMembers, final long logPosition)
     {
         for (final ClusterMember member : clusterMembers)
         {
-            member.termPosition(termPosition);
+            member.logPosition(logPosition);
         }
     }
 
     /**
-     * Has the members of the cluster all reached the provided position in their log.
+     * Has the members of the cluster the voted reached the provided position in their log.
      *
-     * @param clusterMembers to check.
-     * @param position       to compare the {@link #termPosition()} against.
+     * @param clusterMembers   to check.
+     * @param position         to compare the {@link #logPosition()} against.
+     * @param leadershipTermId expected of the members.
      * @return true if all members have reached this position otherwise false.
      */
-    public static boolean hasReachedPosition(final ClusterMember[] clusterMembers, final int position)
+    public static boolean haveVotersReachedPosition(
+        final ClusterMember[] clusterMembers, final long position, final long leadershipTermId)
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.termPosition() < position)
+            if (member.votedFor != null && member.logPosition < position && member.leadershipTermId == leadershipTermId)
             {
                 return false;
             }
@@ -347,22 +434,16 @@ public final class ClusterMember
     }
 
     /**
-     * Are the publications connected if set? Null publications are ignored.
+     * Reset the state of all cluster members.
      *
-     * @param clusterMembers to check for connected publications.
-     * @return true if all the publications are connected.
+     * @param clusterMembers to reset.
      */
-    public static boolean arePublicationsConnected(final ClusterMember[] clusterMembers)
+    public static void reset(final ClusterMember[] clusterMembers)
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.publication() != null && !member.publication.isConnected())
-            {
-                return false;
-            }
+            member.reset();
         }
-
-        return true;
     }
 
     /**
@@ -375,26 +456,122 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            member.votedForId(member.id == candidateMemberId ? candidateMemberId : NULL_MEMBER_ID);
+            member.votedFor(member.id == candidateMemberId ? Boolean.TRUE : null);
+            member.isBallotSent(member.id == candidateMemberId);
         }
     }
 
     /**
-     * Are we still awaiting votes from some cluster members?
+     * Has the candidate got unanimous support of the cluster?
      *
-     * @param clusterMembers to check for votes.
-     * @return true if votes are outstanding.
+     * @param clusterMembers  to check for votes.
+     * @param candidateTermId for the vote.
+     * @return false if any member has not voted for the candidate.
      */
-    public static boolean awaitingVotes(final ClusterMember[] clusterMembers)
+    public static boolean hasWonVoteOnFullCount(final ClusterMember[] clusterMembers, final long candidateTermId)
     {
+        int votes = 0;
+
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.votedForId() == NULL_MEMBER_ID)
+            if (null == member.votedFor || member.leadershipTermId != candidateTermId)
             {
-                return true;
+                return false;
+            }
+
+            votes += member.votedFor ? 1 : 0;
+        }
+
+        return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
+    }
+
+    /**
+     * Has sufficient votes being counted for a majority?
+     *
+     * @param clusterMembers  to check for votes.
+     * @param candidateTermId for the vote.
+     * @return true if a majority of positive votes.
+     */
+    public static boolean hasMajorityVote(final ClusterMember[] clusterMembers, final long candidateTermId)
+    {
+        int votes = 0;
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (Boolean.TRUE.equals(member.votedFor) && member.leadershipTermId == candidateTermId)
+            {
+                ++votes;
             }
         }
 
-        return false;
+        return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
+    }
+
+    /**
+     * Check that the archive endpoint is correctly configured for the cluster member.
+     *
+     * @param member                   to check the configuration.
+     * @param archiveControlRequestUri for the parsed URI string.
+     */
+    public static void checkArchiveEndpoint(final ClusterMember member, final ChannelUri archiveControlRequestUri)
+    {
+        if (!UDP_MEDIA.equals(archiveControlRequestUri.media()))
+        {
+            throw new IllegalStateException("archive control request channel must be udp");
+        }
+
+        final String archiveEndpoint = archiveControlRequestUri.get(ENDPOINT_PARAM_NAME);
+        if (archiveEndpoint != null && !archiveEndpoint.equals(member.archiveEndpoint))
+        {
+            throw new IllegalStateException(
+                "archive control request endpoint must match cluster member configuration: " + archiveEndpoint +
+                " != " + member.archiveEndpoint);
+        }
+    }
+
+    /**
+     * Has the member achieved a unanimous view to be a suitable candidate in an election.
+     *
+     * @param clusterMembers to compare the candidate against.
+     * @param candidate      for leadership.
+     * @return true if the candidate is suitable otherwise false.
+     */
+    public static boolean isUnanimousCandidate(final ClusterMember[] clusterMembers, final ClusterMember candidate)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (NULL_POSITION == member.logPosition ||
+                candidate.leadershipTermId != member.leadershipTermId ||
+                candidate.logPosition < member.logPosition)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Has the member achieved a quorum view to be a suitable candidate in an election.
+     *
+     * @param clusterMembers to compare the candidate against.
+     * @param candidate      for leadership.
+     * @return true if the candidate is suitable otherwise false.
+     */
+    public static boolean isQuorumCandidate(final ClusterMember[] clusterMembers, final ClusterMember candidate)
+    {
+        int possibleVotes = 0;
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (NULL_POSITION == member.logPosition ||
+                candidate.leadershipTermId != member.leadershipTermId ||
+                candidate.logPosition < member.logPosition)
+            {
+                continue;
+            }
+
+            ++possibleVotes;
+        }
+
+        return possibleVotes >= ClusterMember.quorumThreshold(clusterMembers.length);
     }
 }

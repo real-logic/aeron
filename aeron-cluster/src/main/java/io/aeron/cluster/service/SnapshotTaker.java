@@ -88,7 +88,7 @@ public class SnapshotTaker
     {
         if (Thread.currentThread().isInterrupted())
         {
-            throw new AgentTerminationException("Unexpected interrupt during operation");
+            throw new AgentTerminationException("unexpected interrupt during operation");
         }
     }
 
@@ -98,7 +98,7 @@ public class SnapshotTaker
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("Unexpected publication state: " + result);
+            throw new IllegalStateException("unexpected publication state: " + result);
         }
     }
 

@@ -53,6 +53,7 @@ Aeron::Aeron(Context &context) :
         m_countersMetadataBuffer,
         m_countersValueBuffer,
         context.m_onNewPublicationHandler,
+        context.m_onNewExclusivePublicationHandler,
         context.m_onNewSubscriptionHandler,
         context.m_exceptionHandler,
         context.m_onAvailableCounterHandler,
@@ -95,12 +96,12 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
 
     while (true)
     {
-        while (MemoryMappedFile::getFileSize(context.cncFileName().c_str()) == -1)
+        while (MemoryMappedFile::getFileSize(context.cncFileName().c_str()) <= 0)
         {
             if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
             {
                 throw DriverTimeoutException(
-                    util::strPrintf("CnC file not found: %s", context.cncFileName().c_str()), SOURCEINFO);
+                    util::strPrintf("CnC file not created: %s", context.cncFileName().c_str()), SOURCEINFO);
             }
 
             std::this_thread::sleep_for(IDLE_SLEEP_MS_16);

@@ -55,10 +55,6 @@
             <validValue name="SECTION">1</validValue>
             <validValue name="END">2</validValue>
         </enum>
-        <enum name="AdminQueryType" encodingType="int32" description="Type of admin qery">
-            <validValue name="ENDPOINTS">0</validValue>
-            <validValue name="RECOVERY_PLAN">1</validValue>
-        </enum>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
     </types>
 
@@ -136,7 +132,7 @@
         <field name="clusterSessionId"     id="2" type="int64"/>
         <field name="responseStreamId"     id="3" type="int32"/>
         <data  name="responseChannel"      id="4" type="varAsciiEncoding"/>
-        <data  name="credentialData"       id="5" type="varDataEncoding"/>
+        <data  name="encodedCredentials"   id="5" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="SessionHeader"
@@ -174,34 +170,18 @@
 
     <sbe:message name="Challenge"
                  id="7"
-                 description="Challenge the client to provide additional credentials">
+                 description="Challenge the client to provide credentials">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
-        <data  name="challengeData"        id="3" type="varDataEncoding"/>
+        <data  name="encodedChallenge"     id="3" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="ChallengeResponse"
                  id="8"
-                 description="Respond to a cluster challenge with additional credentials">
+                 description="Respond to a cluster challenge with credentials">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
-        <data  name="credentialData"       id="3" type="varDataEncoding"/>
-    </sbe:message>
-
-    <sbe:message name="AdminQuery"
-                 id="9"
-                 description="Query the cluster member for admin information">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="clusterSessionId"     id="2" type="int64"/>
-        <field name="queryType"            id="3" type="AdminQueryType"/>
-    </sbe:message>
-
-    <sbe:message name="AdminResponse"
-                 id="10"
-                 description="Query response from the cluster member">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="clusterSessionId"     id="2" type="int64"/>
-        <data  name="responseData"         id="3" type="varDataEncoding"/>
+        <data  name="encodedCredentials"   id="3" type="varDataEncoding"/>
     </sbe:message>
 
     <!-- Events from the Consensus Module to the clustered services which get appended to the log  -->
@@ -242,7 +222,6 @@
         <field name="action"               id="4" type="ClusterAction"/>
     </sbe:message>
 
-
     <!-- Messages for service control between clustered services and the Consensus Module -->
 
     <sbe:message name="ScheduleTimer"
@@ -274,6 +253,7 @@
         <field name="commitPositionId"     id="2" type="int32"/>
         <field name="logSessionId"         id="3" type="int32"/>
         <field name="logStreamId"          id="4" type="int32"/>
+        <field name="ackBeforeImage"       id="5" type="BooleanType"/>
         <data  name="logChannel"           id="5" type="varAsciiEncoding"/>
     </sbe:message>
 
@@ -290,9 +270,8 @@
         The leader replicates a log stream to all followers for its term as leader. Leadership term ids are monotonic.
 
         The followers persist the replicated log locally and send updates to the leader with the highest position they
-        have persisted in the current term. Each term has a position starting at zero with the total log position
-        reached being an accumulation of the term positions across all leadership terms. Each leadership term starts
-        with base log position for the accumulated term positions.
+        have persisted. The log position is an accumulation of the term positions over the leadership terms.
+        Each leadership term starts with base log position for the accumulated term positions.
 
         The leader gathers the positions reached by the followers, plus its own locally persisted log, and publishes
         the highest position for a quorum of the member nodes including itself which can be committed to the state
@@ -303,44 +282,74 @@
         increasing state.
     -->
 
-    <sbe:message name="RequestVote"
+    <sbe:message name="CanvassPosition"
                  id="50"
-                 description="Request the vote from another member to become the cluster leader">
-        <field name="candidateTermId"      id="1" type="int64"/>
-        <field name="lastBaseLogPosition"  id="2" type="int64"/>
-        <field name="lastTermPosition"     id="3" type="int64"/>
-        <field name="candidateMemberId"    id="4" type="int32"/>
-    </sbe:message>
-
-    <sbe:message name="Vote"
-                 id="51"
-                 description="Response to a vote request from a follower to the candidate">
-        <field name="candidateTermId"      id="1" type="int64"/>
-        <field name="lastBaseLogPosition"  id="2" type="int64"/>
-        <field name="lastTermPosition"     id="3" type="int64"/>
-        <field name="candidateMemberId"    id="4" type="int32"/>
-        <field name="followerMemberId"     id="5" type="int32"/>
-        <field name="vote"                 id="6" type="BooleanType"/>
-    </sbe:message>
-
-    <sbe:message name="AppendedPosition"
-                 id="52"
-                 description="The highest position a follower has appended to their local log">
-        <field name="termPosition"         id="1" type="int64"/>
+                 description="The highest position a follower has appended to their local log when canvassing for leadership">
+        <field name="logPosition"          id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>
         <field name="followerMemberId"     id="3" type="int32"/>
     </sbe:message>
 
-    <sbe:message name="CommitPosition"
+    <sbe:message name="RequestVote"
+                 id="51"
+                 description="Request the vote from another member to become the cluster leader">
+        <field name="logPosition"          id="1" type="int64"/>
+        <field name="candidateTermId"      id="2" type="int64"/>
+        <field name="candidateMemberId"    id="3" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="Vote"
+                 id="52"
+                 description="Response to a vote request from a follower to the candidate">
+        <field name="candidateTermId"      id="1" type="int64"/>
+        <field name="candidateMemberId"    id="2" type="int32"/>
+        <field name="followerMemberId"     id="3" type="int32"/>
+        <field name="vote"                 id="4" type="BooleanType"/>
+    </sbe:message>
+
+    <sbe:message name="NewLeadershipTerm"
                  id="53"
-                 description="The highest position reached by quorum of the cluster as determined by the leader">
-        <field name="termPosition"         id="1" type="int64"/>
+                 description="A leader has been successfully elected and has begun a new term">
+        <field name="logPosition"          id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>
         <field name="leaderMemberId"       id="3" type="int32"/>
         <field name="logSessionId"         id="4" type="int32"/>
     </sbe:message>
 
-    <!-- Snapshot serialisation -->
+    <sbe:message name="AppendedPosition"
+                 id="54"
+                 description="The highest position a follower has appended to their local log">
+        <field name="logPosition"          id="1" type="int64"/>
+        <field name="leadershipTermId"     id="2" type="int64"/>
+        <field name="followerMemberId"     id="3" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="CommitPosition"
+                 id="55"
+                 description="The highest position reached by quorum of the cluster as determined by the leader">
+        <field name="logPosition"          id="1" type="int64"/>
+        <field name="leadershipTermId"     id="2" type="int64"/>
+        <field name="leaderMemberId"       id="3" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="QueryResponse"
+                 id="60"
+                 description="Query response from a member">
+        <field name="correlationId"        id="1" type="int64"/>
+        <field name="requestMemberId"      id="2" type="int32"/>
+        <field name="responseMemberId"     id="3" type="int32"/>
+        <data  name="encodedResponse"      id="4" type="varDataEncoding"/>
+    </sbe:message>
+
+    <sbe:message name="RecoveryPlanQuery"
+                 id="61"
+                 description="Query a leader for their recovery plan">
+        <field name="correlationId"        id="1" type="int64"/>
+        <field name="leaderMemberId"       id="2" type="int32"/>
+        <field name="requestMemberId"      id="3" type="int32"/>
+    </sbe:message>
+
+    <!-- Serialisation of major Entities -->
 
     <sbe:message name="SnapshotMarker"
                  id="100"
@@ -386,26 +395,25 @@
         <field name="nextSessionId"        id="1" type="int64"/>
     </sbe:message>
 
-    <!-- RecoveryPlan serialization -->
-
     <sbe:message name="RecoveryPlan"
                  id="110"
-                 description="Serialized Recovery Plan">
+                 description="Serialised Recovery Plan">
         <field name="lastLeadershipTermId"       id="1"  type="int64"/>
-        <field name="lastLogPosition"            id="2"  type="int64"/>
+        <field name="lastTermBaseLogPosition"    id="2"  type="int64"/>
         <field name="lastTermPositionCommitted"  id="3"  type="int64"/>
         <field name="lastTermPositionAppended"   id="4"  type="int64"/>
         <group name="steps"                      id="5"  dimensionType="groupSizeEncoding">
             <field name="recordingStartPosition" id="6"  type="int64"/>
             <field name="recordingStopPosition"  id="7"  type="int64"/>
-            <field name="entryRecordingId"       id="8"  type="int64"/>
-            <field name="entryLeadershipTermId"  id="9"  type="int64"/>
-            <field name="entryLogPosition"       id="10" type="int64"/>
-            <field name="entryTermPosition"      id="11" type="int64"/>
-            <field name="entryTimestamp"         id="12" type="time_t"/>
-            <field name="entryMemberIdVote"      id="13" type="int32"/>
+            <field name="recordingId"            id="8"  type="int64"/>
+            <field name="leadershipTermId"       id="9"  type="int64"/>
+            <field name="termBaseLogPosition"    id="10" type="int64"/>
+            <field name="termPosition"           id="11" type="int64"/>
+            <field name="timestamp"              id="12" type="time_t"/>
+            <field name="votedForMemberId"       id="13" type="int32"/>
             <field name="entryType"              id="14" type="int32"/>
             <field name="entryIndex"             id="15" type="int32"/>
+            <field name="recordingSessionId"     id="16" type="int32"/>
         </group>
     </sbe:message>
 

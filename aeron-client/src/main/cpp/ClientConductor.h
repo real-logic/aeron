@@ -54,6 +54,7 @@ public:
         AtomicBuffer& counterMetadataBuffer,
         AtomicBuffer& counterValuesBuffer,
         const on_new_publication_t& newPublicationHandler,
+        const on_new_publication_t& newExclusivePublicationHandler,
         const on_new_subscription_t& newSubscriptionHandler,
         const exception_handler_t& errorHandler,
         const on_available_counter_t& availableCounterHandler,
@@ -66,6 +67,7 @@ public:
         m_countersReader(counterMetadataBuffer, counterValuesBuffer),
         m_counterValuesBuffer(counterValuesBuffer),
         m_onNewPublicationHandler(newPublicationHandler),
+        m_onNewExclusivePublicationHandler(newExclusivePublicationHandler),
         m_onNewSubscriptionHandler(newSubscriptionHandler),
         m_errorHandler(errorHandler),
         m_onAvailableCounterHandler(availableCounterHandler),
@@ -345,6 +347,7 @@ private:
     AtomicBuffer& m_counterValuesBuffer;
 
     on_new_publication_t m_onNewPublicationHandler;
+    on_new_publication_t m_onNewExclusivePublicationHandler;
     on_new_subscription_t m_onNewSubscriptionHandler;
     exception_handler_t m_errorHandler;
     on_available_counter_t m_onAvailableCounterHandler;

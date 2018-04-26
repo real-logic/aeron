@@ -115,6 +115,7 @@ public class NetworkPublication
 
     private final UnsafeBuffer[] termBuffers;
     private final ByteBuffer[] sendBuffers;
+    private final Position publisherPos;
     private final Position publisherLimit;
     private final Position senderPosition;
     private final Position senderLimit;
@@ -141,6 +142,7 @@ public class NetworkPublication
         final SendChannelEndpoint channelEndpoint,
         final NanoClock nanoClock,
         final RawLog rawLog,
+        final Position publisherPos,
         final Position publisherLimit,
         final Position senderPosition,
         final Position senderLimit,
@@ -169,6 +171,7 @@ public class NetworkPublication
         this.senderLimit = senderLimit;
         this.flowControl = flowControl;
         this.retransmitHandler = retransmitHandler;
+        this.publisherPos = publisherPos;
         this.publisherLimit = publisherLimit;
         this.mtuLength = mtuLength;
         this.initialTermId = initialTermId;
@@ -214,6 +217,7 @@ public class NetworkPublication
 
     public void close()
     {
+        publisherPos.close();
         publisherLimit.close();
         senderPosition.close();
         senderLimit.close();
@@ -594,9 +598,9 @@ public class NetworkPublication
         }
     }
 
-    private void checkForBlockedPublisher(final long timeNs, final long senderPosition)
+    private void checkForBlockedPublisher(final long producerPosition, final long senderPosition, final long timeNs)
     {
-        if (senderPosition == lastSenderPosition && isPossiblyBlocked(senderPosition))
+        if (senderPosition == lastSenderPosition && isPossiblyBlocked(producerPosition, senderPosition))
         {
             if (timeNs > (timeOfLastActivityNs + unblockTimeoutNs))
             {
@@ -613,7 +617,7 @@ public class NetworkPublication
         }
     }
 
-    private boolean isPossiblyBlocked(final long consumerPosition)
+    private boolean isPossiblyBlocked(final long producerPosition, final long consumerPosition)
     {
         final int producerTermCount = activeTermCount(metaDataBuffer);
         final int expectedTermCount = (int)(consumerPosition >> positionBitsToShift);
@@ -622,10 +626,6 @@ public class NetworkPublication
         {
             return true;
         }
-
-        final long rawTail = rawTailVolatile(metaDataBuffer, indexByTermCount(producerTermCount));
-        final int termOffset = termOffset(rawTail, termBufferLength);
-        final long producerPosition = computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
 
         return producerPosition > consumerPosition;
     }
@@ -675,19 +675,20 @@ public class NetworkPublication
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         updateConnectedStatus();
+        final long producerPosition = producerPosition();
+        publisherPos.setOrdered(producerPosition);
 
         switch (state)
         {
             case ACTIVE:
                 if (!isExclusive)
                 {
-                    checkForBlockedPublisher(timeNs, senderPosition.getVolatile());
+                    checkForBlockedPublisher(producerPosition, senderPosition.getVolatile(), timeNs);
                 }
                 break;
 
             case DRAINING:
                 final long senderPosition = this.senderPosition.getVolatile();
-                final long producerPosition = producerPosition();
                 if (producerPosition > senderPosition)
                 {
                     if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition, termBufferLength))

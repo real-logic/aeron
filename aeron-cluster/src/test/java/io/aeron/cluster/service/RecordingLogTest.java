@@ -35,7 +35,7 @@ public class RecordingLogTest
     @After
     public void after()
     {
-        IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_INDEX_FILE_NAME), false);
+        IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_LOG_FILE_NAME), false);
     }
 
     @Test
@@ -52,7 +52,8 @@ public class RecordingLogTest
         final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
         final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, NULL_VALUE, ENTRY_TYPE_SNAPSHOT, 0);
 
-        recordingLog.appendSnapshot(entry.recordingId, entry.leadershipTermId, entry.logPosition, 777, entry.timestamp);
+        recordingLog.appendSnapshot(
+            entry.recordingId, entry.leadershipTermId, entry.termBaseLogPosition, 777, entry.timestamp);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
         assertThat(recordingLogTwo.entries().size(), is(1));
@@ -65,17 +66,42 @@ public class RecordingLogTest
     public void shouldAppendAndThenCommitTermPosition()
     {
         final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
-        final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, 0, ENTRY_TYPE_TERM, 0);
+        final long leadershipTermId = 1111L;
+        final long termBaseLogPosition = 2222L;
+        final long timestamp = 3333L;
+        final int votedForMemberId = 1;
 
-        recordingLog.appendTerm(
-            entry.recordingId, entry.leadershipTermId, entry.logPosition, entry.timestamp, entry.memberIdVote);
-        recordingLog.commitLeadershipTermPosition(entry.leadershipTermId, 777);
+        recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, timestamp, votedForMemberId);
+
+        final long newPosition = 9999L;
+        recordingLog.commitLeadershipTermPosition(leadershipTermId, newPosition);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
         assertThat(recordingLogTwo.entries().size(), is(1));
 
         final RecordingLog.Entry actualEntry = recordingLogTwo.entries().get(0);
-        assertEquals(entry.toString(), actualEntry.toString());
+        assertEquals(newPosition, actualEntry.termPosition);
+    }
+
+    @Test
+    public void shouldAppendAndThenCommitLogPosition()
+    {
+        final long leadershipTermId = 1111L;
+        final long termBaseLogPosition = 2222L;
+        final long timestamp = 3333L;
+        final int votedForMemberId = 1;
+
+        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
+        recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, timestamp, votedForMemberId);
+
+        final long newLogPosition = 7777L;
+        recordingLog.commitLeadershipLogPosition(leadershipTermId, newLogPosition);
+
+        final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
+        assertThat(recordingLogTwo.entries().size(), is(1));
+
+        final RecordingLog.Entry actualEntry = recordingLogTwo.entries().get(0);
+        assertEquals(newLogPosition, actualEntry.termBaseLogPosition);
     }
 
     @Test
@@ -83,21 +109,21 @@ public class RecordingLogTest
     {
         final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
 
-        final RecordingLog.Entry entryOne = new RecordingLog.Entry(1, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, 0);
+        final RecordingLog.Entry entryOne = new RecordingLog.Entry(
+            NULL_VALUE, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, 0);
         recordingLog.appendTerm(
-            entryOne.recordingId,
             entryOne.leadershipTermId,
-            entryOne.logPosition,
+            entryOne.termBaseLogPosition,
             entryOne.timestamp,
-            entryOne.memberIdVote);
+            entryOne.votedForMemberId);
 
-        final RecordingLog.Entry entryTwo = new RecordingLog.Entry(2, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
+        final RecordingLog.Entry entryTwo = new RecordingLog.Entry(
+            NULL_VALUE, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
         recordingLog.appendTerm(
-            entryTwo.recordingId,
             entryTwo.leadershipTermId,
-            entryTwo.logPosition,
+            entryTwo.termBaseLogPosition,
             entryTwo.timestamp,
-            entryTwo.memberIdVote);
+            entryTwo.votedForMemberId);
 
         recordingLog.tombstoneEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);

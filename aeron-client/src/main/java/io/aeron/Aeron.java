@@ -976,11 +976,11 @@ public class Aeron implements AutoCloseable
 
             while (true)
             {
-                while (!cncFile.exists())
+                while (!cncFile.exists() || cncFile.length() <= 0)
                 {
                     if (epochClock.time() > (startTimeMs + driverTimeoutMs()))
                     {
-                        throw new DriverTimeoutException("CnC file not found: " + cncFile.getAbsolutePath());
+                        throw new DriverTimeoutException("CnC file not created: " + cncFile.getAbsolutePath());
                     }
 
                     sleep(16);

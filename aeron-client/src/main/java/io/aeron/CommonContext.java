@@ -66,6 +66,11 @@ public class CommonContext implements AutoCloseable, Cloneable
     public static final long DRIVER_TIMEOUT_MS = getLong(DRIVER_TIMEOUT_PROP_NAME, DEFAULT_DRIVER_TIMEOUT_MS);
 
     /**
+     * Value to represent a sessionId that is not to be used.
+     */
+    public static final int NULL_SESSION_ID = -1;
+
+    /**
      * The top level Aeron directory used for communication between a Media Driver and client.
      */
     public static final String AERON_DIR_PROP_NAME = "aeron.dir";
@@ -74,6 +79,16 @@ public class CommonContext implements AutoCloseable, Cloneable
      * The value of the top level Aeron directory unless overridden by {@link #aeronDirectoryName(String)}
      */
     public static final String AERON_DIR_PROP_DEFAULT;
+
+    /**
+     * Media type used for IPC shared memory from {@link Publication} to {@link Subscription} channels.
+     */
+    public static final String IPC_MEDIA = "ipc";
+
+    /**
+     * Media type used for UDP sockets from {@link Publication} to {@link Subscription} channels.
+     */
+    public static final String UDP_MEDIA = "udp";
 
     /**
      * URI used for IPC {@link Publication}s and {@link Subscription}s

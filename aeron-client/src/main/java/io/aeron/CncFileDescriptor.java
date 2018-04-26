@@ -42,7 +42,7 @@ import static org.agrona.BitUtil.*;
  *  +-----------------------------+
  * </pre>
  * <p>
- * Meta Data Layout (CnC Version 7)
+ * Meta Data Layout (CnC Version 13)
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -62,13 +62,19 @@ import static org.agrona.BitUtil.*;
  *  |                   Client Liveness Timeout                     |
  *  |                                                               |
  *  +---------------------------------------------------------------+
+ *  |                    Driver Start Timestamp                     |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                         Driver PID                            |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  * </pre>
  */
 public class CncFileDescriptor
 {
     public static final String CNC_FILE = "cnc.dat";
 
-    public static final int CNC_VERSION = 12;
+    public static final int CNC_VERSION = 13;
 
     public static final int CNC_VERSION_FIELD_OFFSET;
     public static final int TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET;
@@ -77,6 +83,8 @@ public class CncFileDescriptor
     public static final int COUNTERS_VALUES_BUFFER_LENGTH_FIELD_OFFSET;
     public static final int CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET;
     public static final int ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET;
+    public static final int START_TIMESTAMP_FIELD_OFFSET;
+    public static final int PID_FIELD_OFFSET;
 
     static
     {
@@ -87,9 +95,11 @@ public class CncFileDescriptor
         COUNTERS_VALUES_BUFFER_LENGTH_FIELD_OFFSET = COUNTERS_METADATA_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
         ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET = COUNTERS_VALUES_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
         CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET = ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
+        START_TIMESTAMP_FIELD_OFFSET = CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET + SIZE_OF_LONG;
+        PID_FIELD_OFFSET = START_TIMESTAMP_FIELD_OFFSET + SIZE_OF_LONG;
     }
 
-    public static final int META_DATA_LENGTH = CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET + SIZE_OF_LONG;
+    public static final int META_DATA_LENGTH = PID_FIELD_OFFSET + SIZE_OF_LONG;
     public static final int END_OF_METADATA_OFFSET = align(META_DATA_LENGTH, (CACHE_LINE_LENGTH * 2));
 
     /**
@@ -139,6 +149,16 @@ public class CncFileDescriptor
         return baseOffset + ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET;
     }
 
+    public static int startTimestampOffset(final int baseOffset)
+    {
+        return baseOffset + START_TIMESTAMP_FIELD_OFFSET;
+    }
+
+    public static int pidOffset(final int baseOffset)
+    {
+        return baseOffset + PID_FIELD_OFFSET;
+    }
+
     public static void fillMetaData(
         final UnsafeBuffer cncMetaDataBuffer,
         final int toDriverBufferLength,
@@ -146,7 +166,9 @@ public class CncFileDescriptor
         final int counterMetaDataBufferLength,
         final int counterValuesBufferLength,
         final long clientLivenessTimeout,
-        final int errorLogBufferLength)
+        final int errorLogBufferLength,
+        final long startTimestamp,
+        final long pid)
     {
         cncMetaDataBuffer.putInt(toDriverBufferLengthOffset(0), toDriverBufferLength);
         cncMetaDataBuffer.putInt(toClientsBufferLengthOffset(0), toClientsBufferLength);
@@ -154,6 +176,8 @@ public class CncFileDescriptor
         cncMetaDataBuffer.putInt(countersValuesBufferLengthOffset(0), counterValuesBufferLength);
         cncMetaDataBuffer.putInt(errorLogBufferLengthOffset(0), errorLogBufferLength);
         cncMetaDataBuffer.putLong(clientLivenessTimeoutOffset(0), clientLivenessTimeout);
+        cncMetaDataBuffer.putLong(startTimestampOffset(0), startTimestamp);
+        cncMetaDataBuffer.putLong(pidOffset(0), pid);
     }
 
     public static void signalCncReady(final UnsafeBuffer cncMetaDataBuffer)
@@ -211,5 +235,15 @@ public class CncFileDescriptor
     public static long clientLivenessTimeout(final DirectBuffer metaDataBuffer)
     {
         return metaDataBuffer.getLong(clientLivenessTimeoutOffset(0));
+    }
+
+    public static long startTimestamp(final DirectBuffer metaDataBuffer)
+    {
+        return metaDataBuffer.getLong(startTimestampOffset(0));
+    }
+
+    public static long pid(final DirectBuffer metaDataBuffer)
+    {
+        return metaDataBuffer.getLong(pidOffset(0));
     }
 }

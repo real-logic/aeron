@@ -59,14 +59,14 @@ public class SessionProxy
     }
 
     /**
-     * Inform the system that the session requires a challenge and to send the provided data in the challenge.
+     * Inform the system that the session requires a challenge and to send the provided encoded challenge.
      *
-     * @param challengeData to send in the challenge to the client.
+     * @param encodedChallenge to send to the client.
      * @return true if challenge was sent or false if challenge could not be sent.
      */
-    public final boolean challenge(final byte[] challengeData)
+    public final boolean challenge(final byte[] encodedChallenge)
     {
-        if (egressPublisher.sendChallenge(clusterSession, challengeData))
+        if (egressPublisher.sendChallenge(clusterSession, encodedChallenge))
         {
             clusterSession.state(CHALLENGED);
             return true;
@@ -76,31 +76,18 @@ public class SessionProxy
     }
 
     /**
-     * Inform the system that the session is met authentication requirements and can continue as a full access client.
+     * Inform the system that the session is met authentication requirements.
      *
      * @param encodedPrincipal to pass to the on session open cluster event.
      * @return true if success event was sent or false if success event could not be sent.
      */
     public final boolean authenticate(final byte[] encodedPrincipal)
     {
-        return authenticate(encodedPrincipal, ClusterSession.Capability.CLIENT_PLUS_QUERY);
-    }
-
-    /**
-     * Inform the system that the session is met authentication requirements and can continue with the given capability.
-     *
-     * @param encodedPrincipal to pass to the on session open cluster event.
-     * @param capability       for the client.
-     * @return true if success event was sent or false if success event could not be sent.
-     * @see ClusterSession.Capability
-     */
-    public final boolean authenticate(final byte[] encodedPrincipal, final ClusterSession.Capability capability)
-    {
         ClusterSession.checkEncodedPrincipalLength(encodedPrincipal);
 
         if (egressPublisher.sendEvent(clusterSession, EventCode.OK, memberEndpointsDetail))
         {
-            clusterSession.authenticate(encodedPrincipal, capability);
+            clusterSession.authenticate(encodedPrincipal);
             return true;
         }
 

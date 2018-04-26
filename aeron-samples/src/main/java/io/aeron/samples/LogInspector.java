@@ -99,7 +99,7 @@ public class LogInspector
 
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
-                final long rawTail = rawTailVolatile(metaDataBuffer, 0);
+                final long rawTail = rawTailVolatile(metaDataBuffer, i);
                 final long termOffset = rawTail & 0xFFFF_FFFFL;
                 final int termId = termId(rawTail);
                 final int offset = (int)Math.min(termOffset, termLength);

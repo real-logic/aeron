@@ -52,7 +52,7 @@ public class TestUtil
 
         if (!archiveDir.mkdirs())
         {
-            throw new IllegalStateException("Failed to make archive test directory: " + archiveDir.getAbsolutePath());
+            throw new IllegalStateException("failed to make archive test directory: " + archiveDir.getAbsolutePath());
         }
 
         return archiveDir;
@@ -161,7 +161,7 @@ public class TestUtil
         {
             if (Thread.currentThread().isInterrupted())
             {
-                throw new IllegalStateException("Unexpected interrupt in test");
+                throw new IllegalStateException("unexpected interrupt in test");
             }
 
             if (System.nanoTime() > deadlineNs)

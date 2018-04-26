@@ -28,19 +28,23 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final CanvassPositionDecoder canvassPositionDecoder = new CanvassPositionDecoder();
     private final RequestVoteDecoder requestVoteDecoder = new RequestVoteDecoder();
     private final VoteDecoder voteDecoder = new VoteDecoder();
+    private final NewLeadershipTermDecoder newLeadershipTermDecoder = new NewLeadershipTermDecoder();
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
     private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
+    private final QueryResponseDecoder queryResponseDecoder = new QueryResponseDecoder();
+    private final RecoveryPlanQueryDecoder recoveryPlanQueryDecoder = new RecoveryPlanQueryDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
-    private final SequencerAgent sequencerAgent;
+    private final MemberStatusListener memberStatusListener;
 
-    MemberStatusAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
+    MemberStatusAdapter(final Subscription subscription, final MemberStatusListener memberStatusListener)
     {
         this.subscription = subscription;
-        this.sequencerAgent = sequencerAgent;
+        this.memberStatusListener = memberStatusListener;
     }
 
     public void close()
@@ -53,6 +57,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
         return subscription.poll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
     }
 
+    @SuppressWarnings("MethodLength")
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -60,6 +65,19 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
+            case CanvassPositionDecoder.TEMPLATE_ID:
+                canvassPositionDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onCanvassPosition(
+                    canvassPositionDecoder.logPosition(),
+                    canvassPositionDecoder.leadershipTermId(),
+                    canvassPositionDecoder.followerMemberId());
+                break;
+
             case RequestVoteDecoder.TEMPLATE_ID:
                 requestVoteDecoder.wrap(
                     buffer,
@@ -67,10 +85,9 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onRequestVote(
+                memberStatusListener.onRequestVote(
+                    requestVoteDecoder.logPosition(),
                     requestVoteDecoder.candidateTermId(),
-                    requestVoteDecoder.lastBaseLogPosition(),
-                    requestVoteDecoder.lastTermPosition(),
                     requestVoteDecoder.candidateMemberId());
                 break;
 
@@ -81,13 +98,25 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onVote(
+                memberStatusListener.onVote(
                     voteDecoder.candidateTermId(),
-                    voteDecoder.lastBaseLogPosition(),
-                    voteDecoder.lastTermPosition(),
                     voteDecoder.candidateMemberId(),
                     voteDecoder.followerMemberId(),
                     voteDecoder.vote() == BooleanType.TRUE);
+                break;
+
+            case NewLeadershipTermDecoder.TEMPLATE_ID:
+                newLeadershipTermDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onNewLeadershipTerm(
+                    newLeadershipTermDecoder.logPosition(),
+                    newLeadershipTermDecoder.leadershipTermId(),
+                    newLeadershipTermDecoder.leaderMemberId(),
+                    newLeadershipTermDecoder.logSessionId());
                 break;
 
             case AppendedPositionDecoder.TEMPLATE_ID:
@@ -97,8 +126,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onAppendedPosition(
-                    appendedPositionDecoder.termPosition(),
+                memberStatusListener.onAppendedPosition(
+                    appendedPositionDecoder.logPosition(),
                     appendedPositionDecoder.leadershipTermId(),
                     appendedPositionDecoder.followerMemberId());
                 break;
@@ -110,15 +139,48 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onCommitPosition(
-                    commitPositionDecoder.termPosition(),
+                memberStatusListener.onCommitPosition(
+                    commitPositionDecoder.logPosition(),
                     commitPositionDecoder.leadershipTermId(),
-                    commitPositionDecoder.leaderMemberId(),
-                    commitPositionDecoder.logSessionId());
+                    commitPositionDecoder.leaderMemberId());
+                break;
+
+            case QueryResponseDecoder.TEMPLATE_ID:
+                queryResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final int dataOffset = offset +
+                    MessageHeaderDecoder.ENCODED_LENGTH +
+                    QueryResponseDecoder.BLOCK_LENGTH +
+                    QueryResponseDecoder.encodedResponseHeaderLength();
+
+                memberStatusListener.onQueryResponse(
+                    queryResponseDecoder.correlationId(),
+                    queryResponseDecoder.requestMemberId(),
+                    queryResponseDecoder.responseMemberId(),
+                    buffer,
+                    dataOffset,
+                    queryResponseDecoder.encodedResponseLength());
+                break;
+
+            case RecoveryPlanQueryDecoder.TEMPLATE_ID:
+                recoveryPlanQueryDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onRecoveryPlanQuery(
+                    recoveryPlanQueryDecoder.correlationId(),
+                    recoveryPlanQueryDecoder.leaderMemberId(),
+                    recoveryPlanQueryDecoder.requestMemberId());
                 break;
 
             default:
-                throw new IllegalStateException("Unknown template id: " + templateId);
+                throw new IllegalStateException("unknown template id: " + templateId);
         }
     }
 }

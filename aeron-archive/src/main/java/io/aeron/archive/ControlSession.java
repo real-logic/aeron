@@ -147,7 +147,7 @@ class ControlSession implements Session
             fromRecordingId,
             recordCount,
             streamId,
-            conductor.strippedChannelBuilder(channel).build(),
+            channel,
             this);
     }
 
@@ -192,6 +192,16 @@ class ControlSession implements Session
         final SourceLocation sourceLocation)
     {
         conductor.extendRecording(correlationId, this, recordingId, streamId, channel, sourceLocation);
+    }
+
+    public void onGetRecordingPosition(final long correlationId, final long recordingId)
+    {
+        conductor.getRecordingPosition(correlationId, this, recordingId);
+    }
+
+    public void onTruncateRecording(final long correlationId, final long recordingId, final long position)
+    {
+        conductor.truncateRecording(correlationId, this, recordingId, position);
     }
 
     void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)

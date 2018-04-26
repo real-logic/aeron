@@ -430,7 +430,7 @@ public class ReplaySessionTest
 
         header.offset(offset);
 
-        recordingWriter.writeFragment(buffer, header);
+        recordingWriter.onBlock(buffer, offset, FRAME_LENGTH, SESSION_ID, INITIAL_TERM_ID);
     }
 
     private void mockPublication(final ExclusivePublication replay, final UnsafeBuffer termBuffer)
@@ -456,6 +456,7 @@ public class ReplaySessionTest
             });
     }
 
+    @SuppressWarnings("SameParameterValue")
     private ReplaySession replaySession(
         final long recordingPosition,
         final long length,
@@ -477,7 +478,7 @@ public class ReplaySessionTest
             position);
     }
 
-    private void validateFrame(final UnsafeBuffer buffer, final int message, final byte flags)
+    private static void validateFrame(final UnsafeBuffer buffer, final int message, final byte flags)
     {
         final int offset = message * FRAME_LENGTH;
 

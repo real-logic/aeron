@@ -29,6 +29,7 @@ public class RecordingExtent implements RecordingDescriptorConsumer
     public long stopTimestamp;
     public long startPosition;
     public long stopPosition;
+    public int sessionId;
 
     public void onRecordingDescriptor(
         final long controlSessionId,
@@ -53,6 +54,7 @@ public class RecordingExtent implements RecordingDescriptorConsumer
         this.stopTimestamp = stopTimestamp;
         this.startPosition = startPosition;
         this.stopPosition = stopPosition;
+        this.sessionId = sessionId;
     }
 
     public String toString()
@@ -63,6 +65,7 @@ public class RecordingExtent implements RecordingDescriptorConsumer
             ", stopTimestamp=" + stopTimestamp +
             ", startPosition=" + startPosition +
             ", stopPosition=" + stopPosition +
+            ", sessionId=" + sessionId +
             '}';
     }
 }

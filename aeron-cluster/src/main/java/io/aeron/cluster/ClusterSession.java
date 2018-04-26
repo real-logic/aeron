@@ -23,40 +23,15 @@ import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
 
-import static io.aeron.cluster.ClusterSession.Capability.NONE;
-
 class ClusterSession implements AutoCloseable
 {
     public static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
     public static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
-    public static final int MAX_ADMIN_RESPONSE_DATA_LENGTH = 4 * 1024;
+    public static final int MAX_ENCODED_MEMBERSHIP_QUERY_LENGTH = 4 * 1024;
 
     enum State
     {
         INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSED
-    }
-
-    /**
-     * What a client is capable of doing.
-     */
-    enum Capability
-    {
-        /**
-         * No capability.
-         */
-        NONE,
-
-        /**
-         * Client can send/receive to/from cluster and can act as a normal client. Can not query endpoints and
-         * recording log
-         */
-        CLIENT_ONLY,
-
-        /**
-         * Client can send/receive to/from cluster and can query cluster endpoints and recording log.
-         * Normally reserved for cluster members only.
-         */
-        CLIENT_PLUS_QUERY
     }
 
     private long timeOfLastActivityMs;
@@ -69,8 +44,6 @@ class ClusterSession implements AutoCloseable
     private State state = State.INIT;
     private CloseReason closeReason = CloseReason.NULL_VAL;
     private byte[] encodedPrincipal = NULL_PRINCIPAL;
-    private byte[] adminResponseData;
-    private Capability capability = NONE;
 
     ClusterSession(final long sessionId, final int responseStreamId, final String responseChannel)
     {
@@ -115,7 +88,7 @@ class ClusterSession implements AutoCloseable
     {
         if (null != responsePublication)
         {
-            throw new IllegalStateException("Response publication already present");
+            throw new IllegalStateException("response publication already added");
         }
 
         responsePublication = aeron.addPublication(responseChannel, responseStreamId);
@@ -141,12 +114,7 @@ class ClusterSession implements AutoCloseable
         this.state = state;
     }
 
-    Capability capability()
-    {
-        return capability;
-    }
-
-    void authenticate(final byte[] encodedPrincipal, final Capability capability)
+    void authenticate(final byte[] encodedPrincipal)
     {
         if (encodedPrincipal != null)
         {
@@ -154,7 +122,6 @@ class ClusterSession implements AutoCloseable
         }
 
         this.state = State.AUTHENTICATED;
-        this.capability = capability;
     }
 
     void open(final long openedTermPosition)
@@ -195,16 +162,6 @@ class ClusterSession implements AutoCloseable
         return openedTermPosition;
     }
 
-    void adminResponseData(final byte[] responseData)
-    {
-        this.adminResponseData = responseData;
-    }
-
-    byte[] adminResponseData()
-    {
-        return adminResponseData;
-    }
-
     static void checkEncodedPrincipalLength(final byte[] encodedPrincipal)
     {
         if (null != encodedPrincipal && encodedPrincipal.length > MAX_ENCODED_PRINCIPAL_LENGTH)
@@ -214,19 +171,6 @@ class ClusterSession implements AutoCloseable
                 MAX_ENCODED_PRINCIPAL_LENGTH +
                 " exceeded: length=" +
                 encodedPrincipal.length);
-        }
-    }
-
-    static void checkAdminResponseDataLength(final byte[] adminResponseData)
-    {
-        if (null != adminResponseData &&
-            adminResponseData.length > MAX_ADMIN_RESPONSE_DATA_LENGTH)
-        {
-            throw new IllegalArgumentException(
-                "Admin Response data max length " +
-                MAX_ADMIN_RESPONSE_DATA_LENGTH +
-                " exceeded: length=" +
-                adminResponseData.length);
         }
     }
 
@@ -241,7 +185,6 @@ class ClusterSession implements AutoCloseable
             ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +
             ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
-            ", adminResponseData=" + Arrays.toString(adminResponseData) +
             '}';
     }
 }

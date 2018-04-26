@@ -20,10 +20,20 @@ import io.aeron.driver.status.StatusUtil;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.StatusIndicator;
 
+/**
+ * Allows a {@link org.agrona.concurrent.ControllableIdleStrategy} to be set via the command line.
+ * The first command line arg is an integer value.
+ */
 public class SetControllableIdleStrategy
 {
     public static void main(final String[] args)
     {
+        if (args.length != 1)
+        {
+            System.out.format("Usage: SetControllableIdleStrategy <n>");
+            System.exit(0);
+        }
+
         try (Aeron aeron = Aeron.connect())
         {
             final CountersReader countersReader = aeron.countersReader();

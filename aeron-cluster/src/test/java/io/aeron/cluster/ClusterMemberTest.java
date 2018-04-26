@@ -23,12 +23,10 @@ import static org.junit.Assert.assertThat;
 
 public class ClusterMemberTest
 {
-    private final ClusterMember[] members = new ClusterMember[]
-    {
-        new ClusterMember(0, "clientEndpoint", "memberEndpoint", "logEndpoint", "archiveEndpoint"),
-        new ClusterMember(1, "clientEndpoint", "memberEndpoint", "logEndpoint", "archiveEndpoint"),
-        new ClusterMember(2, "clientEndpoint", "memberEndpoint", "logEndpoint", "archiveEndpoint"),
-    };
+    private final ClusterMember[] members = ClusterMember.parse(
+        "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
+        "1,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
+        "2,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|");
 
     private final long[] rankedPositions = new long[quorumThreshold(members.length)];
 
@@ -72,7 +70,7 @@ public class ClusterMemberTest
             final long[] memberPositions = positions[i];
             for (int j = 0; j < memberPositions.length; j++)
             {
-                members[j].termPosition(memberPositions[j]);
+                members[j].logPosition(memberPositions[j]);
             }
 
             final long quorumPosition = quorumPosition(members, rankedPositions);

@@ -75,8 +75,8 @@ public class Archive implements AutoCloseable
     }
 
     /**
-     * Launch an {@link Archive} with that communicates with an out of process Media Driver and await a
-     * shutdown signal.
+     * Launch an {@link Archive} with that communicates with an out of process {@link io.aeron.driver.MediaDriver}
+     * and await a shutdown signal.
      *
      * @param args command line argument which is a list for properties files as URLs or filenames.
      */
@@ -184,6 +184,9 @@ public class Archive implements AutoCloseable
         public static final String REPLAY_FRAGMENT_LIMIT_PROP_NAME = "aeron.archive.replay.fragment.limit";
         public static final int REPLAY_FRAGMENT_LIMIT_DEFAULT = 16;
 
+        public static final String MAX_CATALOG_ENTRIES_PROP_NAME = "aeron.archive.max.catalog.entries";
+        public static final long MAX_CATALOG_ENTRIES_DEFAULT = Catalog.DEFAULT_MAX_ENTRIES;
+
         static final String CATALOG_FILE_NAME = "archive.catalog";
         static final String RECORDING_SEGMENT_POSTFIX = ".rec";
 
@@ -279,6 +282,16 @@ public class Archive implements AutoCloseable
         {
             return Integer.getInteger(REPLAY_FRAGMENT_LIMIT_PROP_NAME, REPLAY_FRAGMENT_LIMIT_DEFAULT);
         }
+
+        /**
+         * Maximum number of catalog entries to allocate for the catalog file.
+         *
+         * @return the maximum number of catalog entries to support for the catalog file.
+         */
+        public static long maxCatalogEntries()
+        {
+            return Long.getLong(MAX_CATALOG_ENTRIES_PROP_NAME, MAX_CATALOG_ENTRIES_DEFAULT);
+        }
     }
 
     /**
@@ -304,6 +317,7 @@ public class Archive implements AutoCloseable
         private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
         private int recordingEventsStreamId = AeronArchive.Configuration.recordingEventsStreamId();
 
+        private long maxCatalogEntries = Configuration.maxCatalogEntries();
         private int segmentFileLength = Configuration.segmentFileLength();
         private int fileSyncLevel = Configuration.fileSyncLevel();
 
@@ -415,18 +429,18 @@ public class Archive implements AutoCloseable
             if (!archiveDir.exists() && !archiveDir.mkdirs())
             {
                 throw new IllegalArgumentException(
-                    "Failed to create archive dir: " + archiveDir.getAbsolutePath());
+                    "failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
             archiveDirChannel = channelForDirectorySync(archiveDir, fileSyncLevel);
 
             if (!BitUtil.isPowerOfTwo(segmentFileLength))
             {
-                throw new ConfigurationException("Segment file length not a power of 2: " + segmentFileLength);
+                throw new ConfigurationException("segment file length not a power of 2: " + segmentFileLength);
             }
             else if (segmentFileLength < TERM_MIN_LENGTH || segmentFileLength > TERM_MAX_LENGTH)
             {
-                throw new ConfigurationException("Segment file length not in valid range: " + segmentFileLength);
+                throw new ConfigurationException("segment file length not in valid range: " + segmentFileLength);
             }
 
             if (null == markFile)
@@ -436,7 +450,7 @@ public class Archive implements AutoCloseable
 
             if (null == catalog)
             {
-                catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, epochClock);
+                catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, maxCatalogEntries, epochClock);
             }
         }
 
@@ -1070,6 +1084,28 @@ public class Archive implements AutoCloseable
         public ArchiveMarkFile archiveMarkFile()
         {
             return markFile;
+        }
+
+        /**
+         * Maximum number of catalog entries for the Archive.
+         *
+         * @param maxCatalogEntries for the archive.
+         * @return this for a fluent API.
+         */
+        public Context maxCatalogEntries(final long maxCatalogEntries)
+        {
+            this.maxCatalogEntries = maxCatalogEntries;
+            return this;
+        }
+
+        /**
+         * Maximum number of catalog entries for the Archive.
+         *
+         * @return maximum number of catalog entries for the Archive.
+         */
+        public long maxCatalogEntries()
+        {
+            return maxCatalogEntries;
         }
 
         /**

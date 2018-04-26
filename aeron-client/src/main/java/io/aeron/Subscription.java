@@ -126,7 +126,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Return the registration id used to register this Publication with the media driver.
+     * Return the registration id used to register this Subscription with the media driver.
      *
      * @return registration id
      */

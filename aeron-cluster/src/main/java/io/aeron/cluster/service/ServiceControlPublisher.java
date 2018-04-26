@@ -43,7 +43,7 @@ public class ServiceControlPublisher implements AutoCloseable
         CloseHelper.close(publication);
     }
 
-    public void scheduleTimer(final long correlationId, final long deadlineMs)
+    public boolean scheduleTimer(final long correlationId, final long deadlineMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerEncoder.BLOCK_LENGTH;
 
@@ -60,17 +60,17 @@ public class ServiceControlPublisher implements AutoCloseable
 
                 bufferClaim.commit();
 
-                return;
+                return true;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to schedule timer");
+        return false;
     }
 
-    public void cancelTimer(final long correlationId)
+    public boolean cancelTimer(final long correlationId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CancelTimerEncoder.BLOCK_LENGTH;
 
@@ -86,14 +86,14 @@ public class ServiceControlPublisher implements AutoCloseable
 
                 bufferClaim.commit();
 
-                return;
+                return true;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to cancel timer");
+        return false;
     }
 
     public void ackAction(
@@ -123,7 +123,7 @@ public class ServiceControlPublisher implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to send ACK");
+        throw new IllegalStateException("failed to send ACK");
     }
 
     public void joinLog(
@@ -131,6 +131,7 @@ public class ServiceControlPublisher implements AutoCloseable
         final int commitPositionId,
         final int logSessionId,
         final int logStreamId,
+        final boolean ackBeforeImage,
         final String channel)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinLogEncoder.BLOCK_LENGTH +
@@ -148,6 +149,7 @@ public class ServiceControlPublisher implements AutoCloseable
                     .commitPositionId(commitPositionId)
                     .logSessionId(logSessionId)
                     .logStreamId(logStreamId)
+                    .ackBeforeImage(ackBeforeImage ? BooleanType.TRUE : BooleanType.FALSE)
                     .logChannel(channel);
 
                 bufferClaim.commit();
@@ -159,10 +161,10 @@ public class ServiceControlPublisher implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to send log connect request");
+        throw new IllegalStateException("failed to send log connect request");
     }
 
-    public void closeSession(final long clusterSessionId)
+    public boolean closeSession(final long clusterSessionId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CloseSessionEncoder.BLOCK_LENGTH;
 
@@ -178,14 +180,14 @@ public class ServiceControlPublisher implements AutoCloseable
 
                 bufferClaim.commit();
 
-                return;
+                return true;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("Failed to schedule timer");
+        return false;
     }
 
     private static void checkResult(final long result)
@@ -194,7 +196,7 @@ public class ServiceControlPublisher implements AutoCloseable
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("Unexpected publication state: " + result);
+            throw new IllegalStateException("unexpected publication state: " + result);
         }
     }
 }

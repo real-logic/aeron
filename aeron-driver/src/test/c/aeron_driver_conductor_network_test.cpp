@@ -217,6 +217,47 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkPublicationsD
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
+TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveMultipleNetworkPublicationsToSameChannelSameStreamId)
+{
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+    int64_t pub_id_3 = nextCorrelationId();
+    int64_t pub_id_4 = nextCorrelationId();
+    int64_t remove_correlation_id_1 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, CHANNEL_1, STREAM_ID_1, false), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, CHANNEL_1, STREAM_ID_1, false), 0);
+    doWork();
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+
+    aeron_network_publication_t *publication =
+        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
+
+    ASSERT_NE(publication, (aeron_network_publication_t *)NULL);
+    ASSERT_EQ(publication->conductor_fields.refcnt, 4);
+
+    ASSERT_EQ(removePublication(client_id, remove_correlation_id_1, pub_id_2), 0);
+    doWork();
+
+    publication = aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
+    ASSERT_NE(publication, (aeron_network_publication_t *)NULL);
+    ASSERT_EQ(publication->conductor_fields.refcnt, 3);
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_OPERATION_SUCCESS);
+
+        const command::OperationSucceededFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), remove_correlation_id_1);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleExclusiveNetworkPublicationsWithSameChannelSameStreamId)
 {
     int64_t client_id = nextCorrelationId();

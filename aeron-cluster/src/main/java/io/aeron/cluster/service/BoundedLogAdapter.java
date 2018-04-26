@@ -67,6 +67,11 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         return upperBound.counterId();
     }
 
+    public boolean isCaughtUp()
+    {
+        return image.position() >= upperBound.get();
+    }
+
     public int poll()
     {
         return image.boundedControlledPoll(fragmentAssembler, upperBound.get(), FRAGMENT_LIMIT);

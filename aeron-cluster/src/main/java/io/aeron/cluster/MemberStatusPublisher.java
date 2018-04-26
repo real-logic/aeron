@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
+import org.agrona.DirectBuffer;
 
 class MemberStatusPublisher
 {
@@ -25,17 +26,46 @@ class MemberStatusPublisher
 
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    private final CanvassPositionEncoder canvassPositionEncoder = new CanvassPositionEncoder();
     private final RequestVoteEncoder requestVoteEncoder = new RequestVoteEncoder();
     private final VoteEncoder voteEncoder = new VoteEncoder();
+    private final NewLeadershipTermEncoder newLeadershipTermEncoder = new NewLeadershipTermEncoder();
     private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
+    private final QueryResponseEncoder queryResponseEncoder = new QueryResponseEncoder();
+    private final RecoveryPlanQueryEncoder recoveryPlanQueryEncoder = new RecoveryPlanQueryEncoder();
+
+    public boolean canvassPosition(
+        final Publication publication, final long logPosition, final long leadershipTermId, final int followerMemberId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + CanvassPositionEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                canvassPositionEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .logPosition(logPosition)
+                    .leadershipTermId(leadershipTermId)
+                    .followerMemberId(followerMemberId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
 
     public boolean requestVote(
-        final Publication publication,
-        final long candidateTermId,
-        final long lastBaseLogPosition,
-        final long lastTermPosition,
-        final int candidateMemberId)
+        final Publication publication, final long logPosition, final long candidateTermId, final int candidateMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + RequestVoteEncoder.BLOCK_LENGTH;
 
@@ -47,9 +77,8 @@ class MemberStatusPublisher
             {
                 requestVoteEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .logPosition(logPosition)
                     .candidateTermId(candidateTermId)
-                    .lastBaseLogPosition(lastBaseLogPosition)
-                    .lastTermPosition(lastTermPosition)
                     .candidateMemberId(candidateMemberId);
 
                 bufferClaim.commit();
@@ -64,11 +93,9 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean vote(
+    public boolean placeVote(
         final Publication publication,
         final long candidateTermId,
-        final long lastBaseLogPosition,
-        final long lastTermPosition,
         final int candidateMemberId,
         final int followerMemberId,
         final boolean vote)
@@ -84,8 +111,6 @@ class MemberStatusPublisher
                 voteEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .candidateTermId(candidateTermId)
-                    .lastBaseLogPosition(lastBaseLogPosition)
-                    .lastTermPosition(lastTermPosition)
                     .candidateMemberId(candidateMemberId)
                     .followerMemberId(followerMemberId)
                     .vote(vote ? BooleanType.TRUE : BooleanType.FALSE);
@@ -102,8 +127,42 @@ class MemberStatusPublisher
         return false;
     }
 
+    public boolean newLeadershipTerm(
+        final Publication publication,
+        final long logPosition,
+        final long leadershipTermId,
+        final int leaderMemberId,
+        final int logSessionId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                newLeadershipTermEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .logPosition(logPosition)
+                    .leadershipTermId(leadershipTermId)
+                    .leaderMemberId(leaderMemberId)
+                    .logSessionId(logSessionId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
     public boolean appendedPosition(
-        final Publication publication, final long termPosition, final long leadershipTermId, final int followerMemberId)
+        final Publication publication, final long logPosition, final long leadershipTermId, final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
 
@@ -115,7 +174,7 @@ class MemberStatusPublisher
             {
                 appendedPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .termPosition(termPosition)
+                    .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
                     .followerMemberId(followerMemberId);
 
@@ -132,11 +191,7 @@ class MemberStatusPublisher
     }
 
     public boolean commitPosition(
-        final Publication publication,
-        final long termPosition,
-        final long leadershipTermId,
-        final int leaderMemberId,
-        final int logSessionId)
+        final Publication publication, final long logPosition, final long leadershipTermId, final int leaderMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CommitPositionEncoder.BLOCK_LENGTH;
 
@@ -148,10 +203,77 @@ class MemberStatusPublisher
             {
                 commitPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .termPosition(termPosition)
+                    .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
+                    .leaderMemberId(leaderMemberId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean queryResponse(
+        final Publication publication,
+        final long correlationId,
+        final int requestMemberId,
+        final int responseMemberId,
+        final DirectBuffer dataBuffer,
+        final int dataOffset,
+        final int dataLength)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            QueryResponseEncoder.BLOCK_LENGTH +
+            QueryResponseEncoder.encodedResponseHeaderLength() +
+            dataLength;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                queryResponseEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .requestMemberId(requestMemberId)
+                    .responseMemberId(responseMemberId)
+                    .putEncodedResponse(dataBuffer, dataOffset, dataLength);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean recoveryPlanQuery(
+        final Publication publication, final long correlationId, final int leaderMemberId, final int memberId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecoveryPlanQueryEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                recoveryPlanQueryEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
                     .leaderMemberId(leaderMemberId)
-                    .logSessionId(logSessionId);
+                    .requestMemberId(memberId);
 
                 bufferClaim.commit();
 
@@ -169,7 +291,7 @@ class MemberStatusPublisher
     {
         if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("Unexpected publication state: " + result);
+            throw new IllegalStateException("unexpected publication state: " + result);
         }
     }
 }

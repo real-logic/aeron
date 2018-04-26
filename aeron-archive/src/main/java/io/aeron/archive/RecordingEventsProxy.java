@@ -93,12 +93,12 @@ class RecordingEventsProxy
 
             if (result == Publication.CLOSED)
             {
-                throw new IllegalStateException("Recording events publication is closed");
+                throw new IllegalStateException("recording events publication is closed");
             }
 
             if (result == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new IllegalStateException("Recording events publication at max position");
+                throw new IllegalStateException("recording events publication at max position");
             }
 
             idleStrategy.idle();

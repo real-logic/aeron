@@ -30,7 +30,6 @@ public class EgressPoller implements ControlledFragmentHandler
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
-    private final AdminResponseDecoder adminResponseDecoder = new AdminResponseDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
     private long clusterSessionId = -1;
@@ -39,8 +38,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private boolean pollComplete = false;
     private EventCode eventCode;
     private String detail = "";
-    private byte[] challengeData;
-    private byte[] adminResponseData;
+    private byte[] encodedChallenge;
 
     public EgressPoller(final Subscription subscription, final int fragmentLimit)
     {
@@ -109,29 +107,19 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
-     * Get the challenge data in the last challenge.
+     * Get the encoded challenge in the last challenge.
      *
-     * @return the challenge data in the last challenge or null if last message was not a challenge.
+     * @return the encoded challenge in the last challenge or null if last message was not a challenge.
      */
-    public byte[] challengeData()
+    public byte[] encodedChallenge()
     {
-        return challengeData;
-    }
-
-    /**
-     * Get the response data in the last admin response.
-     *
-     * @return the response data in the last admin response or null if last message was not an admin response.
-     */
-    public byte[] adminResponseData()
-    {
-        return adminResponseData;
+        return encodedChallenge;
     }
 
     /**
      * Has the last polling action received a complete event?
      *
-     * @return true of the last polling action received a complete event?
+     * @return true if the last polling action received a complete event.
      */
     public boolean isPollComplete()
     {
@@ -139,11 +127,11 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
-     * Was last message a challenge or not.
+     * Was last message a challenge or not?
      *
      * @return true if last message was a challenge or false if not.
      */
-    public boolean challenged()
+    public boolean isChallenged()
     {
         return ChallengeDecoder.TEMPLATE_ID == templateId;
     }
@@ -155,8 +143,7 @@ public class EgressPoller implements ControlledFragmentHandler
         templateId = -1;
         eventCode = null;
         detail = "";
-        challengeData = null;
-        adminResponseData = null;
+        encodedChallenge = null;
         pollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
@@ -211,29 +198,15 @@ public class EgressPoller implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                challengeData = new byte[challengeDecoder.challengeDataLength()];
-                challengeDecoder.getChallengeData(challengeData, 0, challengeDecoder.challengeDataLength());
+                encodedChallenge = new byte[challengeDecoder.encodedChallengeLength()];
+                challengeDecoder.getEncodedChallenge(encodedChallenge, 0, challengeDecoder.encodedChallengeLength());
 
                 clusterSessionId = challengeDecoder.clusterSessionId();
                 correlationId = challengeDecoder.correlationId();
                 break;
 
-            case AdminResponseDecoder.TEMPLATE_ID:
-                adminResponseDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                adminResponseData = new byte[adminResponseDecoder.responseDataLength()];
-                adminResponseDecoder.getResponseData(adminResponseData, 0, adminResponseDecoder.responseDataLength());
-
-                clusterSessionId = adminResponseDecoder.clusterSessionId();
-                correlationId = adminResponseDecoder.correlationId();
-                break;
-
             default:
-                throw new IllegalStateException("Unknown templateId: " + templateId);
+                throw new IllegalStateException("unknown templateId: " + templateId);
         }
 
         pollComplete = true;

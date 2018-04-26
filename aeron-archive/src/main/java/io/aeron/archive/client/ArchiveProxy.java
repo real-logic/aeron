@@ -17,7 +17,7 @@ package io.aeron.archive.client;
 
 import io.aeron.Publication;
 import io.aeron.archive.codecs.*;
-import org.agrona.ExpandableDirectByteBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.*;
 
 import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT_DEFAULT_NS;
@@ -37,7 +37,7 @@ public class ArchiveProxy
     private final IdleStrategy retryIdleStrategy;
     private final NanoClock nanoClock;
 
-    private final ExpandableDirectByteBuffer buffer = new ExpandableDirectByteBuffer(1024);
+    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(124);
     private final Publication publication;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
@@ -51,6 +51,10 @@ public class ArchiveProxy
         new ListRecordingsForUriRequestEncoder();
     private final ListRecordingRequestEncoder listRecordingRequestEncoder = new ListRecordingRequestEncoder();
     private final ExtendRecordingRequestEncoder extendRecordingRequestEncoder = new ExtendRecordingRequestEncoder();
+    private final RecordingPositionRequestEncoder recordingPositionRequestEncoder =
+        new RecordingPositionRequestEncoder();
+    private final TruncateRecordingRequestEncoder truncateRecordingRequestEncoder =
+        new TruncateRecordingRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -121,6 +125,28 @@ public class ArchiveProxy
             .responseChannel(responseChannel);
 
         return offerWithTimeout(connectRequestEncoder.encodedLength(), null);
+    }
+
+    /**
+     * Try Connect to an archive on its control interface providing the response stream details. Only one attempt will
+     * be made to offer the request.
+     *
+     * @param responseChannel  for the control message responses.
+     * @param responseStreamId for the control message responses.
+     * @param correlationId    for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean tryConnect(final String responseChannel, final int responseStreamId, final long correlationId)
+    {
+        connectRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .responseStreamId(responseStreamId)
+            .responseChannel(responseChannel);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + connectRequestEncoder.encodedLength();
+
+        return publication.offer(buffer, 0, length) > 0;
     }
 
     /**
@@ -377,6 +403,48 @@ public class ArchiveProxy
         return offer(extendRecordingRequestEncoder.encodedLength());
     }
 
+    /**
+     * Get the recorded position of an active recording.
+     *
+     * @param recordingId      of the active recording that the position is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean getRecordingPosition(final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        recordingPositionRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(recordingPositionRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
+     * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
+     *
+     * @param recordingId      of the stopped recording to be truncated.
+     * @param position         to which the recording will be truncated.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean truncateRecording(
+        final long recordingId, final long position, final long correlationId, final long controlSessionId)
+    {
+        truncateRecordingRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .position(position);
+
+        return offer(truncateRecordingRequestEncoder.encodedLength());
+    }
+
     private boolean offer(final int length)
     {
         retryIdleStrategy.reset();
@@ -392,17 +460,17 @@ public class ArchiveProxy
 
             if (result == Publication.CLOSED)
             {
-                throw new IllegalStateException("Connection to the archive has been closed");
+                throw new IllegalStateException("connection to the archive has been closed");
             }
 
             if (result == Publication.NOT_CONNECTED)
             {
-                throw new IllegalStateException("Connection to the archive is no longer available");
+                throw new IllegalStateException("connection to the archive is no longer available");
             }
 
             if (result == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new IllegalStateException("Publication failed due to max position being reached");
+                throw new IllegalStateException("offer failed due to max position being reached");
             }
 
             if (--attempts <= 0)
@@ -429,12 +497,12 @@ public class ArchiveProxy
 
             if (result == Publication.CLOSED)
             {
-                throw new IllegalStateException("Connection to the archive has been closed");
+                throw new IllegalStateException("connection to the archive has been closed");
             }
 
             if (result == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new IllegalStateException("Publication failed due to max position being reached");
+                throw new IllegalStateException("offer failed due to max position being reached");
             }
 
             if (nanoClock.nanoTime() > deadlineNs)
@@ -446,6 +514,7 @@ public class ArchiveProxy
             {
                 aeronClientInvoker.invoke();
             }
+
             retryIdleStrategy.idle();
         }
     }

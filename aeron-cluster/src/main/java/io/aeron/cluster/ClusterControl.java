@@ -137,7 +137,7 @@ public class ClusterControl
 
             if (toggleValue < 0 || toggleValue > (STATES.length - 1))
             {
-                throw new IllegalStateException("Invalid toggle value: " + toggleValue);
+                throw new IllegalStateException("invalid toggle value: " + toggleValue);
             }
 
             return STATES[(int)toggleValue];

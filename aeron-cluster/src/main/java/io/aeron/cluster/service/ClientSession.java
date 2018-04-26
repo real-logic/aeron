@@ -35,15 +35,21 @@ public class ClientSession
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
 
+    /**
+     * Return value to indicate egress to a session is mocked out by the cluster when in follower mode.
+     */
+    public static final long MOCKED_OFFER = 1;
+
     private final long id;
     private final int responseStreamId;
     private final String responseChannel;
-    private Publication responsePublication;
     private final byte[] encodedPrincipal;
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
     private final Cluster cluster;
+    private Publication responsePublication;
+    private boolean isClosing;
 
     ClientSession(
         final long sessionId,
@@ -98,14 +104,23 @@ public class ClientSession
     }
 
     /**
-     * Cluster session encoded principal passed from {@link io.aeron.cluster.Authenticator}
-     * when the session was authenticated.
+     * Cluster session encoded principal from when the session was authenticated.
      *
      * @return The encoded Principal passed. May be 0 length to indicate none present.
      */
     public byte[] encodedPrincipal()
     {
         return encodedPrincipal;
+    }
+
+    /**
+     * Indicates that a request to close this session has been made.
+     *
+     * @return whether a request to close this session has been made.
+     */
+    public boolean isClosing()
+    {
+        return isClosing;
     }
 
     /**
@@ -116,7 +131,7 @@ public class ClientSession
      * @param offset        offset in the buffer at which the encoded message begins.
      * @param length        in bytes of the encoded message.
      * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.Role#LEADER}
-     * otherwise 1.
+     * otherwise {@link #MOCKED_OFFER}.
      */
     public long offer(
         final long correlationId,
@@ -126,7 +141,7 @@ public class ClientSession
     {
         if (cluster.role() != Cluster.Role.LEADER)
         {
-            return 1;
+            return MOCKED_OFFER;
         }
 
         sessionHeaderEncoder.correlationId(correlationId);
@@ -140,10 +155,15 @@ public class ClientSession
     {
         if (null != responsePublication)
         {
-            throw new IllegalStateException("Response publication already present");
+            throw new IllegalStateException("response publication already added");
         }
 
         responsePublication = aeron.addPublication(responseChannel, responseStreamId);
+    }
+
+    void markClosing()
+    {
+        this.isClosing = true;
     }
 
     void disconnect()

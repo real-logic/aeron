@@ -18,20 +18,18 @@ package io.aeron.cluster.service;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanEncoder;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.LangUtil;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.*;
 
@@ -55,7 +53,7 @@ import static org.agrona.BitUtil.*;
  *  |                     Leadership Term ID                        |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |             Log Position at beginning of term                 |
+ *  |              Log Position at beginning of term                |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                    Term Position/Length                       |
@@ -84,53 +82,53 @@ public class RecordingLog
     {
         public final long recordingId;
         public final long leadershipTermId;
-        public final long logPosition;
+        public final long termBaseLogPosition;
         public final long termPosition;
         public final long timestamp;
-        public final int memberIdVote;
+        public final int votedForMemberId;
         public final int type;
         public final int entryIndex;
 
         /**
          * A new entry in the recording log.
          *
-         * @param recordingId      of the entry in an archive.
-         * @param leadershipTermId of this entry.
-         * @param logPosition      accumulated position of the log over leadership terms for the beginning of the term.
-         * @param termPosition     position reached within the current leadership term, same at leadership term length.
-         * @param timestamp        of this entry.
-         * @param memberIdVote     which member this node voted for in the election.
-         * @param type             of the entry as a log of a term or a snapshot.
-         * @param entryIndex       of the entry on disk.
+         * @param recordingId         of the entry in an archive.
+         * @param leadershipTermId    of this entry.
+         * @param termBaseLogPosition position of the log over leadership terms at the beginning of this term.
+         * @param termPosition        position reached within the current leadership term, same as term length.
+         * @param timestamp           of this entry.
+         * @param votedForMemberId    which member this node voted for in the election.
+         * @param type                of the entry as a log of a term or a snapshot.
+         * @param entryIndex          of the entry on disk.
          */
         public Entry(
             final long recordingId,
             final long leadershipTermId,
-            final long logPosition,
+            final long termBaseLogPosition,
             final long termPosition,
             final long timestamp,
-            final int memberIdVote,
+            final int votedForMemberId,
             final int type,
             final int entryIndex)
         {
             this.recordingId = recordingId;
             this.leadershipTermId = leadershipTermId;
-            this.logPosition = logPosition;
+            this.termBaseLogPosition = termBaseLogPosition;
             this.termPosition = termPosition;
             this.timestamp = timestamp;
-            this.memberIdVote = memberIdVote;
+            this.votedForMemberId = votedForMemberId;
             this.type = type;
             this.entryIndex = entryIndex;
         }
 
         public Entry(final RecoveryPlanDecoder.StepsDecoder decoder)
         {
-            this.recordingId = decoder.entryRecordingId();
-            this.leadershipTermId = decoder.entryLeadershipTermId();
-            this.logPosition = decoder.entryLogPosition();
-            this.termPosition = decoder.entryTermPosition();
-            this.timestamp = decoder.entryTimestamp();
-            this.memberIdVote = decoder.entryMemberIdVote();
+            this.recordingId = decoder.recordingId();
+            this.leadershipTermId = decoder.leadershipTermId();
+            this.termBaseLogPosition = decoder.termBaseLogPosition();
+            this.termPosition = decoder.termPosition();
+            this.timestamp = decoder.timestamp();
+            this.votedForMemberId = decoder.votedForMemberId();
             this.type = decoder.entryType();
             this.entryIndex = decoder.entryIndex();
         }
@@ -138,12 +136,12 @@ public class RecordingLog
         public void encode(final RecoveryPlanEncoder.StepsEncoder encoder)
         {
             encoder
-                .entryRecordingId(recordingId)
-                .entryLeadershipTermId(leadershipTermId)
-                .entryLogPosition(logPosition)
-                .entryTermPosition(termPosition)
-                .entryTimestamp(timestamp)
-                .entryMemberIdVote(memberIdVote)
+                .recordingId(recordingId)
+                .leadershipTermId(leadershipTermId)
+                .termBaseLogPosition(termBaseLogPosition)
+                .termPosition(termPosition)
+                .timestamp(timestamp)
+                .votedForMemberId(votedForMemberId)
                 .entryType(type)
                 .entryIndex(entryIndex);
         }
@@ -153,10 +151,10 @@ public class RecordingLog
             return "Entry{" +
                 "recordingId=" + recordingId +
                 ", leadershipTermId=" + leadershipTermId +
-                ", logPosition=" + logPosition +
+                ", termBaseLogPosition=" + termBaseLogPosition +
                 ", termPosition=" + termPosition +
                 ", timestamp=" + timestamp +
-                ", memberIdVote=" + memberIdVote +
+                ", votedForMemberId=" + votedForMemberId +
                 ", type=" + type +
                 ", entryIndex=" + entryIndex +
                 '}';
@@ -170,12 +168,18 @@ public class RecordingLog
     {
         public final long recordingStartPosition;
         public final long recordingStopPosition;
+        public final int recordingSessionId;
         public final Entry entry;
 
-        public ReplayStep(final long recordingStartPosition, final long recordingStopPosition, final Entry entry)
+        public ReplayStep(
+            final long recordingStartPosition,
+            final long recordingStopPosition,
+            final int recordingSessionId,
+            final Entry entry)
         {
             this.recordingStartPosition = recordingStartPosition;
             this.recordingStopPosition = recordingStopPosition;
+            this.recordingSessionId = recordingSessionId;
             this.entry = entry;
         }
 
@@ -183,6 +187,7 @@ public class RecordingLog
         {
             this.recordingStartPosition = decoder.recordingStartPosition();
             this.recordingStopPosition = decoder.recordingStopPosition();
+            this.recordingSessionId = decoder.recordingSessionId();
             entry = new Entry(decoder);
         }
 
@@ -190,7 +195,8 @@ public class RecordingLog
         {
             encoder
                 .recordingStartPosition(recordingStartPosition)
-                .recordingStopPosition(recordingStopPosition);
+                .recordingStopPosition(recordingStopPosition)
+                .recordingSessionId(recordingSessionId);
             entry.encode(encoder);
         }
 
@@ -199,6 +205,7 @@ public class RecordingLog
             return "ReplayStep{" +
                 "recordingStartPosition=" + recordingStartPosition +
                 ", recordingStopPosition=" + recordingStopPosition +
+                ", recordingSessionId=" + recordingSessionId +
                 ", entry=" + entry +
                 '}';
         }
@@ -210,38 +217,36 @@ public class RecordingLog
     public static class RecoveryPlan
     {
         public final long lastLeadershipTermId;
-        public final long lastLogPosition;
+        public final long lastTermBaseLogPosition;
         public final long lastTermPositionCommitted;
         public final long lastTermPositionAppended;
         public final ReplayStep snapshotStep;
         public final ArrayList<ReplayStep> termSteps;
         public final RecoveryPlanEncoder encoder = new RecoveryPlanEncoder();
         public final RecoveryPlanDecoder decoder = new RecoveryPlanDecoder();
-        public final UnsafeBuffer buffer = new UnsafeBuffer();
 
         public RecoveryPlan(
             final long lastLeadershipTermId,
-            final long lastLogPosition,
+            final long lastTermBaseLogPosition,
             final long lastTermPositionCommitted,
             final long lastTermPositionAppended,
             final ReplayStep snapshotStep,
             final ArrayList<ReplayStep> termSteps)
         {
             this.lastLeadershipTermId = lastLeadershipTermId;
-            this.lastLogPosition = lastLogPosition;
+            this.lastTermBaseLogPosition = lastTermBaseLogPosition;
             this.lastTermPositionCommitted = lastTermPositionCommitted;
             this.lastTermPositionAppended = lastTermPositionAppended;
             this.snapshotStep = snapshotStep;
             this.termSteps = termSteps;
         }
 
-        public RecoveryPlan(final byte[] decodingBuffer)
+        public RecoveryPlan(final DirectBuffer buffer, final int offset)
         {
-            buffer.wrap(decodingBuffer);
-            decoder.wrap(buffer, 0, RecoveryPlanDecoder.BLOCK_LENGTH, RecoveryPlanDecoder.SCHEMA_VERSION);
+            decoder.wrap(buffer, offset, RecoveryPlanDecoder.BLOCK_LENGTH, RecoveryPlanDecoder.SCHEMA_VERSION);
 
             this.lastLeadershipTermId = decoder.lastLeadershipTermId();
-            this.lastLogPosition = decoder.lastLogPosition();
+            this.lastTermBaseLogPosition = decoder.lastTermBaseLogPosition();
             this.lastTermPositionCommitted = decoder.lastTermPositionCommitted();
             this.lastTermPositionAppended = decoder.lastTermPositionAppended();
 
@@ -266,45 +271,46 @@ public class RecordingLog
             this.snapshotStep = snapshot;
         }
 
-        public byte[] serialize()
+        public int encodedLength()
         {
-            final int numberOfSteps = termSteps.size() + (null != snapshotStep ? 1 : 0);
-            final int length = RecoveryPlanEncoder.BLOCK_LENGTH +
+            final int stepsCount = termSteps.size() + (null != snapshotStep ? 1 : 0);
+
+            return RecoveryPlanEncoder.BLOCK_LENGTH +
                 RecoveryPlanEncoder.StepsEncoder.sbeHeaderSize() +
-                numberOfSteps * RecoveryPlanEncoder.StepsEncoder.sbeBlockLength();
-            final byte[] encodingbBffer = new byte[length];
+                stepsCount * RecoveryPlanEncoder.StepsEncoder.sbeBlockLength();
+        }
 
-            buffer.wrap(encodingbBffer);
-            encoder.wrap(buffer, 0);
-
-            encoder
+        public int encode(final MutableDirectBuffer buffer, final int offset)
+        {
+            encoder.wrap(buffer, offset)
                 .lastLeadershipTermId(lastLeadershipTermId)
-                .lastLogPosition(lastLogPosition)
+                .lastTermBaseLogPosition(lastTermBaseLogPosition)
                 .lastTermPositionCommitted(lastTermPositionCommitted)
                 .lastTermPositionAppended(lastTermPositionAppended);
 
-            final RecoveryPlanEncoder.StepsEncoder stepEncoder = encoder.stepsCount(numberOfSteps);
+            final int stepsCount = termSteps.size() + (null != snapshotStep ? 1 : 0);
+            final RecoveryPlanEncoder.StepsEncoder stepEncoder = encoder.stepsCount(stepsCount);
 
             if (null != snapshotStep)
             {
+                stepEncoder.next();
                 snapshotStep.encode(stepEncoder);
-                stepEncoder.next();
             }
 
-            for (final ReplayStep step : termSteps)
+            for (int i = 0, size = termSteps.size(); i < size; i++)
             {
-                step.encode(stepEncoder);
                 stepEncoder.next();
+                termSteps.get(i).encode(stepEncoder);
             }
 
-            return encodingbBffer;
+            return encoder.encodedLength();
         }
 
         public String toString()
         {
             return "RecoveryPlan{" +
                 "lastLeadershipTermId=" + lastLeadershipTermId +
-                ", lastLogPosition=" + lastLogPosition +
+                ", lastTermBaseLogPosition=" + lastTermBaseLogPosition +
                 ", lastTermPositionCommitted=" + lastTermPositionCommitted +
                 ", lastTermPositionAppended=" + lastTermPositionAppended +
                 ", snapshotStep=" + snapshotStep +
@@ -314,9 +320,9 @@ public class RecordingLog
     }
 
     /**
-     * Filename for the recording index for the history of log terms and snapshots.
+     * Filename for the history of log terms and snapshot recordings.
      */
-    public static final String RECORDING_INDEX_FILE_NAME = "recording-index.log";
+    public static final String RECORDING_LOG_FILE_NAME = "recording.log";
 
     /**
      * Represents a value that is not set or invalid.
@@ -324,12 +330,12 @@ public class RecordingLog
     public static final int NULL_VALUE = -1;
 
     /**
-     * The index entry is for a recording of messages within a term to the consensus log.
+     * The log entry is for a recording of messages within a term to the consensus log.
      */
     public static final int ENTRY_TYPE_TERM = 0;
 
     /**
-     * The index entry is for a recording of a snapshot of state taken as of a position in the log.
+     * The log entry is for a recording of a snapshot of state taken as of a position in the log.
      */
     public static final int ENTRY_TYPE_SNAPSHOT = 1;
 
@@ -344,14 +350,14 @@ public class RecordingLog
     public static final int LEADERSHIP_TERM_ID_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
 
     /**
-     * The offset at which the absolute log position for the entry is stored.
+     * The offset at which the log position as of the beginning of the term for the entry is stored.
      */
-    public static final int LOG_POSITION_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
+    public static final int TERM_BASE_LOG_POSITION_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
 
     /**
      * The offset at which the term position is stored.
      */
-    public static final int TERM_POSITION_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
+    public static final int TERM_POSITION_OFFSET = TERM_BASE_LOG_POSITION_OFFSET + SIZE_OF_LONG;
 
     /**
      * The offset at which the timestamp for the entry is stored.
@@ -375,20 +381,20 @@ public class RecordingLog
 
     private int nextEntryIndex;
     private final File parentDir;
-    private final File indexFile;
-    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(ByteOrder.LITTLE_ENDIAN);
+    private final File logFile;
+    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
     private final ArrayList<Entry> entries = new ArrayList<>();
 
     /**
-     * Create an index that appends to an existing index or creates a new one.
+     * Create a log that appends to an existing log or creates a new one.
      *
-     * @param parentDir in which the index will be created.
+     * @param parentDir in which the log will be created.
      */
     public RecordingLog(final File parentDir)
     {
         this.parentDir = parentDir;
-        this.indexFile = new File(parentDir, RECORDING_INDEX_FILE_NAME);
+        this.logFile = new File(parentDir, RECORDING_LOG_FILE_NAME);
 
         reload();
     }
@@ -414,7 +420,7 @@ public class RecordingLog
     }
 
     /**
-     * Reload the index from disk.
+     * Reload the log from disk.
      */
     public void reload()
     {
@@ -423,8 +429,8 @@ public class RecordingLog
         FileChannel fileChannel = null;
         try
         {
-            final boolean newFile = !indexFile.exists();
-            fileChannel = FileChannel.open(indexFile.toPath(), CREATE, READ, WRITE, SYNC);
+            final boolean newFile = !logFile.exists();
+            fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE, SYNC);
 
             if (newFile)
             {
@@ -469,9 +475,9 @@ public class RecordingLog
     }
 
     /**
-     * Get the latest snapshot {@link Entry} in the index.
+     * Get the latest snapshot {@link Entry} in the log.
      *
-     * @return the latest snapshot {@link Entry} in the index or null if no snapshot exists.
+     * @return the latest snapshot {@link Entry} in the log or null if no snapshot exists.
      */
     public Entry getLatestSnapshot()
     {
@@ -506,7 +512,7 @@ public class RecordingLog
         if (null != snapshotStep)
         {
             lastLeadershipTermId = snapshotStep.entry.leadershipTermId;
-            lastLogPosition = snapshotStep.entry.logPosition;
+            lastLogPosition = snapshotStep.entry.termBaseLogPosition;
             lastTermPositionCommitted = snapshotStep.entry.termPosition;
             lastTermPositionAppended = lastTermPositionCommitted;
         }
@@ -518,7 +524,7 @@ public class RecordingLog
             final Entry entry = replayStep.entry;
 
             lastLeadershipTermId = entry.leadershipTermId;
-            lastLogPosition = entry.logPosition;
+            lastLogPosition = entry.termBaseLogPosition;
             lastTermPositionCommitted = entry.termPosition;
             lastTermPositionAppended = replayStep.recordingStopPosition;
         }
@@ -530,70 +536,6 @@ public class RecordingLog
             lastTermPositionAppended,
             snapshotStep,
             steps);
-    }
-
-    static ReplayStep planRecovery(
-        final ArrayList<ReplayStep> steps, final ArrayList<Entry> entries, final AeronArchive archive)
-    {
-        if (entries.isEmpty())
-        {
-            return null;
-        }
-
-        int snapshotIndex = -1;
-        for (int i = entries.size() - 1; i >= 0; i--)
-        {
-            final Entry entry = entries.get(i);
-            if (ENTRY_TYPE_SNAPSHOT == entry.type)
-            {
-                snapshotIndex = i;
-            }
-        }
-
-        final ReplayStep snapshotStep;
-        final RecordingExtent recordingExtent = new RecordingExtent();
-
-        if (-1 != snapshotIndex)
-        {
-            final Entry snapshot = entries.get(snapshotIndex);
-            getRecordingExtent(archive, recordingExtent, snapshot);
-
-            snapshotStep = new ReplayStep(recordingExtent.startPosition, recordingExtent.stopPosition, snapshot);
-
-            if (snapshotIndex - 1 >= 0)
-            {
-                for (int i = snapshotIndex - 1; i >= 0; i--)
-                {
-                    final Entry entry = entries.get(i);
-                    if (ENTRY_TYPE_TERM == entry.type)
-                    {
-                        getRecordingExtent(archive, recordingExtent, snapshot);
-                        final long snapshotPosition = snapshot.logPosition + snapshot.termPosition;
-
-                        if (recordingExtent.stopPosition == NULL_POSITION ||
-                            (entry.logPosition + recordingExtent.stopPosition) > snapshotPosition)
-                        {
-                            steps.add(new ReplayStep(snapshot.termPosition, recordingExtent.stopPosition, entry));
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        else
-        {
-            snapshotStep = null;
-        }
-
-        for (int i = snapshotIndex + 1, length = entries.size(); i < length; i++)
-        {
-            final Entry entry = entries.get(i);
-            getRecordingExtent(archive, recordingExtent, entry);
-
-            steps.add(new ReplayStep(recordingExtent.startPosition, recordingExtent.stopPosition, entry));
-        }
-
-        return snapshotStep;
     }
 
     /**
@@ -620,20 +562,18 @@ public class RecordingLog
     }
 
     /**
-     * Append an index entry for a Raft term.
+     * Append a log entry for a Raft term.
      *
-     * @param recordingId      in the archive for the term.
      * @param leadershipTermId for the current term.
      * @param logPosition      reached at the beginning of the term.
      * @param timestamp        at the beginning of the term.
-     * @param memberIdVote     in the leader election.
+     * @param votedForMemberId in the leader election.
      */
     public void appendTerm(
-        final long recordingId,
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
-        final int memberIdVote)
+        final int votedForMemberId)
     {
         final int size = entries.size();
         if (size > 0)
@@ -648,11 +588,11 @@ public class RecordingLog
             }
         }
 
-        append(ENTRY_TYPE_TERM, recordingId, leadershipTermId, logPosition, NULL_POSITION, timestamp, memberIdVote);
+        append(ENTRY_TYPE_TERM, NULL_VALUE, leadershipTermId, logPosition, NULL_POSITION, timestamp, votedForMemberId);
     }
 
     /**
-     * Append an index entry for a snapshot.
+     * Append a log entry for a snapshot.
      *
      * @param recordingId      in the archive for the snapshot.
      * @param leadershipTermId for the current term
@@ -672,7 +612,7 @@ public class RecordingLog
         {
             final Entry entry = entries.get(size - 1);
 
-            if (entry.leadershipTermId != leadershipTermId)
+            if (entry.type == ENTRY_TYPE_TERM && entry.leadershipTermId != leadershipTermId)
             {
                 throw new IllegalStateException("leadershipTermId out of sequence: previous " +
                     entry.leadershipTermId + " this " + leadershipTermId);
@@ -683,6 +623,30 @@ public class RecordingLog
     }
 
     /**
+     * Commit the recording id of the log for a leadership term.
+     *
+     * @param leadershipTermId for committing the recording id for the log.
+     * @param recordingId      for the log of the leadership term.
+     */
+    public void commitLeadershipRecordingId(final long leadershipTermId, final long recordingId)
+    {
+        final int index = getLeadershipTermEntryIndex(leadershipTermId);
+
+        commitEntryValue(index, recordingId, RECORDING_ID_OFFSET);
+
+        final Entry entry = entries.get(index);
+        entries.set(index, new Entry(
+            recordingId,
+            entry.leadershipTermId,
+            entry.termBaseLogPosition,
+            entry.termPosition,
+            entry.timestamp,
+            entry.votedForMemberId,
+            entry.type,
+            entry.entryIndex));
+    }
+
+    /**
      * Commit the position reached in a leadership term before a clean shutdown.
      *
      * @param leadershipTermId for committing the term position reached.
@@ -690,37 +654,44 @@ public class RecordingLog
      */
     public void commitLeadershipTermPosition(final long leadershipTermId, final long termPosition)
     {
-        int index = -1;
-        for (int i = 0, size = entries.size(); i < size; i++)
-        {
-            final Entry entry = entries.get(i);
-            if (entry.leadershipTermId == leadershipTermId && entry.type == ENTRY_TYPE_TERM)
-            {
-                index = entry.entryIndex;
-                break;
-            }
-        }
+        final int index = getLeadershipTermEntryIndex(leadershipTermId);
 
-        if (-1 == index)
-        {
-            throw new IllegalArgumentException("Unknown leadershipTermId: " + leadershipTermId);
-        }
+        commitEntryValue(index, termPosition, TERM_POSITION_OFFSET);
 
-        buffer.putLong(0, termPosition);
-        byteBuffer.limit(SIZE_OF_LONG).position(0);
-        final long filePosition = (index * ENTRY_LENGTH) + TERM_POSITION_OFFSET;
+        final Entry entry = entries.get(index);
+        entries.set(index, new Entry(
+            entry.recordingId,
+            entry.leadershipTermId,
+            entry.termBaseLogPosition,
+            termPosition,
+            entry.timestamp,
+            entry.votedForMemberId,
+            entry.type,
+            entry.entryIndex));
+    }
 
-        try (FileChannel fileChannel = FileChannel.open(indexFile.toPath(), WRITE, SYNC))
-        {
-            if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
-            {
-                throw new IllegalStateException("failed to write field atomically");
-            }
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+    /**
+     * Commit the position for the base of a leadership term.
+     *
+     * @param leadershipTermId for committing the base position.
+     * @param logPosition      for the base of a leadership term.
+     */
+    public void commitLeadershipLogPosition(final long leadershipTermId, final long logPosition)
+    {
+        final int index = getLeadershipTermEntryIndex(leadershipTermId);
+
+        commitEntryValue(index, logPosition, TERM_BASE_LOG_POSITION_OFFSET);
+
+        final Entry entry = entries.get(index);
+        entries.set(index, new Entry(
+            entry.recordingId,
+            entry.leadershipTermId,
+            logPosition,
+            entry.termPosition,
+            entry.timestamp,
+            entry.votedForMemberId,
+            entry.type,
+            entry.entryIndex));
     }
 
     /**
@@ -744,14 +715,14 @@ public class RecordingLog
 
         if (-1 == index)
         {
-            throw new IllegalArgumentException("Unknown entry index: " + entryIndex);
+            throw new IllegalArgumentException("unknown entry index: " + entryIndex);
         }
 
-        buffer.putInt(0, NULL_VALUE);
+        buffer.putInt(0, NULL_VALUE, LITTLE_ENDIAN);
         byteBuffer.limit(SIZE_OF_INT).position(0);
         final long filePosition = (index * ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
 
-        try (FileChannel fileChannel = FileChannel.open(indexFile.toPath(), WRITE, SYNC))
+        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
         {
             if (SIZE_OF_INT != fileChannel.write(byteBuffer, filePosition))
             {
@@ -764,6 +735,14 @@ public class RecordingLog
         }
     }
 
+    public String toString()
+    {
+        return "RecordingLog{" +
+            "file=" + logFile.getAbsolutePath() +
+            ", entries=" + entries +
+            '}';
+    }
+
     private void append(
         final int entryType,
         final long recordingId,
@@ -771,19 +750,19 @@ public class RecordingLog
         final long logPosition,
         final long termPosition,
         final long timestamp,
-        final int memberIdVote)
+        final int votedForMemberId)
     {
-        buffer.putLong(RECORDING_ID_OFFSET, recordingId);
-        buffer.putLong(LOG_POSITION_OFFSET, logPosition);
-        buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
-        buffer.putLong(TIMESTAMP_OFFSET, timestamp);
-        buffer.putLong(TERM_POSITION_OFFSET, termPosition);
-        buffer.putInt(MEMBER_ID_VOTE_OFFSET, memberIdVote);
-        buffer.putInt(ENTRY_TYPE_OFFSET, entryType);
+        buffer.putLong(RECORDING_ID_OFFSET, recordingId, LITTLE_ENDIAN);
+        buffer.putLong(TERM_BASE_LOG_POSITION_OFFSET, logPosition, LITTLE_ENDIAN);
+        buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId, LITTLE_ENDIAN);
+        buffer.putLong(TIMESTAMP_OFFSET, timestamp, LITTLE_ENDIAN);
+        buffer.putLong(TERM_POSITION_OFFSET, termPosition, LITTLE_ENDIAN);
+        buffer.putInt(MEMBER_ID_VOTE_OFFSET, votedForMemberId, LITTLE_ENDIAN);
+        buffer.putInt(ENTRY_TYPE_OFFSET, entryType, LITTLE_ENDIAN);
 
         byteBuffer.limit(ENTRY_LENGTH).position(0);
 
-        try (FileChannel fileChannel = FileChannel.open(indexFile.toPath(), WRITE, APPEND, SYNC))
+        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, APPEND, SYNC))
         {
             if (ENTRY_LENGTH != fileChannel.write(byteBuffer))
             {
@@ -801,7 +780,7 @@ public class RecordingLog
             logPosition,
             NULL_POSITION,
             timestamp,
-            memberIdVote,
+            votedForMemberId,
             entryType,
             nextEntryIndex++));
     }
@@ -816,12 +795,12 @@ public class RecordingLog
             if (NULL_VALUE != entryType)
             {
                 entries.add(new Entry(
-                    buffer.getLong(i + RECORDING_ID_OFFSET),
-                    buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET),
-                    buffer.getLong(i + LOG_POSITION_OFFSET),
-                    buffer.getLong(i + TERM_POSITION_OFFSET),
-                    buffer.getLong(i + TIMESTAMP_OFFSET),
-                    buffer.getInt(i + MEMBER_ID_VOTE_OFFSET),
+                    buffer.getLong(i + RECORDING_ID_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(i + TERM_BASE_LOG_POSITION_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(i + TERM_POSITION_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(i + TIMESTAMP_OFFSET, LITTLE_ENDIAN),
+                    buffer.getInt(i + MEMBER_ID_VOTE_OFFSET, LITTLE_ENDIAN),
                     entryType,
                     nextEntryIndex));
             }
@@ -846,7 +825,108 @@ public class RecordingLog
     {
         if (archive.listRecording(entry.recordingId, recordingExtent) == 0)
         {
-            throw new IllegalStateException("Unknown recording id: " + entry.recordingId);
+            throw new IllegalStateException("unknown recording id: " + entry.recordingId);
+        }
+    }
+
+    private int getLeadershipTermEntryIndex(final long leadershipTermId)
+    {
+        for (int i = 0, size = entries.size(); i < size; i++)
+        {
+            final Entry entry = entries.get(i);
+            if (entry.leadershipTermId == leadershipTermId && entry.type == ENTRY_TYPE_TERM)
+            {
+                return entry.entryIndex;
+            }
+        }
+
+        throw new IllegalArgumentException("unknown leadershipTermId: " + leadershipTermId);
+    }
+
+    private static ReplayStep planRecovery(
+        final ArrayList<ReplayStep> steps, final ArrayList<Entry> entries, final AeronArchive archive)
+    {
+        if (entries.isEmpty())
+        {
+            return null;
+        }
+
+        int snapshotIndex = -1;
+        for (int i = entries.size() - 1; i >= 0; i--)
+        {
+            final Entry entry = entries.get(i);
+            if (ENTRY_TYPE_SNAPSHOT == entry.type)
+            {
+                snapshotIndex = i;
+                break;
+            }
+        }
+
+        final ReplayStep snapshotStep;
+        final RecordingExtent recordingExtent = new RecordingExtent();
+
+        if (-1 != snapshotIndex)
+        {
+            final Entry snapshot = entries.get(snapshotIndex);
+            getRecordingExtent(archive, recordingExtent, snapshot);
+
+            snapshotStep = new ReplayStep(
+                recordingExtent.startPosition, recordingExtent.stopPosition, recordingExtent.sessionId, snapshot);
+
+            if (snapshotIndex - 1 >= 0)
+            {
+                for (int i = snapshotIndex - 1; i >= 0; i--)
+                {
+                    final Entry entry = entries.get(i);
+                    if (ENTRY_TYPE_TERM == entry.type)
+                    {
+                        getRecordingExtent(archive, recordingExtent, entry);
+                        final long snapshotPosition = snapshot.termBaseLogPosition + snapshot.termPosition;
+
+                        if (recordingExtent.stopPosition == NULL_POSITION ||
+                            (entry.termBaseLogPosition + recordingExtent.stopPosition) > snapshotPosition)
+                        {
+                            steps.add(new ReplayStep(
+                                snapshot.termPosition, recordingExtent.stopPosition, recordingExtent.sessionId, entry));
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            snapshotStep = null;
+        }
+
+        for (int i = snapshotIndex + 1, length = entries.size(); i < length; i++)
+        {
+            final Entry entry = entries.get(i);
+            getRecordingExtent(archive, recordingExtent, entry);
+
+            steps.add(new ReplayStep(
+                recordingExtent.startPosition, recordingExtent.stopPosition, recordingExtent.sessionId, entry));
+        }
+
+        return snapshotStep;
+    }
+
+    private void commitEntryValue(final int entryIndex, final long value, final int fieldOffset)
+    {
+        buffer.putLong(0, value, LITTLE_ENDIAN);
+        byteBuffer.limit(SIZE_OF_LONG).position(0);
+        final long filePosition = (entryIndex * ENTRY_LENGTH) + fieldOffset;
+
+        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
+        {
+            if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
+            {
+                throw new IllegalStateException("failed to write field atomically");
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 }

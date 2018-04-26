@@ -392,7 +392,7 @@ public class ExclusiveTermAppender
                     final int vectorRemaining = vector.length - vectorOffset;
                     final int numBytes = Math.min(bytesToWrite - bytesWritten, vectorRemaining);
 
-                    termBuffer.putBytes(payloadOffset, vector.buffer, vectorOffset, numBytes);
+                    termBuffer.putBytes(payloadOffset, vector.buffer, vector.offset + vectorOffset, numBytes);
 
                     bytesWritten += numBytes;
                     payloadOffset += numBytes;

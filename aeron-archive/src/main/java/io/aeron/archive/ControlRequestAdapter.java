@@ -34,6 +34,10 @@ class ControlRequestAdapter implements FragmentHandler
         new ListRecordingsForUriRequestDecoder();
     private final ListRecordingRequestDecoder listRecordingRequestDecoder = new ListRecordingRequestDecoder();
     private final ExtendRecordingRequestDecoder extendRecordingRequestDecoder = new ExtendRecordingRequestDecoder();
+    private final RecordingPositionRequestDecoder recordingPositionRequestDecoder =
+        new RecordingPositionRequestDecoder();
+    private final TruncateRecordingRequestDecoder truncateRecordingRequestDecoder =
+        new TruncateRecordingRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -189,8 +193,35 @@ class ControlRequestAdapter implements FragmentHandler
                     extendRecordingRequestDecoder.sourceLocation());
                 break;
 
+            case RecordingPositionRequestDecoder.TEMPLATE_ID:
+                recordingPositionRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onGetRecordingPosition(
+                    recordingPositionRequestDecoder.controlSessionId(),
+                    recordingPositionRequestDecoder.correlationId(),
+                    recordingPositionRequestDecoder.recordingId());
+                break;
+
+            case TruncateRecordingRequestDecoder.TEMPLATE_ID:
+                truncateRecordingRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onTruncateRecording(
+                    truncateRecordingRequestDecoder.controlSessionId(),
+                    truncateRecordingRequestDecoder.correlationId(),
+                    truncateRecordingRequestDecoder.recordingId(),
+                    truncateRecordingRequestDecoder.position());
+                break;
+
             default:
-                throw new IllegalArgumentException("Unexpected template id:" + templateId);
+                throw new IllegalArgumentException("unexpected template id:" + templateId);
         }
     }
 }

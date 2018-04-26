@@ -105,6 +105,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                     joinLogDecoder.commitPositionId(),
                     joinLogDecoder.logSessionId(),
                     joinLogDecoder.logStreamId(),
+                    joinLogDecoder.ackBeforeImage() == BooleanType.TRUE,
                     joinLogDecoder.logChannel());
                 break;
 
@@ -119,7 +120,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                 break;
 
             default:
-                throw new IllegalArgumentException("Unknown template id: " + templateId);
+                throw new IllegalArgumentException("unknown template id: " + templateId);
         }
     }
 }

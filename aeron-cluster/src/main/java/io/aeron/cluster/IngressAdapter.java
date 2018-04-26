@@ -34,7 +34,6 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final SessionKeepAliveRequestDecoder keepAliveRequestDecoder = new SessionKeepAliveRequestDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
-    private final AdminQueryDecoder adminQueryDecoder = new AdminQueryDecoder();
 
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
@@ -63,7 +62,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
-        final byte[] credentialData;
+        final byte[] credentials;
 
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
@@ -77,14 +76,14 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 
                 final String responseChannel = connectRequestDecoder.responseChannel();
 
-                credentialData = new byte[connectRequestDecoder.credentialDataLength()];
-                connectRequestDecoder.getCredentialData(credentialData, 0, credentialData.length);
+                credentials = new byte[connectRequestDecoder.encodedCredentialsLength()];
+                connectRequestDecoder.getEncodedCredentials(credentials, 0, credentials.length);
 
                 sequencerAgent.onSessionConnect(
                     connectRequestDecoder.correlationId(),
                     connectRequestDecoder.responseStreamId(),
                     responseChannel,
-                    credentialData);
+                    credentials);
                 break;
 
             case SessionHeaderDecoder.TEMPLATE_ID:
@@ -128,26 +127,13 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                credentialData = new byte[challengeResponseDecoder.credentialDataLength()];
-                challengeResponseDecoder.getCredentialData(credentialData, 0, credentialData.length);
+                credentials = new byte[challengeResponseDecoder.encodedCredentialsLength()];
+                challengeResponseDecoder.getEncodedCredentials(credentials, 0, credentials.length);
 
                 sequencerAgent.onChallengeResponse(
                     challengeResponseDecoder.correlationId(),
                     challengeResponseDecoder.clusterSessionId(),
-                    credentialData);
-                break;
-
-            case AdminQueryDecoder.TEMPLATE_ID:
-                adminQueryDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                sequencerAgent.onAdminQuery(
-                    adminQueryDecoder.correlationId(),
-                    adminQueryDecoder.clusterSessionId(),
-                    adminQueryDecoder.queryType());
+                    credentials);
                 break;
 
             default:

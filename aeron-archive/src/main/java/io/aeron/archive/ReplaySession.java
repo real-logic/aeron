@@ -36,13 +36,15 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 /**
  * A replay session with a client which works through the required request response flow and streaming of recorded data.
  * The {@link ArchiveConductor} will initiate a session on receiving a ReplayRequest
- * (see {@link io.aeron.archive.codecs.ReplayRequestDecoder}). The session will:
+ * (see {@link io.aeron.archive.codecs.ReplayRequestDecoder}).
+ * <p>
+ * The session will:
  * <ul>
- * <li>Validate request parameters and respond with appropriate error if unable to replay </li>
+ * <li>Validate request parameters and respond with appropriate error if unable to replay.</li>
  * <li>Wait for replay subscription to connect to the requested replay publication. If no subscription appears within
  * {@link #CONNECT_TIMEOUT_MS} the session will terminate and respond will error.</li>
- * <li>Once the replay publication is connected send an OK response to control client</li>
- * <li>Stream recorded data into the replayPublication {@link ExclusivePublication}</li>
+ * <li>Once the replay publication is connected send an OK response to control client.</li>
+ * <li>Stream recorded data into the replayPublication {@link ExclusivePublication}.</li>
  * <li>If the replay is aborted part way through, send a ReplayAborted message and terminate.</li>
  * </ul>
  */
@@ -186,6 +188,11 @@ class ReplaySession implements Session, SimpleFragmentHandler
         }
 
         return false;
+    }
+
+    long recordingId()
+    {
+        return cursor.recordingId();
     }
 
     State state()

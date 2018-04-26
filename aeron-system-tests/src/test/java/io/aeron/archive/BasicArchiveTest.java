@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
@@ -42,6 +43,7 @@ import static org.junit.Assert.assertThat;
 
 public class BasicArchiveTest
 {
+    private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int FRAGMENT_LIMIT = 10;
     private static final int TERM_BUFFER_LENGTH = 64 * 1024;
 
@@ -76,6 +78,7 @@ public class BasicArchiveTest
                 .spiesSimulateConnection(false)
                 .dirDeleteOnStart(true),
             new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(IoUtil.tmpDirName(), "archive"))
@@ -100,6 +103,28 @@ public class BasicArchiveTest
 
         archivingMediaDriver.archive().context().deleteArchiveDirectory();
         archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldPerformAsyncConnect()
+    {
+        final long lastControlSessionId = aeronArchive.controlSessionId();
+        aeronArchive.close();
+        aeronArchive = null;
+
+        final AeronArchive.AsyncConnect asyncConnect = AeronArchive.asyncConnect(
+            new AeronArchive.Context().aeron(aeron));
+
+        AeronArchive archive;
+        do
+        {
+            archive = asyncConnect.poll();
+        }
+        while (null == archive);
+
+        assertThat(archive.controlSessionId(), is(lastControlSessionId + 1));
+
+        archive.close();
     }
 
     @Test(timeout = 10_000)
@@ -130,6 +155,8 @@ public class BasicArchiveTest
                 SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
+
+            assertThat(aeronArchive.getRecordingPosition(recordingIdFromCounter), is(stopPosition));
         }
 
         aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
@@ -137,15 +164,17 @@ public class BasicArchiveTest
         final long recordingId = findRecordingId(RECORDING_CHANNEL, RECORDING_STREAM_ID, stopPosition);
         assertEquals(recordingIdFromCounter, recordingId);
 
-        final long fromPosition = 0L;
-        final long length = stopPosition - fromPosition;
+        final long position = 0L;
+        final long length = stopPosition - position;
 
         try (Subscription subscription = aeronArchive.replay(
-            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+            recordingId, position, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
         {
             consume(subscription, messageCount, messagePrefix);
             assertEquals(stopPosition, subscription.imageAtIndex(0).position());
         }
+
+        aeronArchive.truncateRecording(recordingId, position);
     }
 
     @Test(timeout = 10_000)
@@ -175,14 +204,16 @@ public class BasicArchiveTest
                 Thread.yield();
             }
 
+            assertThat(aeronArchive.getRecordingPosition(recordingId), is(stopPosition));
             aeronArchive.stopRecording(publication);
+            assertThat(aeronArchive.getRecordingPosition(recordingId), is(NULL_POSITION));
         }
 
-        final long fromPosition = 0L;
-        final long length = stopPosition - fromPosition;
+        final long position = 0L;
+        final long length = stopPosition - position;
 
         final long replaySessionId = aeronArchive.startReplay(
-            recordingId, fromPosition, length, REPLAY_CHANNEL, REPLAY_STREAM_ID);
+            recordingId, position, length, REPLAY_CHANNEL, REPLAY_STREAM_ID);
 
         aeronArchive.stopReplay(replaySessionId);
     }

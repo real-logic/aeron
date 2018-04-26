@@ -252,10 +252,10 @@ public class ArchiveRecordingLoadTest
 
         printf("Sending %d messages, total length=%d %n", MESSAGE_COUNT, totalDataLength);
 
-        publishDataToBeRecorded(publication, MESSAGE_COUNT);
+        publishDataToBeRecorded(publication);
     }
 
-    private void publishDataToBeRecorded(final ExclusivePublication publication, final int messageCount)
+    private void publishDataToBeRecorded(final ExclusivePublication publication)
     {
         buffer.setMemory(0, 1024, (byte)'z');
 
@@ -266,7 +266,7 @@ public class ArchiveRecordingLoadTest
         final int startTermOffset = computeTermOffsetFromPosition(startPosition, positionBitsToShift);
         final int startTermId = computeTermIdFromPosition(startPosition, positionBitsToShift, initialTermId);
 
-        for (int i = 0; i < messageCount; i++)
+        for (int i = 0; i < MESSAGE_COUNT; i++)
         {
             final int dataLength = messageLengths[i] - DataHeaderFlyweight.HEADER_LENGTH;
             buffer.putInt(0, i);

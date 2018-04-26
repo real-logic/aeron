@@ -8,6 +8,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
+import org.agrona.collections.ArrayUtil;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -20,8 +21,12 @@ import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.INVALID;
 import static io.aeron.archive.Catalog.VALID;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.file.StandardOpenOption.READ;
 
+/**
+ * Tool for getting a listing from or verifying the archive catalog.
+ */
 public class CatalogTool
 {
     private static final ByteBuffer TEMP_BUFFER =
@@ -52,6 +57,7 @@ public class CatalogTool
                 ArchiveMarkFile markFile = openMarkFile(System.out::println))
             {
                 printMarkInformation(markFile);
+                System.out.println("Catalog Max Entries: " + catalog.maxEntries());
                 catalog.forEach((he, hd, e, d) -> System.out.println(d));
             }
         }
@@ -117,50 +123,79 @@ public class CatalogTool
         final int segmentFileLength = decoder.segmentFileLength();
         final int termBufferLength = decoder.termBufferLength();
         final long startPosition = decoder.startPosition();
-        final long stopPosition = decoder.stopPosition();
-        final long recordingLength = stopPosition - startPosition;
         final long startSegmentOffset = startPosition & (termBufferLength - 1);
-        final long dataLength = startSegmentOffset + recordingLength;
-        final long endSegmentOffset = dataLength & (segmentFileLength - 1);
+        final long stopSegmentOffset;
+        final File maxSegmentFile;
 
-        final int recordingFileCount = (int)((dataLength + segmentFileLength - 1) / segmentFileLength);
+        long stopPosition = decoder.stopPosition();
+        int maxSegmentIndex = -1;
 
-        final String prefix = recordingId + ".";
-        final boolean[] filesFound = new boolean[recordingFileCount];
-        for (final String fileName : archiveDir.list((dir, name) -> name.startsWith(prefix)))
+        if (NULL_POSITION == stopPosition)
         {
-            try
+            final String prefix = recordingId + "-";
+            String[] segmentFiles =
+                archiveDir.list((dir, name) -> name.endsWith(RECORDING_SEGMENT_POSTFIX));
+
+            if (null == segmentFiles)
             {
-                final int index = Integer.valueOf(
-                    fileName.substring(prefix.length(), fileName.length() - RECORDING_SEGMENT_POSTFIX.length()));
-                filesFound[index] = true;
+                segmentFiles = ArrayUtil.EMPTY_STRING_ARRAY;
             }
-            catch (final Exception ex)
+
+            for (final String filename : segmentFiles)
             {
-                System.err.println("(recordingId=" + recordingId + ") ERR: malformed recording filename:" + fileName);
-                ex.printStackTrace(System.err);
+                try
+                {
+                    final int index = Integer.valueOf(
+                        filename.substring(prefix.length(), filename.length() - RECORDING_SEGMENT_POSTFIX.length()));
+                    maxSegmentIndex = Math.max(index, maxSegmentIndex);
+                }
+                catch (final Exception ignore)
+                {
+                    System.err.println(
+                        "(recordingId=" + recordingId + ") ERR: malformed recording filename:" + filename);
+                    headerEncoder.valid(INVALID);
+                    return;
+                }
+            }
+
+            if (maxSegmentIndex < 0)
+            {
+                System.err.println(
+                    "(recordingId=" + recordingId + ") ERR: no recording segment files");
                 headerEncoder.valid(INVALID);
                 return;
             }
+
+            maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentIndex));
+            stopSegmentOffset = Catalog.recoverStopOffset(maxSegmentFile, segmentFileLength);
+
+            final long recordingLength =
+                startSegmentOffset + (maxSegmentIndex * segmentFileLength) + stopSegmentOffset;
+
+            stopPosition = startPosition + recordingLength;
+
+            encoder.stopPosition(stopPosition);
+            encoder.stopTimestamp(System.currentTimeMillis());
+        }
+        else
+        {
+            final long recordingLength = stopPosition - startPosition;
+            final long dataLength = startSegmentOffset + recordingLength;
+
+            stopSegmentOffset = dataLength & (segmentFileLength - 1);
+            maxSegmentIndex = (int)((recordingLength - startSegmentOffset - stopSegmentOffset) / segmentFileLength);
+            maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentIndex));
         }
 
-        for (int i = 0; i < filesFound.length; i++)
+        if (!maxSegmentFile.exists())
         {
-            if (!filesFound[i])
-            {
-                System.err.println("(recordingId=" + recordingId + ") ERR: missing recording file :" + i);
-                headerEncoder.valid(INVALID);
-                return;
-            }
-        }
-
-        if (verifyFirstFile(recordingId, decoder, startSegmentOffset))
-        {
+            System.err.println("(recordingId=" + recordingId + ") ERR: missing last recording file: " + maxSegmentFile);
             headerEncoder.valid(INVALID);
             return;
         }
 
-        if (verifyLastFile(recordingId, recordingFileCount, endSegmentOffset))
+        final long startOffset = ((stopPosition - startPosition) > segmentFileLength) ? 0L : startSegmentOffset;
+        if (verifyLastFile(recordingId, maxSegmentFile, startOffset, stopSegmentOffset, decoder))
         {
             headerEncoder.valid(INVALID);
             return;
@@ -171,13 +206,16 @@ public class CatalogTool
     }
 
     private static boolean verifyLastFile(
-        final long recordingId, final int recordingFileCount, final long endSegmentOffset)
+        final long recordingId,
+        final File lastSegmentFile,
+        final long startOffset,
+        final long endSegmentOffset,
+        final RecordingDescriptorDecoder decoder)
     {
-        final File lastSegmentFile = new File(archiveDir, segmentFileName(recordingId, recordingFileCount - 1));
         try (FileChannel lastFile = FileChannel.open(lastSegmentFile.toPath(), READ))
         {
             TEMP_BUFFER.clear();
-            long position = 0L;
+            long position = startOffset;
             do
             {
                 TEMP_BUFFER.clear().limit(DataHeaderFlyweight.HEADER_LENGTH);
@@ -186,6 +224,24 @@ public class CatalogTool
                     System.err.println("(recordingId=" + recordingId + ") ERR: failed to read fragment header.");
                     return true;
                 }
+
+                if (HEADER_FLYWEIGHT.frameLength() != 0)
+                {
+                    if (HEADER_FLYWEIGHT.sessionId() != decoder.sessionId())
+                    {
+                        System.err.println("(recordingId=" + recordingId + ") ERR: fragment sessionId=" +
+                            HEADER_FLYWEIGHT.sessionId() + " (expected=" + decoder.sessionId() + ")");
+                        return true;
+                    }
+
+                    if (HEADER_FLYWEIGHT.streamId() != decoder.streamId())
+                    {
+                        System.err.println("(recordingId=" + recordingId + ") ERR: fragment sessionId=" +
+                            HEADER_FLYWEIGHT.streamId() + " (expected=" + decoder.streamId() + ")");
+                        return true;
+                    }
+                }
+
                 position += BitUtil.align(HEADER_FLYWEIGHT.frameLength(), FrameDescriptor.FRAME_ALIGNMENT);
             }
             while (HEADER_FLYWEIGHT.frameLength() != 0);
@@ -199,8 +255,7 @@ public class CatalogTool
         }
         catch (final Exception ex)
         {
-            System.err.println("(recordingId=" + recordingId + ") ERR: failed to verify file:" +
-                segmentFileName(recordingId, recordingFileCount - 1));
+            System.err.println("(recordingId=" + recordingId + ") ERR: failed to verify file:" + lastSegmentFile);
             ex.printStackTrace(System.err);
             return true;
         }

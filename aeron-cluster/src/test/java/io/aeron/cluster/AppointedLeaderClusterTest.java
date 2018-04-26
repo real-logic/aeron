@@ -27,8 +27,8 @@ import io.aeron.cluster.client.EgressAdapter;
 import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import io.aeron.cluster.service.RecordingLog;
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
@@ -45,9 +45,9 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-@Ignore
-public class ClusterTest
+public class AppointedLeaderClusterTest
 {
+    private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int MEMBER_COUNT = 3;
     private static final int MESSAGE_COUNT = 1000;
     private static final String MSG = "Hello World!";
@@ -90,9 +90,11 @@ public class ClusterTest
                     .aeronDirectoryName(baseDirName)
                     .threadingMode(ThreadingMode.SHARED)
                     .termBufferSparseFile(true)
+                    .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
                     .errorHandler(Throwable::printStackTrace)
                     .dirDeleteOnStart(true),
                 new Archive.Context()
+                    .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                     .aeronDirectoryName(baseDirName)
                     .archiveDir(new File(baseDirName, "archive"))
                     .controlChannel(archiveCtx.controlRequestChannel())
@@ -102,6 +104,7 @@ public class ClusterTest
                     .threadingMode(ArchiveThreadingMode.SHARED)
                     .deleteArchiveOnStart(true),
                 new ConsensusModule.Context()
+                    .errorHandler(Throwable::printStackTrace)
                     .clusterMemberId(i)
                     .clusterMembers(CLUSTER_MEMBERS)
                     .appointedLeaderId(0)
@@ -172,7 +175,7 @@ public class ClusterTest
         final long msgCorrelationId = aeron.nextCorrelationId();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
 
-        final EchoConsumer consumer = new EchoConsumer(client.egressSubscription());
+        final EchoConsumer consumer = new EchoConsumer(client.egressSubscription(), client.clusterSessionId());
         final Thread thread = new Thread(consumer);
         thread.setName("consumer");
         thread.setDaemon(true);
@@ -193,33 +196,6 @@ public class ClusterTest
         {
             assertThat(service.messageCount(), is(MESSAGE_COUNT));
         }
-    }
-
-    @Test(timeout = 10_000)
-    public void shouldQueryLeaderForEndpoints()
-    {
-        final String endpoints = client.queryForEndpoints();
-        final ClusterMember[] responseClusterMembers = ClusterMember.parse(endpoints);
-        final int appointedLeaderId = 0;
-        final ClusterMember responseLeader = responseClusterMembers[0];
-
-        assertThat(responseClusterMembers.length, is(1));
-        assertThat(responseLeader.id(), is(appointedLeaderId));
-
-        final ClusterMember[] configuredClusterMembers = ClusterMember.parse(CLUSTER_MEMBERS);
-        final ClusterMember configuredLeader = configuredClusterMembers[appointedLeaderId];
-
-        assertThat(responseLeader.clientFacingEndpoint(), is(configuredLeader.clientFacingEndpoint()));
-        assertThat(responseLeader.memberFacingEndpoint(), is(configuredLeader.memberFacingEndpoint()));
-        assertThat(responseLeader.logEndpoint(), is(configuredLeader.logEndpoint()));
-        assertThat(responseLeader.archiveEndpoint(), is(configuredLeader.archiveEndpoint()));
-    }
-
-    @Test(timeout = 10_000)
-    public void shouldQueryLeaderForRecoveryPlan()
-    {
-        final byte[] encodedPlan = client.queryForRecoveryPlan();
-        final RecordingLog.RecoveryPlan recoveryPlan = new RecordingLog.RecoveryPlan(encodedPlan);
     }
 
     private static String memberSpecificPort(final String channel, final int memberId)
@@ -251,9 +227,9 @@ public class ClusterTest
         private int messageCount;
         private final EgressAdapter egressAdapter;
 
-        EchoConsumer(final Subscription egressSubscription)
+        EchoConsumer(final Subscription egressSubscription, final long clusterSessionId)
         {
-            egressAdapter = new EgressAdapter(this, egressSubscription, 10);
+            egressAdapter = new EgressAdapter(this, clusterSessionId, egressSubscription, 10);
         }
 
         public void run()

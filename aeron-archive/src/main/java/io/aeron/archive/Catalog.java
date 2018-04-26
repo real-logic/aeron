@@ -17,8 +17,10 @@ package io.aeron.archive;
 
 import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.AsciiEncoding;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -28,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -94,6 +97,8 @@ class Catalog implements AutoCloseable
 
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     static final int DEFAULT_RECORD_LENGTH = 1024;
+    static final long MAX_ENTRIES = calculateMaxEntries(Integer.MAX_VALUE, DEFAULT_RECORD_LENGTH);
+    static final long DEFAULT_MAX_ENTRIES = 8 * 1024;
     static final byte VALID = 1;
     static final byte INVALID = 0;
 
@@ -121,21 +126,34 @@ class Catalog implements AutoCloseable
         final File archiveDir,
         final FileChannel archiveDirChannel,
         final int fileSyncLevel,
+        final long maxNumEntries,
         final EpochClock epochClock)
     {
         this.archiveDir = archiveDir;
         this.fileSyncLevel = fileSyncLevel;
         this.epochClock = epochClock;
 
+        validateMaxEntries(maxNumEntries);
+
         try
         {
             final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
             final boolean catalogPreExists = catalogFile.exists();
             MappedByteBuffer catalogMappedByteBuffer = null;
+            final long catalogLength;
 
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE))
             {
-                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, Integer.MAX_VALUE);
+                if (catalogPreExists)
+                {
+                    catalogLength = channel.size();
+                }
+                else
+                {
+                    catalogLength = calculateCatalogLength(maxNumEntries);
+                }
+
+                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, catalogLength);
             }
             catch (final Exception ex)
             {
@@ -163,7 +181,7 @@ class Catalog implements AutoCloseable
             {
                 if (catalogHeaderDecoder.version() != CatalogHeaderDecoder.SCHEMA_VERSION)
                 {
-                    throw new IllegalArgumentException("Catalog file version " + catalogHeaderDecoder.version() +
+                    throw new IllegalArgumentException("catalog file version " + catalogHeaderDecoder.version() +
                         " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
                 }
 
@@ -191,7 +209,7 @@ class Catalog implements AutoCloseable
 
             maxDescriptorStringsCombinedLength =
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
-            maxRecordingId = (Integer.MAX_VALUE - (2 * recordLength - 1)) / recordLength;
+            maxRecordingId = (int)calculateMaxEntries(catalogLength, recordLength) - 1;
 
             refreshCatalog(true);
         }
@@ -212,10 +230,12 @@ class Catalog implements AutoCloseable
         {
             final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
             MappedByteBuffer catalogMappedByteBuffer = null;
+            final long catalogLength;
 
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE))
             {
-                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, channel.size());
+                catalogLength = channel.size();
+                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, catalogLength);
             }
             catch (final Exception ex)
             {
@@ -238,14 +258,14 @@ class Catalog implements AutoCloseable
 
             if (catalogHeaderDecoder.version() != CatalogHeaderDecoder.SCHEMA_VERSION)
             {
-                throw new IllegalArgumentException("Catalog file version " + catalogHeaderDecoder.version() +
+                throw new IllegalArgumentException("catalog file version " + catalogHeaderDecoder.version() +
                     " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
             }
 
             recordLength = catalogHeaderDecoder.entryLength();
             maxDescriptorStringsCombinedLength =
                 recordLength - (DESCRIPTOR_HEADER_LENGTH + RecordingDescriptorEncoder.BLOCK_LENGTH + 12);
-            maxRecordingId = (Integer.MAX_VALUE - (2 * recordLength - 1)) / recordLength;
+            maxRecordingId = (int)calculateMaxEntries(catalogLength, recordLength) - 1;
 
             refreshCatalog(false);
         }
@@ -259,6 +279,11 @@ class Catalog implements AutoCloseable
     public void close()
     {
         IoUtil.unmap(catalogByteBuffer);
+    }
+
+    public int maxEntries()
+    {
+        return maxRecordingId + 1;
     }
 
     long addNewRecording(
@@ -276,13 +301,13 @@ class Catalog implements AutoCloseable
     {
         if (nextRecordingId > maxRecordingId)
         {
-            throw new IllegalStateException("Catalog is full, max recordings reached: " + maxRecordingId);
+            throw new IllegalStateException("catalog is full, max recordings reached: " + maxRecordingId);
         }
 
         final int combinedStringsLen = strippedChannel.length() + sourceIdentity.length() + originalChannel.length();
         if (combinedStringsLen > maxDescriptorStringsCombinedLength)
         {
-            throw new IllegalArgumentException("Combined length of channel:'" + strippedChannel +
+            throw new IllegalArgumentException("combined length of channel:'" + strippedChannel +
                 "' and sourceIdentity:'" + sourceIdentity +
                 "' and originalChannel:'" + originalChannel +
                 "' exceeds max allowed:" + maxDescriptorStringsCombinedLength);
@@ -448,6 +473,18 @@ class Catalog implements AutoCloseable
         }
     }
 
+    void recordingStopped(final long recordingId, final long position)
+    {
+        final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
+        final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
+        fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
+
+        if (fileSyncLevel > 0)
+        {
+            catalogByteBuffer.force();
+        }
+    }
+
     void extendRecording(final long recordingId)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
@@ -501,9 +538,76 @@ class Catalog implements AutoCloseable
         return descriptorBuffer.getByte(RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
+    public static long calculateCatalogLength(final long maxEntries)
+    {
+        return Math.min((maxEntries * DEFAULT_RECORD_LENGTH) + DEFAULT_RECORD_LENGTH, Integer.MAX_VALUE);
+    }
+
+    public static long calculateMaxEntries(final long catalogLength, final long recordLength)
+    {
+        if (Integer.MAX_VALUE == catalogLength)
+        {
+            return (Integer.MAX_VALUE - (recordLength - 1)) / recordLength;
+        }
+
+        return (catalogLength / recordLength) - 1;
+    }
+
     int recordingDescriptorOffset(final long recordingId)
     {
         return (int)(recordingId * recordLength) + recordLength;
+    }
+
+    public static void validateMaxEntries(final long maxEntries)
+    {
+        if (maxEntries < 1 || maxEntries > MAX_ENTRIES)
+        {
+            throw new IllegalArgumentException(
+                "Catalog max entries must be between 1 and " + MAX_ENTRIES + ": maxEntries=" + maxEntries);
+        }
+    }
+
+    public static long recoverStopOffset(final File segmentFile, final int segmentFileLength)
+    {
+        long lastFragmentOffset = 0;
+        try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))
+        {
+            final ByteBuffer buffer = ByteBuffer.allocateDirect(HEADER_LENGTH);
+            buffer.order(BYTE_ORDER);
+
+            long nextFragmentOffset = 0;
+            do
+            {
+                buffer.clear();
+                if (HEADER_LENGTH != segment.read(buffer, nextFragmentOffset))
+                {
+                    throw new IllegalStateException("unexpected read failure from file: " +
+                        segmentFile.getAbsolutePath() + " at position:" + nextFragmentOffset);
+                }
+
+                final int frameLength = buffer.getInt(DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
+                if (frameLength == 0)
+                {
+                    break;
+                }
+
+                lastFragmentOffset = nextFragmentOffset;
+                nextFragmentOffset += align(frameLength, FRAME_ALIGNMENT);
+            }
+            while (nextFragmentOffset != segmentFileLength);
+
+            if ((nextFragmentOffset / PAGE_SIZE) == (lastFragmentOffset / PAGE_SIZE))
+            {
+                // if last fragment does not straddle page boundaries we need not drop it
+                lastFragmentOffset = nextFragmentOffset;
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return lastFragmentOffset;
     }
 
     /**
@@ -532,28 +636,50 @@ class Catalog implements AutoCloseable
         final long recordingId = decoder.recordingId();
         if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIMESTAMP)
         {
-            int segmentIndex = 0;
-            File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
+            final String prefix = recordingId + "-";
+            String[] segmentFiles = archiveDir.list(
+                (dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_POSTFIX));
+
+            if (null == segmentFiles)
+            {
+                segmentFiles = ArrayUtil.EMPTY_STRING_ARRAY;
+            }
+
+            int maxSegmentIndex = -1;
+            for (final String filename : segmentFiles)
+            {
+                final int length = filename.length();
+                final int offset = prefix.length();
+                final int remaining = length - offset - RECORDING_SEGMENT_POSTFIX.length();
+
+                if (remaining > 0)
+                {
+                    try
+                    {
+                        maxSegmentIndex = Math.max(
+                            AsciiEncoding.parseIntAscii(filename, offset, remaining),
+                            maxSegmentIndex);
+                    }
+                    catch (final Exception ignore)
+                    {
+                    }
+                }
+            }
+
+            final File maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentIndex));
             final long startPosition = decoder.startPosition();
 
-            if (!segmentFile.exists())
+            if (maxSegmentIndex < 0)
             {
                 encoder.stopPosition(startPosition);
             }
             else
             {
-                File nextSegmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex + 1));
-                while (nextSegmentFile.exists())
-                {
-                    segmentIndex++;
-                    segmentFile = nextSegmentFile;
-                    nextSegmentFile = new File(archiveDir, segmentFileName(recordingId, segmentIndex + 1));
-                }
                 final int segmentFileLength = decoder.segmentFileLength();
-                final long stopOffset = recoverStopOffset(segmentFile, segmentFileLength);
+                final long stopOffset = recoverStopOffset(maxSegmentFile, segmentFileLength);
                 final int termBufferLength = decoder.termBufferLength();
                 final long recordingLength =
-                    (startPosition & (termBufferLength - 1)) + (segmentIndex * segmentFileLength) + stopOffset;
+                    (startPosition & (termBufferLength - 1)) + (maxSegmentIndex * segmentFileLength) + stopOffset;
                 encoder.stopPosition(startPosition + recordingLength);
             }
 
@@ -561,48 +687,5 @@ class Catalog implements AutoCloseable
         }
 
         nextRecordingId = recordingId + 1;
-    }
-
-    private long recoverStopOffset(final File segmentFile, final int segmentFileLength)
-    {
-        long lastFragmentOffset = 0;
-        try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))
-        {
-            final ByteBuffer buffer = ByteBuffer.allocateDirect(HEADER_LENGTH);
-            buffer.order(BYTE_ORDER);
-
-            long nextFragmentOffset = 0;
-            do
-            {
-                buffer.clear();
-                if (HEADER_LENGTH != segment.read(buffer, nextFragmentOffset))
-                {
-                    throw new IllegalStateException("Unexpected read failure from file: " +
-                        segmentFile.getAbsolutePath() + " at position:" + nextFragmentOffset);
-                }
-
-                final int frameLength = buffer.getInt(DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
-                if (frameLength == 0)
-                {
-                    break;
-                }
-
-                lastFragmentOffset = nextFragmentOffset;
-                nextFragmentOffset += align(frameLength, FRAME_ALIGNMENT);
-            }
-            while (nextFragmentOffset != segmentFileLength);
-
-            if ((nextFragmentOffset / PAGE_SIZE) == (lastFragmentOffset / PAGE_SIZE))
-            {
-                // if last fragment does not straddle page boundaries we need not drop it
-                lastFragmentOffset = nextFragmentOffset;
-            }
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return lastFragmentOffset;
     }
 }

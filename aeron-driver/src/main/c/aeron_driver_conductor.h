@@ -38,6 +38,7 @@
 typedef struct aeron_publication_link_stct
 {
     aeron_driver_managed_resource_t *resource;
+    int64_t registration_id;
 }
 aeron_publication_link_t;
 
@@ -51,9 +52,11 @@ aeron_counter_link_t;
 typedef struct aeron_client_stct
 {
     int64_t client_id;
-    int64_t client_liveness_timeout_ns;
-    int64_t time_of_last_keepalive;
+    int64_t client_liveness_timeout_ms;
+    int64_t time_of_last_keepalive_ms;
     bool reached_end_of_life;
+
+    aeron_counter_t heartbeat_status;
 
     struct publication_link_stct
     {
@@ -254,7 +257,6 @@ typedef struct aeron_driver_conductor_stct
     lingering_resources;
 
     int64_t *errors_counter;
-    int64_t *client_keep_alives_counter;
     int64_t *unblocked_commands_counter;
 
     aeron_clock_func_t nano_clock;

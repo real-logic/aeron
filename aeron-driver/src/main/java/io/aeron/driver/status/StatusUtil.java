@@ -39,7 +39,7 @@ public class StatusUtil
         final MutableInteger id = new MutableInteger(-1);
 
         countersReader.forEach(
-            (counterId, typeId, keyBuffer, label) ->
+            (counterId, label) ->
             {
                 if (counterId == SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY.id() &&
                     label.equals(SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY.label()))

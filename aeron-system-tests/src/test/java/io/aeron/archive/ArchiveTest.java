@@ -72,6 +72,7 @@ public class ArchiveTest
             });
     }
 
+    private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final String CONTROL_RESPONSE_URI = CommonContext.IPC_CHANNEL;
     private static final int CONTROL_RESPONSE_STREAM_ID = 100;
     private static final String REPLAY_URI = CommonContext.IPC_CHANNEL;
@@ -147,6 +148,7 @@ public class ArchiveTest
 
         archive = Archive.launch(
             new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .fileSyncLevel(SYNC_LEVEL)
                 .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
                 .deleteArchiveOnStart(true)

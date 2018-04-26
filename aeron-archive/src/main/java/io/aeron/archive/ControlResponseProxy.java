@@ -139,17 +139,17 @@ class ControlResponseProxy
     {
         if (result == Publication.NOT_CONNECTED)
         {
-            throw new IllegalStateException("Response publication is not connected: " + controlPublication.channel());
+            throw new IllegalStateException("response publication is not connected: " + controlPublication.channel());
         }
 
         if (result == Publication.CLOSED)
         {
-            throw new IllegalStateException("Response publication is closed: " + controlPublication.channel());
+            throw new IllegalStateException("response publication is closed: " + controlPublication.channel());
         }
 
         if (result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("Response publication at max position: " + controlPublication.channel());
+            throw new IllegalStateException("response publication at max position: " + controlPublication.channel());
         }
     }
 }

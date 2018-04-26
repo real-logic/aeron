@@ -28,6 +28,7 @@ import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
 /**
  * Allocates {@link UnsafeBufferPosition} counters on a stream of messages. Positions tracked in bytes include:
  * <ul>
+ * <li>{@link PublisherPos}: Highest position on a {@link io.aeron.Publication} reached for offers and claims.</li>
  * <li>{@link PublisherLimit}: Limit for flow controlling a {@link io.aeron.Publication} offers and claims.</li>
  * <li>{@link SenderPos}: Highest position on a {@link io.aeron.Publication} stream sent to the media.</li>
  * <li>{@link SenderLimit}: Limit for flow controlling a {@link io.aeron.driver.Sender} of a stream.</li>
@@ -130,8 +131,7 @@ public class StreamPositionCounter
             keyLength,
             tempBuffer,
             keyLength,
-            labelLength
-        );
+            labelLength);
     }
 
     /**
@@ -193,8 +193,7 @@ public class StreamPositionCounter
             keyLength,
             tempBuffer,
             keyLength,
-            labelLength
-        );
+            labelLength);
 
         return new UnsafeBufferPosition((UnsafeBuffer)countersManager.valuesBuffer(), counterId, countersManager);
     }
@@ -215,9 +214,6 @@ public class StreamPositionCounter
             case SenderPos.SENDER_POSITION_TYPE_ID:
                 return SenderPos.NAME;
 
-            case SenderLimit.SENDER_LIMIT_TYPE_ID:
-                return SenderLimit.NAME;
-
             case ReceiverHwm.RECEIVER_HWM_TYPE_ID:
                 return ReceiverHwm.NAME;
 
@@ -226,6 +222,12 @@ public class StreamPositionCounter
 
             case ReceiverPos.RECEIVER_POS_TYPE_ID:
                 return ReceiverPos.NAME;
+
+            case SenderLimit.SENDER_LIMIT_TYPE_ID:
+                return SenderLimit.NAME;
+
+            case PublisherPos.PUBLISHER_POS_TYPE_ID:
+                return PublisherPos.NAME;
 
             default:
                 return "<unknown>";

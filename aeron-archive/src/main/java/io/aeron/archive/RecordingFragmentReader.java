@@ -90,14 +90,14 @@ class RecordingFragmentReader implements AutoCloseable
 
         if (replayLength < 0)
         {
-            throw new IllegalArgumentException("Length must be positive");
+            throw new IllegalArgumentException("length must be positive");
         }
 
         segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentLength);
 
         if (!openRecordingSegment())
         {
-            throw new IllegalStateException("segment file must be available for requested position: " + position);
+            throw new IllegalStateException("no segment file for requested position: " + position);
         }
 
         final long termCount = startPosition >> LogBufferDescriptor.positionBitsToShift(termLength);
@@ -117,7 +117,7 @@ class RecordingFragmentReader implements AutoCloseable
             DataHeaderFlyweight.streamId(termBuffer, fromTermOffset) != recordingSummary.streamId)
         {
             close();
-            throw new IllegalArgumentException("fromPosition is not aligned to fragment: " + fromPosition);
+            throw new IllegalArgumentException("position is not aligned to fragment: " + fromPosition);
         }
 
         replayPosition = fromPosition;
@@ -127,6 +127,11 @@ class RecordingFragmentReader implements AutoCloseable
     public void close()
     {
         closeRecordingSegment();
+    }
+
+    long recordingId()
+    {
+        return recordingId;
     }
 
     boolean isDone()
@@ -182,6 +187,19 @@ class RecordingFragmentReader implements AutoCloseable
         return polled;
     }
 
+    public static boolean initialSegmentFileExists(
+        final RecordingSummary recordingSummary,
+        final File archiveDir,
+        final long position)
+    {
+        final long fromPosition = position == NULL_POSITION ? recordingSummary.startPosition : position;
+        final int segmentFileIndex =
+            segmentFileIndex(recordingSummary.startPosition, fromPosition, recordingSummary.segmentFileLength);
+        final File segmentFile = new File(archiveDir, segmentFileName(recordingSummary.recordingId, segmentFileIndex));
+
+        return segmentFile.exists();
+    }
+
     private boolean noAvailableData()
     {
         return recordingPosition != null &&
@@ -225,7 +243,7 @@ class RecordingFragmentReader implements AutoCloseable
             segmentFileIndex++;
             if (!openRecordingSegment())
             {
-                throw new IllegalStateException("Failed to open segment file: " +
+                throw new IllegalStateException("failed to open segment file: " +
                     segmentFileName(recordingId, segmentFileIndex));
             }
 
@@ -251,7 +269,7 @@ class RecordingFragmentReader implements AutoCloseable
             final int lastSegmentIndex = segmentFileIndex(startPosition, stopPosition, segmentLength);
             if (lastSegmentIndex > segmentFileIndex)
             {
-                throw new IllegalStateException("Recording segment not found. Segment index=" + segmentFileIndex +
+                throw new IllegalStateException("recording segment not found - segment index=" + segmentFileIndex +
                     ", last segment index=" + lastSegmentIndex);
             }
 

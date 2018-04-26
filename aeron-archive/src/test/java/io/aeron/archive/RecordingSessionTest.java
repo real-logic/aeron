@@ -59,8 +59,7 @@ public class RecordingSessionTest
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
     private final Counter mockPosition = mock(Counter.class);
-    private Image image = mockImage(
-        SESSION_ID, INITIAL_TERM_ID, SOURCE_IDENTITY, TERM_BUFFER_LENGTH, mockSubscription(CHANNEL, STREAM_ID));
+    private final Image image = mockImage(mockSubscription());
     private final File archiveDir = TestUtil.makeTestDirectory();
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
@@ -190,32 +189,27 @@ public class RecordingSessionTest
         session.close();
     }
 
-    private Subscription mockSubscription(final String channel, final int streamId)
+    private static Subscription mockSubscription()
     {
         final Subscription subscription = mock(Subscription.class);
 
-        when(subscription.channel()).thenReturn(channel);
-        when(subscription.streamId()).thenReturn(streamId);
+        when(subscription.channel()).thenReturn(CHANNEL);
+        when(subscription.streamId()).thenReturn(STREAM_ID);
 
         return subscription;
     }
 
-    private Image mockImage(
-        final int sessionId,
-        final int initialTermId,
-        final String sourceIdentity,
-        final int termBufferLength,
-        final Subscription subscription)
+    private static Image mockImage(final Subscription subscription)
     {
         final Image image = mock(Image.class);
 
-        when(image.sessionId()).thenReturn(sessionId);
-        when(image.initialTermId()).thenReturn(initialTermId);
-        when(image.sourceIdentity()).thenReturn(sourceIdentity);
-        when(image.termBufferLength()).thenReturn(termBufferLength);
-        when(image.subscription()).thenReturn(subscription);
+        when(image.sessionId()).thenReturn(SESSION_ID);
+        when(image.initialTermId()).thenReturn(INITIAL_TERM_ID);
+        when(image.sourceIdentity()).thenReturn(SOURCE_IDENTITY);
+        when(image.termBufferLength()).thenReturn(TERM_BUFFER_LENGTH);
         when(image.mtuLength()).thenReturn(MTU_LENGTH);
         when(image.joinPosition()).thenReturn(START_POSITION);
+        when(image.subscription()).thenReturn(subscription);
 
         return image;
     }

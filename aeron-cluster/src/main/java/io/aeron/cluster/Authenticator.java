@@ -23,20 +23,20 @@ public interface Authenticator
     /**
      * Called upon reception of a Connect Request.
      *
-     * @param sessionId      of the unauthenticated client assigned by the consensus module.
-     * @param credentialData from the Connect Request. Will not be null, but may be 0 length.
-     * @param nowMs          current time in milliseconds.
+     * @param sessionId          of the unauthenticated client assigned by the consensus module.
+     * @param encodedCredentials from the Connect Request. Will not be null, but may be 0 length.
+     * @param nowMs              current time in milliseconds.
      */
-    void onConnectRequest(long sessionId, byte[] credentialData, long nowMs);
+    void onConnectRequest(long sessionId, byte[] encodedCredentials, long nowMs);
 
     /**
      * Called upon reception of a Challenge Response from an unauthenticated client.
      *
-     * @param sessionId      of the unauthenticated client assigned by the consensus module.
-     * @param credentialData from the Challenge Response. Will not be null, but may be 0 length.
-     * @param nowMs          current time in milliseconds.
+     * @param sessionId          of the unauthenticated client assigned by the consensus module.
+     * @param encodedCredentials from the Challenge Response. Will not be null, but may be 0 length.
+     * @param nowMs              current time in milliseconds.
      */
-    void onChallengeResponse(long sessionId, byte[] credentialData, long nowMs);
+    void onChallengeResponse(long sessionId, byte[] encodedCredentials, long nowMs);
 
     /**
      * Called when a connected client should be able to accept a response from the authenticator.

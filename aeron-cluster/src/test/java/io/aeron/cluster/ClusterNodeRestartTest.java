@@ -49,6 +49,8 @@ import static org.mockito.Mockito.when;
 
 public class ClusterNodeRestartTest
 {
+    private static final long MAX_CATALOG_ENTRIES = 1024;
+
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
 
@@ -96,7 +98,6 @@ public class ClusterNodeRestartTest
         final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
 
         launchService(true, serviceMsgCounter);
-
         connectClient();
 
         sendCountedMessageIntoCluster(0);
@@ -128,7 +129,6 @@ public class ClusterNodeRestartTest
         final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
 
         launchService(true, serviceMsgCounter);
-
         connectClient();
 
         sendCountedMessageIntoCluster(0);
@@ -145,7 +145,6 @@ public class ClusterNodeRestartTest
 
         launchClusteredMediaDriver(false);
         launchService(false, restartServiceMsgCounter);
-
         connectClient();
 
         sendCountedMessageIntoCluster(1);
@@ -158,27 +157,15 @@ public class ClusterNodeRestartTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldRestartServiceFromSnapshot() throws Exception
+    public void shouldRestartServiceFromEmptySnapshot() throws Exception
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
         launchService(true, serviceMsgCounter);
 
-        connectClient();
-
-        sendCountedMessageIntoCluster(0);
-        sendCountedMessageIntoCluster(1);
-        sendCountedMessageIntoCluster(2);
-
-        while (serviceMsgCounter.get() < 2)
-        {
-            Thread.yield();
-        }
-
-        final CountersReader counters = aeronCluster.context().aeron().countersReader();
+        final CountersReader counters = container.context().aeron().countersReader();
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
         assertNotNull(controlToggle);
-
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
         while (snapshotCount.get() == 0)
@@ -187,12 +174,48 @@ public class ClusterNodeRestartTest
             Thread.sleep(1);
         }
 
-        sendCountedMessageIntoCluster(3);
+        container.close();
+        clusteredMediaDriver.close();
 
-        while (serviceMsgCounter.get() < 3)
+        serviceState.set(null);
+        launchClusteredMediaDriver(false);
+        launchService(false, serviceMsgCounter);
+
+        while (null == serviceState.get())
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
+        }
+
+        assertThat(serviceState.get(), is("0"));
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldRestartServiceFromSnapshot() throws Exception
+    {
+        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+        launchService(true, serviceMsgCounter);
+        connectClient();
+
+        sendCountedMessageIntoCluster(0);
+        sendCountedMessageIntoCluster(1);
+        sendCountedMessageIntoCluster(2);
+
+        while (serviceMsgCounter.get() != 3)
+        {
+            Thread.yield();
+        }
+
+        final CountersReader counters = aeronCluster.context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+        assertNotNull(controlToggle);
+        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+        while (snapshotCount.get() == 0)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1);
         }
 
         aeronCluster.close();
@@ -210,6 +233,59 @@ public class ClusterNodeRestartTest
         }
 
         assertThat(serviceState.get(), is("3"));
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldRestartServiceFromSnapshotWithFurtherLog() throws Exception
+    {
+        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+        launchService(true, serviceMsgCounter);
+        connectClient();
+
+        sendCountedMessageIntoCluster(0);
+        sendCountedMessageIntoCluster(1);
+        sendCountedMessageIntoCluster(2);
+
+        while (serviceMsgCounter.get() != 3)
+        {
+            Thread.yield();
+        }
+
+        final CountersReader counters = aeronCluster.context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+        assertNotNull(controlToggle);
+        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+        while (snapshotCount.get() == 0)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1);
+        }
+
+        sendCountedMessageIntoCluster(3);
+
+        while (serviceMsgCounter.get() != 4)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        aeronCluster.close();
+        container.close();
+        clusteredMediaDriver.close();
+
+        serviceMsgCounter.set(0);
+        launchClusteredMediaDriver(false);
+        launchService(false, serviceMsgCounter);
+
+        while (serviceMsgCounter.get() != 1)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        assertThat(serviceState.get(), is("4"));
     }
 
     private void sendCountedMessageIntoCluster(final int value)
@@ -253,6 +329,7 @@ public class ClusterNodeRestartTest
                     assertThat(sentValue, is(counterValue));
 
                     counterValue++;
+                    serviceState.set(Integer.toString(counterValue));
                     msgCounter.getAndIncrement();
                 }
 
@@ -277,8 +354,11 @@ public class ClusterNodeRestartTest
                             (buffer, offset, length, header) ->
                             {
                                 counterValue = buffer.getInt(offset);
-                                serviceState.set(
-                                    buffer.getStringWithoutLengthAscii(offset + SIZE_OF_INT, length - SIZE_OF_INT));
+
+                                final String s = buffer.getStringWithoutLengthAscii(offset +
+                                    SIZE_OF_INT, length - SIZE_OF_INT);
+
+                                serviceState.set(s);
                             },
                             1);
 
@@ -331,9 +411,11 @@ public class ClusterNodeRestartTest
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true),
             new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
+                .errorHandler(Throwable::printStackTrace)
                 .snapshotCounter(mockSnapshotCounter)
                 .terminationHook(() -> isTerminated.set(true))
                 .deleteDirOnStart(initialLaunch));
@@ -345,7 +427,7 @@ public class ClusterNodeRestartTest
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("Unexpected publication state: " + result);
+            throw new IllegalStateException("unexpected publication state: " + result);
         }
     }
 }

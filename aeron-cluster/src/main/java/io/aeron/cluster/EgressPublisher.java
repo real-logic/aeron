@@ -18,16 +18,19 @@ package io.aeron.cluster;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
+import org.agrona.ExpandableArrayBuffer;
+
+import static io.aeron.cluster.ClusterSession.MAX_ENCODED_MEMBERSHIP_QUERY_LENGTH;
 
 class EgressPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
 
     private final BufferClaim bufferClaim = new BufferClaim();
+    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(MAX_ENCODED_MEMBERSHIP_QUERY_LENGTH);
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
     private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
-    private final AdminResponseEncoder adminResponseEncoder = new AdminResponseEncoder();
 
     public boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
     {
@@ -60,58 +63,28 @@ class EgressPublisher
         return false;
     }
 
-    public boolean sendChallenge(final ClusterSession session, final byte[] challengeData)
+    public boolean sendChallenge(final ClusterSession session, final byte[] encodedChallenge)
     {
         final Publication publication = session.responsePublication();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
-            ChallengeEncoder.BLOCK_LENGTH +
-            ChallengeEncoder.challengeDataHeaderLength() +
-            challengeData.length;
-
-        int attempts = SEND_ATTEMPTS;
-        do
+        if (!publication.isConnected())
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                challengeEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(session.id())
-                    .correlationId(session.lastCorrelationId())
-                    .putChallengeData(challengeData, 0, challengeData.length);
-
-                bufferClaim.commit();
-
-                return true;
-            }
+            return false;
         }
-        while (--attempts > 0);
 
-        return false;
-    }
+        challengeEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .clusterSessionId(session.id())
+            .correlationId(session.lastCorrelationId())
+            .putEncodedChallenge(encodedChallenge, 0, encodedChallenge.length);
 
-    public boolean sendAdminResponse(final ClusterSession session, final byte[] responseData)
-    {
-        final Publication publication = session.responsePublication();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
-            AdminResponseEncoder.BLOCK_LENGTH +
-            AdminResponseEncoder.responseDataHeaderLength() +
-            responseData.length;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + challengeEncoder.encodedLength();
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = publication.offer(buffer, 0, length);
             if (result > 0)
             {
-                adminResponseEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(session.id())
-                    .correlationId(session.lastCorrelationId())
-                    .putResponseData(responseData, 0, responseData.length);
-
-                bufferClaim.commit();
-
                 return true;
             }
         }

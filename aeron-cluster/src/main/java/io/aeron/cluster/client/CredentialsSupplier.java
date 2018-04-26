@@ -24,18 +24,18 @@ package io.aeron.cluster.client;
 public interface CredentialsSupplier
 {
     /**
-     * Provide a credential to be included in Session Connect message to the cluster.
+     * Provide encoded credentials to be included in Session Connect message to the cluster.
      *
-     * @return a credential in binary form to be included in the Session Connect message to the cluster.
+     * @return encoded credentials to be included in the Session Connect message to the cluster.
      */
-    byte[] connectRequestCredentialData();
+    byte[] encodedCredentials();
 
     /**
-     * Given some challenge data, provide the credential to be included in a Challenge Response as part of
+     * Given some encoded challenge, provide the credentials to be included in a Challenge Response as part of
      * authentication with a cluster.
      *
-     * @param challengeData from the cluster to use in providing a credential.
-     * @return a credential in binary form to be included in the Challenge Response to the cluster.
+     * @param encodedChallenge from the cluster to use in providing a credential.
+     * @return encoded credentials to be included in the Challenge Response to the cluster.
      */
-    byte[] onChallenge(byte[] challengeData);
+    byte[] onChallenge(byte[] encodedChallenge);
 }

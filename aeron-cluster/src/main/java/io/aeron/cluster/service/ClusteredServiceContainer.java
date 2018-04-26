@@ -19,13 +19,14 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
-import io.aeron.cluster.ClusterMarkFile;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.errors.DistinctErrorLog;
+import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
 
@@ -34,6 +35,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
+import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 public final class ClusteredServiceContainer implements AutoCloseable
@@ -218,6 +220,17 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String CLUSTERED_SERVICE_DIR_DEFAULT = "clustered-service";
 
         /**
+         * Size in bytes of the error buffer for the cluster container.
+         */
+        public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.cluster.service.error.buffer.length";
+
+        /**
+         * Size in bytes of the error buffer for the cluster container.
+         * Default to 1MB.
+         */
+        public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+
+        /**
          * The value {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
          *
          * @return {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
@@ -333,6 +346,17 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             return System.getProperty(CLUSTERED_SERVICE_DIR_PROP_NAME, CLUSTERED_SERVICE_DIR_DEFAULT);
         }
+
+        /**
+         * Size in bytes of the error buffer in the mark file.
+         *
+         * @return length of error buffer in bytes.
+         * @see #ERROR_BUFFER_LENGTH_PROP_NAME
+         */
+        public static int errorBufferLength()
+        {
+            return getSizeAsInt(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
+        }
     }
 
     public static class Context implements AutoCloseable, Cloneable
@@ -345,11 +369,13 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private int serviceControlStreamId = Configuration.serviceControlStreamId();
         private String snapshotChannel = Configuration.snapshotChannel();
         private int snapshotStreamId = Configuration.snapshotStreamId();
+        private int errorBufferLength = Configuration.errorBufferLength();
         private boolean deleteDirOnStart = false;
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
+        private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
@@ -401,9 +427,47 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 epochClock = new SystemEpochClock();
             }
 
+            if (deleteDirOnStart)
+            {
+                if (null != clusteredServiceDir)
+                {
+                    IoUtil.delete(clusteredServiceDir, true);
+                }
+                else
+                {
+                    IoUtil.delete(new File(Configuration.clusteredServiceDirName()), true);
+                }
+            }
+
+            if (null == clusteredServiceDir)
+            {
+                clusteredServiceDir = new File(clusteredServiceDirectoryName);
+            }
+
+            if (!clusteredServiceDir.exists() && !clusteredServiceDir.mkdirs())
+            {
+                throw new IllegalStateException(
+                    "Failed to create clustered service dir: " + clusteredServiceDir.getAbsolutePath());
+            }
+
+            if (null == markFile)
+            {
+                markFile = new ClusterMarkFile(
+                    new File(clusteredServiceDir, ClusterMarkFile.FILENAME),
+                    ClusterComponentType.CONTAINER,
+                    errorBufferLength,
+                    epochClock,
+                    0);
+            }
+
+            if (null == errorLog)
+            {
+                errorLog = new DistinctErrorLog(markFile.errorBuffer(), epochClock);
+            }
+
             if (null == errorHandler)
             {
-                throw new IllegalStateException("Error handler must be supplied");
+                errorHandler = new LoggingErrorHandler(errorLog);
             }
 
             if (null == aeron)
@@ -411,7 +475,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 aeron = Aeron.connect(
                     new Aeron.Context()
                         .aeronDirectoryName(aeronDirectoryName)
-                        .errorHandler(countedErrorHandler)
+                        .errorHandler(errorHandler)
                         .epochClock(epochClock));
 
                 if (null == errorCounter)
@@ -424,7 +488,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == errorCounter)
             {
-                throw new IllegalStateException("Error counter must be supplied");
+                throw new IllegalStateException("error counter must be supplied");
             }
 
             if (null == countedErrorHandler)
@@ -449,28 +513,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 .ownsAeronClient(false)
                 .lock(new NoOpLock());
 
-            if (deleteDirOnStart)
-            {
-                if (null != clusteredServiceDir)
-                {
-                    IoUtil.delete(clusteredServiceDir, true);
-                }
-                else
-                {
-                    IoUtil.delete(new File(Configuration.clusteredServiceDirName()), true);
-                }
-            }
-
-            if (null == clusteredServiceDir)
-            {
-                clusteredServiceDir = new File(clusteredServiceDirectoryName);
-            }
-
-            if (!clusteredServiceDir.exists() && !clusteredServiceDir.mkdirs())
-            {
-                throw new IllegalStateException(
-                    "Failed to create clustered service dir: " + clusteredServiceDir.getAbsolutePath());
-            }
 
             if (null == recordingLog)
             {
@@ -1108,6 +1150,50 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
+         * Set the error buffer length in bytes to use.
+         *
+         * @param errorBufferLength in bytes to use.
+         * @return this for a fluent API.
+         */
+        public Context errorBufferLength(final int errorBufferLength)
+        {
+            this.errorBufferLength = errorBufferLength;
+            return this;
+        }
+
+        /**
+         * The error buffer length in bytes.
+         *
+         * @return error buffer length in bytes.
+         */
+        public int errorBufferLength()
+        {
+            return errorBufferLength;
+        }
+
+        /**
+         * Set the {@link DistinctErrorLog} in use.
+         *
+         * @param errorLog to use.
+         * @return this for a fluent API.
+         */
+        public Context errorLog(final DistinctErrorLog errorLog)
+        {
+            this.errorLog = errorLog;
+            return this;
+        }
+
+        /**
+         * The {@link DistinctErrorLog} in use.
+         *
+         * @return {@link DistinctErrorLog} in use.
+         */
+        public DistinctErrorLog errorLog()
+        {
+            return errorLog;
+        }
+
+        /**
          * Delete the cluster container directory.
          */
         public void deleteDirectory()
@@ -1135,42 +1221,31 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
         private void concludeMarkFile()
         {
-            if (null == markFile)
-            {
-                final int alignedTotalFileLength = ClusterMarkFile.alignedTotalFileLength(
-                    ClusterMarkFile.ALIGNMENT,
-                    aeron.context().aeronDirectoryName(),
-                    archiveContext.controlRequestChannel(),
-                    serviceControlChannel(),
-                    null,
-                    serviceName,
-                    null);
+            ClusterMarkFile.checkHeaderLength(
+                aeron.context().aeronDirectoryName(),
+                archiveContext.controlRequestChannel(),
+                serviceControlChannel(),
+                null,
+                serviceName,
+                null);
 
-                markFile = new ClusterMarkFile(
-                    new File(clusteredServiceDir, ClusterMarkFile.FILENAME),
-                    ClusterComponentType.CONTAINER,
-                    alignedTotalFileLength,
-                    epochClock,
-                    0);
+            final MarkFileHeaderEncoder encoder = markFile.encoder();
 
-                final MarkFileHeaderEncoder encoder = markFile.encoder();
+            encoder
+                .archiveStreamId(archiveContext.controlRequestStreamId())
+                .serviceControlStreamId(serviceControlStreamId)
+                .ingressStreamId(0)
+                .memberId(-1)
+                .serviceId(serviceId)
+                .aeronDirectory(aeron.context().aeronDirectoryName())
+                .archiveChannel(archiveContext.controlRequestChannel())
+                .serviceControlChannel(serviceControlChannel)
+                .ingressChannel("")
+                .serviceName(serviceName)
+                .authenticator("");
 
-                encoder
-                    .archiveStreamId(archiveContext.controlRequestStreamId())
-                    .serviceControlStreamId(serviceControlStreamId)
-                    .ingressStreamId(0)
-                    .memberId(-1)
-                    .serviceId(serviceId)
-                    .aeronDirectory(aeron.context().aeronDirectoryName())
-                    .archiveChannel(archiveContext.controlRequestChannel())
-                    .serviceControlChannel(serviceControlChannel)
-                    .ingressChannel("")
-                    .serviceName(serviceName)
-                    .authenticator("");
-
-                markFile.updateActivityTimestamp(epochClock.time());
-                markFile.signalReady();
-            }
+            markFile.updateActivityTimestamp(epochClock.time());
+            markFile.signalReady();
         }
     }
 }

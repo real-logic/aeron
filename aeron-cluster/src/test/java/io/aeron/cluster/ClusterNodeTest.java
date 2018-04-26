@@ -43,6 +43,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ClusterNodeTest
 {
+    private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int FRAGMENT_LIMIT = 1;
 
     private ClusteredMediaDriver clusteredMediaDriver;
@@ -59,9 +60,11 @@ public class ClusterNodeTest
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnStart(true),
             new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
+                .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(true));
     }
 
@@ -134,6 +137,7 @@ public class ClusterNodeTest
                     messageCount.value += 1;
                 }
             },
+            aeronCluster.clusterSessionId(),
             aeronCluster.egressSubscription(),
             FRAGMENT_LIMIT);
 
@@ -187,6 +191,7 @@ public class ClusterNodeTest
                     messageCount.value += 1;
                 }
             },
+            aeronCluster.clusterSessionId(),
             aeronCluster.egressSubscription(),
             FRAGMENT_LIMIT);
 
@@ -251,7 +256,10 @@ public class ClusterNodeTest
                 this.correlationId = correlationId;
                 this.msg = buffer.getStringWithoutLengthAscii(offset, length);
 
-                cluster.scheduleTimer(correlationId, timestampMs + 100);
+                if (!cluster.scheduleTimer(correlationId, timestampMs + 100))
+                {
+                    throw new IllegalStateException("unexpected back pressure");
+                }
             }
 
             public void onTimerEvent(final long correlationId, final long timestampMs)

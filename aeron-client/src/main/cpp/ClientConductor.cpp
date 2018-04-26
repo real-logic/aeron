@@ -469,7 +469,7 @@ void ClientConductor::onNewExclusivePublication(
         state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
         state.m_originalRegistrationId = originalRegistrationId;
 
-        m_onNewPublicationHandler(state.m_channel, streamId, sessionId, registrationId);
+        m_onNewExclusivePublicationHandler(state.m_channel, streamId, sessionId, registrationId);
     }
 }
 

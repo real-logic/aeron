@@ -106,7 +106,7 @@ public class RecoveryState
     }
 
     /**
-     * Find the active counter id for a snapshot.
+     * Find the active counter id for recovery state.
      *
      * @param counters to search within.
      * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
@@ -132,7 +132,7 @@ public class RecoveryState
     }
 
     /**
-     * Get the leadership term id for the snapshot.
+     * Get the leadership term id for the recovery state.
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
@@ -156,7 +156,7 @@ public class RecoveryState
     }
 
     /**
-     * Get the term position for the snapshot within the leadership term.
+     * Get the term position for recovery within the leadership term.
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
@@ -180,7 +180,7 @@ public class RecoveryState
     }
 
     /**
-     * Get the timestamp for when the snapshot was taken.
+     * Get the timestamp at the beginning of recovery.
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.

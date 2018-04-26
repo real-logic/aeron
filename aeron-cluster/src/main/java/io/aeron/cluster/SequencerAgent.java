@@ -449,10 +449,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         {
             election.onAppendedPosition(logPosition, leadershipTermId, followerMemberId);
         }
-        else
-        {
-            // TODO: Respond to member
-        }
     }
 
     public void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
@@ -460,6 +456,10 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         if (null != election)
         {
             election.onRequestVote(logPosition, candidateTermId, candidateId);
+        }
+        else if (candidateTermId > this.leadershipTermId)
+        {
+            // TODO: Create an election
         }
     }
 
@@ -469,6 +469,10 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         if (null != election)
         {
             election.onNewLeadershipTerm(logPosition, leadershipTermId, leaderMemberId, logSessionId);
+        }
+        else if (leadershipTermId > this.leadershipTermId)
+        {
+            // TODO: Follow new leader
         }
     }
 
@@ -487,12 +491,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         {
             election.onAppendedPosition(logPosition, leadershipTermId, followerMemberId);
         }
-        else
+        else if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
-            if (leadershipTermId == this.leadershipTermId)
-            {
-                clusterMembers[followerMemberId].logPosition(logPosition);
-            }
+            clusterMembers[followerMemberId].logPosition(logPosition);
         }
     }
 
@@ -502,13 +503,14 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         {
             election.onCommitPosition(logPosition, leadershipTermId, leaderMemberId);
         }
-        else
+        else if (Cluster.Role.FOLLOWER == role && leadershipTermId == this.leadershipTermId)
         {
-            if (leadershipTermId == this.leadershipTermId)
-            {
-                timeOfLastLogUpdateMs = cachedEpochClock.time();
-                followerCommitPosition = logPosition;
-            }
+            timeOfLastLogUpdateMs = cachedEpochClock.time();
+            followerCommitPosition = logPosition;
+        }
+        else if (Cluster.Role.LEADER == role && leadershipTermId > this.leadershipTermId)
+        {
+            // TODO: Follow new leader
         }
     }
 

@@ -307,7 +307,7 @@ public final class AeronCluster implements AutoCloseable
                         }
                         else
                         {
-                            publications[i].close();
+                            CloseHelper.close(publications[i]);
                         }
                     }
 
@@ -318,7 +318,7 @@ public final class AeronCluster implements AutoCloseable
                 {
                     for (int i = 0; i < memberCount; i++)
                     {
-                        publications[i].close();
+                        CloseHelper.quietClose(publications[i]);
                     }
 
                     throw new TimeoutException("awaiting connection to cluster");
@@ -336,8 +336,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 if (nanoClock.nanoTime() > deadlineNs)
                 {
-                    publication.close();
-
+                    CloseHelper.quietClose(publication);
                     throw new TimeoutException("awaiting connection to cluster");
                 }
 
@@ -696,7 +695,7 @@ public final class AeronCluster implements AutoCloseable
 
             if (null == idleStrategy)
             {
-                idleStrategy = new BackoffIdleStrategy(1, 10, 1, 1);
+                idleStrategy = new BackoffIdleStrategy(1, 10, 1000, 1000);
             }
 
             if (null == lock)

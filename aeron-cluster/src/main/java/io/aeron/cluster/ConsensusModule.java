@@ -753,7 +753,7 @@ public class ConsensusModule implements AutoCloseable
             AuthenticatorSupplier supplier = null;
             try
             {
-                supplier = (AuthenticatorSupplier)Class.forName(supplierClassName).newInstance();
+                supplier = (AuthenticatorSupplier)Class.forName(supplierClassName).getConstructor().newInstance();
             }
             catch (final Exception ex)
             {

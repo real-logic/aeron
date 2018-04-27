@@ -25,7 +25,9 @@ public class DefaultUnicastFlowControlSupplier implements FlowControlSupplier
         FlowControl flowControl = null;
         try
         {
-            flowControl = (FlowControl)Class.forName(Configuration.UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
+            flowControl = (FlowControl)Class.forName(Configuration.UNICAST_FLOW_CONTROL_STRATEGY)
+                .getConstructor()
+                .newInstance();
         }
         catch (final Exception ex)
         {

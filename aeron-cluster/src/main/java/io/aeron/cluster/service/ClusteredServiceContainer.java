@@ -540,7 +540,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
                 try
                 {
-                    clusteredService = (ClusteredService)Class.forName(className).newInstance();
+                    clusteredService = (ClusteredService)Class.forName(className).getConstructor().newInstance();
                 }
                 catch (final Exception ex)
                 {

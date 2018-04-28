@@ -120,14 +120,7 @@ subprojects {
     group = aeronGroup
     version = aeronVersion
 
-    compileJava {
-        sourceCompatibility = '1.8'
-        targetCompatibility = '1.8'
-    }
-
     jar.enabled = true
-
-    [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
     dependencies {
         checkstyle 'com.puppycrawl.tools:checkstyle:8.9'
@@ -142,6 +135,20 @@ subprojects {
         toolVersion = '8.9'
     }
 
+    compileJava {
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+        options.encoding = 'UTF-8'
+        options.deprecation = true
+    }
+
+    compileTestJava {
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+        options.encoding = 'UTF-8'
+        options.deprecation = true
+    }
+    
     test {
         testLogging {
             showStandardStreams = true
@@ -152,6 +159,9 @@ subprojects {
     javadoc {
         title = '<h1>Aeron Message Transport</h1>'
         options.bottom = '<i>Copyright &#169; 2014-2018 Real Logic Ltd. All Rights Reserved.</i>'
+        if (JavaVersion.current() == JavaVersion.VERSION_1_10) {
+            options.addBooleanOption 'html5', true
+        }
     }
 
     task testJar(type: Jar, dependsOn: testClasses) {
@@ -817,6 +827,6 @@ task uploadToMavenCentral {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.6'
+    gradleVersion = '4.7'
     distributionType = 'ALL'
 }

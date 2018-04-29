@@ -50,6 +50,24 @@ public enum ErrorCode
      */
     UNKNOWN_COUNTER(5);
 
+    static final ErrorCode[] ERROR_CODES;
+
+    static
+    {
+        final ErrorCode[] errorCodes = values();
+        ERROR_CODES = new ErrorCode[errorCodes.length];
+        for (final ErrorCode errorCode : errorCodes)
+        {
+            final int value = errorCode.value();
+            if (null != ERROR_CODES[value])
+            {
+                throw new IllegalStateException("value already in use: " + value);
+            }
+
+            ERROR_CODES[value] = errorCode;
+        }
+    }
+
     private final int value;
 
     ErrorCode(final int value)
@@ -75,16 +93,11 @@ public enum ErrorCode
      */
     public static ErrorCode get(final int value)
     {
-        if (value > Singleton.VALUES.length)
+        if (value < 0 || value > (ERROR_CODES.length - 1))
         {
-            throw new IllegalArgumentException("No ErrorCode for value: " + value);
+            throw new IllegalStateException("invalid error code: " + value);
         }
 
-        return Singleton.VALUES[value];
-    }
-
-    static class Singleton
-    {
-        public static final ErrorCode[] VALUES = ErrorCode.values();
+        return ERROR_CODES[value];
     }
 }

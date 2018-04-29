@@ -634,7 +634,7 @@ class Catalog implements AutoCloseable
         final RecordingDescriptorDecoder decoder)
     {
         final long recordingId = decoder.recordingId();
-        if (headerDecoder.valid() == VALID && decoder.stopTimestamp() == NULL_TIMESTAMP)
+        if (headerDecoder.valid() == VALID && decoder.stopPosition() == NULL_POSITION)
         {
             final String prefix = recordingId + "-";
             String[] segmentFiles = archiveDir.list(
@@ -666,18 +666,17 @@ class Catalog implements AutoCloseable
                 }
             }
 
-            final File maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentIndex));
-            final long startPosition = decoder.startPosition();
-
             if (maxSegmentIndex < 0)
             {
-                encoder.stopPosition(startPosition);
+                encoder.stopPosition(decoder.startPosition());
             }
             else
             {
+                final File maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentIndex));
                 final int segmentFileLength = decoder.segmentFileLength();
                 final long stopOffset = recoverStopOffset(maxSegmentFile, segmentFileLength);
                 final int termBufferLength = decoder.termBufferLength();
+                final long startPosition = decoder.startPosition();
                 final long recordingLength =
                     (startPosition & (termBufferLength - 1)) + (maxSegmentIndex * segmentFileLength) + stopOffset;
                 encoder.stopPosition(startPosition + recordingLength);

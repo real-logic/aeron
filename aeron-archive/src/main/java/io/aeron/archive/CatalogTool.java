@@ -6,6 +6,7 @@ import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.AsciiEncoding;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.collections.ArrayUtil;
@@ -143,18 +144,25 @@ public class CatalogTool
 
             for (final String filename : segmentFiles)
             {
-                try
+                final int length = filename.length();
+                final int offset = prefix.length();
+                final int remaining = length - offset - RECORDING_SEGMENT_POSTFIX.length();
+
+                if (remaining > 0)
                 {
-                    final int index = Integer.valueOf(
-                        filename.substring(prefix.length(), filename.length() - RECORDING_SEGMENT_POSTFIX.length()));
-                    maxSegmentIndex = Math.max(index, maxSegmentIndex);
-                }
-                catch (final Exception ignore)
-                {
-                    System.err.println(
-                        "(recordingId=" + recordingId + ") ERR: malformed recording filename:" + filename);
-                    headerEncoder.valid(INVALID);
-                    return;
+                    try
+                    {
+                        maxSegmentIndex = Math.max(
+                            AsciiEncoding.parseIntAscii(filename, offset, remaining),
+                            maxSegmentIndex);
+                    }
+                    catch (final Exception ignore)
+                    {
+                        System.err.println(
+                            "(recordingId=" + recordingId + ") ERR: malformed recording filename:" + filename);
+                        headerEncoder.valid(INVALID);
+                        return;
+                    }
                 }
             }
 

@@ -121,10 +121,12 @@ class RecordingWriter implements BlockHandler
                 recordingFileChannel.force(forceMetadata);
             }
 
-            afterWrite(length);
+            segmentPosition += length;
+            recordedPosition.getAndAddOrdered(length);
         }
         catch (final ClosedByInterruptException ex)
         {
+            //noinspection ResultOfMethodCallIgnored
             Thread.interrupted();
             close();
             throw new IllegalStateException("file closed by interrupt, recording aborted.", ex);
@@ -198,11 +200,5 @@ class RecordingWriter implements BlockHandler
         {
             recordingFileChannel.position(segmentPosition);
         }
-    }
-
-    private void afterWrite(final int blockLength)
-    {
-        segmentPosition += blockLength;
-        recordedPosition.getAndAddOrdered(blockLength);
     }
 }

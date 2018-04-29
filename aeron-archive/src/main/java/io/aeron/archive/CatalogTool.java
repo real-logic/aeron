@@ -134,7 +134,7 @@ public class CatalogTool
         {
             final String prefix = recordingId + "-";
             String[] segmentFiles =
-                archiveDir.list((dir, name) -> name.endsWith(RECORDING_SEGMENT_POSTFIX));
+                archiveDir.list((dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_POSTFIX));
 
             if (null == segmentFiles)
             {

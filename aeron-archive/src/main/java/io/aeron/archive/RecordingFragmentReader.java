@@ -48,7 +48,6 @@ class RecordingFragmentReader implements AutoCloseable
 
     private final File archiveDir;
     private final long recordingId;
-    private final long startPosition;
     private final int segmentLength;
     private final int termLength;
 
@@ -78,9 +77,9 @@ class RecordingFragmentReader implements AutoCloseable
         this.recordingPosition = recordingPosition;
         termLength = recordingSummary.termBufferLength;
         segmentLength = recordingSummary.segmentFileLength;
-        startPosition = recordingSummary.startPosition;
         recordingId = recordingSummary.recordingId;
 
+        final long startPosition = recordingSummary.startPosition;
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
         final long stopPosition = recordingSummary.stopPosition;
         this.stopPosition = stopPosition == NULL_POSITION ? recordingPosition.get() : stopPosition;
@@ -95,10 +94,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentLength);
 
-        if (!openRecordingSegment())
-        {
-            throw new IllegalStateException("no segment file for requested position: " + position);
-        }
+        openRecordingSegment();
 
         final long termCount = startPosition >> LogBufferDescriptor.positionBitsToShift(termLength);
         final long termStartPosition = termCount * termLength;
@@ -112,9 +108,10 @@ class RecordingFragmentReader implements AutoCloseable
         termStartSegmentOffset = fromTermStartSegmentOffset;
         termOffset = fromTermOffset;
 
-        if (DataHeaderFlyweight.termOffset(termBuffer, fromTermOffset) != fromTermOffset ||
+        if (fromPosition != startPosition &&
+            (DataHeaderFlyweight.termOffset(termBuffer, fromTermOffset) != fromTermOffset ||
             DataHeaderFlyweight.termId(termBuffer, fromTermOffset) != fromTermId ||
-            DataHeaderFlyweight.streamId(termBuffer, fromTermOffset) != recordingSummary.streamId)
+            DataHeaderFlyweight.streamId(termBuffer, fromTermOffset) != recordingSummary.streamId))
         {
             close();
             throw new IllegalArgumentException("position is not aligned to fragment: " + fromPosition);
@@ -187,10 +184,8 @@ class RecordingFragmentReader implements AutoCloseable
         return polled;
     }
 
-    public static boolean initialSegmentFileExists(
-        final RecordingSummary recordingSummary,
-        final File archiveDir,
-        final long position)
+    static boolean hasInitialSegmentFile(
+        final RecordingSummary recordingSummary, final File archiveDir, final long position)
     {
         final long fromPosition = position == NULL_POSITION ? recordingSummary.startPosition : position;
         final int segmentFileIndex =
@@ -241,12 +236,7 @@ class RecordingFragmentReader implements AutoCloseable
         {
             closeRecordingSegment();
             segmentFileIndex++;
-            if (!openRecordingSegment())
-            {
-                throw new IllegalStateException("failed to open segment file: " +
-                    segmentFileName(recordingId, segmentFileIndex));
-            }
-
+            openRecordingSegment();
             termStartSegmentOffset = 0;
         }
 
@@ -259,21 +249,14 @@ class RecordingFragmentReader implements AutoCloseable
         mappedSegmentBuffer = null;
     }
 
-    private boolean openRecordingSegment()
+    private void openRecordingSegment()
     {
         final String segmentFileName = segmentFileName(recordingId, segmentFileIndex);
         final File segmentFile = new File(archiveDir, segmentFileName);
 
         if (!segmentFile.exists())
         {
-            final int lastSegmentIndex = segmentFileIndex(startPosition, stopPosition, segmentLength);
-            if (lastSegmentIndex > segmentFileIndex)
-            {
-                throw new IllegalStateException("recording segment not found - segment index=" + segmentFileIndex +
-                    ", last segment index=" + lastSegmentIndex);
-            }
-
-            return false;
+            throw new IllegalArgumentException("failed to open recording segment file: " + segmentFileName);
         }
 
         try (FileChannel channel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
@@ -284,7 +267,5 @@ class RecordingFragmentReader implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
-
-        return true;
     }
 }

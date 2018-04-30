@@ -20,6 +20,7 @@ import io.aeron.Image;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 
+import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 /**
@@ -120,15 +121,28 @@ class RecordingSession implements Session
 
     private int init()
     {
-        state = State.RECORDING;
+        final long joinPosition = image.joinPosition();
+
+        try
+        {
+            recordingWriter.init((int)joinPosition & (image.termBufferLength() - 1));
+        }
+        catch (final IOException ex)
+        {
+            close();
+            state = State.STOPPED;
+            LangUtil.rethrowUnchecked(ex);
+        }
 
         recordingEventsProxy.started(
             recordingId,
-            image.joinPosition(),
+            joinPosition,
             image.sessionId(),
             image.subscription().streamId(),
             originalChannel,
             image.sourceIdentity());
+
+        state = State.RECORDING;
 
         return 1;
     }

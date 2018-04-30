@@ -380,7 +380,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             replayPosition = position;
         }
 
-        if (!RecordingFragmentReader.initialSegmentFileExists(recordingSummary, archiveDir, replayPosition))
+        if (!RecordingFragmentReader.hasInitialSegmentFile(recordingSummary, archiveDir, replayPosition))
         {
             controlSession.sendResponse(
                 correlationId,

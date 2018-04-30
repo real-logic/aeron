@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -73,7 +74,7 @@ public class ReplaySessionTest
     private RecordingSummary recordingSummary = new RecordingSummary();
 
     @Before
-    public void before()
+    public void before() throws IOException
     {
         when(position.getWeak()).then((invocation) -> positionLong);
         when(position.get()).then((invocation) -> positionLong);
@@ -111,6 +112,8 @@ public class ReplaySessionTest
 
         final RecordingWriter writer = new RecordingWriter(
             RECORDING_ID, START_POSITION, JOIN_POSITION, TERM_BUFFER_LENGTH, context, ARCHIVE_DIR_CHANNEL, position);
+
+        writer.init(INITIAL_TERM_OFFSET);
 
         final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 
@@ -327,7 +330,7 @@ public class ReplaySessionTest
     }
 
     @Test
-    public void shouldReplayFromActiveRecording()
+    public void shouldReplayFromActiveRecording() throws IOException
     {
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
 
@@ -340,6 +343,8 @@ public class ReplaySessionTest
 
         final RecordingWriter writer = new RecordingWriter(
             recordingId, START_POSITION, JOIN_POSITION, TERM_BUFFER_LENGTH, context, ARCHIVE_DIR_CHANNEL, position);
+
+        writer.init(INITIAL_TERM_OFFSET);
 
         when(epochClock.time()).thenReturn(TIME);
 

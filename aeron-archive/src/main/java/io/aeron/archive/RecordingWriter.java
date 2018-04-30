@@ -30,7 +30,6 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -47,8 +46,6 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  */
 class RecordingWriter implements BlockHandler
 {
-    private static final int NULL_SEGMENT_POSITION = -1;
-
     private final long recordingId;
     private final int segmentFileLength;
     private final boolean forceWrites;
@@ -57,11 +54,7 @@ class RecordingWriter implements BlockHandler
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
 
-    /**
-     * Index is in the range 0:segmentFileLength, except before the first block for this image is received indicated
-     * by NULL_SEGMENT_POSITION
-     */
-    private int segmentPosition = NULL_SEGMENT_POSITION;
+    private int segmentPosition;
     private int segmentIndex;
     private FileChannel recordingFileChannel;
 
@@ -97,11 +90,6 @@ class RecordingWriter implements BlockHandler
     {
         try
         {
-            if (NULL_POSITION == segmentPosition)
-            {
-                onFirstWrite(termOffset);
-            }
-
             if (segmentFileLength == segmentPosition)
             {
                 onFileRollOver();
@@ -154,6 +142,17 @@ class RecordingWriter implements BlockHandler
         CloseHelper.close(recordingFileChannel);
     }
 
+    void init(final int segmentOffset) throws IOException
+    {
+        segmentPosition = segmentOffset;
+        newRecordingSegmentFile();
+
+        if (segmentOffset != 0)
+        {
+            recordingFileChannel.position(segmentOffset);
+        }
+    }
+
     boolean isClosed()
     {
         return isClosed;
@@ -189,16 +188,5 @@ class RecordingWriter implements BlockHandler
         segmentIndex++;
 
         newRecordingSegmentFile();
-    }
-
-    private void onFirstWrite(final int termOffset) throws IOException
-    {
-        segmentPosition = termOffset;
-        newRecordingSegmentFile();
-
-        if (segmentPosition != 0)
-        {
-            recordingFileChannel.position(segmentPosition);
-        }
     }
 }

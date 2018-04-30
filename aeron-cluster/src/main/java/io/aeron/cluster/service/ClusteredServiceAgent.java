@@ -86,22 +86,20 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
     public void onStart()
     {
-        service.onStart(this);
-
         final CountersReader counters = aeron.countersReader();
-        final int recoveryCounterId = awaitRecoveryCounter(counters);
+        roleCounter = awaitClusterRoleCounter(counters);
         findHeartbeatCounter(counters);
 
+        service.onStart(this);
         isRecovering = true;
+        final int recoveryCounterId = awaitRecoveryCounter(counters);
         checkForSnapshot(counters, recoveryCounterId);
         checkForReplay(counters, recoveryCounterId);
         isRecovering = false;
-
         service.onReady();
 
         joinActiveLog(counters);
 
-        roleCounter = awaitClusterRoleCounter(counters);
         role(Role.get((int)roleCounter.get()));
 
         if (Role.LEADER == role)

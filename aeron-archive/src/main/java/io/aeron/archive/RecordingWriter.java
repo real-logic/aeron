@@ -47,6 +47,7 @@ import static io.aeron.archive.Archive.segmentFileName;
 class RecordingWriter implements BlockHandler
 {
     private final long recordingId;
+    private final long startPosition;
     private final int segmentFileLength;
     private final boolean forceWrites;
     private final boolean forceMetadata;
@@ -70,6 +71,7 @@ class RecordingWriter implements BlockHandler
         final Counter recordedPosition)
     {
         this.recordingId = recordingId;
+        this.startPosition = startPosition;
         this.recordedPosition = recordedPosition;
         this.archiveDirChannel = archiveDirChannel;
 
@@ -129,6 +131,16 @@ class RecordingWriter implements BlockHandler
     public long recordingId()
     {
         return recordingId;
+    }
+
+    public long startPosition()
+    {
+        return startPosition;
+    }
+
+    public int segmentFileLength()
+    {
+        return segmentFileLength;
     }
 
     public void close()

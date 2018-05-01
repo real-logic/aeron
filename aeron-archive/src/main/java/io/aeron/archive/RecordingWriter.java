@@ -157,7 +157,7 @@ class RecordingWriter implements BlockHandler
     void init(final int segmentOffset) throws IOException
     {
         segmentPosition = segmentOffset;
-        newRecordingSegmentFile();
+        openRecordingSegmentFile();
 
         if (segmentOffset != 0)
         {
@@ -170,7 +170,7 @@ class RecordingWriter implements BlockHandler
         return isClosed;
     }
 
-    private void newRecordingSegmentFile()
+    private void openRecordingSegmentFile()
     {
         final File file = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
 
@@ -199,6 +199,6 @@ class RecordingWriter implements BlockHandler
         segmentPosition = 0;
         segmentIndex++;
 
-        newRecordingSegmentFile();
+        openRecordingSegmentFile();
     }
 }

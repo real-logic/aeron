@@ -122,16 +122,13 @@ class RecordingSession implements Session
     private int init()
     {
         final long joinPosition = image.joinPosition();
-        int segmentOffset = (int)joinPosition & (image.termBufferLength() - 1);
-
-        if (joinPosition > recordingWriter.startPosition())
-        {
-            segmentOffset = (int)joinPosition & (recordingWriter.segmentFileLength() - 1);
-        }
+        final long startPosition = recordingWriter.startPosition();
+        final long startTermBasePosition = startPosition - (startPosition & (image.termBufferLength() - 1));
+        final long segmentOffset = (joinPosition - startTermBasePosition) & (recordingWriter.segmentFileLength() - 1);
 
         try
         {
-            recordingWriter.init(segmentOffset);
+            recordingWriter.init((int)segmentOffset);
         }
         catch (final IOException ex)
         {

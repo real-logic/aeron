@@ -470,8 +470,8 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
             serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
         }
 
-        logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, commitPositionId), this);
         activeLog = null;
+        logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, commitPositionId), this);
 
         role(Role.get((int)roleCounter.get()));
 
@@ -717,6 +717,18 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
             this.streamId = streamId;
             this.ackBeforeImage = ackBeforeImage;
             this.channel = channel;
+        }
+
+        public String toString()
+        {
+            return "ActiveLog{" +
+                "leadershipTermId=" + leadershipTermId +
+                ", commitPositionId=" + commitPositionId +
+                ", sessionId=" + sessionId +
+                ", streamId=" + streamId +
+                ", ackBeforeImage=" + ackBeforeImage +
+                ", channel='" + channel + '\'' +
+                '}';
         }
     }
 }

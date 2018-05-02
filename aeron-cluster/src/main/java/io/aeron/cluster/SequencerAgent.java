@@ -51,7 +51,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 {
     private boolean isRecovering;
     private final int memberId;
-    private int serviceAckCount = 0;
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
     private final long leaderHeartbeatTimeoutMs;
@@ -70,6 +69,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private ClusterMember leaderMember;
     private final ClusterMember thisMember;
     private long[] rankedPositions;
+    private final long[] serviceAckPositions;
     private final Counter clusterRoleCounter;
     private final ClusterMarkFile markFile;
     private final AgentInvoker aeronClientInvoker;
@@ -126,6 +126,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         this.recordingLog = ctx.recordingLog();
         this.tempBuffer = ctx.tempBuffer();
         this.serviceHeartbeats = ctx.serviceHeartbeatCounters();
+
+        this.serviceAckPositions = new long[ctx.serviceCount()];
+        resetServiceAckPositions(serviceAckPositions);
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -283,8 +286,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
         validateServiceAck(logPosition, leadershipTermId, serviceId, action);
+        serviceAckPositions[serviceId] = logPosition;
 
-        if (++serviceAckCount == ctx.serviceCount())
+        if (haveServicesAckedPosition(serviceAckPositions, logPosition))
         {
             final long termPosition = currentTermPosition();
             switch (action)
@@ -314,10 +318,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                     ctx.terminationHook().run();
                     break;
             }
-        }
-        else if (serviceAckCount > ctx.serviceCount())
-        {
-            throw new IllegalStateException("service count ACK exceeded: " + serviceAckCount);
         }
     }
 
@@ -666,7 +666,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             case SNAPSHOT:
                 if (!isRecovering)
                 {
-                    serviceAckCount = 0;
                     state(ConsensusModule.State.SNAPSHOT);
                 }
                 break;
@@ -674,7 +673,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             case SHUTDOWN:
                 if (!isRecovering)
                 {
-                    serviceAckCount = 0;
                     state(ConsensusModule.State.SHUTDOWN);
                 }
                 break;
@@ -682,7 +680,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             case ABORT:
                 if (!isRecovering)
                 {
-                    serviceAckCount = 0;
                     state(ConsensusModule.State.ABORT);
                 }
                 break;
@@ -800,7 +797,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             try (Subscription subscription = aeron.addSubscription(channel, streamId))
             {
-                serviceAckCount = 0;
+                resetServiceAckPositions(serviceAckPositions);
                 logAdapter = null;
 
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, true, channel);
@@ -889,7 +886,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 break;
 
             case SNAPSHOT:
-                serviceAckCount = 0;
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT, nowMs))
                 {
                     state(ConsensusModule.State.SNAPSHOT);
@@ -897,7 +893,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 break;
 
             case SHUTDOWN:
-                serviceAckCount = 0;
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SHUTDOWN, nowMs))
                 {
                     state(ConsensusModule.State.SHUTDOWN);
@@ -905,7 +900,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 break;
 
             case ABORT:
-                serviceAckCount = 0;
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.ABORT, nowMs))
                 {
                     state(ConsensusModule.State.ABORT);
@@ -1087,7 +1081,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader, final int logSessionId)
     {
-        serviceAckCount = 0;
+        resetServiceAckPositions(serviceAckPositions);
 
         final String channel = isLeader && UDP_MEDIA.equals(channelUri.media()) ?
             channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
@@ -1189,7 +1183,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
             {
-                serviceAckCount = 0;
+                resetServiceAckPositions(serviceAckPositions);
                 logAdapter = null;
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, true, channel);
 
@@ -1203,7 +1197,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                             (int)archive.startReplay(recordingId, startPosition, length, channel, streamId),
                             subscription);
 
-                        serviceAckCount = 0;
+                        resetServiceAckPositions(serviceAckPositions);
                         replayTerm(image, stopPosition, counter);
                         awaitServiceAcks();
 
@@ -1242,15 +1236,10 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     private void awaitServiceAcks()
     {
-        while (true)
+        final long logPosition = termBaseLogPosition + currentTermPosition();
+        while (!haveServicesAckedPosition(serviceAckPositions, logPosition))
         {
-            final int fragmentsRead = serviceControlAdapter.poll();
-            if (serviceAckCount >= ctx.serviceCount())
-            {
-                break;
-            }
-
-            idle(fragmentsRead);
+            idle(serviceControlAdapter.poll());
         }
     }
 
@@ -1484,5 +1473,26 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             idle(workCount);
         }
+    }
+
+    private static void resetServiceAckPositions(final long[] serviceAckPositions)
+    {
+        for (int i = 0, length = serviceAckPositions.length; i < length; i++)
+        {
+            serviceAckPositions[i] = NULL_POSITION;
+        }
+    }
+
+    private static boolean haveServicesAckedPosition(final long[] serviceAckPositions, final long position)
+    {
+        for (final long serviceAckPosition : serviceAckPositions)
+        {
+            if (serviceAckPosition < position)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

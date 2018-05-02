@@ -703,6 +703,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     {
         role(Cluster.Role.LEADER);
         leadershipTermId = election.leadershipTermId();
+        termBaseLogPosition = election.logPosition();
         leaderMember = election.leader();
         updateMemberDetails(leaderMember.id());
 

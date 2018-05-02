@@ -127,14 +127,14 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
             markFile.updateActivityTimestamp(nowMs);
             checkHealthAndUpdateHeartbeat(nowMs);
             workCount += serviceControlAdapter.poll();
+
+            if (activeLog != null)
+            {
+                switchActiveLog();
+            }
         }
 
         workCount += logAdapter.poll();
-
-        if (activeLog != null)
-        {
-            switchActiveLog();
-        }
 
         return workCount;
     }

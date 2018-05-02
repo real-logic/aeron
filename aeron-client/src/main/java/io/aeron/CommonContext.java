@@ -26,6 +26,7 @@ import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -416,7 +417,7 @@ public class CommonContext implements AutoCloseable, Cloneable
     {
         final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
-        if (cncFile.exists())
+        if (cncFile.exists() && cncFile.length() > 0)
         {
             if (null != logger)
             {
@@ -442,7 +443,7 @@ public class CommonContext implements AutoCloseable, Cloneable
     {
         final File cncFile = new File(directory, CncFileDescriptor.CNC_FILE);
 
-        if (cncFile.exists())
+        if (cncFile.exists() && cncFile.length() > 0)
         {
             logger.accept("INFO: Aeron CnC file exists: " + cncFile);
 
@@ -490,7 +491,7 @@ public class CommonContext implements AutoCloseable, Cloneable
      * @return true if a driver is active or false if not.
      */
     public static boolean isDriverActive(
-        final long driverTimeoutMs, final Consumer<String> logger, final MappedByteBuffer cncByteBuffer)
+        final long driverTimeoutMs, final Consumer<String> logger, final ByteBuffer cncByteBuffer)
     {
         if (null == cncByteBuffer)
         {
@@ -555,7 +556,7 @@ public class CommonContext implements AutoCloseable, Cloneable
      * @param cncByteBuffer containing the error log.
      * @return the number of observations from the error log.
      */
-    public int saveErrorLog(final PrintStream out, final MappedByteBuffer cncByteBuffer)
+    public int saveErrorLog(final PrintStream out, final ByteBuffer cncByteBuffer)
     {
         if (null == cncByteBuffer)
         {
@@ -578,7 +579,8 @@ public class CommonContext implements AutoCloseable, Cloneable
 
         final int distinctErrorCount = ErrorLogReader.read(buffer, errorConsumer);
 
-        out.format("%n%d distinct errors observed.%n", distinctErrorCount);
+        out.println();
+        out.println(distinctErrorCount + " distinct errors observed.");
 
         return distinctErrorCount;
     }

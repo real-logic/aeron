@@ -98,9 +98,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         isRecovering = false;
         service.onReady();
 
-        joinActiveLog(counters);
-
-        role(Role.get((int)roleCounter.get()));
+        joinActiveLog();
 
         if (Role.LEADER == role)
         {
@@ -377,6 +375,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
                 }
             }
 
+            activeLog = null;
             serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, REPLAY);
         }
 
@@ -385,18 +384,10 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
     private void awaitActiveLog()
     {
-        activeLog = null;
-        idleStrategy.reset();
-        while (true)
+        while (null == activeLog)
         {
-            final int fragments = serviceControlAdapter.poll();
-            if (activeLog != null)
-            {
-                break;
-            }
-
             checkInterruptedStatus();
-            idleStrategy.idle(fragments);
+            idleStrategy.idle(serviceControlAdapter.poll());
         }
     }
 
@@ -430,19 +421,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         {
             logAdapter.close();
 
-            final CountersReader counters = aeron.countersReader();
-            final int counterId = activeLog.commitPositionId;
-
-            leadershipTermId = activeLog.leadershipTermId;
-            termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, counterId);
-
-            final Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
-            final Image image = awaitImage(activeLog.sessionId, subscription);
-            serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
-
-            logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, counterId), this);
-            activeLog = null;
-            role(Role.get((int)roleCounter.get()));
+            joinLog();
         }
     }
 
@@ -461,9 +440,17 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         return counterId;
     }
 
-    private void joinActiveLog(final CountersReader counters)
+    private void joinActiveLog()
     {
+        activeLog = null;
         awaitActiveLog();
+
+        joinLog();
+    }
+
+    private void joinLog()
+    {
+        final CountersReader counters = aeron.countersReader();
 
         final int commitPositionId = activeLog.commitPositionId;
         if (!CommitPos.isActive(counters, commitPositionId))
@@ -492,6 +479,8 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
         logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, commitPositionId), this);
         activeLog = null;
+
+        role(Role.get((int)roleCounter.get()));
     }
 
     private Image awaitImage(final int sessionId, final Subscription subscription)

@@ -128,7 +128,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         this.serviceHeartbeats = ctx.serviceHeartbeatCounters();
 
         this.serviceAckPositions = new long[ctx.serviceCount()];
-        resetServiceAckPositions(serviceAckPositions);
+        nullPositions(serviceAckPositions);
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -288,7 +288,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         validateServiceAck(logPosition, leadershipTermId, serviceId, action);
         serviceAckPositions[serviceId] = logPosition;
 
-        if (haveServicesAckedPosition(serviceAckPositions, logPosition))
+        if (reachedThreshold(logPosition, serviceAckPositions))
         {
             final long termPosition = currentTermPosition();
             switch (action)
@@ -797,7 +797,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             try (Subscription subscription = aeron.addSubscription(channel, streamId))
             {
-                resetServiceAckPositions(serviceAckPositions);
+                nullPositions(serviceAckPositions);
                 logAdapter = null;
 
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, true, channel);
@@ -1081,7 +1081,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader, final int logSessionId)
     {
-        resetServiceAckPositions(serviceAckPositions);
+        nullPositions(serviceAckPositions);
 
         final String channel = isLeader && UDP_MEDIA.equals(channelUri.media()) ?
             channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
@@ -1183,7 +1183,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
             {
-                resetServiceAckPositions(serviceAckPositions);
+                nullPositions(serviceAckPositions);
                 logAdapter = null;
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, true, channel);
 
@@ -1197,7 +1197,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                             (int)archive.startReplay(recordingId, startPosition, length, channel, streamId),
                             subscription);
 
-                        resetServiceAckPositions(serviceAckPositions);
+                        nullPositions(serviceAckPositions);
                         replayTerm(image, stopPosition, counter);
                         awaitServiceAcks();
 
@@ -1237,7 +1237,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private void awaitServiceAcks()
     {
         final long logPosition = termBaseLogPosition + currentTermPosition();
-        while (!haveServicesAckedPosition(serviceAckPositions, logPosition))
+        while (!reachedThreshold(logPosition, serviceAckPositions))
         {
             idle(serviceControlAdapter.poll());
         }
@@ -1475,19 +1475,19 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         }
     }
 
-    private static void resetServiceAckPositions(final long[] serviceAckPositions)
+    private static void nullPositions(final long[] positions)
     {
-        for (int i = 0, length = serviceAckPositions.length; i < length; i++)
+        for (int i = 0, length = positions.length; i < length; i++)
         {
-            serviceAckPositions[i] = NULL_POSITION;
+            positions[i] = NULL_POSITION;
         }
     }
 
-    private static boolean haveServicesAckedPosition(final long[] serviceAckPositions, final long position)
+    private static boolean reachedThreshold(final long thresholdPosition, final long[] positions)
     {
-        for (final long serviceAckPosition : serviceAckPositions)
+        for (final long position : positions)
         {
-            if (serviceAckPosition < position)
+            if (position < thresholdPosition)
             {
                 return false;
             }

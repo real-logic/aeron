@@ -118,16 +118,18 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
     public int doWork()
     {
+        int workCount = 0;
+
         final long nowMs = epochClock.time();
         if (cachedEpochClock.time() != nowMs)
         {
-            markFile.updateActivityTimestamp(nowMs);
             cachedEpochClock.update(nowMs);
+            markFile.updateActivityTimestamp(nowMs);
             checkHealthAndUpdateHeartbeat(nowMs);
+            workCount += serviceControlAdapter.poll();
         }
 
-        int workCount = logAdapter.poll();
-        workCount += serviceControlAdapter.poll();
+        workCount += logAdapter.poll();
 
         if (activeLog != null)
         {

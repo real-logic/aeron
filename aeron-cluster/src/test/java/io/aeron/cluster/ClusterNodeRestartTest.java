@@ -114,6 +114,7 @@ public class ClusterNodeRestartTest
 
         launchClusteredMediaDriver(false);
         launchService(false, restartServiceMsgCounter);
+        connectClient();
 
         while (restartServiceMsgCounter.get() == 0)
         {
@@ -162,6 +163,7 @@ public class ClusterNodeRestartTest
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
         launchService(true, serviceMsgCounter);
+        connectClient();
 
         final CountersReader counters = container.context().aeron().countersReader();
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
@@ -174,12 +176,14 @@ public class ClusterNodeRestartTest
             Thread.sleep(1);
         }
 
+        aeronCluster.close();
         container.close();
         clusteredMediaDriver.close();
 
         serviceState.set(null);
         launchClusteredMediaDriver(false);
         launchService(false, serviceMsgCounter);
+        connectClient();
 
         while (null == serviceState.get())
         {
@@ -225,6 +229,7 @@ public class ClusterNodeRestartTest
         serviceState.set(null);
         launchClusteredMediaDriver(false);
         launchService(false, serviceMsgCounter);
+        connectClient();
 
         while (null == serviceState.get())
         {
@@ -278,6 +283,7 @@ public class ClusterNodeRestartTest
         serviceMsgCounter.set(0);
         launchClusteredMediaDriver(false);
         launchService(false, serviceMsgCounter);
+        connectClient();
 
         while (serviceMsgCounter.get() != 1)
         {

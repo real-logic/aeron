@@ -99,14 +99,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         service.onReady();
 
         joinActiveLog();
-
-        if (Role.LEADER == role)
-        {
-            for (final ClientSession session : sessionByIdMap.values())
-            {
-                session.connect(aeron);
-            }
-        }
     }
 
     public void onClose()
@@ -442,7 +434,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
     private void joinActiveLog()
     {
-        activeLog = null;
         awaitActiveLog();
 
         joinLog();
@@ -481,6 +472,18 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         activeLog = null;
 
         role(Role.get((int)roleCounter.get()));
+
+        for (final ClientSession session : sessionByIdMap.values())
+        {
+            if (Role.LEADER == role)
+            {
+                session.connect(aeron);
+            }
+            else
+            {
+                session.disconnect();
+            }
+        }
     }
 
     private Image awaitImage(final int sessionId, final Subscription subscription)

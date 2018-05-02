@@ -153,12 +153,10 @@ public class ClientSession
 
     void connect(final Aeron aeron)
     {
-        if (null != responsePublication)
+        if (null == responsePublication)
         {
-            throw new IllegalStateException("response publication already added");
+            responsePublication = aeron.addPublication(responseChannel, responseStreamId);
         }
-
-        responsePublication = aeron.addPublication(responseChannel, responseStreamId);
     }
 
     void markClosing()

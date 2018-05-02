@@ -59,7 +59,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
     private long leadershipTermId;
     private long timestampMs;
     private BoundedLogAdapter logAdapter;
-    private ActiveLog activeLog;
+    private NewActiveLogEvent newActiveLogEvent;
     private ReadableCounter roleCounter;
     private AtomicCounter heartbeatCounter;
     private Role role = Role.FOLLOWER;
@@ -97,8 +97,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         checkForReplay(counters, recoveryCounterId);
         isRecovering = false;
         service.onReady();
-
-        joinActiveLog();
     }
 
     public void onClose()
@@ -128,13 +126,13 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
             checkHealthAndUpdateHeartbeat(nowMs);
             workCount += serviceControlAdapter.poll();
 
-            if (activeLog != null)
+            if (newActiveLogEvent != null)
             {
-                switchActiveLog();
+                joinActiveLog();
             }
         }
 
-        workCount += logAdapter.poll();
+        workCount += null != logAdapter ? logAdapter.poll() : 0;
 
         return workCount;
     }
@@ -209,7 +207,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         final boolean ackBeforeImage,
         final String logChannel)
     {
-        activeLog = new ActiveLog(
+        newActiveLogEvent = new NewActiveLogEvent(
             leadershipTermId, commitPositionId, logSessionId, logStreamId, ackBeforeImage, logChannel);
     }
 
@@ -300,7 +298,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
     private void checkHealthAndUpdateHeartbeat(final long nowMs)
     {
-        if (null != logAdapter && !logAdapter.image().isClosed())
+        if (null == logAdapter || !logAdapter.image().isClosed())
         {
             heartbeatCounter.setOrdered(nowMs);
         }
@@ -349,17 +347,18 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         for (int i = 0; i < replayTermCount; i++)
         {
             awaitActiveLog();
-            final int counterId = activeLog.commitPositionId;
+            final int counterId = newActiveLogEvent.commitPositionId;
             leadershipTermId = CommitPos.getLeadershipTermId(counters, counterId);
             termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, counterId);
 
             if (CommitPos.getLeadershipTermLength(counters, counterId) > 0)
             {
-                try (Subscription subscription = aeron.addSubscription(activeLog.channel, activeLog.streamId))
+                try (Subscription subscription = aeron.addSubscription(
+                    newActiveLogEvent.channel, newActiveLogEvent.streamId))
                 {
                     serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
 
-                    final Image image = awaitImage(activeLog.sessionId, subscription);
+                    final Image image = awaitImage(newActiveLogEvent.sessionId, subscription);
                     final ReadableCounter limit = new ReadableCounter(counters, counterId);
                     final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
 
@@ -369,7 +368,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
                 }
             }
 
-            activeLog = null;
+            newActiveLogEvent = null;
             serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, REPLAY);
         }
 
@@ -378,7 +377,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
     private void awaitActiveLog()
     {
-        while (null == activeLog)
+        while (null == newActiveLogEvent)
         {
             checkInterruptedStatus();
             idleStrategy.idle(serviceControlAdapter.poll());
@@ -409,16 +408,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         }
     }
 
-    private void switchActiveLog()
-    {
-        if (logAdapter.isCaughtUp())
-        {
-            logAdapter.close();
-
-            joinLog();
-        }
-    }
-
     private int awaitRecoveryCounter(final CountersReader counters)
     {
         idleStrategy.reset();
@@ -436,28 +425,33 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
     private void joinActiveLog()
     {
-        awaitActiveLog();
+        if (null != logAdapter)
+        {
+            if (!logAdapter.isCaughtUp())
+            {
+                return;
+            }
 
-        joinLog();
-    }
+            logAdapter.close();
+            logAdapter = null;
+        }
 
-    private void joinLog()
-    {
         final CountersReader counters = aeron.countersReader();
 
-        final int commitPositionId = activeLog.commitPositionId;
+        final int commitPositionId = newActiveLogEvent.commitPositionId;
         if (!CommitPos.isActive(counters, commitPositionId))
         {
             throw new IllegalStateException("CommitPos counter not active: " + commitPositionId);
         }
 
-        final int logSessionId = activeLog.sessionId;
-        leadershipTermId = activeLog.leadershipTermId;
+        final int logSessionId = newActiveLogEvent.sessionId;
+        leadershipTermId = newActiveLogEvent.leadershipTermId;
         termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, commitPositionId);
 
-        final Subscription logSubscription = aeron.addSubscription(activeLog.channel, activeLog.streamId);
+        final Subscription logSubscription = aeron.addSubscription(
+            newActiveLogEvent.channel, newActiveLogEvent.streamId);
 
-        if (activeLog.ackBeforeImage)
+        if (newActiveLogEvent.ackBeforeImage)
         {
             serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
         }
@@ -465,12 +459,12 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         final Image image = awaitImage(logSessionId, logSubscription);
         heartbeatCounter.setOrdered(epochClock.time());
 
-        if (!activeLog.ackBeforeImage)
+        if (!newActiveLogEvent.ackBeforeImage)
         {
             serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
         }
 
-        activeLog = null;
+        newActiveLogEvent = null;
         logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, commitPositionId), this);
 
         role(Role.get((int)roleCounter.get()));
@@ -691,44 +685,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         if (Thread.currentThread().isInterrupted())
         {
             throw new AgentTerminationException("unexpected interrupt during operation");
-        }
-    }
-
-    static class ActiveLog
-    {
-        final long leadershipTermId;
-        final int commitPositionId;
-        final int sessionId;
-        final int streamId;
-        final boolean ackBeforeImage;
-        final String channel;
-
-        ActiveLog(
-            final long leadershipTermId,
-            final int commitPositionId,
-            final int sessionId,
-            final int streamId,
-            final boolean ackBeforeImage,
-            final String channel)
-        {
-            this.leadershipTermId = leadershipTermId;
-            this.commitPositionId = commitPositionId;
-            this.sessionId = sessionId;
-            this.streamId = streamId;
-            this.ackBeforeImage = ackBeforeImage;
-            this.channel = channel;
-        }
-
-        public String toString()
-        {
-            return "ActiveLog{" +
-                "leadershipTermId=" + leadershipTermId +
-                ", commitPositionId=" + commitPositionId +
-                ", sessionId=" + sessionId +
-                ", streamId=" + streamId +
-                ", ackBeforeImage=" + ackBeforeImage +
-                ", channel='" + channel + '\'' +
-                '}';
         }
     }
 }

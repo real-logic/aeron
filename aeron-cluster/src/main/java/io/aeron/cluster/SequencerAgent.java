@@ -286,11 +286,6 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
         if (++serviceAckCount == ctx.serviceCount())
         {
-            if (isRecovering)
-            {
-                return;
-            }
-
             final long termPosition = currentTermPosition();
             switch (action)
             {

@@ -212,7 +212,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Directory to use for the clustered service.
          */
-        public static final String CLUSTERED_SERVICE_DIR_PROP_NAME = "aeron.clustered.service.dir";
+        public static final String CLUSTERED_SERVICE_DIR_PROP_NAME = "aeron.cluster.service.dir";
 
         /**
          * Directory to use for the cluster container.

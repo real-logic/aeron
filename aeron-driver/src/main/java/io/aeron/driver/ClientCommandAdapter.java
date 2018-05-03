@@ -204,6 +204,30 @@ class ClientCommandAdapter implements MessageHandler
                     conductor.onClientClose(correlatedMsgFlyweight.clientId(), correlationId);
                     break;
                 }
+
+                case ADD_RCV_DESTINATION:
+                {
+                    destinationMsgFlyweight.wrap(buffer, index);
+
+                    correlationId = destinationMsgFlyweight.correlationId();
+                    final long channelRegistrationId = destinationMsgFlyweight.registrationCorrelationId();
+                    final String channel = destinationMsgFlyweight.channel();
+
+                    conductor.onAddRcvDestination(channelRegistrationId, channel, correlationId);
+                    break;
+                }
+
+                case REMOVE_RCV_DESTINATION:
+                {
+                    destinationMsgFlyweight.wrap(buffer, index);
+
+                    correlationId = destinationMsgFlyweight.correlationId();
+                    final long channelRegistrationId = destinationMsgFlyweight.registrationCorrelationId();
+                    final String channel = destinationMsgFlyweight.channel();
+
+                    conductor.onRemoveRcvDestination(channelRegistrationId, channel, correlationId);
+                    break;
+                }
             }
         }
         catch (final ControlProtocolException ex)

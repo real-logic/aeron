@@ -77,6 +77,16 @@ public class ControlProtocolEvents
      */
     public static final int CLIENT_CLOSE = 0x0B;
 
+    /**
+     * Add Destination for existing Subscription.
+     */
+    public static final int ADD_RCV_DESTINATION = 0x0C;
+
+    /**
+     * Remove Destination for existing Subscription.
+     */
+    public static final int REMOVE_RCV_DESTINATION = 0x0D;
+
     // Media Driver to Clients
 
     /**

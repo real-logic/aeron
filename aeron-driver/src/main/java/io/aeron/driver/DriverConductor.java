@@ -805,6 +805,59 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
     }
 
+    void onAddRcvDestination(final long registrationId, final String destinationChannel, final long correlationId)
+    {
+        ReceiveChannelEndpoint receiveChannelEndpoint = null;
+
+        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        {
+            final SubscriptionLink subscriptionLink = subscriptionLinks.get(i);
+
+            if (registrationId == subscriptionLink.registrationId())
+            {
+                receiveChannelEndpoint = subscriptionLink.channelEndpoint();
+                break;
+            }
+        }
+
+        if (null == receiveChannelEndpoint)
+        {
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown subscription: " + registrationId);
+        }
+
+        receiveChannelEndpoint.validateAllowsDestinationControl();
+
+        final UdpChannel destinationUdpChannel = UdpChannel.parse(destinationChannel);
+
+//        receiverProxy.addDestination(receiveChannelEndpoint, destinationUdpChannel);
+        clientProxy.operationSucceeded(correlationId);
+    }
+
+    void onRemoveRcvDestination(final long registrationId, final String destinationChannel, final long correlationId)
+    {
+        ReceiveChannelEndpoint receiveChannelEndpoint = null;
+
+        for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
+        {
+            final SubscriptionLink subscriptionLink = subscriptionLinks.get(i);
+
+            if (registrationId == subscriptionLink.registrationId())
+            {
+                receiveChannelEndpoint = subscriptionLink.channelEndpoint();
+                break;
+            }
+        }
+
+        if (null == receiveChannelEndpoint)
+        {
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown subscription: " + registrationId);
+        }
+
+        receiveChannelEndpoint.validateAllowsDestinationControl();
+
+        clientProxy.operationSucceeded(correlationId);
+    }
+
     private void heartbeatAndCheckTimers(final long nowNs)
     {
         final long nowMs = cachedEpochClock.time();

@@ -16,22 +16,22 @@
 package io.aeron.driver.media;
 
 import io.aeron.driver.*;
-import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.*;
+import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.LangUtil;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
 import org.agrona.collections.Long2LongCounterMap;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static io.aeron.status.ChannelEndpointStatus.status;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
+import static io.aeron.status.ChannelEndpointStatus.status;
 
 /**
  * Aggregator of multiple subscriptions onto a single transport channel for receiving of data and setup frames
@@ -225,6 +225,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public InetSocketAddress explicitControlAddress()
     {
         return udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;
+    }
+
+    public void validateAllowsDestinationControl()
+    {
     }
 
     public int onDataPacket(

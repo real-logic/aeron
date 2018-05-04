@@ -114,7 +114,7 @@ class RecordingFragmentReader implements AutoCloseable
             DataHeaderFlyweight.streamId(termBuffer, fromTermOffset) != recordingSummary.streamId))
         {
             close();
-            throw new IllegalArgumentException("position is not aligned to fragment: " + fromPosition);
+            throw new IllegalArgumentException("position is not aligned to a fragment: " + fromPosition);
         }
 
         replayPosition = fromPosition;

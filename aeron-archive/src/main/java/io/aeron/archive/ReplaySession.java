@@ -107,7 +107,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
         catch (final Exception ex)
         {
             CloseHelper.close(replayPublication);
-            onError("failed to open cursor on a recording - " + ex.getMessage());
+            onError("failed to replay recording id " + recordingSummary.recordingId + " - " + ex.getMessage());
             LangUtil.rethrowUnchecked(ex);
         }
 

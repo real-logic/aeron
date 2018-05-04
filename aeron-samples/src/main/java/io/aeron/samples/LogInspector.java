@@ -55,7 +55,7 @@ public class LogInspector
     public static final String AERON_LOG_SCAN_OVER_ZEROES_PROP_NAME = "aeron.log.inspector.scanOverZeroes";
     public static final boolean AERON_LOG_SCAN_OVER_ZEROES = Boolean.getBoolean(AERON_LOG_SCAN_OVER_ZEROES_PROP_NAME);
 
-    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    public static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     public static void main(final String[] args)
     {

@@ -30,6 +30,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.util.Collection;
 
+import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.codecs.ClusterAction.READY;
 import static io.aeron.cluster.codecs.ClusterAction.REPLAY;
@@ -513,17 +514,9 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
     {
         try (AeronArchive archive = AeronArchive.connect(archiveCtx))
         {
-            final RecordingExtent recordingExtent = new RecordingExtent();
-            if (0 == archive.listRecording(recordingId, recordingExtent))
-            {
-                throw new IllegalStateException("could not find recordingId: " + recordingId);
-            }
-
             final String channel = ctx.replayChannel();
             final int streamId = ctx.replayStreamId();
-
-            final long length = recordingExtent.stopPosition - recordingExtent.startPosition;
-            final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
+            final int sessionId = (int)archive.startReplay(recordingId, 0, NULL_LENGTH, channel, streamId);
 
             final String replaySessionChannel = ChannelUri.addSessionId(channel, sessionId);
             try (Subscription subscription = aeron.addSubscription(replaySessionChannel, streamId))

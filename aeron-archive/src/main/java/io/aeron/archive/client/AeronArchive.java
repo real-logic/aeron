@@ -54,6 +54,11 @@ public class AeronArchive implements AutoCloseable
      */
     public static final long NULL_POSITION = -1L;
 
+    /**
+     * Represents a length that has not been set. If null length is provided then replay the whole recorded stream.
+     */
+    public static final long NULL_LENGTH = -1L;
+
     private static final int FRAGMENT_LIMIT = 10;
 
     private final long controlSessionId;

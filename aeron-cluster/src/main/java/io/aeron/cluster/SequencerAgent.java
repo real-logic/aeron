@@ -1109,25 +1109,17 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         termBaseLogPosition = snapshot.termBaseLogPosition + snapshot.termPosition;
         leadershipTermId = snapshot.leadershipTermId;
 
-        final long recordingId = snapshot.recordingId;
-        final RecordingExtent recordingExtent = new RecordingExtent();
-        if (0 == archive.listRecording(recordingId, recordingExtent))
-        {
-            throw new IllegalStateException("unknown recordingId: " + recordingId);
-        }
-
         final String channel = ctx.replayChannel();
         final int streamId = ctx.replayStreamId();
-
-        final long length = recordingExtent.stopPosition - recordingExtent.startPosition;
-        final int sessionId = (int)archive.startReplay(recordingId, 0, length, channel, streamId);
-
+        final long length = snapshotStep.recordingStopPosition - snapshotStep.recordingStartPosition;
+        final int sessionId = (int)archive.startReplay(snapshot.recordingId, 0, length, channel, streamId);
         final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, sessionId);
+
         try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
         {
             final Image image = awaitImage(sessionId, subscription);
-
             final SnapshotLoader snapshotLoader = new SnapshotLoader(image, this);
+
             while (true)
             {
                 final int fragments = snapshotLoader.poll();

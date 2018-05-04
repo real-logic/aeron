@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.Counter;
 import io.aeron.Image;
 import io.aeron.Subscription;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.logbuffer.BlockHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -162,7 +163,7 @@ public class RecordingSessionTest
             recordingSummary,
             archiveDir,
             NULL_POSITION,
-            RecordingFragmentReader.NULL_LENGTH,
+            AeronArchive.NULL_LENGTH,
             null))
         {
             final int polled = reader.controlledPoll(

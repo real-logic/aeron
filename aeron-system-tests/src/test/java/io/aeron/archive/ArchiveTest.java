@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.*;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveProxy;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.client.RecordingEventsAdapter;
@@ -626,7 +627,7 @@ public class ArchiveTest
             catalog.recordingSummary(recordingId, new RecordingSummary()),
             archiveDir,
             NULL_POSITION,
-            RecordingFragmentReader.NULL_LENGTH,
+            AeronArchive.NULL_LENGTH,
             null))
         {
             while (!archiveDataFileReader.isDone())

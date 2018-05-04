@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Counter;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -41,7 +42,6 @@ import static java.nio.file.StandardOpenOption.*;
 
 class RecordingFragmentReader implements AutoCloseable
 {
-    static final long NULL_LENGTH = -1;
 
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
@@ -85,7 +85,7 @@ class RecordingFragmentReader implements AutoCloseable
         this.stopPosition = stopPosition == NULL_POSITION ? recordingPosition.get() : stopPosition;
 
         final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
-        final long replayLength = length == NULL_LENGTH ? maxLength : Math.min(length, maxLength);
+        final long replayLength = length == AeronArchive.NULL_LENGTH ? maxLength : Math.min(length, maxLength);
 
         if (replayLength < 0)
         {

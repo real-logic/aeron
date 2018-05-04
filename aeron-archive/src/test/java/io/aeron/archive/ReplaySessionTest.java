@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
@@ -144,7 +145,7 @@ public class ReplaySessionTest
             recordingSummary,
             archiveDir,
             NULL_POSITION,
-            RecordingFragmentReader.NULL_LENGTH,
+            AeronArchive.NULL_LENGTH,
             null))
         {
             int polled = reader.controlledPoll(

@@ -250,7 +250,7 @@ class RecordingFragmentReader implements AutoCloseable
 
         if (!segmentFile.exists())
         {
-            throw new IllegalArgumentException("failed to open recording segment file: " + segmentFileName);
+            throw new IllegalArgumentException("failed to open recording segment file " + segmentFileName);
         }
 
         try (FileChannel channel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))

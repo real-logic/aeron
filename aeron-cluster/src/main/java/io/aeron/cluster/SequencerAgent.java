@@ -797,10 +797,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             try (Subscription subscription = aeron.addSubscription(channel, streamId))
             {
-                resetToNull(serviceAckPositions);
                 logAdapter = null;
-
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, true, channel);
+                resetToNull(serviceAckPositions);
                 awaitServiceAcks();
 
                 final int replaySessionId = (int)archive.startReplay(
@@ -1081,13 +1080,12 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader, final int logSessionId)
     {
-        resetToNull(serviceAckPositions);
-
         final String channel = isLeader && UDP_MEDIA.equals(channelUri.media()) ?
             channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
         serviceControlPublisher.joinLog(
             leadershipTermId, termCommitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
 
+        resetToNull(serviceAckPositions);
         awaitServiceAcks();
     }
 
@@ -1175,9 +1173,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
             {
-                resetToNull(serviceAckPositions);
                 logAdapter = null;
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, true, channel);
+                resetToNull(serviceAckPositions);
 
                 if (length > 0)
                 {

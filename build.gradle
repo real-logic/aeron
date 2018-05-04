@@ -29,8 +29,8 @@ defaultTasks 'clean', 'build', 'shadowJar', 'install'
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '0.9.17'
-def sbeVersion = '1.8.0'
+def agronaVersion = '0.9.18'
+def sbeVersion = '1.8.1'
 
 group = aeronGroup
 version = aeronVersion

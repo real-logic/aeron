@@ -102,7 +102,7 @@ class RecordingFragmentReader implements AutoCloseable
         termBaseSegmentOffset = segmentOffset - termOffset;
         termBuffer = new UnsafeBuffer(mappedSegmentBuffer, termBaseSegmentOffset, termLength);
 
-        if (fromPosition != startPosition &&
+        if (fromPosition > startPosition &&
             (DataHeaderFlyweight.termOffset(termBuffer, termOffset) != termOffset ||
             DataHeaderFlyweight.termId(termBuffer, termOffset) != termId ||
             DataHeaderFlyweight.streamId(termBuffer, termOffset) != recordingSummary.streamId))

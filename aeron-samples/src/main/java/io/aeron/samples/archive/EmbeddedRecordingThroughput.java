@@ -134,7 +134,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
             final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;
 
             System.out.printf(
-                "Recorded %.02f MB @ %.02f MB/s - %,d msg/sec - %d byte message + 32 byte header%n",
+                "Recorded %.02f MB @ %.02f MB/s - %,d msg/sec - %d byte payload + 32 byte header%n",
                 recordingMb, dataRate, msgRate, MESSAGE_LENGTH);
 
             isRecording = false;

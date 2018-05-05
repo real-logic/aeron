@@ -159,7 +159,7 @@ public class SamplesUtil
         final long totalBytes)
     {
         System.out.println(String.format(
-            "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
+            "%.02g msgs/sec, %.02g payload bytes/sec, totals %d messages %d MB",
             messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
     }
 

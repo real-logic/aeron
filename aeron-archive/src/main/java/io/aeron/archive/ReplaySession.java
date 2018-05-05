@@ -20,18 +20,12 @@ import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
-
-import static io.aeron.logbuffer.FrameDescriptor.frameFlags;
-import static io.aeron.logbuffer.FrameDescriptor.frameType;
-import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * A replay session with a client which works through the required request response flow and streaming of recorded data.
@@ -164,19 +158,17 @@ class ReplaySession implements Session, SimpleFragmentHandler
         return state == State.INACTIVE;
     }
 
-    public boolean onFragment(final UnsafeBuffer buffer, final int offset, final int length)
+    public boolean onFragment(
+        final UnsafeBuffer buffer,
+        final int offset,
+        final int length,
+        final int frameType,
+        final byte flags,
+        final long reservedValue)
     {
-        if (state != State.REPLAY)
-        {
-            return false;
-        }
-
-        final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
-        final int frameType = frameType(buffer, frameOffset);
-
         final long result = frameType == FrameDescriptor.PADDING_FRAME_TYPE ?
             replayPublication.appendPadding(length) :
-            replayFrame(buffer, offset, length, frameOffset);
+            replayFrame(buffer, offset, length, flags, reservedValue);
 
         if (result > 0)
         {
@@ -242,14 +234,24 @@ class ReplaySession implements Session, SimpleFragmentHandler
         return workDone;
     }
 
-    private long replayFrame(final UnsafeBuffer buffer, final int offset, final int length, final int frameOffset)
+    private long replayFrame(
+        final UnsafeBuffer buffer, final int offset, final int length, final byte flags, final long reservedValue)
     {
-        final long result = replayPublication.tryClaim(length, bufferClaim);
+        long result = replayPublication.tryClaim(length, bufferClaim);
         if (result > 0)
         {
             bufferClaim
-                .flags(frameFlags(buffer, frameOffset))
-                .reservedValue(buffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
+                .flags(flags)
+                .reservedValue(reservedValue)
+                .buffer().putBytes(bufferClaim.offset(), buffer, offset, length);
+
+            bufferClaim.commit();
+        }
+        else if ((result = replayPublication.tryClaim(length, bufferClaim)) > 0)
+        {
+            bufferClaim
+                .flags(flags)
+                .reservedValue(reservedValue)
                 .buffer().putBytes(bufferClaim.offset(), buffer, offset, length);
 
             bufferClaim.commit();

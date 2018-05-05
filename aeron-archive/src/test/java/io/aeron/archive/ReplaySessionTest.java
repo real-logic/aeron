@@ -148,8 +148,8 @@ public class ReplaySessionTest
             AeronArchive.NULL_LENGTH,
             null))
         {
-            int polled = reader.controlledPoll(
-                (buffer, offset, length) ->
+            int fragments = reader.controlledPoll(
+                (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
                     assertEquals(offset, INITIAL_TERM_OFFSET + HEADER_LENGTH);
@@ -161,10 +161,10 @@ public class ReplaySessionTest
                 },
                 1);
 
-            assertEquals(1, polled);
+            assertEquals(1, fragments);
 
-            polled = reader.controlledPoll(
-                (buffer, offset, length) ->
+            fragments = reader.controlledPoll(
+                (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
                     assertEquals(offset, INITIAL_TERM_OFFSET + FRAME_LENGTH + HEADER_LENGTH);
@@ -176,10 +176,10 @@ public class ReplaySessionTest
                 },
                 1);
 
-            assertEquals(1, polled);
+            assertEquals(1, fragments);
 
-            polled = reader.controlledPoll(
-                (buffer, offset, length) ->
+            fragments = reader.controlledPoll(
+                (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
                     assertEquals(offset, INITIAL_TERM_OFFSET + 2 * FRAME_LENGTH + HEADER_LENGTH);
@@ -191,10 +191,10 @@ public class ReplaySessionTest
                 },
                 1);
 
-            assertEquals(1, polled);
+            assertEquals(1, fragments);
 
-            polled = reader.controlledPoll(
-                (buffer, offset, length) ->
+            fragments = reader.controlledPoll(
+                (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
                     assertEquals(offset, INITIAL_TERM_OFFSET + 3 * FRAME_LENGTH + HEADER_LENGTH);
@@ -206,7 +206,7 @@ public class ReplaySessionTest
                 },
                 1);
 
-            assertEquals(1, polled);
+            assertEquals(1, fragments);
         }
     }
 

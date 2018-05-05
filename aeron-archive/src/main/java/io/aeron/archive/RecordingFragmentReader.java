@@ -37,6 +37,8 @@ import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.*;
 
@@ -132,40 +134,41 @@ class RecordingFragmentReader implements AutoCloseable
 
     int controlledPoll(final SimpleFragmentHandler fragmentHandler, final int fragmentLimit)
     {
-        if (isDone() || noAvailableData())
+        int fragments = 0;
+
+        if (noAvailableLiveData())
         {
-            return 0;
+            return fragments;
         }
 
-        int polled = 0;
-
-        while ((stopPosition - replayPosition) > 0 && polled < fragmentLimit)
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        while (replayPosition < stopPosition && fragments < fragmentLimit)
         {
-            if (termOffset == termLength)
+            final int frameOffset = termOffset;
+            if (frameOffset == termLength)
             {
                 termOffset = 0;
                 nextTerm();
                 break;
             }
 
-            final int frameOffset = termOffset;
             final int frameLength = FrameDescriptor.frameLength(termBuffer, frameOffset);
+            final int frameType = FrameDescriptor.frameType(termBuffer, frameOffset);
+            final byte flags = FrameDescriptor.frameFlags(termBuffer, frameOffset);
+            final long reservedValue = termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN);
+
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
-
-            replayPosition += alignedLength;
-            termOffset += alignedLength;
-
-            final int dataOffset = frameOffset + DataHeaderFlyweight.DATA_OFFSET;
+            final int dataOffset = frameOffset + DataHeaderFlyweight.HEADER_LENGTH;
             final int dataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
 
-            if (!fragmentHandler.onFragment(termBuffer, dataOffset, dataLength))
+            if (!fragmentHandler.onFragment(termBuffer, dataOffset, dataLength, frameType, flags, reservedValue))
             {
-                replayPosition -= alignedLength;
-                termOffset -= alignedLength;
                 break;
             }
 
-            polled++;
+            replayPosition += alignedLength;
+            termOffset += alignedLength;
+            fragments++;
 
             if (replayPosition >= replayLimit)
             {
@@ -175,7 +178,7 @@ class RecordingFragmentReader implements AutoCloseable
             }
         }
 
-        return polled;
+        return fragments;
     }
 
     static boolean hasInitialSegmentFile(
@@ -189,7 +192,7 @@ class RecordingFragmentReader implements AutoCloseable
         return segmentFile.exists();
     }
 
-    private boolean noAvailableData()
+    private boolean noAvailableLiveData()
     {
         return recordingPosition != null &&
             replayPosition == stopPosition &&

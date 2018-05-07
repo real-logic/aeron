@@ -15,7 +15,10 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.driver.*;
+import io.aeron.driver.DataPacketDispatcher;
+import io.aeron.driver.DriverConductorProxy;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.PublicationImage;
 import io.aeron.protocol.*;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.LangUtil;
@@ -28,7 +31,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
@@ -244,9 +246,19 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return multiRcvDestination.addDestination(transport);
     }
 
-    public ReceiveDestinationUdpTransport removeDestination(final UdpChannel udpChannel)
+    public void removeDestination(final int transportIndex)
     {
-        return multiRcvDestination.removeDestination(udpChannel);
+        multiRcvDestination.removeDestination(transportIndex);
+    }
+
+    public int destination(final UdpChannel udpChannel)
+    {
+        return multiRcvDestination.transport(udpChannel);
+    }
+
+    public ReceiveDestinationUdpTransport destination(final int transportIndex)
+    {
+        return multiRcvDestination.transport(transportIndex);
     }
 
     public int onDataPacket(
@@ -325,7 +337,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     public void sendStatusMessage(
-        final ArrayList<DestinationImageControlAddress> controlAddresses,
+        final DestinationImageControlAddress[] controlAddresses,
         final int sessionId,
         final int streamId,
         final int termId,
@@ -349,7 +361,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     public void sendNakMessage(
-        final ArrayList<DestinationImageControlAddress> controlAddresses,
+        final DestinationImageControlAddress[] controlAddresses,
         final int sessionId,
         final int streamId,
         final int termId,
@@ -371,7 +383,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     public void sendRttMeasurement(
-        final ArrayList<DestinationImageControlAddress> controlAddresses,
+        final DestinationImageControlAddress[] controlAddresses,
         final int sessionId,
         final int streamId,
         final long echoTimestampNs,
@@ -440,13 +452,13 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     protected void send(
         final ByteBuffer buffer,
         final int bytesToSend,
-        final ArrayList<DestinationImageControlAddress> controlAddresses)
+        final DestinationImageControlAddress[] controlAddresses)
     {
         final int bytesSent;
 
         if (null == multiRcvDestination)
         {
-            bytesSent = sendTo(buffer, controlAddresses.get(0).address);
+            bytesSent = sendTo(buffer, controlAddresses[0].address);
         }
         else
         {

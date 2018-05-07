@@ -22,10 +22,11 @@ import io.aeron.driver.media.ReceiveDestinationUdpTransport;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayListUtil;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -176,12 +177,36 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             channelEndpoint.sendSetupElicitingStatusMessage(
                 transportIndex, channelEndpoint.explicitControlAddress(), 0, 0);
         }
+
+        for (final PublicationImage image : publicationImages)
+        {
+            if (channelEndpoint == image.channelEndpoint())
+            {
+                image.addDestination(transportIndex);
+            }
+        }
     }
 
     public void onRemoveDestination(
         final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel)
     {
-        CloseHelper.close(channelEndpoint.removeDestination(udpChannel));
+        final int transportIndex = channelEndpoint.destination(udpChannel);
+
+        if (ArrayUtil.UNKNOWN_INDEX != transportIndex)
+        {
+            final ReceiveDestinationUdpTransport transport = channelEndpoint.destination(transportIndex);
+
+            channelEndpoint.removeDestination(transportIndex);
+            CloseHelper.close(transport);
+
+            for (final PublicationImage image : publicationImages)
+            {
+                if (channelEndpoint == image.channelEndpoint())
+                {
+                    image.addDestination(transportIndex);
+                }
+            }
+        }
     }
 
     public void accept(final ReceiverCmd cmd)

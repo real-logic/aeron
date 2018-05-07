@@ -294,7 +294,7 @@ class RecordingCatchUp implements AutoCloseable
                 workCount += 1;
             }
         }
-        else if (pollForArchiveResponse(localArchive, activeCorrelationId))
+        else if (pollForResponse(localArchive, activeCorrelationId))
         {
             state = State.AWAIT_REPLAY;
             activeCorrelationId = NULL_CORRELATION_ID;
@@ -325,7 +325,7 @@ class RecordingCatchUp implements AutoCloseable
                 workCount = 1;
             }
         }
-        else if (pollForArchiveResponse(leaderArchive, activeCorrelationId))
+        else if (pollForResponse(leaderArchive, activeCorrelationId))
         {
             state = State.AWAIT_TRANSFER;
             activeCorrelationId = NULL_CORRELATION_ID;
@@ -394,7 +394,7 @@ class RecordingCatchUp implements AutoCloseable
         }
     }
 
-    private static boolean pollForArchiveResponse(final AeronArchive archive, final long correlationId)
+    private static boolean pollForResponse(final AeronArchive archive, final long correlationId)
     {
         final ControlResponsePoller poller = archive.controlResponsePoller();
 

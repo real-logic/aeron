@@ -258,8 +258,8 @@ class RecordingCatchUp implements AutoCloseable
             final AeronArchive.Context leaderArchiveContext = new AeronArchive.Context()
                 .aeron(context.aeron())
                 .controlRequestChannel(archiveControlRequestChannel.build())
-                .controlResponseChannel(leaderArchive.context().controlResponseChannel())
-                .controlResponseStreamId(leaderArchive.context().controlResponseStreamId() + 1);
+                .controlResponseChannel(localArchive.context().controlResponseChannel())
+                .controlResponseStreamId(localArchive.context().controlResponseStreamId() + 1);
 
             leaderAsyncConnect = AeronArchive.asyncConnect(leaderArchiveContext);
 

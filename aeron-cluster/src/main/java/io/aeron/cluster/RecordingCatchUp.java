@@ -39,7 +39,7 @@ class RecordingCatchUp implements AutoCloseable
     {
         INIT,
         AWAITING_LEADER_RECOVERY_PLAN,
-        AWAITING_ARCHIVE_CONNECTS,
+        AWAITING_LEADER_ARCHIVE_CONNECT,
         AWAITING_EXTEND_RECORDING,
         AWAITING_START_REPLAY,
         AWAITING_CATCH_UP,
@@ -54,9 +54,9 @@ class RecordingCatchUp implements AutoCloseable
     private final int leaderMemberId;
     private final int memberId;
 
-    private AeronArchive.AsyncConnect srcAsyncConnect;
-    private AeronArchive dstArchive;
-    private AeronArchive srcArchive;
+    private AeronArchive.AsyncConnect leaderAsyncConnect;
+    private AeronArchive leaderArchive;
+    private AeronArchive localArchive;
     private String replayChannel;
     private String extendChannel;
 
@@ -82,7 +82,7 @@ class RecordingCatchUp implements AutoCloseable
         final RecordingLog.RecoveryPlan localRecoveryPlan,
         final ConsensusModule.Context context)
     {
-        this.dstArchive = localArchive;
+        this.leaderArchive = localArchive;
         this.memberStatusPublisher = memberStatusPublisher;
         this.clusterMembers = clusterMembers;
         this.localRecoveryPlan = localRecoveryPlan;
@@ -94,7 +94,7 @@ class RecordingCatchUp implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(srcArchive);
+        CloseHelper.close(localArchive);
     }
 
     public int doWork()
@@ -118,10 +118,10 @@ class RecordingCatchUp implements AutoCloseable
                 break;
 
             case AWAITING_LEADER_RECOVERY_PLAN:
-                workCount += connectToArchives();
+                workCount += connectToLeaderArchive();
                 break;
 
-            case AWAITING_ARCHIVE_CONNECTS:
+            case AWAITING_LEADER_ARCHIVE_CONNECT:
                 workCount += tryExtendRecording();
                 break;
 
@@ -247,7 +247,7 @@ class RecordingCatchUp implements AutoCloseable
         return 1;
     }
 
-    private int connectToArchives()
+    private int connectToLeaderArchive()
     {
         if (NULL_RECORDING_ID != recordingIdToExtend)
         {
@@ -258,12 +258,12 @@ class RecordingCatchUp implements AutoCloseable
             final AeronArchive.Context leaderArchiveContext = new AeronArchive.Context()
                 .aeron(context.aeron())
                 .controlRequestChannel(archiveControlRequestChannel.build())
-                .controlResponseChannel(dstArchive.context().controlResponseChannel())
-                .controlResponseStreamId(dstArchive.context().controlResponseStreamId() + 1);
+                .controlResponseChannel(leaderArchive.context().controlResponseChannel())
+                .controlResponseStreamId(leaderArchive.context().controlResponseStreamId() + 1);
 
-            srcAsyncConnect = AeronArchive.asyncConnect(leaderArchiveContext);
+            leaderAsyncConnect = AeronArchive.asyncConnect(leaderArchiveContext);
 
-            state = State.AWAITING_ARCHIVE_CONNECTS;
+            state = State.AWAITING_LEADER_ARCHIVE_CONNECT;
         }
 
         return 1;
@@ -273,9 +273,9 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (null == srcArchive)
+        if (null == localArchive)
         {
-            srcArchive = srcAsyncConnect.poll();
+            localArchive = leaderAsyncConnect.poll();
 
             return workCount;
         }
@@ -284,13 +284,13 @@ class RecordingCatchUp implements AutoCloseable
         {
             final long correlationId = context.aeron().nextCorrelationId();
 
-            if (dstArchive.archiveProxy().extendRecording(
+            if (leaderArchive.archiveProxy().extendRecording(
                 extendChannel,
                 context.logStreamId(),
                 SourceLocation.REMOTE,
                 recordingIdToExtend,
                 correlationId,
-                dstArchive.controlSessionId()))
+                leaderArchive.controlSessionId()))
             {
                 extendRecordingCorrelationId = correlationId;
                 archiveResponded = false;
@@ -306,7 +306,7 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (!archiveResponded && !pollForArchiveResponse(dstArchive, extendRecordingCorrelationId))
+        if (!archiveResponded && !pollForArchiveResponse(leaderArchive, extendRecordingCorrelationId))
         {
             return workCount;
         }
@@ -317,14 +317,14 @@ class RecordingCatchUp implements AutoCloseable
 
             final long correlationId = context.aeron().nextCorrelationId();
 
-            if (srcArchive.archiveProxy().replay(
+            if (localArchive.archiveProxy().replay(
                 leaderRecordingId,
                 fromPosition,
                 targetPosition - fromPosition,
                 replayChannel,
                 context.logStreamId(),
                 correlationId,
-                srcArchive.controlSessionId()))
+                localArchive.controlSessionId()))
             {
                 replayCorrelationId = correlationId;
                 archiveResponded = false;
@@ -340,7 +340,7 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (!archiveResponded && !pollForArchiveResponse(srcArchive, replayCorrelationId))
+        if (!archiveResponded && !pollForArchiveResponse(localArchive, replayCorrelationId))
         {
             return workCount;
         }

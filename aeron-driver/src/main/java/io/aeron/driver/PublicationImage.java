@@ -24,17 +24,15 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
-import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
@@ -68,7 +66,7 @@ class PublicationImageReceiverFields extends PublicationImagePadding2
 {
     protected boolean isEndOfStream = false;
     protected long lastPacketTimestampNs;
-    protected ArrayList<DestinationImageControlAddress> controlAddresses;
+    protected DestinationImageControlAddress[] controlAddresses = new DestinationImageControlAddress[1];
 }
 
 class PublicationImagePadding3 extends PublicationImageReceiverFields
@@ -120,7 +118,6 @@ public class PublicationImage
 
     private final NanoClock nanoClock;
     private final NanoClock cachedNanoClock;
-//    private final InetSocketAddress controlAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final UnsafeBuffer[] termBuffers;
     private final Position hwmPosition;
@@ -169,7 +166,6 @@ public class PublicationImage
         this.streamId = streamId;
         this.rawLog = rawLog;
         this.subscriberPositions = subscriberPositions;
-        this.controlAddresses = new ArrayList<>();
         this.hwmPosition = hwmPosition;
         this.rebuildPosition = rebuildPosition;
         this.sourceAddress = sourceAddress;
@@ -192,7 +188,8 @@ public class PublicationImage
         timeOfLastStateChangeNs = nowNs;
         lastPacketTimestampNs = nowNs;
 
-        controlAddresses.add(transportIndex, new DestinationImageControlAddress(nowNs, controlAddress));
+        controlAddresses = ArrayUtil.ensureCapacity(controlAddresses, transportIndex + 1);
+        controlAddresses[transportIndex] = new DestinationImageControlAddress(nowNs, controlAddress);
 
         termBuffers = rawLog.termBuffers();
         lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
@@ -365,11 +362,12 @@ public class PublicationImage
 
     void addDestination(final int transportIndex)
     {
+        controlAddresses = ArrayUtil.ensureCapacity(controlAddresses, transportIndex + 1);
     }
 
     void removeDestination(final int transportIndex)
     {
-        ArrayListUtil.fastUnorderedRemove(controlAddresses, transportIndex);
+        controlAddresses[transportIndex] = null;
     }
 
     private void state(final State state)
@@ -757,12 +755,12 @@ public class PublicationImage
 
     private void updateControlAddress(final int transportIndex, final InetSocketAddress srcAddress, final long nowNs)
     {
-        DestinationImageControlAddress controlAddress = controlAddresses.get(transportIndex);
+        DestinationImageControlAddress controlAddress = controlAddresses[transportIndex];
 
         if (null == controlAddress)
         {
             controlAddress = new DestinationImageControlAddress(nowNs, srcAddress);
-            controlAddresses.add(transportIndex, controlAddress);
+            controlAddresses[transportIndex] = controlAddress;
         }
 
         controlAddress.timeOfLastFrameNs = nowNs;

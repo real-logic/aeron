@@ -16,20 +16,18 @@
 package io.aeron.driver.media;
 
 import org.agrona.LangUtil;
-import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.NanoClock;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 
 public class MultiRcvDestination implements AutoCloseable
 {
     private final long destinationTimeoutNs;
     private final NanoClock nanoClock;
-    private final ArrayList<ReceiveDestinationUdpTransport> transports = new ArrayList<>();
+    private ReceiveDestinationUdpTransport[] transports = new ReceiveDestinationUdpTransport[0];
 
     public MultiRcvDestination(final NanoClock nanoClock, final long timeoutNs)
     {
@@ -39,29 +37,49 @@ public class MultiRcvDestination implements AutoCloseable
 
     public void close()
     {
-        transports.forEach(ReceiveDestinationUdpTransport::close);
+        for (final ReceiveDestinationUdpTransport transport : transports)
+        {
+            transport.close();
+        }
     }
 
     public int addDestination(final ReceiveDestinationUdpTransport transport)
     {
-        transports.add(transport);
-        return transports.size() - 1;
+        int index = transports.length;
+
+        for (int i = 0, length = transports.length; i < length; i++)
+        {
+            if (null == transports[i])
+            {
+                index = i;
+                break;
+            }
+        }
+
+        transports = ArrayUtil.ensureCapacity(transports, index + 1);
+        transports[index] = transport;
+
+        return index;
+    }
+
+    public void removeDestination(final int transportIndex)
+    {
+        transports[transportIndex] = null;
     }
 
     public ReceiveDestinationUdpTransport transport(final int transportIndex)
     {
-        return transports.get(transportIndex);
+        return transports[transportIndex];
     }
 
-    public ReceiveDestinationUdpTransport removeDestination(final UdpChannel udpChannel)
+    public int transport(final UdpChannel udpChannel)
     {
-        final ArrayList<ReceiveDestinationUdpTransport> transports = this.transports;
+        final ReceiveDestinationUdpTransport[] transports = this.transports;
         int index = ArrayUtil.UNKNOWN_INDEX;
-        ReceiveDestinationUdpTransport result = null;
 
-        for (int i = 0, length = transports.size(); i < length; i++)
+        for (int i = 0, length = transports.length; i < length; i++)
         {
-            final ReceiveDestinationUdpTransport transport = transports.get(i);
+            final ReceiveDestinationUdpTransport transport = transports[i];
 
             if (transport.udpChannel().equals(udpChannel))
             {
@@ -70,32 +88,26 @@ public class MultiRcvDestination implements AutoCloseable
             }
         }
 
-        if (ArrayUtil.UNKNOWN_INDEX != index)
-        {
-            result = transports.get(index);
-            ArrayListUtil.fastUnorderedRemove(transports, index);
-        }
-
-        return result;
+        return index;
     }
 
     public int sendToAll(
-        final ArrayList<DestinationImageControlAddress> controlAddresses,
+        final DestinationImageControlAddress[] controlAddresses,
         final ByteBuffer buffer,
         final int position,
         final int bytesToSend)
     {
-        final ArrayList<ReceiveDestinationUdpTransport> transports = this.transports;
+        final ReceiveDestinationUdpTransport[] transports = this.transports;
         final long nowNs = nanoClock.nanoTime();
         int minBytesSent = bytesToSend;
 
-        for (int lastIndex = controlAddresses.size() - 1, i = lastIndex; i >= 0; i--)
+        for (int lastIndex = controlAddresses.length - 1, i = lastIndex; i >= 0; i--)
         {
-            final DestinationImageControlAddress controlAddress = controlAddresses.get(i);
+            final DestinationImageControlAddress controlAddress = controlAddresses[i];
 
             if (null != controlAddress)
             {
-                final UdpChannelTransport transport = transports.get(i);
+                final UdpChannelTransport transport = transports[i];
 
                 if (null != transport && nowNs < (controlAddress.timeOfLastFrameNs + destinationTimeoutNs))
                 {

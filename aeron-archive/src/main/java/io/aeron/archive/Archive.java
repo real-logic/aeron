@@ -409,21 +409,14 @@ public class Archive implements AutoCloseable
                 idleStrategySupplier = Configuration.idleStrategySupplier(null);
             }
 
-            if (deleteArchiveOnStart)
-            {
-                if (null != archiveDir)
-                {
-                    IoUtil.delete(archiveDir, true);
-                }
-                else
-                {
-                    IoUtil.delete(new File(Configuration.archiveDirName()), true);
-                }
-            }
-
             if (null == archiveDir)
             {
                 archiveDir = new File(archiveDirectoryName);
+            }
+
+            if (deleteArchiveOnStart && archiveDir.exists())
+            {
+                IoUtil.delete(archiveDir, false);
             }
 
             if (!archiveDir.exists() && !archiveDir.mkdirs())

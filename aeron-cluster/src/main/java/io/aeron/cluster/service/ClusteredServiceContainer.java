@@ -427,21 +427,14 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 epochClock = new SystemEpochClock();
             }
 
-            if (deleteDirOnStart)
-            {
-                if (null != clusteredServiceDir)
-                {
-                    IoUtil.delete(clusteredServiceDir, true);
-                }
-                else
-                {
-                    IoUtil.delete(new File(Configuration.clusteredServiceDirName()), true);
-                }
-            }
-
             if (null == clusteredServiceDir)
             {
                 clusteredServiceDir = new File(clusteredServiceDirectoryName);
+            }
+
+            if (deleteDirOnStart && clusteredServiceDir.exists())
+            {
+                IoUtil.delete(clusteredServiceDir, false);
             }
 
             if (!clusteredServiceDir.exists() && !clusteredServiceDir.mkdirs())

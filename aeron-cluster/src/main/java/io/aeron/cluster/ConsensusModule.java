@@ -872,21 +872,14 @@ public class ConsensusModule implements AutoCloseable
         @SuppressWarnings("MethodLength")
         public void conclude()
         {
-            if (deleteDirOnStart)
-            {
-                if (null != clusterDir)
-                {
-                    IoUtil.delete(clusterDir, true);
-                }
-                else
-                {
-                    IoUtil.delete(new File(Configuration.clusterDirName()), true);
-                }
-            }
-
             if (null == clusterDir)
             {
                 clusterDir = new File(clusterDirectoryName);
+            }
+
+            if (deleteDirOnStart && clusterDir.exists())
+            {
+                IoUtil.delete(clusterDir, false);
             }
 
             if (!clusterDir.exists() && !clusterDir.mkdirs())

@@ -33,7 +33,7 @@ import static io.aeron.driver.DataPacketDispatcher.SessionState.*;
  * <p>
  * All methods should be called from the {@link Receiver} thread.
  */
-public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHandler
+public class DataPacketDispatcher
 {
     enum SessionState
     {

@@ -182,7 +182,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         {
             if (channelEndpoint == image.channelEndpoint())
             {
-                image.addDestination(transportIndex);
+                image.addDestination(transportIndex, transport);
             }
         }
     }
@@ -203,7 +203,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             {
                 if (channelEndpoint == image.channelEndpoint())
                 {
-                    image.addDestination(transportIndex);
+                    image.removeDestination(transportIndex);
                 }
             }
         }

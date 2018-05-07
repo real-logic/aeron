@@ -18,6 +18,7 @@ package io.aeron.driver;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.DestinationImageControlAddress;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveDestinationUdpTransport;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -360,9 +361,17 @@ public class PublicationImage
         state(ACTIVE);
     }
 
-    void addDestination(final int transportIndex)
+    void addDestination(final int transportIndex, final ReceiveDestinationUdpTransport transport)
     {
         controlAddresses = ArrayUtil.ensureCapacity(controlAddresses, transportIndex + 1);
+
+        if (transport.isMulticast())
+        {
+            final InetSocketAddress controlAddress = transport.udpChannel().remoteControl();
+
+            controlAddresses[transportIndex] =
+                new DestinationImageControlAddress(nanoClock.nanoTime(), controlAddress);
+        }
     }
 
     void removeDestination(final int transportIndex)

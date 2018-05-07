@@ -546,12 +546,12 @@ class Election implements MemberStatusListener, AutoCloseable
         }
         else
         {
-            if (recordingCatchUp.isInInit())
+            if (recordingCatchUp.isInit())
             {
                 sequencerAgent.updateFollowersMemberDetails();
             }
 
-            if (!recordingCatchUp.isCaughtUp())
+            if (!recordingCatchUp.isDone())
             {
                 workCount += memberStatusAdapter.poll();
                 workCount += recordingCatchUp.doWork();

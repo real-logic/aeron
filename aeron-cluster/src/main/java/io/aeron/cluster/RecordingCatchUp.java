@@ -38,11 +38,10 @@ class RecordingCatchUp implements AutoCloseable
     enum State
     {
         INIT,
-        AWAITING_LEADER_RECOVERY_PLAN,
-        AWAITING_LEADER_ARCHIVE_CONNECT,
-        AWAITING_EXTEND_RECORDING,
-        AWAITING_START_REPLAY,
-        AWAITING_TRANSFER,
+        AWAIT_LEADER_CONNECTION,
+        AWAIT_EXTEND_RECORDING,
+        AWAIT_REPLAY,
+        AWAIT_TRANSFER,
         DONE
     }
 
@@ -71,7 +70,6 @@ class RecordingCatchUp implements AutoCloseable
     private long extendRecordingCorrelationId = NULL_CORRELATION_ID;
     private long replayCorrelationId = NULL_CORRELATION_ID;
     private int recPosCounterId = CountersReader.NULL_COUNTER_ID;
-    private boolean archiveResponded = false;
 
     RecordingCatchUp(
         final AeronArchive localArchive,
@@ -101,51 +99,38 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (State.AWAITING_TRANSFER == state)
-        {
-            if (currentPosition() >= targetPosition)
-            {
-                state = State.DONE;
-            }
-
-            return workCount;
-        }
-
         switch (state)
         {
             case INIT:
-                workCount += queryRecoveryPlan();
+                workCount += init();
                 break;
 
-            case AWAITING_LEADER_RECOVERY_PLAN:
-                workCount += connectToLeaderArchive();
+            case AWAIT_LEADER_CONNECTION:
+                workCount += awaitLeaderConnection();
                 break;
 
-            case AWAITING_LEADER_ARCHIVE_CONNECT:
-                workCount += tryExtendRecording();
+            case AWAIT_EXTEND_RECORDING:
+                workCount += awaitExtendRecording();
                 break;
 
-            case AWAITING_EXTEND_RECORDING:
-                workCount += tryStartReplay();
+            case AWAIT_REPLAY:
+                workCount += awaitReplay();
                 break;
 
-            case AWAITING_START_REPLAY:
-                workCount += tryFindRecordPosCounter();
-                break;
-
-            case DONE:
+            case AWAIT_TRANSFER:
+                workCount += awaitTransfer();
                 break;
         }
 
         return workCount;
     }
 
-    public boolean isInInit()
+    public boolean isInit()
     {
         return State.INIT == state;
     }
 
-    public boolean isCaughtUp()
+    public boolean isDone()
     {
         return State.DONE == state;
     }
@@ -188,7 +173,7 @@ class RecordingCatchUp implements AutoCloseable
         final int offset,
         final int length)
     {
-        if (State.AWAITING_LEADER_RECOVERY_PLAN == state &&
+        if (State.AWAIT_LEADER_CONNECTION == state &&
             correlationId == queryRecoveryPlanCorrelationId &&
             requestMemberId == memberId &&
             responseMemberId == leaderMemberId)
@@ -233,23 +218,22 @@ class RecordingCatchUp implements AutoCloseable
         }
     }
 
-    private int queryRecoveryPlan()
+    private int init()
     {
-        final long correlationId = context.aeron().nextCorrelationId();
+        int workCount = 0;
 
-        if (memberStatusPublisher.recoveryPlanQuery(
-            clusterMembers[leaderMemberId].publication(), correlationId, leaderMemberId, memberId))
+        if (NULL_CORRELATION_ID == queryRecoveryPlanCorrelationId)
         {
-            queryRecoveryPlanCorrelationId = correlationId;
-            state = State.AWAITING_LEADER_RECOVERY_PLAN;
+            final long correlationId = context.aeron().nextCorrelationId();
+
+            if (memberStatusPublisher.recoveryPlanQuery(
+                clusterMembers[leaderMemberId].publication(), correlationId, leaderMemberId, memberId))
+            {
+                queryRecoveryPlanCorrelationId = correlationId;
+            }
         }
 
-        return 1;
-    }
-
-    private int connectToLeaderArchive()
-    {
-        if (NULL_RECORDING_ID != recordingIdToExtend)
+        if (null == leaderAsyncConnect)
         {
             final ChannelUriStringBuilder archiveControlRequestChannel = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
@@ -262,23 +246,41 @@ class RecordingCatchUp implements AutoCloseable
                 .controlResponseStreamId(localArchive.context().controlResponseStreamId() + 1);
 
             leaderAsyncConnect = AeronArchive.asyncConnect(leaderArchiveContext);
-
-            state = State.AWAITING_LEADER_ARCHIVE_CONNECT;
+            workCount += 1;
         }
 
-        return 1;
+        if (NULL_CORRELATION_ID != queryRecoveryPlanCorrelationId)
+        {
+            state = State.AWAIT_LEADER_CONNECTION;
+            workCount += 1;
+        }
+
+        return workCount;
     }
 
-    private int tryExtendRecording()
+    private int awaitLeaderConnection()
     {
         int workCount = 0;
 
-        if (null == leaderArchive)
+        if (NULL_RECORDING_ID != leaderRecordingId)
         {
-            leaderArchive = leaderAsyncConnect.poll();
-
-            return workCount;
+            if (null == leaderArchive)
+            {
+                leaderArchive = leaderAsyncConnect.poll();
+            }
+            else
+            {
+                state = State.AWAIT_EXTEND_RECORDING;
+                workCount += 1;
+            }
         }
+
+        return workCount;
+    }
+
+    private int awaitExtendRecording()
+    {
+        int workCount = 0;
 
         if (NULL_CORRELATION_ID == extendRecordingCorrelationId)
         {
@@ -293,28 +295,24 @@ class RecordingCatchUp implements AutoCloseable
                 localArchive.controlSessionId()))
             {
                 extendRecordingCorrelationId = correlationId;
-                archiveResponded = false;
-                state = State.AWAITING_EXTEND_RECORDING;
-                workCount = 1;
+                workCount += 1;
             }
+        }
+        else if (pollForArchiveResponse(localArchive, extendRecordingCorrelationId))
+        {
+            state = State.AWAIT_REPLAY;
+            workCount += 1;
         }
 
         return workCount;
     }
 
-    private int tryStartReplay()
+    private int awaitReplay()
     {
         int workCount = 0;
 
-        if (!archiveResponded && !pollForArchiveResponse(localArchive, extendRecordingCorrelationId))
-        {
-            return workCount;
-        }
-
         if (NULL_CORRELATION_ID == replayCorrelationId)
         {
-            archiveResponded = true;
-
             final long correlationId = context.aeron().nextCorrelationId();
 
             if (leaderArchive.archiveProxy().replay(
@@ -327,34 +325,33 @@ class RecordingCatchUp implements AutoCloseable
                 leaderArchive.controlSessionId()))
             {
                 replayCorrelationId = correlationId;
-                archiveResponded = false;
-                state = State.AWAITING_START_REPLAY;
                 workCount = 1;
             }
+        }
+        else if (pollForArchiveResponse(leaderArchive, replayCorrelationId))
+        {
+            state = State.AWAIT_TRANSFER;
+            workCount += 1;
         }
 
         return workCount;
     }
 
-    private int tryFindRecordPosCounter()
+    private int awaitTransfer()
     {
         int workCount = 0;
 
-        if (!archiveResponded && !pollForArchiveResponse(leaderArchive, replayCorrelationId))
-        {
-            return workCount;
-        }
-
         if (CountersReader.NULL_COUNTER_ID == recPosCounterId)
         {
-            archiveResponded = true;
-
             recPosCounterId = RecordingPos.findCounterIdByRecording(localCountersReader, recordingIdToExtend);
             if (CountersReader.NULL_COUNTER_ID != recPosCounterId)
             {
-                state = State.AWAITING_TRANSFER;
                 workCount = 1;
             }
+        }
+        else if (currentPosition() >= targetPosition)
+        {
+            state = State.DONE;
         }
 
         return workCount;

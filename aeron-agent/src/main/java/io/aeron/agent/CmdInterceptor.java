@@ -111,6 +111,14 @@ public class CmdInterceptor
             case CLIENT_CLOSE:
                 LOGGER.log(CMD_IN_CLIENT_CLOSE, buffer, index, length);
                 break;
+
+            case ADD_RCV_DESTINATION:
+                LOGGER.log(CMD_IN_ADD_RCV_DESTINATION, buffer, index, length);
+                break;
+
+            case REMOVE_RCV_DESTINATION:
+                LOGGER.log(CMD_IN_REMOVE_RCV_DESTINATION, buffer, index, length);
+                break;
         }
     }
 }

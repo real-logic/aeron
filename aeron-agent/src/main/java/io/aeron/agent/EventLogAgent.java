@@ -15,7 +15,6 @@
  */
 package io.aeron.agent;
 
-import io.aeron.driver.EventLog;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
@@ -31,7 +30,8 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 
 import static net.bytebuddy.asm.Advice.to;
-import static net.bytebuddy.matcher.ElementMatchers.*;
+import static net.bytebuddy.matcher.ElementMatchers.nameEndsWith;
+import static net.bytebuddy.matcher.ElementMatchers.named;
 
 @SuppressWarnings("unused")
 public class EventLogAgent
@@ -140,25 +140,13 @@ public class EventLogAgent
                         .on(named("registerReceiveChannelEndpoint")))
                     .visit(to(ChannelEndpointInterceptor.ReceiverProxyInterceptor.CloseReceiveChannelEndpoint.class)
                         .on(named("closeReceiveChannelEndpoint"))))
-            .type(inheritsAnnotation(EventLog.class))
+            .type(nameEndsWith("UdpChannelTransport"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
                 builder
-                    .visit(to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.Presend.class)
-                        .on(named("presend")))
-                    .visit(to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.SendTo.class)
-                        .on(named("sendTo")))
-                    .visit(to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.OnStatusMessage.class)
-                        .on(named("onStatusMessage")))
-                    .visit(to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.OnNakMessage.class)
-                        .on(named("onNakMessage")))
-                    .visit(to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.OnRttMeasurement.class)
-                        .on(named("onRttMeasurement")))
-                    .visit(to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.OnDataPacket.class)
-                        .on(named("onDataPacket")))
-                    .visit(to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.OnSetupMessage.class)
-                        .on(named("onSetupMessage")))
-                    .visit(to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.OnRttMeasurement.class)
-                        .on(named("onRttMeasurement"))))
+                    .visit(to(ChannelEndpointInterceptor.UdpChannelTransportInterceptor.SendHook.class)
+                        .on(named("sendHook")))
+                    .visit(to(ChannelEndpointInterceptor.UdpChannelTransportInterceptor.ReceiveHook.class)
+                        .on(named("receiveHook"))))
             .installOn(instrumentation);
 
         final Thread thread = new Thread(readerAgentRunner);
@@ -189,7 +177,7 @@ public class EventLogAgent
                 .or(nameEndsWith("ClientCommandAdapter"))
                 .or(nameEndsWith("SenderProxy"))
                 .or(nameEndsWith("ReceiverProxy"))
-                .or(inheritsAnnotation(EventLog.class));
+                .or(nameEndsWith("UdpChannelTransport"));
 
             final ResettableClassFileTransformer transformer = new AgentBuilder.Default()
                 .type(orClause)

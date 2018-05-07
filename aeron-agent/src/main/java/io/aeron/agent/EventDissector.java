@@ -103,6 +103,7 @@ public class EventDissector
         return builder.toString();
     }
 
+    @SuppressWarnings("MethodLength")
     public static String dissectAsCommand(final EventCode code, final MutableDirectBuffer buffer, final int offset)
     {
         final StringBuilder builder = new StringBuilder();
@@ -167,6 +168,8 @@ public class EventDissector
 
             case CMD_IN_ADD_DESTINATION:
             case CMD_IN_REMOVE_DESTINATION:
+            case CMD_IN_ADD_RCV_DESTINATION:
+            case CMD_IN_REMOVE_RCV_DESTINATION:
                 final DestinationMessageFlyweight destinationMessageFlyweight = DESTINATION_MSG;
                 destinationMessageFlyweight.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(destinationMessageFlyweight));

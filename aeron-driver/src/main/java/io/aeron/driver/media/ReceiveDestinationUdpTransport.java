@@ -15,26 +15,14 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.MediaDriver;
-import org.agrona.LangUtil;
-import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.concurrent.status.AtomicCounter;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 
 public class ReceiveDestinationUdpTransport extends UdpChannelTransport
 {
-    private final Long2ObjectHashMap<InetSocketAddress> controlAddressMap = new Long2ObjectHashMap<>();
-
     public ReceiveDestinationUdpTransport(
         final UdpChannel udpChannel,
-        final DataPacketDispatcher dispatcher,
-        final AtomicCounter statusIndicator,
         final MediaDriver.Context context)
     {
         super(
@@ -46,32 +34,13 @@ public class ReceiveDestinationUdpTransport extends UdpChannelTransport
             context.systemCounters().get(INVALID_PACKETS));
     }
 
-    public void addControlAddress(final long imageCorrelationId, final InetSocketAddress controlAddress)
+    public void openChannel()
     {
-        controlAddressMap.put(imageCorrelationId, controlAddress);
+        openDatagramChannel(null);
     }
 
-    public void removeControlAddress(final long imageCorrelationId)
+    public boolean hasExplicitControl()
     {
-        controlAddressMap.remove(imageCorrelationId);
-    }
-
-    public int sendTo(final ByteBuffer buffer, final long imageCorrelationId)
-    {
-        final InetSocketAddress controlAddress = controlAddressMap.get(imageCorrelationId);
-        int bytesSent = 0;
-        try
-        {
-            if (null != sendDatagramChannel && null != controlAddress)
-            {
-                bytesSent = sendDatagramChannel.send(buffer, controlAddress);
-            }
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return bytesSent;
+        return udpChannel.hasExplicitControl();
     }
 }

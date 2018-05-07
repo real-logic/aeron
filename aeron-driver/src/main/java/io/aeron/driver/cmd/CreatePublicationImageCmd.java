@@ -29,6 +29,7 @@ public class CreatePublicationImageCmd implements DriverConductorCmd
     private final int termOffset;
     private final int termLength;
     private final int senderMtuLength;
+    private final int transportIndex;
     private final InetSocketAddress controlAddress;
     private final InetSocketAddress srcAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
@@ -41,6 +42,7 @@ public class CreatePublicationImageCmd implements DriverConductorCmd
         final int termOffset,
         final int termLength,
         final int senderMtuLength,
+        final int transportIndex,
         final InetSocketAddress controlAddress,
         final InetSocketAddress srcAddress,
         final ReceiveChannelEndpoint channelEndpoint)
@@ -52,6 +54,7 @@ public class CreatePublicationImageCmd implements DriverConductorCmd
         this.termOffset = termOffset;
         this.termLength = termLength;
         this.senderMtuLength = senderMtuLength;
+        this.transportIndex = transportIndex;
         this.controlAddress = controlAddress;
         this.srcAddress = srcAddress;
         this.channelEndpoint = channelEndpoint;
@@ -67,6 +70,7 @@ public class CreatePublicationImageCmd implements DriverConductorCmd
             termOffset,
             termLength,
             senderMtuLength,
+            transportIndex,
             controlAddress,
             srcAddress,
             channelEndpoint);

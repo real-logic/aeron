@@ -31,10 +31,12 @@ public interface SetupMessageHandler
      * @param header          of the Setup Frame in the message (may be re-wrapped if needed)
      * @param buffer          holding the Setup Info (always starts at 0 offset)
      * @param srcAddress      of the Frame
+     * @param transportIndex  that the frame arrived on
      */
     void onSetupMessage(
         ReceiveChannelEndpoint channelEndpoint,
         SetupFlyweight header,
         UnsafeBuffer buffer,
-        InetSocketAddress srcAddress);
+        InetSocketAddress srcAddress,
+        int transportIndex);
 }

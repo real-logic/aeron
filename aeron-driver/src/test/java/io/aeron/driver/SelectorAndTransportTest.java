@@ -143,7 +143,8 @@ public class SelectorAndTransportTest
             any(DataHeaderFlyweight.class),
             any(UnsafeBuffer.class),
             anyInt(),
-            any(InetSocketAddress.class));
+            any(InetSocketAddress.class),
+            anyInt());
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
@@ -192,7 +193,8 @@ public class SelectorAndTransportTest
             any(DataHeaderFlyweight.class),
             any(UnsafeBuffer.class),
             anyInt(),
-            any(InetSocketAddress.class));
+            any(InetSocketAddress.class),
+            anyInt());
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);

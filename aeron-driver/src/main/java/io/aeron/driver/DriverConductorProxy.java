@@ -59,6 +59,7 @@ public class DriverConductorProxy
         final int termOffset,
         final int termLength,
         final int mtuLength,
+        final int transportIndex,
         final InetSocketAddress controlAddress,
         final InetSocketAddress srcAddress,
         final ReceiveChannelEndpoint channelEndpoint)
@@ -73,6 +74,7 @@ public class DriverConductorProxy
                 termOffset,
                 termLength,
                 mtuLength,
+                transportIndex,
                 controlAddress,
                 srcAddress,
                 channelEndpoint);
@@ -87,6 +89,7 @@ public class DriverConductorProxy
                 termOffset,
                 termLength,
                 mtuLength,
+                transportIndex,
                 controlAddress,
                 srcAddress,
                 channelEndpoint));

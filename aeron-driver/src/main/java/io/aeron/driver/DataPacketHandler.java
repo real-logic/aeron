@@ -32,6 +32,7 @@ public interface DataPacketHandler
      * @param buffer          holding the data (always starts at 0 offset)
      * @param length          of the packet (may be longer than the header frame length)
      * @param srcAddress      of the packet
+     * @param transportIndex  that the frame arrived on
      * @return the number of bytes received.
      */
     int onDataPacket(
@@ -39,5 +40,6 @@ public interface DataPacketHandler
         DataHeaderFlyweight header,
         UnsafeBuffer buffer,
         int length,
-        InetSocketAddress srcAddress);
+        InetSocketAddress srcAddress,
+        int transportIndex);
 }

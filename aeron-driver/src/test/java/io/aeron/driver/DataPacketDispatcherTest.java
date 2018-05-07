@@ -75,64 +75,64 @@ public class DataPacketDispatcherTest
     public void shouldElicitSetupMessageWhenDataArrivesForSubscriptionWithoutImage()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
 
-        verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
-        verify(mockChannelEndpoint).sendSetupElicitingStatusMessage(SRC_ADDRESS, SESSION_ID, STREAM_ID);
-        verify(mockReceiver).addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint, false, SRC_ADDRESS);
+        verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt(), anyInt(), any());
+        verify(mockChannelEndpoint).sendSetupElicitingStatusMessage(0, SRC_ADDRESS, SESSION_ID, STREAM_ID);
+        verify(mockReceiver).addPendingSetupMessage(SESSION_ID, STREAM_ID, 0, mockChannelEndpoint, false, SRC_ADDRESS);
     }
 
     @Test
     public void shouldOnlyElicitSetupMessageOnceWhenDataArrivesForSubscriptionWithoutImage()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
 
-        verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
-        verify(mockChannelEndpoint).sendSetupElicitingStatusMessage(SRC_ADDRESS, SESSION_ID, STREAM_ID);
-        verify(mockReceiver).addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint, false, SRC_ADDRESS);
+        verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt(), anyInt(), any());
+        verify(mockChannelEndpoint).sendSetupElicitingStatusMessage(0, SRC_ADDRESS, SESSION_ID, STREAM_ID);
+        verify(mockReceiver).addPendingSetupMessage(SESSION_ID, STREAM_ID, 0, mockChannelEndpoint, false, SRC_ADDRESS);
     }
 
     @Test
     public void shouldElicitSetupMessageAgainWhenDataArrivesForSubscriptionWithoutImageAfterRemovePendingSetup()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
         dispatcher.removePendingSetup(SESSION_ID, STREAM_ID);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
 
-        verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
-        verify(mockChannelEndpoint, times(2)).sendSetupElicitingStatusMessage(SRC_ADDRESS, SESSION_ID, STREAM_ID);
+        verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt(), anyInt(), any());
+        verify(mockChannelEndpoint, times(2)).sendSetupElicitingStatusMessage(0, SRC_ADDRESS, SESSION_ID, STREAM_ID);
         verify(mockReceiver, times(2))
-            .addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint, false, SRC_ADDRESS);
+            .addPendingSetupMessage(SESSION_ID, STREAM_ID, 0, mockChannelEndpoint, false, SRC_ADDRESS);
     }
 
     @Test
     public void shouldRequestCreateImageUponReceivingSetup()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS, 0);
 
         verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
-            MTU_LENGTH, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
+            MTU_LENGTH, 0, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
     }
 
     @Test
     public void shouldOnlyRequestCreateImageOnceUponReceivingSetup()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS, 0);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS, 0);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS, 0);
 
         verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
-            MTU_LENGTH, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
+            MTU_LENGTH, 0, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
     }
 
     @Test
@@ -140,7 +140,7 @@ public class DataPacketDispatcherTest
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS, 0);
 
         verifyZeroInteractions(mockConductorProxy);
     }
@@ -171,8 +171,8 @@ public class DataPacketDispatcherTest
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);
         dispatcher.removePublicationImage(mockImage);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS, 0);
 
         verifyZeroInteractions(mockConductorProxy);
         verifyZeroInteractions(mockReceiver);
@@ -185,18 +185,18 @@ public class DataPacketDispatcherTest
         dispatcher.addPublicationImage(mockImage);
         dispatcher.removePublicationImage(mockImage);
         dispatcher.removeCoolDown(SESSION_ID, STREAM_ID);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS, 0);
 
-        verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
+        verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt(), anyInt(), any());
 
         final InOrder inOrder = inOrder(mockChannelEndpoint, mockReceiver, mockConductorProxy);
-        inOrder.verify(mockChannelEndpoint).sendSetupElicitingStatusMessage(SRC_ADDRESS, SESSION_ID, STREAM_ID);
+        inOrder.verify(mockChannelEndpoint).sendSetupElicitingStatusMessage(0, SRC_ADDRESS, SESSION_ID, STREAM_ID);
         inOrder.verify(mockReceiver)
-            .addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint, false, SRC_ADDRESS);
+            .addPendingSetupMessage(SESSION_ID, STREAM_ID, 0, mockChannelEndpoint, false, SRC_ADDRESS);
         inOrder.verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
-            MTU_LENGTH, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
+            MTU_LENGTH, 0, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
     }
 
     @Test
@@ -204,10 +204,10 @@ public class DataPacketDispatcherTest
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
 
         verify(mockImage).activate();
-        verify(mockImage).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH);
+        verify(mockImage).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH, 0, SRC_ADDRESS);
     }
 
     @Test
@@ -230,10 +230,10 @@ public class DataPacketDispatcherTest
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage2);
         dispatcher.removePublicationImage(mockImage1);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
 
-        verify(mockImage1, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
-        verify(mockImage2).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH);
+        verify(mockImage1, never()).insertPacket(anyInt(), anyInt(), any(), anyInt(), anyInt(), any());
+        verify(mockImage2).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH, 0, SRC_ADDRESS);
     }
 
     @Test

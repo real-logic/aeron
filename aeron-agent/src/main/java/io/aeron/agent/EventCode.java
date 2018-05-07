@@ -59,7 +59,10 @@ public enum EventCode
     CMD_OUT_COUNTER_READY(38, EventDissector::dissectAsCommand),
     CMD_OUT_ON_UNAVAILABLE_COUNTER(39, EventDissector::dissectAsCommand),
 
-    CMD_IN_CLIENT_CLOSE(40, EventDissector::dissectAsCommand);
+    CMD_IN_CLIENT_CLOSE(40, EventDissector::dissectAsCommand),
+
+    CMD_IN_ADD_RCV_DESTINATION(41, EventDissector::dissectAsCommand),
+    CMD_IN_REMOVE_RCV_DESTINATION(42, EventDissector::dissectAsCommand);
 
     private static final int MAX_ID = 63;
     private static final EventCode[] EVENT_CODE_BY_ID = new EventCode[MAX_ID];

@@ -41,7 +41,6 @@ import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
  * Aggregator of multiple {@link NetworkPublication}s onto a single transport channel for
  * sending data and setup frames plus the receiving of status and NAK frames.
  */
-@EventLog
 public class SendChannelEndpoint extends UdpChannelTransport
 {
     private static final long DESTINATION_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
@@ -195,7 +194,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             {
                 try
                 {
-                    presend(buffer, connectAddress);
+                    sendHook(buffer, connectAddress);
                     bytesSent = sendDatagramChannel.write(buffer);
                 }
                 catch (final PortUnreachableException | ClosedChannelException | NotYetConnectedException ignore)
@@ -214,17 +213,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
 
         return bytesSent;
-    }
-
-    /**
-     * Method used as a hook for logging.
-     *
-     * @param buffer  to be sent
-     * @param address to which the buffer will be sent.
-     */
-    @SuppressWarnings("unused")
-    protected void presend(final ByteBuffer buffer, final InetSocketAddress address)
-    {
     }
 
     public void onStatusMessage(

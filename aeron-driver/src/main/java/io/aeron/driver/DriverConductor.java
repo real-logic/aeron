@@ -198,6 +198,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         final int initialTermOffset,
         final int termBufferLength,
         final int senderMtuLength,
+        final int transportIndex,
         final InetSocketAddress controlAddress,
         final InetSocketAddress sourceAddress,
         final ReceiveChannelEndpoint channelEndpoint)
@@ -234,6 +235,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
                 registrationId,
                 imageLivenessTimeoutNs,
                 channelEndpoint,
+                transportIndex,
                 controlAddress,
                 sessionId,
                 streamId,

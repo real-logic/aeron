@@ -50,7 +50,7 @@ abstract class MultiDestination
         int bytesSent = 0;
         try
         {
-            channelEndpoint.presend(buffer, destination);
+            channelEndpoint.sendHook(buffer, destination);
 
             buffer.position(position);
             bytesSent = datagramChannel.send(buffer, destination);

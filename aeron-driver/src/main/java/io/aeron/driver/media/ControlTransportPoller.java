@@ -141,6 +141,8 @@ public class ControlTransportPoller extends UdpTransportPoller
             byteReceived = byteBuffer.position();
             if (channelEndpoint.isValidFrame(unsafeBuffer, byteReceived))
             {
+                channelEndpoint.receiveHook(unsafeBuffer, byteReceived, srcAddress);
+
                 final int frameType = frameType(unsafeBuffer, 0);
                 if (HDR_TYPE_NAK == frameType)
                 {

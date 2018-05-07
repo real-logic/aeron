@@ -13,12 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver;
+package io.aeron.driver.media;
 
-/**
- * Indicates that a class can be instrumented for logging method invocations to the event log when the logging agent
- * is attached.
- */
-public @interface EventLog
+import java.net.InetSocketAddress;
+
+public class DestinationImageControlAddress
 {
+    public long timeOfLastFrameNs;
+    public InetSocketAddress address;
+
+    public DestinationImageControlAddress(final long timeOfLastFrameNs, final InetSocketAddress address)
+    {
+        this.timeOfLastFrameNs = timeOfLastFrameNs;
+        this.address = address;
+    }
 }

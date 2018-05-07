@@ -18,6 +18,9 @@ package io.aeron.driver;
 import io.aeron.driver.cmd.ReceiverCmd;
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveDestinationUdpTransport;
+import io.aeron.driver.media.UdpChannel;
+import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -95,12 +98,13 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     public void addPendingSetupMessage(
         final int sessionId,
         final int streamId,
+        final int transportIndex,
         final ReceiveChannelEndpoint channelEndpoint,
         final boolean periodic,
         final InetSocketAddress controlAddress)
     {
         final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(
-            sessionId, streamId, channelEndpoint, periodic, controlAddress);
+            sessionId, streamId, transportIndex, channelEndpoint, periodic, controlAddress);
 
         cmd.timeOfStatusMessageNs(nanoClock.nanoTime());
         pendingSetupMessages.add(cmd);
@@ -142,8 +146,8 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
         if (channelEndpoint.hasExplicitControl())
         {
-            addPendingSetupMessage(0, 0, channelEndpoint, true, channelEndpoint.explicitControlAddress());
-            channelEndpoint.sendSetupElicitingStatusMessage(channelEndpoint.explicitControlAddress(), 0, 0);
+            addPendingSetupMessage(0, 0, 0, channelEndpoint, true, channelEndpoint.explicitControlAddress());
+            channelEndpoint.sendSetupElicitingStatusMessage(0, channelEndpoint.explicitControlAddress(), 0, 0);
         }
     }
 
@@ -155,6 +159,29 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     public void onRemoveCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
         channelEndpoint.removeCoolDown(sessionId, streamId);
+    }
+
+    public void onAddDestination(
+        final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationUdpTransport transport)
+    {
+        transport.openChannel();
+
+        final int transportIndex = channelEndpoint.addDestination(transport);
+        dataTransportPoller.registerForRead(channelEndpoint, transport, transportIndex);
+
+        if (transport.hasExplicitControl())
+        {
+            addPendingSetupMessage(
+                0, 0, transportIndex, channelEndpoint, true, channelEndpoint.explicitControlAddress());
+            channelEndpoint.sendSetupElicitingStatusMessage(
+                transportIndex, channelEndpoint.explicitControlAddress(), 0, 0);
+        }
+    }
+
+    public void onRemoveDestination(
+        final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel)
+    {
+        CloseHelper.close(channelEndpoint.removeDestination(udpChannel));
     }
 
     public void accept(final ReceiverCmd cmd)
@@ -179,7 +206,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
                 else if (pending.shouldElicitSetupMessage())
                 {
                     pending.channelEndpoint().sendSetupElicitingStatusMessage(
-                        pending.controlAddress(), pending.sessionId(), pending.streamId());
+                        pending.transportIndex(), pending.controlAddress(), pending.sessionId(), pending.streamId());
                     pending.timeOfStatusMessageNs(nowNs);
                 }
             }

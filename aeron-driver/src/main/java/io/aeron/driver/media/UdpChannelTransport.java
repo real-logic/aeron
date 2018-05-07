@@ -16,8 +16,8 @@
 package io.aeron.driver.media;
 
 import io.aeron.driver.Configuration;
-import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.HeaderFlyweight;
+import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -25,14 +25,17 @@ import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.PortUnreachableException;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
 import static io.aeron.logbuffer.FrameDescriptor.frameVersion;
-import static java.net.StandardSocketOptions.*;
+import static java.net.StandardSocketOptions.SO_RCVBUF;
+import static java.net.StandardSocketOptions.SO_SNDBUF;
 
 public abstract class UdpChannelTransport implements AutoCloseable
 {
@@ -69,7 +72,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     /**
      * Create the underlying channel for reading and writing.
      *
-     * @param statusIndicator to set for status
+     * @param statusIndicator to set for error status
      */
     public void openDatagramChannel(final AtomicCounter statusIndicator)
     {
@@ -121,7 +124,10 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            statusIndicator.setOrdered(ChannelEndpointStatus.ERRORED);
+            if (null != statusIndicator)
+            {
+                statusIndicator.setOrdered(ChannelEndpointStatus.ERRORED);
+            }
 
             CloseHelper.quietClose(sendDatagramChannel);
             if (receiveDatagramChannel != sendDatagramChannel)
@@ -252,6 +258,16 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
 
         return isFrameValid;
+    }
+
+    @SuppressWarnings("unused")
+    public void sendHook(final ByteBuffer buffer, final InetSocketAddress address)
+    {
+    }
+
+    @SuppressWarnings("unused")
+    public void receiveHook(final UnsafeBuffer buffer, final int length, final InetSocketAddress address)
+    {
     }
 
     /**

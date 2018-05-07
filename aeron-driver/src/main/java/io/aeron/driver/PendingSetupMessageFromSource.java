@@ -23,6 +23,7 @@ class PendingSetupMessageFromSource
 {
     private final int sessionId;
     private final int streamId;
+    private final int transportIndex;
     private final boolean periodic;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final InetSocketAddress controlAddress;
@@ -32,12 +33,14 @@ class PendingSetupMessageFromSource
     PendingSetupMessageFromSource(
         final int sessionId,
         final int streamId,
+        final int transportIndex,
         final ReceiveChannelEndpoint channelEndpoint,
         final boolean periodic,
         final InetSocketAddress controlAddress)
     {
         this.sessionId = sessionId;
         this.streamId = streamId;
+        this.transportIndex = transportIndex;
         this.channelEndpoint = channelEndpoint;
         this.periodic = periodic;
         this.controlAddress = controlAddress;
@@ -51,6 +54,11 @@ class PendingSetupMessageFromSource
     public int streamId()
     {
         return streamId;
+    }
+
+    public int transportIndex()
+    {
+        return transportIndex;
     }
 
     public ReceiveChannelEndpoint channelEndpoint()

@@ -234,10 +234,8 @@ class RecordingCatchUp implements AutoCloseable
                 .media(CommonContext.UDP_MEDIA)
                 .endpoint(clusterMembers[leaderMemberId].archiveEndpoint());
 
-            final AeronArchive.Context leaderArchiveContext = new AeronArchive.Context()
-                .aeron(context.aeron())
+            final AeronArchive.Context leaderArchiveContext = context.archiveContext().clone()
                 .controlRequestChannel(archiveControlRequestChannel.build())
-                .controlResponseChannel(localArchive.context().controlResponseChannel())
                 .controlResponseStreamId(localArchive.context().controlResponseStreamId() + 1);
 
             leaderAsyncConnect = AeronArchive.asyncConnect(leaderArchiveContext);

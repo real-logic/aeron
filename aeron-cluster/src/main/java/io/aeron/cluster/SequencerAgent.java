@@ -191,7 +191,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
     public void onStart()
     {
-        archive = AeronArchive.connect(ctx.archiveContext());
+        archive = AeronArchive.connect(ctx.archiveContext().clone());
         recoveryPlan = recordingLog.createRecoveryPlan(archive);
         recoveryPlanBuffer = new UnsafeBuffer(new byte[recoveryPlan.encodedLength()]);
         recoveryPlan.encode(recoveryPlanBuffer, 0);

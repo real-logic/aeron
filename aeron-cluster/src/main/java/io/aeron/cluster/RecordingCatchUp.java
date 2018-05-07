@@ -82,7 +82,7 @@ class RecordingCatchUp implements AutoCloseable
         final RecordingLog.RecoveryPlan localRecoveryPlan,
         final ConsensusModule.Context context)
     {
-        this.leaderArchive = localArchive;
+        this.localArchive = localArchive;
         this.memberStatusPublisher = memberStatusPublisher;
         this.clusterMembers = clusterMembers;
         this.localRecoveryPlan = localRecoveryPlan;
@@ -94,7 +94,7 @@ class RecordingCatchUp implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(localArchive);
+        CloseHelper.close(leaderArchive);
     }
 
     public int doWork()
@@ -273,9 +273,9 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (null == localArchive)
+        if (null == leaderArchive)
         {
-            localArchive = leaderAsyncConnect.poll();
+            leaderArchive = leaderAsyncConnect.poll();
 
             return workCount;
         }
@@ -284,13 +284,13 @@ class RecordingCatchUp implements AutoCloseable
         {
             final long correlationId = context.aeron().nextCorrelationId();
 
-            if (leaderArchive.archiveProxy().extendRecording(
+            if (localArchive.archiveProxy().extendRecording(
                 extendChannel,
                 context.logStreamId(),
                 SourceLocation.REMOTE,
                 recordingIdToExtend,
                 correlationId,
-                leaderArchive.controlSessionId()))
+                localArchive.controlSessionId()))
             {
                 extendRecordingCorrelationId = correlationId;
                 archiveResponded = false;
@@ -306,7 +306,7 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (!archiveResponded && !pollForArchiveResponse(leaderArchive, extendRecordingCorrelationId))
+        if (!archiveResponded && !pollForArchiveResponse(localArchive, extendRecordingCorrelationId))
         {
             return workCount;
         }
@@ -317,14 +317,14 @@ class RecordingCatchUp implements AutoCloseable
 
             final long correlationId = context.aeron().nextCorrelationId();
 
-            if (localArchive.archiveProxy().replay(
+            if (leaderArchive.archiveProxy().replay(
                 leaderRecordingId,
                 fromPosition,
                 targetPosition - fromPosition,
                 replayChannel,
                 context.logStreamId(),
                 correlationId,
-                localArchive.controlSessionId()))
+                leaderArchive.controlSessionId()))
             {
                 replayCorrelationId = correlationId;
                 archiveResponded = false;
@@ -340,7 +340,7 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (!archiveResponded && !pollForArchiveResponse(localArchive, replayCorrelationId))
+        if (!archiveResponded && !pollForArchiveResponse(leaderArchive, replayCorrelationId))
         {
             return workCount;
         }

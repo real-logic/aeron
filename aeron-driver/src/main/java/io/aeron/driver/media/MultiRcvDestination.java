@@ -25,9 +25,11 @@ import java.nio.ByteBuffer;
 
 public class MultiRcvDestination implements AutoCloseable
 {
+    private static final ReceiveDestinationUdpTransport[] EMPTY_TRANSPORTS = new ReceiveDestinationUdpTransport[0];
+
     private final long destinationTimeoutNs;
     private final NanoClock nanoClock;
-    private ReceiveDestinationUdpTransport[] transports = new ReceiveDestinationUdpTransport[0];
+    private ReceiveDestinationUdpTransport[] transports = EMPTY_TRANSPORTS;
 
     public MultiRcvDestination(final NanoClock nanoClock, final long timeoutNs)
     {

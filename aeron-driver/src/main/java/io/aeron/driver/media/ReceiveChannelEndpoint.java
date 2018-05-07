@@ -201,7 +201,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public long decRefToStreamAndSession(final int streamId, final int sessionId)
     {
         final long key = Hashing.compoundKey(streamId, sessionId);
-
         final long count = refCountByStreamIdAndSessionIdMap.decrementAndGet(key);
 
         if (-1 == count)
@@ -267,7 +266,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
-        dispatcher.onSetupMessage(this, header, buffer, srcAddress, transportIndex);
+        dispatcher.onSetupMessage(this, header, srcAddress, transportIndex);
     }
 
     public void onRttMeasurement(

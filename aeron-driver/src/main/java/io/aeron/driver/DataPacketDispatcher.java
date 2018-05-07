@@ -290,7 +290,6 @@ public class DataPacketDispatcher
     public void onSetupMessage(
         final ReceiveChannelEndpoint channelEndpoint,
         final SetupFlyweight header,
-        final UnsafeBuffer buffer,
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {

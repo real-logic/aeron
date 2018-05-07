@@ -367,10 +367,13 @@ public class PublicationImage
 
         if (transport.isMulticast())
         {
-            final InetSocketAddress controlAddress = transport.udpChannel().remoteControl();
-
             controlAddresses[transportIndex] =
-                new DestinationImageControlAddress(nanoClock.nanoTime(), controlAddress);
+                new DestinationImageControlAddress(nanoClock.nanoTime(), transport.udpChannel().remoteControl());
+        }
+        else if (transport.hasExplicitControl())
+        {
+            controlAddresses[transportIndex] =
+                new DestinationImageControlAddress(nanoClock.nanoTime(), transport.explicitControlAddress());
         }
     }
 

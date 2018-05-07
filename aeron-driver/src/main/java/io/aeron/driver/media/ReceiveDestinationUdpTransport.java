@@ -17,6 +17,8 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.MediaDriver;
 
+import java.net.InetSocketAddress;
+
 import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 
 public class ReceiveDestinationUdpTransport extends UdpChannelTransport
@@ -42,5 +44,10 @@ public class ReceiveDestinationUdpTransport extends UdpChannelTransport
     public boolean hasExplicitControl()
     {
         return udpChannel.hasExplicitControl();
+    }
+
+    public InetSocketAddress explicitControlAddress()
+    {
+        return udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;
     }
 }

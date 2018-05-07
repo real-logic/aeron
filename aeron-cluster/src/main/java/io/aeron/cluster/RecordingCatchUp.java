@@ -42,8 +42,8 @@ class RecordingCatchUp implements AutoCloseable
         AWAITING_LEADER_ARCHIVE_CONNECT,
         AWAITING_EXTEND_RECORDING,
         AWAITING_START_REPLAY,
-        AWAITING_CATCH_UP,
-        CAUGHT_UP
+        AWAITING_TRANSFER,
+        DONE
     }
 
     private final MemberStatusPublisher memberStatusPublisher;
@@ -101,11 +101,11 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (State.AWAITING_CATCH_UP == state)
+        if (State.AWAITING_TRANSFER == state)
         {
             if (currentPosition() >= targetPosition)
             {
-                state = State.CAUGHT_UP;
+                state = State.DONE;
             }
 
             return workCount;
@@ -133,7 +133,7 @@ class RecordingCatchUp implements AutoCloseable
                 workCount += tryFindRecordPosCounter();
                 break;
 
-            case CAUGHT_UP:
+            case DONE:
                 break;
         }
 
@@ -147,7 +147,7 @@ class RecordingCatchUp implements AutoCloseable
 
     public boolean isCaughtUp()
     {
-        return State.CAUGHT_UP == state;
+        return State.DONE == state;
     }
 
     public long currentPosition()
@@ -352,7 +352,7 @@ class RecordingCatchUp implements AutoCloseable
             recPosCounterId = RecordingPos.findCounterIdByRecording(localCountersReader, recordingIdToExtend);
             if (CountersReader.NULL_COUNTER_ID != recPosCounterId)
             {
-                state = State.AWAITING_CATCH_UP;
+                state = State.AWAITING_TRANSFER;
                 workCount = 1;
             }
         }

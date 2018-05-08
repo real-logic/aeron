@@ -166,7 +166,7 @@ class RecordingCatchUp implements AutoCloseable
         final int responseMemberId,
         final DirectBuffer data,
         final int offset,
-        final int length)
+        @SuppressWarnings("unused") final int length)
     {
         if (State.AWAIT_LEADER_CONNECTION == state &&
             correlationId == activeCorrelationId &&
@@ -244,7 +244,7 @@ class RecordingCatchUp implements AutoCloseable
 
         if (NULL_CORRELATION_ID != activeCorrelationId)
         {
-            state = State.AWAIT_LEADER_CONNECTION;
+            state(State.AWAIT_LEADER_CONNECTION);
             workCount += 1;
         }
 
@@ -263,7 +263,7 @@ class RecordingCatchUp implements AutoCloseable
             }
             else
             {
-                state = State.AWAIT_EXTEND_RECORDING;
+                state(State.AWAIT_EXTEND_RECORDING);
                 activeCorrelationId = NULL_CORRELATION_ID;
                 workCount += 1;
             }
@@ -294,7 +294,7 @@ class RecordingCatchUp implements AutoCloseable
         }
         else if (pollForResponse(localArchive, activeCorrelationId))
         {
-            state = State.AWAIT_REPLAY;
+            state(State.AWAIT_REPLAY);
             activeCorrelationId = NULL_CORRELATION_ID;
             workCount += 1;
         }
@@ -325,7 +325,7 @@ class RecordingCatchUp implements AutoCloseable
         }
         else if (pollForResponse(leaderArchive, activeCorrelationId))
         {
-            state = State.AWAIT_TRANSFER;
+            state(State.AWAIT_TRANSFER);
             activeCorrelationId = NULL_CORRELATION_ID;
             workCount += 1;
         }
@@ -347,7 +347,7 @@ class RecordingCatchUp implements AutoCloseable
         }
         else if (currentPosition() >= targetPosition)
         {
-            state = State.DONE;
+            state(State.DONE);
         }
 
         return workCount;
@@ -390,6 +390,12 @@ class RecordingCatchUp implements AutoCloseable
             throw new IllegalStateException(
                 "last step local start position does not match leader last step start position");
         }
+    }
+
+    private void state(final State state)
+    {
+        //System.out.println(this.state + " -> " + state);
+        this.state = state;
     }
 
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)

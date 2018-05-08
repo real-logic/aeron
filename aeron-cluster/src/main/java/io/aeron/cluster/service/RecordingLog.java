@@ -62,7 +62,7 @@ import static org.agrona.BitUtil.*;
  *  |   Timestamp at beginning of term or when snapshot was taken   |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                       Member ID vote                          |
+ *  |          Applicable ID (Member ID vote / Service ID)          |
  *  +---------------------------------------------------------------+
  *  |                 Entry Type (Log or Snapshot)                  |
  *  +---------------------------------------------------------------+
@@ -85,7 +85,7 @@ public class RecordingLog
         public final long termBaseLogPosition;
         public final long termPosition;
         public final long timestamp;
-        public final int votedForMemberId;
+        public final int applicableId;
         public final int type;
         public final int entryIndex;
 
@@ -97,7 +97,7 @@ public class RecordingLog
          * @param termBaseLogPosition position of the log over leadership terms at the beginning of this term.
          * @param termPosition        position reached within the current leadership term, same as term length.
          * @param timestamp           of this entry.
-         * @param votedForMemberId    which member this node voted for in the election.
+         * @param applicableId        member id for vote or service id for snapshot.
          * @param type                of the entry as a log of a term or a snapshot.
          * @param entryIndex          of the entry on disk.
          */
@@ -107,7 +107,7 @@ public class RecordingLog
             final long termBaseLogPosition,
             final long termPosition,
             final long timestamp,
-            final int votedForMemberId,
+            final int applicableId,
             final int type,
             final int entryIndex)
         {
@@ -116,7 +116,7 @@ public class RecordingLog
             this.termBaseLogPosition = termBaseLogPosition;
             this.termPosition = termPosition;
             this.timestamp = timestamp;
-            this.votedForMemberId = votedForMemberId;
+            this.applicableId = applicableId;
             this.type = type;
             this.entryIndex = entryIndex;
         }
@@ -128,7 +128,7 @@ public class RecordingLog
             this.termBaseLogPosition = decoder.termBaseLogPosition();
             this.termPosition = decoder.termPosition();
             this.timestamp = decoder.timestamp();
-            this.votedForMemberId = decoder.votedForMemberId();
+            this.applicableId = decoder.applicableId();
             this.type = decoder.entryType();
             this.entryIndex = decoder.entryIndex();
         }
@@ -141,7 +141,7 @@ public class RecordingLog
                 .termBaseLogPosition(termBaseLogPosition)
                 .termPosition(termPosition)
                 .timestamp(timestamp)
-                .votedForMemberId(votedForMemberId)
+                .applicableId(applicableId)
                 .entryType(type)
                 .entryIndex(entryIndex);
         }
@@ -154,7 +154,7 @@ public class RecordingLog
                 ", termBaseLogPosition=" + termBaseLogPosition +
                 ", termPosition=" + termPosition +
                 ", timestamp=" + timestamp +
-                ", votedForMemberId=" + votedForMemberId +
+                ", applicableId=" + applicableId +
                 ", type=" + type +
                 ", entryIndex=" + entryIndex +
                 '}';
@@ -365,14 +365,14 @@ public class RecordingLog
     public static final int TIMESTAMP_OFFSET = TERM_POSITION_OFFSET + SIZE_OF_LONG;
 
     /**
-     * The offset at which the voted for member id is recorded.
+     * The offset at which the voted for member id or service id is recorded.
      */
-    public static final int MEMBER_ID_VOTE_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+    public static final int APPLICABLE_ID_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
 
     /**
      * The offset at which the type of the entry is stored.
      */
-    public static final int ENTRY_TYPE_OFFSET = MEMBER_ID_VOTE_OFFSET + SIZE_OF_INT;
+    public static final int ENTRY_TYPE_OFFSET = APPLICABLE_ID_OFFSET + SIZE_OF_INT;
 
     /**
      * The length of each entry.
@@ -578,10 +578,9 @@ public class RecordingLog
         final int size = entries.size();
         if (size > 0)
         {
-            final long expectedTermId = leadershipTermId - 1;
             final Entry entry = entries.get(size - 1);
 
-            if (entry.type != NULL_VALUE && entry.leadershipTermId != expectedTermId)
+            if (entry.type != NULL_VALUE && entry.leadershipTermId > leadershipTermId)
             {
                 throw new IllegalStateException("leadershipTermId out of sequence: previous " +
                     entry.leadershipTermId + " this " + leadershipTermId);
@@ -599,13 +598,15 @@ public class RecordingLog
      * @param logPosition      at the beginning of the leadership term.
      * @param termPosition     for the position in the current term or length so far for that term.
      * @param timestamp        at which the snapshot was taken.
+     * @param serviceId        for which the snapshot is recorded.
      */
     public void appendSnapshot(
         final long recordingId,
         final long leadershipTermId,
         final long logPosition,
         final long termPosition,
-        final long timestamp)
+        final long timestamp,
+        final int serviceId)
     {
         final int size = entries.size();
         if (size > 0)
@@ -619,7 +620,7 @@ public class RecordingLog
             }
         }
 
-        append(ENTRY_TYPE_SNAPSHOT, recordingId, leadershipTermId, logPosition, termPosition, timestamp, NULL_VALUE);
+        append(ENTRY_TYPE_SNAPSHOT, recordingId, leadershipTermId, logPosition, termPosition, timestamp, serviceId);
     }
 
     /**
@@ -641,7 +642,7 @@ public class RecordingLog
             entry.termBaseLogPosition,
             entry.termPosition,
             entry.timestamp,
-            entry.votedForMemberId,
+            entry.applicableId,
             entry.type,
             entry.entryIndex));
     }
@@ -665,7 +666,7 @@ public class RecordingLog
             entry.termBaseLogPosition,
             termPosition,
             entry.timestamp,
-            entry.votedForMemberId,
+            entry.applicableId,
             entry.type,
             entry.entryIndex));
     }
@@ -689,7 +690,7 @@ public class RecordingLog
             logPosition,
             entry.termPosition,
             entry.timestamp,
-            entry.votedForMemberId,
+            entry.applicableId,
             entry.type,
             entry.entryIndex));
     }
@@ -750,14 +751,14 @@ public class RecordingLog
         final long logPosition,
         final long termPosition,
         final long timestamp,
-        final int votedForMemberId)
+        final int applicableId)
     {
         buffer.putLong(RECORDING_ID_OFFSET, recordingId, LITTLE_ENDIAN);
         buffer.putLong(TERM_BASE_LOG_POSITION_OFFSET, logPosition, LITTLE_ENDIAN);
         buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId, LITTLE_ENDIAN);
         buffer.putLong(TIMESTAMP_OFFSET, timestamp, LITTLE_ENDIAN);
         buffer.putLong(TERM_POSITION_OFFSET, termPosition, LITTLE_ENDIAN);
-        buffer.putInt(MEMBER_ID_VOTE_OFFSET, votedForMemberId, LITTLE_ENDIAN);
+        buffer.putInt(APPLICABLE_ID_OFFSET, applicableId, LITTLE_ENDIAN);
         buffer.putInt(ENTRY_TYPE_OFFSET, entryType, LITTLE_ENDIAN);
 
         byteBuffer.limit(ENTRY_LENGTH).position(0);
@@ -780,7 +781,7 @@ public class RecordingLog
             logPosition,
             NULL_POSITION,
             timestamp,
-            votedForMemberId,
+            applicableId,
             entryType,
             nextEntryIndex++));
     }
@@ -800,7 +801,7 @@ public class RecordingLog
                     buffer.getLong(i + TERM_BASE_LOG_POSITION_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(i + TERM_POSITION_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(i + TIMESTAMP_OFFSET, LITTLE_ENDIAN),
-                    buffer.getInt(i + MEMBER_ID_VOTE_OFFSET, LITTLE_ENDIAN),
+                    buffer.getInt(i + APPLICABLE_ID_OFFSET, LITTLE_ENDIAN),
                     entryType,
                     nextEntryIndex));
             }

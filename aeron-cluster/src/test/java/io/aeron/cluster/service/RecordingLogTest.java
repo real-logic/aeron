@@ -53,7 +53,7 @@ public class RecordingLogTest
         final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, NULL_VALUE, ENTRY_TYPE_SNAPSHOT, 0);
 
         recordingLog.appendSnapshot(
-            entry.recordingId, entry.leadershipTermId, entry.termBaseLogPosition, 777, entry.timestamp);
+            entry.recordingId, entry.leadershipTermId, entry.termBaseLogPosition, 777, entry.timestamp, NULL_VALUE);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
         assertThat(recordingLogTwo.entries().size(), is(1));
@@ -115,7 +115,7 @@ public class RecordingLogTest
             entryOne.leadershipTermId,
             entryOne.termBaseLogPosition,
             entryOne.timestamp,
-            entryOne.votedForMemberId);
+            entryOne.applicableId);
 
         final RecordingLog.Entry entryTwo = new RecordingLog.Entry(
             NULL_VALUE, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
@@ -123,7 +123,7 @@ public class RecordingLogTest
             entryTwo.leadershipTermId,
             entryTwo.termBaseLogPosition,
             entryTwo.timestamp,
-            entryTwo.votedForMemberId);
+            entryTwo.applicableId);
 
         recordingLog.tombstoneEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);

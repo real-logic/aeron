@@ -410,7 +410,7 @@
             <field name="termBaseLogPosition"    id="10" type="int64"/>
             <field name="termPosition"           id="11" type="int64"/>
             <field name="timestamp"              id="12" type="time_t"/>
-            <field name="votedForMemberId"       id="13" type="int32"/>
+            <field name="applicableId"           id="13" type="int32"/>
             <field name="entryType"              id="14" type="int32"/>
             <field name="entryIndex"             id="15" type="int32"/>
             <field name="recordingSessionId"     id="16" type="int32"/>

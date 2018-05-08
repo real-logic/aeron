@@ -579,7 +579,8 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
             }
         }
 
-        recordingLog.appendSnapshot(recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs);
+        recordingLog.appendSnapshot(
+            recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs, serviceId);
     }
 
     private void awaitRecordingComplete(

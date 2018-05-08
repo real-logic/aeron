@@ -46,6 +46,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
+import static io.aeron.cluster.service.RecordingLog.NULL_VALUE;
 
 class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListener
 {
@@ -1373,7 +1374,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                 snapshotState(publication, termBaseLogPosition + termPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
                 recordingLog.appendSnapshot(
-                    recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs);
+                    recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs, NULL_VALUE);
             }
             finally
             {

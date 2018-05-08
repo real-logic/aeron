@@ -427,13 +427,10 @@ public class RecordingLog
     public void reload()
     {
         entries.clear();
+        final boolean newFile = !logFile.exists();
 
-        FileChannel fileChannel = null;
-        try
+        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE))
         {
-            final boolean newFile = !logFile.exists();
-            fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE, SYNC);
-
             if (newFile)
             {
                 syncDirectory(parentDir);
@@ -469,10 +466,6 @@ public class RecordingLog
         catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
-        }
-        finally
-        {
-            CloseHelper.close(fileChannel);
         }
     }
 

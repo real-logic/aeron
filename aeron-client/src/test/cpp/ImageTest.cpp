@@ -590,7 +590,7 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPo
     const std::int32_t initialOffset = TERM_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    const std::int64_t maxPosition = static_cast<std::int64_t>(INT_MAX) + 1000;
+    const std::int64_t maxPosition = static_cast<std::int64_t>(INT32_MAX) + 1000;
 
     m_subscriberPosition.set(initialPosition);
     Image image(

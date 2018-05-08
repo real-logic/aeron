@@ -58,7 +58,7 @@ import static org.agrona.BitUtil.*;
  *  |              Log Position at beginning of term                |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                    Term Position/Length                       |
+ *  |      Term Position / Length of log for a leadership term      |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |   Timestamp at beginning of term or when snapshot was taken   |
@@ -322,7 +322,7 @@ public class RecordingLog
     }
 
     /**
-     * Filename for the history of log terms and snapshot recordings.
+     * Filename for the history of leadership log terms and snapshot recordings.
      */
     public static final String RECORDING_LOG_FILE_NAME = "recording.log";
 

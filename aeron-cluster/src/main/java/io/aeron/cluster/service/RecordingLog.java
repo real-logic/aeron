@@ -34,13 +34,15 @@ import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.*;
 
 /**
- * A log of recordings that make up the history of a Raft log. Entries are in order.
+ * A log of recordings which make up the history of a Raft log across leadership terms. Entries are in order.
  * <p>
- * The log is made up of entries of log terms or snapshots to roll up state as of a log position and leadership term.
+ * The log is made up of entries of leadership terms or snapshots to roll up state as of a log position within a
+ * leadership term.
  * <p>
- * The latest state is made up of a the latest snapshot followed by any term logs which follow. It is possible that
- * the a snapshot is taken mid term and therefore the latest state is the snapshot plus the log of messages which
- * begin before the snapshot but continues after it.
+ * The latest state is made up of a the latest snapshot followed by any leadership term logs which follow. It is
+ * possible that a snapshot is taken mid term and therefore the latest state is the snapshot plus the log of messages
+ * which begin before the snapshot which are not required and those that continue afterwards which need to be applied
+ * on top of the snapshot.
  * <p>
  * Record layout as follows:
  * <pre>
@@ -375,7 +377,7 @@ public class RecordingLog
     public static final int ENTRY_TYPE_OFFSET = APPLICABLE_ID_OFFSET + SIZE_OF_INT;
 
     /**
-     * The length of each entry.
+     * The length of each entry in the recording log (not the recordings in the archive).
      */
     private static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
 
@@ -562,7 +564,7 @@ public class RecordingLog
     }
 
     /**
-     * Append a log entry for a Raft term.
+     * Append a log entry for a leadership term.
      *
      * @param leadershipTermId for the current term.
      * @param logPosition      reached at the beginning of the term.

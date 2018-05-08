@@ -484,9 +484,9 @@ public:
             AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(initialPosition,
                 m_positionBitsToShift)];
             std::int32_t resultingOffset = initialOffset;
-            const util::index_t capacity = termBuffer.capacity();
-            std::int32_t endOffset =
-                std::min(capacity, static_cast<std::int32_t>(maxPosition - initialPosition + initialOffset));
+            const std::int64_t capacity = termBuffer.capacity();
+            const std::int32_t endOffset =
+                static_cast<std::int32_t>(std::min(capacity, maxPosition - initialPosition + initialOffset));
 
             m_header.buffer(termBuffer);
 

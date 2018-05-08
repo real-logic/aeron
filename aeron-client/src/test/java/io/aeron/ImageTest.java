@@ -506,6 +506,33 @@ public class ImageTest
         inOrder.verify(position).setOrdered(TERM_BUFFER_LENGTH);
     }
 
+    @Test
+    public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionAboveIntMaxValue()
+    {
+        final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
+        final long initialPosition =
+            computePosition(INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long maxPosition = (long)Integer.MAX_VALUE + 1000;
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, initialOffset);
+        insertPaddingFrame(INITIAL_TERM_ID, initialOffset + ALIGNED_FRAME_LENGTH);
+
+        when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
+            .thenReturn(Action.CONTINUE);
+
+        final int fragmentsRead =
+            image.boundedControlledPoll(mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
+
+        assertThat(fragmentsRead, is(1));
+
+        final InOrder inOrder = Mockito.inOrder(position, mockControlledFragmentHandler);
+        inOrder.verify(mockControlledFragmentHandler).onFragment(
+            any(UnsafeBuffer.class), eq(initialOffset + HEADER_LENGTH), eq(DATA.length), any(Header.class));
+        inOrder.verify(position).setOrdered(TERM_BUFFER_LENGTH);
+    }
+
     private Image createImage()
     {
         return new Image(subscription, SESSION_ID, position, logBuffers, errorHandler, SOURCE_IDENTITY, CORRELATION_ID);

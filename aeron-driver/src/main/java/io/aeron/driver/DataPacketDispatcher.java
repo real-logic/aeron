@@ -366,8 +366,8 @@ public class DataPacketDispatcher
                 {
                     // TODO: check rate limit
 
-                    final InetSocketAddress controlAddress = channelEndpoint.isMulticast() ?
-                        channelEndpoint.udpChannel().remoteControl() : srcAddress;
+                    final InetSocketAddress controlAddress = channelEndpoint.isMulticast(transportIndex) ?
+                        channelEndpoint.udpChannel(transportIndex).remoteControl() : srcAddress;
 
                     channelEndpoint.sendRttMeasurement(
                         transportIndex, controlAddress, sessionId, streamId, header.echoTimestampNs(), 0, false);
@@ -392,8 +392,8 @@ public class DataPacketDispatcher
         final int streamId,
         final int sessionId)
     {
-        final InetSocketAddress controlAddress =
-            channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
+        final InetSocketAddress controlAddress = channelEndpoint.isMulticast(transportIndex) ?
+            channelEndpoint.udpChannel(transportIndex).remoteControl() : srcAddress;
 
         channelEndpoint.sendSetupElicitingStatusMessage(transportIndex, controlAddress, sessionId, streamId);
         receiver.addPendingSetupMessage(sessionId, streamId, transportIndex, channelEndpoint, false, controlAddress);
@@ -412,10 +412,10 @@ public class DataPacketDispatcher
         final int mtuLength,
         final int setupTtl)
     {
-        final InetSocketAddress controlAddress = channelEndpoint.isMulticast() ?
-            channelEndpoint.udpChannel().remoteControl() : srcAddress;
+        final InetSocketAddress controlAddress = channelEndpoint.isMulticast(transportIndex) ?
+            channelEndpoint.udpChannel(transportIndex).remoteControl() : srcAddress;
 
-        if (channelEndpoint.isMulticast() && channelEndpoint.multicastTtl() < setupTtl)
+        if (channelEndpoint.isMulticast(transportIndex) && channelEndpoint.multicastTtl(transportIndex) < setupTtl)
         {
             channelEndpoint.possibleTtlAsymmetryEncountered();
         }

@@ -27,14 +27,14 @@ public class MultiRcvDestination implements AutoCloseable
 {
     private static final ReceiveDestinationUdpTransport[] EMPTY_TRANSPORTS = new ReceiveDestinationUdpTransport[0];
 
-    private final long destinationTimeoutNs;
+    private final long destinationAddressTimeoutNs;
     private final NanoClock nanoClock;
     private ReceiveDestinationUdpTransport[] transports = EMPTY_TRANSPORTS;
 
     public MultiRcvDestination(final NanoClock nanoClock, final long timeoutNs)
     {
         this.nanoClock = nanoClock;
-        this.destinationTimeoutNs = timeoutNs;
+        this.destinationAddressTimeoutNs = timeoutNs;
     }
 
     public void close()
@@ -111,7 +111,7 @@ public class MultiRcvDestination implements AutoCloseable
             {
                 final UdpChannelTransport transport = transports[i];
 
-                if (null != transport && nowNs < (controlAddress.timeOfLastFrameNs + destinationTimeoutNs))
+                if (null != transport && nowNs < (controlAddress.timeOfLastFrameNs + destinationAddressTimeoutNs))
                 {
                     buffer.position(position);
                     minBytesSent = Math.min(minBytesSent, sendTo(transport, buffer, controlAddress.address));

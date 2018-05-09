@@ -421,6 +421,36 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         return conductor.channelStatus(channelStatusId);
     }
 
+    /**
+     * Add a destination manually to a multi-destination Subscription.
+     *
+     * @param endpointChannel for the destination to add
+     */
+    public void addDestination(final String endpointChannel)
+    {
+        if (isClosed)
+        {
+            throw new IllegalStateException("Subscription is closed");
+        }
+
+        conductor.addRcvDestination(registrationId, endpointChannel);
+    }
+
+    /**
+     * Remove a previously added destination from a multi-destination Subscription.
+     *
+     * @param endpointChannel for the destination to remove
+     */
+    public void removeDestination(final String endpointChannel)
+    {
+        if (isClosed)
+        {
+            throw new IllegalStateException("Subscription is closed");
+        }
+
+        conductor.removeRcvDestination(registrationId, endpointChannel);
+    }
+
     void channelStatusId(final int id)
     {
         channelStatusId = id;

@@ -196,6 +196,40 @@ public class DriverProxy
         return correlationId;
     }
 
+    public long addRcvDestination(final long registrationId, final String endpointChannel)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        destinationMessage
+            .registrationCorrelationId(registrationId)
+            .channel(endpointChannel)
+            .correlationId(correlationId);
+
+        if (!toDriverCommandBuffer.write(ADD_RCV_DESTINATION, buffer, 0, destinationMessage.length()))
+        {
+            throw new IllegalStateException("Could not write rcv destination command");
+        }
+
+        return correlationId;
+    }
+
+    public long removeRcvDestination(final long registrationId, final String endpointChannel)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        destinationMessage
+            .registrationCorrelationId(registrationId)
+            .channel(endpointChannel)
+            .correlationId(correlationId);
+
+        if (!toDriverCommandBuffer.write(REMOVE_RCV_DESTINATION, buffer, 0, destinationMessage.length()))
+        {
+            throw new IllegalStateException("Could not write rcv destination command");
+        }
+
+        return correlationId;
+    }
+
     public long addCounter(
         final int typeId,
         final DirectBuffer keyBuffer,

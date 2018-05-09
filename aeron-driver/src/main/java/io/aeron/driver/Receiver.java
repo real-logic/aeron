@@ -141,19 +141,25 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public void onRegisterReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        channelEndpoint.openChannel(conductorProxy);
-        channelEndpoint.registerForRead(dataTransportPoller);
-        channelEndpoint.indicateActive();
-
-        if (channelEndpoint.hasExplicitControl())
+        if (!channelEndpoint.hasDestinationControl())
         {
-            addPendingSetupMessage(0, 0, 0, channelEndpoint, true, channelEndpoint.explicitControlAddress());
-            channelEndpoint.sendSetupElicitingStatusMessage(0, channelEndpoint.explicitControlAddress(), 0, 0);
+            channelEndpoint.openChannel(conductorProxy);
+            channelEndpoint.registerForRead(dataTransportPoller);
+            channelEndpoint.indicateActive();
+
+            if (channelEndpoint.hasExplicitControl())
+            {
+                addPendingSetupMessage(
+                    0, 0, 0, channelEndpoint, true, channelEndpoint.explicitControlAddress());
+                channelEndpoint.sendSetupElicitingStatusMessage(
+                    0, channelEndpoint.explicitControlAddress(), 0, 0);
+            }
         }
     }
 
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
+        channelEndpoint.closeMultiRcvDestination();
         channelEndpoint.close();
     }
 

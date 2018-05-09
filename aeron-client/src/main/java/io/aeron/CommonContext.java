@@ -179,6 +179,11 @@ public class CommonContext implements AutoCloseable, Cloneable
      */
     public static final String RELIABLE_STREAM_PARAM_NAME = "reliable";
 
+    /**
+     * Key for the tag for a subscription with multiple destinations
+     */
+    public static final String TAG_ID_PARAM_NAME = "tag-id";
+
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName = getAeronDirectoryName();
     private File aeronDirectory;

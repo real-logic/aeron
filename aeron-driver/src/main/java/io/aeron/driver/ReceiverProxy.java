@@ -17,6 +17,8 @@ package io.aeron.driver;
 
 import io.aeron.driver.cmd.*;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveDestinationUdpTransport;
+import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.util.Queue;
@@ -146,6 +148,31 @@ public class ReceiverProxy
         else
         {
             offer(new RemoveCoolDownCmd(channelEndpoint, sessionId, streamId));
+        }
+    }
+
+    public void addDestination(
+        final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationUdpTransport transport)
+    {
+        if (notConcurrent())
+        {
+            receiver.onAddDestination(channelEndpoint, transport);
+        }
+        else
+        {
+            offer(new AddRcvDestinationCmd(channelEndpoint, transport));
+        }
+    }
+
+    public void removeDestination(final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel)
+    {
+        if (notConcurrent())
+        {
+            receiver.onRemoveDestination(channelEndpoint, udpChannel);
+        }
+        else
+        {
+            offer(new RemoveRcvDestinationCmd(channelEndpoint, udpChannel));
         }
     }
 

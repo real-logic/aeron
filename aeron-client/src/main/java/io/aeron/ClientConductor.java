@@ -510,6 +510,36 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
+    void addRcvDestination(final long registrationId, final String endpointChannel)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureOpen();
+
+            awaitResponse(driverProxy.addRcvDestination(registrationId, endpointChannel));
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void removeRcvDestination(final long registrationId, final String endpointChannel)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureOpen();
+
+            awaitResponse(driverProxy.removeRcvDestination(registrationId, endpointChannel));
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
     Counter addCounter(
         final int typeId,
         final DirectBuffer keyBuffer,

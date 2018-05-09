@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.CommonContext;
 import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
@@ -43,7 +44,7 @@ import static io.aeron.status.ChannelEndpointStatus.status;
  */
 public class ReceiveChannelEndpoint extends UdpChannelTransport
 {
-    private static final long DESTINATION_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
+    private static final long DESTINATION_ADDRESS_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
 
     private final DataPacketDispatcher dispatcher;
     private final ByteBuffer smBuffer;
@@ -90,9 +91,15 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
         receiverId = threadLocals.receiverId();
 
-        final MultiRcvDestination multiRcvDestination = null;
-        // TODO: create if udpChannel is multi-destination
-        this.multiRcvDestination = multiRcvDestination;
+        final String mode = udpChannel.channelUri().get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
+        if (CommonContext.MDC_CONTROL_MODE_MANUAL.equals(mode))
+        {
+            this.multiRcvDestination = new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT);
+        }
+        else
+        {
+            this.multiRcvDestination = null;
+        }
     }
 
     /**
@@ -152,22 +159,33 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
     }
 
+    public void closeMultiRcvDestination()
+    {
+        if (null != multiRcvDestination)
+        {
+            multiRcvDestination.close();
+        }
+    }
+
     public void openChannel(final DriverConductorProxy conductorProxy)
     {
-        if (conductorProxy.notConcurrent())
+        if (null == multiRcvDestination)
         {
-            openDatagramChannel(statusIndicator);
-        }
-        else
-        {
-            try
+            if (conductorProxy.notConcurrent())
             {
                 openDatagramChannel(statusIndicator);
             }
-            catch (final Exception ex)
+            else
             {
-                conductorProxy.channelEndpointError(statusIndicator.id(), ex);
-                throw ex;
+                try
+                {
+                    openDatagramChannel(statusIndicator);
+                }
+                catch (final Exception ex)
+                {
+                    conductorProxy.channelEndpointError(statusIndicator.id(), ex);
+                    throw ex;
+                }
             }
         }
     }
@@ -237,8 +255,80 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;
     }
 
+    public boolean hasDestinationControl()
+    {
+        return (null != multiRcvDestination);
+    }
+
     public void validateAllowsDestinationControl()
     {
+        if (null == multiRcvDestination)
+        {
+            throw new IllegalArgumentException("channel does not allow manual control");
+        }
+    }
+
+    public boolean isMulticast()
+    {
+        return isMulticast(0);
+    }
+
+    public boolean isMulticast(final int transportIndex)
+    {
+        if (null != multiRcvDestination)
+        {
+            return multiRcvDestination.transport(transportIndex).isMulticast();
+        }
+        else if (0 == transportIndex)
+        {
+            return super.isMulticast();
+        }
+        else
+        {
+            throw new IllegalStateException("isMulticast for unknown index " + transportIndex);
+        }
+    }
+
+    public UdpChannel udpChannel()
+    {
+        return udpChannel(0);
+    }
+
+    public UdpChannel udpChannel(final int transportIndex)
+    {
+        if (null != multiRcvDestination)
+        {
+            return multiRcvDestination.transport(transportIndex).udpChannel();
+        }
+        else if (0 == transportIndex)
+        {
+            return super.udpChannel();
+        }
+        else
+        {
+            throw new IllegalStateException("udpChannel for unknown index " + transportIndex);
+        }
+    }
+
+    public int multicastTtl()
+    {
+        return multicastTtl(0);
+    }
+
+    public int multicastTtl(final int transportIndex)
+    {
+        if (null != multiRcvDestination)
+        {
+            return multiRcvDestination.transport(transportIndex).multicastTtl();
+        }
+        else if (0 == transportIndex)
+        {
+            return super.multicastTtl();
+        }
+        else
+        {
+            throw new IllegalStateException("multicastTtl for unknown index " + transportIndex);
+        }
     }
 
     public int addDestination(final ReceiveDestinationUdpTransport transport)

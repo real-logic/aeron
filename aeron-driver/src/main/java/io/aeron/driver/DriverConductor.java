@@ -23,6 +23,7 @@ import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.cmd.DriverConductorCmd;
 import io.aeron.driver.exceptions.ControlProtocolException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveDestinationUdpTransport;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
@@ -831,7 +832,10 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         final UdpChannel destinationUdpChannel = UdpChannel.parse(destinationChannel);
 
-//        receiverProxy.addDestination(receiveChannelEndpoint, destinationUdpChannel);
+        final ReceiveDestinationUdpTransport transport =
+            new ReceiveDestinationUdpTransport(destinationUdpChannel, context);
+
+        receiverProxy.addDestination(receiveChannelEndpoint, transport);
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -857,6 +861,8 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
+        final UdpChannel destinationUdpChannel = UdpChannel.parse(destinationChannel);
+        receiverProxy.removeDestination(receiveChannelEndpoint, destinationUdpChannel);
         clientProxy.operationSucceeded(correlationId);
     }
 

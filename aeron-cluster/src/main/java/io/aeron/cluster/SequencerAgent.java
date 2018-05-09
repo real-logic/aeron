@@ -198,9 +198,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
             isRecovering = true;
-            if (null != recoveryPlan.snapshotStep)
+            if (recoveryPlan.snapshotSteps.size() > 0)
             {
-                recoverFromSnapshot(recoveryPlan.snapshotStep, archive);
+                recoverFromSnapshot(recoveryPlan.snapshotSteps.get(0), archive);
             }
 
             awaitServiceAcks();
@@ -1214,11 +1214,10 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
     {
         final int termCount = plan.termSteps.size();
-        final RecordingLog.ReplayStep snapshotStep = plan.snapshotStep;
 
-        if (null != snapshotStep)
+        if (plan.snapshotSteps.size() > 0)
         {
-            final RecordingLog.Entry snapshot = snapshotStep.entry;
+            final RecordingLog.Entry snapshot = plan.snapshotSteps.get(0).entry;
 
             return RecoveryState.allocate(
                 aeron, tempBuffer, snapshot.leadershipTermId, snapshot.termPosition, snapshot.timestamp, termCount);

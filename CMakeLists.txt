@@ -87,8 +87,9 @@ set(HDRHISTOGRAM_LIBS
 
 ExternalProject_Add(
     google_benchmark
-    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-1.1.0.tar.gz
-    URL_MD5 66b2a23076cf70739525be0092fc3ae3
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-1.4.0.tar.gz
+    URL_MD5 ccfaf2cd93ae20191b94f730b945423e
+    CMAKE_ARGS -DBENCHMARK_ENABLE_GTEST_TESTS=OFF
     INSTALL_COMMAND ""
 )
 

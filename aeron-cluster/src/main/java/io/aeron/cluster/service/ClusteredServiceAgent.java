@@ -323,14 +323,14 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
         if (NULL_POSITION != termPosition)
         {
-            final RecordingLog.Entry snapshotEntry = recordingLog.getSnapshot(leadershipTermId, termPosition);
-            if (null == snapshotEntry)
+            final RecordingLog.Entry snapshot = recordingLog.getSnapshot(leadershipTermId, termPosition, serviceId);
+            if (null == snapshot)
             {
                 throw new IllegalStateException("no snapshot available for term position: " + termPosition);
             }
 
-            recordingId = snapshotEntry.recordingId;
-            termBaseLogPosition = snapshotEntry.termBaseLogPosition + snapshotEntry.termPosition;
+            recordingId = snapshot.recordingId;
+            termBaseLogPosition = snapshot.termBaseLogPosition + snapshot.termPosition;
             loadSnapshot(recordingId);
         }
 

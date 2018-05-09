@@ -39,7 +39,9 @@ public class MultiDestinationSubscriptionTest
     private static final String PUB_UNICAST_URI = "aeron:udp?endpoint=localhost:54325";
     private static final String PUB_MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
     private static final String PUB_MDC_URI = "aeron:udp?control=localhost:54325|control-mode=dynamic";
+
     private static final String SUB_URI = "aeron:udp?control-mode=manual";
+    private static final String SUB_MDC_DESTINATION_URI = "aeron:udp?endpoint=localhost:54326|control=localhost:54325";
 
     private static final int STREAM_ID = 1;
 
@@ -120,6 +122,23 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test(timeout = 10_000)
+    public void shouldSpinUpAndShutdownWithDynamicMdc()
+    {
+        launch();
+
+        publication = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+
+        subscription.addDestination(SUB_MDC_DESTINATION_URI);
+
+        while (subscription.hasNoImages())
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
+    }
+
+    @Test(timeout = 10_000)
     public void shouldSendToSingleDestinationSubscriptionWithUnicast()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -163,6 +182,39 @@ public class MultiDestinationSubscriptionTest
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
 
         subscription.addDestination(PUB_MULTICAST_URI);
+
+        while (subscription.hasNoImages())
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            final MutableInteger fragmentsRead = new MutableInteger();
+            pollForFragment(subscription, fragmentHandler, fragmentsRead);
+        }
+
+        verifyFragments(fragmentHandler, numMessagesToSend);
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldSendToSingleDestinationSubscriptionWithDynamicMdc()
+    {
+        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+
+        launch();
+
+        publication = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+
+        subscription.addDestination(SUB_MDC_DESTINATION_URI);
 
         while (subscription.hasNoImages())
         {

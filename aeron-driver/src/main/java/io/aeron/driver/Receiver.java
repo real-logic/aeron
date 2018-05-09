@@ -179,9 +179,9 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         if (transport.hasExplicitControl())
         {
             addPendingSetupMessage(
-                0, 0, transportIndex, channelEndpoint, true, channelEndpoint.explicitControlAddress());
+                0, 0, transportIndex, channelEndpoint, true, transport.explicitControlAddress());
             channelEndpoint.sendSetupElicitingStatusMessage(
-                transportIndex, channelEndpoint.explicitControlAddress(), 0, 0);
+                transportIndex, transport.explicitControlAddress(), 0, 0);
         }
 
         for (final PublicationImage image : publicationImages)

@@ -72,7 +72,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Suspended processing of ingress and expired timers.
          */
-        SUSPENDED(2, ClusterAction.SUSPEND),
+        SUSPENDED(2, ClusterAction.READY, ClusterAction.REPLAY),
 
         /**
          * In the process of taking a snapshot.

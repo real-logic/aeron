@@ -125,7 +125,7 @@ inline void defaultErrorHandler(const std::exception& exception)
         const SourcedException& sourcedException = dynamic_cast<const SourcedException&>(exception);
         std::cerr << " : " << sourcedException.where();
     }
-    catch (std::bad_cast)
+    catch (const std::bad_cast&)
     {
         // ignore
     }

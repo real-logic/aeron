@@ -319,7 +319,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         final long termPosition = RecoveryState.getTermPosition(counters, recoveryCounterId);
         leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
         timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
-        long recordingId = ServiceControlListener.NULL_VALUE;
 
         if (NULL_POSITION != termPosition)
         {
@@ -329,13 +328,12 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
                 throw new IllegalStateException("no snapshot available for term position: " + termPosition);
             }
 
-            recordingId = snapshot.recordingId;
             termBaseLogPosition = snapshot.termBaseLogPosition + snapshot.termPosition;
-            loadSnapshot(recordingId);
+            loadSnapshot(snapshot.recordingId);
         }
 
         serviceControlPublisher.ackAction(
-            termBaseLogPosition, leadershipTermId, recordingId, serviceId, ClusterAction.INIT);
+            termBaseLogPosition, leadershipTermId, serviceId, ClusterAction.INIT);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
@@ -556,7 +554,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         }
     }
 
-    private void onTakeSnapshot(final long termPosition)
+    private long onTakeSnapshot(final long termPosition)
     {
         final long recordingId;
         final String channel = ctx.snapshotChannel();
@@ -584,6 +582,8 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
         recordingLog.appendSnapshot(
             recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs, serviceId);
+
+        return recordingId;
     }
 
     private void awaitRecordingComplete(
@@ -635,13 +635,13 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         switch (action)
         {
             case SNAPSHOT:
-                onTakeSnapshot(termPosition);
-                serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, action);
+                serviceControlPublisher.ackAction(
+                    logPosition, leadershipTermId, onTakeSnapshot(termPosition), serviceId, action);
                 break;
 
             case SHUTDOWN:
-                onTakeSnapshot(termPosition);
-                serviceControlPublisher.ackAction(logPosition, leadershipTermId, serviceId, action);
+                serviceControlPublisher.ackAction(
+                    logPosition, leadershipTermId, onTakeSnapshot(termPosition), serviceId, action);
                 ctx.terminationHook().run();
                 break;
 

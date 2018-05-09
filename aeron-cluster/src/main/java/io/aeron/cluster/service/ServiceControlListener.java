@@ -25,6 +25,11 @@ import io.aeron.cluster.codecs.ClusterAction;
 public interface ServiceControlListener
 {
     /**
+     * Used to represent null values as placeholders.
+     */
+    int NULL_VALUE = -1;
+
+    /**
      * Request from a service to schedule a timer.
      *
      * @param correlationId that must be unique across services for the timer.
@@ -48,10 +53,12 @@ public interface ServiceControlListener
      *
      * @param logPosition      of the service after undertaking the action.
      * @param leadershipTermId within which the action has taken place.
+     * @param relevantId       as a result of the action such as the recording id for a snapshot.
      * @param serviceId        that has undertaken the action.
      * @param action           undertaken.
      */
-    default void onServiceAck(long logPosition, long leadershipTermId, int serviceId, ClusterAction action)
+    default void onServiceAck(
+        long logPosition, long leadershipTermId, long relevantId, int serviceId, ClusterAction action)
     {
     }
 

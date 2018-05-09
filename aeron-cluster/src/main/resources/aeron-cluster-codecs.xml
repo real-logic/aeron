@@ -242,8 +242,9 @@
                  description="Service acknowledging a cluster action request">
         <field name="logPosition"          id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>
-        <field name="serviceId"            id="3" type="int32"/>
-        <field name="action"               id="4" type="ClusterAction"/>
+        <field name="relevantId"           id="3" type="int64"/>
+        <field name="serviceId"            id="4" type="int32"/>
+        <field name="action"               id="5" type="ClusterAction"/>
     </sbe:message>
 
     <sbe:message name="JoinLog"

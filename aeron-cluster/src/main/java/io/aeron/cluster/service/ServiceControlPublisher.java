@@ -97,7 +97,20 @@ public class ServiceControlPublisher implements AutoCloseable
     }
 
     public void ackAction(
-        final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
+        final long logPosition,
+        final long leadershipTermId,
+        final int serviceId,
+        final ClusterAction action)
+    {
+        ackAction(logPosition, leadershipTermId, ServiceControlListener.NULL_VALUE, serviceId, action);
+    }
+
+    public void ackAction(
+        final long logPosition,
+        final long leadershipTermId,
+        final long relevantId,
+        final int serviceId,
+        final ClusterAction action)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionAckEncoder.BLOCK_LENGTH;
 
@@ -111,6 +124,7 @@ public class ServiceControlPublisher implements AutoCloseable
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
+                    .relevantId(relevantId)
                     .serviceId(serviceId)
                     .action(action);
 

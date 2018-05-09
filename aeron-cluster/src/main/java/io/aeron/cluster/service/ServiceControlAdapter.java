@@ -89,6 +89,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                 serviceControlListener.onServiceAck(
                     clusterActionAckDecoder.logPosition(),
                     clusterActionAckDecoder.leadershipTermId(),
+                    clusterActionAckDecoder.relevantId(),
                     clusterActionAckDecoder.serviceId(),
                     clusterActionAckDecoder.action());
                 break;

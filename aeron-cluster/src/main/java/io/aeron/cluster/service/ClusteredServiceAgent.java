@@ -319,6 +319,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         final long termPosition = RecoveryState.getTermPosition(counters, recoveryCounterId);
         leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
         timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
+        long recordingId = ServiceControlListener.NULL_VALUE;
 
         if (NULL_POSITION != termPosition)
         {
@@ -328,11 +329,13 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
                 throw new IllegalStateException("no snapshot available for term position: " + termPosition);
             }
 
+            recordingId = snapshotEntry.recordingId;
             termBaseLogPosition = snapshotEntry.termBaseLogPosition + snapshotEntry.termPosition;
-            loadSnapshot(snapshotEntry.recordingId);
+            loadSnapshot(recordingId);
         }
 
-        serviceControlPublisher.ackAction(termBaseLogPosition, leadershipTermId, serviceId, ClusterAction.INIT);
+        serviceControlPublisher.ackAction(
+            termBaseLogPosition, leadershipTermId, recordingId, serviceId, ClusterAction.INIT);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)

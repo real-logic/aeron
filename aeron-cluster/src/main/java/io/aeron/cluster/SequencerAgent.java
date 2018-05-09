@@ -46,7 +46,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
-import static io.aeron.cluster.service.RecordingLog.NULL_VALUE;
+import static io.aeron.cluster.ServiceAckState.*;
 
 class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListener
 {
@@ -70,7 +70,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private ClusterMember leaderMember;
     private final ClusterMember thisMember;
     private long[] rankedPositions;
-    private final long[] serviceAckPositions;
+    private final ServiceAckState[] serviceAckStates;
     private final Counter clusterRoleCounter;
     private final ClusterMarkFile markFile;
     private final AgentInvoker aeronClientInvoker;
@@ -127,9 +127,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         this.recordingLog = ctx.recordingLog();
         this.tempBuffer = ctx.tempBuffer();
         this.serviceHeartbeats = ctx.serviceHeartbeatCounters();
-
-        this.serviceAckPositions = new long[ctx.serviceCount()];
-        resetToNull(serviceAckPositions);
+        this.serviceAckStates = newArray(ctx.serviceCount());
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -284,12 +282,16 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     }
 
     public void onServiceAck(
-        final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
+        final long logPosition,
+        final long leadershipTermId,
+        final long relevantId,
+        final int serviceId,
+        final ClusterAction action)
     {
         validateServiceAck(logPosition, leadershipTermId, serviceId, action);
-        serviceAckPositions[serviceId] = logPosition;
+        serviceAckStates[serviceId].logPosition(logPosition).relevantId(relevantId);
 
-        if (hasReachedThreshold(logPosition, serviceAckPositions))
+        if (hasReachedThreshold(logPosition, serviceAckStates))
         {
             final long termPosition = currentTermPosition();
             switch (action)
@@ -800,7 +802,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             {
                 logAdapter = null;
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, true, channel);
-                resetToNull(serviceAckPositions);
+                resetToNull(serviceAckStates);
                 awaitServiceAcks();
 
                 final int replaySessionId = (int)archive.startReplay(
@@ -1086,7 +1088,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         serviceControlPublisher.joinLog(
             leadershipTermId, termCommitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
 
-        resetToNull(serviceAckPositions);
+        resetToNull(serviceAckStates);
         awaitServiceAcks();
     }
 
@@ -1176,7 +1178,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             {
                 logAdapter = null;
                 serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, true, channel);
-                resetToNull(serviceAckPositions);
+                resetToNull(serviceAckStates);
 
                 if (length > 0)
                 {
@@ -1188,7 +1190,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                             (int)archive.startReplay(recordingId, startPosition, length, channel, streamId),
                             subscription);
 
-                        resetToNull(serviceAckPositions);
+                        resetToNull(serviceAckStates);
                         replayTerm(image, stopPosition, counter);
                         awaitServiceAcks();
 
@@ -1228,7 +1230,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private void awaitServiceAcks()
     {
         final long logPosition = termBaseLogPosition + currentTermPosition();
-        while (!hasReachedThreshold(logPosition, serviceAckPositions))
+        while (!hasReachedThreshold(logPosition, serviceAckStates))
         {
             idle(serviceControlAdapter.poll());
         }
@@ -1464,26 +1466,5 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             idle(workCount);
         }
-    }
-
-    private static void resetToNull(final long[] positions)
-    {
-        for (int i = 0, length = positions.length; i < length; i++)
-        {
-            positions[i] = NULL_POSITION;
-        }
-    }
-
-    private static boolean hasReachedThreshold(final long thresholdPosition, final long[] positions)
-    {
-        for (final long position : positions)
-        {
-            if (position < thresholdPosition)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

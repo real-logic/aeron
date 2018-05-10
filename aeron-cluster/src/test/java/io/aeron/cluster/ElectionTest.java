@@ -19,7 +19,6 @@ import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.Publication;
 import io.aeron.cluster.service.Cluster;
-import io.aeron.cluster.service.RecordingLog;
 import org.agrona.concurrent.CachedEpochClock;
 import org.junit.Before;
 import org.junit.Test;

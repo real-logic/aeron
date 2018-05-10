@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.cluster.service.RecordingLog;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.*;
 import io.aeron.exceptions.TimeoutException;
@@ -1214,16 +1213,31 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
     {
         final int termCount = plan.termSteps.size();
+        final int snapshotsCount = plan.snapshotSteps.size();
 
-        if (plan.snapshotSteps.size() > 0)
+        if (snapshotsCount > 0)
         {
+            final long[] serviceSnapshotRecordingIds = new long[snapshotsCount - 1];
             final RecordingLog.Entry snapshot = plan.snapshotSteps.get(0).entry;
 
+            for (int i = 1; i < snapshotsCount; i++)
+            {
+                final RecordingLog.ReplayStep serviceSnapshot = plan.snapshotSteps.get(i);
+                serviceSnapshotRecordingIds[serviceSnapshot.entry.applicableId] = serviceSnapshot.entry.recordingId;
+            }
+
             return RecoveryState.allocate(
-                aeron, tempBuffer, snapshot.leadershipTermId, snapshot.termPosition, snapshot.timestamp, termCount);
+                aeron,
+                tempBuffer,
+                snapshot.leadershipTermId,
+                snapshot.termBaseLogPosition,
+                snapshot.termPosition,
+                snapshot.timestamp,
+                termCount,
+                serviceSnapshotRecordingIds);
         }
 
-        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, NULL_POSITION, 0, termCount);
+        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, 0, NULL_POSITION, 0, termCount);
     }
 
     private void awaitServiceAcks()
@@ -1374,6 +1388,14 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
                 snapshotState(publication, termBaseLogPosition + termPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
+
+                for (int i = serviceAckStates.length - 1; i >= 0; i--)
+                {
+                    final long snapshotRecordingId = serviceAckStates[i].relevantId();
+                    recordingLog.appendSnapshot(
+                        snapshotRecordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs, i);
+                }
+
                 recordingLog.appendSnapshot(
                     recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs, NULL_VALUE);
             }

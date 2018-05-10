@@ -387,7 +387,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private boolean ownsAeronClient;
 
         private ClusteredService clusteredService;
-        private RecordingLog recordingLog;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
         private ClusterMarkFile markFile;
@@ -505,12 +504,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 .aeron(aeron)
                 .ownsAeronClient(false)
                 .lock(new NoOpLock());
-
-
-            if (null == recordingLog)
-            {
-                recordingLog = new RecordingLog(clusteredServiceDir);
-            }
 
             if (null == shutdownSignalBarrier)
             {
@@ -1048,28 +1041,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public File clusteredServiceDir()
         {
             return clusteredServiceDir;
-        }
-
-        /**
-         * Set the {@link RecordingLog} for the  log terms and snapshots.
-         *
-         * @param recordingLog to use.
-         * @return this for a fluent API.
-         */
-        public Context recordingLog(final RecordingLog recordingLog)
-        {
-            this.recordingLog = recordingLog;
-            return this;
-        }
-
-        /**
-         * The {@link RecordingLog} for the  log terms and snapshots.
-         *
-         * @return {@link RecordingLog} for the  log terms and snapshots.
-         */
-        public RecordingLog recordingLog()
-        {
-            return recordingLog;
         }
 
         /**

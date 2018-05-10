@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster.service;
+package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanEncoder;
+import io.aeron.cluster.service.RecordingExtent;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -897,7 +898,7 @@ public class RecordingLog
                     {
                         getRecordingExtent(archive, recordingExtent, entry);
 
-                        snapshotSteps.set(entry.entryIndex + 1, new ReplayStep(
+                        snapshotSteps.add(entry.applicableId + 1, new ReplayStep(
                             recordingExtent.startPosition,
                             recordingExtent.stopPosition,
                             recordingExtent.sessionId,

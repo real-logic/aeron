@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.cluster.RecordingLog;
 import org.agrona.IoUtil;
 import org.junit.After;
 import org.junit.Test;
@@ -22,9 +23,9 @@ import org.junit.Test;
 import java.io.File;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.cluster.service.RecordingLog.ENTRY_TYPE_SNAPSHOT;
-import static io.aeron.cluster.service.RecordingLog.ENTRY_TYPE_TERM;
-import static io.aeron.cluster.service.RecordingLog.NULL_VALUE;
+import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_SNAPSHOT;
+import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
+import static io.aeron.cluster.RecordingLog.NULL_VALUE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 

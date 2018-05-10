@@ -20,7 +20,6 @@ import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.service.RecordingLog;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;

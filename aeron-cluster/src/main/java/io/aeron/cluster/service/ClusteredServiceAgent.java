@@ -51,7 +51,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
     private final ServiceControlPublisher serviceControlPublisher;
     private final ServiceControlAdapter serviceControlAdapter;
     private final IdleStrategy idleStrategy;
-    private final RecordingLog recordingLog;
     private final EpochClock epochClock;
     private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private final ClusterMarkFile markFile;
@@ -73,7 +72,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         aeron = ctx.aeron();
         shouldCloseResources = ctx.ownsAeronClient();
         service = ctx.clusteredService();
-        recordingLog = ctx.recordingLog();
         idleStrategy = ctx.idleStrategy();
         serviceId = ctx.serviceId();
         epochClock = ctx.epochClock();
@@ -322,14 +320,8 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
         if (NULL_POSITION != termPosition)
         {
-            final RecordingLog.Entry snapshot = recordingLog.getSnapshot(leadershipTermId, termPosition, serviceId);
-            if (null == snapshot)
-            {
-                throw new IllegalStateException("no snapshot available for term position: " + termPosition);
-            }
-
-            termBaseLogPosition = snapshot.termBaseLogPosition + snapshot.termPosition;
-            loadSnapshot(snapshot.recordingId);
+            termBaseLogPosition = RecoveryState.getTermBaseLogPosition(counters, recoveryCounterId) + termPosition;
+            loadSnapshot(RecoveryState.getSnapshotRecordingId(counters, recoveryCounterId, serviceId));
         }
 
         serviceControlPublisher.ackAction(
@@ -579,9 +571,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
                 archive.stopRecording(publication);
             }
         }
-
-        recordingLog.appendSnapshot(
-            recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs, serviceId);
 
         return recordingId;
     }

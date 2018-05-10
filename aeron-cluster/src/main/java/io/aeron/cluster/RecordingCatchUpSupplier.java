@@ -16,7 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.service.RecordingLog;
 
 interface RecordingCatchUpSupplier
 {

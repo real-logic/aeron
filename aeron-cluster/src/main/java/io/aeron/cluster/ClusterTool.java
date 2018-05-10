@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.CncFileDescriptor;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.service.ClusterMarkFile;
-import io.aeron.cluster.service.RecordingLog;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.AtomicBuffer;

@@ -964,11 +964,6 @@ public class ConsensusModule implements AutoCloseable
                 moduleState = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus module state");
             }
 
-            if (null == clusterNodeRole)
-            {
-                clusterNodeRole = aeron.addCounter(Configuration.CLUSTER_NODE_ROLE_TYPE_ID, "Cluster node role");
-            }
-
             if (null == controlToggle)
             {
                 controlToggle = aeron.addCounter(CONTROL_TOGGLE_TYPE_ID, "Cluster control toggle");
@@ -991,6 +986,11 @@ public class ConsensusModule implements AutoCloseable
                 {
                     serviceHeartbeatCounters[i] = ServiceHeartbeat.allocate(aeron, tempBuffer, i);
                 }
+            }
+
+            if (null == clusterNodeRole)
+            {
+                clusterNodeRole = aeron.addCounter(Configuration.CLUSTER_NODE_ROLE_TYPE_ID, "Cluster node role");
             }
 
             if (null == threadFactory)

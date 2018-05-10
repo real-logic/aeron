@@ -87,7 +87,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
     {
         final CountersReader counters = aeron.countersReader();
         roleCounter = awaitClusterRoleCounter(counters);
-        findHeartbeatCounter(counters);
+        heartbeatCounter = awaitHeartbeatCounter(counters);
 
         service.onStart(this);
         isRecovering = true;
@@ -503,6 +503,20 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         return new ReadableCounter(counters, counterId);
     }
 
+    private AtomicCounter awaitHeartbeatCounter(final CountersReader counters)
+    {
+        idleStrategy.reset();
+        int counterId = ServiceHeartbeat.findCounterId(counters, ctx.serviceId());
+        while (NULL_COUNTER_ID == counterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+            counterId = ServiceHeartbeat.findCounterId(counters, ctx.serviceId());
+        }
+
+        return new AtomicCounter(counters.valuesBuffer(), counterId);
+    }
+
     private void loadSnapshot(final long recordingId)
     {
         try (AeronArchive archive = AeronArchive.connect(archiveCtx))
@@ -653,17 +667,6 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         }
 
         return counterId;
-    }
-
-    private void findHeartbeatCounter(final CountersReader counters)
-    {
-        final int heartbeatCounterId = ServiceHeartbeat.findCounterId(counters, ctx.serviceId());
-        if (NULL_COUNTER_ID == heartbeatCounterId)
-        {
-            throw new IllegalStateException("failed to find heartbeat counter");
-        }
-
-        heartbeatCounter = new AtomicCounter(counters.valuesBuffer(), heartbeatCounterId);
     }
 
     private static void checkInterruptedStatus()

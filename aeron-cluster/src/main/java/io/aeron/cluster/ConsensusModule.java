@@ -276,7 +276,7 @@ public class ConsensusModule implements AutoCloseable
          * Default property for the list of cluster member endpoints.
          */
         public static final String CLUSTER_MEMBERS_DEFAULT =
-            "0,localhost:10000,localhost:20000,localhost:30000,localhost:8010";
+            "0,localhost:10000,localhost:20000,localhost:30000,localhost:40000,localhost:8010";
 
         /**
          * Channel for the clustered log.
@@ -883,8 +883,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (!clusterDir.exists() && !clusterDir.mkdirs())
             {
-                throw new IllegalStateException(
-                    "failed to create cluster dir: " + clusterDir.getAbsolutePath());
+                throw new IllegalStateException("failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
             if (null == tempBuffer)
@@ -1233,7 +1232,8 @@ public class ConsensusModule implements AutoCloseable
          * String representing the cluster members.
          * <p>
          * <code>
-         *     0,client-facing:port,member-facing:port,log:port|1,client-facing:port,member-facing:port,log:port| ...
+         *     0,client-facing:port,member-facing:port,log:port,transfer:port,archive:port| \
+         *     1,client-facing:port,member-facing:port,log:port,transfer:port,archive:port| ...
          * </code>
          * <p>
          * The client facing endpoints will be used as the endpoint in {@link #ingressChannel()} if the endpoint is

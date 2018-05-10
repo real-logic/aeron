@@ -24,9 +24,9 @@ import static org.junit.Assert.assertThat;
 public class ClusterMemberTest
 {
     private final ClusterMember[] members = ClusterMember.parse(
-        "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
-        "1,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
-        "2,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|");
+        "0,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|" +
+        "1,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|" +
+        "2,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|");
 
     private final long[] rankedPositions = new long[quorumThreshold(members.length)];
 

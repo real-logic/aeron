@@ -38,9 +38,9 @@ import static org.mockito.Mockito.*;
 public class MultiNodeTest
 {
     private static final String THREE_NODE_MEMBERS =
-        "0,localhost:9010,localhost:9020,localhost:9030,localhost:8010|" +
-        "1,localhost:9011,localhost:9021,localhost:9031,localhost:8011|" +
-        "2,localhost:9012,localhost:9022,localhost:9032,localhost:8012";
+        "0,localhost:9010,localhost:9020,localhost:9030,localhost:9040,localhost:8010|" +
+        "1,localhost:9011,localhost:9021,localhost:9031,localhost:9041,localhost:8011|" +
+        "2,localhost:9012,localhost:9022,localhost:9032,localhost:9042,localhost:8012";
 
     private final MemberStatusListener[] mockMemberStatusListeners = new MemberStatusListener[3];
 

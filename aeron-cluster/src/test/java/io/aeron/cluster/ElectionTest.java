@@ -56,7 +56,7 @@ public class ElectionTest
         final long leadershipTermId = -1;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = ClusterMember.parse(
-            "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint");
+            "0,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint");
 
         final ConsensusModule.Context ctx = new ConsensusModule.Context()
             .recordingLog(recordingLog)
@@ -551,9 +551,9 @@ public class ElectionTest
     private static ClusterMember[] prepareClusterMembers()
     {
         final ClusterMember[] clusterMembers = ClusterMember.parse(
-            "0,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
-                "1,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|" +
-                "2,clientEndpoint,memberEndpoint,logEndpoint,archiveEndpoint|");
+            "0,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|" +
+            "1,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|" +
+            "2,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|");
 
         clusterMembers[0].publication(mock(Publication.class));
         clusterMembers[1].publication(mock(Publication.class));

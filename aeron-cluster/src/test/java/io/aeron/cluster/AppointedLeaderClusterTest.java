@@ -214,6 +214,7 @@ public class AppointedLeaderClusterTest
                 .append("localhost:2011").append(i).append(',')
                 .append("localhost:2022").append(i).append(',')
                 .append("localhost:2033").append(i).append(',')
+                .append("localhost:2044").append(i).append(',')
                 .append("localhost:801").append(i).append('|');
         }
 

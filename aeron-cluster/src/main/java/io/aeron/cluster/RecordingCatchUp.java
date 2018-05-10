@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ChannelUri;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
@@ -188,27 +187,13 @@ class RecordingCatchUp implements AutoCloseable
             targetPosition = leaderLastStep.recordingStopPosition;
             logPosition = leaderRecoveryPlan.lastTermBaseLogPosition + leaderRecoveryPlan.lastTermPositionAppended;
 
-            // TODO: raise this channel as a configuration option
-            final ChannelUri channelUri = ChannelUri.parse("aeron:udp?endpoint=localhost:3333");
-            final String endpoint = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
-
-            final ChannelUriStringBuilder uriStringBuilder = new ChannelUriStringBuilder();
-
-            // TODO: need the other params from the local recording
-
-            uriStringBuilder
+            extendChannel = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
-                .endpoint(endpoint)
-                .sessionId(localLastStep.recordingSessionId);
+                .endpoint(clusterMembers[memberId].transferEndpoint())
+                .sessionId(localLastStep.recordingSessionId)
+                .build();
 
-            extendChannel = uriStringBuilder.build();
-
-            uriStringBuilder.clear()
-                .media(CommonContext.UDP_MEDIA)
-                .endpoint(endpoint)
-                .sessionId(localLastStep.recordingSessionId);
-
-            replayChannel = uriStringBuilder.build();
+            replayChannel = extendChannel;
         }
     }
 

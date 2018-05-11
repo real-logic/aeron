@@ -118,7 +118,7 @@ public class ClusterTool
         }
 
         final ClusterMarkFile[] serviceMarkFile = openServiceMarkFiles(clusterDir, stream::println);
-        describe(stream, serviceMarkFile);
+        errors(stream, serviceMarkFile);
     }
 
     public static void describe(final PrintStream stream, final ClusterMarkFile[] serviceMarkFiles)

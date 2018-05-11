@@ -71,11 +71,6 @@ public class AuthenticationTest
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
-        if (null != container)
-        {
-            container.context().deleteDirectory();
-        }
-
         if (null != clusteredMediaDriver)
         {
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
@@ -474,8 +469,7 @@ public class AuthenticationTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .errorHandler(Throwable::printStackTrace)
-                .deleteDirOnStart(true));
+                .errorHandler(Throwable::printStackTrace));
     }
 
     private AeronCluster connectToCluster(final CredentialsSupplier credentialsSupplier)

@@ -121,8 +121,7 @@ public class AppointedLeaderClusterTest
                     .archiveContext(archiveCtx.clone())
                     .clusteredServiceDir(new File(baseDirName, "service"))
                     .clusteredService(echoServices[i])
-                    .errorHandler(Throwable::printStackTrace)
-                    .deleteDirOnStart(true));
+                    .errorHandler(Throwable::printStackTrace));
         }
 
         client = AeronCluster.connect(

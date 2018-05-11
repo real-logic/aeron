@@ -18,6 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import org.agrona.CloseHelper;
@@ -217,7 +218,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Directory to use for the cluster container.
          */
-        public static final String CLUSTERED_SERVICE_DIR_DEFAULT = "clustered-service";
+        public static final String CLUSTERED_SERVICE_DIR_DEFAULT = ConsensusModule.Configuration.clusterDirName();
 
         /**
          * Size in bytes of the error buffer for the cluster container.
@@ -370,7 +371,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private String snapshotChannel = Configuration.snapshotChannel();
         private int snapshotStreamId = Configuration.snapshotStreamId();
         private int errorBufferLength = Configuration.errorBufferLength();
-        private boolean deleteDirOnStart = false;
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -431,11 +431,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 clusteredServiceDir = new File(clusteredServiceDirectoryName);
             }
 
-            if (deleteDirOnStart && clusteredServiceDir.exists())
-            {
-                IoUtil.delete(clusteredServiceDir, false);
-            }
-
             if (!clusteredServiceDir.exists() && !clusteredServiceDir.mkdirs())
             {
                 throw new IllegalStateException(
@@ -445,7 +440,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
             if (null == markFile)
             {
                 markFile = new ClusterMarkFile(
-                    new File(clusteredServiceDir, ClusterMarkFile.FILENAME),
+                    new File(clusteredServiceDir, ClusterMarkFile.markFilenameForService(serviceId)),
                     ClusterComponentType.CONTAINER,
                     errorBufferLength,
                     epochClock,
@@ -971,28 +966,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public AeronArchive.Context archiveContext()
         {
             return archiveContext;
-        }
-
-        /**
-         * Should the container attempt to immediately delete {@link #clusteredServiceDir()} on startup.
-         *
-         * @param deleteDirOnStart Attempt deletion.
-         * @return this for a fluent API.
-         */
-        public Context deleteDirOnStart(final boolean deleteDirOnStart)
-        {
-            this.deleteDirOnStart = deleteDirOnStart;
-            return this;
-        }
-
-        /**
-         * Will the container attempt to immediately delete {@link #clusteredServiceDir()} on startup.
-         *
-         * @return true when directory will be deleted, otherwise false.
-         */
-        public boolean deleteDirOnStart()
-        {
-            return deleteDirOnStart;
         }
 
         /**

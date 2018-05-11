@@ -75,11 +75,6 @@ public class ClusterNodeTest
         CloseHelper.close(container);
         CloseHelper.close(clusteredMediaDriver);
 
-        if (null != container)
-        {
-            container.context().deleteDirectory();
-        }
-
         if (null != clusteredMediaDriver)
         {
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
@@ -231,8 +226,7 @@ public class ClusterNodeTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(echoService)
-                .errorHandler(Throwable::printStackTrace)
-                .deleteDirOnStart(true));
+                .errorHandler(Throwable::printStackTrace));
     }
 
     private ClusteredServiceContainer launchTimedService()
@@ -280,8 +274,7 @@ public class ClusterNodeTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(timedService)
-                .errorHandler(Throwable::printStackTrace)
-                .deleteDirOnStart(true));
+                .errorHandler(Throwable::printStackTrace));
     }
 
     private AeronCluster connectToCluster()

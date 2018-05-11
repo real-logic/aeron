@@ -180,8 +180,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .clusteredService(this)
                 .terminationHook(() -> {})
                 .archiveContext(aeronArchiveContext.clone())
-                .errorHandler(Throwable::printStackTrace)
-                .deleteDirOnStart(isCleanStart));
+                .errorHandler(Throwable::printStackTrace));
 
         this.cleanOnClose = cleanOnClose;
         aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriverPath));

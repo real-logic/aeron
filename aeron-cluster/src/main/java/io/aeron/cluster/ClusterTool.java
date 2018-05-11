@@ -20,6 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.AtomicBuffer;
 
 import java.io.File;
@@ -80,6 +81,9 @@ public class ClusterTool
             printTypeAndActivityTimestamp(stream, markFile);
             stream.println(markFile.decoder());
         }
+
+        final ClusterMarkFile[] serviceMarkFile = openServiceMarkFiles(clusterDir, stream::println);
+        describe(stream, serviceMarkFile);
     }
 
     public static void pid(final PrintStream stream, final File clusterDir)
@@ -112,11 +116,57 @@ public class ClusterTool
             printTypeAndActivityTimestamp(stream, markFile);
             printErrors(stream, markFile);
         }
+
+        final ClusterMarkFile[] serviceMarkFile = openServiceMarkFiles(clusterDir, stream::println);
+        describe(stream, serviceMarkFile);
+    }
+
+    public static void describe(final PrintStream stream, final ClusterMarkFile[] serviceMarkFiles)
+    {
+        for (final ClusterMarkFile serviceMarkFile : serviceMarkFiles)
+        {
+            printTypeAndActivityTimestamp(stream, serviceMarkFile);
+            stream.println(serviceMarkFile.decoder());
+            serviceMarkFile.close();
+        }
+    }
+
+    public static void errors(final PrintStream stream, final ClusterMarkFile[] serviceMarkFiles)
+    {
+        for (final ClusterMarkFile serviceMarkFile : serviceMarkFiles)
+        {
+            printTypeAndActivityTimestamp(stream, serviceMarkFile);
+            printErrors(stream, serviceMarkFile);
+            serviceMarkFile.close();
+        }
     }
 
     private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
     {
         return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
+    }
+
+    private static ClusterMarkFile[] openServiceMarkFiles(final File clustderDir, final Consumer<String> logger)
+    {
+        String[] clusterMarkFilenames =
+            clustderDir.list((dir, name) ->
+                name.startsWith(ClusterMarkFile.SERVICE_FILENAME_PREFIX) &&
+                name.endsWith(ClusterMarkFile.FILE_EXTENSION));
+
+        if (null == clusterMarkFilenames)
+        {
+            clusterMarkFilenames = ArrayUtil.EMPTY_STRING_ARRAY;
+        }
+
+        final ClusterMarkFile[] clusterMarkFiles = new ClusterMarkFile[clusterMarkFilenames.length];
+
+        for (int i = 0, length = clusterMarkFiles.length; i < length; i++)
+        {
+            clusterMarkFiles[i] = new ClusterMarkFile(
+                clustderDir, clusterMarkFilenames[i], System::currentTimeMillis, TIMEOUT_MS, logger);
+        }
+
+        return clusterMarkFiles;
     }
 
     private static void printTypeAndActivityTimestamp(final PrintStream stream, final ClusterMarkFile markFile)

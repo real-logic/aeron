@@ -227,24 +227,18 @@ class Election implements MemberStatusListener, AutoCloseable
                 thisMember.id(),
                 false);
         }
-        else if (candidateTermId == (leadershipTermId + 1))
-        {
-            leadershipTermId = candidateTermId;
-            final long nowMs = ctx.epochClock().time();
-            ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs, candidateId);
-            state(State.FOLLOWER_BALLOT, nowMs);
 
-            memberStatusPublisher.placeVote(
-                clusterMembers[candidateId].publication(),
-                candidateTermId,
-                candidateId,
-                thisMember.id(),
-                true);
-        }
-        else if (candidateTermId > (leadershipTermId + 1))
-        {
-            state(State.CANVASS, ctx.epochClock().time());
-        }
+        leadershipTermId = candidateTermId;
+        final long nowMs = ctx.epochClock().time();
+        ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs, candidateId);
+        state(State.FOLLOWER_BALLOT, nowMs);
+
+        memberStatusPublisher.placeVote(
+            clusterMembers[candidateId].publication(),
+            candidateTermId,
+            candidateId,
+            thisMember.id(),
+            true);
     }
 
     public void onVote(
@@ -328,7 +322,10 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public void onCommitPosition(final long logPosition, final long leadershipTermId, final int leaderMemberId)
     {
-        catchupToLeader(logPosition, leadershipTermId, leaderMemberId);
+        if (leadershipTermId > this.leadershipTermId)
+        {
+            catchupToLeader(logPosition, leadershipTermId, leaderMemberId);
+        }
     }
 
     State state()

@@ -465,17 +465,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
                         .errorHandler(errorHandler)
                         .epochClock(epochClock));
 
-                if (null == errorCounter)
-                {
-                    errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Cluster errors - service " + serviceId);
-                }
-
                 ownsAeronClient = true;
             }
 
             if (null == errorCounter)
             {
-                throw new IllegalStateException("error counter must be supplied");
+                errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Cluster errors - service " + serviceId);
             }
 
             if (null == countedErrorHandler)

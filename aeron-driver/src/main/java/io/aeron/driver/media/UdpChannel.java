@@ -23,6 +23,7 @@ import io.aeron.ChannelUri;
 import org.agrona.BitUtil;
 
 import java.net.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.driver.media.NetworkUtil.filterBySubnet;
 import static io.aeron.driver.media.NetworkUtil.findAddressOnInterface;
@@ -43,9 +44,12 @@ public final class UdpChannel
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
     };
 
+    private static final AtomicInteger UNIQUE_CANONICAL_FORM_VALUE = new AtomicInteger();
+
     private final boolean hasExplicitControl;
     private final boolean isMulticast;
     private final boolean hasTagId;
+    private final boolean hasNoDistinguishingCharacteristic;
     private final long tagId;
     private final int multicastTtl;
     private final InetSocketAddress remoteData;
@@ -63,6 +67,7 @@ public final class UdpChannel
         hasExplicitControl = context.hasExplicitControl;
         isMulticast = context.isMulticast;
         hasTagId = context.hasTagId;
+        hasNoDistinguishingCharacteristic = context.hasNoDistinguishingCharacteristic;
         tagId = context.tagId;
         multicastTtl = context.multicastTtl;
         remoteData = context.remoteData;
@@ -94,8 +99,10 @@ public final class UdpChannel
             final InetSocketAddress explicitControlAddress = getExplicitControlAddress(channelUri);
             final String tagIdStr = channelUri.get(CommonContext.TAG_ID_PARAM_NAME);
             final String controlMode = channelUri.get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
+            final boolean hasNoDistinguishingCharacteristic =
+                null == endpointAddress && null == explicitControlAddress && null == tagIdStr;
 
-            if (null == endpointAddress && null == explicitControlAddress && null == tagIdStr && null == controlMode)
+            if (hasNoDistinguishingCharacteristic && null == controlMode)
             {
                 throw new IllegalArgumentException(
                     "Aeron URIs for UDP must specify an endpoint address, control address, tag-id, or control-mode");
@@ -111,18 +118,18 @@ public final class UdpChannel
                 throw new UnknownHostException("could not resolve control address: " + explicitControlAddress);
             }
 
-            final Context context = new Context().uriStr(channelUriString).channelUri(channelUri);
+            final Context context = new Context()
+                .uriStr(channelUriString)
+                .channelUri(channelUri)
+                .hasNoDistinguishingCharacteristic(hasNoDistinguishingCharacteristic);
 
             if (null != tagIdStr)
             {
-                context
-                    .hasTagId(true)
-                    .tagId(Long.parseLong(tagIdStr));
+                context.hasTagId(true).tagId(Long.parseLong(tagIdStr));
             }
 
             if (null == endpointAddress)
             {
-                // just control specified, a multi-destination-cast Publication, so wildcard the endpoint
                 endpointAddress = new InetSocketAddress("0.0.0.0", 0);
             }
 
@@ -163,13 +170,16 @@ public final class UdpChannel
                     searchAddress.getAddress() :
                     resolveToAddressOfInterface(findInterface(searchAddress), searchAddress);
 
+                final String uniqueCanonicalFormSuffix = hasNoDistinguishingCharacteristic ?
+                    ("-" + Integer.toString(UNIQUE_CANONICAL_FORM_VALUE.getAndAdd(1))) : "";
+
                 context
                     .remoteControlAddress(endpointAddress)
                     .remoteDataAddress(endpointAddress)
                     .localControlAddress(localAddress)
                     .localDataAddress(localAddress)
                     .protocolFamily(getProtocolFamily(endpointAddress.getAddress()))
-                    .canonicalForm(canonicalise(localAddress, endpointAddress));
+                    .canonicalForm(canonicalise(localAddress, endpointAddress) + uniqueCanonicalFormSuffix);
             }
 
             return new UdpChannel(context);
@@ -366,6 +376,11 @@ public final class UdpChannel
         return protocolFamily;
     }
 
+    public long tagId()
+    {
+        return tagId;
+    }
+
     /**
      * Does the channel have an explicit control address as used with multi-destination-cast or not?
      *
@@ -376,9 +391,27 @@ public final class UdpChannel
         return hasExplicitControl;
     }
 
-    public boolean hasWildcardEndpoint()
+    public boolean hasTagId()
     {
-        return remoteData.getAddress().isAnyLocalAddress() && remoteData.getPort() == 0;
+        return hasTagId;
+    }
+
+    public boolean doesTagIdMatch(final UdpChannel udpChannel)
+    {
+        if (!hasTagId || !udpChannel.hasTagId() || tagId != udpChannel.tagId())
+        {
+            return false;
+        }
+
+        if (udpChannel.remoteData().getAddress().isAnyLocalAddress() &&
+            udpChannel.remoteData().getPort() == 0 &&
+            udpChannel.localData().getAddress().isAnyLocalAddress() &&
+            udpChannel.localData().getPort() == 0)
+        {
+            return true;
+        }
+
+        throw new IllegalArgumentException("matching tag-id has set endpoint or control address");
     }
 
     /**
@@ -577,6 +610,7 @@ public final class UdpChannel
         boolean hasExplicitControl = false;
         boolean isMulticast = false;
         boolean hasTagId = false;
+        boolean hasNoDistinguishingCharacteristic = false;
 
         Context uriStr(final String uri)
         {
@@ -659,6 +693,12 @@ public final class UdpChannel
         Context hasTagId(final boolean hasTagId)
         {
             this.hasTagId = hasTagId;
+            return this;
+        }
+
+        Context hasNoDistinguishingCharacteristic(final boolean hasNoDistinguishingCharacteristic)
+        {
+            this.hasNoDistinguishingCharacteristic = hasNoDistinguishingCharacteristic;
             return this;
         }
     }

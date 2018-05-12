@@ -64,6 +64,9 @@ public class DriverConductorTest
     private static final String CHANNEL_4002 = "aeron:udp?endpoint=localhost:4002";
     private static final String CHANNEL_4003 = "aeron:udp?endpoint=localhost:4003";
     private static final String CHANNEL_4004 = "aeron:udp?endpoint=localhost:4004";
+    private static final String CHANNEL_4000_TAG_ID_1 = "aeron:udp?endpoint=localhost:4000|tag-id=1001";
+    private static final String CHANNEL_TAG_ID_1 = "aeron:udp?tag-id=1001";
+    private static final String CHANNEL_SUB_CONTROL_MODE_MANUAL = "aeron:udp?control-mode=manual";
     private static final String CHANNEL_IPC = "aeron:ipc";
     private static final String INVALID_URI = "aeron:udp://";
     private static final String COUNTER_LABEL = "counter label";
@@ -1628,6 +1631,68 @@ public class DriverConductorTest
 
         verify(mockClientProxy, never()).onAvailableImage(
             anyLong(), eq(STREAM_ID_1), anyInt(), anyLong(), anyInt(), anyString(), anyString());
+    }
+
+    @Test
+    public void shouldUseExistingChannelEndpointOnAddPublciationWithSameTagId()
+    {
+        final long id1 = driverProxy.addPublication(CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
+        final long id2 = driverProxy.addPublication(CHANNEL_TAG_ID_1, STREAM_ID_2);
+
+        driverConductor.doWork();
+        verify(mockErrorHandler, never()).onError(any());
+
+        verify(senderProxy).registerSendChannelEndpoint(any());
+
+        driverProxy.removePublication(id1);
+        driverProxy.removePublication(id2);
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        verify(senderProxy).closeSendChannelEndpoint(any());
+    }
+
+    @Test
+    public void shouldUseExistingChannelEndpointOnAddSubscriptionWithSameTagId()
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_4000_TAG_ID_1);
+
+        final long id1 = driverProxy.addSubscription(CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
+        final long id2 = driverProxy.addSubscription(CHANNEL_TAG_ID_1, STREAM_ID_1);
+
+        driverConductor.doWork();
+        verify(mockErrorHandler, never()).onError(any());
+
+        verify(receiverProxy).registerReceiveChannelEndpoint(any());
+
+        driverProxy.removeSubscription(id1);
+        driverProxy.removeSubscription(id2);
+
+        driverConductor.doWork();
+
+        verify(receiverProxy).closeReceiveChannelEndpoint(any());
+    }
+
+    @Test
+    public void shouldUseUniqueChannelEndpointOnAddSubscriptionWithNoDistinguishingCharacteristics()
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_SUB_CONTROL_MODE_MANUAL);
+
+        final long id1 = driverProxy.addSubscription(CHANNEL_SUB_CONTROL_MODE_MANUAL, STREAM_ID_1);
+        final long id2 = driverProxy.addSubscription(CHANNEL_SUB_CONTROL_MODE_MANUAL, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        verify(receiverProxy, times(2)).registerReceiveChannelEndpoint(any());
+
+        driverProxy.removeSubscription(id1);
+        driverProxy.removeSubscription(id2);
+
+        driverConductor.doWork();
+
+        verify(receiverProxy, times(2)).closeReceiveChannelEndpoint(any());
+
+        verify(mockErrorHandler, never()).onError(any());
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)

@@ -30,6 +30,7 @@ public class MultiRcvDestination implements AutoCloseable
     private final long destinationAddressTimeoutNs;
     private final NanoClock nanoClock;
     private ReceiveDestinationUdpTransport[] transports = EMPTY_TRANSPORTS;
+    private int numDestinations = 0;
 
     public MultiRcvDestination(final NanoClock nanoClock, final long timeoutNs)
     {
@@ -60,6 +61,7 @@ public class MultiRcvDestination implements AutoCloseable
 
         transports = ArrayUtil.ensureCapacity(transports, index + 1);
         transports[index] = transport;
+        numDestinations++;
 
         return index;
     }
@@ -67,6 +69,12 @@ public class MultiRcvDestination implements AutoCloseable
     public void removeDestination(final int transportIndex)
     {
         transports[transportIndex] = null;
+        numDestinations--;
+    }
+
+    public boolean hasDestinations()
+    {
+        return numDestinations > 0;
     }
 
     public ReceiveDestinationUdpTransport transport(final int transportIndex)

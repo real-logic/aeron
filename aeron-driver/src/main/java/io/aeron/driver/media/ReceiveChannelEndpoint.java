@@ -296,7 +296,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public UdpChannel udpChannel(final int transportIndex)
     {
-        if (null != multiRcvDestination)
+        if (null != multiRcvDestination && multiRcvDestination.hasDestinations())
         {
             return multiRcvDestination.transport(transportIndex).udpChannel();
         }

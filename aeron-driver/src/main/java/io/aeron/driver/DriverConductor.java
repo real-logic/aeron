@@ -46,7 +46,8 @@ import java.util.function.Consumer;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.PublicationParams.*;
-import static io.aeron.driver.status.SystemCounterDescriptor.*;
+import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
+import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
@@ -1122,7 +1123,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     private SendChannelEndpoint getOrCreateSendChannelEndpoint(final UdpChannel udpChannel)
     {
-        SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
+        SendChannelEndpoint channelEndpoint = findExistingSendChannelEndpoint(udpChannel);
         if (null == channelEndpoint)
         {
             channelEndpoint = context.sendChannelEndpointSupplier().newInstance(
@@ -1137,11 +1138,28 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         return channelEndpoint;
     }
 
+    private SendChannelEndpoint findExistingSendChannelEndpoint(final UdpChannel udpChannel)
+    {
+        if (udpChannel.hasTagId())
+        {
+            for (final SendChannelEndpoint endpoint : sendChannelEndpointByChannelMap.values())
+            {
+                final UdpChannel endpointUdpChannel = endpoint.udpChannel();
+
+                if (endpointUdpChannel.doesTagIdMatch(udpChannel))
+                {
+                    return endpoint;
+                }
+            }
+        }
+
+        return sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
+    }
+
     private void checkForClashingSubscription(
         final SubscriptionParams params, final UdpChannel udpChannel, final int streamId)
     {
-        final ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(
-            udpChannel.canonicalForm());
+        final ReceiveChannelEndpoint channelEndpoint = findExistingReceiveChannelEndpoint(udpChannel);
         if (null != channelEndpoint)
         {
             final ArrayList<SubscriptionLink> existingLinks = subscriptionLinks;
@@ -1260,7 +1278,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     private ReceiveChannelEndpoint getOrCreateReceiveChannelEndpoint(final UdpChannel udpChannel)
     {
-        ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
+        ReceiveChannelEndpoint channelEndpoint = findExistingReceiveChannelEndpoint(udpChannel);
         if (null == channelEndpoint)
         {
             channelEndpoint = context.receiveChannelEndpointSupplier().newInstance(
@@ -1274,6 +1292,24 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         }
 
         return channelEndpoint;
+    }
+
+    private ReceiveChannelEndpoint findExistingReceiveChannelEndpoint(final UdpChannel udpChannel)
+    {
+        if (udpChannel.hasTagId())
+        {
+            for (final ReceiveChannelEndpoint endpoint : receiveChannelEndpointByChannelMap.values())
+            {
+                final UdpChannel endpointUdpChannel = endpoint.udpChannel();
+
+                if (endpointUdpChannel.doesTagIdMatch(udpChannel))
+                {
+                    return endpoint;
+                }
+            }
+        }
+
+        return receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
     }
 
     private AeronClient getOrAddClient(final long clientId)

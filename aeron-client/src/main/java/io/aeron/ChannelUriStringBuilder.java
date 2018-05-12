@@ -48,6 +48,7 @@ public class ChannelUriStringBuilder
     private Integer termOffset;
     private Integer sessionId;
     private Integer linger;
+    private Integer tagId;
 
     /**
      * Clear out all the values thus setting back to the initial state.
@@ -70,6 +71,7 @@ public class ChannelUriStringBuilder
         termId = null;
         termOffset = null;
         sessionId = null;
+        tagId = null;
 
         return this;
     }
@@ -541,6 +543,30 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set the tag id for a publication or subscription.
+     *
+     * @param tagId for the publication or subscription.
+     * @return this for a fluent API.
+     * @see CommonContext#TAG_ID_PARAM_NAME
+     */
+    public ChannelUriStringBuilder tagId(final Integer tagId)
+    {
+        this.tagId = tagId;
+        return this;
+    }
+
+    /**
+     * Get the tag id for a publication or subscription.
+     *
+     * @return the tag id for a publication or subscription.
+     * @see CommonContext#TAG_ID_PARAM_NAME
+     */
+    public Integer tagId()
+    {
+        return sessionId;
+    }
+
+    /**
      * Build a channel URI String for the given parameters.
      *
      * @return a channel URI String for the given parameters.
@@ -555,6 +581,11 @@ public class ChannelUriStringBuilder
         }
 
         sb.append(ChannelUri.AERON_SCHEME).append(':').append(media).append('?');
+
+        if (null != tagId)
+        {
+            sb.append(TAG_ID_PARAM_NAME).append('=').append(tagId.intValue()).append('|');
+        }
 
         if (null != endpoint)
         {

@@ -386,16 +386,6 @@ public class ConsensusModule implements AutoCloseable
         public static final int ELECTION_STATE_TYPE_ID = Election.ELECTION_STATE_TYPE_ID;
 
         /**
-         * Directory to use for the aeron cluster.
-         */
-        public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
-
-        /**
-         * Directory to use for the aeron cluster.
-         */
-        public static final String CLUSTER_DIR_DEFAULT = "aeron-cluster";
-
-        /**
          * The number of services in this cluster instance.
          */
         public static final String SERVICE_COUNT_PROP_NAME = "aeron.cluster.service.count";
@@ -604,16 +594,6 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The value {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
-         *
-         * @return {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
-         */
-        public static String clusterDirName()
-        {
-            return System.getProperty(CLUSTER_DIR_PROP_NAME, CLUSTER_DIR_DEFAULT);
-        }
-
-        /**
          * The value {@link #SERVICE_COUNT_DEFAULT} or system property
          * {@link #SERVICE_COUNT_PROP_NAME} if set.
          *
@@ -794,7 +774,7 @@ public class ConsensusModule implements AutoCloseable
         private Aeron aeron;
 
         private boolean deleteDirOnStart = false;
-        private String clusterDirectoryName = Configuration.clusterDirName();
+        private String clusterDirectoryName = ClusteredServiceContainer.Configuration.clusterDirName();
         private File clusterDir;
         private RecordingLog recordingLog;
         private ClusterMarkFile markFile;
@@ -1089,7 +1069,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param clusterDirectoryName to use.
          * @return this for a fluent API.
-         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public Context clusterDirectoryName(final String clusterDirectoryName)
         {
@@ -1101,7 +1081,7 @@ public class ConsensusModule implements AutoCloseable
          * The directory name to use for the consensus module directory.
          *
          * @return directory name for the consensus module directory.
-         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public String clusterDirectoryName()
         {
@@ -1113,7 +1093,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param clusterDir to use.
          * @return this for a fluent API.
-         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public Context clusterDir(final File clusterDir)
         {
@@ -1125,7 +1105,7 @@ public class ConsensusModule implements AutoCloseable
          * The directory used for for the consensus module directory.
          *
          * @return directory for for the consensus module directory.
-         * @see Configuration#CLUSTER_DIR_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public File clusterDir()
         {

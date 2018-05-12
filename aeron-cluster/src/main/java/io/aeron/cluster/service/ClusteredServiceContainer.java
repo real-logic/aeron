@@ -18,7 +18,6 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import org.agrona.CloseHelper;
@@ -211,14 +210,14 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final int SNAPSHOT_STREAM_ID_DEFAULT = 7;
 
         /**
-         * Directory to use for the clustered service.
+         * Directory to use for the aeron cluster.
          */
-        public static final String CLUSTERED_SERVICE_DIR_PROP_NAME = "aeron.cluster.service.dir";
+        public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
 
         /**
-         * Directory to use for the cluster container.
+         * Directory to use for the aeron cluster.
          */
-        public static final String CLUSTERED_SERVICE_DIR_DEFAULT = ConsensusModule.Configuration.clusterDirName();
+        public static final String CLUSTER_DIR_DEFAULT = "aeron-cluster";
 
         /**
          * Size in bytes of the error buffer for the cluster container.
@@ -337,15 +336,13 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * The value {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property
-         * {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
+         * The value {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
          *
-         * @return {@link #CLUSTERED_SERVICE_DIR_DEFAULT} or system property
-         * {@link #CLUSTERED_SERVICE_DIR_PROP_NAME} if set.
+         * @return {@link #CLUSTER_DIR_DEFAULT} or system property {@link #CLUSTER_DIR_PROP_NAME} if set.
          */
-        public static String clusteredServiceDirName()
+        public static String clusterDirName()
         {
-            return System.getProperty(CLUSTERED_SERVICE_DIR_PROP_NAME, CLUSTERED_SERVICE_DIR_DEFAULT);
+            return System.getProperty(CLUSTER_DIR_PROP_NAME, CLUSTER_DIR_DEFAULT);
         }
 
         /**
@@ -380,8 +377,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
         private AeronArchive.Context archiveContext;
-        private String clusteredServiceDirectoryName = Configuration.clusteredServiceDirName();
-        private File clusteredServiceDir;
+        private String clusterDirectoryName = Configuration.clusterDirName();
+        private File clusterDir;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private boolean ownsAeronClient;
@@ -426,21 +423,21 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 epochClock = new SystemEpochClock();
             }
 
-            if (null == clusteredServiceDir)
+            if (null == clusterDir)
             {
-                clusteredServiceDir = new File(clusteredServiceDirectoryName);
+                clusterDir = new File(clusterDirectoryName);
             }
 
-            if (!clusteredServiceDir.exists() && !clusteredServiceDir.mkdirs())
+            if (!clusterDir.exists() && !clusterDir.mkdirs())
             {
                 throw new IllegalStateException(
-                    "Failed to create clustered service dir: " + clusteredServiceDir.getAbsolutePath());
+                    "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
             if (null == markFile)
             {
                 markFile = new ClusterMarkFile(
-                    new File(clusteredServiceDir, ClusterMarkFile.markFilenameForService(serviceId)),
+                    new File(clusterDir, ClusterMarkFile.markFilenameForService(serviceId)),
                     ClusterComponentType.CONTAINER,
                     errorBufferLength,
                     epochClock,
@@ -964,51 +961,51 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the directory name to use for the clustered service container.
+         * Set the directory name to use for the consensus module directory.
          *
-         * @param clusteredServiceDirectoryName to use.
+         * @param clusterDirectoryName to use.
          * @return this for a fluent API.
-         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
          */
-        public Context clusteredServiceDirectoryName(final String clusteredServiceDirectoryName)
+        public Context clusterDirectoryName(final String clusterDirectoryName)
         {
-            this.clusteredServiceDirectoryName = clusteredServiceDirectoryName;
+            this.clusterDirectoryName = clusterDirectoryName;
             return this;
         }
 
         /**
-         * The directory name used for the clustered service container.
+         * The directory name to use for the cluster directory.
          *
-         * @return directory for the cluster container.
-         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
+         * @return directory name for the cluster directory.
+         * @see Configuration#CLUSTER_DIR_PROP_NAME
          */
-        public String clusteredServiceDirectoryName()
+        public String clusterDirectoryName()
         {
-            return clusteredServiceDirectoryName;
+            return clusterDirectoryName;
         }
 
         /**
-         * Set the directory to use for the clustered service container.
+         * Set the directory to use for the cluster directory.
          *
-         * @param dir to use.
+         * @param clusterDir to use.
          * @return this for a fluent API.
-         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
-        public Context clusteredServiceDir(final File dir)
+        public Context clusterDir(final File clusterDir)
         {
-            this.clusteredServiceDir = dir;
+            this.clusterDir = clusterDir;
             return this;
         }
 
         /**
-         * The directory used for the clustered service container.
+         * The directory used for for the cluster directory.
          *
-         * @return directory for the cluster container.
-         * @see Configuration#CLUSTERED_SERVICE_DIR_PROP_NAME
+         * @return directory for for the cluster directory.
+         * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
-        public File clusteredServiceDir()
+        public File clusterDir()
         {
-            return clusteredServiceDir;
+            return clusterDir;
         }
 
         /**
@@ -1130,9 +1127,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public void deleteDirectory()
         {
-            if (null != clusteredServiceDir)
+            if (null != clusterDir)
             {
-                IoUtil.delete(clusteredServiceDir, false);
+                IoUtil.delete(clusterDir, false);
             }
         }
 

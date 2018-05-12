@@ -119,7 +119,7 @@ public class AppointedLeaderClusterTest
                 new ClusteredServiceContainer.Context()
                     .aeronDirectoryName(baseDirName)
                     .archiveContext(archiveCtx.clone())
-                    .clusteredServiceDir(new File(baseDirName, "service"))
+                    .clusterDir(new File(baseDirName, "service"))
                     .clusteredService(echoServices[i])
                     .errorHandler(Throwable::printStackTrace));
         }

@@ -51,9 +51,9 @@ import static java.util.stream.Collectors.toList;
 public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 {
     public static final String DRIVER_DIRECTORY = "driver";
-    public static final String CONSENSUS_MODULE_DIRECTORY = ConsensusModule.Configuration.clusterDirName();
+    public static final String CONSENSUS_MODULE_DIRECTORY = ClusteredServiceContainer.Configuration.clusterDirName();
     public static final String ARCHIVE_DIRECTORY = Archive.Configuration.archiveDirName();
-    public static final String SERVICE_DIRECTORY = ClusteredServiceContainer.Configuration.clusteredServiceDirName();
+    public static final String SERVICE_DIRECTORY = ClusteredServiceContainer.Configuration.clusterDirName();
     private static final String LOG_CHANNEL =
         "aeron:udp?term-length=64k|control-mode=manual|control=localhost:55550";
 
@@ -175,7 +175,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         clusteredServiceContainer = ClusteredServiceContainer.launch(
             serviceContext
                 .aeronDirectoryName(mediaDriverPath)
-                .clusteredServiceDir(serviceDir)
+                .clusterDir(serviceDir)
                 .idleStrategySupplier(() -> new SleepingMillisIdleStrategy(1))
                 .clusteredService(this)
                 .terminationHook(() -> {})
@@ -237,11 +237,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
     public void deleteDirectories()
     {
-        if (null != clusteredServiceContainer)
-        {
-            clusteredServiceContainer.context().deleteDirectory();
-        }
-
         if (null != clusteredMediaDriver)
         {
             clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();

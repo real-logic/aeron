@@ -382,6 +382,11 @@ public class PublicationImage
         controlAddresses[transportIndex] = null;
     }
 
+    void addControlAddressIfUnknown(final int transportIndex, final InetSocketAddress remoteAddress)
+    {
+        updateControlAddress(transportIndex, remoteAddress, nanoClock.nanoTime());
+    }
+
     private void state(final State state)
     {
         timeOfLastStateChangeNs = cachedNanoClock.nanoTime();

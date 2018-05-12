@@ -322,6 +322,10 @@ public class DataPacketDispatcher
                         header.mtuLength(),
                         header.ttl());
                 }
+                else if (null != sessionInterest.image)
+                {
+                    sessionInterest.image.addControlAddressIfUnknown(transportIndex, srcAddress);
+                }
             }
             else if (streamInterest.isForAllSessions || streamInterest.subscribedSessionIds.contains(sessionId))
             {

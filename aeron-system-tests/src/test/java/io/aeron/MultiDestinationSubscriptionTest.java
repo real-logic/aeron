@@ -15,20 +15,27 @@
  */
 package io.aeron;
 
+import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -36,6 +43,9 @@ import static org.mockito.Mockito.*;
 
 public class MultiDestinationSubscriptionTest
 {
+    private static final String UNICAST_ENDPOINT_A = "localhost:54325";
+    private static final String UNICAST_ENDPOINT_B = "localhost:54326";
+
     private static final String PUB_UNICAST_URI = "aeron:udp?endpoint=localhost:54325";
     private static final String PUB_MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
     private static final String PUB_MDC_URI = "aeron:udp?control=localhost:54325|control-mode=dynamic";
@@ -49,13 +59,18 @@ public class MultiDestinationSubscriptionTest
     private static final int NUM_MESSAGES_PER_TERM = 64;
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
+    private static final String ROOT_DIR =
+        IoUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
 
-    private final MediaDriver.Context driverContext = new MediaDriver.Context();
+    private final MediaDriver.Context driverContextA = new MediaDriver.Context();
+    private final MediaDriver.Context driverContextB = new MediaDriver.Context();
 
     private Aeron clientA;
     private Aeron clientB;
-    private MediaDriver driver;
-    private Publication publication;
+    private MediaDriver driverA;
+    private MediaDriver driverB;
+    private Publication publicationA;
+    private Publication publicationB;
     private Subscription subscription;
 
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
@@ -63,28 +78,41 @@ public class MultiDestinationSubscriptionTest
 
     private void launch()
     {
+        final String baseDirA = ROOT_DIR + "A";
+        final String baseDirB = ROOT_DIR + "B";
+
         buffer.putInt(0, 1);
 
-        driverContext
+        driverContextA
             .errorHandler(Throwable::printStackTrace)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
+            .aeronDirectoryName(baseDirA)
             .threadingMode(ThreadingMode.SHARED);
 
-        driver = MediaDriver.launch(driverContext);
-        clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContext.aeronDirectoryName()));
-        clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContext.aeronDirectoryName()));
+        driverContextB
+            .errorHandler(Throwable::printStackTrace)
+            .publicationTermBufferLength(TERM_BUFFER_LENGTH)
+            .aeronDirectoryName(baseDirB)
+            .threadingMode(ThreadingMode.SHARED);
+
+        driverA = MediaDriver.launch(driverContextA);
+        driverB = MediaDriver.launch(driverContextB);
+        clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextA.aeronDirectoryName()));
+        clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextB.aeronDirectoryName()));
     }
 
     @After
     public void closeEverything()
     {
-        CloseHelper.close(publication);
+        CloseHelper.close(publicationA);
+        CloseHelper.close(publicationB);
         CloseHelper.close(subscription);
         CloseHelper.close(clientB);
         CloseHelper.close(clientA);
-        CloseHelper.close(driver);
+        CloseHelper.close(driverA);
+        CloseHelper.close(driverB);
 
-        driverContext.deleteAeronDirectory();
+        IoUtil.delete(new File(ROOT_DIR), true);
     }
 
     @Test(timeout = 10_000)
@@ -92,7 +120,7 @@ public class MultiDestinationSubscriptionTest
     {
         launch();
 
-        publication = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
 
         subscription.addDestination(PUB_UNICAST_URI);
@@ -109,7 +137,7 @@ public class MultiDestinationSubscriptionTest
     {
         launch();
 
-        publication = clientA.addPublication(PUB_MULTICAST_URI, STREAM_ID);
+        publicationA = clientA.addPublication(PUB_MULTICAST_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
 
         subscription.addDestination(PUB_MULTICAST_URI);
@@ -126,7 +154,7 @@ public class MultiDestinationSubscriptionTest
     {
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
+        publicationA = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
 
         subscription.addDestination(SUB_MDC_DESTINATION_URI);
@@ -145,7 +173,7 @@ public class MultiDestinationSubscriptionTest
 
         launch();
 
-        publication = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
 
         subscription.addDestination(PUB_UNICAST_URI);
@@ -158,7 +186,7 @@ public class MultiDestinationSubscriptionTest
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
             {
                 SystemTest.checkInterruptedStatus();
                 Thread.yield();
@@ -178,7 +206,7 @@ public class MultiDestinationSubscriptionTest
 
         launch();
 
-        publication = clientA.addPublication(PUB_MULTICAST_URI, STREAM_ID);
+        publicationA = clientA.addPublication(PUB_MULTICAST_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
 
         subscription.addDestination(PUB_MULTICAST_URI);
@@ -191,7 +219,7 @@ public class MultiDestinationSubscriptionTest
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
             {
                 SystemTest.checkInterruptedStatus();
                 Thread.yield();
@@ -211,7 +239,7 @@ public class MultiDestinationSubscriptionTest
 
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
+        publicationA = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
 
         subscription.addDestination(SUB_MDC_DESTINATION_URI);
@@ -224,7 +252,7 @@ public class MultiDestinationSubscriptionTest
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
             {
                 SystemTest.checkInterruptedStatus();
                 Thread.yield();
@@ -234,6 +262,93 @@ public class MultiDestinationSubscriptionTest
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
         }
 
+        verifyFragments(fragmentHandler, numMessagesToSend);
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldSendToMultipleDestinationSubscriptionWithSameStream()
+    {
+        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final int numMessagesToSendForA = numMessagesToSend / 2;
+        final int numMessagesToSendForB = numMessagesToSend / 2;
+
+        launch();
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
+
+        builder
+            .clear()
+            .media(CommonContext.UDP_MEDIA)
+            .endpoint(UNICAST_ENDPOINT_A);
+
+        final String publicationChannelA = builder.build();
+
+        publicationA = clientA.addPublication(publicationChannelA, STREAM_ID);
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+
+        subscription.addDestination(publicationChannelA);
+
+        while (subscription.hasNoImages())
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        for (int i = 0; i < numMessagesToSendForA; i++)
+        {
+            while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            final MutableInteger fragmentsRead = new MutableInteger();
+            pollForFragment(subscription, fragmentHandler, fragmentsRead);
+        }
+
+        final long position = publicationA.position();
+        final int initialTermId = publicationA.initialTermId();
+        final int positionBitsToShift = Long.numberOfTrailingZeros(publicationA.termBufferLength());
+        final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
+        final int termOffset = (int)(position & (publicationA.termBufferLength() - 1));
+
+        builder
+            .clear()
+            .media(CommonContext.UDP_MEDIA)
+            .sessionId(publicationA.sessionId())
+            .initialTermId(initialTermId)
+            .termId(termId)
+            .termOffset(termOffset)
+            .mtu(Configuration.MTU_LENGTH_DEFAULT)
+            .termLength(publicationA.termBufferLength())
+            .endpoint(UNICAST_ENDPOINT_B);
+
+        final String publicationChannelB = builder.build();
+
+        publicationB = clientB.addExclusivePublication(publicationChannelB, STREAM_ID);
+
+        builder
+            .clear()
+            .media(CommonContext.UDP_MEDIA)
+            .endpoint(UNICAST_ENDPOINT_B);
+
+        final String destinationChannel = builder.build();
+
+        subscription.addDestination(destinationChannel);
+
+        for (int i = 0; i < numMessagesToSendForB; i++)
+        {
+            while (publicationB.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            final MutableInteger fragmentsRead = new MutableInteger();
+            pollForFragment(subscription, fragmentHandler, fragmentsRead);
+        }
+
+        assertThat(subscription.imageCount(), is(1));
         verifyFragments(fragmentHandler, numMessagesToSend);
     }
 

@@ -48,7 +48,7 @@ public class ChannelUriStringBuilder
     private Integer termOffset;
     private Integer sessionId;
     private Integer linger;
-    private Integer tagId;
+    private Long tagId;
 
     /**
      * Clear out all the values thus setting back to the initial state.
@@ -549,7 +549,7 @@ public class ChannelUriStringBuilder
      * @return this for a fluent API.
      * @see CommonContext#TAG_ID_PARAM_NAME
      */
-    public ChannelUriStringBuilder tagId(final Integer tagId)
+    public ChannelUriStringBuilder tagId(final Long tagId)
     {
         this.tagId = tagId;
         return this;
@@ -561,9 +561,9 @@ public class ChannelUriStringBuilder
      * @return the tag id for a publication or subscription.
      * @see CommonContext#TAG_ID_PARAM_NAME
      */
-    public Integer tagId()
+    public Long tagId()
     {
-        return sessionId;
+        return tagId;
     }
 
     /**
@@ -584,7 +584,7 @@ public class ChannelUriStringBuilder
 
         if (null != tagId)
         {
-            sb.append(TAG_ID_PARAM_NAME).append('=').append(tagId.intValue()).append('|');
+            sb.append(TAG_ID_PARAM_NAME).append('=').append(tagId.longValue()).append('|');
         }
 
         if (null != endpoint)

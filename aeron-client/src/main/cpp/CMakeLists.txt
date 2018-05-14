@@ -126,6 +126,11 @@ target_include_directories(aeron_client
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+if (NOT WIN32)
+	set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+	set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+endif()
+
 target_link_libraries(aeron_client
     INTERFACE ${CMAKE_THREAD_LIBS_INIT}
 )

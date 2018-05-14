@@ -43,6 +43,8 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
+set(AERON_THIRDPARTY_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/thirdparty")
+
 ##########################################################
 # gmock usage
 
@@ -50,6 +52,7 @@ ExternalProject_Add(
     gmock
     URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.8.0.zip
     URL_MD5 adfafc8512ab65fd3cf7955ef0100ff5
+    PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/gmock"
     INSTALL_COMMAND ""
 )
 
@@ -70,6 +73,7 @@ ExternalProject_Add(
     hdr_histogram
     URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c.zip
     URL_MD5 8d1d6c6df1ee8342c180529a89568081
+    PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram"
     INSTALL_COMMAND ""
 )
 
@@ -90,6 +94,7 @@ ExternalProject_Add(
     URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-1.4.0.tar.gz
     URL_MD5 ccfaf2cd93ae20191b94f730b945423e
     CMAKE_ARGS -DBENCHMARK_ENABLE_GTEST_TESTS=OFF;-DBENCHMARK_ENABLE_ASSEMBLY_TESTS=OFF
+    PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/google_benchmark"
     INSTALL_COMMAND ""
 )
 
@@ -102,6 +107,8 @@ set(
     GOOGLE_BENCHMARK_LIBS
     ${GOOGLE_BENCHMARK_BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}benchmark${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
+
+unset(AERON_THIRDPARTY_BINARY_DIR)
 
 ##########################################################
 # Platform flags, etc.

@@ -1076,7 +1076,7 @@ public class Aeron implements AutoCloseable
         }
         catch (final InterruptedException ignore)
         {
-            Thread.interrupted();
+            Thread.currentThread().interrupt();
         }
     }
 }

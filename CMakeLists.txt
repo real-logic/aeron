@@ -19,7 +19,7 @@ cmake_policy(VERSION 3.0.2)
 file(STRINGS version.txt VERSION_TXT LIMIT_COUNT 1 REGEX "^[0-9]+(\\.[0-9]+)+")
 string(REGEX REPLACE "^([0-9]+(\\.[0-9]+)+).*$" "\\1" VERSION_FROM_FILE "${VERSION_TXT}")
 
-if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
     message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory)"
         "and run CMake from there. You may need to remove CMakeCache.txt.")
 endif()
@@ -43,6 +43,8 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
+set(AERON_THIRDPARTY_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/thirdparty")
+
 ##########################################################
 # gmock usage
 
@@ -50,6 +52,8 @@ ExternalProject_Add(
     gmock
     URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.8.0.zip
     URL_MD5 adfafc8512ab65fd3cf7955ef0100ff5
+    PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/gmock"
+    BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/gmock/src/gmock-build/googlemock/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX};${AERON_THIRDPARTY_BINARY_DIR}/gmock/src/gmock-build/googlemock/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock_main${CMAKE_STATIC_LIBRARY_SUFFIX}"
     INSTALL_COMMAND ""
 )
 
@@ -70,6 +74,8 @@ ExternalProject_Add(
     hdr_histogram
     URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c.zip
     URL_MD5 8d1d6c6df1ee8342c180529a89568081
+    PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram"
+    BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram/src/hdr_histogram-build/src/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}"
     INSTALL_COMMAND ""
 )
 
@@ -89,7 +95,9 @@ ExternalProject_Add(
     google_benchmark
     URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-1.4.0.tar.gz
     URL_MD5 ccfaf2cd93ae20191b94f730b945423e
-    CMAKE_ARGS -DBENCHMARK_ENABLE_GTEST_TESTS=OFF
+    CMAKE_ARGS -DBENCHMARK_ENABLE_GTEST_TESTS=OFF;-DBENCHMARK_ENABLE_ASSEMBLY_TESTS=OFF
+    PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/google_benchmark"
+    BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/google_benchmark/src/google_benchmark-build/src/${CMAKE_STATIC_LIBRARY_PREFIX}benchmark${CMAKE_STATIC_LIBRARY_SUFFIX}"
     INSTALL_COMMAND ""
 )
 
@@ -102,6 +110,8 @@ set(
     GOOGLE_BENCHMARK_LIBS
     ${GOOGLE_BENCHMARK_BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}benchmark${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
+
+unset(AERON_THIRDPARTY_BINARY_DIR)
 
 ##########################################################
 # Platform flags, etc.
@@ -185,13 +195,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/binaries")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 
-set(AERON_SAMPLES_PATH "${CMAKE_SOURCE_DIR}/aeron-samples/src/main/cpp")
+set(AERON_SAMPLES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-samples/src/main/cpp")
 
-set(AERON_CLIENT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
-set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
+set(AERON_CLIENT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/main/cpp")
+set(AERON_CLIENT_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/cpp")
 
-set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/c")
-set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/c")
+set(AERON_DRIVER_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-driver/src/main/c")
+set(AERON_DRIVER_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-driver/src/test/c")
 
 # gmock - includes gtest
 include_directories(${GMOCK_SOURCE_DIR}/googletest/include)

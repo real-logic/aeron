@@ -15,9 +15,6 @@
 #
 
 if(BUILD_TESTING)
-    include_directories(${AERON_CLIENT_SOURCE_PATH})
-    include_directories(${AERON_CLIENT_TEST_PATH})
-
     set(TEST_HEADERS
         ClientConductorFixture.h
         util/TestUtils.h
@@ -28,6 +25,9 @@ if(BUILD_TESTING)
         concurrent/MockAtomicBuffer.cpp)
 
     add_library(aeron_client_test STATIC ${TEST_SOURCE} ${TEST_HEADERS})
+    target_include_directories(aeron_client_test
+        PUBLIC ${AERON_CLIENT_TEST_PATH}
+    )
     target_link_libraries(aeron_client_test aeron_client)
     add_dependencies(aeron_client_test gmock)
 

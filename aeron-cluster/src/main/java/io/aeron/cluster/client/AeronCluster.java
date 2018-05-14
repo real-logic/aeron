@@ -20,6 +20,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
 
 import java.util.concurrent.TimeUnit;
@@ -667,6 +668,7 @@ public final class AeronCluster implements AutoCloseable
         private CredentialsSupplier credentialsSupplier;
         private boolean ownsAeronClient = false;
         private boolean isIngressExclusive = true;
+        private ErrorHandler errorHandler = Aeron.DEFAULT_ERROR_HANDLER;
 
         /**
          * Perform a shallow copy of the object.
@@ -689,7 +691,8 @@ public final class AeronCluster implements AutoCloseable
         {
             if (null == aeron)
             {
-                aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
+                aeron = Aeron.connect(
+                        new Aeron.Context().aeronDirectoryName(aeronDirectoryName).errorHandler(errorHandler));
                 ownsAeronClient = true;
             }
 
@@ -1014,6 +1017,28 @@ public final class AeronCluster implements AutoCloseable
         public Context credentialsSupplier(final CredentialsSupplier credentialsSupplier)
         {
             this.credentialsSupplier = credentialsSupplier;
+            return this;
+        }
+
+        /**
+         * Get the {@link ErrorHandler} to be used for handling any exceptions.
+         *
+         * @return The {@link ErrorHandler} to be used for handling any exceptions.
+         */
+        public ErrorHandler errorHandler()
+        {
+            return errorHandler;
+        }
+
+        /**
+         * Set the {@link ErrorHandler} to be used for handling any exceptions.
+         *
+         * @param errorHandler Method to handle objects of type Throwable.
+         * @return this for fluent API.
+         */
+        public Context errorHandler(final ErrorHandler errorHandler)
+        {
+            this.errorHandler = errorHandler;
             return this;
         }
 

@@ -50,11 +50,12 @@ public:
     {
         m_thread = std::thread([&]()
         {
-          std::string name("Aeron Agent");
+            std::string name("aeron-agent");
+
 #ifdef  __APPLE__
-          pthread_setname_np(name.c_str());
+            pthread_setname_np(name.c_str());
 #else
-          pthread_setname_np(pthread_self(), name.c_str());
+            pthread_setname_np(pthread_self(), name.c_str());
 #endif
 
             run();

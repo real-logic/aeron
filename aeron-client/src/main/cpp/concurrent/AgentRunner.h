@@ -43,7 +43,7 @@ public:
     }
 
     AgentRunner(
-        Agent& agent, IdleStrategy& idleStrategy, logbuffer::exception_handler_t& exceptionHandler, const std::string name) :
+        Agent& agent, IdleStrategy& idleStrategy, logbuffer::exception_handler_t& exceptionHandler, const std::string& name) :
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
@@ -71,7 +71,7 @@ public:
     {
         m_thread = std::thread([&]()
         {
-#ifdef  __APPLE__
+#if defined(Darwin)
             pthread_setname_np(m_name.c_str());
 #else
             pthread_setname_np(pthread_self(), m_name.c_str());

@@ -194,6 +194,12 @@ static void *agent_main(void *arg)
 {
     aeron_agent_runner_t *runner = (aeron_agent_runner_t *)arg;
 
+#if defined(Darwin)
+    pthread_setname_np(runner->role_name);
+#else
+    pthread_setname_np(pthread_self(), runner->role_name);
+#endif
+
     if (NULL != runner->on_start)
     {
         runner->on_start(runner->on_start_state, runner->role_name);

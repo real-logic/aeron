@@ -37,8 +37,29 @@ public:
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
-        m_running(true)
+        m_running(true),
+        m_name("aeron-agent")
     {
+    }
+
+    AgentRunner(
+        Agent& agent, IdleStrategy& idleStrategy, logbuffer::exception_handler_t& exceptionHandler, const std::string name) :
+        m_agent(agent),
+        m_idleStrategy(idleStrategy),
+        m_exceptionHandler(exceptionHandler),
+        m_running(true),
+        m_name(name)
+    {
+    }
+
+    /**
+     * Name given to the thread running the agent.
+     *
+     * @return the name given to the thread running the agent.
+     */
+    inline const std::string& name() const
+    {
+        return m_name;
     }
 
     /**
@@ -50,12 +71,10 @@ public:
     {
         m_thread = std::thread([&]()
         {
-            std::string name("aeron-agent");
-
 #ifdef  __APPLE__
-            pthread_setname_np(name.c_str());
+            pthread_setname_np(m_name.c_str());
 #else
-            pthread_setname_np(pthread_self(), name.c_str());
+            pthread_setname_np(pthread_self(), m_name.c_str());
 #endif
 
             run();
@@ -112,6 +131,7 @@ private:
     logbuffer::exception_handler_t& m_exceptionHandler;
     std::atomic<bool> m_running;
     std::thread m_thread;
+    std::string m_name;
 };
 
 }}

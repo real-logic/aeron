@@ -23,6 +23,8 @@ static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_16(16);
 static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_100(100);
 
+static const char* AGENT_NAME = "client-conductor";
+
 static long long currentTimeMillis()
 {
     using namespace std::chrono;
@@ -62,7 +64,7 @@ Aeron::Aeron(Context &context) :
         context.m_resourceLingerTimeout,
         CncFileDescriptor::clientLivenessTimeout(m_cncBuffer)),
     m_idleStrategy(IDLE_SLEEP_MS),
-    m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler),
+    m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler, AGENT_NAME),
     m_conductorInvoker(m_conductor, m_context.m_exceptionHandler)
 {
     if (m_context.m_useConductorAgentInvoker)

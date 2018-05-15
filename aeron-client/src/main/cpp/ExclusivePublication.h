@@ -119,7 +119,7 @@ public:
     }
 
     /**
-     * Registration Id returned by Aeron::addPublication when this Publication was added.
+     * Registration Id returned by Aeron::addExclusivePublication when this Publication was added.
      *
      * @return the registrationId of the publication.
      */

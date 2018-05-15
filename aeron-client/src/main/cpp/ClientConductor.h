@@ -287,7 +287,6 @@ private:
         std::weak_ptr<ExclusivePublication> m_publication;
         const std::string m_channel;
         const std::int64_t m_registrationId;
-        std::int64_t m_originalRegistrationId = -1;
         const long long m_timeOfRegistrationMs;
         const std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;

@@ -57,7 +57,6 @@ public:
         ClientConductor& conductor,
         const std::string& channel,
         std::int64_t registrationId,
-        std::int64_t originalRegistrationId,
         std::int32_t streamId,
         std::int32_t sessionId,
         UnsafeBufferPosition& publicationLimit,
@@ -115,7 +114,7 @@ public:
      */
     inline std::int64_t originalRegistrationId() const
     {
-        return m_originalRegistrationId;
+        return m_registrationId;
     }
 
     /**
@@ -129,14 +128,13 @@ public:
     }
 
     /**
-     * Is this Publication the original instance added to the driver? If not then it was added after another client
-     * has already added the publication.
+     * ExclusivePublication instances are always original.
      *
-     * @return true if this instance is the first added otherwise false.
+     * @return true.
      */
-    inline bool isOriginal() const
+    static constexpr bool isOriginal()
     {
-        return m_originalRegistrationId == m_registrationId;
+        return true;
     }
 
     /**
@@ -561,7 +559,6 @@ private:
 
     const std::string m_channel;
     std::int64_t m_registrationId;
-    std::int64_t m_originalRegistrationId;
     std::int64_t m_maxPossiblePosition;
     std::int32_t m_streamId;
     std::int32_t m_sessionId;

@@ -76,7 +76,6 @@ public:
 #else
             pthread_setname_np(pthread_self(), m_name.c_str());
 #endif
-
             run();
         });
     }
@@ -119,6 +118,9 @@ public:
 
     }
 
+    /**
+     * Close the agent and stop the associated thread from running. This method waits for the thread to join.
+     */
     inline void close()
     {
         m_running = false;
@@ -131,7 +133,7 @@ private:
     logbuffer::exception_handler_t& m_exceptionHandler;
     std::atomic<bool> m_running;
     std::thread m_thread;
-    std::string m_name;
+    const std::string m_name;
 };
 
 }}

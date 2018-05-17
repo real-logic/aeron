@@ -15,7 +15,6 @@
  */
 package io.aeron;
 
-import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
@@ -63,12 +62,9 @@ public class MultiDestinationSubscriptionTest
         IoUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
 
     private final MediaDriver.Context driverContextA = new MediaDriver.Context();
-    private final MediaDriver.Context driverContextB = new MediaDriver.Context();
 
     private Aeron clientA;
-    private Aeron clientB;
     private MediaDriver driverA;
-    private MediaDriver driverB;
     private Publication publicationA;
     private Publication publicationB;
     private Subscription subscription;
@@ -79,7 +75,6 @@ public class MultiDestinationSubscriptionTest
     private void launch()
     {
         final String baseDirA = ROOT_DIR + "A";
-        final String baseDirB = ROOT_DIR + "B";
 
         buffer.putInt(0, 1);
 
@@ -89,16 +84,8 @@ public class MultiDestinationSubscriptionTest
             .aeronDirectoryName(baseDirA)
             .threadingMode(ThreadingMode.SHARED);
 
-        driverContextB
-            .errorHandler(Throwable::printStackTrace)
-            .publicationTermBufferLength(TERM_BUFFER_LENGTH)
-            .aeronDirectoryName(baseDirB)
-            .threadingMode(ThreadingMode.SHARED);
-
         driverA = MediaDriver.launch(driverContextA);
-        driverB = MediaDriver.launch(driverContextB);
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextA.aeronDirectoryName()));
-        clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextB.aeronDirectoryName()));
     }
 
     @After
@@ -107,10 +94,8 @@ public class MultiDestinationSubscriptionTest
         CloseHelper.close(publicationA);
         CloseHelper.close(publicationB);
         CloseHelper.close(subscription);
-        CloseHelper.close(clientB);
         CloseHelper.close(clientA);
         CloseHelper.close(driverA);
-        CloseHelper.close(driverB);
 
         IoUtil.delete(new File(ROOT_DIR), true);
     }
@@ -271,6 +256,8 @@ public class MultiDestinationSubscriptionTest
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         final int numMessagesToSendForA = numMessagesToSend / 2;
         final int numMessagesToSendForB = numMessagesToSend / 2;
+        final String tags = "1,2";
+        final int pubTag = 2;
 
         launch();
 
@@ -278,6 +265,7 @@ public class MultiDestinationSubscriptionTest
 
         builder
             .clear()
+            .tags(tags)
             .media(CommonContext.UDP_MEDIA)
             .endpoint(UNICAST_ENDPOINT_A);
 
@@ -315,17 +303,20 @@ public class MultiDestinationSubscriptionTest
         builder
             .clear()
             .media(CommonContext.UDP_MEDIA)
-            .sessionId(publicationA.sessionId())
+            .isSessionIdTagReference(true)
+            .sessionId(pubTag)
             .initialTermId(initialTermId)
             .termId(termId)
             .termOffset(termOffset)
-            .mtu(Configuration.MTU_LENGTH_DEFAULT)
-            .termLength(publicationA.termBufferLength())
+            .isMtuTegReference(true)
+            .mtu(pubTag)
+            .isTermLengthTagReference(true)
+            .termLength(pubTag)
             .endpoint(UNICAST_ENDPOINT_B);
 
         final String publicationChannelB = builder.build();
 
-        publicationB = clientB.addExclusivePublication(publicationChannelB, STREAM_ID);
+        publicationB = clientA.addExclusivePublication(publicationChannelB, STREAM_ID);
 
         builder
             .clear()

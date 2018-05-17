@@ -433,7 +433,7 @@ public class ChannelUri
 
                     if ((i - currentStartIndex) > 0)
                     {
-                        tag = tags.subSequence(currentStartIndex, i - 1).toString();
+                        tag = tags.subSequence(currentStartIndex, i).toString();
                         currentStartIndex = i + 1;
                     }
 
@@ -446,7 +446,7 @@ public class ChannelUri
             if ((length - currentStartIndex) > 0)
             {
                 stringArray = ArrayUtil.ensureCapacity(stringArray, tagIndex + 1);
-                stringArray[tagIndex] = tags.subSequence(currentStartIndex, length - 1).toString();
+                stringArray[tagIndex] = tags.subSequence(currentStartIndex, length).toString();
             }
         }
 

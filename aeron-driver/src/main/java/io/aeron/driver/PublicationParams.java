@@ -39,40 +39,56 @@ class PublicationParams
     boolean hasTag = false;
     boolean isSessionIdTagReference = false;
 
-    static int getTermBufferLength(final ChannelUri channelUri, final int defaultTermLength)
+    static int getTermBufferLength(
+        final ChannelUri channelUri,
+        final DriverConductor driverConductor,
+        final MediaDriver.Context context,
+        final boolean isIpc)
     {
         final String termLengthParam = channelUri.get(TERM_LENGTH_PARAM_NAME);
-        int termLength = defaultTermLength;
+        int termLength = isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength();
         if (null != termLengthParam)
         {
-            termLength = (int)SystemUtil.parseSize(TERM_OFFSET_PARAM_NAME, termLengthParam);
+            termLength =
+                ChannelUri.isTagReference(termLengthParam) ?
+                (int)resolveTagReferencedValue(TERM_LENGTH_PARAM_NAME, termLengthParam, driverConductor, isIpc) :
+                (int)SystemUtil.parseSize(TERM_LENGTH_PARAM_NAME, termLengthParam);
             LogBufferDescriptor.checkTermLength(termLength);
         }
 
         return termLength;
     }
 
-    static int getMtuLength(final ChannelUri channelUri, final int defaultMtuLength)
+    static int getMtuLength(
+        final ChannelUri channelUri,
+        final DriverConductor driverConductor,
+        final MediaDriver.Context context,
+        final boolean isIpc)
     {
-        int mtuLength = defaultMtuLength;
+        int mtuLength = isIpc ? context.ipcMtuLength() : context.mtuLength();
         final String mtuParam = channelUri.get(MTU_LENGTH_PARAM_NAME);
         if (null != mtuParam)
         {
-            mtuLength = (int)SystemUtil.parseSize(MTU_LENGTH_PARAM_NAME, mtuParam);
+            mtuLength =
+                ChannelUri.isTagReference(mtuParam) ?
+                (int)resolveTagReferencedValue(MTU_LENGTH_PARAM_NAME, mtuParam, driverConductor, isIpc) :
+                (int)SystemUtil.parseSize(MTU_LENGTH_PARAM_NAME, mtuParam);
             Configuration.validateMtuLength(mtuLength);
         }
 
         return mtuLength;
     }
 
-    static long getLingerTimeoutNs(final ChannelUri channelUri, final long driverLingerTImeoutNs)
+    static long getLingerTimeoutNs(
+        final ChannelUri channelUri,
+        final MediaDriver.Context context)
     {
-        long lingerTimeoutNs = driverLingerTImeoutNs;
+        long lingerTimeoutNs = context.publicationLingerTimeoutNs();
         final String lingerParam = channelUri.get(LINGER_PARAM_NAME);
         if (null != lingerParam)
         {
             lingerTimeoutNs = SystemUtil.parseDuration(LINGER_PARAM_NAME, lingerParam);
-            Configuration.validatePublicationLingerTimeoutNs(lingerTimeoutNs, driverLingerTImeoutNs);
+            Configuration.validatePublicationLingerTimeoutNs(lingerTimeoutNs, lingerTimeoutNs);
         }
 
         return lingerTimeoutNs;
@@ -141,7 +157,7 @@ class PublicationParams
         final IpcPublication ipcPublication =
             isIpc ? driverConductor.findIpcPublicationByTag(tag) : null;
 
-        if (null != networkPublication)
+        if (null != networkPublication || null != ipcPublication)
         {
             switch (paramName)
             {
@@ -169,12 +185,9 @@ class PublicationParams
     {
         final PublicationParams params = new PublicationParams();
 
-        params.termLength = getTermBufferLength(
-            channelUri, isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength());
-
-        params.mtuLength = getMtuLength(channelUri, isIpc ? context.ipcMtuLength() : context.mtuLength());
-
-        params.lingerTimeoutNs = getLingerTimeoutNs(channelUri, context.publicationLingerTimeoutNs());
+        params.termLength = getTermBufferLength(channelUri, driverConductor, context, isIpc);
+        params.mtuLength = getMtuLength(channelUri, driverConductor, context, isIpc);
+        params.lingerTimeoutNs = getLingerTimeoutNs(channelUri, context);
 
         final String tagStr = channelUri.entityTag();
         if (null != tagStr)

@@ -348,7 +348,7 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder mtu(final Integer mtu)
     {
-        if (null != mtu)
+        if (null != mtu && !isMtuTagRef)
         {
             if (mtu < 32 || mtu > 65504)
             {
@@ -386,7 +386,7 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder termLength(final Integer termLength)
     {
-        if (null != termLength)
+        if (null != termLength && !isTermLengthTagRef)
         {
             LogBufferDescriptor.checkTermLength(termLength);
         }

@@ -39,6 +39,7 @@ public class ChannelUriStringBuilder
     private String networkInterface;
     private String controlEndpoint;
     private String controlMode;
+    private String tags;
     private Boolean reliable;
     private Integer ttl;
     private Integer mtu;
@@ -48,7 +49,6 @@ public class ChannelUriStringBuilder
     private Integer termOffset;
     private Integer sessionId;
     private Integer linger;
-    private Long tagId;
 
     /**
      * Clear out all the values thus setting back to the initial state.
@@ -63,6 +63,7 @@ public class ChannelUriStringBuilder
         networkInterface = null;
         controlEndpoint = null;
         controlMode = null;
+        tags = null;
         reliable = null;
         ttl  = null;
         mtu = null;
@@ -71,7 +72,6 @@ public class ChannelUriStringBuilder
         termId = null;
         termOffset = null;
         sessionId = null;
-        tagId = null;
 
         return this;
     }
@@ -543,27 +543,27 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the tag id for a publication or subscription.
+     * Set the tags for a channel, and/or publication or subscription.
      *
-     * @param tagId for the publication or subscription.
+     * @param tags for the channel, publication or subscription.
      * @return this for a fluent API.
      * @see CommonContext#TAGS_PARAM_NAME
      */
-    public ChannelUriStringBuilder tagId(final Long tagId)
+    public ChannelUriStringBuilder tags(final String tags)
     {
-        this.tagId = tagId;
+        this.tags = tags;
         return this;
     }
 
     /**
-     * Get the tag id for a publication or subscription.
+     * Get the tags for a channel, and/or publication or subscription.
      *
-     * @return the tag id for a publication or subscription.
+     * @return the tags for a channel, publication or subscription.
      * @see CommonContext#TAGS_PARAM_NAME
      */
-    public Long tagId()
+    public String tags()
     {
-        return tagId;
+        return tags;
     }
 
     /**
@@ -582,9 +582,9 @@ public class ChannelUriStringBuilder
 
         sb.append(ChannelUri.AERON_SCHEME).append(':').append(media).append('?');
 
-        if (null != tagId)
+        if (null != tags)
         {
-            sb.append(TAGS_PARAM_NAME).append('=').append(tagId.longValue()).append('|');
+            sb.append(TAGS_PARAM_NAME).append('=').append(tags).append('|');
         }
 
         if (null != endpoint)

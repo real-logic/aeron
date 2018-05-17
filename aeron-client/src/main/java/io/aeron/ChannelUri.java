@@ -15,9 +15,12 @@
  */
 package io.aeron;
 
+import org.agrona.collections.ArrayUtil;
+
 import java.util.*;
 
 import static io.aeron.CommonContext.SPY_PREFIX;
+import static io.aeron.CommonContext.TAGS_PARAM_NAME;
 
 /**
  * Parser for Aeron channel URIs. The format is:
@@ -49,11 +52,17 @@ public class ChannelUri
      */
     public static final String SPY_QUALIFIER = "aeron-spy";
 
+    public static final long INVALID_TAG = -1;
+
+    private static final int CHANNEL_TAG_INDEX = 0;
+    private static final int ENTITY_TAG_INDEX = 1;
+
     private static final String AERON_PREFIX = AERON_SCHEME + ":";
 
     private String prefix;
     private String media;
     private final Map<String, String> params;
+    private String[] tags;
 
     /**
      * Construct with the components provided to avoid parsing.
@@ -67,6 +76,8 @@ public class ChannelUri
         this.prefix = prefix;
         this.media = media;
         this.params = params;
+
+        this.tags = splitTags(params.get(TAGS_PARAM_NAME));
     }
 
     /**
@@ -184,6 +195,26 @@ public class ChannelUri
     public boolean containsKey(final String key)
     {
         return params.containsKey(key);
+    }
+
+    /**
+     * Get the channel tag.
+     *
+     * @return channel tag.
+     */
+    public String channelTag()
+    {
+        return (tags.length > CHANNEL_TAG_INDEX) ? tags[CHANNEL_TAG_INDEX] : null;
+    }
+
+    /**
+     * Get the entity tag.
+     *
+     * @return entity tag.
+     */
+    public String entityTag()
+    {
+        return (tags.length > ENTITY_TAG_INDEX) ? tags[ENTITY_TAG_INDEX] : null;
     }
 
     /**
@@ -350,6 +381,16 @@ public class ChannelUri
         return channelUri.toString();
     }
 
+    public static boolean isTagReference(final String paramValue)
+    {
+        return startsWith(paramValue, "tag:");
+    }
+
+    public static long tagReferenced(final String paramValue)
+    {
+        return Long.parseLong(paramValue.substring(4));
+    }
+
     private static boolean startsWith(final CharSequence input, final int position, final CharSequence prefix)
     {
         if ((input.length() - position) < prefix.length())
@@ -371,5 +412,44 @@ public class ChannelUri
     private static boolean startsWith(final CharSequence input, final CharSequence prefix)
     {
         return startsWith(input, 0, prefix);
+    }
+
+    private static String[] splitTags(final CharSequence tags)
+    {
+        String[] stringArray = ArrayUtil.EMPTY_STRING_ARRAY;
+
+        if (null != tags)
+        {
+            int currentStartIndex = 0;
+            int tagIndex = 0;
+            stringArray = new String[2];
+            final int length = tags.length();
+
+            for (int i = 0; i < length; i++)
+            {
+                if (tags.charAt(i) == ',')
+                {
+                    String tag = null;
+
+                    if ((i - currentStartIndex) > 0)
+                    {
+                        tag = tags.subSequence(currentStartIndex, i - 1).toString();
+                        currentStartIndex = i + 1;
+                    }
+
+                    stringArray = ArrayUtil.ensureCapacity(stringArray, tagIndex + 1);
+                    stringArray[tagIndex] = tag;
+                    tagIndex++;
+                }
+            }
+
+            if ((length - currentStartIndex) > 0)
+            {
+                stringArray = ArrayUtil.ensureCapacity(stringArray, tagIndex + 1);
+                stringArray[tagIndex] = tags.subSequence(currentStartIndex, length - 1).toString();
+            }
+        }
+
+        return stringArray;
     }
 }

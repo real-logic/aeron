@@ -96,6 +96,7 @@ public class NetworkPublication
     private final long unblockTimeoutNs;
     private final long connectionTimeoutNs;
     private final long lingerTimeoutNs;
+    private final long tag;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termBufferLength;
@@ -139,6 +140,7 @@ public class NetworkPublication
 
     public NetworkPublication(
         final long registrationId,
+        final long tag,
         final SendChannelEndpoint channelEndpoint,
         final NanoClock nanoClock,
         final RawLog rawLog,
@@ -164,6 +166,7 @@ public class NetworkPublication
         this.unblockTimeoutNs = unblockTimeoutNs;
         this.connectionTimeoutNs = connectionTimeoutNs;
         this.lingerTimeoutNs = lingerTimeoutNs;
+        this.tag = tag;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.nanoClock = nanoClock;
@@ -227,6 +230,16 @@ public class NetworkPublication
         }
 
         rawLog.close();
+    }
+
+    public long tag()
+    {
+        return tag;
+    }
+
+    public int termBufferLength()
+    {
+        return termBufferLength;
     }
 
     public int mtuLength()

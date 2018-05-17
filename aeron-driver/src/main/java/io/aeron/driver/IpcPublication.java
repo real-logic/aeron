@@ -43,6 +43,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     private final long registrationId;
     private final long unblockTimeoutNs;
     private final long lingerTimeoutNs;
+    private final long tag;
     private final int sessionId;
     private final int streamId;
     private final int tripGain;
@@ -70,6 +71,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     public IpcPublication(
         final long registrationId,
+        final long tag,
         final int sessionId,
         final int streamId,
         final Position publisherPos,
@@ -82,6 +84,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         final boolean isExclusive)
     {
         this.registrationId = registrationId;
+        this.tag = tag;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.isExclusive = isExclusive;
@@ -123,6 +126,11 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         return registrationId;
     }
 
+    public long tag()
+    {
+        return tag;
+    }
+
     public boolean isExclusive()
     {
         return isExclusive;
@@ -136,6 +144,16 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     public int publisherLimitId()
     {
         return publisherLimit.id();
+    }
+
+    public int termBufferLength()
+    {
+        return termBufferLength;
+    }
+
+    public int mtuLength()
+    {
+        return LogBufferDescriptor.mtuLength(metaDataBuffer);
     }
 
     public void close()

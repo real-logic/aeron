@@ -315,6 +315,34 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         return null;
     }
 
+    NetworkPublication findNetworkPublicationByTag(final long tag)
+    {
+        for (int i = 0, size = networkPublications.size(); i < size; i++)
+        {
+            final NetworkPublication publication = networkPublications.get(i);
+            if (publication.tag() == tag && publication.tag() != ChannelUri.INVALID_TAG)
+            {
+                return publication;
+            }
+        }
+
+        return null;
+    }
+
+    IpcPublication findIpcPublicationByTag(final long tag)
+    {
+        for (int i = 0, size = ipcPublications.size(); i < size; i++)
+        {
+            final IpcPublication publication = ipcPublications.get(i);
+            if (publication.tag() == tag && publication.tag() != ChannelUri.INVALID_TAG)
+            {
+                return publication;
+            }
+        }
+
+        return null;
+    }
+
     void onAddNetworkPublication(
         final String channel,
         final int streamId,
@@ -324,7 +352,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final ChannelUri channelUri = udpChannel.channelUri();
-        final PublicationParams params = getPublicationParams(context, channelUri, isExclusive, false);
+        final PublicationParams params = getPublicationParams(context, channelUri, this, isExclusive, false);
         validateMtuForMaxMessage(params, isExclusive);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
@@ -337,7 +365,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         if (null == publication)
         {
-            if (params.hasSessionId)
+            if (params.hasSessionId && !params.isSessionIdTagReference)
             {
                 confirmSessionIdNotInUse(params.sessionId);
             }
@@ -987,6 +1015,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         final NetworkPublication publication = new NetworkPublication(
             registrationId,
+            params.tag,
             channelEndpoint,
             cachedNanoClock,
             newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
@@ -1140,13 +1169,13 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     private SendChannelEndpoint findExistingSendChannelEndpoint(final UdpChannel udpChannel)
     {
-        if (udpChannel.hasTagId())
+        if (udpChannel.hasTag())
         {
             for (final SendChannelEndpoint endpoint : sendChannelEndpointByChannelMap.values())
             {
                 final UdpChannel endpointUdpChannel = endpoint.udpChannel();
 
-                if (endpointUdpChannel.doesTagIdMatch(udpChannel))
+                if (endpointUdpChannel.doesTagMatch(udpChannel))
                 {
                     return endpoint;
                 }
@@ -1296,13 +1325,13 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
     private ReceiveChannelEndpoint findExistingReceiveChannelEndpoint(final UdpChannel udpChannel)
     {
-        if (udpChannel.hasTagId())
+        if (udpChannel.hasTag())
         {
             for (final ReceiveChannelEndpoint endpoint : receiveChannelEndpointByChannelMap.values())
             {
                 final UdpChannel endpointUdpChannel = endpoint.udpChannel();
 
-                if (endpointUdpChannel.doesTagIdMatch(udpChannel))
+                if (endpointUdpChannel.doesTagMatch(udpChannel))
                 {
                     return endpoint;
                 }
@@ -1333,7 +1362,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     {
         IpcPublication publication = null;
         final ChannelUri channelUri = ChannelUri.parse(channel);
-        final PublicationParams params = getPublicationParams(context, channelUri, isExclusive, true);
+        final PublicationParams params = getPublicationParams(context, channelUri, this, isExclusive, true);
 
         if (!isExclusive)
         {
@@ -1342,7 +1371,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         if (null == publication)
         {
-            if (params.hasSessionId)
+            if (params.hasSessionId && !params.isSessionIdTagReference)
             {
                 confirmSessionIdNotInUse(params.sessionId);
             }
@@ -1371,6 +1400,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
 
         final IpcPublication publication = new IpcPublication(
             registrationId,
+            params.tag,
             sessionId,
             streamId,
             PublisherPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),

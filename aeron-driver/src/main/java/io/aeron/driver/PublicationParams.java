@@ -15,18 +15,19 @@
  */
 package io.aeron.driver;
 
-import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.ChannelUri;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.SystemUtil;
 
+import static io.aeron.ChannelUri.INVALID_TAG;
 import static io.aeron.CommonContext.*;
 
 class PublicationParams
 {
     long lingerTimeoutNs = 0;
+    long tag = ChannelUri.INVALID_TAG;
     int termLength = 0;
     int mtuLength = 0;
     int initialTermId = 0;
@@ -35,6 +36,8 @@ class PublicationParams
     int sessionId = 0;
     boolean isReplay = false;
     boolean hasSessionId = false;
+    boolean hasTag = false;
+    boolean isSessionIdTagReference = false;
 
     static int getTermBufferLength(final ChannelUri channelUri, final int defaultTermLength)
     {
@@ -112,10 +115,55 @@ class PublicationParams
         }
     }
 
+    static void validateTag(final long tag, final DriverConductor driverConductor, final boolean isIpc)
+    {
+        if (INVALID_TAG == tag)
+        {
+            throw new IllegalArgumentException("tag of " + INVALID_TAG + " is reserved");
+        }
+
+        if (null != driverConductor.findNetworkPublicationByTag(tag) ||
+            null != driverConductor.findIpcPublicationByTag(tag))
+        {
+            throw new IllegalArgumentException("tag of " + tag + " already in use");
+        }
+    }
+
+    static long resolveTagReferencedValue(
+        final String paramName,
+        final String paramValue,
+        final DriverConductor driverConductor,
+        final boolean isIpc)
+    {
+        final long tag = ChannelUri.tagReferenced(paramValue);
+        final NetworkPublication networkPublication =
+            isIpc ? null : driverConductor.findNetworkPublicationByTag(tag);
+        final IpcPublication ipcPublication =
+            isIpc ? driverConductor.findIpcPublicationByTag(tag) : null;
+
+        if (null != networkPublication)
+        {
+            switch (paramName)
+            {
+                case TERM_LENGTH_PARAM_NAME:
+                    return isIpc ? ipcPublication.termBufferLength() : networkPublication.termBufferLength();
+
+                case MTU_LENGTH_PARAM_NAME:
+                    return isIpc ? ipcPublication.mtuLength() : networkPublication.mtuLength();
+
+                case SESSION_ID_PARAM_NAME:
+                    return isIpc ? ipcPublication.sessionId() : networkPublication.sessionId();
+            }
+        }
+
+        throw new IllegalArgumentException(paramName + "=" + paramValue + " must reference a network publication");
+    }
+
     @SuppressWarnings("ConstantConditions")
     static PublicationParams getPublicationParams(
         final MediaDriver.Context context,
         final ChannelUri channelUri,
+        final DriverConductor driverConductor,
         final boolean isExclusive,
         final boolean isIpc)
     {
@@ -128,10 +176,23 @@ class PublicationParams
 
         params.lingerTimeoutNs = getLingerTimeoutNs(channelUri, context.publicationLingerTimeoutNs());
 
-        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+        final String tagStr = channelUri.entityTag();
+        if (null != tagStr)
+        {
+            final long tag = Long.parseLong(tagStr);
+            validateTag(tag, driverConductor, isIpc);
+            params.tag = tag;
+            params.hasTag = true;
+        }
+
+        final String sessionIdStr = channelUri.get(SESSION_ID_PARAM_NAME);
         if (null != sessionIdStr)
         {
-            params.sessionId = Integer.parseInt(sessionIdStr);
+            params.isSessionIdTagReference = ChannelUri.isTagReference(sessionIdStr);
+            params.sessionId =
+                params.isSessionIdTagReference ?
+                (int)resolveTagReferencedValue(SESSION_ID_PARAM_NAME, sessionIdStr, driverConductor, isIpc) :
+                Integer.parseInt(sessionIdStr);
             params.hasSessionId = true;
         }
 

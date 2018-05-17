@@ -547,7 +547,7 @@ public class ChannelUriStringBuilder
      *
      * @param tagId for the publication or subscription.
      * @return this for a fluent API.
-     * @see CommonContext#TAG_ID_PARAM_NAME
+     * @see CommonContext#TAGS_PARAM_NAME
      */
     public ChannelUriStringBuilder tagId(final Long tagId)
     {
@@ -559,7 +559,7 @@ public class ChannelUriStringBuilder
      * Get the tag id for a publication or subscription.
      *
      * @return the tag id for a publication or subscription.
-     * @see CommonContext#TAG_ID_PARAM_NAME
+     * @see CommonContext#TAGS_PARAM_NAME
      */
     public Long tagId()
     {
@@ -584,7 +584,7 @@ public class ChannelUriStringBuilder
 
         if (null != tagId)
         {
-            sb.append(TAG_ID_PARAM_NAME).append('=').append(tagId.longValue()).append('|');
+            sb.append(TAGS_PARAM_NAME).append('=').append(tagId.longValue()).append('|');
         }
 
         if (null != endpoint)

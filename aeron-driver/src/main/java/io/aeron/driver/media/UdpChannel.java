@@ -15,19 +15,17 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.exceptions.InvalidChannelException;
-import io.aeron.ChannelUri;
 import org.agrona.BitUtil;
 
 import java.net.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.aeron.driver.media.NetworkUtil.filterBySubnet;
-import static io.aeron.driver.media.NetworkUtil.findAddressOnInterface;
-import static io.aeron.driver.media.NetworkUtil.getProtocolFamily;
+import static io.aeron.driver.media.NetworkUtil.*;
 import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
 
@@ -48,9 +46,9 @@ public final class UdpChannel
 
     private final boolean hasExplicitControl;
     private final boolean isMulticast;
-    private final boolean hasTagId;
+    private final boolean hasTag;
     private final boolean hasNoDistinguishingCharacteristic;
-    private final long tagId;
+    private final long tag;
     private final int multicastTtl;
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -66,9 +64,9 @@ public final class UdpChannel
     {
         hasExplicitControl = context.hasExplicitControl;
         isMulticast = context.isMulticast;
-        hasTagId = context.hasTagId;
+        hasTag = context.hasTagId;
         hasNoDistinguishingCharacteristic = context.hasNoDistinguishingCharacteristic;
-        tagId = context.tagId;
+        tag = context.tagId;
         multicastTtl = context.multicastTtl;
         remoteData = context.remoteData;
         localData = context.localData;
@@ -88,6 +86,7 @@ public final class UdpChannel
      * @return a new {@link UdpChannel}
      * @throws InvalidChannelException if an error occurs.
      */
+    @SuppressWarnings("MethodLength")
     public static UdpChannel parse(final String channelUriString)
     {
         try
@@ -97,7 +96,8 @@ public final class UdpChannel
 
             InetSocketAddress endpointAddress = getEndpointAddress(channelUri);
             final InetSocketAddress explicitControlAddress = getExplicitControlAddress(channelUri);
-            final String tagIdStr = channelUri.get(CommonContext.TAG_ID_PARAM_NAME);
+
+            final String tagIdStr = channelUri.channelTag();
             final String controlMode = channelUri.get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
             final boolean hasNoDistinguishingCharacteristic =
                 null == endpointAddress && null == explicitControlAddress && null == tagIdStr;
@@ -376,9 +376,9 @@ public final class UdpChannel
         return protocolFamily;
     }
 
-    public long tagId()
+    public long tag()
     {
-        return tagId;
+        return tag;
     }
 
     /**
@@ -391,14 +391,14 @@ public final class UdpChannel
         return hasExplicitControl;
     }
 
-    public boolean hasTagId()
+    public boolean hasTag()
     {
-        return hasTagId;
+        return hasTag;
     }
 
-    public boolean doesTagIdMatch(final UdpChannel udpChannel)
+    public boolean doesTagMatch(final UdpChannel udpChannel)
     {
-        if (!hasTagId || !udpChannel.hasTagId() || tagId != udpChannel.tagId())
+        if (!hasTag || !udpChannel.hasTag() || tag != udpChannel.tag())
         {
             return false;
         }
@@ -411,7 +411,7 @@ public final class UdpChannel
             return true;
         }
 
-        throw new IllegalArgumentException("matching tag-id has set endpoint or control address");
+        throw new IllegalArgumentException("matching tag has set endpoint or control address");
     }
 
     /**

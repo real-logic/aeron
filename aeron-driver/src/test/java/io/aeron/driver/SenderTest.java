@@ -136,6 +136,7 @@ public class SenderTest
 
         publication = new NetworkPublication(
             1,
+            101,
             mockSendChannelEndpoint,
             () -> currentTimestamp,
             rawLog,

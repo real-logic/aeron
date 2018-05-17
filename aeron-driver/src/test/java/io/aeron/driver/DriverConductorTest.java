@@ -64,8 +64,8 @@ public class DriverConductorTest
     private static final String CHANNEL_4002 = "aeron:udp?endpoint=localhost:4002";
     private static final String CHANNEL_4003 = "aeron:udp?endpoint=localhost:4003";
     private static final String CHANNEL_4004 = "aeron:udp?endpoint=localhost:4004";
-    private static final String CHANNEL_4000_TAG_ID_1 = "aeron:udp?endpoint=localhost:4000|tag-id=1001";
-    private static final String CHANNEL_TAG_ID_1 = "aeron:udp?tag-id=1001";
+    private static final String CHANNEL_4000_TAG_ID_1 = "aeron:udp?endpoint=localhost:4000|tags=1001";
+    private static final String CHANNEL_TAG_ID_1 = "aeron:udp?tags=1001";
     private static final String CHANNEL_SUB_CONTROL_MODE_MANUAL = "aeron:udp?control-mode=manual";
     private static final String CHANNEL_IPC = "aeron:ipc";
     private static final String INVALID_URI = "aeron:udp://";

@@ -49,6 +49,9 @@ public class ChannelUriStringBuilder
     private Integer termOffset;
     private Integer sessionId;
     private Integer linger;
+    private boolean isSessionIdTagRef;
+    private boolean isTermLengthTagRef;
+    private boolean isMtuTagRef;
 
     /**
      * Clear out all the values thus setting back to the initial state.
@@ -72,6 +75,9 @@ public class ChannelUriStringBuilder
         termId = null;
         termOffset = null;
         sessionId = null;
+        isSessionIdTagRef = false;
+        isTermLengthTagRef = false;
+        isMtuTagRef = false;
 
         return this;
     }
@@ -567,6 +573,72 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Is the value for {@link #sessionId()} a tag reference or not.
+     *
+     * @param isSessionIdTagRef for session id
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder isSessionIdTagReference(final boolean isSessionIdTagRef)
+    {
+        this.isSessionIdTagRef = isSessionIdTagRef;
+        return this;
+    }
+
+    /**
+     * Is the value for {@link #sessionId()} a tag reference or not.
+     *
+     * @return whether the value for {@link #sessionId()} a tag reference or not.
+     */
+    public boolean isSessionIdTagReference()
+    {
+        return isSessionIdTagRef;
+    }
+
+    /**
+     * Is the value for {@link #termLength()} a tag reference or not.
+     *
+     * @param isTermLengthTagRef for term length
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder isTermLengthTagReference(final boolean isTermLengthTagRef)
+    {
+        this.isTermLengthTagRef = isTermLengthTagRef;
+        return this;
+    }
+
+    /**
+     * Is the value for {@link #termLength()} a tag reference or not.
+     *
+     * @return whether the value for {@link #termLength()} a tag reference or not.
+     */
+    public boolean isTermLengthTagReference()
+    {
+        return isTermLengthTagRef;
+    }
+
+    /**
+     * Is the value for {@link #mtu()} a tag reference or not.
+     *
+     * @param isMtuTagRef for mtu
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder isMtuTegReference(final boolean isMtuTagRef)
+    {
+        this.isMtuTagRef = isMtuTagRef;
+        return this;
+    }
+
+    /**
+     * Is the value for {@link #mtu()} a tag reference or not.
+     *
+     * @return whether the value for {@link #mtu()} a tag reference or not.
+     */
+    public boolean isMtuTagReference()
+    {
+        return isMtuTagRef;
+    }
+
+    /**
      * Build a channel URI String for the given parameters.
      *
      * @return a channel URI String for the given parameters.
@@ -619,12 +691,12 @@ public class ChannelUriStringBuilder
 
         if (null != mtu)
         {
-            sb.append(MTU_LENGTH_PARAM_NAME).append('=').append(mtu.intValue()).append('|');
+            sb.append(MTU_LENGTH_PARAM_NAME).append('=').append(prefixTag(isMtuTagRef, mtu)).append('|');
         }
 
         if (null != termLength)
         {
-            sb.append(TERM_LENGTH_PARAM_NAME).append('=').append(termLength.intValue()).append('|');
+            sb.append(TERM_LENGTH_PARAM_NAME).append('=').append(prefixTag(isTermLengthTagRef, termLength)).append('|');
         }
 
         if (null != initialTermId)
@@ -644,7 +716,7 @@ public class ChannelUriStringBuilder
 
         if (null != sessionId)
         {
-            sb.append(SESSION_ID_PARAM_NAME).append('=').append(sessionId.intValue()).append('|');
+            sb.append(SESSION_ID_PARAM_NAME).append('=').append(prefixTag(isSessionIdTagRef, sessionId)).append('|');
         }
 
         if (null != linger)
@@ -671,5 +743,10 @@ public class ChannelUriStringBuilder
     public static Integer integerValueOf(final String value)
     {
         return null == value ? null : Integer.valueOf(value);
+    }
+
+    private static String prefixTag(final boolean isTagReference, final Integer value)
+    {
+        return isTagReference ? "tag:" + value.toString() : value.toString();
     }
 }

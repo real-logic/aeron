@@ -588,9 +588,10 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         sessionByIdMap.get(clusterSessionId).lastActivity(timestamp, correlationId);
     }
 
-    void onReplayTimerEvent(@SuppressWarnings("unused") final long correlationId, final long timestamp)
+    void onReplayTimerEvent(final long correlationId, final long timestamp)
     {
         cachedEpochClock.update(timestamp);
+        timerService.cancelTimer(correlationId);
     }
 
     void onReplaySessionOpen(
@@ -1192,6 +1193,12 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
                         resetToNull(serviceAckStates);
                         replayTerm(image, stopPosition, counter);
                         awaitServiceAcks();
+
+                        int workCount;
+                        while (0 != (workCount = timerService.poll(cachedEpochClock.time())))
+                        {
+                            idle(workCount);
+                        }
 
                         final long termPosition = image.position();
                         if (step.entry.termPosition < termPosition)

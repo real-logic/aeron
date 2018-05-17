@@ -387,7 +387,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     public void onSessionKeepAlive(final long clusterSessionId)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session)
+        if (null != session && session.state() == OPEN)
         {
             session.timeOfLastActivityMs(cachedEpochClock.time());
         }

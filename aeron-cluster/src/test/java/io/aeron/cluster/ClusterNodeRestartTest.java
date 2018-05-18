@@ -356,8 +356,8 @@ public class ClusterNodeRestartTest
                             {
                                 counterValue = buffer.getInt(offset);
 
-                                final String s = buffer.getStringWithoutLengthAscii(offset +
-                                    SIZE_OF_INT, length - SIZE_OF_INT);
+                                final String s = buffer.getStringWithoutLengthAscii(
+                                    offset + SIZE_OF_INT, length - SIZE_OF_INT);
 
                                 serviceState.set(s);
                             },
@@ -368,8 +368,7 @@ public class ClusterNodeRestartTest
                             break;
                         }
 
-                        TestUtil.checkInterruptedStatus();
-                        Thread.yield();
+                        cluster.idle();
                     }
                 }
             };

@@ -159,4 +159,10 @@ public interface Cluster
      * @see #scheduleTimer(long, long)
      */
     boolean cancelTimer(long correlationId);
+
+    /**
+     * Should be called by the service when it experiences back pressure on egress, closing sessions, or making
+     * timer requests.
+     */
+    void idle();
 }

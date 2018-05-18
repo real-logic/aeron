@@ -250,9 +250,9 @@ public class ClusterNodeTest
                 this.correlationId = correlationId;
                 this.msg = buffer.getStringWithoutLengthAscii(offset, length);
 
-                if (!cluster.scheduleTimer(correlationId, timestampMs + 100))
+                while (!cluster.scheduleTimer(correlationId, timestampMs + 100))
                 {
-                    throw new IllegalStateException("unexpected back pressure");
+                    cluster.idle();
                 }
             }
 
@@ -265,8 +265,7 @@ public class ClusterNodeTest
 
                 while (clientSession.offer(correlationId, buffer, 0, responseMsg.length()) < 0)
                 {
-                    TestUtil.checkInterruptedStatus();
-                    Thread.yield();
+                    cluster.idle();
                 }
             }
         };

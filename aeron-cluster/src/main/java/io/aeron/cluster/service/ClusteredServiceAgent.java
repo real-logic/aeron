@@ -198,6 +198,13 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
         return serviceControlPublisher.cancelTimer(correlationId);
     }
 
+    public void idle()
+    {
+        checkInterruptedStatus();
+        serviceControlAdapter.poll();
+        idleStrategy.idle();
+    }
+
     public void onJoinLog(
         final long leadershipTermId,
         final int commitPositionId,
@@ -371,10 +378,10 @@ class ClusteredServiceAgent implements Agent, Cluster, ServiceControlListener
 
     private void awaitActiveLog()
     {
+        idleStrategy.reset();
         while (null == newActiveLogEvent)
         {
-            checkInterruptedStatus();
-            idleStrategy.idle(serviceControlAdapter.poll());
+            idle();
         }
     }
 

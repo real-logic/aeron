@@ -286,8 +286,7 @@ public class AppointedLeaderClusterTest
 
             while (session.offer(correlationId, buffer, offset, length) < 0)
             {
-                TestUtil.checkInterruptedStatus();
-                Thread.yield();
+                cluster.idle();
             }
 
             if (++messageCount >= MESSAGE_COUNT)

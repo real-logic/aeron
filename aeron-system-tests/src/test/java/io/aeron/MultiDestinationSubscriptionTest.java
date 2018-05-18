@@ -308,10 +308,6 @@ public class MultiDestinationSubscriptionTest
             .initialTermId(initialTermId)
             .termId(termId)
             .termOffset(termOffset)
-            .isMtuTegReference(true)
-            .mtu(pubTag)
-            .isTermLengthTagReference(true)
-            .termLength(pubTag)
             .endpoint(UNICAST_ENDPOINT_B);
 
         final String publicationChannelB = builder.build();

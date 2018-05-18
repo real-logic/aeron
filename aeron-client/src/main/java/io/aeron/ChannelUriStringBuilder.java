@@ -50,8 +50,6 @@ public class ChannelUriStringBuilder
     private Integer sessionId;
     private Integer linger;
     private boolean isSessionIdTagRef;
-    private boolean isTermLengthTagRef;
-    private boolean isMtuTagRef;
 
     /**
      * Clear out all the values thus setting back to the initial state.
@@ -76,8 +74,6 @@ public class ChannelUriStringBuilder
         termOffset = null;
         sessionId = null;
         isSessionIdTagRef = false;
-        isTermLengthTagRef = false;
-        isMtuTagRef = false;
 
         return this;
     }
@@ -348,7 +344,7 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder mtu(final Integer mtu)
     {
-        if (null != mtu && !isMtuTagRef)
+        if (null != mtu)
         {
             if (mtu < 32 || mtu > 65504)
             {
@@ -386,7 +382,7 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder termLength(final Integer termLength)
     {
-        if (null != termLength && !isTermLengthTagRef)
+        if (null != termLength)
         {
             LogBufferDescriptor.checkTermLength(termLength);
         }
@@ -595,50 +591,6 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Is the value for {@link #termLength()} a tag reference or not.
-     *
-     * @param isTermLengthTagRef for term length
-     * @return this for a fluent API.
-     */
-    public ChannelUriStringBuilder isTermLengthTagReference(final boolean isTermLengthTagRef)
-    {
-        this.isTermLengthTagRef = isTermLengthTagRef;
-        return this;
-    }
-
-    /**
-     * Is the value for {@link #termLength()} a tag reference or not.
-     *
-     * @return whether the value for {@link #termLength()} a tag reference or not.
-     */
-    public boolean isTermLengthTagReference()
-    {
-        return isTermLengthTagRef;
-    }
-
-    /**
-     * Is the value for {@link #mtu()} a tag reference or not.
-     *
-     * @param isMtuTagRef for mtu
-     * @return this for a fluent API.
-     */
-    public ChannelUriStringBuilder isMtuTegReference(final boolean isMtuTagRef)
-    {
-        this.isMtuTagRef = isMtuTagRef;
-        return this;
-    }
-
-    /**
-     * Is the value for {@link #mtu()} a tag reference or not.
-     *
-     * @return whether the value for {@link #mtu()} a tag reference or not.
-     */
-    public boolean isMtuTagReference()
-    {
-        return isMtuTagRef;
-    }
-
-    /**
      * Build a channel URI String for the given parameters.
      *
      * @return a channel URI String for the given parameters.
@@ -691,12 +643,12 @@ public class ChannelUriStringBuilder
 
         if (null != mtu)
         {
-            sb.append(MTU_LENGTH_PARAM_NAME).append('=').append(prefixTag(isMtuTagRef, mtu)).append('|');
+            sb.append(MTU_LENGTH_PARAM_NAME).append('=').append(mtu.intValue()).append('|');
         }
 
         if (null != termLength)
         {
-            sb.append(TERM_LENGTH_PARAM_NAME).append('=').append(prefixTag(isTermLengthTagRef, termLength)).append('|');
+            sb.append(TERM_LENGTH_PARAM_NAME).append('=').append(termLength.intValue()).append('|');
         }
 
         if (null != initialTermId)

@@ -388,7 +388,7 @@ public class ChannelUri
 
     public static long tagReferenced(final String paramValue)
     {
-        return Long.parseLong(paramValue.substring(4));
+        return isTagReference(paramValue) ? Long.parseLong(paramValue.substring(4)) : INVALID_TAG;
     }
 
     private static boolean startsWith(final CharSequence input, final int position, final CharSequence prefix)

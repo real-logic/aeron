@@ -27,6 +27,11 @@ import org.agrona.DirectBuffer;
 public interface ClusteredService
 {
     /**
+     * Used to represent a null service identifier.
+     */
+    int NULL_SERVICE_ID = -1;
+
+    /**
      * Start event for the service where the service can perform any initialisation required. This will be called
      * before any snapshot or logs are replayed.
      *

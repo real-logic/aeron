@@ -329,8 +329,7 @@ class ClusteredServiceAgent implements Agent, Cluster, ConsensusModuleListener
             loadSnapshot(RecoveryState.getSnapshotRecordingId(counters, recoveryCounterId, serviceId));
         }
 
-        consensusModuleProxy.ackAction(
-            termBaseLogPosition, leadershipTermId, serviceId, ClusterAction.INIT);
+        consensusModuleProxy.ackAction(termBaseLogPosition, leadershipTermId, serviceId, ClusterAction.INIT);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)

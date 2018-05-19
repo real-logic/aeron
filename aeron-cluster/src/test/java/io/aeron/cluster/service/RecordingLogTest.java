@@ -59,7 +59,7 @@ public class RecordingLogTest
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
         assertThat(recordingLogTwo.entries().size(), is(1));
 
-        final RecordingLog.Entry snapshot = recordingLogTwo.getLatestSnapshot(ServiceListener.NULL_VALUE);
+        final RecordingLog.Entry snapshot = recordingLogTwo.getLatestSnapshot(ClusteredService.NULL_SERVICE_ID);
         assertEquals(entry.toString(), snapshot.toString());
     }
 

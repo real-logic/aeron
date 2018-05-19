@@ -46,6 +46,7 @@ import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 import static io.aeron.cluster.ServiceAckState.*;
+import static io.aeron.cluster.service.ClusteredService.NULL_SERVICE_ID;
 
 class SequencerAgent implements Agent, ServiceListener, MemberStatusListener
 {
@@ -1403,7 +1404,7 @@ class SequencerAgent implements Agent, ServiceListener, MemberStatusListener
                 }
 
                 recordingLog.appendSnapshot(
-                    recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs, NULL_VALUE);
+                    recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs, NULL_SERVICE_ID);
             }
             finally
             {

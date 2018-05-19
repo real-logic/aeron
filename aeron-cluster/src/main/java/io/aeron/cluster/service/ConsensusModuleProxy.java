@@ -101,7 +101,7 @@ public class ConsensusModuleProxy implements AutoCloseable
         final int serviceId,
         final ClusterAction action)
     {
-        ackAction(logPosition, leadershipTermId, ServiceListener.NULL_VALUE, serviceId, action);
+        ackAction(logPosition, leadershipTermId, -1, serviceId, action);
     }
 
     public void ackAction(

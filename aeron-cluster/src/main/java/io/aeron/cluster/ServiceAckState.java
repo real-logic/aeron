@@ -15,15 +15,16 @@
  */
 package io.aeron.cluster;
 
-import static io.aeron.cluster.service.ServiceListener.NULL_VALUE;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.cluster.service.ClusteredService.NULL_SERVICE_ID;
 
 /**
  * State holder for each of the services.
  */
 class ServiceAckState
 {
-    private long logPosition = NULL_VALUE;
-    private long relevantId = NULL_VALUE;
+    private long logPosition = NULL_POSITION;
+    private long relevantId = NULL_SERVICE_ID;
 
     long logPosition()
     {
@@ -51,7 +52,7 @@ class ServiceAckState
     {
         for (final ServiceAckState serviceAckState : serviceAckStates)
         {
-            serviceAckState.logPosition(NULL_VALUE).relevantId(NULL_VALUE);
+            serviceAckState.logPosition(NULL_POSITION).relevantId(NULL_SERVICE_ID);
         }
     }
 

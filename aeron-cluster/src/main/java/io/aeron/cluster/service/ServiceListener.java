@@ -23,11 +23,6 @@ import io.aeron.cluster.codecs.ClusterAction;
 public interface ServiceListener
 {
     /**
-     * Used to represent null values as placeholders.
-     */
-    int NULL_VALUE = -1;
-
-    /**
      * Request from a service to schedule a timer.
      *
      * @param correlationId that must be unique across services for the timer.

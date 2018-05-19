@@ -47,7 +47,7 @@ import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 import static io.aeron.cluster.ServiceAckState.*;
 
-class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListener
+class SequencerAgent implements Agent, ServiceListener, MemberStatusListener
 {
     private boolean isRecovering;
     private final int memberId;
@@ -78,8 +78,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     private final Counter moduleState;
     private final Counter controlToggle;
     private final TimerService timerService;
-    private final ServiceControlAdapter serviceControlAdapter;
-    private final ServiceControlPublisher serviceControlPublisher;
+    private final ConsensusModuleAdapter consensusModuleAdapter;
+    private final ServiceProxy serviceProxy;
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
     private final LogPublisher logPublisher;
@@ -158,10 +158,9 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         archiveUri.put(ENDPOINT_PARAM_NAME, thisMember.archiveEndpoint());
         ctx.archiveContext().controlRequestChannel(archiveUri.toString());
 
-        serviceControlAdapter = new ServiceControlAdapter(
-            aeron.addSubscription(ctx.serviceControlChannel(), ctx.serviceControlStreamId()), this);
-        serviceControlPublisher = new ServiceControlPublisher(
-            aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceControlStreamId()));
+        consensusModuleAdapter = new ConsensusModuleAdapter(
+            aeron.addSubscription(ctx.serviceControlChannel(), ctx.consensusModuleStreamId()), this);
+        serviceProxy = new ServiceProxy(aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceStreamId()));
 
         authenticator = ctx.authenticatorSupplier().newAuthenticator(ctx);
     }
@@ -182,8 +181,8 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             logPublisher.disconnect();
             CloseHelper.close(ingressAdapter);
-            CloseHelper.close(serviceControlPublisher);
-            CloseHelper.close(serviceControlAdapter);
+            CloseHelper.close(serviceProxy);
+            CloseHelper.close(consensusModuleAdapter);
         }
     }
 
@@ -264,7 +263,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             workCount += memberStatusAdapter.poll();
             workCount += updateMemberPosition(nowMs);
-            workCount += serviceControlAdapter.poll();
+            workCount += consensusModuleAdapter.poll();
         }
 
         if (isSlowTickCycle)
@@ -801,7 +800,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             try (Subscription subscription = aeron.addSubscription(channel, streamId))
             {
                 logAdapter = null;
-                serviceControlPublisher.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, true, channel);
+                serviceProxy.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, true, channel);
                 resetToNull(serviceAckStates);
                 awaitServiceAcks();
 
@@ -1085,7 +1084,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
     {
         final String channel = isLeader && UDP_MEDIA.equals(channelUri.media()) ?
             channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
-        serviceControlPublisher.joinLog(
+        serviceProxy.joinLog(
             leadershipTermId, termCommitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
 
         resetToNull(serviceAckStates);
@@ -1177,7 +1176,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
             try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
             {
                 logAdapter = null;
-                serviceControlPublisher.joinLog(leadershipTermId, counter.id(), i, streamId, true, channel);
+                serviceProxy.joinLog(leadershipTermId, counter.id(), i, streamId, true, channel);
                 resetToNull(serviceAckStates);
 
                 if (length > 0)
@@ -1252,7 +1251,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
         final long logPosition = termBaseLogPosition + currentTermPosition();
         while (!hasReachedThreshold(logPosition, serviceAckStates))
         {
-            idle(serviceControlAdapter.poll());
+            idle(consensusModuleAdapter.poll());
         }
     }
 
@@ -1489,7 +1488,7 @@ class SequencerAgent implements Agent, ServiceControlListener, MemberStatusListe
 
             replayPosition.setOrdered(image.position());
 
-            workCount += serviceControlAdapter.poll();
+            workCount += consensusModuleAdapter.poll();
             workCount += timerService.poll(cachedEpochClock.time());
 
             idle(workCount);

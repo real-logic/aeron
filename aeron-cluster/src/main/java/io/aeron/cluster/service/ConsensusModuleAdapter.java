@@ -22,22 +22,21 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
-public final class ServiceControlAdapter implements FragmentHandler, AutoCloseable
+public final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
 {
     final Subscription subscription;
-    final ServiceControlListener serviceControlListener;
+    final ServiceListener serviceListener;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ScheduleTimerDecoder scheduleTimerDecoder = new ScheduleTimerDecoder();
     private final CancelTimerDecoder cancelTimerDecoder = new CancelTimerDecoder();
     private final ClusterActionAckDecoder clusterActionAckDecoder = new ClusterActionAckDecoder();
-    private final JoinLogDecoder joinLogDecoder = new JoinLogDecoder();
     private final CloseSessionDecoder closeSessionDecoder = new CloseSessionDecoder();
 
-    public ServiceControlAdapter(final Subscription subscription, final ServiceControlListener serviceControlListener)
+    public ConsensusModuleAdapter(final Subscription subscription, final ServiceListener serviceListener)
     {
         this.subscription = subscription;
-        this.serviceControlListener = serviceControlListener;
+        this.serviceListener = serviceListener;
     }
 
     public void close()
@@ -64,7 +63,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                serviceControlListener.onScheduleTimer(
+                serviceListener.onScheduleTimer(
                     scheduleTimerDecoder.correlationId(),
                     scheduleTimerDecoder.deadline());
                 break;
@@ -76,7 +75,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                serviceControlListener.onCancelTimer(scheduleTimerDecoder.correlationId());
+                serviceListener.onCancelTimer(scheduleTimerDecoder.correlationId());
                 break;
 
             case ClusterActionAckDecoder.TEMPLATE_ID:
@@ -86,28 +85,12 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                serviceControlListener.onServiceAck(
+                serviceListener.onServiceAck(
                     clusterActionAckDecoder.logPosition(),
                     clusterActionAckDecoder.leadershipTermId(),
                     clusterActionAckDecoder.relevantId(),
                     clusterActionAckDecoder.serviceId(),
                     clusterActionAckDecoder.action());
-                break;
-
-            case JoinLogDecoder.TEMPLATE_ID:
-                joinLogDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                serviceControlListener.onJoinLog(
-                    joinLogDecoder.leadershipTermId(),
-                    joinLogDecoder.commitPositionId(),
-                    joinLogDecoder.logSessionId(),
-                    joinLogDecoder.logStreamId(),
-                    joinLogDecoder.ackBeforeImage() == BooleanType.TRUE,
-                    joinLogDecoder.logChannel());
                 break;
 
             case CloseSessionDecoder.TEMPLATE_ID:
@@ -117,7 +100,7 @@ public final class ServiceControlAdapter implements FragmentHandler, AutoCloseab
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                serviceControlListener.onServiceCloseSession(closeSessionDecoder.clusterSessionId());
+                serviceListener.onServiceCloseSession(closeSessionDecoder.clusterSessionId());
                 break;
 
             default:

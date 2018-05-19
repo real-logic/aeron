@@ -553,7 +553,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Stream id within a channel for sending messages to a cluster.
          */
-        public static final int INGRESS_STREAM_ID_DEFAULT = 1;
+        public static final int INGRESS_STREAM_ID_DEFAULT = 101;
 
         /**
          * Channel for receiving response messages from a cluster.
@@ -573,7 +573,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Stream id within a channel for receiving messages from a cluster.
          */
-        public static final int EGRESS_STREAM_ID_DEFAULT = 2;
+        public static final int EGRESS_STREAM_ID_DEFAULT = 102;
 
         /**
          * The timeout in nanoseconds to wait for a message.

@@ -18,11 +18,9 @@ package io.aeron.cluster.service;
 import io.aeron.cluster.codecs.ClusterAction;
 
 /**
- * Listens for events that can be bi-directional between the consensus module and services.
- * <p>
- * The relevant handlers can be implemented and others ignored with the default implementations.
+ * Listens for events from the services requesting action in the cluster.
  */
-public interface ServiceControlListener
+public interface ServiceListener
 {
     /**
      * Used to represent null values as placeholders.
@@ -35,18 +33,14 @@ public interface ServiceControlListener
      * @param correlationId that must be unique across services for the timer.
      * @param deadline      after which the timer will expire and then fire.
      */
-    default void onScheduleTimer(long correlationId, long deadline)
-    {
-    }
+    void onScheduleTimer(long correlationId, long deadline);
 
     /**
      * Request from a service to cancel a previously scheduled timer.
      *
      * @param correlationId of the previously scheduled timer.
      */
-    default void onCancelTimer(long correlationId)
-    {
-    }
+    void onCancelTimer(long correlationId);
 
     /**
      * Acknowledgement from a service that it has undertaken the a requested {@link ClusterAction}.
@@ -57,37 +51,12 @@ public interface ServiceControlListener
      * @param serviceId        that has undertaken the action.
      * @param action           undertaken.
      */
-    default void onServiceAck(
-        long logPosition, long leadershipTermId, long relevantId, int serviceId, ClusterAction action)
-    {
-    }
-
-    /**
-     * Request that the services join to a log for replay or live stream.
-     *
-     * @param leadershipTermId for the log.
-     * @param commitPositionId for counter that gives the bound for consumption of the log.
-     * @param logSessionId     for the log to confirm subscription.
-     * @param logStreamId      to subscribe to for the log.
-     * @param ackBeforeImage   or after Image.
-     * @param logChannel       to subscribe to for the log.
-     */
-    default void onJoinLog(
-        long leadershipTermId,
-        int commitPositionId,
-        int logSessionId,
-        int logStreamId,
-        boolean ackBeforeImage,
-        String logChannel)
-    {
-    }
+    void onServiceAck(long logPosition, long leadershipTermId, long relevantId, int serviceId, ClusterAction action);
 
     /**
      * Request that a cluster session be closed.
      *
      * @param clusterSessionId of the session to be closed.
      */
-    default void onServiceCloseSession(long clusterSessionId)
-    {
-    }
+    void onServiceCloseSession(long clusterSessionId);
 }

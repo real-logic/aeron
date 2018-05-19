@@ -20,7 +20,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 
-public class ServiceControlPublisher implements AutoCloseable
+public class ConsensusModuleProxy implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
 
@@ -29,11 +29,10 @@ public class ServiceControlPublisher implements AutoCloseable
     private final ScheduleTimerEncoder scheduleTimerEncoder = new ScheduleTimerEncoder();
     private final CancelTimerEncoder cancelTimerEncoder = new CancelTimerEncoder();
     private final ClusterActionAckEncoder clusterActionAckEncoder = new ClusterActionAckEncoder();
-    private final JoinLogEncoder joinLogEncoder = new JoinLogEncoder();
     private final CloseSessionEncoder closeSessionEncoder = new CloseSessionEncoder();
     private final Publication publication;
 
-    public ServiceControlPublisher(final Publication publication)
+    public ConsensusModuleProxy(final Publication publication)
     {
         this.publication = publication;
     }
@@ -102,7 +101,7 @@ public class ServiceControlPublisher implements AutoCloseable
         final int serviceId,
         final ClusterAction action)
     {
-        ackAction(logPosition, leadershipTermId, ServiceControlListener.NULL_VALUE, serviceId, action);
+        ackAction(logPosition, leadershipTermId, ServiceListener.NULL_VALUE, serviceId, action);
     }
 
     public void ackAction(
@@ -138,44 +137,6 @@ public class ServiceControlPublisher implements AutoCloseable
         while (--attempts > 0);
 
         throw new IllegalStateException("failed to send ACK");
-    }
-
-    public void joinLog(
-        final long leadershipTermId,
-        final int commitPositionId,
-        final int logSessionId,
-        final int logStreamId,
-        final boolean ackBeforeImage,
-        final String channel)
-    {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinLogEncoder.BLOCK_LENGTH +
-            JoinLogEncoder.logChannelHeaderLength() + channel.length();
-
-        int attempts = SEND_ATTEMPTS * 2;
-        do
-        {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                joinLogEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .leadershipTermId(leadershipTermId)
-                    .commitPositionId(commitPositionId)
-                    .logSessionId(logSessionId)
-                    .logStreamId(logStreamId)
-                    .ackBeforeImage(ackBeforeImage ? BooleanType.TRUE : BooleanType.FALSE)
-                    .logChannel(channel);
-
-                bufferClaim.commit();
-
-                return;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        throw new IllegalStateException("failed to send log connect request");
     }
 
     public boolean closeSession(final long clusterSessionId)

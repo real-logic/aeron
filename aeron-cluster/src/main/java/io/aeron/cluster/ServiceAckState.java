@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster;
 
-import static io.aeron.cluster.service.ServiceControlListener.NULL_VALUE;
+import static io.aeron.cluster.service.ServiceListener.NULL_VALUE;
 
 /**
  * State holder for each of the services.

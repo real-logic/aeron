@@ -296,7 +296,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Stream id within a channel for the clustered log.
          */
-        public static final int LOG_STREAM_ID_DEFAULT = 3;
+        public static final int LOG_STREAM_ID_DEFAULT = 100;
 
         /**
          * Channel to be used for archiving snapshots.
@@ -306,7 +306,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Stream id for the archived snapshots within a channel.
          */
-        public static final int SNAPSHOT_STREAM_ID_DEFAULT = 6;
+        public static final int SNAPSHOT_STREAM_ID_DEFAULT = 107;
 
         /**
          * Message detail to be sent when max concurrent session limit is reached.
@@ -343,7 +343,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Stream id for the archived snapshots within a channel.
          */
-        public static final int MEMBER_STATUS_STREAM_ID_DEFAULT = 8;
+        public static final int MEMBER_STATUS_STREAM_ID_DEFAULT = 108;
 
         /**
          * Counter type id for the consensus module state.
@@ -790,7 +790,8 @@ public class ConsensusModule implements AutoCloseable
         private String replayChannel = ClusteredServiceContainer.Configuration.replayChannel();
         private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
         private String serviceControlChannel = ClusteredServiceContainer.Configuration.serviceControlChannel();
-        private int serviceControlStreamId = ClusteredServiceContainer.Configuration.serviceControlStreamId();
+        private int consensusModuleStreamId = ClusteredServiceContainer.Configuration.consensusModuleStreamId();
+        private int serviceStreamId = ClusteredServiceContainer.Configuration.serviceStreamId();
         private String snapshotChannel = Configuration.snapshotChannel();
         private int snapshotStreamId = Configuration.snapshotStreamId();
         private String memberStatusChannel = Configuration.memberStatusChannel();
@@ -1412,27 +1413,51 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the stream id for bi-directional communications between the consensus module and services.
+         * Set the stream id for communications from the consensus module and to the services.
          *
-         * @param streamId for bi-directional communications between the consensus module and services.
+         * @param streamId for communications from the consensus module and to the services.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_STREAM_ID_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#SERVICE_STREAM_ID_PROP_NAME
          */
-        public Context serviceControlStreamId(final int streamId)
+        public Context serviceStreamId(final int streamId)
         {
-            serviceControlStreamId = streamId;
+            serviceStreamId = streamId;
             return this;
         }
 
         /**
-         * Get the stream id for bi-directional communications between the consensus module and services.
+         * Get the stream id for communications from the consensus module and to the services.
          *
-         * @return the stream id for the scheduling timer events channel.
-         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_STREAM_ID_PROP_NAME
+         * @return the stream id for communications from the consensus module and to the services.
+         * @see ClusteredServiceContainer.Configuration#SERVICE_STREAM_ID_PROP_NAME
          */
-        public int serviceControlStreamId()
+        public int serviceStreamId()
         {
-            return serviceControlStreamId;
+            return serviceStreamId;
+        }
+
+        /**
+         * Set the stream id for communications from the services to the consensus module.
+         *
+         * @param streamId for communications from the services to the consensus module.
+         * @return this for a fluent API
+         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
+         */
+        public Context consensusModuleStreamId(final int streamId)
+        {
+            consensusModuleStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for communications from the services to the consensus module.
+         *
+         * @return the stream id for communications from the services to the consensus module.
+         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
+         */
+        public int consensusModuleStreamId()
+        {
+            return consensusModuleStreamId;
         }
 
         /**
@@ -2347,7 +2372,8 @@ public class ConsensusModule implements AutoCloseable
 
             encoder
                 .archiveStreamId(archiveContext.controlRequestStreamId())
-                .serviceControlStreamId(serviceControlStreamId)
+                .serviceStreamId(serviceStreamId)
+                .consensusModuleStreamId(consensusModuleStreamId)
                 .ingressStreamId(ingressStreamId)
                 .memberId(clusterMemberId)
                 .serviceId(-1)

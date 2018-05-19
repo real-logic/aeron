@@ -45,16 +45,13 @@ final class PublicationParams
         lingerTimeoutNs = context.publicationLingerTimeoutNs();
     }
 
-    private void getTag(
-        final ChannelUri channelUri,
-        final DriverConductor driverConductor,
-        final boolean isIpc)
+    private void getTag(final ChannelUri channelUri, final DriverConductor driverConductor)
     {
         final String tagParam = channelUri.entityTag();
         if (null != tagParam)
         {
             final long tag = Long.parseLong(tagParam);
-            validateTag(tag, driverConductor, isIpc);
+            validateTag(tag, driverConductor);
             this.tag = tag;
         }
     }
@@ -178,17 +175,17 @@ final class PublicationParams
         }
     }
 
-    static void validateTag(final long tag, final DriverConductor driverConductor, final boolean isIpc)
+    private static void validateTag(final long tag, final DriverConductor driverConductor)
     {
         if (INVALID_TAG == tag)
         {
-            throw new IllegalArgumentException("tag of " + INVALID_TAG + " is reserved");
+            throw new IllegalArgumentException(INVALID_TAG + " tag is reserved");
         }
 
         if (null != driverConductor.findNetworkPublicationByTag(tag) ||
             null != driverConductor.findIpcPublicationByTag(tag))
         {
-            throw new IllegalArgumentException("tag of " + tag + " already in use");
+            throw new IllegalArgumentException(tag + " tag already in use");
         }
     }
 
@@ -202,7 +199,7 @@ final class PublicationParams
     {
         final PublicationParams params = new PublicationParams(context, isIpc);
 
-        params.getTag(channelUri, driverConductor, isIpc);
+        params.getTag(channelUri, driverConductor);
         params.getSessionId(channelUri, driverConductor);
         params.getTermBufferLength(channelUri);
         params.getMtuLength(channelUri);

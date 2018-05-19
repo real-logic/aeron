@@ -15,6 +15,7 @@
  */
 package io.aeron.archive.client;
 
+import io.aeron.Aeron;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.*;
@@ -34,10 +35,10 @@ public class ControlResponsePoller implements ControlledFragmentHandler
 
     private final Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
-    private long controlSessionId = -1;
-    private long correlationId = -1;
-    private long relevantId = -1;
-    private int templateId = -1;
+    private long controlSessionId = Aeron.NULL_VALUE;
+    private long correlationId = Aeron.NULL_VALUE;
+    private long relevantId = Aeron.NULL_VALUE;
+    private int templateId = Aeron.NULL_VALUE;
     private ControlResponseCode code;
     private String errorMessage;
     private boolean pollComplete = false;
@@ -79,9 +80,9 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     }
 
     /**
-     * Control session id of the last polled message or -1 if poll returned nothing.
+     * Control session id of the last polled message or {@link Aeron#NULL_VALUE} if poll returned nothing.
      *
-     * @return control session id of the last polled message or -1 if unrecognised template.
+     * @return control session id of the last polled message or {@link Aeron#NULL_VALUE} if unrecognised template.
      */
     public long controlSessionId()
     {
@@ -89,9 +90,9 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     }
 
     /**
-     * Correlation id of the last polled message or -1 if poll returned nothing.
+     * Correlation id of the last polled message or {@link Aeron#NULL_VALUE} if poll returned nothing.
      *
-     * @return correlation id of the last polled message or -1 if unrecognised template.
+     * @return correlation id of the last polled message or {@link Aeron#NULL_VALUE} if unrecognised template.
      */
     public long correlationId()
     {

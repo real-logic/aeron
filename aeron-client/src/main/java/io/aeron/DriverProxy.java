@@ -119,7 +119,7 @@ public class DriverProxy
 
     public long addSubscription(final String channel, final int streamId)
     {
-        final long registrationId = -1;
+        final long registrationId = Aeron.NULL_VALUE;
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
 
         subscriptionMessage.correlationId(correlationId);

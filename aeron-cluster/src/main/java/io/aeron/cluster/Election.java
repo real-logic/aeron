@@ -15,10 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ChannelUri;
-import io.aeron.CommonContext;
-import io.aeron.Counter;
-import io.aeron.Publication;
+import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
@@ -29,7 +26,6 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.cluster.ClusterMember.NULL_MEMBER_ID;
 
 /**
  * Election process to determine a new cluster leader.
@@ -396,7 +392,7 @@ class Election implements MemberStatusListener, AutoCloseable
             workCount += 1;
         }
 
-        if (ctx.appointedLeaderId() != NULL_MEMBER_ID)
+        if (ctx.appointedLeaderId() != Aeron.NULL_VALUE)
         {
             return  workCount;
         }

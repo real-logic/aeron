@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
@@ -43,7 +44,6 @@ class ControlSession implements Session
     }
 
     static final long TIMEOUT_MS = 5000L;
-    private static final int NULL_DEADLINE = -1;
 
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
@@ -299,10 +299,10 @@ class ControlSession implements Session
                 if (sendFirst(queuedResponses))
                 {
                     queuedResponses.pollFirst();
-                    activityDeadlineMs = NULL_DEADLINE;
+                    activityDeadlineMs = Aeron.NULL_VALUE;
                     workCount++;
                 }
-                else if (activityDeadlineMs == NULL_DEADLINE)
+                else if (activityDeadlineMs == Aeron.NULL_VALUE)
                 {
                     activityDeadlineMs = epochClock.time() + TIMEOUT_MS;
                 }
@@ -324,13 +324,13 @@ class ControlSession implements Session
     private int waitForConnection()
     {
         int workCount = 0;
-        if (activityDeadlineMs == NULL_DEADLINE)
+        if (activityDeadlineMs == Aeron.NULL_VALUE)
         {
             activityDeadlineMs = epochClock.time() + TIMEOUT_MS;
         }
         else if (controlPublication.isConnected())
         {
-            activityDeadlineMs = NULL_DEADLINE;
+            activityDeadlineMs = Aeron.NULL_VALUE;
             state = State.ACTIVE;
             sendConnectResponse();
             workCount += 1;
@@ -345,7 +345,7 @@ class ControlSession implements Session
 
     private boolean hasGoneInactive()
     {
-        return activityDeadlineMs != NULL_DEADLINE && epochClock.time() > activityDeadlineMs;
+        return activityDeadlineMs != Aeron.NULL_VALUE && epochClock.time() > activityDeadlineMs;
     }
 
     private void queueResponse(

@@ -1211,7 +1211,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 .serviceStreamId(serviceStreamId)
                 .consensusModuleStreamId(consensusModuleStreamId)
                 .ingressStreamId(0)
-                .memberId(-1)
+                .memberId(Aeron.NULL_VALUE)
                 .serviceId(serviceId)
                 .aeronDirectory(aeron.context().aeronDirectoryName())
                 .archiveChannel(archiveContext.controlRequestChannel())

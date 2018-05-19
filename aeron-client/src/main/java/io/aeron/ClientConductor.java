@@ -44,7 +44,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 class ClientConductor implements Agent, DriverEventsListener
 {
-    private static final long NO_CORRELATION_ID = -1;
+    private static final long NO_CORRELATION_ID = Aeron.NULL_VALUE;
     private static final long RESOURCE_CHECK_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
     private static final long RESOURCE_LINGER_NS = TimeUnit.SECONDS.toNanos(3);
 

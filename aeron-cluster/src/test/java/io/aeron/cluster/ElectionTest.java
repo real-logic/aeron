@@ -53,7 +53,7 @@ public class ElectionTest
     @Test
     public void shouldElectSingleNodeClusterLeader()
     {
-        final long leadershipTermId = -1;
+        final long leadershipTermId = Aeron.NULL_VALUE;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = ClusterMember.parse(
             "0,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint");
@@ -77,7 +77,7 @@ public class ElectionTest
     @Test
     public void shouldElectAppointedLeader()
     {
-        final long leadershipTermId = -1;
+        final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
@@ -159,7 +159,7 @@ public class ElectionTest
     @Test
     public void shouldVoteForAppointedLeader()
     {
-        final long leadershipTermId = -1;
+        final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final int candidateId = 0;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
@@ -214,7 +214,7 @@ public class ElectionTest
     public void shouldCanvassMembersForSuccessfulLeadershipBid()
     {
         final long logPosition = 0;
-        final long leaderShipTermId = -1;
+        final long leaderShipTermId = Aeron.NULL_VALUE;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leaderShipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
@@ -253,7 +253,7 @@ public class ElectionTest
     @Test
     public void shouldCanvassMembersForUnSuccessfulLeadershipBid()
     {
-        final long leadershipTermId = -1;
+        final long leadershipTermId = Aeron.NULL_VALUE;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
@@ -289,7 +289,7 @@ public class ElectionTest
     public void shouldVoteForCandidateDuringNomination()
     {
         final long logPosition = 0;
-        final long leadershipTermId = -1;
+        final long leadershipTermId = Aeron.NULL_VALUE;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
@@ -330,7 +330,7 @@ public class ElectionTest
     @Test
     public void shouldTimeoutCanvassWithMajority()
     {
-        final long leadershipTermId = -1;
+        final long leadershipTermId = Aeron.NULL_VALUE;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
@@ -365,7 +365,7 @@ public class ElectionTest
     @Test
     public void shouldTimeoutCandidateBallotWithMajority()
     {
-        final long leadershipTermId = -1;
+        final long leadershipTermId = Aeron.NULL_VALUE;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
@@ -410,7 +410,7 @@ public class ElectionTest
     @Test
     public void shouldElectCandidateWithMajorityOfFullVote()
     {
-        final long leadershipTermId = -1;
+        final long leadershipTermId = Aeron.NULL_VALUE;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
@@ -453,7 +453,7 @@ public class ElectionTest
     @Test
     public void shouldTimeoutCandidateBallotWithoutMajority()
     {
-        final long leadershipTermId = -1;
+        final long leadershipTermId = Aeron.NULL_VALUE;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
@@ -493,7 +493,7 @@ public class ElectionTest
     @Test
     public void shouldTimeoutFollowerBallotWithoutLeaderEmerging()
     {
-        final long leadershipTermId = -1;
+        final long leadershipTermId = Aeron.NULL_VALUE;
         final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 

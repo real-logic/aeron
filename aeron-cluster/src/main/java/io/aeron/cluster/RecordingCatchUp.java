@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
@@ -30,9 +31,6 @@ import static io.aeron.archive.status.RecordingPos.findCounterIdByRecording;
 
 class RecordingCatchUp implements AutoCloseable
 {
-    private static final long NULL_RECORDING_ID = -1;
-    private static final long NULL_CORRELATION_ID = -1;
-
     enum State
     {
         INIT,
@@ -60,9 +58,9 @@ class RecordingCatchUp implements AutoCloseable
     private long logPosition = NULL_POSITION;
     private long targetPosition = NULL_POSITION;
     private long fromPosition = NULL_POSITION;
-    private long leaderRecordingId = NULL_RECORDING_ID;
-    private long recordingIdToExtend = NULL_RECORDING_ID;
-    private long activeCorrelationId = NULL_CORRELATION_ID;
+    private long leaderRecordingId = Aeron.NULL_VALUE;
+    private long recordingIdToExtend = Aeron.NULL_VALUE;
+    private long activeCorrelationId = Aeron.NULL_VALUE;
     private int recPosCounterId = CountersReader.NULL_COUNTER_ID;
 
     RecordingCatchUp(
@@ -201,7 +199,7 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (NULL_CORRELATION_ID == activeCorrelationId)
+        if (Aeron.NULL_VALUE == activeCorrelationId)
         {
             final long correlationId = context.aeron().nextCorrelationId();
 
@@ -226,7 +224,7 @@ class RecordingCatchUp implements AutoCloseable
             workCount += 1;
         }
 
-        if (NULL_CORRELATION_ID != activeCorrelationId)
+        if (Aeron.NULL_VALUE != activeCorrelationId)
         {
             state(State.AWAIT_LEADER_CONNECTION);
             workCount += 1;
@@ -239,7 +237,7 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (NULL_RECORDING_ID != leaderRecordingId)
+        if (Aeron.NULL_VALUE != leaderRecordingId)
         {
             if (null == leaderArchive)
             {
@@ -248,7 +246,7 @@ class RecordingCatchUp implements AutoCloseable
             else
             {
                 state(State.AWAIT_EXTEND_RECORDING);
-                activeCorrelationId = NULL_CORRELATION_ID;
+                activeCorrelationId = Aeron.NULL_VALUE;
                 workCount += 1;
             }
         }
@@ -260,7 +258,7 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (NULL_CORRELATION_ID == activeCorrelationId)
+        if (Aeron.NULL_VALUE == activeCorrelationId)
         {
             final long correlationId = context.aeron().nextCorrelationId();
 
@@ -279,7 +277,7 @@ class RecordingCatchUp implements AutoCloseable
         else if (pollForResponse(localArchive, activeCorrelationId))
         {
             state(State.AWAIT_REPLAY);
-            activeCorrelationId = NULL_CORRELATION_ID;
+            activeCorrelationId = Aeron.NULL_VALUE;
             workCount += 1;
         }
 
@@ -290,7 +288,7 @@ class RecordingCatchUp implements AutoCloseable
     {
         int workCount = 0;
 
-        if (NULL_CORRELATION_ID == activeCorrelationId)
+        if (Aeron.NULL_VALUE == activeCorrelationId)
         {
             final long correlationId = context.aeron().nextCorrelationId();
 
@@ -310,7 +308,7 @@ class RecordingCatchUp implements AutoCloseable
         else if (pollForResponse(leaderArchive, activeCorrelationId))
         {
             state(State.AWAIT_TRANSFER);
-            activeCorrelationId = NULL_CORRELATION_ID;
+            activeCorrelationId = Aeron.NULL_VALUE;
             workCount += 1;
         }
 

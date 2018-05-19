@@ -29,6 +29,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.*;
@@ -324,11 +325,6 @@ public class RecordingLog
     public static final String RECORDING_LOG_FILE_NAME = "recording.log";
 
     /**
-     * Represents a value that is not set or invalid.
-     */
-    public static final int NULL_VALUE = -1;
-
-    /**
      * The log entry is for a recording of messages within a term to the consensus log.
      */
     public static final int ENTRY_TYPE_TERM = 0;
@@ -499,9 +495,9 @@ public class RecordingLog
         final ArrayList<ReplayStep> termSteps = new ArrayList<>();
         planRecovery(snapshotSteps, termSteps, entries, archive);
 
-        long lastLeadershipTermId = -1;
+        long lastLeadershipTermId = NULL_VALUE;
         long lastLogPosition = 0;
-        long lastTermPositionCommitted = -1;
+        long lastTermPositionCommitted = AeronArchive.NULL_POSITION;
         long lastTermPositionAppended = 0;
 
         final int snapshotStepsSize = snapshotSteps.size();

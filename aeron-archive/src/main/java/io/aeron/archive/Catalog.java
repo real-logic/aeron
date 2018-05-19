@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.AsciiEncoding;
@@ -93,7 +94,7 @@ class Catalog implements AutoCloseable
     }
 
     static final int PAGE_SIZE = 4096;
-    static final int NULL_RECORD_ID = -1;
+    static final int NULL_RECORD_ID = Aeron.NULL_VALUE;
 
     static final int DESCRIPTOR_HEADER_LENGTH = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
     static final int DEFAULT_RECORD_LENGTH = 1024;

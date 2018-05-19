@@ -262,10 +262,10 @@ public class ConsensusModule implements AutoCloseable
         public static final String APPOINTED_LEADER_ID_PROP_NAME = "aeron.cluster.appointed.leader.id";
 
         /**
-         * Default property for the appointed cluster leader id. A value of -1 means no leader has been appointed
-         * and thus an automated leader election should occur.
+         * Default property for the appointed cluster leader id. A value of {@link Aeron#NULL_VALUE} means no leader has
+         * been appointed and thus an automated leader election should occur.
          */
-        public static final int APPOINTED_LEADER_ID_DEFAULT = ClusterMember.NULL_MEMBER_ID;
+        public static final int APPOINTED_LEADER_ID_DEFAULT = Aeron.NULL_VALUE;
 
         /**
          * Property name for the comma separated list of cluster member endpoints.
@@ -2376,7 +2376,7 @@ public class ConsensusModule implements AutoCloseable
                 .consensusModuleStreamId(consensusModuleStreamId)
                 .ingressStreamId(ingressStreamId)
                 .memberId(clusterMemberId)
-                .serviceId(-1)
+                .serviceId(ClusteredService.NULL_SERVICE_ID)
                 .aeronDirectory(aeron.context().aeronDirectoryName())
                 .archiveChannel(archiveContext.controlRequestChannel())
                 .serviceControlChannel(serviceControlChannel)

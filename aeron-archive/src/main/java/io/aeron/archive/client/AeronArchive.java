@@ -47,17 +47,17 @@ public class AeronArchive implements AutoCloseable
     /**
      * Represents a timestamp that has not been set. Can be used when the time is not known.
      */
-    public static final long NULL_TIMESTAMP = -1L;
+    public static final long NULL_TIMESTAMP = Aeron.NULL_VALUE;
 
     /**
      * Represents a position that has not been set. Can be used when the position is not known.
      */
-    public static final long NULL_POSITION = -1L;
+    public static final long NULL_POSITION = Aeron.NULL_VALUE;
 
     /**
      * Represents a length that has not been set. If null length is provided then replay the whole recorded stream.
      */
-    public static final long NULL_LENGTH = -1L;
+    public static final long NULL_LENGTH = Aeron.NULL_VALUE;
 
     private static final int FRAGMENT_LIMIT = 10;
 
@@ -1671,7 +1671,7 @@ public class AeronArchive implements AutoCloseable
         private final Context ctx;
         private final ControlResponsePoller controlResponsePoller;
         private final ArchiveProxy archiveProxy;
-        private long connectCorrelationId = -1;
+        private long connectCorrelationId = Aeron.NULL_VALUE;
         private int step = 0;
 
         AsyncConnect(

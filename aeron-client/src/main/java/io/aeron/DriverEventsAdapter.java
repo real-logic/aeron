@@ -51,7 +51,7 @@ class DriverEventsAdapter implements MessageHandler
     public int receive(final long activeCorrelationId)
     {
         this.activeCorrelationId = activeCorrelationId;
-        this.lastReceivedCorrelationId = -1;
+        this.lastReceivedCorrelationId = Aeron.NULL_VALUE;
 
         return broadcastReceiver.receive(this);
     }

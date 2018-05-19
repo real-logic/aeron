@@ -21,6 +21,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.KEY_OFFSET;
@@ -52,11 +53,6 @@ public class CommitPos
      * Type id of a commit position counter.
      */
     public static final int COMMIT_POSITION_TYPE_ID = 203;
-
-    /**
-     * Represents a null value if the counter is not found.
-     */
-    public static final long NULL_VALUE = -1;
 
     /**
      * Human readable name for the counter.
@@ -102,7 +98,7 @@ public class CommitPos
      *
      * @param counters  to search within.
      * @param counterId for the active commit position.
-     * @return the leadership term id if found otherwise {@link #NULL_VALUE}.
+     * @return the leadership term id if found otherwise {@link Aeron#NULL_VALUE}.
      */
     public static long getLeadershipTermId(final CountersReader counters, final int counterId)
     {
@@ -126,7 +122,7 @@ public class CommitPos
      *
      * @param counters  to search within.
      * @param counterId for the active commit position.
-     * @return the base log position if found otherwise {@link #NULL_VALUE}.
+     * @return the base log position if found otherwise {@link Aeron#NULL_VALUE}.
      */
     public static long getTermBaseLogPosition(final CountersReader counters, final int counterId)
     {
@@ -150,7 +146,7 @@ public class CommitPos
      *
      * @param counters  to search within.
      * @param counterId for the active commit position.
-     * @return the base log position if found otherwise {@link #NULL_VALUE}.
+     * @return the base log position if found otherwise {@link Aeron#NULL_VALUE}.
      */
     public static long getLeadershipTermLength(final CountersReader counters, final int counterId)
     {

@@ -84,8 +84,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final EpochClock epochClock = System::currentTimeMillis;
     private final MemberStatusCounters[] memberStatusCounters;
 
-    private int thisMemberIndex = -1;
-    private int leaderIndex = -1;
+    private int thisMemberIndex;
+    private int leaderIndex;
 
     ConsensusModuleHarness(
         final ConsensusModule.Context consensusModuleContext,

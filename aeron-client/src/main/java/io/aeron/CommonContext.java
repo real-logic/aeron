@@ -69,7 +69,7 @@ public class CommonContext implements AutoCloseable, Cloneable
     /**
      * Value to represent a sessionId that is not to be used.
      */
-    public static final int NULL_SESSION_ID = -1;
+    public static final int NULL_SESSION_ID = Aeron.NULL_VALUE;
 
     /**
      * The top level Aeron directory used for communication between a Media Driver and client.

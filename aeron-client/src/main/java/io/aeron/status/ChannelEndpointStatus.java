@@ -15,6 +15,7 @@
  */
 package io.aeron.status;
 
+import io.aeron.Aeron;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -51,7 +52,7 @@ public class ChannelEndpointStatus
     /**
      * No counter ID is allocated yet.
      */
-    public static final int NO_ID_ALLOCATED = -1;
+    public static final int NO_ID_ALLOCATED = Aeron.NULL_VALUE;
 
     /**
      * Offset in the key meta data for the channel of the counter.

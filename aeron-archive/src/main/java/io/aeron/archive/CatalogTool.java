@@ -1,5 +1,6 @@
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
@@ -129,7 +130,7 @@ public class CatalogTool
         final File maxSegmentFile;
 
         long stopPosition = decoder.stopPosition();
-        int maxSegmentIndex = -1;
+        int maxSegmentIndex = Aeron.NULL_VALUE;
 
         if (NULL_POSITION == stopPosition)
         {

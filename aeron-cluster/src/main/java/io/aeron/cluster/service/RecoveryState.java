@@ -21,6 +21,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.*;
@@ -63,11 +64,6 @@ public class RecoveryState
      * Type id of a recovery state counter.
      */
     public static final int RECOVERY_STATE_TYPE_ID = 204;
-
-    /**
-     * Represents a null value if the counter is not found.
-     */
-    public static final int NULL_VALUE = -1;
 
     /**
      * Human readable name for the counter.
@@ -169,7 +165,7 @@ public class RecoveryState
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
-     * @return the leadership term id if found otherwise {@link #NULL_VALUE}.
+     * @return the leadership term id if found otherwise {@link Aeron#NULL_VALUE}.
      */
     public static long getLeadershipTermId(final CountersReader counters, final int counterId)
     {
@@ -193,7 +189,7 @@ public class RecoveryState
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
-     * @return the term base log position if found otherwise {@link #NULL_VALUE}.
+     * @return the term base log position if found otherwise {@link Aeron#NULL_VALUE}.
      */
     public static long getTermBaseLogPosition(final CountersReader counters, final int counterId)
     {
@@ -217,7 +213,7 @@ public class RecoveryState
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
-     * @return the term position if found otherwise {@link #NULL_VALUE}.
+     * @return the term position if found otherwise {@link Aeron#NULL_VALUE}.
      */
     public static long getTermPosition(final CountersReader counters, final int counterId)
     {
@@ -241,7 +237,7 @@ public class RecoveryState
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
-     * @return the timestamp if found otherwise {@link #NULL_VALUE}.
+     * @return the timestamp if found otherwise {@link Aeron#NULL_VALUE}.
      */
     public static long getTimestamp(final CountersReader counters, final int counterId)
     {
@@ -265,7 +261,7 @@ public class RecoveryState
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
-     * @return the count of replay terms if found otherwise {@link #NULL_VALUE}.
+     * @return the count of replay terms if found otherwise {@link Aeron#NULL_VALUE}.
      */
     public static int getReplayTermCount(final CountersReader counters, final int counterId)
     {
@@ -290,7 +286,7 @@ public class RecoveryState
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
      * @param serviceId for the snapshot required.
-     * @return the count of replay terms if found otherwise {@link #NULL_VALUE}.
+     * @return the count of replay terms if found otherwise {@link Aeron#NULL_VALUE}.
      */
     public static long getSnapshotRecordingId(final CountersReader counters, final int counterId, final int serviceId)
     {

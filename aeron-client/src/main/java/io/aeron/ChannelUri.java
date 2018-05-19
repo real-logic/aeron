@@ -52,7 +52,7 @@ public class ChannelUri
      */
     public static final String SPY_QUALIFIER = "aeron-spy";
 
-    public static final long INVALID_TAG = -1;
+    public static final long INVALID_TAG = Aeron.NULL_VALUE;
 
     private static final int CHANNEL_TAG_INDEX = 0;
     private static final int ENTITY_TAG_INDEX = 1;

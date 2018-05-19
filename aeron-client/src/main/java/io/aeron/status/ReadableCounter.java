@@ -15,6 +15,7 @@
  */
 package io.aeron.status;
 
+import io.aeron.Aeron;
 import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -40,7 +41,7 @@ public class ReadableCounter implements AutoCloseable
      * Construct a view of an existing counter.
      *
      * @param countersReader for getting access to the buffers.
-     * @param registrationId assigned by the driver for the counter or -1 if not known.
+     * @param registrationId assigned by the driver for the counter or {@link Aeron#NULL_VALUE} if not known.
      * @param counterId      for the counter to be viewed.
      * @throws IllegalStateException if the id has for the counter has not been allocated.
      */
@@ -72,7 +73,7 @@ public class ReadableCounter implements AutoCloseable
      */
     public ReadableCounter(final CountersReader countersReader, final int counterId)
     {
-        this(countersReader, -1, counterId);
+        this(countersReader, Aeron.NULL_VALUE, counterId);
     }
 
     /**

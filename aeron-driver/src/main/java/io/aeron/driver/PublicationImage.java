@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.Aeron;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.DestinationImageControlAddress;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
@@ -89,17 +90,17 @@ public class PublicationImage
     }
 
     private long timeOfLastStateChangeNs;
-    private long lastLossChangeNumber = -1;
-    private long lastSmChangeNumber = -1;
+    private long lastLossChangeNumber = Aeron.NULL_VALUE;
+    private long lastSmChangeNumber = Aeron.NULL_VALUE;
 
-    private volatile long beginLossChange = -1;
-    private volatile long endLossChange = -1;
+    private volatile long beginLossChange = Aeron.NULL_VALUE;
+    private volatile long endLossChange = Aeron.NULL_VALUE;
     private int lossTermId;
     private int lossTermOffset;
     private int lossLength;
 
-    private volatile long beginSmChange = -1;
-    private volatile long endSmChange = -1;
+    private volatile long beginSmChange = Aeron.NULL_VALUE;
+    private volatile long endSmChange = Aeron.NULL_VALUE;
     private long nextSmPosition;
     private int nextSmReceiverWindowLength;
 

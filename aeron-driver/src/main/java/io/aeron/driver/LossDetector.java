@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.Aeron;
 import io.aeron.logbuffer.TermGapScanner;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -27,14 +28,12 @@ import static io.aeron.logbuffer.TermGapScanner.scanForGap;
  */
 public class LossDetector implements TermGapScanner.GapHandler
 {
-    private static final long TIMER_INACTIVE = -1;
-
     private final FeedbackDelayGenerator delayGenerator;
     private final LossHandler lossHandler;
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
 
-    private long deadlineNs = TIMER_INACTIVE;
+    private long deadlineNs = Aeron.NULL_VALUE;
 
     /**
      * Create a loss detector for a channel.

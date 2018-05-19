@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
@@ -101,7 +102,7 @@ public class ConsensusModuleProxy implements AutoCloseable
         final int serviceId,
         final ClusterAction action)
     {
-        ackAction(logPosition, leadershipTermId, -1, serviceId, action);
+        ackAction(logPosition, leadershipTermId, Aeron.NULL_VALUE, serviceId, action);
     }
 
     public void ackAction(

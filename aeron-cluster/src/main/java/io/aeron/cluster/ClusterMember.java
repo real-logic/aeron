@@ -29,12 +29,10 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  */
 public final class ClusterMember
 {
-    public static final int NULL_MEMBER_ID = -1;
-
     private boolean isBallotSent;
     private boolean isLeader;
     private final int id;
-    private long leadershipTermId = -1;
+    private long leadershipTermId = Aeron.NULL_VALUE;
     private long logPosition = NULL_POSITION;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
@@ -462,7 +460,7 @@ public final class ClusterMember
     }
 
     /**
-     * Become a candidate by voting for yourself and resetting the other votes to {@link #NULL_MEMBER_ID}.
+     * Become a candidate by voting for yourself and resetting the other votes to {@link Aeron#NULL_VALUE}.
      *
      * @param clusterMembers    to reset the votes for.
      * @param candidateMemberId for the election.

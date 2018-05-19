@@ -58,7 +58,7 @@ public class RecordingPos
     /**
      * Represents a null recording id when not found.
      */
-    public static final long NULL_RECORDING_ID = -1L;
+    public static final long NULL_RECORDING_ID = Aeron.NULL_VALUE;
 
     /**
      * Human readable name for the counter.

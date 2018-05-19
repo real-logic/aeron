@@ -15,6 +15,7 @@
  */
 package io.aeron.archive.client;
 
+import io.aeron.Aeron;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.MessageHeaderDecoder;
 import io.aeron.archive.codecs.RecordingProgressDecoder;
@@ -60,7 +61,7 @@ public class RecordingEventsPoller implements FragmentHandler
      */
     public int poll()
     {
-        templateId = -1;
+        templateId = Aeron.NULL_VALUE;
         pollComplete = false;
 
         return subscription.poll(this, 1);
@@ -143,7 +144,7 @@ public class RecordingEventsPoller implements FragmentHandler
                 recordingId = recordingStartedDecoder.recordingId();
                 recordingStartPosition = recordingStartedDecoder.startPosition();
                 recordingPosition = recordingStartPosition;
-                recordingStopPosition = -1;
+                recordingStopPosition = Aeron.NULL_VALUE;
                 break;
 
             case RecordingProgressDecoder.TEMPLATE_ID:
@@ -156,7 +157,7 @@ public class RecordingEventsPoller implements FragmentHandler
                 recordingId = recordingProgressDecoder.recordingId();
                 recordingStartPosition = recordingProgressDecoder.startPosition();
                 recordingPosition = recordingProgressDecoder.position();
-                recordingStopPosition = -1;
+                recordingStopPosition = Aeron.NULL_VALUE;
                 break;
 
             case RecordingStoppedDecoder.TEMPLATE_ID:

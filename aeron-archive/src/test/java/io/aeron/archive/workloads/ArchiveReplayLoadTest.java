@@ -91,7 +91,7 @@ public class ArchiveReplayLoadTest
     private MediaDriver driver;
     private AeronArchive aeronArchive;
     private long startPosition;
-    private long recordingId = -1L;
+    private long recordingId = Aeron.NULL_VALUE;
     private long totalPayloadLength;
     private volatile long expectedRecordingLength;
     private long recordedLength = 0;

@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.Aeron;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
@@ -48,7 +49,7 @@ public class StatusUtil
                 }
             });
 
-        if (-1 != id.value)
+        if (Aeron.NULL_VALUE != id.value)
         {
             statusIndicator = new UnsafeBufferStatusIndicator(countersReader.valuesBuffer(), id.value);
         }
@@ -81,7 +82,7 @@ public class StatusUtil
                 }
             });
 
-        if (-1 != id.value)
+        if (Aeron.NULL_VALUE != id.value)
         {
             statusReader = new UnsafeBufferStatusIndicator(countersReader.valuesBuffer(), id.value);
         }
@@ -114,7 +115,7 @@ public class StatusUtil
                 }
             });
 
-        if (-1 != id.value)
+        if (Aeron.NULL_VALUE != id.value)
         {
             statusReader = new UnsafeBufferStatusIndicator(countersReader.valuesBuffer(), id.value);
         }

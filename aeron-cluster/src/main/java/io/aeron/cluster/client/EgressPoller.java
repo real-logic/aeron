@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster.client;
 
+import io.aeron.Aeron;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.codecs.*;
@@ -32,9 +33,9 @@ public class EgressPoller implements ControlledFragmentHandler
     private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
-    private long clusterSessionId = -1;
-    private long correlationId = -1;
-    private int templateId = -1;
+    private long clusterSessionId = Aeron.NULL_VALUE;
+    private long correlationId = Aeron.NULL_VALUE;
+    private int templateId = Aeron.NULL_VALUE;
     private boolean pollComplete = false;
     private EventCode eventCode;
     private String detail = "";
@@ -67,9 +68,9 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
-     * Cluster session id of the last polled event or -1 if poll returned nothing.
+     * Cluster session id of the last polled event or {@link Aeron#NULL_VALUE} if poll returned nothing.
      *
-     * @return cluster session id of the last polled event or -1 if unrecognised template.
+     * @return cluster session id of the last polled event or {@link Aeron#NULL_VALUE} if unrecognised template.
      */
     public long clusterSessionId()
     {
@@ -77,9 +78,9 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
-     * Correlation id of the last polled event or -1 if poll returned nothing.
+     * Correlation id of the last polled event or {@link Aeron#NULL_VALUE} if poll returned nothing.
      *
-     * @return correlation id of the last polled event or -1 if unrecognised template.
+     * @return correlation id of the last polled event or {@link Aeron#NULL_VALUE} if unrecognised template.
      */
     public long correlationId()
     {

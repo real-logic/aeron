@@ -56,6 +56,11 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 public class Aeron implements AutoCloseable
 {
     /**
+     * Used to represent a null value for when some value is not yet set.
+     */
+    public static final int NULL_VALUE = -1;
+
+    /**
      * Using an integer because there is no support for boolean. 1 is closed and 0 is not closed.
      */
     private static final AtomicIntegerFieldUpdater<Aeron> IS_CLOSED_UPDATER = newUpdater(Aeron.class, "isClosed");

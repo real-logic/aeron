@@ -58,7 +58,7 @@ class SequencerAgent implements Agent, ServiceListener, MemberStatusListener
     private final long serviceHeartbeatTimeoutMs;
     private long nextSessionId = 1;
     private long termBaseLogPosition = 0;
-    private long leadershipTermId = -1;
+    private long leadershipTermId = Aeron.NULL_VALUE;
     private long lastRecordingPosition = 0;
     private long timeOfLastLogUpdateMs = 0;
     private long followerCommitPosition = 0;
@@ -1078,7 +1078,7 @@ class SequencerAgent implements Agent, ServiceListener, MemberStatusListener
         termRecordingPosition = new ReadableCounter(counters, recordingCounterId);
 
         termCommitPosition = CommitPos.allocate(
-            aeron, tempBuffer, leadershipTermId, termBaseLogPosition, CommitPos.NULL_VALUE);
+            aeron, tempBuffer, leadershipTermId, termBaseLogPosition, Aeron.NULL_VALUE);
     }
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader, final int logSessionId)

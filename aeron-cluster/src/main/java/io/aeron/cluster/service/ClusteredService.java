@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.Aeron;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
@@ -29,7 +30,7 @@ public interface ClusteredService
     /**
      * Used to represent a null service identifier.
      */
-    int NULL_SERVICE_ID = -1;
+    int NULL_SERVICE_ID = Aeron.NULL_VALUE;
 
     /**
      * Start event for the service where the service can perform any initialisation required. This will be called

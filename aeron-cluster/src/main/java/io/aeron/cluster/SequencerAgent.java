@@ -654,7 +654,6 @@ class SequencerAgent implements Agent, MemberStatusListener
         final long logPosition, final long leadershipTermId, final long timestamp, final ClusterAction action)
     {
         cachedEpochClock.update(timestamp);
-        final long termPosition = logPosition - termBaseLogPosition;
 
         switch (action)
         {

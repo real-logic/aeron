@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
- * HeaderFlyweight for Data Header
+ * HeaderFlyweight for Data Frame header of a message fragment.
  * <p>
  * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-frame">Data Frame</a>
  */

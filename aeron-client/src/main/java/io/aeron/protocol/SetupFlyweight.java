@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
- * HeaderFlyweight for Setup Frames
+ * HeaderFlyweight for Setup Message Frames.
  * <p>
  * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#stream-setup">Stream Setup</a>
  */

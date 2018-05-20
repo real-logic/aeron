@@ -22,10 +22,10 @@ import java.nio.ByteBuffer;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
- * Flyweight for an RTT Measurement Packet
+ * Flyweight for an RTT Measurement Frame Header.
  * <p>
  * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#rtt-measurement-header">
- * RTT Measurement Header</a>
+ * RTT Measurement Frame Header</a>
  */
 public class RttMeasurementFlyweight extends HeaderFlyweight
 {

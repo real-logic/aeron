@@ -23,7 +23,7 @@ import java.nio.ByteOrder;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
- * Flyweight for a Status Message Packet
+ * Flyweight for a Status Message Frame.
  *
  * @see <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#status-messages">Status Message</a>
  */

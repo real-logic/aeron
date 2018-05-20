@@ -23,7 +23,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 /**
- * Flyweight for general Aeron network protocol header
+ * Flyweight for general Aeron network protocol header of a message frame.
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1

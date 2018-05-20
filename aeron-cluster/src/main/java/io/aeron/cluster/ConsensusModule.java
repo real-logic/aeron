@@ -191,7 +191,6 @@ public class ConsensusModule implements AutoCloseable
         ctx.conclude();
 
         final SequencerAgent conductor = new SequencerAgent(ctx, new EgressPublisher(), new LogPublisher());
-
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
 
@@ -262,8 +261,8 @@ public class ConsensusModule implements AutoCloseable
         public static final String APPOINTED_LEADER_ID_PROP_NAME = "aeron.cluster.appointed.leader.id";
 
         /**
-         * Default property for the appointed cluster leader id. A value of {@link Aeron#NULL_VALUE} means no leader has
-         * been appointed and thus an automated leader election should occur.
+         * Default property for the appointed cluster leader id. A value of {@link Aeron#NULL_VALUE} means no leader
+         * has been appointed and thus an automated leader election should occur.
          */
         public static final int APPOINTED_LEADER_ID_DEFAULT = Aeron.NULL_VALUE;
 
@@ -411,7 +410,7 @@ public class ConsensusModule implements AutoCloseable
         public static final String SESSION_TIMEOUT_PROP_NAME = "aeron.cluster.session.timeout";
 
         /**
-         * Timeout for a session if no activity is observed. Default to 5 seconds in nanoseconds.
+         * Timeout for a session if no activity is observed.
          */
         public static final long SESSION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
@@ -432,7 +431,6 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * Interval at which a leader will send heartbeats if the log is not progressing.
-         * Default to 500 milliseconds in nanoseconds.
          */
         public static final long LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
@@ -486,8 +484,7 @@ public class ConsensusModule implements AutoCloseable
         public static final String STATUS_INTERVAL_PROP_NAME = "aeron.cluster.status.interval";
 
         /**
-         * Interval at which a member will send out status updates during election phases.
-         * Default to 20 milliseconds in nanoseconds.
+         * Default interval at which a member will send out status updates during election phases.
          */
         public static final long STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(20);
 
@@ -509,7 +506,6 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * Size in bytes of the error buffer for the cluster.
-         * Default to 1MB.
          */
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 

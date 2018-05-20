@@ -128,7 +128,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String SERVICE_ID_PROP_NAME = "aeron.cluster.service.id";
 
         /**
-         * Identity for a clustered service. Default to 0.
+         * Default identity for a clustered service.
          */
         public static final int SERVICE_ID_DEFAULT = 0;
 
@@ -138,7 +138,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String SERVICE_NAME_PROP_NAME = "aeron.cluster.service.name";
 
         /**
-         * Name for a clustered service to be the role of the {@link Agent}. Default to "clustered-service".
+         * Name for a clustered service to be the role of the {@link Agent}.
          */
         public static final String SERVICE_NAME_DEFAULT = "clustered-service";
 
@@ -154,7 +154,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String REPLAY_CHANNEL_PROP_NAME = "aeron.cluster.replay.channel";
 
         /**
-         * Channel to be used for log or snapshot replay on startup.
+         * Default channel to be used for log or snapshot replay on startup.
          */
         public static final String REPLAY_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
 
@@ -164,7 +164,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String REPLAY_STREAM_ID_PROP_NAME = "aeron.cluster.replay.stream.id";
 
         /**
-         * Stream id for the log or snapshot replay within a channel.
+         * Default stream id for the log or snapshot replay within a channel.
          */
         public static final int REPLAY_STREAM_ID_DEFAULT = 103;
 
@@ -174,7 +174,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String SERVICE_CONTROL_CHANNEL_PROP_NAME = "aeron.cluster.service.control.channel";
 
         /**
-         * Channel for communications between the local consensus module and services. This should be IPC.
+         * Default channel for communications between the local consensus module and services. This should be IPC.
          */
         public static final String SERVICE_CONTROL_CHANNEL_DEFAULT = "aeron:ipc?term-length=64k|mtu=8k";
 
@@ -184,7 +184,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String SERVICE_STREAM_ID_PROP_NAME = "aeron.cluster.service.stream.id";
 
         /**
-         * Stream id within a channel for communications from the consensus module to the services.
+         * Default stream id within a channel for communications from the consensus module to the services.
          */
         public static final int SERVICE_CONTROL_STREAM_ID_DEFAULT = 104;
 
@@ -194,7 +194,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String CONSENSUS_MODULE_STREAM_ID_PROP_NAME = "aeron.cluster.consensus.module.stream.id";
 
         /**
-         * Stream id within a channel for communications from the services to the consensus module.
+         * Default stream id within a channel for communications from the services to the consensus module.
          */
         public static final int CONSENSUS_MODULE_STREAM_ID_DEFAULT = 105;
 
@@ -204,7 +204,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String SNAPSHOT_CHANNEL_PROP_NAME = "aeron.cluster.snapshot.channel";
 
         /**
-         * Channel to be used for archiving snapshots.
+         * Default channel to be used for archiving snapshots.
          */
         public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
 
@@ -214,7 +214,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String SNAPSHOT_STREAM_ID_PROP_NAME = "aeron.cluster.snapshot.stream.id";
 
         /**
-         * Stream id for the archived snapshots within a channel.
+         * Default stream id for the archived snapshots within a channel.
          */
         public static final int SNAPSHOT_STREAM_ID_DEFAULT = 106;
 
@@ -224,18 +224,17 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final String CLUSTER_DIR_PROP_NAME = "aeron.cluster.dir";
 
         /**
-         * Directory to use for the aeron cluster.
+         * Default directory to use for the aeron cluster.
          */
         public static final String CLUSTER_DIR_DEFAULT = "aeron-cluster";
 
         /**
-         * Size in bytes of the error buffer for the cluster container.
+         * Length in bytes of the error buffer for the cluster container.
          */
         public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.cluster.service.error.buffer.length";
 
         /**
-         * Size in bytes of the error buffer for the cluster container.
-         * Default to 1MB.
+         * Default length in bytes of the error buffer for the cluster container.
          */
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 

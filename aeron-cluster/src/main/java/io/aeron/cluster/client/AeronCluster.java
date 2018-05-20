@@ -518,7 +518,7 @@ public final class AeronCluster implements AutoCloseable
         public static final String MESSAGE_TIMEOUT_PROP_NAME = "aeron.cluster.message.timeout";
 
         /**
-         * Timeout when waiting on a message to be sent or received. Default to 5 seconds in nanoseconds.
+         * Default timeout when waiting on a message to be sent or received.
          */
         public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
@@ -530,7 +530,7 @@ public final class AeronCluster implements AutoCloseable
         public static final String CLUSTER_MEMBER_ENDPOINTS_PROP_NAME = "aeron.cluster.member.endpoints";
 
         /**
-         * Property name for the comma separated list of cluster member endpoints.
+         * Default comma separated list of cluster member endpoints.
          */
         public static final String CLUSTER_MEMBER_ENDPOINTS_DEFAULT = null;
 
@@ -551,7 +551,7 @@ public final class AeronCluster implements AutoCloseable
         public static final String INGRESS_STREAM_ID_PROP_NAME = "aeron.cluster.ingress.stream.id";
 
         /**
-         * Stream id within a channel for sending messages to a cluster.
+         * Default stream id within a channel for sending messages to a cluster.
          */
         public static final int INGRESS_STREAM_ID_DEFAULT = 101;
 
@@ -571,7 +571,7 @@ public final class AeronCluster implements AutoCloseable
         public static final String EGRESS_STREAM_ID_PROP_NAME = "aeron.archive.control.response.stream.id";
 
         /**
-         * Stream id within a channel for receiving messages from a cluster.
+         * Default stream id within a channel for receiving messages from a cluster.
          */
         public static final int EGRESS_STREAM_ID_DEFAULT = 102;
 

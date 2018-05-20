@@ -37,7 +37,7 @@ import static io.aeron.cluster.codecs.ClusterAction.REPLAY;
 import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
-class ClusteredServiceAgent implements Agent, Cluster, ConsensusModuleListener
+class ClusteredServiceAgent implements Agent, Cluster
 {
     private final int serviceId;
     private boolean isRecovering;

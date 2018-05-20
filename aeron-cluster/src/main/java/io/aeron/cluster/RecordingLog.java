@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanEncoder;
-import io.aeron.cluster.service.RecordingExtent;
 import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 

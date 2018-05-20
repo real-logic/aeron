@@ -48,7 +48,7 @@ import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 import static io.aeron.cluster.ServiceAckState.*;
 import static io.aeron.cluster.service.ClusteredService.NULL_SERVICE_ID;
 
-class SequencerAgent implements Agent, ServiceListener, MemberStatusListener
+class SequencerAgent implements Agent, MemberStatusListener
 {
     private boolean isRecovering;
     private final int memberId;

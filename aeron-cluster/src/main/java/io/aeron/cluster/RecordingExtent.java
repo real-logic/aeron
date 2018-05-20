@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster.service;
+package io.aeron.cluster;
 
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 
@@ -22,7 +22,7 @@ import io.aeron.archive.client.RecordingDescriptorConsumer;
  *
  * @see io.aeron.archive.client.AeronArchive#listRecording(long, RecordingDescriptorConsumer)
  */
-public class RecordingExtent implements RecordingDescriptorConsumer
+class RecordingExtent implements RecordingDescriptorConsumer
 {
     public long recordingId;
     public long startTimestamp;

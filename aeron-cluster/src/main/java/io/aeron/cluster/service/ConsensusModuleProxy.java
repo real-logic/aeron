@@ -21,7 +21,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 
-public class ConsensusModuleProxy implements AutoCloseable
+final class ConsensusModuleProxy implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
 
@@ -33,7 +33,7 @@ public class ConsensusModuleProxy implements AutoCloseable
     private final CloseSessionEncoder closeSessionEncoder = new CloseSessionEncoder();
     private final Publication publication;
 
-    public ConsensusModuleProxy(final Publication publication)
+    ConsensusModuleProxy(final Publication publication)
     {
         this.publication = publication;
     }

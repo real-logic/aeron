@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster.service;
+package io.aeron.cluster;
 
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 
-public class ServiceProxy implements AutoCloseable
+final class ServiceProxy implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
 
@@ -29,7 +29,7 @@ public class ServiceProxy implements AutoCloseable
     private final JoinLogEncoder joinLogEncoder = new JoinLogEncoder();
     private final Publication publication;
 
-    public ServiceProxy(final Publication publication)
+    ServiceProxy(final Publication publication)
     {
         this.publication = publication;
     }

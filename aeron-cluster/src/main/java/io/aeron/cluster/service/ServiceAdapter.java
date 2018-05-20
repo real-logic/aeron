@@ -22,18 +22,18 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
-public final class ServiceAdapter implements FragmentHandler, AutoCloseable
+final class ServiceAdapter implements FragmentHandler, AutoCloseable
 {
-    final Subscription subscription;
-    final ConsensusModuleListener consensusModuleListener;
+    private final Subscription subscription;
+    private final ClusteredServiceAgent clusteredServiceAgent;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final JoinLogDecoder joinLogDecoder = new JoinLogDecoder();
 
-    public ServiceAdapter(final Subscription subscription, final ConsensusModuleListener consensusModuleListener)
+    ServiceAdapter(final Subscription subscription, final ClusteredServiceAgent clusteredServiceAgent)
     {
         this.subscription = subscription;
-        this.consensusModuleListener = consensusModuleListener;
+        this.clusteredServiceAgent = clusteredServiceAgent;
     }
 
     public void close()
@@ -51,26 +51,23 @@ public final class ServiceAdapter implements FragmentHandler, AutoCloseable
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        if (JoinLogDecoder.TEMPLATE_ID != templateId)
         {
-            case JoinLogDecoder.TEMPLATE_ID:
-                joinLogDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleListener.onJoinLog(
-                    joinLogDecoder.leadershipTermId(),
-                    joinLogDecoder.commitPositionId(),
-                    joinLogDecoder.logSessionId(),
-                    joinLogDecoder.logStreamId(),
-                    joinLogDecoder.ackBeforeImage() == BooleanType.TRUE,
-                    joinLogDecoder.logChannel());
-                break;
-
-            default:
-                throw new IllegalArgumentException("unknown template id: " + templateId);
+            throw new IllegalArgumentException("unknown template id: " + templateId);
         }
+
+        joinLogDecoder.wrap(
+            buffer,
+            offset + MessageHeaderDecoder.ENCODED_LENGTH,
+            messageHeaderDecoder.blockLength(),
+            messageHeaderDecoder.version());
+
+        clusteredServiceAgent.onJoinLog(
+            joinLogDecoder.leadershipTermId(),
+            joinLogDecoder.commitPositionId(),
+            joinLogDecoder.logSessionId(),
+            joinLogDecoder.logStreamId(),
+            joinLogDecoder.ackBeforeImage() == BooleanType.TRUE,
+            joinLogDecoder.logChannel());
     }
 }

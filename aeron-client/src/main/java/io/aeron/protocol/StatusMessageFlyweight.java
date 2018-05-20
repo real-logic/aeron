@@ -24,13 +24,14 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Flyweight for a Status Message Frame.
- *
- * @see <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#status-messages">Status Message</a>
+ * <p>
+ * <a target="_blank" href="https://github.com/real-logic/aeron/wiki/Protocol-Specification#status-messages">
+ *     Status Message</a> wiki page.
  */
 public class StatusMessageFlyweight extends HeaderFlyweight
 {
     /**
-     * Length of the Status Message Packet
+     * Length of the Status Message Frame
      */
     public static final int HEADER_LENGTH = 36;
 

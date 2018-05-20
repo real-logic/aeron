@@ -24,8 +24,8 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 /**
  * Flyweight for an RTT Measurement Frame Header.
  * <p>
- * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#rtt-measurement-header">
- * RTT Measurement Frame Header</a>
+ * <a target="_blank" href="https://github.com/real-logic/aeron/wiki/Protocol-Specification#rtt-measurement-header">
+ * RTT Measurement Frame Header</a> wiki page.
  */
 public class RttMeasurementFlyweight extends HeaderFlyweight
 {

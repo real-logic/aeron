@@ -79,7 +79,7 @@ import static org.agrona.BitUtil.*;
 public class RecordingLog
 {
     /**
-     * A copy of the entry in the log.
+     * Representation of the entry in the {@link RecordingLog}.
      */
     public static final class Entry
     {
@@ -165,7 +165,7 @@ public class RecordingLog
     }
 
     /**
-     * Steps in a recovery plan.
+     * Step in a {@link RecoveryPlan}.
      */
     public static class ReplayStep
     {
@@ -215,7 +215,7 @@ public class RecordingLog
     }
 
     /**
-     * The snapshot and steps to recover the state of a cluster.
+     * The snapshots and steps to recover the state of a cluster.
      */
     public static class RecoveryPlan
     {

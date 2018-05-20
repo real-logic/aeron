@@ -45,6 +45,9 @@ import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
+/**
+ * Component which resides on each node and is responsible for coordinating the consensus within a cluster.
+ */
 public class ConsensusModule implements AutoCloseable
 {
     /**
@@ -763,6 +766,9 @@ public class ConsensusModule implements AutoCloseable
         }
     }
 
+    /**
+     * Programmable overrides for configuring the {@link ConsensusModule} in a cluster.
+     */
     public static class Context implements AutoCloseable, Cloneable
     {
         private boolean ownsAeronClient = false;

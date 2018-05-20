@@ -50,7 +50,7 @@ public final class ClusterMember
      * @param clientFacingEndpoint address and port endpoint to which cluster clients connect.
      * @param memberFacingEndpoint address and port endpoint to which other cluster members connect.
      * @param logEndpoint          address and port endpoint to which the log is replicated.
-     * @param transferEndpoint       address and port endpoint to which a stream is replayed to catchup the leader.
+     * @param transferEndpoint     address and port endpoint to which a stream is replayed to catchup the leader.
      * @param archiveEndpoint      address and port endpoint to which the archive control channel can be reached.
      * @param endpointsDetail      comma separated list of endpoints.
      */
@@ -80,7 +80,7 @@ public final class ClusterMember
         isBallotSent = false;
         isLeader = false;
         votedFor = null;
-        leadershipTermId = -1;
+        leadershipTermId = Aeron.NULL_VALUE;
         logPosition = NULL_POSITION;
     }
 

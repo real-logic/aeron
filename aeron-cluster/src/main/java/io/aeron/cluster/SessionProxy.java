@@ -21,7 +21,7 @@ import static io.aeron.cluster.ClusterSession.State.CHALLENGED;
 import static io.aeron.cluster.ClusterSession.State.REJECTED;
 
 /**
- * Proxy for a session for authentication purposes. Used to inform system of client authentication status.
+ * Proxy for a session when performing authentication. Used to inform system of client authentication status.
  * <p>
  * <b>Note:</b> The object is not threadsafe.
  */

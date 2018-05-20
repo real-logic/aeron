@@ -48,7 +48,7 @@ import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 public class ConsensusModule implements AutoCloseable
 {
     /**
-     * Type of snapshot for this agent.
+     * Type of snapshot for this component.
      */
     public static final long SNAPSHOT_TYPE_ID = 1;
 

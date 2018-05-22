@@ -15,9 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.driver.cmd.CreatePublicationImageCmd;
-import io.aeron.driver.cmd.DriverConductorCmd;
-import io.aeron.driver.cmd.ChannelEndpointErrorCmd;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -33,13 +30,13 @@ import static io.aeron.driver.ThreadingMode.SHARED;
 public class DriverConductorProxy
 {
     private final ThreadingMode threadingMode;
-    private final Queue<DriverConductorCmd> commandQueue;
+    private final Queue<Runnable> commandQueue;
     private final AtomicCounter failCount;
 
     private DriverConductor driverConductor;
 
     public DriverConductorProxy(
-        final ThreadingMode threadingMode, final Queue<DriverConductorCmd> commandQueue, final AtomicCounter failCount)
+        final ThreadingMode threadingMode, final Queue<Runnable> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
@@ -81,7 +78,7 @@ public class DriverConductorProxy
         }
         else
         {
-            offer(new CreatePublicationImageCmd(
+            offer(() -> driverConductor.onCreatePublicationImage(
                 sessionId,
                 streamId,
                 initialTermId,
@@ -104,7 +101,7 @@ public class DriverConductorProxy
         }
         else
         {
-            offer(new ChannelEndpointErrorCmd(statusIndicatorId, error));
+            offer(() -> driverConductor.onChannelEndpointError(statusIndicatorId, error));
         }
     }
 
@@ -113,7 +110,7 @@ public class DriverConductorProxy
         return threadingMode == SHARED || threadingMode == INVOKER;
     }
 
-    private void offer(final DriverConductorCmd cmd)
+    private void offer(final Runnable cmd)
     {
         while (!commandQueue.offer(cmd))
         {

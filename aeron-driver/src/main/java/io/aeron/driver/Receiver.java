@@ -15,7 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.driver.cmd.ReceiverCmd;
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationUdpTransport;
@@ -30,7 +29,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.function.Consumer;
 
 import static io.aeron.driver.Configuration.PENDING_SETUPS_TIMEOUT_NS;
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
@@ -38,10 +36,10 @@ import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
 /**
  * Receiver agent for JVM based media driver, uses an event loop with command buffer
  */
-public class Receiver implements Agent, Consumer<ReceiverCmd>
+public class Receiver implements Agent
 {
     private final DataTransportPoller dataTransportPoller;
-    private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
+    private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final NanoClock nanoClock;
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
@@ -69,7 +67,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public int doWork()
     {
-        int workCount = commandQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
+        int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
         final int bytesReceived = dataTransportPoller.pollTransports();
         totalBytesReceived.getAndAddOrdered(bytesReceived);
         final long nowNs = nanoClock.nanoTime();
@@ -213,11 +211,6 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
                 }
             }
         }
-    }
-
-    public void accept(final ReceiverCmd cmd)
-    {
-        cmd.execute(this);
     }
 
     private void checkPendingSetupMessages(final long nowNs)

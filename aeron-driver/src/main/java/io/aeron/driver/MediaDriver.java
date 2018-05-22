@@ -16,10 +16,9 @@
 package io.aeron.driver;
 
 import io.aeron.*;
-import io.aeron.driver.buffer.RawLogFactory;
-import io.aeron.driver.cmd.*;
-import io.aeron.driver.exceptions.*;
+import io.aeron.driver.exceptions.ActiveDriverException;
 import io.aeron.driver.media.*;
+import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -34,7 +33,7 @@ import org.agrona.concurrent.status.*;
 import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -440,9 +439,9 @@ public final class MediaDriver implements AutoCloseable
         private RawLogFactory rawLogFactory;
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
-        private ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue;
-        private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
-        private OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue;
+        private ManyToOneConcurrentArrayQueue<Runnable> driverCommandQueue;
+        private OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue;
+        private OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue;
         private ReceiverProxy receiverProxy;
         private SenderProxy senderProxy;
         private DriverConductorProxy driverConductorProxy;
@@ -1771,34 +1770,34 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue()
+        OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
         }
 
-        Context receiverCommandQueue(final OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue)
+        Context receiverCommandQueue(final OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue)
         {
             this.receiverCommandQueue = receiverCommandQueue;
             return this;
         }
 
-        OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue()
+        OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue()
         {
             return senderCommandQueue;
         }
 
-        Context senderCommandQueue(final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue)
+        Context senderCommandQueue(final OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue)
         {
             this.senderCommandQueue = senderCommandQueue;
             return this;
         }
 
-        ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCommandQueue()
+        ManyToOneConcurrentArrayQueue<Runnable> driverCommandQueue()
         {
             return driverCommandQueue;
         }
 
-        Context driverCommandQueue(final ManyToOneConcurrentArrayQueue<DriverConductorCmd> queue)
+        Context driverCommandQueue(final ManyToOneConcurrentArrayQueue<Runnable> queue)
         {
             this.driverCommandQueue = queue;
             return this;

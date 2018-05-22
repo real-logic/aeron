@@ -16,8 +16,6 @@
 package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
-import io.aeron.driver.cmd.NewPublicationCmd;
-import io.aeron.driver.cmd.SenderCmd;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
@@ -88,7 +86,7 @@ public class SenderTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final SetupFlyweight setupHeader = new SetupFlyweight();
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
-    private final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue =
+    private final OneToOneConcurrentArrayQueue<Runnable> senderCommandQueue =
         new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
 
     private final HeaderWriter headerWriter = HeaderWriter.newInstance(HEADER);
@@ -158,7 +156,7 @@ public class SenderTest
             false,
             false);
 
-        senderCommandQueue.offer(new NewPublicationCmd(publication));
+        senderCommandQueue.offer(() -> sender.onNewNetworkPublication(publication));
     }
 
     @After

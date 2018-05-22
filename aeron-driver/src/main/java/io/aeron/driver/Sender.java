@@ -17,7 +17,6 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.SendChannelEndpoint;
-import io.aeron.driver.cmd.SenderCmd;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -25,7 +24,6 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.net.InetSocketAddress;
-import java.util.function.Consumer;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
 
@@ -51,14 +49,14 @@ class SenderRhsPadding extends SenderHotFields
 /**
  * Agent that iterates over {@link NetworkPublication}s for sending them to registered subscribers.
  */
-public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCmd>
+public class Sender extends SenderRhsPadding implements Agent
 {
     private static final NetworkPublication[] EMPTY_PUBLICATIONS = new NetworkPublication[0];
 
     private final long statusMessageReadTimeoutNs;
     private final int dutyCycleRatio;
     private final ControlTransportPoller controlTransportPoller;
-    private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
+    private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesSent;
     private final NanoClock nanoClock;
     private final DriverConductorProxy conductorProxy;
@@ -83,7 +81,7 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
 
     public int doWork()
     {
-        final int workCount = commandQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
+        final int workCount = commandQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
         final long nowNs = nanoClock.nanoTime();
         final int bytesSent = doSend(nowNs);
 
@@ -137,11 +135,6 @@ public class Sender extends SenderRhsPadding implements Agent, Consumer<SenderCm
     public void onRemoveDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
         channelEndpoint.removeDestination(address);
-    }
-
-    public void accept(final SenderCmd cmd)
-    {
-        cmd.execute(this);
     }
 
     private int doSend(final long nowNs)

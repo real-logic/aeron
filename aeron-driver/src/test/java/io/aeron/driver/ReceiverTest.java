@@ -16,7 +16,6 @@
 package io.aeron.driver;
 
 import io.aeron.driver.buffer.*;
-import io.aeron.driver.cmd.*;
 import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
@@ -32,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
-import static junit.framework.TestCase.assertTrue;
 import static org.agrona.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -94,7 +92,7 @@ public class ReceiverTest
     private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
-    private final ManyToOneConcurrentArrayQueue<DriverConductorCmd> toConductorQueue =
+    private final ManyToOneConcurrentArrayQueue<Runnable> toConductorQueue =
         new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
 
     private ReceiveChannelEndpoint receiveChannelEndpoint;
@@ -136,6 +134,7 @@ public class ReceiverTest
         ctx.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
 
         receiver = new Receiver(ctx);
+        receiverProxy.receiver(receiver);
 
         senderChannel = DatagramChannel.open();
         senderChannel.bind(senderAddress);
@@ -201,13 +200,6 @@ public class ReceiverTest
 
         final int messagesRead = toConductorQueue.drain((e) ->
         {
-            final CreatePublicationImageCmd cmd = (CreatePublicationImageCmd)e;
-
-            assertThat(cmd.channelEndpoint().udpChannel(), is(UDP_CHANNEL));
-            assertThat(cmd.streamId(), is(STREAM_ID));
-            assertThat(cmd.sessionId(), is(SESSION_ID));
-            assertThat(cmd.termId(), is(ACTIVE_TERM_ID));
-
             // pass in new term buffer from conductor, which should trigger SM
             receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
         });
@@ -252,7 +244,6 @@ public class ReceiverTest
 
         final int commandsRead = toConductorQueue.drain((e) ->
         {
-            assertTrue(e instanceof CreatePublicationImageCmd);
             // pass in new term buffer from conductor, which should trigger SM
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
@@ -323,7 +314,6 @@ public class ReceiverTest
 
         final int commandsRead = toConductorQueue.drain((e) ->
         {
-            assertTrue(e instanceof CreatePublicationImageCmd);
             // pass in new term buffer from conductor, which should trigger SM
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
@@ -397,7 +387,6 @@ public class ReceiverTest
 
         final int commandsRead = toConductorQueue.drain((e) ->
         {
-            assertTrue(e instanceof CreatePublicationImageCmd);
             // pass in new term buffer from conductor, which should trigger SM
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
@@ -475,7 +464,6 @@ public class ReceiverTest
 
         final int commandsRead = toConductorQueue.drain((e) ->
         {
-            assertTrue(e instanceof CreatePublicationImageCmd);
             // pass in new term buffer from conductor, which should trigger SM
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,

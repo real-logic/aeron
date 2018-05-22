@@ -20,7 +20,6 @@ import io.aeron.CommonContext;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.RawLogFactory;
-import io.aeron.driver.cmd.DriverConductorCmd;
 import io.aeron.driver.exceptions.ControlProtocolException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationUdpTransport;
@@ -41,7 +40,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
@@ -55,7 +53,7 @@ import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
 /**
  * Driver Conductor that takes commands from publishers and subscribers and orchestrates the media driver.
  */
-public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
+public class DriverConductor implements Agent
 {
     private final long timerIntervalNs;
     private final long imageLivenessTimeoutNs;
@@ -75,7 +73,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
     private final ClientProxy clientProxy;
     private final RingBuffer toDriverCommands;
     private final ClientCommandAdapter clientCommandAdapter;
-    private final ManyToOneConcurrentArrayQueue<DriverConductorCmd> driverCmdQueue;
+    private final ManyToOneConcurrentArrayQueue<Runnable> driverCmdQueue;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final ArrayList<NetworkPublication> networkPublications = new ArrayList<>();
@@ -143,11 +141,6 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         return "driver-conductor";
     }
 
-    public void accept(final DriverConductorCmd cmd)
-    {
-        cmd.execute(this);
-    }
-
     public int doWork()
     {
         int workCount = 0;
@@ -157,7 +150,7 @@ public class DriverConductor implements Agent, Consumer<DriverConductorCmd>
         workCount += processTimers(nowNs);
 
         workCount += clientCommandAdapter.receive();
-        workCount += driverCmdQueue.drain(this, Configuration.COMMAND_DRAIN_LIMIT);
+        workCount += driverCmdQueue.drain(Runnable::run, Configuration.COMMAND_DRAIN_LIMIT);
 
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int i = 0, size = publicationImages.size(); i < size; i++)

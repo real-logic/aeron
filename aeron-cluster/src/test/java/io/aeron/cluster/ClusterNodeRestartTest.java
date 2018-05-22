@@ -39,11 +39,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -92,7 +92,7 @@ public class ClusterNodeRestartTest
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
         final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
 
-        launchService(true, serviceMsgCounter);
+        launchService(serviceMsgCounter);
         connectClient();
 
         sendCountedMessageIntoCluster(0);
@@ -108,7 +108,7 @@ public class ClusterNodeRestartTest
         clusteredMediaDriver.close();
 
         launchClusteredMediaDriver(false);
-        launchService(false, restartServiceMsgCounter);
+        launchService(restartServiceMsgCounter);
         connectClient();
 
         while (restartServiceMsgCounter.get() == 0)
@@ -124,7 +124,7 @@ public class ClusterNodeRestartTest
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
         final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
 
-        launchService(true, serviceMsgCounter);
+        launchService(serviceMsgCounter);
         connectClient();
 
         sendCountedMessageIntoCluster(0);
@@ -140,7 +140,7 @@ public class ClusterNodeRestartTest
         clusteredMediaDriver.close();
 
         launchClusteredMediaDriver(false);
-        launchService(false, restartServiceMsgCounter);
+        launchService(restartServiceMsgCounter);
         connectClient();
 
         sendCountedMessageIntoCluster(1);
@@ -157,7 +157,7 @@ public class ClusterNodeRestartTest
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
-        launchService(true, serviceMsgCounter);
+        launchService(serviceMsgCounter);
         connectClient();
 
         final CountersReader counters = container.context().aeron().countersReader();
@@ -177,7 +177,7 @@ public class ClusterNodeRestartTest
 
         serviceState.set(null);
         launchClusteredMediaDriver(false);
-        launchService(false, serviceMsgCounter);
+        launchService(serviceMsgCounter);
         connectClient();
 
         while (null == serviceState.get())
@@ -194,7 +194,7 @@ public class ClusterNodeRestartTest
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
-        launchService(true, serviceMsgCounter);
+        launchService(serviceMsgCounter);
         connectClient();
 
         sendCountedMessageIntoCluster(0);
@@ -223,7 +223,7 @@ public class ClusterNodeRestartTest
 
         serviceState.set(null);
         launchClusteredMediaDriver(false);
-        launchService(false, serviceMsgCounter);
+        launchService(serviceMsgCounter);
         connectClient();
 
         while (null == serviceState.get())
@@ -240,7 +240,7 @@ public class ClusterNodeRestartTest
     {
         final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
-        launchService(true, serviceMsgCounter);
+        launchService(serviceMsgCounter);
         connectClient();
 
         sendCountedMessageIntoCluster(0);
@@ -277,7 +277,7 @@ public class ClusterNodeRestartTest
 
         serviceMsgCounter.set(0);
         launchClusteredMediaDriver(false);
-        launchService(false, serviceMsgCounter);
+        launchService(serviceMsgCounter);
         connectClient();
 
         while (serviceMsgCounter.get() != 1)
@@ -310,7 +310,7 @@ public class ClusterNodeRestartTest
         }
     }
 
-    private void launchService(final boolean initialLaunch, final AtomicLong msgCounter)
+    private void launchService(final AtomicLong msgCounter)
     {
         final ClusteredService service =
             new StubClusteredService()

@@ -565,16 +565,16 @@ public class ElectionTest
     private static RecordingLog.RecoveryPlan recoveryPlan(final long leadershipTermId)
     {
         final long lastTermBaseLogPosition = 0;
-        final long lastTermPositionCommitted = 0;
-        final long lastTermPositionAppended = 0;
+        final long lastCommittedTermPosition = 0;
+        final long lastAppendedTermPosition = 0;
         final ArrayList<RecordingLog.ReplayStep> snapshotSteps = new ArrayList<>();
         final ArrayList<RecordingLog.ReplayStep> termSteps = new ArrayList<>();
 
         return new RecordingLog.RecoveryPlan(
             leadershipTermId,
             lastTermBaseLogPosition,
-            lastTermPositionCommitted,
-            lastTermPositionAppended,
+            lastCommittedTermPosition,
+            lastAppendedTermPosition,
             snapshotSteps,
             termSteps);
     }

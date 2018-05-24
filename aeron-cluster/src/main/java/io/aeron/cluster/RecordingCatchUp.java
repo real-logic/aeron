@@ -183,7 +183,7 @@ class RecordingCatchUp implements AutoCloseable
 
             fromPosition = localLastStep.recordingStopPosition;
             targetPosition = leaderLastStep.recordingStopPosition;
-            logPosition = leaderRecoveryPlan.lastLogPositionAppended;
+            logPosition = leaderRecoveryPlan.lastAppendedLogPosition;
 
             extendChannel = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)

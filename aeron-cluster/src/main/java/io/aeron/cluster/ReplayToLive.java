@@ -55,9 +55,9 @@ class ReplayToLive implements AutoCloseable
     private long activeCorrelationId = Aeron.NULL_VALUE;
     private long nextTargetPosition = Aeron.NULL_VALUE;
     private boolean liveAdded = false;
+    private boolean replayActive = false;
 
     ReplayToLive(
-        final Aeron aeron,
         final Subscription subscription,
         final AeronArchive archive,
         final String replayChannel,
@@ -83,6 +83,11 @@ class ReplayToLive implements AutoCloseable
 
     public void close()
     {
+        if (replayActive)
+        {
+            archive.stopReplay(sessionId);
+        }
+
         state(State.CLOSED);
     }
 
@@ -191,6 +196,8 @@ class ReplayToLive implements AutoCloseable
                 activeCorrelationId = correlationId;
                 workCount += 1;
             }
+
+            replayActive = true;
         }
         else if (pollForResponse(archive, activeCorrelationId))
         {
@@ -281,6 +288,7 @@ class ReplayToLive implements AutoCloseable
         }
         else if (pollForResponse(archive, activeCorrelationId))
         {
+            replayActive = false;
             subscription.removeDestination(replayDestination);
             state(State.CAUGHT_UP);
             activeCorrelationId = Aeron.NULL_VALUE;

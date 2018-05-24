@@ -170,7 +170,6 @@ public class ReplayToLiveTest
                 awaitPosition(counters, counterId, publication.position());
 
                 final ReplayToLive replayToLive = new ReplayToLive(
-                    aeron,
                     subscription,
                     aeronArchive,
                     REPLAY_CHANNEL.build(),

@@ -349,14 +349,14 @@ public class RecordingLog
     public static final int TERM_BASE_LOG_POSITION_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
 
     /**
-     * The offset at which the term position is stored.
+     * The offset at which the log position is stored.
      */
-    public static final int TERM_POSITION_OFFSET = TERM_BASE_LOG_POSITION_OFFSET + SIZE_OF_LONG;
+    public static final int LOG_POSITION_OFFSET = TERM_BASE_LOG_POSITION_OFFSET + SIZE_OF_LONG;
 
     /**
      * The offset at which the timestamp for the entry is stored.
      */
-    public static final int TIMESTAMP_OFFSET = TERM_POSITION_OFFSET + SIZE_OF_LONG;
+    public static final int TIMESTAMP_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
 
     /**
      * The offset at which the voted for member id or service id is recorded.
@@ -532,41 +532,16 @@ public class RecordingLog
     }
 
     /**
-     * Get the latest snapshot for a given position within a leadership term.
-     *
-     * @param leadershipTermId in which the snapshot was taken.
-     * @param logPosition      within the leadership term.
-     * @param serviceId        to which the snapshot applies.
-     * @return the latest snapshot for a given position or null if no match found.
-     */
-    public Entry getSnapshot(final long leadershipTermId, final long logPosition, final int serviceId)
-    {
-        for (int i = entries.size() - 1; i >= 0; i--)
-        {
-            final Entry entry = entries.get(i);
-            if (entry.type == ENTRY_TYPE_SNAPSHOT &&
-                leadershipTermId == entry.leadershipTermId &&
-                logPosition == entry.logPosition &&
-                serviceId == entry.applicableId)
-            {
-                return entry;
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * Append a log entry for a leadership term.
      *
      * @param leadershipTermId for the current term.
-     * @param logPosition      reached at the beginning of the term.
+     * @param termBaseLogPosition      reached at the beginning of the term.
      * @param timestamp        at the beginning of the term.
      * @param votedForMemberId in the leader election.
      */
     public void appendTerm(
         final long leadershipTermId,
-        final long logPosition,
+        final long termBaseLogPosition,
         final long timestamp,
         final int votedForMemberId)
     {
@@ -582,24 +557,31 @@ public class RecordingLog
             }
         }
 
-        append(ENTRY_TYPE_TERM, NULL_VALUE, leadershipTermId, logPosition, NULL_POSITION, timestamp, votedForMemberId);
+        append(
+            ENTRY_TYPE_TERM,
+            NULL_VALUE,
+            leadershipTermId,
+            termBaseLogPosition,
+            NULL_POSITION,
+            timestamp,
+            votedForMemberId);
     }
 
     /**
      * Append a log entry for a snapshot.
      *
-     * @param recordingId      in the archive for the snapshot.
-     * @param leadershipTermId for the current term
-     * @param logPosition      at the beginning of the leadership term.
-     * @param termPosition     for the position in the current term or length so far for that term.
-     * @param timestamp        at which the snapshot was taken.
-     * @param serviceId        for which the snapshot is recorded.
+     * @param recordingId         in the archive for the snapshot.
+     * @param leadershipTermId    for the current term
+     * @param termBaseLogPosition at the beginning of the leadership term.
+     * @param logPosition         for the position in the current term or length so far for that term.
+     * @param timestamp           at which the snapshot was taken.
+     * @param serviceId           for which the snapshot is recorded.
      */
     public void appendSnapshot(
         final long recordingId,
         final long leadershipTermId,
+        final long termBaseLogPosition,
         final long logPosition,
-        final long termPosition,
         final long timestamp,
         final int serviceId)
     {
@@ -615,7 +597,14 @@ public class RecordingLog
             }
         }
 
-        append(ENTRY_TYPE_SNAPSHOT, recordingId, leadershipTermId, logPosition, termPosition, timestamp, serviceId);
+        append(
+            ENTRY_TYPE_SNAPSHOT,
+            recordingId,
+            leadershipTermId,
+            termBaseLogPosition,
+            logPosition,
+            timestamp,
+            serviceId);
     }
 
     /**
@@ -627,7 +616,6 @@ public class RecordingLog
     public void commitLeadershipRecordingId(final long leadershipTermId, final long recordingId)
     {
         final int index = getLeadershipTermEntryIndex(leadershipTermId);
-
         commitEntryValue(index, recordingId, RECORDING_ID_OFFSET);
 
         final Entry entry = entries.get(index);
@@ -646,20 +634,19 @@ public class RecordingLog
      * Commit the position reached in a leadership term before a clean shutdown.
      *
      * @param leadershipTermId for committing the term position reached.
-     * @param termPosition     reached in the leadership term.
+     * @param logPosition      reached in the leadership term.
      */
-    public void commitLeadershipTermPosition(final long leadershipTermId, final long termPosition)
+    public void commitLogPosition(final long leadershipTermId, final long logPosition)
     {
         final int index = getLeadershipTermEntryIndex(leadershipTermId);
-
-        commitEntryValue(index, termPosition, TERM_POSITION_OFFSET);
+        commitEntryValue(index, logPosition, LOG_POSITION_OFFSET);
 
         final Entry entry = entries.get(index);
         entries.set(index, new Entry(
             entry.recordingId,
             entry.leadershipTermId,
             entry.termBaseLogPosition,
-            termPosition,
+            logPosition,
             entry.timestamp,
             entry.applicableId,
             entry.type,
@@ -672,10 +659,9 @@ public class RecordingLog
      * @param leadershipTermId for committing the base position.
      * @param logPosition      for the base of a leadership term.
      */
-    public void commitLeadershipLogPosition(final long leadershipTermId, final long logPosition)
+    public void commitTermBaseLogPosition(final long leadershipTermId, final long logPosition)
     {
         final int index = getLeadershipTermEntryIndex(leadershipTermId);
-
         commitEntryValue(index, logPosition, TERM_BASE_LOG_POSITION_OFFSET);
 
         final Entry entry = entries.get(index);
@@ -743,16 +729,16 @@ public class RecordingLog
         final int entryType,
         final long recordingId,
         final long leadershipTermId,
+        final long termBaseLogPosition,
         final long logPosition,
-        final long termPosition,
         final long timestamp,
         final int applicableId)
     {
         buffer.putLong(RECORDING_ID_OFFSET, recordingId, LITTLE_ENDIAN);
-        buffer.putLong(TERM_BASE_LOG_POSITION_OFFSET, logPosition, LITTLE_ENDIAN);
         buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId, LITTLE_ENDIAN);
+        buffer.putLong(TERM_BASE_LOG_POSITION_OFFSET, termBaseLogPosition, LITTLE_ENDIAN);
+        buffer.putLong(LOG_POSITION_OFFSET, logPosition, LITTLE_ENDIAN);
         buffer.putLong(TIMESTAMP_OFFSET, timestamp, LITTLE_ENDIAN);
-        buffer.putLong(TERM_POSITION_OFFSET, termPosition, LITTLE_ENDIAN);
         buffer.putInt(APPLICABLE_ID_OFFSET, applicableId, LITTLE_ENDIAN);
         buffer.putInt(ENTRY_TYPE_OFFSET, entryType, LITTLE_ENDIAN);
 
@@ -773,8 +759,8 @@ public class RecordingLog
         entries.add(new Entry(
             recordingId,
             leadershipTermId,
+            termBaseLogPosition,
             logPosition,
-            NULL_POSITION,
             timestamp,
             applicableId,
             entryType,
@@ -794,7 +780,7 @@ public class RecordingLog
                     buffer.getLong(i + RECORDING_ID_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(i + TERM_BASE_LOG_POSITION_OFFSET, LITTLE_ENDIAN),
-                    buffer.getLong(i + TERM_POSITION_OFFSET, LITTLE_ENDIAN),
+                    buffer.getLong(i + LOG_POSITION_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(i + TIMESTAMP_OFFSET, LITTLE_ENDIAN),
                     buffer.getInt(i + APPLICABLE_ID_OFFSET, LITTLE_ENDIAN),
                     entryType,

@@ -59,11 +59,11 @@ class SequencerAgent implements Agent, MemberStatusListener
     private long nextSessionId = 1;
     private long termBaseLogPosition = 0;
     private long leadershipTermId = Aeron.NULL_VALUE;
-    private long lastRecordingPosition = 0;
+    private long lastAppendedPosition = 0;
     private long timeOfLastLogUpdateMs = 0;
     private long followerCommitPosition = 0;
-    private ReadableCounter termRecordingPosition;
-    private Counter termCommitPosition;
+    private ReadableCounter appendedPosition;
+    private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
     private Cluster.Role role;
     private ClusterMember[] clusterMembers;
@@ -292,12 +292,11 @@ class SequencerAgent implements Agent, MemberStatusListener
 
         if (hasReachedThreshold(logPosition, serviceAckStates))
         {
-            final long termPosition = currentTermPosition();
             switch (action)
             {
                 case SNAPSHOT:
                     final long nowNs = cachedEpochClock.time();
-                    takeSnapshot(nowNs, termPosition);
+                    takeSnapshot(nowNs, logPosition);
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
 
@@ -308,14 +307,14 @@ class SequencerAgent implements Agent, MemberStatusListener
                     break;
 
                 case SHUTDOWN:
-                    takeSnapshot(cachedEpochClock.time(), termPosition);
-                    recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
+                    takeSnapshot(cachedEpochClock.time(), logPosition);
+                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
                     break;
 
                 case ABORT:
-                    recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
+                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
                     break;
@@ -566,12 +565,12 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     void logRecordingPositionCounter(final ReadableCounter logRecordingPosition)
     {
-        this.termRecordingPosition = logRecordingPosition;
+        this.appendedPosition = logRecordingPosition;
     }
 
     void commitPositionCounter(final Counter commitPosition)
     {
-        this.termCommitPosition = commitPosition;
+        this.commitPosition = commitPosition;
     }
 
     @SuppressWarnings("unused")
@@ -726,7 +725,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         archive.startRecording(recordingChannel, ctx.logStreamId(), SourceLocation.LOCAL);
 
         createPositionCounters(logSessionId);
-        final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), termRecordingPosition.counterId());
+        final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
         recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);
 
         awaitServicesReady(channelUri, true, logSessionId);
@@ -747,9 +746,9 @@ class SequencerAgent implements Agent, MemberStatusListener
         logAdapter = new LogAdapter(image, this);
 
         createPositionCounters(logSessionId);
-        final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), termRecordingPosition.counterId());
+        final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
         recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);
-        lastRecordingPosition = 0;
+        lastAppendedPosition = 0;
     }
 
     void awaitFollowerServicesReady(final ChannelUri channelUri, final int logSessionId)
@@ -811,7 +810,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                 replayTerm(image, targetPosition, counter);
 
                 final long termPosition = image.position();
-                recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
+                recordingLog.commitLogPosition(leadershipTermId, termPosition);
                 termBaseLogPosition = entry.termBaseLogPosition + termPosition;
             }
         }
@@ -1074,10 +1073,8 @@ class SequencerAgent implements Agent, MemberStatusListener
         final CountersReader counters = aeron.countersReader();
         final int recordingCounterId = awaitRecordingCounter(counters, logSessionId);
 
-        termRecordingPosition = new ReadableCounter(counters, recordingCounterId);
-
-        termCommitPosition = CommitPos.allocate(
-            aeron, tempBuffer, leadershipTermId, termBaseLogPosition, Aeron.NULL_VALUE);
+        appendedPosition = new ReadableCounter(counters, recordingCounterId);
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, Aeron.NULL_VALUE);
     }
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader, final int logSessionId)
@@ -1085,7 +1082,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         final String channel = isLeader && UDP_MEDIA.equals(channelUri.media()) ?
             channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
         serviceProxy.joinLog(
-            leadershipTermId, termCommitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
+            leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
 
         resetToNull(serviceAckStates);
         awaitServiceAcks();
@@ -1202,7 +1199,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                         final long termPosition = image.position();
                         if (entry.logPosition < entry.termBaseLogPosition + termPosition)
                         {
-                            recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
+                            recordingLog.commitLogPosition(leadershipTermId, entry.termBaseLogPosition + termPosition);
                         }
 
                         termBaseLogPosition = entry.termBaseLogPosition + termPosition;
@@ -1309,10 +1306,10 @@ class SequencerAgent implements Agent, MemberStatusListener
 
         if (Cluster.Role.LEADER == role)
         {
-            thisMember.logPosition(termBaseLogPosition + termRecordingPosition.get());
+            thisMember.logPosition(termBaseLogPosition + appendedPosition.get());
 
             final long position = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
-            final long logPosition = termBaseLogPosition + termCommitPosition.getWeak();
+            final long logPosition = termBaseLogPosition + commitPosition.getWeak();
             if (position > logPosition || nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatIntervalMs))
             {
                 for (final ClusterMember member : clusterMembers)
@@ -1324,7 +1321,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                     }
                 }
 
-                termCommitPosition.setOrdered(position - termBaseLogPosition);
+                commitPosition.setOrdered(position - termBaseLogPosition);
                 timeOfLastLogUpdateMs = nowMs;
 
                 workCount = 1;
@@ -1332,20 +1329,20 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
         else if (Cluster.Role.FOLLOWER == role)
         {
-            final long recordingPosition = termRecordingPosition.get();
-            if (recordingPosition != lastRecordingPosition)
+            final long appendedPosition = this.appendedPosition.get();
+            if (appendedPosition != lastAppendedPosition)
             {
                 final Publication publication = leaderMember.publication();
                 if (memberStatusPublisher.appendedPosition(
-                    publication, termBaseLogPosition + recordingPosition, leadershipTermId, memberId))
+                    publication, termBaseLogPosition + appendedPosition, leadershipTermId, memberId))
                 {
-                    lastRecordingPosition = recordingPosition;
+                    lastAppendedPosition = appendedPosition;
                 }
 
                 workCount = 1;
             }
 
-            termCommitPosition.proposeMaxOrdered(logAdapter.position());
+            commitPosition.proposeMaxOrdered(logAdapter.position());
 
             if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
             {
@@ -1378,7 +1375,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    private void takeSnapshot(final long timestampMs, final long termPosition)
+    private void takeSnapshot(final long timestampMs, final long logPosition)
     {
         final String channel = ctx.snapshotChannel();
         final int streamId = ctx.snapshotStreamId();
@@ -1391,18 +1388,18 @@ class SequencerAgent implements Agent, MemberStatusListener
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                snapshotState(publication, termBaseLogPosition + termPosition, leadershipTermId);
+                snapshotState(publication, logPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
 
                 for (int i = serviceAckStates.length - 1; i >= 0; i--)
                 {
                     final long snapshotRecordingId = serviceAckStates[i].relevantId();
                     recordingLog.appendSnapshot(
-                        snapshotRecordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs, i);
+                        snapshotRecordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, i);
                 }
 
                 recordingLog.appendSnapshot(
-                    recordingId, leadershipTermId, termBaseLogPosition, termPosition, timestampMs, NULL_SERVICE_ID);
+                    recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, NULL_SERVICE_ID);
             }
             finally
             {

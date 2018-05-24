@@ -75,7 +75,7 @@ public class RecordingLogTest
         recordingLog.appendTerm(leadershipTermId, logPosition, timestamp, votedForMemberId);
 
         final long newPosition = 9999L;
-        recordingLog.commitLeadershipTermPosition(leadershipTermId, newPosition);
+        recordingLog.commitLogPosition(leadershipTermId, newPosition);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
         assertThat(recordingLogTwo.entries().size(), is(1));
@@ -95,14 +95,14 @@ public class RecordingLogTest
         final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
         recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, timestamp, votedForMemberId);
 
-        final long newLogPosition = 7777L;
-        recordingLog.commitLeadershipLogPosition(leadershipTermId, newLogPosition);
+        final long newBaseLogPosition = 7777L;
+        recordingLog.commitTermBaseLogPosition(leadershipTermId, newBaseLogPosition);
 
         final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
         assertThat(recordingLogTwo.entries().size(), is(1));
 
         final RecordingLog.Entry actualEntry = recordingLogTwo.entries().get(0);
-        assertEquals(newLogPosition, actualEntry.termBaseLogPosition);
+        assertEquals(newBaseLogPosition, actualEntry.termBaseLogPosition);
     }
 
     @Test

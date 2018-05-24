@@ -139,7 +139,7 @@ class Election implements MemberStatusListener, AutoCloseable
         this.localArchive = localArchive;
         this.sequencerAgent = sequencerAgent;
         this.random = ctx.random();
-        logPosition = recoveryPlan.lastTermBaseLogPosition + recoveryPlan.lastTermPositionAppended;
+        logPosition = recoveryPlan.lastLogPositionAppended;
     }
 
     public void close()

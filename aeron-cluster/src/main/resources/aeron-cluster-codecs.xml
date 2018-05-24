@@ -401,8 +401,8 @@
                  description="Serialised Recovery Plan">
         <field name="lastLeadershipTermId"       id="1"  type="int64"/>
         <field name="lastTermBaseLogPosition"    id="2"  type="int64"/>
-        <field name="lastTermPositionCommitted"  id="3"  type="int64"/>
-        <field name="lastTermPositionAppended"   id="4"  type="int64"/>
+        <field name="lastLogPositionCommitted"   id="3"  type="int64"/>
+        <field name="lastLogPositionAppended"    id="4"  type="int64"/>
         <group name="steps"                      id="5"  dimensionType="groupSizeEncoding">
             <field name="recordingStartPosition" id="6"  type="int64"/>
             <field name="recordingStopPosition"  id="7"  type="int64"/>

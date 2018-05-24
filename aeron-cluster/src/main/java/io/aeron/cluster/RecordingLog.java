@@ -221,8 +221,8 @@ public class RecordingLog
     {
         public final long lastLeadershipTermId;
         public final long lastTermBaseLogPosition;
-        public final long lastTermPositionCommitted;
-        public final long lastTermPositionAppended;
+        public final long lastLogPositionCommitted;
+        public final long lastLogPositionAppended;
         public final ArrayList<ReplayStep> snapshotSteps;
         public final ArrayList<ReplayStep> termSteps;
         public final RecoveryPlanEncoder encoder = new RecoveryPlanEncoder();
@@ -231,15 +231,15 @@ public class RecordingLog
         public RecoveryPlan(
             final long lastLeadershipTermId,
             final long lastTermBaseLogPosition,
-            final long lastTermPositionCommitted,
-            final long lastTermPositionAppended,
+            final long lastLogPositionCommitted,
+            final long lastLogPositionAppended,
             final ArrayList<ReplayStep> snapshotSteps,
             final ArrayList<ReplayStep> termSteps)
         {
             this.lastLeadershipTermId = lastLeadershipTermId;
             this.lastTermBaseLogPosition = lastTermBaseLogPosition;
-            this.lastTermPositionCommitted = lastTermPositionCommitted;
-            this.lastTermPositionAppended = lastTermPositionAppended;
+            this.lastLogPositionCommitted = lastLogPositionCommitted;
+            this.lastLogPositionAppended = lastLogPositionAppended;
             this.snapshotSteps = snapshotSteps;
             this.termSteps = termSteps;
         }
@@ -250,8 +250,8 @@ public class RecordingLog
 
             this.lastLeadershipTermId = decoder.lastLeadershipTermId();
             this.lastTermBaseLogPosition = decoder.lastTermBaseLogPosition();
-            this.lastTermPositionCommitted = decoder.lastTermPositionCommitted();
-            this.lastTermPositionAppended = decoder.lastTermPositionAppended();
+            this.lastLogPositionCommitted = decoder.lastLogPositionCommitted();
+            this.lastLogPositionAppended = decoder.lastLogPositionAppended();
 
             snapshotSteps = new ArrayList<>();
             termSteps = new ArrayList<>();
@@ -284,8 +284,8 @@ public class RecordingLog
             encoder.wrap(buffer, offset)
                 .lastLeadershipTermId(lastLeadershipTermId)
                 .lastTermBaseLogPosition(lastTermBaseLogPosition)
-                .lastTermPositionCommitted(lastTermPositionCommitted)
-                .lastTermPositionAppended(lastTermPositionAppended);
+                .lastLogPositionCommitted(lastLogPositionCommitted)
+                .lastLogPositionAppended(lastLogPositionAppended);
 
             final int stepsCount = termSteps.size() + snapshotSteps.size();
             final RecoveryPlanEncoder.StepsEncoder stepEncoder = encoder.stepsCount(stepsCount);
@@ -310,8 +310,8 @@ public class RecordingLog
             return "RecoveryPlan{" +
                 "lastLeadershipTermId=" + lastLeadershipTermId +
                 ", lastTermBaseLogPosition=" + lastTermBaseLogPosition +
-                ", lastTermPositionCommitted=" + lastTermPositionCommitted +
-                ", lastTermPositionAppended=" + lastTermPositionAppended +
+                ", lastLogPositionCommitted=" + lastLogPositionCommitted +
+                ", lastLogPositionAppended=" + lastLogPositionAppended +
                 ", snapshotSteps=" + snapshotSteps +
                 ", termSteps=" + termSteps +
                 '}';
@@ -496,8 +496,8 @@ public class RecordingLog
 
         long lastLeadershipTermId = NULL_VALUE;
         long lastTermBaseLogPosition = 0;
-        long lastTermPositionCommitted = AeronArchive.NULL_POSITION;
-        long lastTermPositionAppended = 0;
+        long lastLogPositionCommitted = AeronArchive.NULL_POSITION;
+        long lastLogPositionAppended = 0;
 
         final int snapshotStepsSize = snapshotSteps.size();
         if (snapshotStepsSize > 0)
@@ -506,8 +506,8 @@ public class RecordingLog
 
             lastLeadershipTermId = snapshotStep.entry.leadershipTermId;
             lastTermBaseLogPosition = snapshotStep.entry.termBaseLogPosition;
-            lastTermPositionCommitted = snapshotStep.entry.logPosition - lastTermBaseLogPosition;
-            lastTermPositionAppended = lastTermPositionCommitted;
+            lastLogPositionCommitted = snapshotStep.entry.logPosition;
+            lastLogPositionAppended = lastLogPositionCommitted;
         }
 
         final int termStepsSize = termSteps.size();
@@ -518,15 +518,15 @@ public class RecordingLog
 
             lastLeadershipTermId = entry.leadershipTermId;
             lastTermBaseLogPosition = entry.termBaseLogPosition;
-            lastTermPositionCommitted = entry.logPosition - lastTermBaseLogPosition;
-            lastTermPositionAppended = replayStep.recordingStopPosition;
+            lastLogPositionCommitted = entry.logPosition;
+            lastLogPositionAppended = lastTermBaseLogPosition + replayStep.recordingStopPosition;
         }
 
         return new RecoveryPlan(
             lastLeadershipTermId,
             lastTermBaseLogPosition,
-            lastTermPositionCommitted,
-            lastTermPositionAppended,
+            lastLogPositionCommitted,
+            lastLogPositionAppended,
             snapshotSteps,
             termSteps);
     }

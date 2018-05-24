@@ -682,13 +682,25 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
     private ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
     {
+        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+
         channelBuilder
             .clear()
             .media(channelUri.media())
             .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
             .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
-            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME))
-            .sessionId(integerValueOf(channelUri.get(CommonContext.SESSION_ID_PARAM_NAME)));
+            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME));
+
+        if (null != sessionIdStr && ChannelUri.isTagReference(sessionIdStr))
+        {
+            channelBuilder
+                .isSessionIdTagReference(true)
+                .sessionId((int)ChannelUri.tagReferenced(sessionIdStr));
+        }
+        else
+        {
+            channelBuilder.sessionId(integerValueOf(sessionIdStr));
+        }
 
         return channelBuilder;
     }

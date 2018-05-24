@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.NanoClock;
@@ -42,7 +43,7 @@ public class MultiRcvDestination implements AutoCloseable
     {
         for (final ReceiveDestinationUdpTransport transport : transports)
         {
-            transport.close();
+            CloseHelper.close(transport);
         }
     }
 
@@ -75,6 +76,11 @@ public class MultiRcvDestination implements AutoCloseable
     public boolean hasDestinations()
     {
         return numDestinations > 0;
+    }
+
+    public boolean hasDestination(final int transportIndex)
+    {
+        return (numDestinations > transportIndex && null != transports[transportIndex]);
     }
 
     public ReceiveDestinationUdpTransport transport(final int transportIndex)

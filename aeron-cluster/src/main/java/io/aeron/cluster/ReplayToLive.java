@@ -21,6 +21,8 @@ import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.FragmentHandler;
 
 class ReplayToLive implements AutoCloseable
 {
@@ -116,6 +118,19 @@ class ReplayToLive implements AutoCloseable
         }
 
         return workCount;
+    }
+
+    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
+    {
+        doWork();
+        return null == image ? 0 : image.poll(fragmentHandler, fragmentLimit);
+    }
+
+    public int boundedControlledPoll(
+        final ControlledFragmentHandler fragmentHandler, final long maxPosition, final int fragmentLimit)
+    {
+        doWork();
+        return null == image ? 0 : image.boundedControlledPoll(fragmentHandler, maxPosition, fragmentLimit);
     }
 
     public boolean isCaughtUp()

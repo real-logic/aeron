@@ -55,7 +55,6 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private final ClusterMarkFile markFile;
 
-    private long termBaseLogPosition;
     private long leadershipTermId;
     private long timestampMs;
     private BoundedLogAdapter logAdapter;
@@ -277,11 +276,11 @@ class ClusteredServiceAgent implements Agent, Cluster
         service.onSessionClose(session, timestampMs, closeReason);
     }
 
-    void onServiceAction(final long termPosition, final long timestampMs, final ClusterAction action)
+    void onServiceAction(final long logPosition, final long timestampMs, final ClusterAction action)
     {
         this.timestampMs = timestampMs;
 
-        executeAction(action, termPosition);
+        executeAction(action, logPosition);
     }
 
     void addSession(
@@ -319,17 +318,20 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
     {
-        final long logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
+        long logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
         leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
         timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
 
         if (NULL_POSITION != logPosition)
         {
-            termBaseLogPosition = logPosition;
             loadSnapshot(RecoveryState.getSnapshotRecordingId(counters, recoveryCounterId, serviceId));
         }
+        else
+        {
+            logPosition = 0;
+        }
 
-        consensusModuleProxy.ackAction(termBaseLogPosition, leadershipTermId, serviceId, ClusterAction.INIT);
+        consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, ClusterAction.INIT);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
@@ -347,27 +349,26 @@ class ClusteredServiceAgent implements Agent, Cluster
             awaitActiveLog();
             final int counterId = newActiveLogEvent.commitPositionId;
             leadershipTermId = CommitPos.getLeadershipTermId(counters, counterId);
-            termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, counterId);
+            long logPosition = CommitPos.getTermBaseLogPosition(counters, counterId);
 
             if (CommitPos.getLeadershipTermLength(counters, counterId) > 0)
             {
                 try (Subscription subscription = aeron.addSubscription(
                     newActiveLogEvent.channel, newActiveLogEvent.streamId))
                 {
-                    consensusModuleProxy.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+                    consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, READY);
 
                     final Image image = awaitImage(newActiveLogEvent.sessionId, subscription);
                     final ReadableCounter limit = new ReadableCounter(counters, counterId);
                     final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
 
                     consumeImage(image, adapter);
-
-                    termBaseLogPosition += image.position();
+                    logPosition += image.position();
                 }
             }
 
             newActiveLogEvent = null;
-            consensusModuleProxy.ackAction(termBaseLogPosition, leadershipTermId, serviceId, REPLAY);
+            consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, REPLAY);
         }
 
         service.onReplayEnd();
@@ -446,14 +447,14 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         final int logSessionId = newActiveLogEvent.sessionId;
         leadershipTermId = newActiveLogEvent.leadershipTermId;
-        termBaseLogPosition = CommitPos.getTermBaseLogPosition(counters, commitPositionId);
+        final long logPosition = CommitPos.getTermBaseLogPosition(counters, commitPositionId);
 
         final Subscription logSubscription = aeron.addSubscription(
             newActiveLogEvent.channel, newActiveLogEvent.streamId);
 
         if (newActiveLogEvent.ackBeforeImage)
         {
-            consensusModuleProxy.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+            consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, READY);
         }
 
         final Image image = awaitImage(logSessionId, logSubscription);
@@ -461,7 +462,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         if (!newActiveLogEvent.ackBeforeImage)
         {
-            consensusModuleProxy.ackAction(termBaseLogPosition, leadershipTermId, serviceId, READY);
+            consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, READY);
         }
 
         newActiveLogEvent = null;
@@ -566,14 +567,13 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
     }
 
-    private long onTakeSnapshot(final long termPosition)
+    private long onTakeSnapshot(final long logPosition)
     {
         final long recordingId;
-        final String channel = ctx.snapshotChannel();
-        final int streamId = ctx.snapshotStreamId();
 
         try (AeronArchive archive = AeronArchive.connect(archiveCtx);
-            Publication publication = archive.addRecordedExclusivePublication(channel, streamId))
+            Publication publication = archive.addRecordedExclusivePublication(
+                ctx.snapshotChannel(), ctx.snapshotStreamId()))
         {
             try
             {
@@ -581,7 +581,7 @@ class ClusteredServiceAgent implements Agent, Cluster
                 final int counterId = awaitRecordingCounter(publication, counters);
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
-                snapshotState(publication, termBaseLogPosition + termPosition);
+                snapshotState(publication, logPosition);
                 service.onTakeSnapshot(publication);
 
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
@@ -597,7 +597,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void awaitRecordingComplete(
         final long recordingId,
-        final long completePosition,
+        final long position,
         final CountersReader counters,
         final int counterId,
         final AeronArchive archive)
@@ -615,7 +615,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
             archive.checkForErrorResponse();
         }
-        while (counters.getCounterValue(counterId) < completePosition);
+        while (counters.getCounterValue(counterId) < position);
     }
 
     private void snapshotState(final Publication publication, final long logPosition)
@@ -632,25 +632,23 @@ class ClusteredServiceAgent implements Agent, Cluster
         snapshotTaker.markEnd(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
-    private void executeAction(final ClusterAction action, final long termPosition)
+    private void executeAction(final ClusterAction action, final long logPosition)
     {
         if (isRecovering)
         {
             return;
         }
 
-        final long logPosition = termBaseLogPosition + termPosition;
-
         switch (action)
         {
             case SNAPSHOT:
                 consensusModuleProxy.ackAction(
-                    logPosition, leadershipTermId, onTakeSnapshot(termPosition), serviceId, action);
+                    logPosition, leadershipTermId, onTakeSnapshot(logPosition), serviceId, action);
                 break;
 
             case SHUTDOWN:
                 consensusModuleProxy.ackAction(
-                    logPosition, leadershipTermId, onTakeSnapshot(termPosition), serviceId, action);
+                    logPosition, leadershipTermId, onTakeSnapshot(logPosition), serviceId, action);
                 ctx.terminationHook().run();
                 break;
 

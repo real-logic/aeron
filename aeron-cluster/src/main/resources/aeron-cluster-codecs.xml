@@ -409,7 +409,7 @@
             <field name="recordingId"            id="8"  type="int64"/>
             <field name="leadershipTermId"       id="9"  type="int64"/>
             <field name="termBaseLogPosition"    id="10" type="int64"/>
-            <field name="termPosition"           id="11" type="int64"/>
+            <field name="logPosition"            id="11" type="int64"/>
             <field name="timestamp"              id="12" type="time_t"/>
             <field name="applicableId"           id="13" type="int32"/>
             <field name="entryType"              id="14" type="int32"/>

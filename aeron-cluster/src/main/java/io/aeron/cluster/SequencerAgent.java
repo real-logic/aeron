@@ -1106,7 +1106,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         final RecordingLog.Entry snapshot = snapshotStep.entry;
 
         cachedEpochClock.update(snapshot.timestamp);
-        termBaseLogPosition = snapshot.termBaseLogPosition + snapshot.termPosition;
+        termBaseLogPosition = snapshot.logPosition;
         leadershipTermId = snapshot.leadershipTermId;
 
         final String channel = ctx.replayChannel();
@@ -1200,7 +1200,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                         }
 
                         final long termPosition = image.position();
-                        if (step.entry.termPosition < termPosition)
+                        if (entry.logPosition < entry.termBaseLogPosition + termPosition)
                         {
                             recordingLog.commitLeadershipTermPosition(leadershipTermId, termPosition);
                         }
@@ -1236,14 +1236,13 @@ class SequencerAgent implements Agent, MemberStatusListener
                 aeron,
                 tempBuffer,
                 snapshot.leadershipTermId,
-                snapshot.termBaseLogPosition,
-                snapshot.termPosition,
+                snapshot.logPosition,
                 snapshot.timestamp,
                 termCount,
                 serviceSnapshotRecordingIds);
         }
 
-        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, 0, NULL_POSITION, 0, termCount);
+        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, NULL_POSITION, 0, termCount);
     }
 
     private void awaitServiceAcks()

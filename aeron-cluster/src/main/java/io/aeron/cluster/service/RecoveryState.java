@@ -37,10 +37,7 @@ import static org.agrona.concurrent.status.CountersReader.*;
  *  |                     Leadership Term ID                        |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |             Term base log position for Snapshot               |
- *  |                                                               |
- *  +---------------------------------------------------------------+
- *  |                 Term position for Snapshot                    |
+ *  |                  Log position for Snapshot                    |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |              Timestamp at beginning of Recovery               |
@@ -71,9 +68,8 @@ public class RecoveryState
     public static final String NAME = "cluster recovery: leadershipTermId=";
 
     public static final int LEADERSHIP_TERM_ID_OFFSET = 0;
-    public static final int TERM_BASE_LOG_POSITION_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
-    public static final int TERM_POSITION_OFFSET = TERM_BASE_LOG_POSITION_OFFSET + SIZE_OF_LONG;
-    public static final int TIMESTAMP_OFFSET = TERM_POSITION_OFFSET + SIZE_OF_LONG;
+    public static final int LOG_POSITION_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
+    public static final int TIMESTAMP_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
     public static final int REPLAY_TERM_COUNT_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
     public static final int SERVICE_COUNT_OFFSET = REPLAY_TERM_COUNT_OFFSET + SIZE_OF_INT;
     public static final int SNAPSHOT_RECORDING_IDS_OFFSET = SERVICE_COUNT_OFFSET + SIZE_OF_INT;
@@ -84,8 +80,7 @@ public class RecoveryState
      * @param aeron                to allocate the counter.
      * @param tempBuffer           to use for building the key and label without allocation.
      * @param leadershipTermId     at which the snapshot was taken.
-     * @param termBaseLogPosition  for the term in which the snapshot was taken.
-     * @param termPosition         at which the snapshot was taken.
+     * @param logPosition          at which the snapshot was taken.
      * @param timestamp            the snapshot was taken.
      * @param replayTermCount      for the count of terms to be replayed during recovery after snapshot.
      * @param snapshotRecordingIds for the services to use during recovery indexed by service id.
@@ -95,15 +90,13 @@ public class RecoveryState
         final Aeron aeron,
         final MutableDirectBuffer tempBuffer,
         final long leadershipTermId,
-        final long termBaseLogPosition,
-        final long termPosition,
+        final long logPosition,
         final long timestamp,
         final int replayTermCount,
         final long... snapshotRecordingIds)
     {
         tempBuffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
-        tempBuffer.putLong(TERM_BASE_LOG_POSITION_OFFSET, termBaseLogPosition);
-        tempBuffer.putLong(TERM_POSITION_OFFSET, termPosition);
+        tempBuffer.putLong(LOG_POSITION_OFFSET, logPosition);
         tempBuffer.putLong(TIMESTAMP_OFFSET, timestamp);
         tempBuffer.putInt(REPLAY_TERM_COUNT_OFFSET, replayTermCount);
 
@@ -125,8 +118,8 @@ public class RecoveryState
         int labelOffset = 0;
         labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, NAME);
         labelOffset += tempBuffer.putLongAscii(keyLength + labelOffset, leadershipTermId);
-        labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, " termPosition=");
-        labelOffset += tempBuffer.putLongAscii(keyLength + labelOffset, termPosition);
+        labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, " logPosition=");
+        labelOffset += tempBuffer.putLongAscii(keyLength + labelOffset, logPosition);
         labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, " replayTermCount=");
         labelOffset += tempBuffer.putIntAscii(keyLength + labelOffset, replayTermCount);
 
@@ -185,37 +178,13 @@ public class RecoveryState
     }
 
     /**
-     * Get the term base log position for recovery that begins the leadership term.
-     *
-     * @param counters  to search within.
-     * @param counterId for the active recovery counter.
-     * @return the term base log position if found otherwise {@link Aeron#NULL_VALUE}.
-     */
-    public static long getTermBaseLogPosition(final CountersReader counters, final int counterId)
-    {
-        final DirectBuffer buffer = counters.metaDataBuffer();
-
-        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
-        {
-            final int recordOffset = CountersReader.metaDataOffset(counterId);
-
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
-            {
-                return buffer.getLong(recordOffset + KEY_OFFSET + TERM_BASE_LOG_POSITION_OFFSET);
-            }
-        }
-
-        return NULL_VALUE;
-    }
-
-    /**
      * Get the term position for recovery within the leadership term.
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
-     * @return the term position if found otherwise {@link Aeron#NULL_VALUE}.
+     * @return the log position if found otherwise {@link Aeron#NULL_VALUE}.
      */
-    public static long getTermPosition(final CountersReader counters, final int counterId)
+    public static long getLogPosition(final CountersReader counters, final int counterId)
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
@@ -225,7 +194,7 @@ public class RecoveryState
 
             if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
             {
-                return buffer.getLong(recordOffset + KEY_OFFSET + TERM_POSITION_OFFSET);
+                return buffer.getLong(recordOffset + KEY_OFFSET + LOG_POSITION_OFFSET);
             }
         }
 

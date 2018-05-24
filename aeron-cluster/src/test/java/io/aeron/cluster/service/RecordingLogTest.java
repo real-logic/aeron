@@ -68,11 +68,11 @@ public class RecordingLogTest
     {
         final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
         final long leadershipTermId = 1111L;
-        final long termBaseLogPosition = 2222L;
+        final long logPosition = 2222L;
         final long timestamp = 3333L;
         final int votedForMemberId = 1;
 
-        recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, timestamp, votedForMemberId);
+        recordingLog.appendTerm(leadershipTermId, logPosition, timestamp, votedForMemberId);
 
         final long newPosition = 9999L;
         recordingLog.commitLeadershipTermPosition(leadershipTermId, newPosition);
@@ -81,7 +81,7 @@ public class RecordingLogTest
         assertThat(recordingLogTwo.entries().size(), is(1));
 
         final RecordingLog.Entry actualEntry = recordingLogTwo.entries().get(0);
-        assertEquals(newPosition, actualEntry.termPosition);
+        assertEquals(newPosition, actualEntry.logPosition);
     }
 
     @Test

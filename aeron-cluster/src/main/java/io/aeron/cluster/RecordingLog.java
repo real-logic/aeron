@@ -59,10 +59,10 @@ import static org.agrona.BitUtil.*;
  *  |              Log Position at beginning of term                |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |      Term Position / Length of log for a leadership term      |
+ *  |              Log Position when entry was created              |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |   Timestamp at beginning of term or when snapshot was taken   |
+ *  |               Timestamp when entry was created                |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |          Applicable ID (Member ID vote / Service ID)          |
@@ -86,7 +86,7 @@ public class RecordingLog
         public final long recordingId;
         public final long leadershipTermId;
         public final long termBaseLogPosition;
-        public final long termPosition;
+        public final long logPosition;
         public final long timestamp;
         public final int applicableId;
         public final int type;
@@ -98,7 +98,7 @@ public class RecordingLog
          * @param recordingId         of the entry in an archive.
          * @param leadershipTermId    of this entry.
          * @param termBaseLogPosition position of the log over leadership terms at the beginning of this term.
-         * @param termPosition        position reached within the current leadership term, same as term length.
+         * @param logPosition         position reached when the entry was created
          * @param timestamp           of this entry.
          * @param applicableId        member id for vote or service id for snapshot.
          * @param type                of the entry as a log of a term or a snapshot.
@@ -108,7 +108,7 @@ public class RecordingLog
             final long recordingId,
             final long leadershipTermId,
             final long termBaseLogPosition,
-            final long termPosition,
+            final long logPosition,
             final long timestamp,
             final int applicableId,
             final int type,
@@ -117,7 +117,7 @@ public class RecordingLog
             this.recordingId = recordingId;
             this.leadershipTermId = leadershipTermId;
             this.termBaseLogPosition = termBaseLogPosition;
-            this.termPosition = termPosition;
+            this.logPosition = logPosition;
             this.timestamp = timestamp;
             this.applicableId = applicableId;
             this.type = type;
@@ -129,7 +129,7 @@ public class RecordingLog
             this.recordingId = decoder.recordingId();
             this.leadershipTermId = decoder.leadershipTermId();
             this.termBaseLogPosition = decoder.termBaseLogPosition();
-            this.termPosition = decoder.termPosition();
+            this.logPosition = decoder.logPosition();
             this.timestamp = decoder.timestamp();
             this.applicableId = decoder.applicableId();
             this.type = decoder.entryType();
@@ -142,7 +142,7 @@ public class RecordingLog
                 .recordingId(recordingId)
                 .leadershipTermId(leadershipTermId)
                 .termBaseLogPosition(termBaseLogPosition)
-                .termPosition(termPosition)
+                .logPosition(logPosition)
                 .timestamp(timestamp)
                 .applicableId(applicableId)
                 .entryType(type)
@@ -155,7 +155,7 @@ public class RecordingLog
                 "recordingId=" + recordingId +
                 ", leadershipTermId=" + leadershipTermId +
                 ", termBaseLogPosition=" + termBaseLogPosition +
-                ", termPosition=" + termPosition +
+                ", logPosition=" + logPosition +
                 ", timestamp=" + timestamp +
                 ", applicableId=" + applicableId +
                 ", type=" + type +
@@ -495,7 +495,7 @@ public class RecordingLog
         planRecovery(snapshotSteps, termSteps, entries, archive);
 
         long lastLeadershipTermId = NULL_VALUE;
-        long lastLogPosition = 0;
+        long lastTermBaseLogPosition = 0;
         long lastTermPositionCommitted = AeronArchive.NULL_POSITION;
         long lastTermPositionAppended = 0;
 
@@ -505,8 +505,8 @@ public class RecordingLog
             final ReplayStep snapshotStep = snapshotSteps.get(0);
 
             lastLeadershipTermId = snapshotStep.entry.leadershipTermId;
-            lastLogPosition = snapshotStep.entry.termBaseLogPosition;
-            lastTermPositionCommitted = snapshotStep.entry.termPosition;
+            lastTermBaseLogPosition = snapshotStep.entry.termBaseLogPosition;
+            lastTermPositionCommitted = snapshotStep.entry.logPosition - lastTermBaseLogPosition;
             lastTermPositionAppended = lastTermPositionCommitted;
         }
 
@@ -517,14 +517,14 @@ public class RecordingLog
             final Entry entry = replayStep.entry;
 
             lastLeadershipTermId = entry.leadershipTermId;
-            lastLogPosition = entry.termBaseLogPosition;
-            lastTermPositionCommitted = entry.termPosition;
+            lastTermBaseLogPosition = entry.termBaseLogPosition;
+            lastTermPositionCommitted = entry.logPosition - lastTermBaseLogPosition;
             lastTermPositionAppended = replayStep.recordingStopPosition;
         }
 
         return new RecoveryPlan(
             lastLeadershipTermId,
-            lastLogPosition,
+            lastTermBaseLogPosition,
             lastTermPositionCommitted,
             lastTermPositionAppended,
             snapshotSteps,
@@ -535,18 +535,18 @@ public class RecordingLog
      * Get the latest snapshot for a given position within a leadership term.
      *
      * @param leadershipTermId in which the snapshot was taken.
-     * @param termPosition     within the leadership term.
+     * @param logPosition      within the leadership term.
      * @param serviceId        to which the snapshot applies.
      * @return the latest snapshot for a given position or null if no match found.
      */
-    public Entry getSnapshot(final long leadershipTermId, final long termPosition, final int serviceId)
+    public Entry getSnapshot(final long leadershipTermId, final long logPosition, final int serviceId)
     {
         for (int i = entries.size() - 1; i >= 0; i--)
         {
             final Entry entry = entries.get(i);
             if (entry.type == ENTRY_TYPE_SNAPSHOT &&
                 leadershipTermId == entry.leadershipTermId &&
-                termPosition == entry.termPosition &&
+                logPosition == entry.logPosition &&
                 serviceId == entry.applicableId)
             {
                 return entry;
@@ -635,7 +635,7 @@ public class RecordingLog
             recordingId,
             entry.leadershipTermId,
             entry.termBaseLogPosition,
-            entry.termPosition,
+            entry.logPosition,
             entry.timestamp,
             entry.applicableId,
             entry.type,
@@ -683,7 +683,7 @@ public class RecordingLog
             entry.recordingId,
             entry.leadershipTermId,
             logPosition,
-            entry.termPosition,
+            entry.logPosition,
             entry.timestamp,
             entry.applicableId,
             entry.type,
@@ -878,18 +878,19 @@ public class RecordingLog
                     if (ENTRY_TYPE_TERM == entry.type)
                     {
                         getRecordingExtent(archive, recordingExtent, entry);
-                        final long snapshotPosition = snapshot.termBaseLogPosition + snapshot.termPosition;
+                        final long snapshotPosition = snapshot.logPosition;
 
                         if (recordingExtent.stopPosition == NULL_POSITION ||
                             (entry.termBaseLogPosition + recordingExtent.stopPosition) > snapshotPosition)
                         {
+                            final long termPosition = snapshot.logPosition - snapshot.termBaseLogPosition;
                             termSteps.add(new ReplayStep(
-                                snapshot.termPosition, recordingExtent.stopPosition, recordingExtent.sessionId, entry));
+                                termPosition, recordingExtent.stopPosition, recordingExtent.sessionId, entry));
                         }
                         break;
                     }
                     else if (entry.leadershipTermId == snapshot.leadershipTermId &&
-                        entry.termPosition == snapshot.termPosition)
+                        entry.logPosition == snapshot.logPosition)
                     {
                         getRecordingExtent(archive, recordingExtent, entry);
 

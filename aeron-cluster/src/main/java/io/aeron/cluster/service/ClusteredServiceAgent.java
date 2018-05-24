@@ -319,13 +319,13 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
     {
-        final long termPosition = RecoveryState.getTermPosition(counters, recoveryCounterId);
+        final long logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
         leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
         timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
 
-        if (NULL_POSITION != termPosition)
+        if (NULL_POSITION != logPosition)
         {
-            termBaseLogPosition = RecoveryState.getTermBaseLogPosition(counters, recoveryCounterId) + termPosition;
+            termBaseLogPosition = logPosition;
             loadSnapshot(RecoveryState.getSnapshotRecordingId(counters, recoveryCounterId, serviceId));
         }
 

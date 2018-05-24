@@ -36,7 +36,7 @@ class ClusterSession implements AutoCloseable
 
     private long timeOfLastActivityMs;
     private long lastCorrelationId;
-    private long openedTermPosition = Long.MAX_VALUE;
+    private long openedLogPosition = Aeron.NULL_VALUE;
     private final long id;
     private final int responseStreamId;
     private final String responseChannel;
@@ -124,9 +124,9 @@ class ClusterSession implements AutoCloseable
         this.state = State.AUTHENTICATED;
     }
 
-    void open(final long openedTermPosition)
+    void open(final long openedLogPosition)
     {
-        this.openedTermPosition = openedTermPosition;
+        this.openedLogPosition = openedLogPosition;
         this.state = State.OPEN;
         encodedPrincipal = null;
     }
@@ -157,9 +157,9 @@ class ClusterSession implements AutoCloseable
         return lastCorrelationId;
     }
 
-    long openedTermPosition()
+    long openedLogPosition()
     {
-        return openedTermPosition;
+        return openedLogPosition;
     }
 
     static void checkEncodedPrincipalLength(final byte[] encodedPrincipal)
@@ -180,7 +180,7 @@ class ClusterSession implements AutoCloseable
             "id=" + id +
             ", timeOfLastActivityMs=" + timeOfLastActivityMs +
             ", lastCorrelationId=" + lastCorrelationId +
-            ", openedTermPosition=" + openedTermPosition +
+            ", openedLogPosition=" + openedLogPosition +
             ", responseStreamId=" + responseStreamId +
             ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +

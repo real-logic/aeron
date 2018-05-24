@@ -53,7 +53,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
                     .clusterSessionId(session.id())
                     .lastCorrelationId(session.lastCorrelationId())
                     .timeOfLastActivity(session.timeOfLastActivityMs())
-                    .openedTermPosition(session.openedTermPosition())
+                    .openedLogPosition(session.openedLogPosition())
                     .closeReason(session.closeReason())
                     .responseStreamId(session.responseStreamId())
                     .responseChannel(responseChannel);

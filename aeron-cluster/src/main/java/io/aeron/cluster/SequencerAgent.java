@@ -616,7 +616,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     }
 
     void onLoadSession(
-        final long termPosition,
+        final long logPosition,
         final long correlationId,
         final long clusterSessionId,
         final long timestamp,
@@ -626,7 +626,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     {
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
         session.closeReason(closeReason);
-        session.open(termPosition);
+        session.open(logPosition);
         session.lastActivity(timestamp, correlationId);
 
         if (CloseReason.NULL_VAL != closeReason)

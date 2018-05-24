@@ -30,8 +30,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.util.Collection;
 
-import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
-import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.codecs.ClusterAction.READY;
 import static io.aeron.cluster.codecs.ClusterAction.REPLAY;
 import static java.util.Collections.unmodifiableCollection;
@@ -322,7 +321,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
         timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
 
-        if (NULL_POSITION != logPosition)
+        if (NULL_VALUE != logPosition)
         {
             loadSnapshot(RecoveryState.getSnapshotRecordingId(counters, recoveryCounterId, serviceId));
         }
@@ -530,7 +529,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             final String channel = ctx.replayChannel();
             final int streamId = ctx.replayStreamId();
-            final int sessionId = (int)archive.startReplay(recordingId, 0, NULL_LENGTH, channel, streamId);
+            final int sessionId = (int)archive.startReplay(recordingId, 0, NULL_VALUE, channel, streamId);
 
             final String replaySessionChannel = ChannelUri.addSessionId(channel, sessionId);
             try (Subscription subscription = aeron.addSubscription(replaySessionChannel, streamId))

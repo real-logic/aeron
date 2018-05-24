@@ -57,11 +57,11 @@ class SequencerAgent implements Agent, MemberStatusListener
     private final long leaderHeartbeatTimeoutMs;
     private final long serviceHeartbeatTimeoutMs;
     private long nextSessionId = 1;
-    private long termBaseLogPosition = 0;
     private long leadershipTermId = Aeron.NULL_VALUE;
+    private long termBaseLogPosition = 0;
     private long lastAppendedPosition = 0;
-    private long timeOfLastLogUpdateMs = 0;
     private long followerCommitPosition = 0;
+    private long timeOfLastLogUpdateMs = 0;
     private ReadableCounter appendedPosition;
     private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -103,8 +103,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private UnsafeBuffer recoveryPlanBuffer;
     private Election election;
 
-    SequencerAgent(
-        final ConsensusModule.Context ctx, final EgressPublisher egressPublisher, final LogPublisher logPublisher)
+    SequencerAgent(final ConsensusModule.Context ctx)
     {
         this.ctx = ctx;
         this.aeron = ctx.aeron();
@@ -113,10 +112,10 @@ class SequencerAgent implements Agent, MemberStatusListener
         this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
         this.leaderHeartbeatTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatTimeoutNs());
         this.serviceHeartbeatTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.serviceHeartbeatTimeoutNs());
-        this.egressPublisher = egressPublisher;
+        this.egressPublisher = ctx.egressPublisher();
         this.moduleState = ctx.moduleStateCounter();
         this.controlToggle = ctx.controlToggleCounter();
-        this.logPublisher = logPublisher;
+        this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
         this.timerService = new TimerService(this);
         this.clusterMembers = ClusterMember.parse(ctx.clusterMembers());

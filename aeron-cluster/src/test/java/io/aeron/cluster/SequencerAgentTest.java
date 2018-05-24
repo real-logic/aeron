@@ -67,7 +67,9 @@ public class SequencerAgentTest
         .epochClock(new SystemEpochClock())
         .authenticatorSupplier(new DefaultAuthenticatorSupplier())
         .clusterMarkFile(mock(ClusterMarkFile.class))
-        .archiveContext(new AeronArchive.Context());
+        .archiveContext(new AeronArchive.Context())
+        .logPublisher(mockLogPublisher)
+        .egressPublisher(mockEgressPublisher);
 
     @Before
     public void before()
@@ -88,7 +90,7 @@ public class SequencerAgentTest
         ctx.maxConcurrentSessions(1);
         ctx.epochClock(clock);
 
-        final SequencerAgent agent = newSequencerAgent();
+        final SequencerAgent agent = new SequencerAgent(ctx);
 
         final long correlationIdOne = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
@@ -120,7 +122,7 @@ public class SequencerAgentTest
 
         ctx.epochClock(clock);
 
-        final SequencerAgent agent = newSequencerAgent();
+        final SequencerAgent agent = new SequencerAgent(ctx);
 
         final long correlationId = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
@@ -177,7 +179,7 @@ public class SequencerAgentTest
         ctx.controlToggleCounter(mockControlToggle);
         ctx.epochClock(clock);
 
-        final SequencerAgent agent = newSequencerAgent();
+        final SequencerAgent agent = new SequencerAgent(ctx);
         agent.commitPositionCounter(mock(Counter.class));
         agent.logRecordingPositionCounter(mock(ReadableCounter.class));
 
@@ -206,10 +208,5 @@ public class SequencerAgentTest
             eq(ClusterAction.SUSPEND), anyLong(), anyLong(), anyLong());
         inOrder.verify(mockLogPublisher).appendClusterAction(
             eq(ClusterAction.RESUME), anyLong(), anyLong(), anyLong());
-    }
-
-    private SequencerAgent newSequencerAgent()
-    {
-        return new SequencerAgent(ctx, mockEgressPublisher, mockLogPublisher);
     }
 }

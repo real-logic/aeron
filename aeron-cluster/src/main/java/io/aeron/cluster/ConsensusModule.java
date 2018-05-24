@@ -193,7 +193,7 @@ public class ConsensusModule implements AutoCloseable
         this.ctx = ctx;
         ctx.conclude();
 
-        final SequencerAgent conductor = new SequencerAgent(ctx, new EgressPublisher(), new LogPublisher());
+        final SequencerAgent conductor = new SequencerAgent(ctx);
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
 
@@ -833,6 +833,8 @@ public class ConsensusModule implements AutoCloseable
         private AeronArchive.Context archiveContext;
         private AuthenticatorSupplier authenticatorSupplier;
         private RecordingCatchUpSupplier recordingCatchUpSupplier;
+        private LogPublisher logPublisher;
+        private EgressPublisher egressPublisher;
 
         /**
          * Perform a shallow copy of the object.
@@ -1018,6 +1020,16 @@ public class ConsensusModule implements AutoCloseable
             if (null == random)
             {
                 random = new Random();
+            }
+
+            if (null == logPublisher)
+            {
+                logPublisher = new LogPublisher();
+            }
+
+            if (null == egressPublisher)
+            {
+                egressPublisher = new EgressPublisher();
             }
 
             concludeMarkFile();
@@ -2325,6 +2337,28 @@ public class ConsensusModule implements AutoCloseable
         public Random random()
         {
             return random;
+        }
+
+        Context logPublisher(final LogPublisher logPublisher)
+        {
+            this.logPublisher = logPublisher;
+            return this;
+        }
+
+        LogPublisher logPublisher()
+        {
+            return logPublisher;
+        }
+
+        Context egressPublisher(final EgressPublisher egressPublisher)
+        {
+            this.egressPublisher = egressPublisher;
+            return this;
+        }
+
+        EgressPublisher egressPublisher()
+        {
+            return egressPublisher;
         }
 
         /**

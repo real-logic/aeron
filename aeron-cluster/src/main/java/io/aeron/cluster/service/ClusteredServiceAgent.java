@@ -89,6 +89,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         service.onStart(this);
         isRecovering = true;
         final int recoveryCounterId = awaitRecoveryCounter(counters);
+        heartbeatCounter.setOrdered(epochClock.time());
         checkForSnapshot(counters, recoveryCounterId);
         checkForReplay(counters, recoveryCounterId);
         isRecovering = false;

@@ -523,7 +523,8 @@ public final class AeronCluster implements AutoCloseable
         public static final long MESSAGE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
-         * Property name for the comma separated list of cluster member endpoints for use with unicast.
+         * Property name for the comma separated list of cluster member endpoints for use with unicast. This is the
+         * endpoint values which get substituted into the {@link #INGRESS_CHANNEL_PROP_NAME} when using UDP unicast.
          * <p>
          * Each member of the list will be substituted for the endpoint in the {@link #INGRESS_CHANNEL_PROP_NAME} value.
          */
@@ -536,7 +537,8 @@ public final class AeronCluster implements AutoCloseable
 
         /**
          * Channel for sending messages to a cluster. Ideally this will be a multicast address otherwise unicast will
-         * be required and the {@link #CLUSTER_MEMBER_ENDPOINTS_PROP_NAME} is used to substitute the endpoints.
+         * be required and the {@link #CLUSTER_MEMBER_ENDPOINTS_PROP_NAME} is used to substitute the endpoints from
+         * the {@link #CLUSTER_MEMBER_ENDPOINTS_PROP_NAME} list.
          */
         public static final String INGRESS_CHANNEL_PROP_NAME = "aeron.cluster.ingress.channel";
 
@@ -737,7 +739,9 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * The endpoints representing members for use with unicast. A null value can be used when multicast.
+         * The endpoints representing members for use with unicast to be substituted into the {@link #ingressChannel()}
+         * for endpoints. A null value can be used when multicast where the {@link #ingressChannel()} contains the
+         * multicast endpoint.
          *
          * @param clusterMembers which are all candidates to be leader.
          * @return this for a fluent API.
@@ -750,7 +754,9 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * The endpoints representing members for use with unicast. A null value can be used when multicast.
+         * The endpoints representing members for use with unicast to be substituted into the {@link #ingressChannel()}
+         * for endpoints. A null value can be used when multicast where the {@link #ingressChannel()} contains the
+         * multicast endpoint.
          *
          * @return members of the cluster which are all candidates to be leader.
          * @see Configuration#CLUSTER_MEMBER_ENDPOINTS_PROP_NAME
@@ -762,6 +768,10 @@ public final class AeronCluster implements AutoCloseable
 
         /**
          * Set the channel parameter for the ingress channel.
+         * <p>
+         * The endpoints representing members for use with unicast are substituted from the
+         * {@link #clusterMemberEndpoints()} for endpoints. A null value can be used when multicast
+         * where this contains the multicast endpoint.
          *
          * @param channel parameter for the ingress channel.
          * @return this for a fluent API.
@@ -775,6 +785,10 @@ public final class AeronCluster implements AutoCloseable
 
         /**
          * Get the channel parameter for the ingress channel.
+         * <p>
+         * The endpoints representing members for use with unicast are substituted from the
+         * {@link #clusterMemberEndpoints()} for endpoints. A null value can be used when multicast
+         * where this contains the multicast endpoint.
          *
          * @return the channel parameter for the ingress channel.
          * @see Configuration#INGRESS_CHANNEL_PROP_NAME

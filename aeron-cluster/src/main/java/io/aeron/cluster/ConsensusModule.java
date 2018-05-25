@@ -271,6 +271,14 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * Property name for the comma separated list of cluster member endpoints.
+         * <p>
+         * <code>
+         *     0,client-facing:port,member-facing:port,log:port,transfer:port,archive:port| \
+         *     1,client-facing:port,member-facing:port,log:port,transfer:port,archive:port| ...
+         * </code>
+         * <p>
+         * The client facing endpoints will be used as the endpoint substituted into the
+         * {@link AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME} if the endpoint is not provided when unicast.
          */
         public static final String CLUSTER_MEMBERS_PROP_NAME = "aeron.cluster.members";
 
@@ -1231,8 +1239,8 @@ public class ConsensusModule implements AutoCloseable
          *     1,client-facing:port,member-facing:port,log:port,transfer:port,archive:port| ...
          * </code>
          * <p>
-         * The client facing endpoints will be used as the endpoint in {@link #ingressChannel()} if the endpoint is
-         * not provided in that when it is not multicast.
+         * The client facing endpoints will be used as the endpoint substituted into the {@link #ingressChannel()}
+         * if the endpoint is not provided unless it is multicast.
          *
          * @param clusterMembers which are all candidates to be leader.
          * @return this for a fluent API.

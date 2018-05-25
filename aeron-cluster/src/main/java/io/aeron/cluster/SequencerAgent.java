@@ -562,14 +562,14 @@ class SequencerAgent implements Agent, MemberStatusListener
         return role;
     }
 
-    void logRecordingPositionCounter(final ReadableCounter logRecordingPosition)
+    void appendedPositionCounter(final ReadableCounter appendedPositionCounter)
     {
-        this.appendedPosition = logRecordingPosition;
+        this.appendedPosition = appendedPositionCounter;
     }
 
-    void commitPositionCounter(final Counter commitPosition)
+    void commitPositionCounter(final Counter commitPositionCounter)
     {
-        this.commitPosition = commitPosition;
+        this.commitPosition = commitPositionCounter;
     }
 
     @SuppressWarnings("unused")

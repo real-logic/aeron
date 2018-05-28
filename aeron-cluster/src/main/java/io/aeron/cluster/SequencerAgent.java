@@ -35,7 +35,6 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
@@ -204,9 +203,9 @@ class SequencerAgent implements Agent, MemberStatusListener
 
             awaitServiceAcks();
 
-            if (recoveryPlan.termSteps.size() > 0)
+            if (recoveryPlan.logs.size() > 0)
             {
-                recoverFromLog(recoveryPlan.termSteps, archive);
+                recoverFromLog(recoveryPlan.logs, archive);
             }
             isRecovering = false;
         }
@@ -779,14 +778,13 @@ class SequencerAgent implements Agent, MemberStatusListener
         final long targetPosition = recordingCatchUp.targetPosition();
         final long length = targetPosition - fromPosition;
 
-        final int lastStepIndex = recoveryPlan.termSteps.size() - 1;
-        final RecordingLog.ReplayStep lastStep = recoveryPlan.termSteps.get(lastStepIndex);
-        final RecordingLog.Entry entry = lastStep.entry;
+        final int lastStepIndex = recoveryPlan.logs.size() - 1;
+        final RecordingLog.Log log = recoveryPlan.logs.get(lastStepIndex);
 
         final long originalLeadershipTermId = leadershipTermId;
 
-        termBaseLogPosition = entry.termBaseLogPosition;
-        leadershipTermId = entry.leadershipTermId;
+        termBaseLogPosition = log.termBaseLogPosition;
+        leadershipTermId = log.leadershipTermId;
 
         try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
         {
@@ -811,7 +809,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
                 final long termPosition = image.position();
                 recordingLog.commitLogPosition(leadershipTermId, termPosition);
-                termBaseLogPosition = entry.termBaseLogPosition + termPosition;
+                termBaseLogPosition = log.termBaseLogPosition + termPosition;
             }
         }
 
@@ -1147,25 +1145,24 @@ class SequencerAgent implements Agent, MemberStatusListener
         return image;
     }
 
-    private void recoverFromLog(final List<RecordingLog.ReplayStep> steps, final AeronArchive archive)
+    private void recoverFromLog(final ArrayList<RecordingLog.Log> logs, final AeronArchive archive)
     {
         final int streamId = ctx.replayStreamId();
         final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
 
-        for (int i = 0, size = steps.size(); i < size; i++)
+        for (int i = 0, size = logs.size(); i < size; i++)
         {
-            final RecordingLog.ReplayStep step = steps.get(i);
-            final RecordingLog.Entry entry = step.entry;
-            final long startPosition = step.recordingStartPosition;
-            final long stopPosition = step.recordingStopPosition;
+            final RecordingLog.Log log = logs.get(i);
+            final long startPosition = log.startPosition;
+            final long stopPosition = log.stopPosition;
             final long length = stopPosition - startPosition;
 
-            termBaseLogPosition = entry.termBaseLogPosition;
-            leadershipTermId = entry.leadershipTermId;
+            termBaseLogPosition = log.termBaseLogPosition;
+            leadershipTermId = log.leadershipTermId;
 
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(i));
             final String channel = channelUri.toString();
-            final long recordingId = entry.recordingId;
+            final long recordingId = log.recordingId;
 
             try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
             {
@@ -1194,12 +1191,12 @@ class SequencerAgent implements Agent, MemberStatusListener
                         }
 
                         final long termPosition = image.position();
-                        if (entry.logPosition < entry.termBaseLogPosition + termPosition)
+                        if (log.logPosition == NULL_POSITION)
                         {
-                            recordingLog.commitLogPosition(leadershipTermId, entry.termBaseLogPosition + termPosition);
+                            recordingLog.commitLogPosition(leadershipTermId, termBaseLogPosition + termPosition);
                         }
 
-                        termBaseLogPosition = entry.termBaseLogPosition + termPosition;
+                        termBaseLogPosition = log.termBaseLogPosition + termPosition;
                     }
                 }
                 else
@@ -1212,7 +1209,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
     {
-        final int termCount = plan.termSteps.size();
+        final int termCount = plan.logs.size();
         final int snapshotsCount = plan.snapshots.size();
 
         if (snapshotsCount > 0)

@@ -171,24 +171,24 @@ class RecordingCatchUp implements AutoCloseable
         {
             final RecordingLog.RecoveryPlan leaderRecoveryPlan = new RecordingLog.RecoveryPlan(data, offset);
 
-            final RecordingLog.ReplayStep localLastStep =
-                localRecoveryPlan.termSteps.get(localRecoveryPlan.termSteps.size() - 1);
-            final RecordingLog.ReplayStep leaderLastStep =
-                leaderRecoveryPlan.termSteps.get(leaderRecoveryPlan.termSteps.size() - 1);
+            final RecordingLog.Log localLog =
+                localRecoveryPlan.logs.get(localRecoveryPlan.logs.size() - 1);
+            final RecordingLog.Log leaderLog =
+                leaderRecoveryPlan.logs.get(leaderRecoveryPlan.logs.size() - 1);
 
-            validateRecoveryPlans(leaderRecoveryPlan, leaderLastStep, localLastStep);
+            validateRecoveryPlans(leaderRecoveryPlan, leaderLog, localLog);
 
-            leaderRecordingId = leaderLastStep.entry.recordingId;
-            recordingIdToExtend = localLastStep.entry.recordingId;
+            leaderRecordingId = leaderLog.recordingId;
+            recordingIdToExtend = localLog.recordingId;
 
-            fromPosition = localLastStep.recordingStopPosition;
-            targetPosition = leaderLastStep.recordingStopPosition;
+            fromPosition = localLog.stopPosition;
+            targetPosition = leaderLog.stopPosition;
             logPosition = leaderRecoveryPlan.lastAppendedLogPosition;
 
             extendChannel = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
                 .endpoint(clusterMembers[memberId].transferEndpoint())
-                .sessionId(localLastStep.recordingSessionId)
+                .sessionId(localLog.sessionId)
                 .build();
 
             replayChannel = extendChannel;
@@ -337,8 +337,8 @@ class RecordingCatchUp implements AutoCloseable
 
     private void validateRecoveryPlans(
         final RecordingLog.RecoveryPlan leaderRecoveryPlan,
-        final RecordingLog.ReplayStep leaderLastStep,
-        final RecordingLog.ReplayStep localLastStep)
+        final RecordingLog.Log leaderLog,
+        final RecordingLog.Log localLog)
     {
         if (leaderRecoveryPlan.lastLeadershipTermId != localRecoveryPlan.lastLeadershipTermId)
         {
@@ -349,28 +349,28 @@ class RecordingCatchUp implements AutoCloseable
                 localRecoveryPlan.lastLeadershipTermId);
         }
 
-        if (leaderRecoveryPlan.termSteps.size() != localRecoveryPlan.termSteps.size())
+        if (leaderRecoveryPlan.logs.size() != localRecoveryPlan.logs.size())
         {
             throw new IllegalStateException(
                 "replay steps are not equal, can not catch up: leader=" +
-                leaderRecoveryPlan.termSteps.size() +
+                leaderRecoveryPlan.logs.size() +
                 " local=" +
-                localRecoveryPlan.termSteps.size());
+                localRecoveryPlan.logs.size());
         }
 
-        if (localLastStep.entry.leadershipTermId != leaderLastStep.entry.leadershipTermId)
+        if (localLog.leadershipTermId != leaderLog.leadershipTermId)
         {
             throw new IllegalStateException(
                 "last step leadershipTermIds are not equal, can not catch up: leader=" +
-                leaderLastStep.entry.leadershipTermId +
+                leaderLog.leadershipTermId +
                 " local=" +
-                localLastStep.entry.leadershipTermId);
+                localLog.leadershipTermId);
         }
 
-        if (localLastStep.recordingStartPosition != leaderLastStep.recordingStartPosition)
+        if (localLog.startPosition != leaderLog.startPosition)
         {
             throw new IllegalStateException(
-                "last step local start position does not match leader last step start position");
+                "local start position does not match leader start position");
         }
     }
 

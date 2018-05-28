@@ -25,10 +25,11 @@ import io.aeron.archive.client.RecordingDescriptorConsumer;
 class RecordingExtent implements RecordingDescriptorConsumer
 {
     public long recordingId;
-    public long startTimestamp;
-    public long stopTimestamp;
     public long startPosition;
     public long stopPosition;
+    public int initialTermId;
+    public int termBufferLength;
+    public int mtuLength;
     public int sessionId;
 
     public void onRecordingDescriptor(
@@ -50,10 +51,11 @@ class RecordingExtent implements RecordingDescriptorConsumer
         final String sourceIdentity)
     {
         this.recordingId = recordingId;
-        this.startTimestamp = startTimestamp;
-        this.stopTimestamp = stopTimestamp;
         this.startPosition = startPosition;
         this.stopPosition = stopPosition;
+        this.initialTermId = initialTermId;
+        this.termBufferLength = termBufferLength;
+        this.mtuLength = mtuLength;
         this.sessionId = sessionId;
     }
 
@@ -61,10 +63,11 @@ class RecordingExtent implements RecordingDescriptorConsumer
     {
         return "RecordingExtent{" +
             "recordingId=" + recordingId +
-            ", startTimestamp=" + startTimestamp +
-            ", stopTimestamp=" + stopTimestamp +
             ", startPosition=" + startPosition +
             ", stopPosition=" + stopPosition +
+            ", initialTermId=" + initialTermId +
+            ", termBufferLength=" + termBufferLength +
+            ", mtuLength=" + mtuLength +
             ", sessionId=" + sessionId +
             '}';
     }

@@ -324,7 +324,7 @@ public class RecordingLog
     public static final String RECORDING_LOG_FILE_NAME = "recording.log";
 
     /**
-     * The log entry is for a recording of messages within a term to the consensus log.
+     * The log entry is for a recording of messages within a leadership term to the log.
      */
     public static final int ENTRY_TYPE_TERM = 0;
 

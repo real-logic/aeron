@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.CommonContext.UDP_MEDIA;
+import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
@@ -806,7 +807,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                     recordingCatchUp.recordingIdToExtend(), fromPosition, length, channel, streamId);
 
                 final Image image = awaitImage(replaySessionId, subscription);
-                replayTerm(image, targetPosition, counter);
+                replayLog(image, targetPosition, counter);
 
                 final long termPosition = image.position();
                 recordingLog.commitLogPosition(leadershipTermId, termPosition);
@@ -1107,8 +1108,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
         final String channel = ctx.replayChannel();
         final int streamId = ctx.replayStreamId();
-        final long length = snapshotStep.recordingStopPosition - snapshotStep.recordingStartPosition;
-        final int sessionId = (int)archive.startReplay(snapshot.recordingId, 0, length, channel, streamId);
+        final int sessionId = (int)archive.startReplay(snapshot.recordingId, 0, NULL_LENGTH, channel, streamId);
         final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, sessionId);
 
         try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
@@ -1186,7 +1186,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                             subscription);
 
                         resetToNull(serviceAckStates);
-                        replayTerm(image, stopPosition, counter);
+                        replayLog(image, stopPosition, counter);
                         awaitServiceAcks();
 
                         int workCount;
@@ -1461,20 +1461,25 @@ class SequencerAgent implements Agent, MemberStatusListener
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
-    private void replayTerm(final Image image, final long finalTermPosition, final Counter replayPosition)
+    private void replayLog(final Image image, final long stopPosition, final Counter replayPosition)
     {
         logAdapter = new LogAdapter(image, this);
 
         while (true)
         {
-            int workCount = logAdapter.poll(finalTermPosition);
+            int workCount = logAdapter.poll(stopPosition);
             if (workCount == 0)
             {
+                if (image.position() == stopPosition)
+                {
+                    break;
+                }
+
                 if (image.isClosed())
                 {
                     if (!image.isEndOfStream())
                     {
-                        throw new IllegalStateException("unexpected close of image when replaying");
+                        throw new IllegalStateException("unexpected close of image when replaying log");
                     }
 
                     break;

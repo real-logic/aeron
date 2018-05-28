@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.CommonContext.UDP_MEDIA;
@@ -57,7 +58,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private final long leaderHeartbeatTimeoutMs;
     private final long serviceHeartbeatTimeoutMs;
     private long nextSessionId = 1;
-    private long leadershipTermId = Aeron.NULL_VALUE;
+    private long leadershipTermId = NULL_VALUE;
     private long termBaseLogPosition = 0;
     private long lastAppendedPosition = 0;
     private long followerCommitPosition = 0;
@@ -1072,7 +1073,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         final int recordingCounterId = awaitRecordingCounter(counters, logSessionId);
 
         appendedPosition = new ReadableCounter(counters, recordingCounterId);
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, Aeron.NULL_VALUE);
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, NULL_VALUE);
     }
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader, final int logSessionId)
@@ -1190,13 +1191,12 @@ class SequencerAgent implements Agent, MemberStatusListener
                             idle(workCount);
                         }
 
-                        final long termPosition = image.position();
-                        if (log.logPosition == NULL_POSITION)
+                        if (NULL_VALUE == log.logPosition)
                         {
-                            recordingLog.commitLogPosition(leadershipTermId, termBaseLogPosition + termPosition);
+                            recordingLog.commitLogPosition(leadershipTermId, termBaseLogPosition + stopPosition);
                         }
 
-                        termBaseLogPosition = log.termBaseLogPosition + termPosition;
+                        termBaseLogPosition = log.termBaseLogPosition + stopPosition;
                     }
                 }
                 else

@@ -349,7 +349,6 @@ public class RecordingLog
         public int encodedLength()
         {
             return RecoveryPlanEncoder.BLOCK_LENGTH +
-                RecoveryPlanEncoder.LogsEncoder.sbeHeaderSize() +
                 RecoveryPlanEncoder.SnapshotsEncoder.sbeHeaderSize() +
                 RecoveryPlanEncoder.LogsEncoder.sbeHeaderSize() +
                 (snapshots.size() * RecoveryPlanEncoder.SnapshotsEncoder.sbeBlockLength()) +
@@ -362,7 +361,6 @@ public class RecordingLog
                 .lastLeadershipTermId(lastLeadershipTermId)
                 .lastTermBaseLogPosition(lastTermBaseLogPosition)
                 .lastAppendedLogPosition(lastAppendedLogPosition);
-
 
             final RecoveryPlanEncoder.SnapshotsEncoder snapshotsEncoder = encoder.snapshotsCount(snapshots.size());
             for (int i = 0, size = snapshots.size(); i < size; i++)

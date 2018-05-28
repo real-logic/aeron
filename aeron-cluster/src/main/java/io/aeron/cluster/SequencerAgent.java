@@ -197,9 +197,9 @@ class SequencerAgent implements Agent, MemberStatusListener
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
             isRecovering = true;
-            if (recoveryPlan.snapshotSteps.size() > 0)
+            if (recoveryPlan.snapshots.size() > 0)
             {
-                recoverFromSnapshot(recoveryPlan.snapshotSteps.get(0), archive);
+                recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
             }
 
             awaitServiceAcks();
@@ -1098,10 +1098,8 @@ class SequencerAgent implements Agent, MemberStatusListener
         updateClusterMemberDetails(clusterMembers);
     }
 
-    private void recoverFromSnapshot(final RecordingLog.ReplayStep snapshotStep, final AeronArchive archive)
+    private void recoverFromSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
     {
-        final RecordingLog.Entry snapshot = snapshotStep.entry;
-
         cachedEpochClock.update(snapshot.timestamp);
         termBaseLogPosition = snapshot.logPosition;
         leadershipTermId = snapshot.leadershipTermId;
@@ -1215,17 +1213,17 @@ class SequencerAgent implements Agent, MemberStatusListener
     private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
     {
         final int termCount = plan.termSteps.size();
-        final int snapshotsCount = plan.snapshotSteps.size();
+        final int snapshotsCount = plan.snapshots.size();
 
         if (snapshotsCount > 0)
         {
             final long[] serviceSnapshotRecordingIds = new long[snapshotsCount - 1];
-            final RecordingLog.Entry snapshot = plan.snapshotSteps.get(0).entry;
+            final RecordingLog.Snapshot snapshot = plan.snapshots.get(0);
 
             for (int i = 1; i < snapshotsCount; i++)
             {
-                final RecordingLog.ReplayStep serviceSnapshot = plan.snapshotSteps.get(i);
-                serviceSnapshotRecordingIds[serviceSnapshot.entry.applicableId] = serviceSnapshot.entry.recordingId;
+                final RecordingLog.Snapshot serviceSnapshot = plan.snapshots.get(i);
+                serviceSnapshotRecordingIds[serviceSnapshot.serviceId] = serviceSnapshot.recordingId;
             }
 
             return RecoveryState.allocate(

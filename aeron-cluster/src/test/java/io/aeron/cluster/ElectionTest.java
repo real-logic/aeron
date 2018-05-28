@@ -567,7 +567,7 @@ public class ElectionTest
         final long lastTermBaseLogPosition = 0;
         final long lastCommittedTermPosition = 0;
         final long lastAppendedTermPosition = 0;
-        final ArrayList<RecordingLog.ReplayStep> snapshotSteps = new ArrayList<>();
+        final ArrayList<RecordingLog.Snapshot> snapshots = new ArrayList<>();
         final ArrayList<RecordingLog.ReplayStep> termSteps = new ArrayList<>();
 
         return new RecordingLog.RecoveryPlan(
@@ -575,7 +575,7 @@ public class ElectionTest
             lastTermBaseLogPosition,
             lastCommittedTermPosition,
             lastAppendedTermPosition,
-            snapshotSteps,
+            snapshots,
             termSteps);
     }
 }

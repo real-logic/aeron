@@ -165,6 +165,78 @@ public class RecordingLog
     }
 
     /**
+     * Representation of a snapshot entry in the {@link RecordingLog}.
+     */
+    public static final class Snapshot
+    {
+        public final long recordingId;
+        public final long leadershipTermId;
+        public final long termBaseLogPosition;
+        public final long logPosition;
+        public final long timestamp;
+        public final int serviceId;
+
+        /**
+         * A snapshot entry in the {@link RecordingLog}.
+         *
+         * @param recordingId         of the entry in an archive.
+         * @param leadershipTermId    in which the snapshot was taken.
+         * @param termBaseLogPosition position of the log over leadership terms at the beginning of this term.
+         * @param logPosition         position reached when the entry was snapshot was taken.
+         * @param timestamp           as which the snapshot was taken.
+         * @param serviceId           which the snapshot belongs to.
+         */
+        public Snapshot(
+            final long recordingId,
+            final long leadershipTermId,
+            final long termBaseLogPosition,
+            final long logPosition,
+            final long timestamp,
+            final int serviceId)
+        {
+            this.recordingId = recordingId;
+            this.leadershipTermId = leadershipTermId;
+            this.termBaseLogPosition = termBaseLogPosition;
+            this.logPosition = logPosition;
+            this.timestamp = timestamp;
+            this.serviceId = serviceId;
+        }
+
+        public Snapshot(final RecoveryPlanDecoder.SnapshotsDecoder decoder)
+        {
+            this.recordingId = decoder.recordingId();
+            this.leadershipTermId = decoder.leadershipTermId();
+            this.termBaseLogPosition = decoder.termBaseLogPosition();
+            this.logPosition = decoder.logPosition();
+            this.timestamp = decoder.timestamp();
+            this.serviceId = decoder.serviceId();
+        }
+
+        public void encode(final RecoveryPlanEncoder.SnapshotsEncoder encoder)
+        {
+            encoder
+                .recordingId(recordingId)
+                .leadershipTermId(leadershipTermId)
+                .termBaseLogPosition(termBaseLogPosition)
+                .logPosition(logPosition)
+                .timestamp(timestamp)
+                .serviceId(serviceId);
+        }
+
+        public String toString()
+        {
+            return "Snapshot{" +
+                "recordingId=" + recordingId +
+                ", leadershipTermId=" + leadershipTermId +
+                ", termBaseLogPosition=" + termBaseLogPosition +
+                ", logPosition=" + logPosition +
+                ", timestamp=" + timestamp +
+                ", serviceId=" + serviceId +
+                '}';
+        }
+    }
+
+    /**
      * Step in a {@link RecoveryPlan}.
      */
     public static class ReplayStep
@@ -223,7 +295,7 @@ public class RecordingLog
         public final long lastTermBaseLogPosition;
         public final long lastCommittedLogPosition;
         public final long lastAppendedLogPosition;
-        public final ArrayList<ReplayStep> snapshotSteps;
+        public final ArrayList<Snapshot> snapshots;
         public final ArrayList<ReplayStep> termSteps;
         public final RecoveryPlanEncoder encoder = new RecoveryPlanEncoder();
         public final RecoveryPlanDecoder decoder = new RecoveryPlanDecoder();
@@ -233,14 +305,14 @@ public class RecordingLog
             final long lastTermBaseLogPosition,
             final long lastCommittedLogPosition,
             final long lastAppendedLogPosition,
-            final ArrayList<ReplayStep> snapshotSteps,
+            final ArrayList<Snapshot> snapshots,
             final ArrayList<ReplayStep> termSteps)
         {
             this.lastLeadershipTermId = lastLeadershipTermId;
             this.lastTermBaseLogPosition = lastTermBaseLogPosition;
             this.lastCommittedLogPosition = lastCommittedLogPosition;
             this.lastAppendedLogPosition = lastAppendedLogPosition;
-            this.snapshotSteps = snapshotSteps;
+            this.snapshots = snapshots;
             this.termSteps = termSteps;
         }
 
@@ -253,30 +325,28 @@ public class RecordingLog
             this.lastCommittedLogPosition = decoder.lastCommittedLogPosition();
             this.lastAppendedLogPosition = decoder.lastAppendedLogPosition();
 
-            snapshotSteps = new ArrayList<>();
+            snapshots = new ArrayList<>();
             termSteps = new ArrayList<>();
+
+            for (final RecoveryPlanDecoder.SnapshotsDecoder snapshotsDecoder : decoder.snapshots())
+            {
+                snapshots.add(new Snapshot(snapshotsDecoder));
+            }
 
             for (final RecoveryPlanDecoder.StepsDecoder stepDecoder : decoder.steps())
             {
-                if (stepDecoder.entryType() == RecordingLog.ENTRY_TYPE_SNAPSHOT)
-                {
-                    snapshotSteps.add(new ReplayStep(stepDecoder));
-                }
-                else
-                {
-                    termSteps.add(new ReplayStep(stepDecoder));
-                }
-
+                termSteps.add(new ReplayStep(stepDecoder));
             }
         }
 
         public int encodedLength()
         {
-            final int stepsCount = termSteps.size() + snapshotSteps.size();
-
             return RecoveryPlanEncoder.BLOCK_LENGTH +
                 RecoveryPlanEncoder.StepsEncoder.sbeHeaderSize() +
-                stepsCount * RecoveryPlanEncoder.StepsEncoder.sbeBlockLength();
+                RecoveryPlanEncoder.SnapshotsEncoder.sbeHeaderSize() +
+                RecoveryPlanEncoder.StepsEncoder.sbeHeaderSize() +
+                (snapshots.size() * RecoveryPlanEncoder.SnapshotsEncoder.sbeBlockLength()) +
+                (termSteps.size() * RecoveryPlanEncoder.StepsEncoder.sbeBlockLength());
         }
 
         public int encode(final MutableDirectBuffer buffer, final int offset)
@@ -287,19 +357,19 @@ public class RecordingLog
                 .lastCommittedLogPosition(lastCommittedLogPosition)
                 .lastAppendedLogPosition(lastAppendedLogPosition);
 
-            final int stepsCount = termSteps.size() + snapshotSteps.size();
-            final RecoveryPlanEncoder.StepsEncoder stepEncoder = encoder.stepsCount(stepsCount);
 
-            for (int i = 0, size = snapshotSteps.size(); i < size; i++)
+            final RecoveryPlanEncoder.SnapshotsEncoder snapshotsEncoder = encoder.snapshotsCount(snapshots.size());
+            for (int i = 0, size = snapshots.size(); i < size; i++)
             {
-                stepEncoder.next();
-                snapshotSteps.get(i).encode(stepEncoder);
+                snapshotsEncoder.next();
+                snapshots.get(i).encode(snapshotsEncoder);
             }
 
+            final RecoveryPlanEncoder.StepsEncoder stepsEncoder = encoder.stepsCount(termSteps.size());
             for (int i = 0, size = termSteps.size(); i < size; i++)
             {
-                stepEncoder.next();
-                termSteps.get(i).encode(stepEncoder);
+                stepsEncoder.next();
+                termSteps.get(i).encode(stepsEncoder);
             }
 
             return encoder.encodedLength();
@@ -312,7 +382,7 @@ public class RecordingLog
                 ", lastTermBaseLogPosition=" + lastTermBaseLogPosition +
                 ", lastCommittedLogPosition=" + lastCommittedLogPosition +
                 ", lastAppendedLogPosition=" + lastAppendedLogPosition +
-                ", snapshotSteps=" + snapshotSteps +
+                ", snapshots=" + snapshots +
                 ", termSteps=" + termSteps +
                 '}';
         }
@@ -490,23 +560,23 @@ public class RecordingLog
      */
     public RecoveryPlan createRecoveryPlan(final AeronArchive archive)
     {
-        final ArrayList<ReplayStep> snapshotSteps = new ArrayList<>();
+        final ArrayList<Snapshot> snapshots = new ArrayList<>();
         final ArrayList<ReplayStep> termSteps = new ArrayList<>();
-        planRecovery(snapshotSteps, termSteps, entries, archive);
+        planRecovery(snapshots, termSteps, entries, archive);
 
         long lastLeadershipTermId = NULL_VALUE;
         long lastTermBaseLogPosition = 0;
         long lastCommittedLogPosition = AeronArchive.NULL_POSITION;
         long lastAppendedLogPosition = 0;
 
-        final int snapshotStepsSize = snapshotSteps.size();
+        final int snapshotStepsSize = snapshots.size();
         if (snapshotStepsSize > 0)
         {
-            final ReplayStep snapshotStep = snapshotSteps.get(0);
+            final Snapshot snapshot = snapshots.get(0);
 
-            lastLeadershipTermId = snapshotStep.entry.leadershipTermId;
-            lastTermBaseLogPosition = snapshotStep.entry.termBaseLogPosition;
-            lastCommittedLogPosition = snapshotStep.entry.logPosition;
+            lastLeadershipTermId = snapshot.leadershipTermId;
+            lastTermBaseLogPosition = snapshot.termBaseLogPosition;
+            lastCommittedLogPosition = snapshot.logPosition;
             lastAppendedLogPosition = lastCommittedLogPosition;
         }
 
@@ -527,7 +597,7 @@ public class RecordingLog
             lastTermBaseLogPosition,
             lastCommittedLogPosition,
             lastAppendedLogPosition,
-            snapshotSteps,
+            snapshots,
             termSteps);
     }
 
@@ -826,7 +896,7 @@ public class RecordingLog
     }
 
     private static void planRecovery(
-        final ArrayList<ReplayStep> snapshotSteps,
+        final ArrayList<Snapshot> snapshots,
         final ArrayList<ReplayStep> termSteps,
         final ArrayList<Entry> entries,
         final AeronArchive archive)
@@ -852,9 +922,13 @@ public class RecordingLog
         if (-1 != snapshotIndex)
         {
             final Entry snapshot = entries.get(snapshotIndex);
-            getRecordingExtent(archive, recordingExtent, snapshot);
-            snapshotSteps.add(new ReplayStep(
-                recordingExtent.startPosition, recordingExtent.stopPosition, recordingExtent.sessionId, snapshot));
+            snapshots.add(new Snapshot(
+                snapshot.recordingId,
+                snapshot.leadershipTermId,
+                snapshot.termBaseLogPosition,
+                snapshot.logPosition,
+                snapshot.timestamp,
+                snapshot.applicableId));
 
             if (snapshotIndex - 1 >= 0)
             {
@@ -878,13 +952,13 @@ public class RecordingLog
                     else if (entry.leadershipTermId == snapshot.leadershipTermId &&
                         entry.logPosition == snapshot.logPosition)
                     {
-                        getRecordingExtent(archive, recordingExtent, entry);
-
-                        snapshotSteps.add(entry.applicableId + 1, new ReplayStep(
-                            recordingExtent.startPosition,
-                            recordingExtent.stopPosition,
-                            recordingExtent.sessionId,
-                            entry));
+                        snapshots.add(entry.applicableId + 1, new Snapshot(
+                            entry.recordingId,
+                            entry.leadershipTermId,
+                            entry.termBaseLogPosition,
+                            entry.logPosition,
+                            entry.timestamp,
+                            entry.applicableId));
                     }
                 }
             }

@@ -532,7 +532,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
             final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
 
-            sequencerAgent.recordFollowerActiveLog(channelUri.toString(), logSessionId);
+            sequencerAgent.recordLogAsFollower(channelUri.toString(), logSessionId);
             sequencerAgent.awaitFollowerServicesReady(channelUri, logSessionId);
             state(State.FOLLOWER_READY, nowMs);
         }
@@ -558,7 +558,7 @@ class Election implements MemberStatusListener, AutoCloseable
                 final ChannelUri channelUri = followerLogChannel(
                     ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
 
-                sequencerAgent.recordFollowerActiveLog(channelUri.toString(), logSessionId);
+                sequencerAgent.recordLogAsFollower(channelUri.toString(), logSessionId);
                 sequencerAgent.awaitFollowerServicesReady(channelUri, logSessionId);
                 state(State.FOLLOWER_READY, nowMs);
             }

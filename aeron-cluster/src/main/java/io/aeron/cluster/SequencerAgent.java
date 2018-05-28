@@ -739,7 +739,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         updateMemberDetails(leaderMember.id());
     }
 
-    void recordFollowerActiveLog(final String logChannel, final int logSessionId)
+    void recordLogAsFollower(final String logChannel, final int logSessionId)
     {
         archive.startRecording(logChannel, ctx.logStreamId(), SourceLocation.REMOTE);
         final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, ctx.logStreamId()));

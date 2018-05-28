@@ -1454,7 +1454,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);
     }
 
-    private void replayLog(final Image image, final long stopPosition, final Counter replayPosition)
+    private void replayLog(final Image image, final long stopPosition, final Counter commitPosition)
     {
         logAdapter = new LogAdapter(image, this);
 
@@ -1479,7 +1479,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                 }
             }
 
-            replayPosition.setOrdered(image.position());
+            commitPosition.setOrdered(image.position());
 
             workCount += consensusModuleAdapter.poll();
             workCount += timerService.poll(cachedEpochClock.time());

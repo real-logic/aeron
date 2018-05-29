@@ -276,7 +276,8 @@ private:
     ManyToOneRingBuffer& m_toDriverCommandBuffer;
     std::int64_t m_clientId;
 
-    inline void writeCommandToDriver(const std::function<util::index_t(AtomicBuffer&, util::index_t &)>& filler)
+    template <typename Filler>
+    inline void writeCommandToDriver(Filler&& filler)
     {
         AERON_DECL_ALIGNED(driver_proxy_command_buffer_t messageBuffer, 16);
         AtomicBuffer buffer(messageBuffer);

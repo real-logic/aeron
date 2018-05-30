@@ -842,11 +842,6 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     private void checkServiceHeartbeats(final long nowMs)
     {
-        if (null != election)
-        {
-            return;
-        }
-
         final long heartbeatThreshold = nowMs - serviceHeartbeatTimeoutMs;
         for (final Counter serviceHeartbeat : serviceHeartbeats)
         {

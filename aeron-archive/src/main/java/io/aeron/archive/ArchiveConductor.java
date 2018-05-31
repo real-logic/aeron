@@ -501,19 +501,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final RecordingSummary originalRecordingSummary = new RecordingSummary();
         catalog.recordingSummary(recordingId, originalRecordingSummary);
 
-        final ChannelUri channelUri = ChannelUri.parse(originalChannel);
-        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
-
-        if (null == sessionIdStr || originalRecordingSummary.sessionId != Integer.parseInt(sessionIdStr))
-        {
-            final String errorMessage = "extend recording channel must contain correct sessionId " + recordingId;
-            controlSession.sendResponse(correlationId, ERROR, errorMessage, controlResponseProxy);
-
-            return;
-        }
-
         try
         {
+            final ChannelUri channelUri = ChannelUri.parse(originalChannel);
             final String strippedChannel = strippedChannelBuilder(channelUri).build();
             final String key = makeKey(streamId, strippedChannel);
             final Subscription oldSubscription = recordingSubscriptionMap.get(key);

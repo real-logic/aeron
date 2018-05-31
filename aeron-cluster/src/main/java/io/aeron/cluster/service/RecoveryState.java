@@ -43,7 +43,7 @@ import static org.agrona.concurrent.status.CountersReader.*;
  *  |              Timestamp at beginning of Recovery               |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |               Count of leadership replay terms                |
+ *  |                    Replay required flag                       |
  *  +---------------------------------------------------------------+
  *  |                     Count of Services                         |
  *  +---------------------------------------------------------------+
@@ -70,8 +70,8 @@ public class RecoveryState
     public static final int LEADERSHIP_TERM_ID_OFFSET = 0;
     public static final int LOG_POSITION_OFFSET = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
     public static final int TIMESTAMP_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
-    public static final int REPLAY_TERM_COUNT_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
-    public static final int SERVICE_COUNT_OFFSET = REPLAY_TERM_COUNT_OFFSET + SIZE_OF_INT;
+    public static final int REPLAY_FLAG_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+    public static final int SERVICE_COUNT_OFFSET = REPLAY_FLAG_OFFSET + SIZE_OF_INT;
     public static final int SNAPSHOT_RECORDING_IDS_OFFSET = SERVICE_COUNT_OFFSET + SIZE_OF_INT;
 
     /**
@@ -82,7 +82,7 @@ public class RecoveryState
      * @param leadershipTermId     at which the snapshot was taken.
      * @param logPosition          at which the snapshot was taken.
      * @param timestamp            the snapshot was taken.
-     * @param replayTermCount      for the count of terms to be replayed during recovery after snapshot.
+     * @param hasReplay            flag is true if all or part of the log must be replayed.
      * @param snapshotRecordingIds for the services to use during recovery indexed by service id.
      * @return the {@link Counter} for the recovery state.
      */
@@ -92,13 +92,13 @@ public class RecoveryState
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
-        final int replayTermCount,
+        final boolean hasReplay,
         final long... snapshotRecordingIds)
     {
         tempBuffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
         tempBuffer.putLong(LOG_POSITION_OFFSET, logPosition);
         tempBuffer.putLong(TIMESTAMP_OFFSET, timestamp);
-        tempBuffer.putInt(REPLAY_TERM_COUNT_OFFSET, replayTermCount);
+        tempBuffer.putInt(REPLAY_FLAG_OFFSET, hasReplay ? 1 : 0);
 
         final int serviceCount = snapshotRecordingIds.length;
         tempBuffer.putInt(SERVICE_COUNT_OFFSET, serviceCount);
@@ -120,8 +120,7 @@ public class RecoveryState
         labelOffset += tempBuffer.putLongAscii(keyLength + labelOffset, leadershipTermId);
         labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, " logPosition=");
         labelOffset += tempBuffer.putLongAscii(keyLength + labelOffset, logPosition);
-        labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, " replayTermCount=");
-        labelOffset += tempBuffer.putIntAscii(keyLength + labelOffset, replayTermCount);
+        labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, " hasReplay=" + hasReplay);
 
         return aeron.addCounter(
             RECOVERY_STATE_TYPE_ID, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelOffset);
@@ -154,7 +153,7 @@ public class RecoveryState
     }
 
     /**
-     * Get the leadership term id for the recovery state.
+     * Get the leadership term id for the snapshot state. {@link Aeron#NULL_VALUE} if no snapshot for recovery.
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
@@ -178,7 +177,7 @@ public class RecoveryState
     }
 
     /**
-     * Get the term position for recovery within the leadership term.
+     * Get the position at which the snapshot was taken. {@link Aeron#NULL_VALUE} if no snapshot for recovery.
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
@@ -202,7 +201,7 @@ public class RecoveryState
     }
 
     /**
-     * Get the timestamp at the beginning of recovery.
+     * Get the timestamp at the beginning of recovery. {@link Aeron#NULL_VALUE} if no snapshot for recovery.
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
@@ -226,13 +225,13 @@ public class RecoveryState
     }
 
     /**
-     * Get the count of terms that will be replayed during recovery.
+     * Has the recovery process got a log to replay?
      *
      * @param counters  to search within.
      * @param counterId for the active recovery counter.
-     * @return the count of replay terms if found otherwise {@link Aeron#NULL_VALUE}.
+     * @return true if a replay is required.
      */
-    public static int getReplayTermCount(final CountersReader counters, final int counterId)
+    public static boolean hasReplay(final CountersReader counters, final int counterId)
     {
         final DirectBuffer buffer = counters.metaDataBuffer();
 
@@ -242,11 +241,11 @@ public class RecoveryState
 
             if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECOVERY_STATE_TYPE_ID)
             {
-                return buffer.getInt(recordOffset + KEY_OFFSET + REPLAY_TERM_COUNT_OFFSET);
+                return buffer.getInt(recordOffset + KEY_OFFSET + REPLAY_FLAG_OFFSET) == 1;
             }
         }
 
-        return NULL_VALUE;
+        return false;
     }
 
     /**

@@ -24,6 +24,7 @@ import io.aeron.cluster.service.*;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -39,8 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
-import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
-import static io.aeron.CommonContext.UDP_MEDIA;
+import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
@@ -58,7 +58,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private final long serviceHeartbeatTimeoutMs;
     private long nextSessionId = 1;
     private long leadershipTermId = NULL_VALUE;
-    private long termBaseLogPosition = 0;
+    private long expectedAckPosition = 0;
     private long lastAppendedPosition = 0;
     private long followerCommitPosition = 0;
     private long timeOfLastLogUpdateMs = 0;
@@ -196,16 +196,16 @@ class SequencerAgent implements Agent, MemberStatusListener
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
             isRecovering = true;
-            if (recoveryPlan.snapshots.size() > 0)
+            if (!recoveryPlan.snapshots.isEmpty())
             {
                 recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
             }
 
             awaitServiceAcks();
 
-            if (recoveryPlan.logs.size() > 0)
+            if (!recoveryPlan.logs.isEmpty())
             {
-                recoverFromLog(recoveryPlan.logs, archive);
+                recoverFromLog(recoveryPlan, archive);
             }
             isRecovering = false;
         }
@@ -258,7 +258,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             else if (Cluster.Role.FOLLOWER == role &&
                 (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state))
             {
-                workCount += logAdapter.poll(followerCommitPosition - termBaseLogPosition);
+                workCount += logAdapter.poll(followerCommitPosition);
             }
 
             workCount += memberStatusAdapter.poll();
@@ -592,7 +592,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     }
 
     void onReplaySessionOpen(
-        final long termPosition,
+        final long logPosition,
         final long correlationId,
         final long clusterSessionId,
         final long timestamp,
@@ -602,7 +602,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         cachedEpochClock.update(timestamp);
 
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
-        session.open(termPosition);
+        session.open(logPosition);
         session.lastActivity(timestamp, correlationId);
 
         sessionByIdMap.put(clusterSessionId, session);
@@ -665,6 +665,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             case SNAPSHOT:
                 if (!isRecovering)
                 {
+                    expectedAckPosition = logPosition;
                     state(ConsensusModule.State.SNAPSHOT);
                 }
                 break;
@@ -672,6 +673,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             case SHUTDOWN:
                 if (!isRecovering)
                 {
+                    expectedAckPosition = logPosition;
                     state(ConsensusModule.State.SHUTDOWN);
                 }
                 break;
@@ -679,6 +681,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             case ABORT:
                 if (!isRecovering)
                 {
+                    expectedAckPosition = logPosition;
                     state(ConsensusModule.State.ABORT);
                 }
                 break;
@@ -694,23 +697,11 @@ class SequencerAgent implements Agent, MemberStatusListener
     {
         role(Cluster.Role.LEADER);
         leadershipTermId = election.leadershipTermId();
-        termBaseLogPosition = election.logPosition();
         leaderMember = thisMember;
         updateMemberDetails(memberId);
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-        final Publication publication = aeron.addExclusivePublication(ctx.logChannel(), ctx.logStreamId());
-        if (!channelUri.containsKey(CommonContext.ENDPOINT_PARAM_NAME) && UDP_MEDIA.equals(channelUri.media()))
-        {
-            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media(UDP_MEDIA);
-            for (final ClusterMember member : clusterMembers)
-            {
-                if (member != thisMember)
-                {
-                    publication.addDestination(builder.endpoint(member.logEndpoint()).build());
-                }
-            }
-        }
+        final Publication publication = createLogPublication(channelUri, recoveryPlan, election.logPosition());
 
         logAdapter = null;
         logPublisher.connect(publication);
@@ -718,7 +709,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         election.logSessionId(logSessionId);
 
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        startLogRecording(channelUri.toString(), logSessionId, SourceLocation.LOCAL);
+        startLogRecording(election.logPosition(), channelUri.toString(), logSessionId, SourceLocation.LOCAL);
 
         awaitServicesReady(channelUri, true, logSessionId);
     }
@@ -733,7 +724,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     void recordLogAsFollower(final String logChannel, final int logSessionId)
     {
-        startLogRecording(logChannel, logSessionId, SourceLocation.REMOTE);
+        startLogRecording(election.logPosition(), logChannel, logSessionId, SourceLocation.REMOTE);
 
         final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, ctx.logStreamId()));
         logAdapter = new LogAdapter(image, this);
@@ -780,10 +771,10 @@ class SequencerAgent implements Agent, MemberStatusListener
         final RecordingLog.Log log = recoveryPlan.logs.get(lastStepIndex);
 
         final long originalLeadershipTermId = leadershipTermId;
-        termBaseLogPosition = log.termBaseLogPosition;
         leadershipTermId = log.leadershipTermId;
+        expectedAckPosition = log.logPosition;
 
-        try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
+        try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, log.logPosition, targetPosition))
         {
             final int streamId = ctx.replayStreamId();
             final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
@@ -804,7 +795,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                 replayLog(awaitImage(replaySessionId, subscription), targetPosition, counter);
 
                 recordingLog.commitLogPosition(leadershipTermId, targetPosition);
-                termBaseLogPosition = log.termBaseLogPosition + targetPosition;
+                expectedAckPosition = targetPosition;
             }
         }
 
@@ -876,6 +867,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             case SNAPSHOT:
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SNAPSHOT, nowMs))
                 {
+                    expectedAckPosition = logPosition();
                     state(ConsensusModule.State.SNAPSHOT);
                 }
                 break;
@@ -883,6 +875,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             case SHUTDOWN:
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SHUTDOWN, nowMs))
                 {
+                    expectedAckPosition = logPosition();
                     state(ConsensusModule.State.SHUTDOWN);
                 }
                 break;
@@ -890,6 +883,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             case ABORT:
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.ABORT, nowMs))
                 {
+                    expectedAckPosition = logPosition();
                     state(ConsensusModule.State.ABORT);
                 }
                 break;
@@ -903,8 +897,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     private boolean appendAction(final ClusterAction action, final long nowMs)
     {
-        final long position = termBaseLogPosition +
-            logPublisher.position() +
+        final long position = logPublisher.position() +
             MessageHeaderEncoder.ENCODED_LENGTH +
             ClusterActionRequestEncoder.BLOCK_LENGTH;
 
@@ -1055,13 +1048,13 @@ class SequencerAgent implements Agent, MemberStatusListener
         return false;
     }
 
-    private void createPositionCounters(final int logSessionId)
+    private void createPositionCounters(final int logSessionId, final long logPosition, final long maxLogPosition)
     {
         final CountersReader counters = aeron.countersReader();
         final int recordingCounterId = awaitRecordingCounter(counters, logSessionId);
 
         appendedPosition = new ReadableCounter(counters, recordingCounterId);
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, NULL_VALUE);
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, maxLogPosition);
     }
 
     private void awaitServicesReady(final ChannelUri channelUri, final boolean isLeader, final int logSessionId)
@@ -1081,13 +1074,13 @@ class SequencerAgent implements Agent, MemberStatusListener
             clusterMember.isLeader(clusterMember.id() == leaderMemberId);
         }
 
-        updateClusterMemberDetails(clusterMembers);
+        updateClusterMemberDetails(clusterMembers, leaderMemberId);
     }
 
     private void recoverFromSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
     {
         cachedEpochClock.update(snapshot.timestamp);
-        termBaseLogPosition = snapshot.logPosition;
+        expectedAckPosition = snapshot.logPosition;
         leadershipTermId = snapshot.leadershipTermId;
 
         final String channel = ctx.replayChannel();
@@ -1133,62 +1126,55 @@ class SequencerAgent implements Agent, MemberStatusListener
         return image;
     }
 
-    private void recoverFromLog(final ArrayList<RecordingLog.Log> logs, final AeronArchive archive)
+    private void recoverFromLog(final RecordingLog.RecoveryPlan plan, final AeronArchive archive)
     {
         final int streamId = ctx.replayStreamId();
         final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
 
-        for (int i = 0, size = logs.size(); i < size; i++)
+        if (!plan.logs.isEmpty())
         {
-            final RecordingLog.Log log = logs.get(i);
+            final RecordingLog.Log log = plan.logs.get(0);
             final long startPosition = log.startPosition;
             final long stopPosition = log.stopPosition;
             final long length = stopPosition - startPosition;
-
-            termBaseLogPosition = log.termBaseLogPosition;
             leadershipTermId = log.leadershipTermId;
 
-            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(i));
+            if (NULL_VALUE == log.logPosition)
+            {
+                recordingLog.commitLogPosition(leadershipTermId, stopPosition);
+            }
+
+            if (log.startPosition == log.stopPosition)
+            {
+                return;
+            }
+
+            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(log.sessionId));
             final String channel = channelUri.toString();
             final long recordingId = log.recordingId;
 
-            try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, termBaseLogPosition, length))
+            try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, startPosition, stopPosition))
             {
-                logAdapter = null;
-                serviceProxy.joinLog(leadershipTermId, counter.id(), i, streamId, true, channel);
-                resetToNull(serviceAckStates);
+                serviceProxy.joinLog(leadershipTermId, counter.id(), log.sessionId, streamId, true, channel);
 
-                if (length > 0)
+                try (Subscription subscription = aeron.addSubscription(channel, streamId))
                 {
-                    try (Subscription subscription = aeron.addSubscription(channel, streamId))
-                    {
-                        awaitServiceAcks();
-
-                        final Image image = awaitImage(
-                            (int)archive.startReplay(recordingId, startPosition, length, channel, streamId),
-                            subscription);
-
-                        resetToNull(serviceAckStates);
-                        replayLog(image, stopPosition, counter);
-                        awaitServiceAcks();
-
-                        int workCount;
-                        while (0 != (workCount = timerService.poll(cachedEpochClock.time())))
-                        {
-                            idle(workCount);
-                        }
-
-                        if (NULL_VALUE == log.logPosition)
-                        {
-                            recordingLog.commitLogPosition(leadershipTermId, termBaseLogPosition + stopPosition);
-                        }
-
-                        termBaseLogPosition = log.termBaseLogPosition + stopPosition;
-                    }
-                }
-                else
-                {
+                    expectedAckPosition = startPosition;
+                    resetToNull(serviceAckStates);
                     awaitServiceAcks();
+
+                    final Image image = awaitImage(
+                        (int)archive.startReplay(recordingId, startPosition, length, channel, streamId), subscription);
+
+                    resetToNull(serviceAckStates);
+                    replayLog(image, stopPosition, counter);
+                    awaitServiceAcks();
+
+                    int workCount;
+                    while (0 != (workCount = timerService.poll(cachedEpochClock.time())))
+                    {
+                        idle(workCount);
+                    }
                 }
             }
         }
@@ -1196,8 +1182,13 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
     {
-        final int termCount = plan.logs.size();
         final int snapshotsCount = plan.snapshots.size();
+        boolean hasReplay = false;
+        if (plan.logs.size() > 0)
+        {
+            final RecordingLog.Log log = plan.logs.get(0);
+            hasReplay = log.stopPosition > log.startPosition;
+        }
 
         if (snapshotsCount > 0)
         {
@@ -1216,16 +1207,16 @@ class SequencerAgent implements Agent, MemberStatusListener
                 snapshot.leadershipTermId,
                 snapshot.logPosition,
                 snapshot.timestamp,
-                termCount,
+                hasReplay,
                 serviceSnapshotRecordingIds);
         }
 
-        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, NULL_VALUE, 0, termCount);
+        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, 0, 0, hasReplay);
     }
 
     private void awaitServiceAcks()
     {
-        final long logPosition = termBaseLogPosition + currentTermPosition();
+        final long logPosition = logPosition();
         while (!hasReachedThreshold(logPosition, serviceAckStates))
         {
             idle(consensusModuleAdapter.poll());
@@ -1235,12 +1226,11 @@ class SequencerAgent implements Agent, MemberStatusListener
     private void validateServiceAck(
         final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
     {
-        final long currentLogPosition = termBaseLogPosition + currentTermPosition();
-        if (logPosition != currentLogPosition || leadershipTermId != this.leadershipTermId)
+        if (logPosition != expectedAckPosition || leadershipTermId != this.leadershipTermId)
         {
             throw new IllegalStateException("invalid log state for action " + action +
                 ": serviceId=" + serviceId +
-                ", logPosition=" + logPosition + " expected " + currentLogPosition +
+                ", logPosition=" + logPosition + " expected " + expectedAckPosition +
                 ", leadershipTermId=" + leadershipTermId + " expected " + this.leadershipTermId);
         }
 
@@ -1250,29 +1240,19 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    private long currentTermPosition()
+    private long logPosition()
     {
         return null != logAdapter ? logAdapter.position() : logPublisher.position();
     }
 
-    private void updateClusterMemberDetails(final ClusterMember[] members)
+    private void updateClusterMemberDetails(final ClusterMember[] members, final int leaderMemberId)
     {
-        int leaderIndex = 0;
-        for (int i = 0, length = members.length; i < length; i++)
-        {
-            if (members[i].isLeader())
-            {
-                leaderIndex = i;
-                break;
-            }
-        }
-
         final StringBuilder builder = new StringBuilder(100);
-        builder.append(members[leaderIndex].clientFacingEndpoint());
+        builder.append(members[leaderMemberId].clientFacingEndpoint());
 
         for (int i = 0, length = members.length; i < length; i++)
         {
-            if (i != leaderIndex)
+            if (i != leaderMemberId)
             {
                 builder.append(',').append(members[i].clientFacingEndpoint());
             }
@@ -1287,10 +1267,10 @@ class SequencerAgent implements Agent, MemberStatusListener
 
         if (Cluster.Role.LEADER == role)
         {
-            thisMember.logPosition(termBaseLogPosition + appendedPosition.get());
+            thisMember.logPosition(appendedPosition.get());
 
             final long quorumPosition = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
-            final long commitPosition = termBaseLogPosition + this.commitPosition.getWeak();
+            final long commitPosition = this.commitPosition.getWeak();
             if (quorumPosition > commitPosition || nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatIntervalMs))
             {
                 for (final ClusterMember member : clusterMembers)
@@ -1302,7 +1282,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                     }
                 }
 
-                this.commitPosition.setOrdered(quorumPosition - termBaseLogPosition);
+                this.commitPosition.setOrdered(quorumPosition);
                 timeOfLastLogUpdateMs = nowMs;
 
                 workCount = 1;
@@ -1314,8 +1294,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             if (appendedPosition != lastAppendedPosition)
             {
                 final Publication publication = leaderMember.publication();
-                if (memberStatusPublisher.appendedPosition(
-                    publication, termBaseLogPosition + appendedPosition, leadershipTermId, memberId))
+                if (memberStatusPublisher.appendedPosition(publication, appendedPosition, leadershipTermId, memberId))
                 {
                     lastAppendedPosition = appendedPosition;
                 }
@@ -1366,6 +1345,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+                final long termBaseLogPosition = recoveryPlan.lastAppendedLogPosition;
 
                 snapshotState(publication, logPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
@@ -1441,17 +1421,65 @@ class SequencerAgent implements Agent, MemberStatusListener
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
 
-    private void startLogRecording(final String logChannel, final int sessionId, final SourceLocation sourceLocation)
+    private Publication createLogPublication(
+        final ChannelUri channelUri, final RecordingLog.RecoveryPlan plan, final long position)
     {
-        archive.startRecording(logChannel, ctx.logStreamId(), sourceLocation);
-        createPositionCounters(sessionId);
+        if (!plan.logs.isEmpty())
+        {
+            final RecordingLog.Log log = plan.logs.get(0);
+            final int termLength = log.termBufferLength;
+            final int initialTermId = log.initialTermId;
+            final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
+            final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, bitsToShift, initialTermId);
+            final int termOffset = (int)(position & (termLength - 1));
+
+            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(log.mtuLength));
+            channelUri.put(TERM_LENGTH_PARAM_NAME, Integer.toString(termLength));
+            channelUri.put(INITIAL_TERM_ID_PARAM_NAME, Integer.toString(initialTermId));
+            channelUri.put(TERM_ID_PARAM_NAME, Integer.toString(termId));
+            channelUri.put(TERM_OFFSET_PARAM_NAME, Integer.toString(termOffset));
+        }
+
+        final Publication publication = aeron.addExclusivePublication(channelUri.toString(), ctx.logStreamId());
+
+        if (!channelUri.containsKey(ENDPOINT_PARAM_NAME) && UDP_MEDIA.equals(channelUri.media()))
+        {
+            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media(UDP_MEDIA);
+            for (final ClusterMember member : clusterMembers)
+            {
+                if (member != thisMember)
+                {
+                    publication.addDestination(builder.endpoint(member.logEndpoint()).build());
+                }
+            }
+        }
+
+        return publication;
+    }
+
+    private void startLogRecording(
+        final long position, final String channel, final int sessionId, final SourceLocation sourceLocation)
+    {
+        if (recoveryPlan.logs.isEmpty())
+        {
+            archive.startRecording(channel, ctx.logStreamId(), sourceLocation);
+        }
+        else
+        {
+            final RecordingLog.Log log = recoveryPlan.logs.get(0);
+            archive.extendRecording(log.recordingId, channel, ctx.logStreamId(), sourceLocation);
+        }
+
+        createPositionCounters(sessionId, position, Long.MAX_VALUE);
+
         final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
         recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);
     }
 
     private void replayLog(final Image image, final long stopPosition, final Counter commitPosition)
     {
-        logAdapter = new LogAdapter(image, this);
+        final LogAdapter logAdapter = new LogAdapter(image, this);
+        expectedAckPosition = stopPosition;
 
         while (true)
         {
@@ -1465,12 +1493,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
                 if (image.isClosed())
                 {
-                    if (!image.isEndOfStream())
-                    {
-                        throw new IllegalStateException("unexpected close of image when replaying log");
-                    }
-
-                    break;
+                    throw new IllegalStateException("unexpected close of image when replaying log");
                 }
             }
 

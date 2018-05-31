@@ -42,8 +42,7 @@ import static org.agrona.BitUtil.*;
  * <p>
  * The latest state is made up of a the latest snapshot followed by any leadership term logs which follow. It is
  * possible that a snapshot is taken mid term and therefore the latest state is the snapshot plus the log of messages
- * which begin before the snapshot which are not required and those that continue afterwards which need to be applied
- * on top of the snapshot.
+ * which got appended to the log after the snapshot was taken.
  * <p>
  * Record layout as follows:
  * <pre>
@@ -893,6 +892,25 @@ public class RecordingLog
         throw new IllegalArgumentException("unknown leadershipTermId: " + leadershipTermId);
     }
 
+    private void commitEntryValue(final int entryIndex, final long value, final int fieldOffset)
+    {
+        buffer.putLong(0, value, LITTLE_ENDIAN);
+        byteBuffer.limit(SIZE_OF_LONG).position(0);
+        final long filePosition = (entryIndex * ENTRY_LENGTH) + fieldOffset;
+
+        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
+        {
+            if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
+            {
+                throw new IllegalStateException("failed to write field atomically");
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
     private static void planRecovery(
         final ArrayList<Snapshot> snapshots,
         final ArrayList<Log> logs,
@@ -904,14 +922,18 @@ public class RecordingLog
             return;
         }
 
+        int logIndex = -1;
         int snapshotIndex = -1;
-        for (int i = entries.size() - 1; i >= 0; i--)
+        for (int i = 0, size = entries.size(); i < size; i++)
         {
             final Entry entry = entries.get(i);
             if (ENTRY_TYPE_SNAPSHOT == entry.type)
             {
                 snapshotIndex = i;
-                break;
+            }
+            else if (ENTRY_TYPE_TERM == entry.type)
+            {
+                logIndex = i;
             }
         }
 
@@ -933,30 +955,9 @@ public class RecordingLog
                 for (int i = snapshotIndex - 1; i >= 0; i--)
                 {
                     final Entry entry = entries.get(i);
-                    if (ENTRY_TYPE_TERM == entry.type)
-                    {
-                        getRecordingExtent(archive, recordingExtent, entry);
-                        final long snapshotPosition = snapshot.logPosition;
 
-                        if (recordingExtent.stopPosition == NULL_POSITION ||
-                            (entry.termBaseLogPosition + recordingExtent.stopPosition) > snapshotPosition)
-                        {
-                            final long termPosition = snapshot.logPosition - snapshot.termBaseLogPosition;
-                            logs.add(new Log(
-                                entry.recordingId,
-                                entry.leadershipTermId,
-                                entry.termBaseLogPosition,
-                                entry.logPosition,
-                                termPosition,
-                                recordingExtent.stopPosition,
-                                recordingExtent.initialTermId,
-                                recordingExtent.termBufferLength,
-                                recordingExtent.mtuLength,
-                                recordingExtent.sessionId));
-                        }
-                        break;
-                    }
-                    else if (entry.leadershipTermId == snapshot.leadershipTermId &&
+                    if (ENTRY_TYPE_SNAPSHOT == entry.type &&
+                        entry.leadershipTermId == snapshot.leadershipTermId &&
                         entry.logPosition == snapshot.logPosition)
                     {
                         snapshots.add(entry.applicableId + 1, new Snapshot(
@@ -971,41 +972,25 @@ public class RecordingLog
             }
         }
 
-        for (int i = snapshotIndex + 1, length = entries.size(); i < length; i++)
+        if (-1 != logIndex)
         {
-            final Entry entry = entries.get(i);
+            final Entry entry = entries.get(logIndex);
             getRecordingExtent(archive, recordingExtent, entry);
+
+            final long startPosition = -1 == snapshotIndex ?
+                recordingExtent.startPosition : snapshots.get(0).logPosition;
 
             logs.add(new Log(
                 entry.recordingId,
                 entry.leadershipTermId,
                 entry.termBaseLogPosition,
                 entry.logPosition,
-                recordingExtent.startPosition,
+                startPosition,
                 recordingExtent.stopPosition,
                 recordingExtent.initialTermId,
                 recordingExtent.termBufferLength,
                 recordingExtent.mtuLength,
                 recordingExtent.sessionId));
-        }
-    }
-
-    private void commitEntryValue(final int entryIndex, final long value, final int fieldOffset)
-    {
-        buffer.putLong(0, value, LITTLE_ENDIAN);
-        byteBuffer.limit(SIZE_OF_LONG).position(0);
-        final long filePosition = (entryIndex * ENTRY_LENGTH) + fieldOffset;
-
-        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
-        {
-            if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
-            {
-                throw new IllegalStateException("failed to write field atomically");
-            }
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
         }
     }
 }

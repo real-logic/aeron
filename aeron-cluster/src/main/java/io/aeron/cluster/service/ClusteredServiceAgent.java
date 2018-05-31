@@ -252,11 +252,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         this.timestampMs = timestampMs;
 
         final ClientSession session = new ClientSession(
-            clusterSessionId,
-            responseStreamId,
-            responseChannel,
-            encodedPrincipal,
-            this);
+            clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this);
 
         if (Role.LEADER == role)
         {
@@ -289,14 +285,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         final String responseChannel,
         final byte[] encodedPrincipal)
     {
-        final ClientSession session = new ClientSession(
-            clusterSessionId,
-            responseStreamId,
-            responseChannel,
-            encodedPrincipal,
-            ClusteredServiceAgent.this);
-
-        sessionByIdMap.put(clusterSessionId, session);
+        sessionByIdMap.put(clusterSessionId, new ClientSession(
+            clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this));
     }
 
     private void checkHealthAndUpdateHeartbeat(final long nowMs)
@@ -318,60 +308,46 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
     {
-        long logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
         leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
         timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
 
-        if (NULL_VALUE != logPosition)
+        if (NULL_VALUE != leadershipTermId)
         {
             loadSnapshot(RecoveryState.getSnapshotRecordingId(counters, recoveryCounterId, serviceId));
         }
-        else
-        {
-            logPosition = 0;
-        }
 
+        final long logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
         consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, ClusterAction.INIT);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
     {
-        final long replayTermCount = RecoveryState.getReplayTermCount(counters, recoveryCounterId);
-        if (0 == replayTermCount)
+        if (RecoveryState.hasReplay(counters, recoveryCounterId))
         {
-            return;
-        }
-
-        service.onReplayBegin();
-
-        for (int i = 0; i < replayTermCount; i++)
-        {
+            service.onReplayBegin();
             awaitActiveLog();
+
             final int counterId = newActiveLogEvent.commitPositionId;
             leadershipTermId = CommitPos.getLeadershipTermId(counters, counterId);
-            long logPosition = CommitPos.getTermBaseLogPosition(counters, counterId);
+            long logPosition = CommitPos.getLogPosition(counters, counterId);
 
-            if (CommitPos.getLeadershipTermLength(counters, counterId) > 0)
+            try (Subscription subscription = aeron.addSubscription(
+                newActiveLogEvent.channel, newActiveLogEvent.streamId))
             {
-                try (Subscription subscription = aeron.addSubscription(
-                    newActiveLogEvent.channel, newActiveLogEvent.streamId))
-                {
-                    consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, READY);
+                consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, READY);
 
-                    final Image image = awaitImage(newActiveLogEvent.sessionId, subscription);
-                    final ReadableCounter limit = new ReadableCounter(counters, counterId);
-                    final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
+                final Image image = awaitImage(newActiveLogEvent.sessionId, subscription);
+                final ReadableCounter limit = new ReadableCounter(counters, counterId);
+                final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
 
-                    consumeImage(image, adapter);
-                    logPosition += image.position();
-                }
+                logPosition = CommitPos.getMaxLogPosition(counters, counterId);
+                consumeImage(image, adapter, logPosition);
             }
 
             newActiveLogEvent = null;
             consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, REPLAY);
+            service.onReplayEnd();
         }
-
-        service.onReplayEnd();
     }
 
     private void awaitActiveLog()
@@ -385,26 +361,25 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
     }
 
-    private void consumeImage(final Image image, final BoundedLogAdapter adapter)
+    private void consumeImage(final Image image, final BoundedLogAdapter adapter, final long maxLogPosition)
     {
         while (true)
         {
             final int workCount = adapter.poll();
             if (workCount == 0)
             {
-                if (image.isClosed())
+                if (image.position() == maxLogPosition)
                 {
-                    if (!image.isEndOfStream())
-                    {
-                        throw new IllegalStateException("unexpected close of replay");
-                    }
-
                     break;
                 }
 
-                checkInterruptedStatus();
+                if (image.isClosed())
+                {
+                    throw new IllegalStateException("unexpected close of replay");
+                }
             }
 
+            checkInterruptedStatus();
             idleStrategy.idle(workCount);
         }
     }
@@ -447,7 +422,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         final int logSessionId = newActiveLogEvent.sessionId;
         leadershipTermId = newActiveLogEvent.leadershipTermId;
-        final long logPosition = CommitPos.getTermBaseLogPosition(counters, commitPositionId);
+        final long logPosition = CommitPos.getLogPosition(counters, commitPositionId);
 
         final Subscription logSubscription = aeron.addSubscription(
             newActiveLogEvent.channel, newActiveLogEvent.streamId);

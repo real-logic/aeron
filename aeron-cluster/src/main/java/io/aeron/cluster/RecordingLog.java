@@ -383,6 +383,23 @@ public class RecordingLog
             return encoder.encodedLength();
         }
 
+        /**
+         * Has the log to be replayed as part of the recovery plan?
+         *
+         * @return true if log replay is require otherwise false.
+         */
+        public boolean hasReplay()
+        {
+            boolean hasReplay = false;
+            if (logs.size() > 0)
+            {
+                final RecordingLog.Log log = logs.get(0);
+                hasReplay = log.stopPosition > log.startPosition;
+            }
+
+            return hasReplay;
+        }
+
         public String toString()
         {
             return "RecoveryPlan{" +

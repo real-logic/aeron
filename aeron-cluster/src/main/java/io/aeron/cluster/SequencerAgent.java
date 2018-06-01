@@ -1144,36 +1144,36 @@ class SequencerAgent implements Agent, MemberStatusListener
                 recordingLog.commitLogPosition(leadershipTermId, stopPosition);
             }
 
-            if (log.startPosition == log.stopPosition)
+            if (plan.hasReplay())
             {
-                return;
-            }
+                channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(log.sessionId));
+                final String channel = channelUri.toString();
+                final long recordingId = log.recordingId;
 
-            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(log.sessionId));
-            final String channel = channelUri.toString();
-            final long recordingId = log.recordingId;
-
-            try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, startPosition, stopPosition))
-            {
-                serviceProxy.joinLog(leadershipTermId, counter.id(), log.sessionId, streamId, true, channel);
-
-                try (Subscription subscription = aeron.addSubscription(channel, streamId))
+                try (Counter counter = CommitPos.allocate(
+                    aeron, tempBuffer, leadershipTermId, startPosition, stopPosition))
                 {
-                    expectedAckPosition = startPosition;
-                    resetToNull(serviceAckStates);
-                    awaitServiceAcks();
+                    serviceProxy.joinLog(leadershipTermId, counter.id(), log.sessionId, streamId, true, channel);
 
-                    final Image image = awaitImage(
-                        (int)archive.startReplay(recordingId, startPosition, length, channel, streamId), subscription);
-
-                    resetToNull(serviceAckStates);
-                    replayLog(image, stopPosition, counter);
-                    awaitServiceAcks();
-
-                    int workCount;
-                    while (0 != (workCount = timerService.poll(cachedEpochClock.time())))
+                    try (Subscription subscription = aeron.addSubscription(channel, streamId))
                     {
-                        idle(workCount);
+                        expectedAckPosition = startPosition;
+                        resetToNull(serviceAckStates);
+                        awaitServiceAcks();
+
+                        final Image image = awaitImage(
+                            (int)archive.startReplay(recordingId, startPosition, length, channel, streamId),
+                            subscription);
+
+                        resetToNull(serviceAckStates);
+                        replayLog(image, stopPosition, counter);
+                        awaitServiceAcks();
+
+                        int workCount;
+                        while (0 != (workCount = timerService.poll(cachedEpochClock.time())))
+                        {
+                            idle(workCount);
+                        }
                     }
                 }
             }
@@ -1183,12 +1183,6 @@ class SequencerAgent implements Agent, MemberStatusListener
     private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
     {
         final int snapshotsCount = plan.snapshots.size();
-        boolean hasReplay = false;
-        if (plan.logs.size() > 0)
-        {
-            final RecordingLog.Log log = plan.logs.get(0);
-            hasReplay = log.stopPosition > log.startPosition;
-        }
 
         if (snapshotsCount > 0)
         {
@@ -1207,11 +1201,11 @@ class SequencerAgent implements Agent, MemberStatusListener
                 snapshot.leadershipTermId,
                 snapshot.logPosition,
                 snapshot.timestamp,
-                hasReplay,
+                plan.hasReplay(),
                 serviceSnapshotRecordingIds);
         }
 
-        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, 0, 0, hasReplay);
+        return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, 0, 0, plan.hasReplay());
     }
 
     private void awaitServiceAcks()

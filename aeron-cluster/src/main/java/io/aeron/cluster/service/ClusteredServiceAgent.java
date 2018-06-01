@@ -317,6 +317,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
 
         final long logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
+        heartbeatCounter.setOrdered(epochClock.time());
         consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, ClusterAction.INIT);
     }
 
@@ -345,6 +346,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             }
 
             newActiveLogEvent = null;
+            heartbeatCounter.setOrdered(epochClock.time());
             consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, REPLAY);
             service.onReplayEnd();
         }

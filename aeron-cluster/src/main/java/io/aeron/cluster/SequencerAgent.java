@@ -696,9 +696,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     void becomeLeader()
     {
         role(Cluster.Role.LEADER);
-        leadershipTermId = election.leadershipTermId();
-        leaderMember = thisMember;
-        updateMemberDetails(memberId);
+        updateMemberDetails();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         final Publication publication = createLogPublication(channelUri, recoveryPlan, election.logPosition());
@@ -713,12 +711,18 @@ class SequencerAgent implements Agent, MemberStatusListener
         awaitServicesReady(channelUri, logSessionId);
     }
 
-    void updateFollowersMemberDetails()
+    void updateMemberDetails()
     {
         leadershipTermId = election.leadershipTermId();
         leaderMember = election.leader();
         followerCommitPosition = election.logPosition();
-        updateMemberDetails(leaderMember.id());
+
+        for (final ClusterMember clusterMember : clusterMembers)
+        {
+            clusterMember.isLeader(clusterMember.id() == leaderMember.id());
+        }
+
+        updateClientConnectDetails(clusterMembers, leaderMember.id());
     }
 
     void recordLogAsFollower(final String logChannel, final int logSessionId)
@@ -730,9 +734,14 @@ class SequencerAgent implements Agent, MemberStatusListener
         lastAppendedPosition = 0;
     }
 
-    void awaitFollowerServicesReady(final ChannelUri channelUri, final int logSessionId)
+    void awaitServicesReady(final ChannelUri channelUri, final int logSessionId)
     {
-        awaitServicesReady(channelUri, logSessionId);
+        final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(channelUri.media()) ?
+            channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
+        serviceProxy.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
+
+        resetToNull(serviceAckStates);
+        awaitServiceAcks();
     }
 
     void electionComplete()
@@ -1056,26 +1065,6 @@ class SequencerAgent implements Agent, MemberStatusListener
         commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, maxLogPosition);
     }
 
-    private void awaitServicesReady(final ChannelUri channelUri, final int logSessionId)
-    {
-        final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(channelUri.media()) ?
-            channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
-        serviceProxy.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
-
-        resetToNull(serviceAckStates);
-        awaitServiceAcks();
-    }
-
-    private void updateMemberDetails(final int leaderMemberId)
-    {
-        for (final ClusterMember clusterMember : clusterMembers)
-        {
-            clusterMember.isLeader(clusterMember.id() == leaderMemberId);
-        }
-
-        updateClusterMemberDetails(clusterMembers, leaderMemberId);
-    }
-
     private void recoverFromSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
     {
         cachedEpochClock.update(snapshot.timestamp);
@@ -1238,7 +1227,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         return null != logAdapter ? logAdapter.position() : logPublisher.position();
     }
 
-    private void updateClusterMemberDetails(final ClusterMember[] members, final int leaderMemberId)
+    private void updateClientConnectDetails(final ClusterMember[] members, final int leaderMemberId)
     {
         final StringBuilder builder = new StringBuilder(100);
         builder.append(members[leaderMemberId].clientFacingEndpoint());

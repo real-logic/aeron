@@ -528,19 +528,19 @@ class Election implements MemberStatusListener, AutoCloseable
 
         if (null == recordingCatchUp)
         {
-            sequencerAgent.updateFollowersMemberDetails();
+            sequencerAgent.updateMemberDetails();
 
             final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
 
             sequencerAgent.recordLogAsFollower(channelUri.toString(), logSessionId);
-            sequencerAgent.awaitFollowerServicesReady(channelUri, logSessionId);
+            sequencerAgent.awaitServicesReady(channelUri, logSessionId);
             state(State.FOLLOWER_READY, nowMs);
         }
         else
         {
             if (recordingCatchUp.isInit())
             {
-                sequencerAgent.updateFollowersMemberDetails();
+                sequencerAgent.updateMemberDetails();
             }
 
             if (!recordingCatchUp.isDone())
@@ -559,7 +559,7 @@ class Election implements MemberStatusListener, AutoCloseable
                     ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
 
                 sequencerAgent.recordLogAsFollower(channelUri.toString(), logSessionId);
-                sequencerAgent.awaitFollowerServicesReady(channelUri, logSessionId);
+                sequencerAgent.awaitServicesReady(channelUri, logSessionId);
                 state(State.FOLLOWER_READY, nowMs);
             }
         }

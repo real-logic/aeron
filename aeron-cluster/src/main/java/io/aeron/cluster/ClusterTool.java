@@ -34,10 +34,10 @@ import java.util.function.Consumer;
  * Tool for investigating the state of a cluster node.
  * <pre>
  *
- * Usage: ClusterTool &#60;cluster-dir&#62; &#60;command&#62;
+ * Usage: ClusterTool &#60;cluster-dir&#62; &#60;command&#62; [options]
  *          describe: prints out all descriptors in the file.
  *               pid: prints PID of cluster component.
- *     recovery-plan: prints recovery plan of cluster component.
+ *     recovery-plan: [service count] prints recovery plan of cluster component.
  *     recording-log: prints recording log of cluster component.
  *            errors: prints Aeron and cluster component error logs.
  * </pre>
@@ -48,7 +48,7 @@ public class ClusterTool
 
     public static void main(final String[] args)
     {
-        if (args.length != 2)
+        if (args.length < 2)
         {
             printHelp(System.out);
             System.exit(-1);
@@ -73,7 +73,12 @@ public class ClusterTool
                 break;
 
             case "recovery-plan":
-                recoveryPlan(System.out, clusterDir);
+                if (args.length < 3)
+                {
+                    printHelp(System.out);
+                    System.exit(-1);
+                }
+                recoveryPlan(System.out, clusterDir, Integer.parseInt(args[2]));
                 break;
 
             case "recording-log":
@@ -106,12 +111,12 @@ public class ClusterTool
         }
     }
 
-    public static void recoveryPlan(final PrintStream out, final File clusterDir)
+    public static void recoveryPlan(final PrintStream out, final File clusterDir, final int serviceCount)
     {
         try (AeronArchive archive = AeronArchive.connect())
         {
             final RecordingLog recordingLog = new RecordingLog(clusterDir);
-            out.println(recordingLog.createRecoveryPlan(archive));
+            out.println(recordingLog.createRecoveryPlan(archive, serviceCount));
         }
     }
 
@@ -217,10 +222,10 @@ public class ClusterTool
 
     private static void printHelp(final PrintStream out)
     {
-        out.println("Usage: <cluster-dir> <command>");
+        out.println("Usage: <cluster-dir> <command> [options]");
         out.println("  describe: prints out all descriptors in the file.");
         out.println("  pid: prints PID of cluster component.");
-        out.println("  recovery-plan: prints recovery plan of cluster component.");
+        out.println("  recovery-plan: [service count] prints recovery plan of cluster component.");
         out.println("  recording-log: prints recording log of cluster component.");
         out.println("  errors: prints Aeron and cluster component error logs.");
     }

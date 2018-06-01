@@ -78,6 +78,11 @@ import static org.agrona.BitUtil.*;
 public class RecordingLog
 {
     /**
+     * The ID assigned to the consensus module as its service id for taking snapshots.
+     */
+    public static final int CONSENSUS_MODULE_SERVICE_ID = 0;
+
+    /**
      * Representation of the entry in the {@link RecordingLog}.
      */
     public static final class Entry
@@ -557,14 +562,15 @@ public class RecordingLog
      * Create a recovery plan for the cluster that when the steps are replayed will bring the cluster back to the
      * latest stable state.
      *
-     * @param archive to lookup recording descriptors.
+     * @param archive      to lookup recording descriptors.
+     * @param serviceCount of services that may have snapshots.
      * @return a new {@link RecoveryPlan} for the cluster.
      */
-    public RecoveryPlan createRecoveryPlan(final AeronArchive archive)
+    public RecoveryPlan createRecoveryPlan(final AeronArchive archive, final int serviceCount)
     {
         final ArrayList<Snapshot> snapshots = new ArrayList<>();
         final ArrayList<Log> logs = new ArrayList<>();
-        planRecovery(snapshots, logs, entries, archive);
+        planRecovery(snapshots, logs, entries, archive, serviceCount);
 
         long lastLeadershipTermId = NULL_VALUE;
         long lastTermBaseLogPosition = 0;
@@ -915,7 +921,8 @@ public class RecordingLog
         final ArrayList<Snapshot> snapshots,
         final ArrayList<Log> logs,
         final ArrayList<Entry> entries,
-        final AeronArchive archive)
+        final AeronArchive archive,
+        final int serviceCount)
     {
         if (entries.isEmpty())
         {
@@ -924,16 +931,20 @@ public class RecordingLog
 
         int logIndex = -1;
         int snapshotIndex = -1;
-        for (int i = 0, size = entries.size(); i < size; i++)
+        for (int i = entries.size() - 1; i >= 0; i--)
         {
             final Entry entry = entries.get(i);
-            if (ENTRY_TYPE_SNAPSHOT == entry.type)
+            if (-1 == snapshotIndex && ENTRY_TYPE_SNAPSHOT == entry.type)
             {
                 snapshotIndex = i;
             }
-            else if (ENTRY_TYPE_TERM == entry.type)
+            else if (-1 == logIndex && ENTRY_TYPE_TERM == entry.type)
             {
                 logIndex = i;
+            }
+            else if (-1 != snapshotIndex && -1 != logIndex)
+            {
+                break;
             }
         }
 
@@ -950,24 +961,26 @@ public class RecordingLog
                 snapshot.timestamp,
                 snapshot.applicableId));
 
-            if (snapshotIndex - 1 >= 0)
+            for (int i = 1; i <= serviceCount; i++)
             {
-                for (int i = snapshotIndex - 1; i >= 0; i--)
+                if ((snapshotIndex - i) < 0)
                 {
-                    final Entry entry = entries.get(i);
+                    throw new IllegalStateException("Snapshot missing for service at index " + i + " in " + entries);
+                }
 
-                    if (ENTRY_TYPE_SNAPSHOT == entry.type &&
-                        entry.leadershipTermId == snapshot.leadershipTermId &&
-                        entry.logPosition == snapshot.logPosition)
-                    {
-                        snapshots.add(entry.applicableId + 1, new Snapshot(
-                            entry.recordingId,
-                            entry.leadershipTermId,
-                            entry.termBaseLogPosition,
-                            entry.logPosition,
-                            entry.timestamp,
-                            entry.applicableId));
-                    }
+                final Entry entry = entries.get(snapshotIndex - 1);
+
+                if (ENTRY_TYPE_SNAPSHOT == entry.type &&
+                    entry.leadershipTermId == snapshot.leadershipTermId &&
+                    entry.logPosition == snapshot.logPosition)
+                {
+                    snapshots.add(entry.applicableId + 1, new Snapshot(
+                        entry.recordingId,
+                        entry.leadershipTermId,
+                        entry.termBaseLogPosition,
+                        entry.logPosition,
+                        entry.timestamp,
+                        entry.applicableId));
                 }
             }
         }

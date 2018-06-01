@@ -734,10 +734,10 @@ class SequencerAgent implements Agent, MemberStatusListener
         lastAppendedPosition = 0;
     }
 
-    void awaitServicesReady(final ChannelUri channelUri, final int logSessionId)
+    void awaitServicesReady(final ChannelUri logChannelUri, final int logSessionId)
     {
-        final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(channelUri.media()) ?
-            channelUri.prefix(SPY_QUALIFIER).toString() : channelUri.toString();
+        final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(logChannelUri.media()) ?
+            logChannelUri.prefix(SPY_QUALIFIER).toString() : logChannelUri.toString();
         serviceProxy.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
 
         resetToNull(serviceAckStates);

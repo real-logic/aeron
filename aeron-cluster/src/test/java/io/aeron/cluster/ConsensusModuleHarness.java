@@ -30,6 +30,7 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.*;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.EpochClock;
@@ -44,8 +45,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntSupplier;
 
-import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.CommonContext.*;
 import static java.util.stream.Collectors.toList;
 
 public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
@@ -83,6 +85,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final File harnessDir;
     private final EpochClock epochClock = System::currentTimeMillis;
     private final MemberStatusCounters[] memberStatusCounters;
+    private final AeronArchive.Context aeronArchiveContext;
 
     private int thisMemberIndex;
     private int leaderIndex;
@@ -183,6 +186,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .errorHandler(Throwable::printStackTrace));
 
         this.cleanOnClose = cleanOnClose;
+        this.aeronArchiveContext = aeronArchiveContext.clone();
         aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriverPath));
 
         memberStatusSubscriptions = new Subscription[members.length];
@@ -252,17 +256,42 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return aeron;
     }
 
-    public ClusterMember member(final int index)
+    ClusterMember member(final int index)
     {
         return members[index];
     }
 
-    public MemberStatusCounters memberStatusCounters(final int index)
+    MemberStatusCounters memberStatusCounters(final int index)
     {
         return memberStatusCounters[index];
     }
 
-    public int pollMemberStatusAdapter(final int index)
+    IntSupplier onRequestVoteCounter(final int index)
+    {
+        return () -> memberStatusCounters[index].onRequestVoteCounter;
+    }
+
+    IntSupplier onNewLeadershipTermCounter(final int index)
+    {
+        return () -> memberStatusCounters[index].onNewLeadershipTermCounter;
+    }
+
+    IntSupplier onVoteCounter(final int index)
+    {
+        return () -> memberStatusCounters[index].onVoteCounter;
+    }
+
+    IntSupplier onAppendedPositionCounter(final int index)
+    {
+        return () -> memberStatusCounters[index].onAppendedPositionCounter;
+    }
+
+    IntSupplier onCanvassPosition(final int index)
+    {
+        return () -> memberStatusCounters[index].onCanvassPosition;
+    }
+
+    int pollMemberStatusAdapter(final int index)
     {
         if (null != memberStatusAdapters[index])
         {
@@ -272,7 +301,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return 0;
     }
 
-    public void awaitMemberStatusMessage(final int index)
+    void awaitMemberStatusMessage(final int index)
     {
         idleStrategy.reset();
         while (memberStatusAdapters[index].poll() == 0)
@@ -281,7 +310,21 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
     }
 
-    public void pollMemberStatusAdapter(final int index, final long durationMs)
+    void awaitMemberStatusMessage(final int index, final IntSupplier counterValue, final int initialCounterValue)
+    {
+        do
+        {
+            awaitMemberStatusMessage(index);
+        }
+        while (counterValue.getAsInt() == initialCounterValue);
+    }
+
+    void awaitMemberStatusMessage(final int index, final IntSupplier counterValue)
+    {
+        awaitMemberStatusMessage(index, counterValue, 0);
+    }
+
+    void pollMemberStatusAdapter(final int index, final long durationMs)
     {
         final long deadlineMs = epochClock.time() + durationMs;
         final MemberStatusAdapter memberStatusAdapter = memberStatusAdapters[index];
@@ -300,17 +343,57 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
     }
 
-    public Publication memberStatusPublication(final int index)
+    Publication memberStatusPublication(final int index)
     {
         return memberStatusPublications[index];
     }
 
-    public MemberStatusPublisher memberStatusPublisher()
+    MemberStatusPublisher memberStatusPublisher()
     {
         return memberStatusPublisher;
     }
 
-    public void awaitServiceOnStart()
+    Publication createLogPublication(
+        final ChannelUri channelUri,
+        final RecordingExtent recordingExtent,
+        final long position,
+        final boolean emptyLog)
+    {
+        if (!emptyLog)
+        {
+            final int termLength = recordingExtent.termBufferLength;
+            final int initialTermId = recordingExtent.initialTermId;
+            final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
+            final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, bitsToShift, initialTermId);
+            final int termOffset = (int)(position & (termLength - 1));
+
+            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(recordingExtent.mtuLength));
+            channelUri.put(TERM_LENGTH_PARAM_NAME, Integer.toString(termLength));
+            channelUri.put(INITIAL_TERM_ID_PARAM_NAME, Integer.toString(initialTermId));
+            channelUri.put(TERM_ID_PARAM_NAME, Integer.toString(termId));
+            channelUri.put(TERM_OFFSET_PARAM_NAME, Integer.toString(termOffset));
+        }
+
+        final Publication publication = aeron.addExclusivePublication(
+            channelUri.toString(),
+            clusteredMediaDriver.consensusModule().context().logStreamId());
+
+        if (!channelUri.containsKey(ENDPOINT_PARAM_NAME) && UDP_MEDIA.equals(channelUri.media()))
+        {
+            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media(UDP_MEDIA);
+            for (final ClusterMember member : members)
+            {
+                if (member == members[thisMemberIndex])
+                {
+                    publication.addDestination(builder.endpoint(member.logEndpoint()).build());
+                }
+            }
+        }
+
+        return publication;
+    }
+
+    void awaitServiceOnStart()
     {
         idleStrategy.reset();
         while (!serviceOnStart.get())
@@ -319,7 +402,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
     }
 
-    public void awaitServiceOnMessageCounter(final int value)
+    void awaitServiceOnMessageCounter(final int value)
     {
         idleStrategy.reset();
         while (serviceOnMessageCounter.get() < value)
@@ -392,12 +475,23 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         service.onReady();
     }
 
-    public static File harnessDirectory(final int clusterMemberId)
+    void recordingExtent(final long recordingId, final RecordingExtent recordingExtent)
+    {
+        try (AeronArchive archive = AeronArchive.connect(aeronArchiveContext.clone()))
+        {
+            if (archive.listRecording(recordingId, recordingExtent) == 0)
+            {
+                throw new IllegalStateException("could not find recordingId to get RecordingExtent");
+            }
+        }
+    }
+
+    static File harnessDirectory(final int clusterMemberId)
     {
         return new File(IoUtil.tmpDirName(), "aeron-cluster-" + clusterMemberId);
     }
 
-    public static long makeRecordingLog(
+    static long makeRecordingLog(
         final int numMessages,
         final int maxMessageLength,
         final Random random,
@@ -458,7 +552,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
     }
 
-    public static long makeTruncatedRecordingLog(
+    static long makeTruncatedRecordingLog(
         final int numTotalMessages,
         final int truncateAtNumMessage,
         final int maxMessageLength,
@@ -475,7 +569,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return truncateRecordingLog(harnessDir, 0, truncatePosition);
     }
 
-    public static long truncateRecordingLog(
+    static long truncateRecordingLog(
         final File harnessDir,
         final long truncateRecordingId,
         final long truncatePosition)
@@ -492,7 +586,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return truncatePosition;
     }
 
-    public static MemberStatusListener memberStatusMixIn(
+    static MemberStatusListener memberStatusMixIn(
         final int index,
         final PrintStream stream,
         final MemberStatusCounters counters,
@@ -503,7 +597,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             public void onCanvassPosition(
                 final long logPosition, final long leadershipTermId, final int followerMemberId)
             {
-                counters.onAppendedPositionCounter++;
+                counters.onCanvassPosition++;
                 stream.format("onCanvassPosition[%d] %d %d %d%n",
                     index, logPosition, leadershipTermId, followerMemberId);
                 nextListener.onCanvassPosition(logPosition, leadershipTermId, followerMemberId);
@@ -576,7 +670,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         };
     }
 
-    public static void copyDirectory(final File srcDirectory, final File dstDirectory)
+    static void copyDirectory(final File srcDirectory, final File dstDirectory)
     {
         final Path srcDir = srcDirectory.toPath();
         final Path dstDir = dstDirectory.toPath();
@@ -604,6 +698,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
     public static class MemberStatusCounters
     {
+        int onCanvassPosition = 0;
         int onRequestVoteCounter = 0;
         int onVoteCounter = 0;
         int onNewLeadershipTermCounter = 0;

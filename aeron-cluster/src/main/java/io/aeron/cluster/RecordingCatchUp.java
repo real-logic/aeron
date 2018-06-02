@@ -38,6 +38,7 @@ class RecordingCatchUp implements AutoCloseable
         AWAIT_EXTEND_RECORDING,
         AWAIT_REPLAY,
         AWAIT_TRANSFER,
+        AWAIT_STOP_EXTEND_RECORDING,
         DONE
     }
 
@@ -110,6 +111,10 @@ class RecordingCatchUp implements AutoCloseable
 
             case AWAIT_TRANSFER:
                 workCount += awaitTransfer();
+                break;
+
+            case AWAIT_STOP_EXTEND_RECORDING:
+                workCount += awaitStopExtendRecording();
                 break;
         }
 
@@ -188,7 +193,7 @@ class RecordingCatchUp implements AutoCloseable
             extendChannel = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
                 .endpoint(clusterMembers[memberId].transferEndpoint())
-                .sessionId(localLog.sessionId)
+//                .sessionId(localLog.sessionId)
                 .build();
 
             replayChannel = extendChannel;
@@ -329,7 +334,36 @@ class RecordingCatchUp implements AutoCloseable
         }
         else if (currentPosition() >= targetPosition)
         {
+            state(State.AWAIT_STOP_EXTEND_RECORDING);
+            activeCorrelationId = Aeron.NULL_VALUE;
+        }
+
+        return workCount;
+    }
+
+    private int awaitStopExtendRecording()
+    {
+        int workCount = 0;
+
+        if (Aeron.NULL_VALUE == activeCorrelationId)
+        {
+            final long correlationId = context.aeron().nextCorrelationId();
+
+            if (localArchive.archiveProxy().stopRecording(
+                extendChannel,
+                context.logStreamId(),
+                correlationId,
+                localArchive.controlSessionId()))
+            {
+                activeCorrelationId = correlationId;
+                workCount = 1;
+            }
+        }
+        else if (pollForResponse(localArchive, activeCorrelationId))
+        {
             state(State.DONE);
+            activeCorrelationId = Aeron.NULL_VALUE;
+            workCount += 1;
         }
 
         return workCount;

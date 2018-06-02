@@ -20,7 +20,10 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.codecs.*;
-import io.aeron.cluster.service.*;
+import io.aeron.cluster.service.Cluster;
+import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.cluster.service.CommitPos;
+import io.aeron.cluster.service.RecoveryState;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -780,9 +783,9 @@ class SequencerAgent implements Agent, MemberStatusListener
 
         final long originalLeadershipTermId = leadershipTermId;
         leadershipTermId = log.leadershipTermId;
-        expectedAckPosition = log.logPosition;
+        expectedAckPosition = fromPosition;
 
-        try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, log.logPosition, targetPosition))
+        try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, fromPosition, targetPosition))
         {
             final int streamId = ctx.replayStreamId();
             final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());

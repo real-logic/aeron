@@ -1059,13 +1059,13 @@ class SequencerAgent implements Agent, MemberStatusListener
         return false;
     }
 
-    private void createPositionCounters(final int logSessionId, final long logPosition, final long maxLogPosition)
+    private void createPositionCounters(final int logSessionId, final long logPosition)
     {
         final CountersReader counters = aeron.countersReader();
         final int recordingCounterId = awaitRecordingCounter(counters, logSessionId);
 
         appendedPosition = new ReadableCounter(counters, recordingCounterId);
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, maxLogPosition);
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, Long.MAX_VALUE);
     }
 
     private void recoverFromSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
@@ -1455,7 +1455,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             archive.extendRecording(log.recordingId, channel, ctx.logStreamId(), sourceLocation);
         }
 
-        createPositionCounters(sessionId, position, Long.MAX_VALUE);
+        createPositionCounters(sessionId, position);
 
         final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
         recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);

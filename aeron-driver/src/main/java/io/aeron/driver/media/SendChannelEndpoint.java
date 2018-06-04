@@ -202,9 +202,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 }
                 catch (final IOException ex)
                 {
-                    final String msg = "failed to send packet of " + bytesToSend +
-                        " bytes to " + connectAddress + " bytes sent: " + bytesSent;
-                    throw new RuntimeException(msg, ex);
+                    sendError(bytesSent, bytesToSend, ex, connectAddress);
                 }
             }
             else

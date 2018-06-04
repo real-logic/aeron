@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import static io.aeron.driver.media.UdpChannelTransport.sendError;
+
 public class MultiRcvDestination implements AutoCloseable
 {
     private static final ReceiveDestinationUdpTransport[] EMPTY_TRANSPORTS = new ReceiveDestinationUdpTransport[0];
@@ -145,9 +147,7 @@ public class MultiRcvDestination implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            final String msg = "failed to send packet of " + remaining +
-                " bytes to " + remoteAddress + " bytes sent: " + bytesSent;
-            throw new RuntimeException(msg, ex);
+            sendError(bytesSent, remaining, ex, remoteAddress);
         }
 
         return bytesSent;

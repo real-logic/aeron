@@ -27,6 +27,8 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 
+import static io.aeron.driver.media.UdpChannelTransport.sendError;
+
 abstract class MultiDestination
 {
     abstract int send(
@@ -60,9 +62,7 @@ abstract class MultiDestination
         }
         catch (final IOException ex)
         {
-            final String msg = "failed to send packet of " + bytesToSend +
-                " bytes to " + destination + " bytes sent: " + bytesSent;
-            throw new RuntimeException(msg, ex);
+            sendError(bytesSent, bytesToSend, ex, destination);
         }
 
         return bytesSent;

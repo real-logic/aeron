@@ -20,7 +20,6 @@ import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.cluster.service.*;
@@ -64,32 +63,32 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Starting up and recovering state.
          */
-        INIT(0, ClusterAction.INIT, ClusterAction.READY, ClusterAction.REPLAY),
+        INIT(0),
 
         /**
          * Active state with ingress and expired timers appended to the log.
          */
-        ACTIVE(1, ClusterAction.READY),
+        ACTIVE(1),
 
         /**
          * Suspended processing of ingress and expired timers.
          */
-        SUSPENDED(2, ClusterAction.READY, ClusterAction.REPLAY),
+        SUSPENDED(2),
 
         /**
          * In the process of taking a snapshot.
          */
-        SNAPSHOT(3, ClusterAction.SNAPSHOT),
+        SNAPSHOT(3),
 
         /**
          * In the process of doing an orderly shutdown taking a snapshot first.
          */
-        SHUTDOWN(4, ClusterAction.SHUTDOWN),
+        SHUTDOWN(4),
 
         /**
          * Aborting processing and shutting down as soon as services ack without taking a snapshot.
          */
-        ABORT(5, ClusterAction.ABORT),
+        ABORT(5),
 
         /**
          * Terminal state.
@@ -115,36 +114,15 @@ public class ConsensusModule implements AutoCloseable
         }
 
         private final int code;
-        private final ClusterAction[] validClusterActions;
 
-        State(final int code, final ClusterAction... clusterActions)
+        State(final int code)
         {
             this.code = code;
-            this.validClusterActions = clusterActions;
         }
 
         public final int code()
         {
             return code;
-        }
-
-        /**
-         * Is the {@link ClusterAction} valid for the current state?
-         *
-         * @param action to check if valid.
-         * @return true if the action is valid for the current state otherwise false.
-         */
-        public final boolean isValid(final ClusterAction action)
-        {
-            for (final ClusterAction validAction : validClusterActions)
-            {
-                if (action == validAction)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /**

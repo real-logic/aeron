@@ -21,7 +21,7 @@ import static io.aeron.cluster.service.ClusteredService.NULL_SERVICE_ID;
 /**
  * State holder for each of the services.
  */
-class ServiceAckState
+class ServiceAckPosition
 {
     private long logPosition = NULL_POSITION;
     private long relevantId = NULL_SERVICE_ID;
@@ -31,7 +31,7 @@ class ServiceAckState
         return logPosition;
     }
 
-    ServiceAckState logPosition(final long logPosition)
+    ServiceAckPosition logPosition(final long logPosition)
     {
         this.logPosition = logPosition;
         return this;
@@ -42,25 +42,25 @@ class ServiceAckState
         return relevantId;
     }
 
-    ServiceAckState relevantId(final long relevantId)
+    ServiceAckPosition relevantId(final long relevantId)
     {
         this.relevantId = relevantId;
         return this;
     }
 
-    static void resetToNull(final ServiceAckState[] serviceAckStates)
+    static void resetToNull(final ServiceAckPosition[] serviceAckPositions)
     {
-        for (final ServiceAckState serviceAckState : serviceAckStates)
+        for (final ServiceAckPosition serviceAckPosition : serviceAckPositions)
         {
-            serviceAckState.logPosition(NULL_POSITION).relevantId(NULL_SERVICE_ID);
+            serviceAckPosition.logPosition(NULL_POSITION).relevantId(NULL_SERVICE_ID);
         }
     }
 
-    static boolean hasReachedThreshold(final long position, final ServiceAckState[] serviceAckStates)
+    static boolean hasReachedThreshold(final long position, final ServiceAckPosition[] serviceAckPositions)
     {
-        for (final ServiceAckState serviceAckState : serviceAckStates)
+        for (final ServiceAckPosition serviceAckPosition : serviceAckPositions)
         {
-            if (serviceAckState.logPosition() < position)
+            if (serviceAckPosition.logPosition() < position)
             {
                 return false;
             }
@@ -69,12 +69,12 @@ class ServiceAckState
         return true;
     }
 
-    static ServiceAckState[] newArray(final int serviceCount)
+    static ServiceAckPosition[] newArray(final int serviceCount)
     {
-        final ServiceAckState[] states = new ServiceAckState[serviceCount];
+        final ServiceAckPosition[] states = new ServiceAckPosition[serviceCount];
         for (int i = 0; i < serviceCount; i++)
         {
-            states[i] = new ServiceAckState();
+            states[i] = new ServiceAckPosition();
         }
 
         return states;

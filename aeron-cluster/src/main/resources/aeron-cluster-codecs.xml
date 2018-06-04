@@ -41,14 +41,11 @@
             <validValue name="TIMEOUT">2</validValue>
         </enum>
         <enum name="ClusterAction" encodingType="int32" description="Action to be taken by a cluster nodes">
-            <validValue name="INIT">0</validValue>
-            <validValue name="SNAPSHOT">1</validValue>
-            <validValue name="READY">2</validValue>
-            <validValue name="REPLAY">3</validValue>
-            <validValue name="SUSPEND">4</validValue>
-            <validValue name="RESUME">5</validValue>
-            <validValue name="SHUTDOWN">6</validValue>
-            <validValue name="ABORT">7</validValue>
+            <validValue name="SUSPEND">0</validValue>
+            <validValue name="RESUME">1</validValue>
+            <validValue name="SNAPSHOT">2</validValue>
+            <validValue name="SHUTDOWN">3</validValue>
+            <validValue name="ABORT">4</validValue>
         </enum>
         <enum name="SnapshotMark" encodingType="int32" description="Mark within a snapshot">
             <validValue name="BEGIN">0</validValue>
@@ -237,14 +234,13 @@
         <field name="correlationId"        id="1" type="int64"/>
     </sbe:message>
 
-    <sbe:message name="ClusterActionAck"
+    <sbe:message name="ServiceAck"
                  id="32"
-                 description="Service acknowledging a cluster action request">
+                 description="Service acknowledging a that it has reached a position or action">
         <field name="logPosition"          id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>
         <field name="relevantId"           id="3" type="int64"/>
         <field name="serviceId"            id="4" type="int32"/>
-        <field name="action"               id="5" type="ClusterAction"/>
     </sbe:message>
 
     <sbe:message name="JoinLog"

@@ -29,7 +29,7 @@ final class ConsensusModuleProxy implements AutoCloseable
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ScheduleTimerEncoder scheduleTimerEncoder = new ScheduleTimerEncoder();
     private final CancelTimerEncoder cancelTimerEncoder = new CancelTimerEncoder();
-    private final ClusterActionAckEncoder clusterActionAckEncoder = new ClusterActionAckEncoder();
+    private final ServiceAckEncoder serviceAckEncoder = new ServiceAckEncoder();
     private final CloseSessionEncoder closeSessionEncoder = new CloseSessionEncoder();
     private final Publication publication;
 
@@ -96,23 +96,14 @@ final class ConsensusModuleProxy implements AutoCloseable
         return false;
     }
 
-    public void ackAction(
-        final long logPosition,
-        final long leadershipTermId,
-        final int serviceId,
-        final ClusterAction action)
+    public void ack(final long logPosition, final long leadershipTermId, final int serviceId)
     {
-        ackAction(logPosition, leadershipTermId, Aeron.NULL_VALUE, serviceId, action);
+        ack(logPosition, leadershipTermId, Aeron.NULL_VALUE, serviceId);
     }
 
-    public void ackAction(
-        final long logPosition,
-        final long leadershipTermId,
-        final long relevantId,
-        final int serviceId,
-        final ClusterAction action)
+    public void ack(final long logPosition, final long leadershipTermId, final long relevantId, final int serviceId)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionAckEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceAckEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -120,13 +111,12 @@ final class ConsensusModuleProxy implements AutoCloseable
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                clusterActionAckEncoder
+                serviceAckEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
                     .relevantId(relevantId)
-                    .serviceId(serviceId)
-                    .action(action);
+                    .serviceId(serviceId);
 
                 bufferClaim.commit();
 

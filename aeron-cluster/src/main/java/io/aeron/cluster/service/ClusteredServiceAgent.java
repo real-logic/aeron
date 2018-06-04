@@ -31,8 +31,6 @@ import org.agrona.concurrent.status.CountersReader;
 import java.util.Collection;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.cluster.codecs.ClusterAction.READY;
-import static io.aeron.cluster.codecs.ClusterAction.REPLAY;
 import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -318,7 +316,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         final long logPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
         heartbeatCounter.setOrdered(epochClock.time());
-        consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, ClusterAction.INIT);
+        consensusModuleProxy.ack(logPosition, leadershipTermId, serviceId);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
@@ -335,7 +333,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             try (Subscription subscription = aeron.addSubscription(
                 newActiveLogEvent.channel, newActiveLogEvent.streamId))
             {
-                consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, READY);
+                consensusModuleProxy.ack(logPosition, leadershipTermId, serviceId);
 
                 final Image image = awaitImage(newActiveLogEvent.sessionId, subscription);
                 final ReadableCounter limit = new ReadableCounter(counters, counterId);
@@ -347,7 +345,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
             newActiveLogEvent = null;
             heartbeatCounter.setOrdered(epochClock.time());
-            consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, REPLAY);
+            consensusModuleProxy.ack(logPosition, leadershipTermId, serviceId);
             service.onReplayEnd();
         }
     }
@@ -431,7 +429,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         if (newActiveLogEvent.ackBeforeImage)
         {
-            consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, READY);
+            consensusModuleProxy.ack(logPosition, leadershipTermId, serviceId);
         }
 
         final Image image = awaitImage(logSessionId, logSubscription);
@@ -439,7 +437,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         if (!newActiveLogEvent.ackBeforeImage)
         {
-            consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, READY);
+            consensusModuleProxy.ack(logPosition, leadershipTermId, serviceId);
         }
 
         newActiveLogEvent = null;
@@ -619,18 +617,16 @@ class ClusteredServiceAgent implements Agent, Cluster
         switch (action)
         {
             case SNAPSHOT:
-                consensusModuleProxy.ackAction(
-                    logPosition, leadershipTermId, onTakeSnapshot(logPosition), serviceId, action);
+                consensusModuleProxy.ack(logPosition, leadershipTermId, onTakeSnapshot(logPosition), serviceId);
                 break;
 
             case SHUTDOWN:
-                consensusModuleProxy.ackAction(
-                    logPosition, leadershipTermId, onTakeSnapshot(logPosition), serviceId, action);
+                consensusModuleProxy.ack(logPosition, leadershipTermId, onTakeSnapshot(logPosition), serviceId);
                 ctx.terminationHook().run();
                 break;
 
             case ABORT:
-                consensusModuleProxy.ackAction(logPosition, leadershipTermId, serviceId, action);
+                consensusModuleProxy.ack(logPosition, leadershipTermId, serviceId);
                 ctx.terminationHook().run();
                 break;
         }

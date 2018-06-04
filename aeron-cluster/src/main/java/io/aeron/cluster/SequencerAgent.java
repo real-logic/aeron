@@ -48,7 +48,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
-import static io.aeron.cluster.ServiceAckState.*;
+import static io.aeron.cluster.ServiceAckPosition.*;
 import static io.aeron.cluster.service.ClusteredService.NULL_SERVICE_ID;
 
 class SequencerAgent implements Agent, MemberStatusListener
@@ -73,7 +73,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private ClusterMember leaderMember;
     private final ClusterMember thisMember;
     private long[] rankedPositions;
-    private final ServiceAckState[] serviceAckStates;
+    private final ServiceAckPosition[] serviceAckPositions;
     private final Counter clusterRoleCounter;
     private final ClusterMarkFile markFile;
     private final AgentInvoker aeronClientInvoker;
@@ -129,7 +129,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         this.recordingLog = ctx.recordingLog();
         this.tempBuffer = ctx.tempBuffer();
         this.serviceHeartbeats = ctx.serviceHeartbeatCounters();
-        this.serviceAckStates = newArray(ctx.serviceCount());
+        this.serviceAckPositions = newArray(ctx.serviceCount());
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -286,15 +286,14 @@ class SequencerAgent implements Agent, MemberStatusListener
         final long logPosition,
         final long leadershipTermId,
         final long relevantId,
-        final int serviceId,
-        final ClusterAction action)
+        final int serviceId)
     {
-        validateServiceAck(logPosition, leadershipTermId, serviceId, action);
-        serviceAckStates[serviceId].logPosition(logPosition).relevantId(relevantId);
+        validateServiceAck(logPosition, leadershipTermId, serviceId);
+        serviceAckPositions[serviceId].logPosition(logPosition).relevantId(relevantId);
 
-        if (hasReachedThreshold(logPosition, serviceAckStates))
+        if (hasReachedThreshold(logPosition, serviceAckPositions))
         {
-            switch (action)
+            switch (state)
             {
                 case SNAPSHOT:
                     final long nowNs = cachedEpochClock.time();
@@ -743,7 +742,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             logChannelUri.prefix(SPY_QUALIFIER).toString() : logChannelUri.toString();
         serviceProxy.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
 
-        resetToNull(serviceAckStates);
+        resetToNull(serviceAckPositions);
         awaitServiceAcks();
     }
 
@@ -797,7 +796,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             {
                 logAdapter = null;
                 serviceProxy.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, true, channel);
-                resetToNull(serviceAckStates);
+                resetToNull(serviceAckPositions);
                 awaitServiceAcks();
 
                 final int replaySessionId = (int)archive.startReplay(
@@ -1149,14 +1148,14 @@ class SequencerAgent implements Agent, MemberStatusListener
                     try (Subscription subscription = aeron.addSubscription(channel, streamId))
                     {
                         expectedAckPosition = startPosition;
-                        resetToNull(serviceAckStates);
+                        resetToNull(serviceAckPositions);
                         awaitServiceAcks();
 
                         final Image image = awaitImage(
                             (int)archive.startReplay(recordingId, startPosition, length, channel, streamId),
                             subscription);
 
-                        resetToNull(serviceAckStates);
+                        resetToNull(serviceAckPositions);
                         replayLog(image, stopPosition, counter);
                         awaitServiceAcks();
 
@@ -1202,26 +1201,20 @@ class SequencerAgent implements Agent, MemberStatusListener
     private void awaitServiceAcks()
     {
         final long logPosition = logPosition();
-        while (!hasReachedThreshold(logPosition, serviceAckStates))
+        while (!hasReachedThreshold(logPosition, serviceAckPositions))
         {
             idle(consensusModuleAdapter.poll());
         }
     }
 
-    private void validateServiceAck(
-        final long logPosition, final long leadershipTermId, final int serviceId, final ClusterAction action)
+    private void validateServiceAck(final long logPosition, final long leadershipTermId, final int serviceId)
     {
         if (logPosition != expectedAckPosition || leadershipTermId != this.leadershipTermId)
         {
-            throw new IllegalStateException("invalid log state for action " + action +
+            throw new IllegalStateException("invalid log state for service ACK" +
                 ": serviceId=" + serviceId +
                 ", logPosition=" + logPosition + " expected " + expectedAckPosition +
                 ", leadershipTermId=" + leadershipTermId + " expected " + this.leadershipTermId);
-        }
-
-        if (!state.isValid(action))
-        {
-            throw new IllegalStateException("invalid service ACK for state " + state + ", action " + action);
         }
     }
 
@@ -1335,9 +1328,9 @@ class SequencerAgent implements Agent, MemberStatusListener
                 snapshotState(publication, logPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
 
-                for (int i = serviceAckStates.length - 1; i >= 0; i--)
+                for (int i = serviceAckPositions.length - 1; i >= 0; i--)
                 {
-                    final long snapshotRecordingId = serviceAckStates[i].relevantId();
+                    final long snapshotRecordingId = serviceAckPositions[i].relevantId();
                     recordingLog.appendSnapshot(
                         snapshotRecordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, i);
                 }

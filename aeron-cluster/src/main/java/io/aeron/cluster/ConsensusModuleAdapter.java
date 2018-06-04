@@ -29,7 +29,7 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ScheduleTimerDecoder scheduleTimerDecoder = new ScheduleTimerDecoder();
     private final CancelTimerDecoder cancelTimerDecoder = new CancelTimerDecoder();
-    private final ClusterActionAckDecoder clusterActionAckDecoder = new ClusterActionAckDecoder();
+    private final ServiceAckDecoder serviceAckDecoder = new ServiceAckDecoder();
     private final CloseSessionDecoder closeSessionDecoder = new CloseSessionDecoder();
 
     ConsensusModuleAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
@@ -77,19 +77,18 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                 sequencerAgent.onCancelTimer(scheduleTimerDecoder.correlationId());
                 break;
 
-            case ClusterActionAckDecoder.TEMPLATE_ID:
-                clusterActionAckDecoder.wrap(
+            case ServiceAckDecoder.TEMPLATE_ID:
+                serviceAckDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
                 sequencerAgent.onServiceAck(
-                    clusterActionAckDecoder.logPosition(),
-                    clusterActionAckDecoder.leadershipTermId(),
-                    clusterActionAckDecoder.relevantId(),
-                    clusterActionAckDecoder.serviceId(),
-                    clusterActionAckDecoder.action());
+                    serviceAckDecoder.logPosition(),
+                    serviceAckDecoder.leadershipTermId(),
+                    serviceAckDecoder.relevantId(),
+                    serviceAckDecoder.serviceId());
                 break;
 
             case CloseSessionDecoder.TEMPLATE_ID:

@@ -130,7 +130,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         if (currentStatus != ChannelEndpointStatus.INITIALIZING)
         {
             throw new IllegalStateException(
-                "Channel cannot be registered unless INITALIZING: status=" + status(currentStatus));
+                "channel cannot be registered unless INITALIZING: status=" + status(currentStatus));
         }
 
         statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
@@ -202,8 +202,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 }
                 catch (final IOException ex)
                 {
-                    throw new RuntimeException(
-                        "Failed to send packet of " + bytesToSend + " bytes to " + connectAddress, ex);
+                    final String msg = "failed to send packet of " + bytesToSend +
+                        " bytes to " + connectAddress + " bytes sent: " + bytesSent;
+                    throw new RuntimeException(msg, ex);
                 }
             }
             else
@@ -284,7 +285,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         if (null == multiDestination || !multiDestination.isManualControlMode())
         {
-            throw new IllegalArgumentException("Control channel does not allow manual control");
+            throw new IllegalArgumentException("control channel does not allow manual control");
         }
     }
 

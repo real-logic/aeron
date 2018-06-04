@@ -60,8 +60,9 @@ abstract class MultiDestination
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(
-                "Failed to send packet of " + bytesToSend + " bytes to " + destination, ex);
+            final String msg = "failed to send packet of " + bytesToSend +
+                " bytes to " + destination + " bytes sent: " + bytesSent;
+            throw new RuntimeException(msg, ex);
         }
 
         return bytesSent;

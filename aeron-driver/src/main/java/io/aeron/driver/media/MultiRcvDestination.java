@@ -16,7 +16,6 @@
 package io.aeron.driver.media;
 
 import org.agrona.CloseHelper;
-import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.NanoClock;
 
@@ -71,11 +70,6 @@ public class MultiRcvDestination implements AutoCloseable
     {
         transports[transportIndex] = null;
         numDestinations--;
-    }
-
-    public boolean hasDestinations()
-    {
-        return numDestinations > 0;
     }
 
     public boolean hasDestination(final int transportIndex)
@@ -139,6 +133,7 @@ public class MultiRcvDestination implements AutoCloseable
     public static int sendTo(
         final UdpChannelTransport transport, final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
+        final int remaining = buffer.remaining();
         int bytesSent = 0;
         try
         {
@@ -150,7 +145,9 @@ public class MultiRcvDestination implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            LangUtil.rethrowUnchecked(ex);
+            final String msg = "failed to send packet of " + remaining +
+                " bytes to " + remoteAddress + " bytes sent: " + bytesSent;
+            throw new RuntimeException(msg, ex);
         }
 
         return bytesSent;

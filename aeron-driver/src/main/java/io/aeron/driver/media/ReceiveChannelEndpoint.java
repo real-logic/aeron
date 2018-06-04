@@ -22,7 +22,6 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.PublicationImage;
 import io.aeron.protocol.*;
 import io.aeron.status.ChannelEndpointStatus;
-import org.agrona.LangUtil;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
 import org.agrona.collections.Long2LongCounterMap;
@@ -111,6 +110,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
+        final int remaining = buffer.remaining();
         int bytesSent = 0;
         try
         {
@@ -122,7 +122,9 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
         catch (final IOException ex)
         {
-            LangUtil.rethrowUnchecked(ex);
+            final String msg = "failed to send packet of " + remaining +
+                " bytes to " + remoteAddress + " bytes sent: " + bytesSent;
+            throw new RuntimeException(msg, ex);
         }
 
         return bytesSent;
@@ -144,7 +146,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (currentStatus != ChannelEndpointStatus.INITIALIZING)
         {
             throw new IllegalStateException(
-                "Channel cannot be registered unless INITIALISING: status=" + status(currentStatus));
+                "channel cannot be registered unless INITIALISING: status=" + status(currentStatus));
         }
 
         statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
@@ -207,7 +209,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (-1 == count)
         {
             refCountByStreamIdMap.remove(streamId);
-            throw new IllegalStateException("Could not find stream Id to decrement: " + streamId);
+            throw new IllegalStateException("could not find stream Id to decrement: " + streamId);
         }
 
         return count;
@@ -227,7 +229,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         {
             refCountByStreamIdAndSessionIdMap.remove(key);
             throw new IllegalStateException(
-                "Could not find stream Id + session Id to decrement: " + streamId + " " + sessionId);
+                "could not find stream Id + session Id to decrement: " + streamId + " " + sessionId);
         }
 
         return count;

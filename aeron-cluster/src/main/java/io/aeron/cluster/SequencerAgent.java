@@ -911,7 +911,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
         final long position = logPublisher.position() + BitUtil.align(headersLength, FRAME_ALIGNMENT);
 
-        return logPublisher.appendClusterAction(action, position, leadershipTermId, nowMs);
+        return logPublisher.appendClusterAction(position, leadershipTermId, nowMs, action);
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
@@ -1211,7 +1211,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     {
         if (logPosition != expectedAckPosition || leadershipTermId != this.leadershipTermId)
         {
-            throw new IllegalStateException("invalid log state for service ACK" +
+            throw new IllegalStateException("invalid position for service ACK" +
                 ": serviceId=" + serviceId +
                 ", logPosition=" + logPosition + " expected " + expectedAckPosition +
                 ", leadershipTermId=" + leadershipTermId + " expected " + this.leadershipTermId);

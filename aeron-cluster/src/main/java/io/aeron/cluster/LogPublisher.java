@@ -171,7 +171,7 @@ class LogPublisher
     }
 
     public boolean appendClusterAction(
-        final ClusterAction action, final long logPosition, final long leadershipTermId, final long nowMs)
+        final long logPosition, final long leadershipTermId, final long nowMs, final ClusterAction action)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionRequestEncoder.BLOCK_LENGTH;
 

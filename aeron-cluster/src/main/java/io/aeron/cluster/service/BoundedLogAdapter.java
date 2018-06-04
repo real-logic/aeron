@@ -156,6 +156,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 
                 agent.onServiceAction(
                     actionRequestDecoder.logPosition(),
+                    actionRequestDecoder.leadershipTermId(),
                     actionRequestDecoder.timestamp(),
                     actionRequestDecoder.action());
                 break;

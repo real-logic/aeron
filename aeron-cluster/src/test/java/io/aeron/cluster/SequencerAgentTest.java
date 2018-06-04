@@ -77,7 +77,8 @@ public class SequencerAgentTest
         when(mockAeron.conductorAgentInvoker()).thenReturn(mock(AgentInvoker.class));
         when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
         when(mockLogPublisher.appendConnectedSession(any(), anyLong())).thenReturn(128L);
-        when(mockLogPublisher.appendClusterAction(any(), anyLong(), anyLong(), anyLong())).thenReturn(TRUE);
+        when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), anyLong(), any(ClusterAction.class)))
+            .thenReturn(TRUE);
         when(mockAeron.addPublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
         when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mock(Subscription.class));
         when(mockResponsePublication.isConnected()).thenReturn(TRUE);
@@ -205,8 +206,8 @@ public class SequencerAgentTest
 
         final InOrder inOrder = Mockito.inOrder(mockLogPublisher);
         inOrder.verify(mockLogPublisher).appendClusterAction(
-            eq(ClusterAction.SUSPEND), anyLong(), anyLong(), anyLong());
+            anyLong(), anyLong(), anyLong(), eq(ClusterAction.SUSPEND));
         inOrder.verify(mockLogPublisher).appendClusterAction(
-            eq(ClusterAction.RESUME), anyLong(), anyLong(), anyLong());
+            anyLong(), anyLong(), anyLong(), eq(ClusterAction.RESUME));
     }
 }

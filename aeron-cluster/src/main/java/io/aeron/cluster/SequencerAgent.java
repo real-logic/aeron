@@ -911,7 +911,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             MessageHeaderEncoder.ENCODED_LENGTH +
             ClusterActionRequestEncoder.BLOCK_LENGTH;
 
-        return logPublisher.appendClusterAction(action, leadershipTermId, position, nowMs);
+        return logPublisher.appendClusterAction(action, position, leadershipTermId, nowMs);
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)

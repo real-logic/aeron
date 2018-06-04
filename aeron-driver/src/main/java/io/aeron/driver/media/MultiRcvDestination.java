@@ -147,7 +147,7 @@ public class MultiRcvDestination implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            sendError(bytesSent, remaining, ex, remoteAddress);
+            sendError(remaining, ex, remoteAddress);
         }
 
         return bytesSent;

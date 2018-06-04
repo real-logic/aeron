@@ -72,18 +72,13 @@ public abstract class UdpChannelTransport implements AutoCloseable
     /**
      * Throw a {@link RuntimeException} with a message for a send error.
      *
-     * @param bytesSent   sent to the network.
      * @param bytesToSend expected to be sent to the network.
      * @param ex          experienced.
      * @param destination to which the send was addressed.
      */
-    public static void sendError(
-        final int bytesSent, final int bytesToSend, final IOException ex, final InetSocketAddress destination)
+    public static void sendError(final int bytesToSend, final IOException ex, final InetSocketAddress destination)
     {
-        final String msg = "failed to send packet of " + bytesToSend +
-            " bytes to " + destination + " bytes sent: " + bytesSent;
-
-        throw new RuntimeException(msg, ex);
+        throw new RuntimeException("failed to send packet of " + bytesToSend + " bytes to " + destination, ex);
     }
 
     /**

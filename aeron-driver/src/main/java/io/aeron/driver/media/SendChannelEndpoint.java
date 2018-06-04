@@ -202,7 +202,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 }
                 catch (final IOException ex)
                 {
-                    sendError(bytesSent, bytesToSend, ex, connectAddress);
+                    sendError(bytesToSend, ex, connectAddress);
                 }
             }
             else

@@ -62,7 +62,7 @@ abstract class MultiDestination
         }
         catch (final IOException ex)
         {
-            sendError(bytesSent, bytesToSend, ex, destination);
+            sendError(bytesToSend, ex, destination);
         }
 
         return bytesSent;

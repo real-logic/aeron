@@ -122,7 +122,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
         catch (final IOException ex)
         {
-            sendError(bytesSent, remaining, ex, remoteAddress);
+            sendError(remaining, ex, remoteAddress);
         }
 
         return bytesSent;

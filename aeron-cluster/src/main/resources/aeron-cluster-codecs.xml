@@ -236,7 +236,7 @@
 
     <sbe:message name="ServiceAck"
                  id="32"
-                 description="Service acknowledging a that it has reached a position or action">
+                 description="Service acknowledging that it has reached a position or taken an action">
         <field name="logPosition"          id="1" type="int64"/>
         <field name="leadershipTermId"     id="2" type="int64"/>
         <field name="relevantId"           id="3" type="int64"/>

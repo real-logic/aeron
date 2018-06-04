@@ -155,7 +155,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     messageHeaderDecoder.version());
 
                 agent.onServiceAction(
-                    header.position(),
+                    actionRequestDecoder.logPosition(),
                     actionRequestDecoder.timestamp(),
                     actionRequestDecoder.action());
                 break;

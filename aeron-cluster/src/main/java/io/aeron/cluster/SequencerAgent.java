@@ -25,13 +25,10 @@ import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.CommitPos;
 import io.aeron.cluster.service.RecoveryState;
 import io.aeron.exceptions.TimeoutException;
-import io.aeron.logbuffer.ControlledFragmentHandler;
-import io.aeron.logbuffer.Header;
-import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.logbuffer.*;
+import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ReadableCounter;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
@@ -50,6 +47,7 @@ import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 import static io.aeron.cluster.ServiceAckPosition.*;
 import static io.aeron.cluster.service.ClusteredService.NULL_SERVICE_ID;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 class SequencerAgent implements Agent, MemberStatusListener
 {
@@ -907,9 +905,11 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     private boolean appendAction(final ClusterAction action, final long nowMs)
     {
-        final long position = logPublisher.position() +
+        final int headersLength = DataHeaderFlyweight.HEADER_LENGTH +
             MessageHeaderEncoder.ENCODED_LENGTH +
             ClusterActionRequestEncoder.BLOCK_LENGTH;
+
+        final long position = logPublisher.position() + BitUtil.align(headersLength, FRAME_ALIGNMENT);
 
         return logPublisher.appendClusterAction(action, position, leadershipTermId, nowMs);
     }

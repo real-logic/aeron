@@ -45,8 +45,8 @@ import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
+import static io.aeron.cluster.RecordingLog.CONSENSUS_MODULE_ID;
 import static io.aeron.cluster.ServiceAck.*;
-import static io.aeron.cluster.service.ClusteredService.NULL_SERVICE_ID;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 class SequencerAgent implements Agent, MemberStatusListener
@@ -220,6 +220,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         final long nowMs = epochClock.time();
         cachedEpochClock.update(nowMs);
         timeOfLastLogUpdateMs = nowMs;
+        leadershipTermId = recoveryPlan.lastLeadershipTermId;
 
         election = new Election(
             true,
@@ -1309,20 +1310,20 @@ class SequencerAgent implements Agent, MemberStatusListener
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-                final long termBaseLogPosition = recoveryPlan.lastAppendedLogPosition;
+                final long termBaseLogPosition = recoveryPlan.lastAppendedLogPosition; // TODO: fix after election
 
                 snapshotState(publication, logPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
 
-                for (int i = serviceAcks.length - 1; i >= 0; i--)
+                for (int serviceId = serviceAcks.length - 1; serviceId >= 0; serviceId--)
                 {
-                    final long snapshotRecordingId = serviceAcks[i].relevantId();
+                    final long snapshotId = serviceAcks[serviceId].relevantId();
                     recordingLog.appendSnapshot(
-                        snapshotRecordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, i);
+                        snapshotId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, serviceId);
                 }
 
                 recordingLog.appendSnapshot(
-                    recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, NULL_SERVICE_ID);
+                    recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, CONSENSUS_MODULE_ID);
             }
             finally
             {

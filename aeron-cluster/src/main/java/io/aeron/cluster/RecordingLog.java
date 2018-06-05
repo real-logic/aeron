@@ -80,7 +80,7 @@ public class RecordingLog
     /**
      * The ID assigned to the consensus module as its service id for taking snapshots.
      */
-    public static final int CONSENSUS_MODULE_SERVICE_ID = 0;
+    public static final int CONSENSUS_MODULE_ID = 0;
 
     /**
      * Representation of the entry in the {@link RecordingLog}.
@@ -603,14 +603,13 @@ public class RecordingLog
             lastAppendedLogPosition = snapshot.logPosition;
         }
 
-        final int logsSize = logs.size();
-        if (logsSize > 0)
+        if (!logs.isEmpty())
         {
-            final Log log = logs.get(logsSize - 1);
+            final Log log = logs.get(0);
 
             lastLeadershipTermId = log.leadershipTermId;
             lastTermBaseLogPosition = log.termBaseLogPosition;
-            lastAppendedLogPosition = lastTermBaseLogPosition + log.stopPosition;
+            lastAppendedLogPosition = log.stopPosition;
         }
 
         return new RecoveryPlan(

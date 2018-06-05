@@ -663,27 +663,15 @@ class SequencerAgent implements Agent, MemberStatusListener
                 break;
 
             case SNAPSHOT:
-                if (!isRecovering)
-                {
-                    expectedAckPosition = logPosition;
-                    state(ConsensusModule.State.SNAPSHOT);
-                }
+                replayCoordinatedAction(logPosition, leadershipTermId, ConsensusModule.State.SNAPSHOT);
                 break;
 
             case SHUTDOWN:
-                if (!isRecovering)
-                {
-                    expectedAckPosition = logPosition;
-                    state(ConsensusModule.State.SHUTDOWN);
-                }
+                replayCoordinatedAction(logPosition, leadershipTermId, ConsensusModule.State.SHUTDOWN);
                 break;
 
             case ABORT:
-                if (!isRecovering)
-                {
-                    expectedAckPosition = logPosition;
-                    state(ConsensusModule.State.ABORT);
-                }
+                replayCoordinatedAction(logPosition, leadershipTermId, ConsensusModule.State.ABORT);
                 break;
         }
     }
@@ -1481,6 +1469,17 @@ class SequencerAgent implements Agent, MemberStatusListener
             workCount += timerService.poll(cachedEpochClock.time());
 
             idle(workCount);
+        }
+    }
+
+    private void replayCoordinatedAction(
+        final long logPosition, final long leadershipTermId, final ConsensusModule.State newState)
+    {
+        if (!isRecovering)
+        {
+            this.leadershipTermId = leadershipTermId;
+            expectedAckPosition = logPosition;
+            state(newState);
         }
     }
 }

@@ -664,15 +664,15 @@ class SequencerAgent implements Agent, MemberStatusListener
                 break;
 
             case SNAPSHOT:
-                replayCoordinatedAction(logPosition, leadershipTermId, ConsensusModule.State.SNAPSHOT);
+                coordinateReplayAction(logPosition, leadershipTermId, ConsensusModule.State.SNAPSHOT);
                 break;
 
             case SHUTDOWN:
-                replayCoordinatedAction(logPosition, leadershipTermId, ConsensusModule.State.SHUTDOWN);
+                coordinateReplayAction(logPosition, leadershipTermId, ConsensusModule.State.SHUTDOWN);
                 break;
 
             case ABORT:
-                replayCoordinatedAction(logPosition, leadershipTermId, ConsensusModule.State.ABORT);
+                coordinateReplayAction(logPosition, leadershipTermId, ConsensusModule.State.ABORT);
                 break;
         }
     }
@@ -1470,7 +1470,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    private void replayCoordinatedAction(
+    private void coordinateReplayAction(
         final long logPosition, final long leadershipTermId, final ConsensusModule.State newState)
     {
         if (!isRecovering)

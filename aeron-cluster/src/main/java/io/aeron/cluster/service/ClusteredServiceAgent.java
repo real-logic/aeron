@@ -119,7 +119,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             heartbeatCounter.setOrdered(nowMs);
             workCount += serviceAdapter.poll();
 
-            if (null != activeLogEvent)
+            if (null != activeLogEvent && null == logAdapter)
             {
                 joinActiveLog();
             }

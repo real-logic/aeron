@@ -61,7 +61,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             container.context().shutdownSignalBarrier().await();
 
-            System.out.println("Shutdown ClusteredMediaDriver...");
+            System.out.println("Shutdown ClusteredServiceContainer...");
         }
     }
 

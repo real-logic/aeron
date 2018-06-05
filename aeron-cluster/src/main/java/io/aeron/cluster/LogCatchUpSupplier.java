@@ -17,9 +17,9 @@ package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
 
-interface RecordingCatchUpSupplier
+interface LogCatchUpSupplier
 {
-    RecordingCatchUp catchUp(
+    LogCatchUp catchUp(
         AeronArchive localArchive,
         MemberStatusPublisher memberStatusPublisher,
         ClusterMember[] clusterMembers,

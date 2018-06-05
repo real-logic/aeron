@@ -23,6 +23,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.status.CountersReader;
 
 /**
  * Adapter for reading a log with a upper bound applied beyond which the consumer cannot progress.
@@ -62,9 +63,9 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         return image;
     }
 
-    public boolean isCaughtUp()
+    public boolean isConsumed(final CountersReader counters)
     {
-        return image.position() >= upperBound.get();
+        return image.position() >= CommitPos.getMaxLogPosition(counters, upperBound.counterId());
     }
 
     public int poll()

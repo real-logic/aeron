@@ -67,7 +67,6 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
             joinLogDecoder.commitPositionId(),
             joinLogDecoder.logSessionId(),
             joinLogDecoder.logStreamId(),
-            joinLogDecoder.ackBeforeImage() == BooleanType.TRUE,
             joinLogDecoder.logChannel());
     }
 }

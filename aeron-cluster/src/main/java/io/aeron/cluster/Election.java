@@ -110,7 +110,7 @@ class Election implements MemberStatusListener, AutoCloseable
     private ClusterMember leaderMember = null;
     private State state = State.INIT;
     private Counter stateCounter;
-    private RecordingCatchUp recordingCatchUp;
+    private LogCatchUp logCatchUp;
 
     Election(
         final boolean isStartup,
@@ -144,7 +144,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(recordingCatchUp);
+        CloseHelper.close(logCatchUp);
         CloseHelper.close(stateCounter);
     }
 
@@ -259,9 +259,9 @@ class Election implements MemberStatusListener, AutoCloseable
             leaderMember = clusterMembers[leaderMemberId];
             this.logSessionId = logSessionId;
 
-            if (this.logPosition < logPosition && null == recordingCatchUp)
+            if (this.logPosition < logPosition && null == logCatchUp)
             {
-                recordingCatchUp = ctx.recordingCatchUpSupplier().catchUp(
+                logCatchUp = ctx.logCatchUpSupplier().catchUp(
                     localArchive,
                     memberStatusPublisher,
                     clusterMembers,
@@ -287,9 +287,9 @@ class Election implements MemberStatusListener, AutoCloseable
         final int offset,
         final int length)
     {
-        if (null != recordingCatchUp)
+        if (null != logCatchUp)
         {
-            recordingCatchUp.onLeaderRecoveryPlan(
+            logCatchUp.onLeaderRecoveryPlan(
                 correlationId, requestMemberId, responseMemberId, data, offset, length);
         }
     }
@@ -526,7 +526,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         int workCount = 1;
 
-        if (null == recordingCatchUp)
+        if (null == logCatchUp)
         {
             sequencerAgent.updateMemberDetails();
 
@@ -538,22 +538,22 @@ class Election implements MemberStatusListener, AutoCloseable
         }
         else
         {
-            if (recordingCatchUp.isInit())
+            if (logCatchUp.isInit())
             {
                 sequencerAgent.updateMemberDetails();
             }
 
-            if (!recordingCatchUp.isDone())
+            if (!logCatchUp.isDone())
             {
                 workCount += memberStatusAdapter.poll();
-                workCount += recordingCatchUp.doWork();
+                workCount += logCatchUp.doWork();
             }
             else
             {
-                recordingCatchUp.close();
-                logPosition = recordingCatchUp.targetPosition();
-                sequencerAgent.catchupLog(recordingCatchUp);
-                recordingCatchUp = null;
+                logCatchUp.close();
+                logPosition = logCatchUp.targetPosition();
+                sequencerAgent.catchupLog(logCatchUp);
+                logCatchUp = null;
 
                 final ChannelUri channelUri = followerLogChannel(
                     ctx.logChannel(), thisMember.logEndpoint(), logSessionId);

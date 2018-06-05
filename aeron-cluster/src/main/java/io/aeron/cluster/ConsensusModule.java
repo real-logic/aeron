@@ -818,7 +818,7 @@ public class ConsensusModule implements AutoCloseable
 
         private AeronArchive.Context archiveContext;
         private AuthenticatorSupplier authenticatorSupplier;
-        private RecordingCatchUpSupplier recordingCatchUpSupplier;
+        private LogCatchUpSupplier logCatchUpSupplier;
         private LogPublisher logPublisher;
         private EgressPublisher egressPublisher;
 
@@ -998,9 +998,9 @@ public class ConsensusModule implements AutoCloseable
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
 
-            if (null == recordingCatchUpSupplier)
+            if (null == logCatchUpSupplier)
             {
-                recordingCatchUpSupplier = RecordingCatchUp::new;
+                logCatchUpSupplier = LogCatchUp::new;
             }
 
             if (null == random)
@@ -1136,25 +1136,25 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the {@link RecordingCatchUpSupplier} to use for catching up recordings.
+         * Set the {@link LogCatchUpSupplier} to use for catching up log recordings.
          *
-         * @param recordingCatchUpSupplier to use.
+         * @param logCatchUpSupplier to use.
          * @return this for a fluent API.
          */
-        public Context recordingCatchUpSupplier(final RecordingCatchUpSupplier recordingCatchUpSupplier)
+        public Context logCatchUpSupplier(final LogCatchUpSupplier logCatchUpSupplier)
         {
-            this.recordingCatchUpSupplier = recordingCatchUpSupplier;
+            this.logCatchUpSupplier = logCatchUpSupplier;
             return this;
         }
 
         /**
-         * The {@link RecordingCatchUpSupplier} to use for catching up recordings.
+         * The {@link LogCatchUpSupplier} to use for catching up log recordings.
          *
-         * @return {@link RecordingCatchUpSupplier} to use.
+         * @return {@link LogCatchUpSupplier} to use.
          */
-        public RecordingCatchUpSupplier recordingCatchUpSupplier()
+        public LogCatchUpSupplier logCatchUpSupplier()
         {
-            return recordingCatchUpSupplier;
+            return logCatchUpSupplier;
         }
 
         /**

@@ -29,7 +29,7 @@ import org.agrona.concurrent.status.CountersReader;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.status.RecordingPos.findCounterIdByRecording;
 
-class RecordingCatchUp implements AutoCloseable
+class LogCatchUp implements AutoCloseable
 {
     enum State
     {
@@ -60,11 +60,11 @@ class RecordingCatchUp implements AutoCloseable
     private long targetPosition = NULL_POSITION;
     private long fromPosition = NULL_POSITION;
     private long leaderRecordingId = Aeron.NULL_VALUE;
-    private long recordingIdToExtend = Aeron.NULL_VALUE;
+    private long localRecordingId = Aeron.NULL_VALUE;
     private long activeCorrelationId = Aeron.NULL_VALUE;
     private int recPosCounterId = CountersReader.NULL_COUNTER_ID;
 
-    RecordingCatchUp(
+    LogCatchUp(
         final AeronArchive localArchive,
         final MemberStatusPublisher memberStatusPublisher,
         final ClusterMember[] clusterMembers,
@@ -156,9 +156,9 @@ class RecordingCatchUp implements AutoCloseable
         return logPosition;
     }
 
-    public long recordingIdToExtend()
+    public long localRecordingId()
     {
-        return recordingIdToExtend;
+        return localRecordingId;
     }
 
     public void onLeaderRecoveryPlan(
@@ -184,7 +184,7 @@ class RecordingCatchUp implements AutoCloseable
             validateRecoveryPlans(leaderRecoveryPlan, leaderLog, localLog);
 
             leaderRecordingId = leaderLog.recordingId;
-            recordingIdToExtend = localLog.recordingId;
+            localRecordingId = localLog.recordingId;
 
             fromPosition = localLog.stopPosition;
             targetPosition = leaderLog.stopPosition;
@@ -271,7 +271,7 @@ class RecordingCatchUp implements AutoCloseable
                 extendChannel,
                 context.logStreamId(),
                 SourceLocation.REMOTE,
-                recordingIdToExtend,
+                localRecordingId,
                 correlationId,
                 localArchive.controlSessionId()))
             {
@@ -326,7 +326,7 @@ class RecordingCatchUp implements AutoCloseable
 
         if (CountersReader.NULL_COUNTER_ID == recPosCounterId)
         {
-            recPosCounterId = findCounterIdByRecording(context.aeron().countersReader(), recordingIdToExtend);
+            recPosCounterId = findCounterIdByRecording(context.aeron().countersReader(), localRecordingId);
             if (CountersReader.NULL_COUNTER_ID != recPosCounterId)
             {
                 workCount = 1;

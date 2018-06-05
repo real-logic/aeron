@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.Counter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -141,7 +142,7 @@ public class CommitPos
     }
 
     /**
-     * Get the maximum log position that a tracking session can reach.
+     * Get the maximum log position that a tracking session can reach. The get operation has volatile semantics.
      *
      * @param counters  to search within.
      * @param counterId for the active commit position.
@@ -149,7 +150,7 @@ public class CommitPos
      */
     public static long getMaxLogPosition(final CountersReader counters, final int counterId)
     {
-        final DirectBuffer buffer = counters.metaDataBuffer();
+        final AtomicBuffer buffer = counters.metaDataBuffer();
 
         if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
         {
@@ -157,11 +158,37 @@ public class CommitPos
 
             if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID)
             {
-                return buffer.getLong(recordOffset + KEY_OFFSET + MAX_LOG_POSITION_OFFSET);
+                return buffer.getLongVolatile(recordOffset + KEY_OFFSET + MAX_LOG_POSITION_OFFSET);
             }
         }
 
         return NULL_VALUE;
+    }
+
+    /**
+     * Set the maximum log position that a tracking session can reach. The set operation has volatile semantics.
+     *
+     * @param counters  to search within.
+     * @param counterId for the active commit position.
+     * @param value     to set for the new max position.
+     * @throws IllegalStateException if the counter id is not valid.
+     */
+    public static void setMaxLogPosition(final CountersReader counters, final int counterId, final long value)
+    {
+        final AtomicBuffer buffer = counters.metaDataBuffer();
+
+        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
+        {
+            final int recordOffset = CountersReader.metaDataOffset(counterId);
+
+            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID)
+            {
+                buffer.putLongVolatile(recordOffset + KEY_OFFSET + MAX_LOG_POSITION_OFFSET, value);
+                return;
+            }
+        }
+
+        throw new IllegalStateException("Counter id not valid: " + counterId);
     }
 
     /**

@@ -728,7 +728,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     {
         final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(logChannelUri.media()) ?
             logChannelUri.prefix(SPY_QUALIFIER).toString() : logChannelUri.toString();
-        serviceProxy.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
+        serviceProxy.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), channel);
 
         awaitServiceAcks();
     }
@@ -758,15 +758,13 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    void catchupLog(final RecordingCatchUp recordingCatchUp)
+    void catchupLog(final LogCatchUp logCatchUp)
     {
-        final long fromPosition = recordingCatchUp.fromPosition();
-        final long targetPosition = recordingCatchUp.targetPosition();
+        final long fromPosition = logCatchUp.fromPosition();
+        final long targetPosition = logCatchUp.targetPosition();
         final long length = targetPosition - fromPosition;
 
-        final int lastStepIndex = recoveryPlan.logs.size() - 1;
-        final RecordingLog.Log log = recoveryPlan.logs.get(lastStepIndex);
-
+        final RecordingLog.Log log = recoveryPlan.logs.get(0);
         final long originalLeadershipTermId = leadershipTermId;
         leadershipTermId = log.leadershipTermId;
         expectedAckPosition = fromPosition;
@@ -775,23 +773,24 @@ class SequencerAgent implements Agent, MemberStatusListener
         {
             final int streamId = ctx.replayStreamId();
             final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
-            final int logSessionId = lastStepIndex + 1;
+            final int logSessionId = 1;
             channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
             final String channel = channelUri.toString();
 
             try (Subscription subscription = aeron.addSubscription(channel, streamId))
             {
                 logAdapter = null;
-                serviceProxy.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, true, channel);
+                serviceProxy.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, channel);
                 awaitServiceAcks();
 
                 final int replaySessionId = (int)archive.startReplay(
-                    recordingCatchUp.recordingIdToExtend(), fromPosition, length, channel, streamId);
+                    logCatchUp.localRecordingId(), fromPosition, length, channel, streamId);
 
                 replayLog(awaitImage(replaySessionId, subscription), targetPosition, counter);
 
                 recordingLog.commitLogPosition(leadershipTermId, targetPosition);
                 expectedAckPosition = targetPosition;
+                awaitServiceAcks();
             }
         }
 
@@ -1106,9 +1105,6 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     private void recoverFromLog(final RecordingLog.RecoveryPlan plan, final AeronArchive archive)
     {
-        final int streamId = ctx.replayStreamId();
-        final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
-
         if (!plan.logs.isEmpty())
         {
             final RecordingLog.Log log = plan.logs.get(0);
@@ -1124,32 +1120,30 @@ class SequencerAgent implements Agent, MemberStatusListener
 
             if (plan.hasReplay())
             {
+                final int streamId = ctx.replayStreamId();
+                final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
                 channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(log.sessionId));
                 final String channel = channelUri.toString();
-                final long recordingId = log.recordingId;
 
                 try (Counter counter = CommitPos.allocate(
-                    aeron, tempBuffer, leadershipTermId, startPosition, stopPosition))
+                    aeron, tempBuffer, leadershipTermId, startPosition, stopPosition);
+                    Subscription subscription = aeron.addSubscription(channel, streamId))
                 {
-                    serviceProxy.joinLog(leadershipTermId, counter.id(), log.sessionId, streamId, true, channel);
+                    serviceProxy.joinLog(leadershipTermId, counter.id(), log.sessionId, streamId, channel);
+                    expectedAckPosition = startPosition;
+                    awaitServiceAcks();
 
-                    try (Subscription subscription = aeron.addSubscription(channel, streamId))
+                    final Image image = awaitImage(
+                        (int)archive.startReplay(log.recordingId, startPosition, length, channel, streamId),
+                        subscription);
+
+                    replayLog(image, stopPosition, counter);
+                    awaitServiceAcks();
+
+                    int workCount;
+                    while (0 != (workCount = timerService.poll(cachedEpochClock.time())))
                     {
-                        expectedAckPosition = startPosition;
-                        awaitServiceAcks();
-
-                        final Image image = awaitImage(
-                            (int)archive.startReplay(recordingId, startPosition, length, channel, streamId),
-                            subscription);
-
-                        replayLog(image, stopPosition, counter);
-                        awaitServiceAcks();
-
-                        int workCount;
-                        while (0 != (workCount = timerService.poll(cachedEpochClock.time())))
-                        {
-                            idle(workCount);
-                        }
+                        idle(workCount);
                     }
                 }
             }

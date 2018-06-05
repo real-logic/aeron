@@ -15,39 +15,38 @@
  */
 package io.aeron.cluster.service;
 
-class NewActiveLogEvent
+/**
+ * Event to signal a change of active log to follow.
+ */
+class ActiveLogEvent
 {
     final long leadershipTermId;
     final int commitPositionId;
     final int sessionId;
     final int streamId;
-    final boolean ackBeforeImage;
     final String channel;
 
-    NewActiveLogEvent(
+    ActiveLogEvent(
         final long leadershipTermId,
         final int commitPositionId,
         final int sessionId,
         final int streamId,
-        final boolean ackBeforeImage,
         final String channel)
     {
         this.leadershipTermId = leadershipTermId;
         this.commitPositionId = commitPositionId;
         this.sessionId = sessionId;
         this.streamId = streamId;
-        this.ackBeforeImage = ackBeforeImage;
         this.channel = channel;
     }
 
     public String toString()
     {
-        return "NewActiveLogEvent{" +
+        return "ActiveLogEvent{" +
             "leadershipTermId=" + leadershipTermId +
             ", commitPositionId=" + commitPositionId +
             ", sessionId=" + sessionId +
             ", streamId=" + streamId +
-            ", ackBeforeImage=" + ackBeforeImage +
             ", channel='" + channel + '\'' +
             '}';
     }

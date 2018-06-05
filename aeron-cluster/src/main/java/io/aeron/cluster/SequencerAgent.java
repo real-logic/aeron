@@ -45,7 +45,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
-import static io.aeron.cluster.ServiceAckPosition.*;
+import static io.aeron.cluster.ServiceAck.*;
 import static io.aeron.cluster.service.ClusteredService.NULL_SERVICE_ID;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
@@ -60,6 +60,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private long nextSessionId = 1;
     private long leadershipTermId = NULL_VALUE;
     private long expectedAckPosition = 0;
+    private long serviceAckId = 0;
     private long lastAppendedPosition = 0;
     private long followerCommitPosition = 0;
     private long timeOfLastLogUpdateMs = 0;
@@ -71,7 +72,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private ClusterMember leaderMember;
     private final ClusterMember thisMember;
     private long[] rankedPositions;
-    private final ServiceAckPosition[] serviceAckPositions;
+    private final ServiceAck[] serviceAcks;
     private final Counter clusterRoleCounter;
     private final ClusterMarkFile markFile;
     private final AgentInvoker aeronClientInvoker;
@@ -127,7 +128,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         this.recordingLog = ctx.recordingLog();
         this.tempBuffer = ctx.tempBuffer();
         this.serviceHeartbeats = ctx.serviceHeartbeatCounters();
-        this.serviceAckPositions = newArray(ctx.serviceCount());
+        this.serviceAcks = newArray(ctx.serviceCount());
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -282,14 +283,14 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     public void onServiceAck(
         final long logPosition,
-        final long leadershipTermId,
+        final long ackId,
         final long relevantId,
         final int serviceId)
     {
-        validateServiceAck(logPosition, leadershipTermId, serviceId);
-        serviceAckPositions[serviceId].logPosition(logPosition).relevantId(relevantId);
+        validateServiceAck(logPosition, ackId, serviceId);
+        serviceAcks[serviceId].logPosition(logPosition).ackId(ackId).relevantId(relevantId);
 
-        if (hasReachedThreshold(logPosition, serviceAckPositions))
+        if (hasReachedThreshold(logPosition, serviceAckId, serviceAcks))
         {
             switch (state)
             {
@@ -728,7 +729,6 @@ class SequencerAgent implements Agent, MemberStatusListener
             logChannelUri.prefix(SPY_QUALIFIER).toString() : logChannelUri.toString();
         serviceProxy.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), false, channel);
 
-        resetToNull(serviceAckPositions);
         awaitServiceAcks();
     }
 
@@ -782,7 +782,6 @@ class SequencerAgent implements Agent, MemberStatusListener
             {
                 logAdapter = null;
                 serviceProxy.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, true, channel);
-                resetToNull(serviceAckPositions);
                 awaitServiceAcks();
 
                 final int replaySessionId = (int)archive.startReplay(
@@ -1136,14 +1135,12 @@ class SequencerAgent implements Agent, MemberStatusListener
                     try (Subscription subscription = aeron.addSubscription(channel, streamId))
                     {
                         expectedAckPosition = startPosition;
-                        resetToNull(serviceAckPositions);
                         awaitServiceAcks();
 
                         final Image image = awaitImage(
                             (int)archive.startReplay(recordingId, startPosition, length, channel, streamId),
                             subscription);
 
-                        resetToNull(serviceAckPositions);
                         replayLog(image, stopPosition, counter);
                         awaitServiceAcks();
 
@@ -1189,20 +1186,21 @@ class SequencerAgent implements Agent, MemberStatusListener
     private void awaitServiceAcks()
     {
         final long logPosition = logPosition();
-        while (!hasReachedThreshold(logPosition, serviceAckPositions))
+        while (!hasReachedThreshold(logPosition, serviceAckId, serviceAcks))
         {
             idle(consensusModuleAdapter.poll());
         }
+        ++serviceAckId;
     }
 
-    private void validateServiceAck(final long logPosition, final long leadershipTermId, final int serviceId)
+    private void validateServiceAck(final long logPosition, final long ackId, final int serviceId)
     {
-        if (logPosition != expectedAckPosition || leadershipTermId != this.leadershipTermId)
+        if (logPosition != expectedAckPosition || ackId != serviceAckId)
         {
-            throw new IllegalStateException("invalid position for service ACK" +
+            throw new IllegalStateException("invalid service ACK" +
                 ": serviceId=" + serviceId +
                 ", logPosition=" + logPosition + " expected " + expectedAckPosition +
-                ", leadershipTermId=" + leadershipTermId + " expected " + this.leadershipTermId);
+                ", ackId=" + ackId + " expected " + serviceAckId);
         }
     }
 
@@ -1316,9 +1314,9 @@ class SequencerAgent implements Agent, MemberStatusListener
                 snapshotState(publication, logPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
 
-                for (int i = serviceAckPositions.length - 1; i >= 0; i--)
+                for (int i = serviceAcks.length - 1; i >= 0; i--)
                 {
-                    final long snapshotRecordingId = serviceAckPositions[i].relevantId();
+                    final long snapshotRecordingId = serviceAcks[i].relevantId();
                     recordingLog.appendSnapshot(
                         snapshotRecordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, i);
                 }

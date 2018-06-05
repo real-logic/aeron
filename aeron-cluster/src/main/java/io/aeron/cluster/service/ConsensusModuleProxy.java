@@ -96,12 +96,12 @@ final class ConsensusModuleProxy implements AutoCloseable
         return false;
     }
 
-    public void ack(final long logPosition, final long leadershipTermId, final int serviceId)
+    public void ack(final long logPosition, final long ackId, final int serviceId)
     {
-        ack(logPosition, leadershipTermId, Aeron.NULL_VALUE, serviceId);
+        ack(logPosition, ackId, Aeron.NULL_VALUE, serviceId);
     }
 
-    public void ack(final long logPosition, final long leadershipTermId, final long relevantId, final int serviceId)
+    public void ack(final long logPosition, final long ackId, final long relevantId, final int serviceId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceAckEncoder.BLOCK_LENGTH;
 
@@ -114,7 +114,7 @@ final class ConsensusModuleProxy implements AutoCloseable
                 serviceAckEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logPosition(logPosition)
-                    .leadershipTermId(leadershipTermId)
+                    .ackId(ackId)
                     .relevantId(relevantId)
                     .serviceId(serviceId);
 

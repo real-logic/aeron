@@ -116,7 +116,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             cachedEpochClock.update(nowMs);
             markFile.updateActivityTimestamp(nowMs);
-            checkHealthAndUpdateHeartbeat(nowMs);
+            heartbeatCounter.setOrdered(nowMs);
             workCount += serviceAdapter.poll();
 
             if (null != activeLogEvent)
@@ -293,14 +293,6 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         sessionByIdMap.put(clusterSessionId, new ClientSession(
             clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this));
-    }
-
-    private void checkHealthAndUpdateHeartbeat(final long nowMs)
-    {
-        if (null == logAdapter || !logAdapter.image().isClosed())
-        {
-            heartbeatCounter.setOrdered(nowMs);
-        }
     }
 
     private void role(final Role newRole)

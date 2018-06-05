@@ -411,13 +411,10 @@ class ClusteredServiceAgent implements Agent, Cluster
             throw new IllegalStateException("CommitPos counter not active: " + commitPositionId);
         }
 
-        final int logSessionId = activeLogEvent.sessionId;
-        final long logPosition = CommitPos.getLogPosition(counters, commitPositionId);
-
         final Subscription logSubscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId);
-        consensusModuleProxy.ack(logPosition, ackId++, serviceId);
+        consensusModuleProxy.ack(CommitPos.getLogPosition(counters, commitPositionId), ackId++, serviceId);
 
-        final Image image = awaitImage(logSessionId, logSubscription);
+        final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
         heartbeatCounter.setOrdered(epochClock.time());
 
         activeLogEvent = null;

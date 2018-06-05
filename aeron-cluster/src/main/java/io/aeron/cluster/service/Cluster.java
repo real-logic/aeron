@@ -145,7 +145,7 @@ public interface Cluster
      * If the correlationId is for an existing scheduled timer then it will be reschedule to the new deadline.
      *
      * @param correlationId to identify the timer when it expires.
-     * @param deadlineMs after which the timer will fire.
+     * @param deadlineMs Epoch time in milliseconds after which the timer will fire.
      * @return true if the event to schedule a timer has been sent or false if back pressure is applied.
      * @see #cancelTimer(long)
      */

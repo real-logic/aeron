@@ -38,7 +38,6 @@ class ClusteredServiceAgent implements Agent, Cluster
 {
     private final int serviceId;
     private boolean isRecovering;
-    private final boolean shouldCloseResources;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
     private final Aeron aeron;
@@ -65,7 +64,6 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         archiveCtx = ctx.archiveContext();
         aeron = ctx.aeron();
-        shouldCloseResources = ctx.ownsAeronClient();
         service = ctx.clusteredService();
         idleStrategy = ctx.idleStrategy();
         serviceId = ctx.serviceId();
@@ -95,7 +93,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public void onClose()
     {
-        if (shouldCloseResources)
+        if (!ctx.ownsAeronClient())
         {
             CloseHelper.close(logAdapter);
             CloseHelper.close(consensusModuleProxy);

@@ -125,7 +125,18 @@ class ClusteredServiceAgent implements Agent, Cluster
             }
         }
 
-        workCount += null != logAdapter ? logAdapter.poll() : 0;
+        if (null != logAdapter)
+        {
+            final int polled = logAdapter.poll();
+            if (0 == polled && logAdapter.isConsumed(aeron.countersReader()))
+            {
+                consensusModuleProxy.ack(logAdapter.image().position(), ackId++, serviceId);
+                logAdapter.close();
+                logAdapter = null;
+            }
+
+            workCount += polled;
+        }
 
         return workCount;
     }
@@ -393,19 +404,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void joinActiveLog()
     {
-        if (null != logAdapter)
-        {
-            if (!logAdapter.isConsumed(aeron.countersReader()))
-            {
-                return;
-            }
-
-            logAdapter.close();
-            logAdapter = null;
-        }
-
         final CountersReader counters = aeron.countersReader();
-
         final int commitPositionId = activeLogEvent.commitPositionId;
         if (!CommitPos.isActive(counters, commitPositionId))
         {

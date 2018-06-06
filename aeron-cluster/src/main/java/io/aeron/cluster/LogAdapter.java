@@ -50,10 +50,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
 
     public void close()
     {
-        if (null != image)
-        {
-            image.subscription().close();
-        }
+        image.subscription().close();
     }
 
     long position()

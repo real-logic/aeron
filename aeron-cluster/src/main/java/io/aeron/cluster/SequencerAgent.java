@@ -689,6 +689,23 @@ class SequencerAgent implements Agent, MemberStatusListener
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         startLogRecording(election.logPosition(), channelUri.toString(), logSessionId, SourceLocation.LOCAL);
         awaitServicesReady(channelUri, logSessionId);
+
+        for (final ClusterSession session : sessionByIdMap.values())
+        {
+            if (session.state() != CLOSED)
+            {
+                session.connect(aeron);
+            }
+        }
+
+        final long nowMs = epochClock.time();
+        for (final ClusterSession session : sessionByIdMap.values())
+        {
+            if (session.state() != CLOSED)
+            {
+                session.timeOfLastActivityMs(nowMs);
+            }
+        }
     }
 
     void updateMemberDetails()
@@ -727,26 +744,6 @@ class SequencerAgent implements Agent, MemberStatusListener
     void electionComplete()
     {
         election = null;
-
-        if (Cluster.Role.LEADER == role)
-        {
-            for (final ClusterSession session : sessionByIdMap.values())
-            {
-                if (session.state() != CLOSED)
-                {
-                    session.connect(aeron);
-                }
-            }
-
-            final long nowMs = epochClock.time();
-            for (final ClusterSession session : sessionByIdMap.values())
-            {
-                if (session.state() != CLOSED)
-                {
-                    session.timeOfLastActivityMs(nowMs);
-                }
-            }
-        }
     }
 
     void catchupLog(final LogCatchUp logCatchUp)

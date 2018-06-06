@@ -23,7 +23,7 @@ import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
 
-class ClusterSession implements AutoCloseable
+class ClusterSession
 {
     public static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
     public static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
@@ -52,6 +52,33 @@ class ClusterSession implements AutoCloseable
         this.responseChannel = responseChannel;
     }
 
+    ClusterSession(
+        final long sessionId,
+        final int responseStreamId,
+        final String responseChannel,
+        final long openedLogPosition,
+        final long timeOfLastActivityMs,
+        final long lastCorrelationId,
+        final CloseReason closeReason)
+    {
+        this.id = sessionId;
+        this.responseStreamId = responseStreamId;
+        this.responseChannel = responseChannel;
+        this.openedLogPosition = openedLogPosition;
+        this.timeOfLastActivityMs = timeOfLastActivityMs;
+        this.lastCorrelationId = lastCorrelationId;
+        this.closeReason = closeReason;
+
+        if (CloseReason.NULL_VAL != closeReason)
+        {
+            state = State.CLOSED;
+        }
+        else
+        {
+            state = State.OPEN;
+        }
+    }
+
     public void close()
     {
         CloseHelper.close(responsePublication);
@@ -74,9 +101,10 @@ class ClusterSession implements AutoCloseable
         return responseChannel;
     }
 
-    void closeReason(final CloseReason closeReason)
+    void close(final CloseReason closeReason)
     {
         this.closeReason = closeReason;
+        close();
     }
 
     CloseReason closeReason()

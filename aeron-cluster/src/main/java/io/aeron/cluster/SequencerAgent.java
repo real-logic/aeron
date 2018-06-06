@@ -350,10 +350,9 @@ class SequencerAgent implements Agent, MemberStatusListener
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
-            session.closeReason(CloseReason.CLIENT_ACTION);
-            session.close();
+            session.close(CloseReason.CLIENT_ACTION);
 
-            if (appendClosedSession(session, cachedEpochClock.time()))
+            if (logPublisher.appendClosedSession(session, cachedEpochClock.time()))
             {
                 sessionByIdMap.remove(clusterSessionId);
             }
@@ -429,10 +428,9 @@ class SequencerAgent implements Agent, MemberStatusListener
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
-            session.closeReason(CloseReason.SERVICE_ACTION);
-            session.close();
+            session.close(CloseReason.SERVICE_ACTION);
 
-            if (Cluster.Role.LEADER == role && appendClosedSession(session, cachedEpochClock.time()))
+            if (Cluster.Role.LEADER == role && logPublisher.appendClosedSession(session, cachedEpochClock.time()))
             {
                 sessionByIdMap.remove(clusterSessionId);
             }
@@ -623,17 +621,9 @@ class SequencerAgent implements Agent, MemberStatusListener
         final int responseStreamId,
         final String responseChannel)
     {
-        final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
-        session.closeReason(closeReason);
-        session.open(logPosition);
-        session.lastActivity(timestamp, correlationId);
+        sessionByIdMap.put(clusterSessionId, new ClusterSession(
+            clusterSessionId, responseStreamId, responseChannel, logPosition, timestamp, correlationId, closeReason));
 
-        if (CloseReason.NULL_VAL != closeReason)
-        {
-            session.close();
-        }
-
-        sessionByIdMap.put(clusterSessionId, session);
         if (clusterSessionId >= nextSessionId)
         {
             nextSessionId = clusterSessionId + 1;
@@ -992,19 +982,20 @@ class SequencerAgent implements Agent, MemberStatusListener
                 switch (session.state())
                 {
                     case OPEN:
-                        egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_TIMEOUT_MSG);
-                        session.closeReason(CloseReason.TIMEOUT);
-                        session.close();
-                        if (appendClosedSession(session, nowMs))
+                        if (session.isResponsePublicationConnected())
+                        {
+                            egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_TIMEOUT_MSG);
+                        }
+                        session.close(CloseReason.TIMEOUT);
+                        if (logPublisher.appendClosedSession(session, nowMs))
                         {
                             i.remove();
                         }
                         break;
 
                     case CLOSED:
-                        if (appendClosedSession(session, nowMs))
+                        if (logPublisher.appendClosedSession(session, nowMs))
                         {
-                            session.close();
                             i.remove();
                         }
                         break;
@@ -1033,17 +1024,6 @@ class SequencerAgent implements Agent, MemberStatusListener
         {
             session.open(resultingPosition);
         }
-    }
-
-    private boolean appendClosedSession(final ClusterSession session, final long nowMs)
-    {
-        if (logPublisher.appendClosedSession(session, nowMs))
-        {
-            session.close();
-            return true;
-        }
-
-        return false;
     }
 
     private void createPositionCounters(final int logSessionId, final long logPosition)

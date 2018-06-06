@@ -197,7 +197,7 @@ class Election implements MemberStatusListener, AutoCloseable
             .logPosition(logPosition)
             .leadershipTermId(leadershipTermId);
 
-        if (State.LEADER_READY == state && leadershipTermId == this.leadershipTermId)
+        if (State.LEADER_READY == state && leadershipTermId <= this.leadershipTermId)
         {
             memberStatusPublisher.newLeadershipTerm(
                 clusterMembers[followerMemberId].publication(),

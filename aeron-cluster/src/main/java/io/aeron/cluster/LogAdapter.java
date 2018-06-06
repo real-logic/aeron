@@ -36,11 +36,11 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     private final Image image;
     private final SequencerAgent sequencerAgent;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
-    private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
+    private final SessionOpenEventDecoder sessionOpenEventDecoder = new SessionOpenEventDecoder();
+    private final SessionCloseEventDecoder sessionCloseEventDecoder = new SessionCloseEventDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
-    private final ClusterActionRequestDecoder actionRequestDecoder = new ClusterActionRequestDecoder();
+    private final ClusterActionRequestDecoder clusterActionRequestDecoder = new ClusterActionRequestDecoder();
 
     LogAdapter(final Image image, final SequencerAgent sequencerAgent)
     {
@@ -100,7 +100,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                 break;
 
             case SessionOpenEventDecoder.TEMPLATE_ID:
-                openEventDecoder.wrap(
+                sessionOpenEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
@@ -108,39 +108,39 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
 
                 sequencerAgent.onReplaySessionOpen(
                     header.position(),
-                    openEventDecoder.correlationId(),
-                    openEventDecoder.clusterSessionId(),
-                    openEventDecoder.timestamp(),
-                    openEventDecoder.responseStreamId(),
-                    openEventDecoder.responseChannel());
+                    sessionOpenEventDecoder.correlationId(),
+                    sessionOpenEventDecoder.clusterSessionId(),
+                    sessionOpenEventDecoder.timestamp(),
+                    sessionOpenEventDecoder.responseStreamId(),
+                    sessionOpenEventDecoder.responseChannel());
                 break;
 
             case SessionCloseEventDecoder.TEMPLATE_ID:
-                closeEventDecoder.wrap(
+                sessionCloseEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
                 sequencerAgent.onReplaySessionClose(
-                    closeEventDecoder.correlationId(),
-                    closeEventDecoder.clusterSessionId(),
-                    closeEventDecoder.timestamp(),
-                    closeEventDecoder.closeReason());
+                    sessionCloseEventDecoder.correlationId(),
+                    sessionCloseEventDecoder.clusterSessionId(),
+                    sessionCloseEventDecoder.timestamp(),
+                    sessionCloseEventDecoder.closeReason());
                 break;
 
             case ClusterActionRequestDecoder.TEMPLATE_ID:
-                actionRequestDecoder.wrap(
+                clusterActionRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
                 sequencerAgent.onReplayClusterAction(
-                    actionRequestDecoder.logPosition(),
-                    actionRequestDecoder.leadershipTermId(),
-                    actionRequestDecoder.timestamp(),
-                    actionRequestDecoder.action());
+                    clusterActionRequestDecoder.logPosition(),
+                    clusterActionRequestDecoder.leadershipTermId(),
+                    clusterActionRequestDecoder.timestamp(),
+                    clusterActionRequestDecoder.action());
                 return Action.BREAK;
         }
 

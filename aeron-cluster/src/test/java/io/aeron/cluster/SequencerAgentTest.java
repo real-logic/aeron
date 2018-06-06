@@ -76,7 +76,7 @@ public class SequencerAgentTest
     {
         when(mockAeron.conductorAgentInvoker()).thenReturn(mock(AgentInvoker.class));
         when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
-        when(mockLogPublisher.appendConnectedSession(any(), anyLong())).thenReturn(128L);
+        when(mockLogPublisher.appendSessionOpen(any(), anyLong())).thenReturn(128L);
         when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), anyLong(), any(ClusterAction.class)))
             .thenReturn(TRUE);
         when(mockAeron.addPublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
@@ -103,7 +103,7 @@ public class SequencerAgentTest
         clock.update(1);
         agent.doWork();
 
-        verify(mockLogPublisher).appendConnectedSession(any(ClusterSession.class), anyLong());
+        verify(mockLogPublisher).appendSessionOpen(any(ClusterSession.class), anyLong());
 
         final long correlationIdTwo = 2L;
         agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO, new byte[0]);
@@ -134,7 +134,7 @@ public class SequencerAgentTest
 
         agent.doWork();
 
-        verify(mockLogPublisher).appendConnectedSession(any(ClusterSession.class), eq(startMs));
+        verify(mockLogPublisher).appendSessionOpen(any(ClusterSession.class), eq(startMs));
 
         final long timeMs = startMs + TimeUnit.NANOSECONDS.toMillis(ConsensusModule.Configuration.sessionTimeoutNs());
         clock.update(timeMs);
@@ -144,7 +144,7 @@ public class SequencerAgentTest
         clock.update(timeoutMs);
         agent.doWork();
 
-        verify(mockLogPublisher).appendClosedSession(any(ClusterSession.class), eq(timeoutMs));
+        verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(
             any(ClusterSession.class), eq(EventCode.ERROR), eq(ConsensusModule.Configuration.SESSION_TIMEOUT_MSG));
     }

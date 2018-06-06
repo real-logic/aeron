@@ -352,7 +352,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         {
             session.close(CloseReason.CLIENT_ACTION);
 
-            if (logPublisher.appendClosedSession(session, cachedEpochClock.time()))
+            if (logPublisher.appendSessionClose(session, cachedEpochClock.time()))
             {
                 sessionByIdMap.remove(clusterSessionId);
             }
@@ -410,7 +410,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     public boolean onTimerEvent(final long correlationId, final long nowMs)
     {
-        return Cluster.Role.LEADER != role || logPublisher.appendTimerEvent(correlationId, nowMs);
+        return Cluster.Role.LEADER != role || logPublisher.appendTimer(correlationId, nowMs);
     }
 
     public void onScheduleTimer(final long correlationId, final long deadlineMs)
@@ -430,7 +430,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         {
             session.close(CloseReason.SERVICE_ACTION);
 
-            if (Cluster.Role.LEADER == role && logPublisher.appendClosedSession(session, cachedEpochClock.time()))
+            if (Cluster.Role.LEADER == role && logPublisher.appendSessionClose(session, cachedEpochClock.time()))
             {
                 sessionByIdMap.remove(clusterSessionId);
             }
@@ -922,7 +922,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                 session.timeOfLastActivityMs(nowMs);
                 sessionByIdMap.put(session.id(), session);
-                appendConnectedSession(session, nowMs);
+                appendSessionOpen(session, nowMs);
 
                 workCount += 1;
             }
@@ -987,14 +987,14 @@ class SequencerAgent implements Agent, MemberStatusListener
                             egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_TIMEOUT_MSG);
                         }
                         session.close(CloseReason.TIMEOUT);
-                        if (logPublisher.appendClosedSession(session, nowMs))
+                        if (logPublisher.appendSessionClose(session, nowMs))
                         {
                             i.remove();
                         }
                         break;
 
                     case CLOSED:
-                        if (logPublisher.appendClosedSession(session, nowMs))
+                        if (logPublisher.appendSessionClose(session, nowMs))
                         {
                             i.remove();
                         }
@@ -1009,7 +1009,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             }
             else if (session.state() == CONNECTED)
             {
-                appendConnectedSession(session, nowMs);
+                appendSessionOpen(session, nowMs);
                 workCount += 1;
             }
         }
@@ -1017,9 +1017,9 @@ class SequencerAgent implements Agent, MemberStatusListener
         return workCount;
     }
 
-    private void appendConnectedSession(final ClusterSession session, final long nowMs)
+    private void appendSessionOpen(final ClusterSession session, final long nowMs)
     {
-        final long resultingPosition = logPublisher.appendConnectedSession(session, nowMs);
+        final long resultingPosition = logPublisher.appendSessionOpen(session, nowMs);
         if (resultingPosition > 0)
         {
             session.open(resultingPosition);
@@ -1347,7 +1347,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
         for (final ClusterSession session : sessionByIdMap.values())
         {
-            if (session.state() == OPEN)
+            if (session.state() == OPEN || session.state() == CLOSED)
             {
                 snapshotTaker.snapshotSession(session);
             }

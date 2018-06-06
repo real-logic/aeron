@@ -27,10 +27,10 @@ class LogPublisher
     private static final int SEND_ATTEMPTS = 3;
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final SessionOpenEventEncoder connectEventEncoder = new SessionOpenEventEncoder();
-    private final SessionCloseEventEncoder closeEventEncoder = new SessionCloseEventEncoder();
+    private final SessionOpenEventEncoder sessionOpenEventEncoder = new SessionOpenEventEncoder();
+    private final SessionCloseEventEncoder sessionCloseEventEncoder = new SessionCloseEventEncoder();
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
-    private final ClusterActionRequestEncoder actionRequestEncoder = new ClusterActionRequestEncoder();
+    private final ClusterActionRequestEncoder clusterActionRequestEncoder = new ClusterActionRequestEncoder();
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
     private Publication publication;
@@ -82,13 +82,13 @@ class LogPublisher
         return false;
     }
 
-    public long appendConnectedSession(final ClusterSession session, final long nowMs)
+    public long appendSessionOpen(final ClusterSession session, final long nowMs)
     {
         long result;
         final byte[] encodedPrincipal = session.encodedPrincipal();
         final String channel = session.responseChannel();
 
-        connectEventEncoder
+        sessionOpenEventEncoder
             .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
             .clusterSessionId(session.id())
             .correlationId(session.lastCorrelationId())
@@ -97,7 +97,7 @@ class LogPublisher
             .responseChannel(channel)
             .putEncodedPrincipal(encodedPrincipal, 0, encodedPrincipal.length);
 
-        final int length = connectEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
+        final int length = sessionOpenEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -115,7 +115,7 @@ class LogPublisher
         return result;
     }
 
-    public boolean appendClosedSession(final ClusterSession session, final long nowMs)
+    public boolean appendSessionClose(final ClusterSession session, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseEventEncoder.BLOCK_LENGTH;
 
@@ -125,7 +125,7 @@ class LogPublisher
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                closeEventEncoder
+                sessionCloseEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .timestamp(nowMs)
@@ -143,7 +143,7 @@ class LogPublisher
         return false;
     }
 
-    public boolean appendTimerEvent(final long correlationId, final long nowMs)
+    public boolean appendTimer(final long correlationId, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TimerEventEncoder.BLOCK_LENGTH;
 
@@ -181,7 +181,7 @@ class LogPublisher
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                actionRequestEncoder.wrapAndApplyHeader(
+                clusterActionRequestEncoder.wrapAndApplyHeader(
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)

@@ -22,7 +22,7 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
-final class LogAdapter implements ControlledFragmentHandler
+final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
 {
     /**
      * Length of the session header that will precede application protocol message.
@@ -46,6 +46,14 @@ final class LogAdapter implements ControlledFragmentHandler
     {
         this.image = image;
         this.sequencerAgent = sequencerAgent;
+    }
+
+    public void close()
+    {
+        if (null != image)
+        {
+            image.subscription().close();
+        }
     }
 
     long position()

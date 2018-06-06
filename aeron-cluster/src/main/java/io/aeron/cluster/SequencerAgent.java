@@ -686,12 +686,12 @@ class SequencerAgent implements Agent, MemberStatusListener
     void becomeLeader()
     {
         role(Cluster.Role.LEADER);
+        closeExistingLog();
         updateMemberDetails();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         final Publication publication = createLogPublication(channelUri, recoveryPlan, election.logPosition());
 
-        logAdapter = null;
         logPublisher.connect(publication);
         final int logSessionId = publication.sessionId();
         election.logSessionId(logSessionId);
@@ -717,6 +717,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     void recordLogAsFollower(final String logChannel, final int logSessionId)
     {
+        closeExistingLog();
         startLogRecording(election.logPosition(), logChannel, logSessionId, SourceLocation.REMOTE);
 
         final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, ctx.logStreamId()));
@@ -1474,5 +1475,12 @@ class SequencerAgent implements Agent, MemberStatusListener
             expectedAckPosition = logPosition;
             state(newState);
         }
+    }
+
+    private void closeExistingLog()
+    {
+        logPublisher.disconnect();
+        CloseHelper.close(logAdapter);
+        logAdapter = null;
     }
 }

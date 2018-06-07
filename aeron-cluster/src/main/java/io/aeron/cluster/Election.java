@@ -261,7 +261,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
             if (this.logPosition < logPosition && null == logCatchUp)
             {
-                logCatchUp = ctx.logCatchUpSupplier().catchUp(
+                logCatchUp = new LogCatchUp(
                     localArchive,
                     memberStatusPublisher,
                     clusterMembers,

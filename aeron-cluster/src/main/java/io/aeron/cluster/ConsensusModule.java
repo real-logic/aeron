@@ -818,7 +818,6 @@ public class ConsensusModule implements AutoCloseable
 
         private AeronArchive.Context archiveContext;
         private AuthenticatorSupplier authenticatorSupplier;
-        private LogCatchUpSupplier logCatchUpSupplier;
         private LogPublisher logPublisher;
         private EgressPublisher egressPublisher;
 
@@ -998,11 +997,6 @@ public class ConsensusModule implements AutoCloseable
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
 
-            if (null == logCatchUpSupplier)
-            {
-                logCatchUpSupplier = LogCatchUp::new;
-            }
-
             if (null == random)
             {
                 random = new Random();
@@ -1133,28 +1127,6 @@ public class ConsensusModule implements AutoCloseable
         public RecordingLog recordingLog()
         {
             return recordingLog;
-        }
-
-        /**
-         * Set the {@link LogCatchUpSupplier} to use for catching up log recordings.
-         *
-         * @param logCatchUpSupplier to use.
-         * @return this for a fluent API.
-         */
-        public Context logCatchUpSupplier(final LogCatchUpSupplier logCatchUpSupplier)
-        {
-            this.logCatchUpSupplier = logCatchUpSupplier;
-            return this;
-        }
-
-        /**
-         * The {@link LogCatchUpSupplier} to use for catching up log recordings.
-         *
-         * @return {@link LogCatchUpSupplier} to use.
-         */
-        public LogCatchUpSupplier logCatchUpSupplier()
-        {
-            return logCatchUpSupplier;
         }
 
         /**

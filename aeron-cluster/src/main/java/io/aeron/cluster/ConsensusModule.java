@@ -813,6 +813,7 @@ public class ConsensusModule implements AutoCloseable
         private Counter controlToggle;
         private Counter snapshotCounter;
         private Counter invalidRequestCounter;
+        private Counter timedOutClientCounter;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
 
@@ -946,6 +947,11 @@ public class ConsensusModule implements AutoCloseable
             if (null == invalidRequestCounter)
             {
                 invalidRequestCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Invalid cluster request count");
+            }
+
+            if (null == timedOutClientCounter)
+            {
+                timedOutClientCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Timed out cluster client count");
             }
 
             if (null == serviceHeartbeatCounters)
@@ -2041,6 +2047,28 @@ public class ConsensusModule implements AutoCloseable
         public Context invalidRequestCounter(final Counter invalidRequestCounter)
         {
             this.invalidRequestCounter = invalidRequestCounter;
+            return this;
+        }
+
+        /**
+         * Get the counter for the count of clients that have been timed out and disconnected.
+         *
+         * @return the counter for the count of clients that have been timed out and disconnected.
+         */
+        public Counter timedOutClientCounter()
+        {
+            return timedOutClientCounter;
+        }
+
+        /**
+         * Set the counter for the count of clients that have been timed out and disconnected.
+         *
+         * @param timedOutClientCounter the count of clients that have been timed out and disconnected.
+         * @return this for a fluent API.
+         */
+        public Context timedOutClientCounter(final Counter timedOutClientCounter)
+        {
+            this.timedOutClientCounter = timedOutClientCounter;
             return this;
         }
 

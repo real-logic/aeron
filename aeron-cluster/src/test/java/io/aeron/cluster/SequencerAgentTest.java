@@ -53,6 +53,7 @@ public class SequencerAgentTest
     private final LogPublisher mockLogPublisher = mock(LogPublisher.class);
     private final Aeron mockAeron = mock(Aeron.class);
     private final ConcurrentPublication mockResponsePublication = mock(ConcurrentPublication.class);
+    private final Counter mockTimedOutClientCounter = mock(Counter.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .errorHandler(Throwable::printStackTrace)
@@ -60,6 +61,7 @@ public class SequencerAgentTest
         .moduleStateCounter(mock(Counter.class))
         .controlToggleCounter(mock(Counter.class))
         .clusterNodeCounter(mock(Counter.class))
+        .timedOutClientCounter(mockTimedOutClientCounter)
         .idleStrategySupplier(NoOpIdleStrategy::new)
         .aeron(mockAeron)
         .clusterMemberId(0)
@@ -76,6 +78,7 @@ public class SequencerAgentTest
     {
         when(mockAeron.conductorAgentInvoker()).thenReturn(mock(AgentInvoker.class));
         when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
+        when(mockLogPublisher.appendSessionClose(any(), anyLong())).thenReturn(TRUE);
         when(mockLogPublisher.appendSessionOpen(any(), anyLong())).thenReturn(128L);
         when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), anyLong(), any(ClusterAction.class)))
             .thenReturn(TRUE);
@@ -144,6 +147,7 @@ public class SequencerAgentTest
         clock.update(timeoutMs);
         agent.doWork();
 
+        verify(mockTimedOutClientCounter).incrementOrdered();
         verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(
             any(ClusterSession.class), eq(EventCode.ERROR), eq(ConsensusModule.Configuration.SESSION_TIMEOUT_MSG));

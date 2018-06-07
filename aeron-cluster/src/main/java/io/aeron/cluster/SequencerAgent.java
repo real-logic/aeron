@@ -932,6 +932,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
                 session.close();
+                ctx.timedOutClientCounter().incrementOrdered();
             }
         }
 
@@ -983,9 +984,11 @@ class SequencerAgent implements Agent, MemberStatusListener
                         {
                             egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_TIMEOUT_MSG);
                         }
+
                         session.close(CloseReason.TIMEOUT);
                         if (logPublisher.appendSessionClose(session, nowMs))
                         {
+                            ctx.timedOutClientCounter().incrementOrdered();
                             i.remove();
                         }
                         break;
@@ -993,6 +996,10 @@ class SequencerAgent implements Agent, MemberStatusListener
                     case CLOSED:
                         if (logPublisher.appendSessionClose(session, nowMs))
                         {
+                            if (session.closeReason() == CloseReason.TIMEOUT)
+                            {
+                                ctx.timedOutClientCounter().incrementOrdered();
+                            }
                             i.remove();
                         }
                         break;

@@ -25,9 +25,9 @@ import java.util.Arrays;
 
 class ClusterSession
 {
-    public static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
-    public static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
-    public static final int MAX_ENCODED_MEMBERSHIP_QUERY_LENGTH = 4 * 1024;
+    static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
+    static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
+    static final int MAX_ENCODED_MEMBERSHIP_QUERY_LENGTH = 4 * 1024;
 
     enum State
     {

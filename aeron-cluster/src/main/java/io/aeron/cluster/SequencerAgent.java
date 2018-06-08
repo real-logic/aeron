@@ -31,6 +31,7 @@ import io.aeron.status.ReadableCounter;
 import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.LongHashSet;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -92,6 +93,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private final Long2ObjectHashMap<ClusterSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
+    private final LongHashSet missedTimersSet = new LongHashSet();
     private final Authenticator authenticator;
     private final SessionProxy sessionProxy;
     private final Aeron aeron;
@@ -588,7 +590,11 @@ class SequencerAgent implements Agent, MemberStatusListener
     void onReplayTimerEvent(final long correlationId, final long timestamp)
     {
         cachedEpochClock.update(timestamp);
-        timerService.cancelTimer(correlationId);
+
+        if (!timerService.cancelTimer(correlationId))
+        {
+            missedTimersSet.add(correlationId);
+        }
     }
 
     void onReplaySessionOpen(
@@ -744,6 +750,12 @@ class SequencerAgent implements Agent, MemberStatusListener
     void electionComplete()
     {
         election = null;
+
+        cancelMissedTimers();
+        if (missedTimersSet.capacity() > LongHashSet.DEFAULT_INITIAL_CAPACITY)
+        {
+            missedTimersSet.compact();
+        }
     }
 
     void catchupLog(final LogCatchUp logCatchUp)
@@ -804,6 +816,10 @@ class SequencerAgent implements Agent, MemberStatusListener
                 workCount += processRejectedSessions(rejectedSessions, nowMs);
                 workCount += timerService.poll(nowMs);
             }
+        }
+        else
+        {
+            cancelMissedTimers();
         }
 
         if (null != archive)
@@ -1432,6 +1448,11 @@ class SequencerAgent implements Agent, MemberStatusListener
             {
                 if (image.position() == stopPosition)
                 {
+                    while (!missedTimersSet.isEmpty())
+                    {
+                        idle();
+                        cancelMissedTimers();
+                    }
                     break;
                 }
 
@@ -1444,7 +1465,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             commitPosition.setOrdered(image.position());
 
             workCount += consensusModuleAdapter.poll();
-            workCount += timerService.poll(cachedEpochClock.time());
+            cancelMissedTimers();
 
             idle(workCount);
         }
@@ -1466,5 +1487,16 @@ class SequencerAgent implements Agent, MemberStatusListener
         logPublisher.disconnect();
         CloseHelper.close(logAdapter);
         logAdapter = null;
+    }
+
+    private void cancelMissedTimers()
+    {
+        for (LongHashSet.LongIterator i = missedTimersSet.iterator(); i.hasNext(); )
+        {
+            if (timerService.cancelTimer(i.next()))
+            {
+                i.remove();
+            }
+        }
     }
 }

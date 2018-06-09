@@ -221,21 +221,27 @@
 
     <!-- Messages for service control between clustered services and the Consensus Module -->
 
-    <sbe:message name="ScheduleTimer"
+    <sbe:message name="CloseSession"
                  id="30"
+                 description="Service instructing that a session be closed">
+        <field name="clusterSessionId"     id="1" type="int64"/>
+    </sbe:message>
+
+    <sbe:message name="ScheduleTimer"
+                 id="31"
                  description="Schedule a timer event to or reschedule for an unexpired correlation id">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="deadline"             id="2" type="time_t"/>
     </sbe:message>
 
     <sbe:message name="CancelTimer"
-                 id="31"
+                 id="32"
                  description="Cancel a scheduled timer event">
         <field name="correlationId"        id="1" type="int64"/>
     </sbe:message>
 
     <sbe:message name="ServiceAck"
-                 id="32"
+                 id="33"
                  description="Service acknowledging that it has reached a position or taken an action">
         <field name="logPosition"          id="1" type="int64"/>
         <field name="ackId"                id="2" type="int64"/>
@@ -244,7 +250,7 @@
     </sbe:message>
 
     <sbe:message name="JoinLog"
-                 id="33"
+                 id="40"
                  description="Consensus Module instructing a service to join a log">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="commitPositionId"     id="2" type="int32"/>
@@ -253,11 +259,6 @@
         <data  name="logChannel"           id="5" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <sbe:message name="CloseSession"
-                 id="34"
-                 description="Service instructing that a session be closed">
-        <field name="clusterSessionId"     id="1" type="int64"/>
-    </sbe:message>
 
     <!--
         Cluster Consensus Protocol

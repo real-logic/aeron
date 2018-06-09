@@ -55,6 +55,16 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
+            case CloseSessionDecoder.TEMPLATE_ID:
+                closeSessionDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onServiceCloseSession(closeSessionDecoder.clusterSessionId());
+                break;
+
             case ScheduleTimerDecoder.TEMPLATE_ID:
                 scheduleTimerDecoder.wrap(
                     buffer,
@@ -89,16 +99,6 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                     serviceAckDecoder.ackId(),
                     serviceAckDecoder.relevantId(),
                     serviceAckDecoder.serviceId());
-                break;
-
-            case CloseSessionDecoder.TEMPLATE_ID:
-                closeSessionDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                sequencerAgent.onServiceCloseSession(closeSessionDecoder.clusterSessionId());
                 break;
 
             default:

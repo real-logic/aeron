@@ -280,46 +280,6 @@ class SequencerAgent implements Agent, MemberStatusListener
         return "sequencer";
     }
 
-    public void onServiceAck(
-        final long logPosition,
-        final long ackId,
-        final long relevantId,
-        final int serviceId)
-    {
-        validateServiceAck(logPosition, ackId, serviceId);
-        serviceAcks[serviceId].logPosition(logPosition).ackId(ackId).relevantId(relevantId);
-
-        if (hasReachedThreshold(logPosition, serviceAckId, serviceAcks))
-        {
-            switch (state)
-            {
-                case SNAPSHOT:
-                    final long nowNs = cachedEpochClock.time();
-                    takeSnapshot(nowNs, logPosition);
-                    state(ConsensusModule.State.ACTIVE);
-                    ClusterControl.ToggleState.reset(controlToggle);
-                    for (final ClusterSession session : sessionByIdMap.values())
-                    {
-                        session.timeOfLastActivityMs(nowNs);
-                    }
-                    break;
-
-                case SHUTDOWN:
-                    takeSnapshot(cachedEpochClock.time(), logPosition);
-                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.terminationHook().run();
-                    break;
-
-                case ABORT:
-                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.terminationHook().run();
-                    break;
-            }
-        }
-    }
-
     public void onSessionConnect(
         final long correlationId,
         final int responseStreamId,
@@ -409,30 +369,6 @@ class SequencerAgent implements Agent, MemberStatusListener
     public boolean onTimerEvent(final long correlationId, final long nowMs)
     {
         return Cluster.Role.LEADER != role || logPublisher.appendTimer(correlationId, nowMs);
-    }
-
-    public void onScheduleTimer(final long correlationId, final long deadlineMs)
-    {
-        timerService.scheduleTimer(correlationId, deadlineMs);
-    }
-
-    public void onCancelTimer(final long correlationId)
-    {
-        timerService.cancelTimer(correlationId);
-    }
-
-    public void onServiceCloseSession(final long clusterSessionId)
-    {
-        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session)
-        {
-            session.close(CloseReason.SERVICE_ACTION);
-
-            if (Cluster.Role.LEADER == role && logPublisher.appendSessionClose(session, cachedEpochClock.time()))
-            {
-                sessionByIdMap.remove(clusterSessionId);
-            }
-        }
     }
 
     public void onCanvassPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
@@ -559,6 +495,70 @@ class SequencerAgent implements Agent, MemberStatusListener
     void commitPositionCounter(final Counter commitPositionCounter)
     {
         this.commitPosition = commitPositionCounter;
+    }
+
+    void onServiceCloseSession(final long clusterSessionId)
+    {
+        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+        if (null != session)
+        {
+            session.close(CloseReason.SERVICE_ACTION);
+
+            if (Cluster.Role.LEADER == role && logPublisher.appendSessionClose(session, cachedEpochClock.time()))
+            {
+                sessionByIdMap.remove(clusterSessionId);
+            }
+        }
+    }
+
+    void onScheduleTimer(final long correlationId, final long deadlineMs)
+    {
+        timerService.scheduleTimer(correlationId, deadlineMs);
+    }
+
+    void onCancelTimer(final long correlationId)
+    {
+        timerService.cancelTimer(correlationId);
+    }
+
+    void onServiceAck(
+        final long logPosition,
+        final long ackId,
+        final long relevantId,
+        final int serviceId)
+    {
+        validateServiceAck(logPosition, ackId, serviceId);
+        serviceAcks[serviceId].logPosition(logPosition).ackId(ackId).relevantId(relevantId);
+
+        if (hasReachedThreshold(logPosition, serviceAckId, serviceAcks))
+        {
+            switch (state)
+            {
+                case SNAPSHOT:
+                    final long nowNs = cachedEpochClock.time();
+                    takeSnapshot(nowNs, logPosition);
+                    state(ConsensusModule.State.ACTIVE);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    for (final ClusterSession session : sessionByIdMap.values())
+                    {
+                        session.timeOfLastActivityMs(nowNs);
+                    }
+                    break;
+
+                case SHUTDOWN:
+                    takeSnapshot(cachedEpochClock.time(), logPosition);
+                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.terminationHook().run();
+                    break;
+
+                case ABORT:
+                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.terminationHook().run();
+                    break;
+            }
+        }
     }
 
     @SuppressWarnings("unused")

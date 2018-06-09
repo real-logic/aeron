@@ -379,11 +379,12 @@
 
     <sbe:message name="RecordingLog"
                  id="64"
+                 blockLength="20"
                  description="Range of a recording log">
         <field name="correlationId"              id="1" type="int64"/>
         <field name="requestMemberId"            id="2" type="int32"/>
         <field name="leaderMemberId"             id="3" type="int32"/>
-        <group name="entries"                    id="4" dimensionType="groupSizeEncoding">
+        <group name="entries"                    id="4" dimensionType="groupSizeEncoding" blockLength="64">
             <field name="recordingId"            id="5"  type="int64"/>
             <field name="leadershipTermId"       id="6"  type="int64"/>
             <field name="termBaseLogPosition"    id="7"  type="int64"/>

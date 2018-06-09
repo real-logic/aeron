@@ -32,19 +32,34 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  */
 class Election implements MemberStatusListener, AutoCloseable
 {
-    public static final int ELECTION_STATE_TYPE_ID = 207;
+    static final int ELECTION_STATE_TYPE_ID = 207;
 
     enum State
     {
         INIT(0),
+
         CANVASS(1),
+
         NOMINATE(2),
+
         CANDIDATE_BALLOT(3),
+
         FOLLOWER_BALLOT(4),
+
         LEADER_TRANSITION(5),
+
         LEADER_READY(6),
-        FOLLOWER_CATCHUP(7),
+
+        FOLLOWER_CATCHUP(7)
+        {
+            void exit(final Election election)
+            {
+                election.closeCatchUp();
+            }
+        },
+
         FOLLOWER_TRANSITION(8),
+
         FOLLOWER_READY(9);
 
         static final State[] STATES;
@@ -72,12 +87,16 @@ class Election implements MemberStatusListener, AutoCloseable
             this.code = code;
         }
 
-        public int code()
+        void exit(final Election election)
+        {
+        }
+
+        int code()
         {
             return code;
         }
 
-        public static State get(final int code)
+        static State get(final int code)
         {
             if (code < 0 || code > (STATES.length - 1))
             {
@@ -334,6 +353,12 @@ class Election implements MemberStatusListener, AutoCloseable
         }
     }
 
+    void closeCatchUp()
+    {
+        CloseHelper.close(logCatchUp);
+        logCatchUp = null;
+    }
+
     State state()
     {
         return state;
@@ -543,10 +568,8 @@ class Election implements MemberStatusListener, AutoCloseable
         }
         else
         {
-            logCatchUp.close();
             logPosition = logCatchUp.targetPosition();
             sequencerAgent.catchupLog(logCatchUp);
-            logCatchUp = null;
 
             state(State.FOLLOWER_TRANSITION, nowMs);
             workCount += 1;
@@ -593,6 +616,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         //System.out.println(this.state + " -> " + state);
         timeOfLastStateChangeMs = nowMs;
+        this.state.exit(this);
         this.state = state;
         stateCounter.setOrdered(state.code());
 

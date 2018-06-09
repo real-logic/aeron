@@ -121,11 +121,6 @@ class LogCatchUp implements AutoCloseable
         return workCount;
     }
 
-    public boolean isInit()
-    {
-        return State.INIT == state;
-    }
-
     public boolean isDone()
     {
         return State.DONE == state;

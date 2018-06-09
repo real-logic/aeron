@@ -43,8 +43,9 @@ class Election implements MemberStatusListener, AutoCloseable
         FOLLOWER_BALLOT(4),
         LEADER_TRANSITION(5),
         LEADER_READY(6),
-        FOLLOWER_TRANSITION(7),
-        FOLLOWER_READY(8);
+        FOLLOWER_CATCHUP(7),
+        FOLLOWER_TRANSITION(8),
+        FOLLOWER_READY(9);
 
         static final State[] STATES;
 
@@ -179,6 +180,10 @@ class Election implements MemberStatusListener, AutoCloseable
                 workCount += leaderReady(nowMs);
                 break;
 
+            case FOLLOWER_CATCHUP:
+                workCount += followerCatchup(nowMs);
+                break;
+
             case FOLLOWER_TRANSITION:
                 workCount += followerTransition(nowMs);
                 break;
@@ -269,9 +274,14 @@ class Election implements MemberStatusListener, AutoCloseable
                     thisMember.id(),
                     recoveryPlan,
                     ctx);
+
+                state(State.FOLLOWER_CATCHUP, ctx.epochClock().time());
+            }
+            else
+            {
+                state(State.FOLLOWER_TRANSITION, ctx.epochClock().time());
             }
 
-            state(State.FOLLOWER_TRANSITION, ctx.epochClock().time());
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
@@ -522,49 +532,40 @@ class Election implements MemberStatusListener, AutoCloseable
         return workCount;
     }
 
-    private int followerTransition(final long nowMs)
+    private int followerCatchup(final long nowMs)
     {
-        int workCount = 1;
+        int workCount = 0;
 
-        if (null == logCatchUp)
+        if (!logCatchUp.isDone())
         {
-            sequencerAgent.updateMemberDetails();
-
-            final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
-
-            sequencerAgent.recordLogAsFollower(channelUri.toString(), logSessionId);
-            sequencerAgent.awaitServicesReady(channelUri, logSessionId);
-            state(State.FOLLOWER_READY, nowMs);
+            workCount += memberStatusAdapter.poll();
+            workCount += logCatchUp.doWork();
         }
         else
         {
-            if (logCatchUp.isInit())
-            {
-                sequencerAgent.updateMemberDetails();
-            }
+            logCatchUp.close();
+            logPosition = logCatchUp.targetPosition();
+            sequencerAgent.catchupLog(logCatchUp);
+            logCatchUp = null;
 
-            if (!logCatchUp.isDone())
-            {
-                workCount += memberStatusAdapter.poll();
-                workCount += logCatchUp.doWork();
-            }
-            else
-            {
-                logCatchUp.close();
-                logPosition = logCatchUp.targetPosition();
-                sequencerAgent.catchupLog(logCatchUp);
-                logCatchUp = null;
-
-                final ChannelUri channelUri = followerLogChannel(
-                    ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
-
-                sequencerAgent.recordLogAsFollower(channelUri.toString(), logSessionId);
-                sequencerAgent.awaitServicesReady(channelUri, logSessionId);
-                state(State.FOLLOWER_READY, nowMs);
-            }
+            state(State.FOLLOWER_TRANSITION, nowMs);
+            workCount += 1;
         }
 
-        return workCount;
+        return  workCount;
+    }
+
+    private int followerTransition(final long nowMs)
+    {
+        sequencerAgent.updateMemberDetails();
+
+        final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
+
+        sequencerAgent.recordLogAsFollower(channelUri.toString(), logSessionId);
+        sequencerAgent.awaitServicesReady(channelUri, logSessionId);
+        state(State.FOLLOWER_READY, nowMs);
+
+        return 1;
     }
 
     private int followerReady(final long nowMs)

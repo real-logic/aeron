@@ -22,14 +22,14 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.status.RecordingPos.findCounterIdByRecording;
 
-class LogCatchUp implements AutoCloseable
+class LogCatchup implements AutoCloseable
 {
     enum State
     {
@@ -64,7 +64,7 @@ class LogCatchUp implements AutoCloseable
     private long activeCorrelationId = Aeron.NULL_VALUE;
     private int recPosCounterId = CountersReader.NULL_COUNTER_ID;
 
-    LogCatchUp(
+    LogCatchup(
         final AeronArchive localArchive,
         final MemberStatusPublisher memberStatusPublisher,
         final ClusterMember[] clusterMembers,
@@ -156,25 +156,16 @@ class LogCatchUp implements AutoCloseable
         return localRecordingId;
     }
 
-    public void onLeaderRecoveryPlan(
-        final long correlationId,
-        final int requestMemberId,
-        final int responseMemberId,
-        final DirectBuffer data,
-        final int offset,
-        @SuppressWarnings("unused") final int length)
+    public void onLeaderRecoveryPlan(final RecoveryPlanDecoder recoveryPlanDecoder)
     {
         if (State.AWAIT_LEADER_CONNECTION == state &&
-            correlationId == activeCorrelationId &&
-            requestMemberId == memberId &&
-            responseMemberId == leaderMemberId)
+            recoveryPlanDecoder.correlationId() == activeCorrelationId &&
+            recoveryPlanDecoder.requestMemberId() == memberId &&
+            recoveryPlanDecoder.leaderMemberId() == leaderMemberId)
         {
-            final RecordingLog.RecoveryPlan leaderRecoveryPlan = new RecordingLog.RecoveryPlan(data, offset);
-
-            final RecordingLog.Log localLog =
-                localRecoveryPlan.logs.get(localRecoveryPlan.logs.size() - 1);
-            final RecordingLog.Log leaderLog =
-                leaderRecoveryPlan.logs.get(leaderRecoveryPlan.logs.size() - 1);
+            final RecordingLog.RecoveryPlan leaderRecoveryPlan = new RecordingLog.RecoveryPlan(recoveryPlanDecoder);
+            final RecordingLog.Log localLog = localRecoveryPlan.logs.get(localRecoveryPlan.logs.size() - 1);
+            final RecordingLog.Log leaderLog = leaderRecoveryPlan.logs.get(leaderRecoveryPlan.logs.size() - 1);
 
             validateRecoveryPlans(leaderRecoveryPlan, leaderLog, localLog);
 
@@ -188,7 +179,6 @@ class LogCatchUp implements AutoCloseable
             extendChannel = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
                 .endpoint(clusterMembers[memberId].transferEndpoint())
-//                .sessionId(localLog.sessionId)
                 .build();
 
             replayChannel = extendChannel;

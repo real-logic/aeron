@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster;
 
-import org.agrona.DirectBuffer;
+import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 
 public interface MemberStatusListener
 {
@@ -31,8 +31,7 @@ public interface MemberStatusListener
 
     void onCommitPosition(long logPosition, long leadershipTermId, int leaderMemberId);
 
-    void onQueryResponse(
-        long correlationId, int requestMemberId, int responseMemberId, DirectBuffer data, int offset, int length);
-
     void onRecoveryPlanQuery(long correlationId, int leaderMemberId, int requestMemberId);
+
+    void onRecoveryPlan(RecoveryPlanDecoder recoveryPlanDecoder);
 }

@@ -17,10 +17,9 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -116,7 +115,6 @@ class Election implements MemberStatusListener, AutoCloseable
     private final MemberStatusPublisher memberStatusPublisher;
     private final ConsensusModule.Context ctx;
     private final RecordingLog.RecoveryPlan recoveryPlan;
-    private final UnsafeBuffer recoveryPlanBuffer;
     private final AeronArchive localArchive;
     private final SequencerAgent sequencerAgent;
     private final Random random;
@@ -130,7 +128,7 @@ class Election implements MemberStatusListener, AutoCloseable
     private ClusterMember leaderMember = null;
     private State state = State.INIT;
     private Counter stateCounter;
-    private LogCatchUp logCatchUp;
+    private LogCatchup logCatchup;
 
     Election(
         final boolean isStartup,
@@ -140,7 +138,6 @@ class Election implements MemberStatusListener, AutoCloseable
         final MemberStatusAdapter memberStatusAdapter,
         final MemberStatusPublisher memberStatusPublisher,
         final RecordingLog.RecoveryPlan recoveryPlan,
-        final UnsafeBuffer recoveryPlanBuffer,
         final ConsensusModule.Context ctx,
         final AeronArchive localArchive,
         final SequencerAgent sequencerAgent)
@@ -154,7 +151,6 @@ class Election implements MemberStatusListener, AutoCloseable
         this.memberStatusAdapter = memberStatusAdapter;
         this.memberStatusPublisher = memberStatusPublisher;
         this.recoveryPlan = recoveryPlan;
-        this.recoveryPlanBuffer = recoveryPlanBuffer;
         this.ctx = ctx;
         this.localArchive = localArchive;
         this.sequencerAgent = sequencerAgent;
@@ -164,7 +160,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(logCatchUp);
+        CloseHelper.close(logCatchup);
         CloseHelper.close(stateCounter);
     }
 
@@ -283,9 +279,9 @@ class Election implements MemberStatusListener, AutoCloseable
             leaderMember = clusterMembers[leaderMemberId];
             this.logSessionId = logSessionId;
 
-            if (this.logPosition < logPosition && null == logCatchUp)
+            if (this.logPosition < logPosition && null == logCatchup)
             {
-                logCatchUp = new LogCatchUp(
+                logCatchup = new LogCatchup(
                     localArchive,
                     memberStatusPublisher,
                     clusterMembers,
@@ -308,33 +304,24 @@ class Election implements MemberStatusListener, AutoCloseable
         }
     }
 
-    public void onQueryResponse(
-        final long correlationId,
-        final int requestMemberId,
-        final int responseMemberId,
-        final DirectBuffer data,
-        final int offset,
-        final int length)
-    {
-        if (null != logCatchUp)
-        {
-            logCatchUp.onLeaderRecoveryPlan(
-                correlationId, requestMemberId, responseMemberId, data, offset, length);
-        }
-    }
-
     public void onRecoveryPlanQuery(final long correlationId, final int leaderMemberId, final int requestMemberId)
     {
         if (leaderMemberId == thisMember.id())
         {
-            memberStatusPublisher.queryResponse(
+            memberStatusPublisher.recoveryPlan(
                 clusterMembers[requestMemberId].publication(),
                 correlationId,
                 requestMemberId,
-                thisMember.id(),
-                recoveryPlanBuffer,
-                0,
-                recoveryPlanBuffer.capacity());
+                leaderMemberId,
+                recoveryPlan);
+        }
+    }
+
+    public void onRecoveryPlan(final RecoveryPlanDecoder decoder)
+    {
+        if (null != logCatchup)
+        {
+            logCatchup.onLeaderRecoveryPlan(decoder);
         }
     }
 
@@ -355,8 +342,8 @@ class Election implements MemberStatusListener, AutoCloseable
 
     void closeCatchUp()
     {
-        CloseHelper.close(logCatchUp);
-        logCatchUp = null;
+        CloseHelper.close(logCatchup);
+        logCatchup = null;
     }
 
     State state()
@@ -561,15 +548,15 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         int workCount = 0;
 
-        if (!logCatchUp.isDone())
+        if (!logCatchup.isDone())
         {
             workCount += memberStatusAdapter.poll();
-            workCount += logCatchUp.doWork();
+            workCount += logCatchup.doWork();
         }
         else
         {
-            logPosition = logCatchUp.targetPosition();
-            sequencerAgent.catchupLog(logCatchUp);
+            logPosition = logCatchup.targetPosition();
+            sequencerAgent.catchupLog(logCatchup);
 
             state(State.FOLLOWER_TRANSITION, nowMs);
             workCount += 1;

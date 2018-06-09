@@ -312,8 +312,6 @@ public class RecordingLog
         public final long lastAppendedLogPosition;
         public final ArrayList<Snapshot> snapshots;
         public final ArrayList<Log> logs;
-        public final RecoveryPlanEncoder encoder = new RecoveryPlanEncoder();
-        public final RecoveryPlanDecoder decoder = new RecoveryPlanDecoder();
 
         public RecoveryPlan(
             final long lastLeadershipTermId,
@@ -329,10 +327,8 @@ public class RecordingLog
             this.logs = logs;
         }
 
-        public RecoveryPlan(final DirectBuffer buffer, final int offset)
+        public RecoveryPlan(final RecoveryPlanDecoder decoder)
         {
-            decoder.wrap(buffer, offset, RecoveryPlanDecoder.BLOCK_LENGTH, RecoveryPlanDecoder.SCHEMA_VERSION);
-
             this.lastLeadershipTermId = decoder.lastLeadershipTermId();
             this.lastTermBaseLogPosition = decoder.lastTermBaseLogPosition();
             this.lastAppendedLogPosition = decoder.lastAppendedLogPosition();
@@ -351,18 +347,9 @@ public class RecordingLog
             }
         }
 
-        public int encodedLength()
+        public int encode(final RecoveryPlanEncoder encoder)
         {
-            return RecoveryPlanEncoder.BLOCK_LENGTH +
-                RecoveryPlanEncoder.SnapshotsEncoder.sbeHeaderSize() +
-                RecoveryPlanEncoder.LogsEncoder.sbeHeaderSize() +
-                (snapshots.size() * RecoveryPlanEncoder.SnapshotsEncoder.sbeBlockLength()) +
-                (logs.size() * RecoveryPlanEncoder.LogsEncoder.sbeBlockLength());
-        }
-
-        public int encode(final MutableDirectBuffer buffer, final int offset)
-        {
-            encoder.wrap(buffer, offset)
+            encoder
                 .lastLeadershipTermId(lastLeadershipTermId)
                 .lastTermBaseLogPosition(lastTermBaseLogPosition)
                 .lastAppendedLogPosition(lastAppendedLogPosition);

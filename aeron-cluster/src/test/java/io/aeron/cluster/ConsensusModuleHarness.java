@@ -23,6 +23,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.codecs.CloseReason;
+import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
@@ -645,20 +646,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 nextListener.onCommitPosition(logPosition, leadershipTermId, leaderMemberId);
             }
 
-            public void onQueryResponse(
-                final long correlationId,
-                final int requestMemberId,
-                final int responseMemberId,
-                final DirectBuffer data,
-                final int offset,
-                final int length)
-            {
-                counters.onQueryResponseCounter++;
-                stream.format("onQueryResponse[%d] %d %d %d%n",
-                    index, correlationId, requestMemberId, responseMemberId);
-                nextListener.onQueryResponse(correlationId, requestMemberId, responseMemberId, data, offset, length);
-            }
-
             public void onRecoveryPlanQuery(
                 final long correlationId, final int leaderMemberId, final int requestMemberId)
             {
@@ -666,6 +653,14 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 stream.format("onRecoveryPlanQuery[%d] %d %d %d%n",
                     index, correlationId, leaderMemberId, requestMemberId);
                 nextListener.onRecoveryPlanQuery(correlationId, leaderMemberId, requestMemberId);
+            }
+
+            public void onRecoveryPlan(final RecoveryPlanDecoder decoder)
+            {
+                counters.onQueryResponseCounter++;
+                stream.format("onRecoveryPlan[%d] %d %d %d%n",
+                    index, decoder.correlationId(), decoder.requestMemberId(), decoder.leaderMemberId());
+                nextListener.onRecoveryPlan(decoder);
             }
         };
     }

@@ -542,7 +542,6 @@ public class ElectionTest
             memberStatusAdapter,
             memberStatusPublisher,
             recoveryPlan,
-            null,
             ctx,
             null,
             sequencerAgent);

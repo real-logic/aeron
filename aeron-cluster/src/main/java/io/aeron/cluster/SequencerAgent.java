@@ -104,7 +104,6 @@ class SequencerAgent implements Agent, MemberStatusListener
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private RecordingLog.RecoveryPlan recoveryPlan;
-    private UnsafeBuffer recoveryPlanBuffer;
     private Election election;
 
     SequencerAgent(final ConsensusModule.Context ctx)
@@ -194,8 +193,6 @@ class SequencerAgent implements Agent, MemberStatusListener
     {
         archive = AeronArchive.connect(ctx.archiveContext().clone());
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
-        recoveryPlanBuffer = new UnsafeBuffer(new byte[recoveryPlan.encodedLength()]);
-        recoveryPlan.encode(recoveryPlanBuffer, 0);
 
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
@@ -232,7 +229,6 @@ class SequencerAgent implements Agent, MemberStatusListener
             memberStatusAdapter,
             memberStatusPublisher,
             recoveryPlan,
-            recoveryPlanBuffer,
             ctx,
             archive,
             this);
@@ -510,20 +506,6 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    public void onQueryResponse(
-        final long correlationId,
-        final int requestMemberId,
-        final int responseMemberId,
-        final DirectBuffer data,
-        final int offset,
-        final int length)
-    {
-        if (null != election)
-        {
-            election.onQueryResponse(correlationId, requestMemberId, responseMemberId, data, offset, length);
-        }
-    }
-
     public void onRecoveryPlanQuery(final long correlationId, final int leaderMemberId, final int requestMemberId)
     {
         if (null != election)
@@ -534,15 +516,21 @@ class SequencerAgent implements Agent, MemberStatusListener
         {
             if (leaderMemberId == memberId)
             {
-                memberStatusPublisher.queryResponse(
+                memberStatusPublisher.recoveryPlan(
                     clusterMembers[requestMemberId].publication(),
                     correlationId,
                     requestMemberId,
                     memberId,
-                    recoveryPlanBuffer,
-                    0,
-                    recoveryPlanBuffer.capacity());
+                    recoveryPlan);
             }
+        }
+    }
+
+    public void onRecoveryPlan(final RecoveryPlanDecoder recoveryPlanDecoder)
+    {
+        if (null != election)
+        {
+            election.onRecoveryPlan(recoveryPlanDecoder);
         }
     }
 
@@ -758,10 +746,10 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    void catchupLog(final LogCatchUp logCatchUp)
+    void catchupLog(final LogCatchup logCatchup)
     {
-        final long fromPosition = logCatchUp.fromPosition();
-        final long targetPosition = logCatchUp.targetPosition();
+        final long fromPosition = logCatchup.fromPosition();
+        final long targetPosition = logCatchup.targetPosition();
         final long length = targetPosition - fromPosition;
 
         final RecordingLog.Log log = recoveryPlan.logs.get(0);
@@ -784,7 +772,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                 awaitServiceAcks();
 
                 final int replaySessionId = (int)archive.startReplay(
-                    logCatchUp.localRecordingId(), fromPosition, length, channel, streamId);
+                    logCatchup.localRecordingId(), fromPosition, length, channel, streamId);
 
                 replayLog(awaitImage(replaySessionId, subscription), targetPosition, counter);
 

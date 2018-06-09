@@ -34,8 +34,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final NewLeadershipTermDecoder newLeadershipTermDecoder = new NewLeadershipTermDecoder();
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
     private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
-    private final QueryResponseDecoder queryResponseDecoder = new QueryResponseDecoder();
     private final RecoveryPlanQueryDecoder recoveryPlanQueryDecoder = new RecoveryPlanQueryDecoder();
+    private final RecoveryPlanDecoder recoveryPlanDecoder = new RecoveryPlanDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -145,27 +145,6 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     commitPositionDecoder.leaderMemberId());
                 break;
 
-            case QueryResponseDecoder.TEMPLATE_ID:
-                queryResponseDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                final int dataOffset = offset +
-                    MessageHeaderDecoder.ENCODED_LENGTH +
-                    QueryResponseDecoder.BLOCK_LENGTH +
-                    QueryResponseDecoder.encodedResponseHeaderLength();
-
-                memberStatusListener.onQueryResponse(
-                    queryResponseDecoder.correlationId(),
-                    queryResponseDecoder.requestMemberId(),
-                    queryResponseDecoder.responseMemberId(),
-                    buffer,
-                    dataOffset,
-                    queryResponseDecoder.encodedResponseLength());
-                break;
-
             case RecoveryPlanQueryDecoder.TEMPLATE_ID:
                 recoveryPlanQueryDecoder.wrap(
                     buffer,
@@ -177,6 +156,16 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     recoveryPlanQueryDecoder.correlationId(),
                     recoveryPlanQueryDecoder.leaderMemberId(),
                     recoveryPlanQueryDecoder.requestMemberId());
+                break;
+
+            case RecoveryPlanDecoder.TEMPLATE_ID:
+                recoveryPlanDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onRecoveryPlan(recoveryPlanDecoder);
                 break;
 
             default:

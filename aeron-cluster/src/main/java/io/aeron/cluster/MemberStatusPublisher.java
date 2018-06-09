@@ -18,12 +18,13 @@ package io.aeron.cluster;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
-import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 
 class MemberStatusPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
 
+    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final CanvassPositionEncoder canvassPositionEncoder = new CanvassPositionEncoder();
@@ -32,8 +33,8 @@ class MemberStatusPublisher
     private final NewLeadershipTermEncoder newLeadershipTermEncoder = new NewLeadershipTermEncoder();
     private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
-    private final QueryResponseEncoder queryResponseEncoder = new QueryResponseEncoder();
     private final RecoveryPlanQueryEncoder recoveryPlanQueryEncoder = new RecoveryPlanQueryEncoder();
+    private final RecoveryPlanEncoder recoveryPlanEncoder = new RecoveryPlanEncoder();
 
     public boolean canvassPosition(
         final Publication publication, final long logPosition, final long leadershipTermId, final int followerMemberId)
@@ -219,45 +220,6 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean queryResponse(
-        final Publication publication,
-        final long correlationId,
-        final int requestMemberId,
-        final int responseMemberId,
-        final DirectBuffer dataBuffer,
-        final int dataOffset,
-        final int dataLength)
-    {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
-            QueryResponseEncoder.BLOCK_LENGTH +
-            QueryResponseEncoder.encodedResponseHeaderLength() +
-            dataLength;
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                queryResponseEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .requestMemberId(requestMemberId)
-                    .responseMemberId(responseMemberId)
-                    .putEncodedResponse(dataBuffer, dataOffset, dataLength);
-
-                bufferClaim.commit();
-
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
-    }
-
     public boolean recoveryPlanQuery(
         final Publication publication, final long correlationId, final int leaderMemberId, final int memberId)
     {
@@ -277,6 +239,36 @@ class MemberStatusPublisher
 
                 bufferClaim.commit();
 
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean recoveryPlan(
+        final Publication publication,
+        final long correlationId,
+        final int requestMemberId,
+        final int leaderMemberId,
+        final RecordingLog.RecoveryPlan recoveryPlan)
+    {
+        recoveryPlanEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .requestMemberId(requestMemberId)
+            .leaderMemberId(leaderMemberId);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + recoveryPlan.encode(recoveryPlanEncoder);
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.offer(buffer, 0, length);
+            if (result > 0)
+            {
                 return true;
             }
 

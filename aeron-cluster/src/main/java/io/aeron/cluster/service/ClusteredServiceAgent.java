@@ -48,11 +48,11 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final ServiceAdapter serviceAdapter;
     private final IdleStrategy idleStrategy;
     private final EpochClock epochClock;
-    private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private final ClusterMarkFile markFile;
 
     private long ackId = 0;
     private long timestampMs;
+    private long cachedTimeMs;
     private BoundedLogAdapter logAdapter;
     private ActiveLogEvent activeLogEvent;
     private AtomicCounter heartbeatCounter;
@@ -112,9 +112,9 @@ class ClusteredServiceAgent implements Agent, Cluster
         int workCount = 0;
 
         final long nowMs = epochClock.time();
-        if (cachedEpochClock.time() != nowMs)
+        if (cachedTimeMs != nowMs)
         {
-            cachedEpochClock.update(nowMs);
+            cachedTimeMs = nowMs;
             markFile.updateActivityTimestamp(nowMs);
             heartbeatCounter.setOrdered(nowMs);
             workCount += serviceAdapter.poll();

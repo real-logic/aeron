@@ -289,6 +289,32 @@ public class ClusterNodeRestartTest
         assertThat(serviceState.get(), is("4"));
     }
 
+    @Test(timeout = 10_000)
+    public void shouldTakeMultipleSnapshots() throws Exception
+    {
+        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+        launchService(serviceMsgCounter);
+        connectClient();
+
+        final CountersReader counters = aeronCluster.context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+        assertNotNull(controlToggle);
+
+        for (int i = 0; i < 3; i++)
+        {
+            assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+            while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.sleep(1);
+            }
+        }
+
+        assertThat(snapshotCount.get(), is(3L));
+    }
+
     private void sendCountedMessageIntoCluster(final int value)
     {
         final long msgCorrelationId = aeronCluster.context().aeron().nextCorrelationId();

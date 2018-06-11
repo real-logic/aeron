@@ -557,6 +557,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                     {
                         session.timeOfLastActivityMs(cachedTimeMs);
                     }
+                    ++serviceAckId;
                     break;
 
                 case SHUTDOWN:

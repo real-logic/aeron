@@ -19,6 +19,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanEncoder;
 import org.agrona.*;
+import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -461,6 +462,7 @@ public class RecordingLog
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
     private final ArrayList<Entry> entries = new ArrayList<>();
+    private final Long2LongHashMap indexByLeadershipTermIdMap = new Long2LongHashMap(NULL_VALUE);
 
     /**
      * Create a log that appends to an existing log or creates a new one.
@@ -540,6 +542,40 @@ public class RecordingLog
         catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    /**
+     * Find entries in a {@link RecordingLog} from a leadershipTermId inclusive. The results are limited to a count
+     * and can optionally include snapshots or not.
+     *
+     * @param fromLeadershipTermId include value from which the query begins.
+     * @param entryCount           to limit the results.
+     * @param includeSnapshots     to be included in the results.
+     * @param results              into which the found entries will be placed.
+     */
+    public void findEntries(
+        final long fromLeadershipTermId,
+        final int entryCount,
+        final boolean includeSnapshots,
+        final List<Entry> results)
+    {
+        int index = (int)indexByLeadershipTermIdMap.get(fromLeadershipTermId);
+        if (NULL_VALUE == index)
+        {
+            return;
+        }
+
+        for (int size = entries.size(), count = 0; index < size && count < entryCount; index++)
+        {
+            final Entry entry = entries.get(index);
+            if (ENTRY_TYPE_SNAPSHOT == entry.type && !includeSnapshots)
+            {
+                continue;
+            }
+
+            results.add(entry);
+            count++;
         }
     }
 
@@ -628,6 +664,8 @@ public class RecordingLog
                     entry.leadershipTermId + " this " + leadershipTermId);
             }
         }
+
+        indexByLeadershipTermIdMap.put(leadershipTermId, nextEntryIndex);
 
         append(
             ENTRY_TYPE_TERM,
@@ -848,7 +886,7 @@ public class RecordingLog
 
             if (NULL_VALUE != entryType)
             {
-                entries.add(new Entry(
+                final Entry entry = new Entry(
                     buffer.getLong(i + RECORDING_ID_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(i + LEADERSHIP_TERM_ID_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(i + TERM_BASE_LOG_POSITION_OFFSET, LITTLE_ENDIAN),
@@ -856,7 +894,14 @@ public class RecordingLog
                     buffer.getLong(i + TIMESTAMP_OFFSET, LITTLE_ENDIAN),
                     buffer.getInt(i + SERVICE_ID_OFFSET, LITTLE_ENDIAN),
                     entryType,
-                    nextEntryIndex));
+                    nextEntryIndex);
+
+                entries.add(entry);
+
+                if (ENTRY_TYPE_TERM == entryType)
+                {
+                    indexByLeadershipTermIdMap.put(entry.leadershipTermId, nextEntryIndex);
+                }
             }
 
             ++nextEntryIndex;

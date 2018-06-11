@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.codecs.RecordingLogDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
@@ -306,15 +307,6 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public void onRecoveryPlanQuery(final long correlationId, final int leaderMemberId, final int requestMemberId)
     {
-        if (leaderMemberId == thisMember.id())
-        {
-            memberStatusPublisher.recoveryPlan(
-                clusterMembers[requestMemberId].publication(),
-                correlationId,
-                requestMemberId,
-                leaderMemberId,
-                recoveryPlan);
-        }
     }
 
     public void onRecoveryPlan(final RecoveryPlanDecoder decoder)
@@ -322,6 +314,24 @@ class Election implements MemberStatusListener, AutoCloseable
         if (null != logCatchup)
         {
             logCatchup.onLeaderRecoveryPlan(decoder);
+        }
+    }
+
+    public void onRecordingLogQuery(
+        final long correlationId,
+        final int leaderMemberId,
+        final int requestMemberId,
+        final long fromLeadershipTermId,
+        final int count,
+        final boolean includeSnapshots)
+    {
+    }
+
+    public void onRecordingLog(final RecordingLogDecoder decoder)
+    {
+        if (null != logCatchup)
+        {
+            logCatchup.onLeaderRecordingLog(decoder);
         }
     }
 

@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.codecs.RecordingLogDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 
 public interface MemberStatusListener
@@ -34,4 +35,14 @@ public interface MemberStatusListener
     void onRecoveryPlanQuery(long correlationId, int leaderMemberId, int requestMemberId);
 
     void onRecoveryPlan(RecoveryPlanDecoder recoveryPlanDecoder);
+
+    void onRecordingLogQuery(
+        long correlationId,
+        int leaderMemberId,
+        int requestMemberId,
+        long fromLeadershipTermId,
+        int count,
+        boolean includeSnapshots);
+
+    void onRecordingLog(RecordingLogDecoder recordingLogDecoder);
 }

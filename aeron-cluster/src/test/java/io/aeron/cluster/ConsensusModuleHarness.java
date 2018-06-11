@@ -23,6 +23,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.codecs.CloseReason;
+import io.aeron.cluster.codecs.RecordingLogDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
@@ -289,7 +290,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
     IntSupplier onCanvassPosition(final int index)
     {
-        return () -> memberStatusCounters[index].onCanvassPosition;
+        return () -> memberStatusCounters[index].onCanvassPositionCounter;
     }
 
     int pollMemberStatusAdapter(final int index)
@@ -598,8 +599,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             public void onCanvassPosition(
                 final long logPosition, final long leadershipTermId, final int followerMemberId)
             {
-                counters.onCanvassPosition++;
-                stream.format("onCanvassPosition[%d] %d %d %d%n",
+                counters.onCanvassPositionCounter++;
+                stream.format("onCanvassPositionCounter[%d] %d %d %d%n",
                     index, logPosition, leadershipTermId, followerMemberId);
                 nextListener.onCanvassPosition(logPosition, leadershipTermId, followerMemberId);
             }
@@ -649,18 +650,41 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             public void onRecoveryPlanQuery(
                 final long correlationId, final int leaderMemberId, final int requestMemberId)
             {
-                counters.onRecoveryPlanQuery++;
-                stream.format("onRecoveryPlanQuery[%d] %d %d %d%n",
+                counters.onRecoveryPlanQueryCounter++;
+                stream.format("onRecoveryPlanQueryCounter[%d] %d %d %d%n",
                     index, correlationId, leaderMemberId, requestMemberId);
                 nextListener.onRecoveryPlanQuery(correlationId, leaderMemberId, requestMemberId);
             }
 
             public void onRecoveryPlan(final RecoveryPlanDecoder decoder)
             {
-                counters.onQueryResponseCounter++;
+                counters.onRecoveryPlanCounter++;
                 stream.format("onRecoveryPlan[%d] %d %d %d%n",
                     index, decoder.correlationId(), decoder.requestMemberId(), decoder.leaderMemberId());
                 nextListener.onRecoveryPlan(decoder);
+            }
+
+            public void onRecordingLogQuery(
+                final long correlationId,
+                final int leaderMemberId,
+                final int requestMemberId,
+                final long fromLeadershipTermId,
+                final int count,
+                final boolean includeSnapshots)
+            {
+                counters.onRecordingLogQueryCounter++;
+                stream.format("onRecordingLogQuery[%d] %d %d %d%n",
+                    index, correlationId, requestMemberId, leaderMemberId);
+                nextListener.onRecordingLogQuery(
+                    correlationId, leaderMemberId, requestMemberId, fromLeadershipTermId, count, includeSnapshots);
+            }
+
+            public void onRecordingLog(final RecordingLogDecoder decoder)
+            {
+                counters.onRecordingLogCounter++;
+                stream.format("onRecordingLog[%d] %d %d %d%n",
+                    index, decoder.correlationId(), decoder.requestMemberId(), decoder.leaderMemberId());
+                nextListener.onRecordingLog(decoder);
             }
         };
     }
@@ -693,14 +717,16 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
     public static class MemberStatusCounters
     {
-        int onCanvassPosition = 0;
+        int onCanvassPositionCounter = 0;
         int onRequestVoteCounter = 0;
         int onVoteCounter = 0;
         int onNewLeadershipTermCounter = 0;
         int onAppendedPositionCounter = 0;
         int onCommitPositionCounter = 0;
-        int onQueryResponseCounter = 0;
-        int onRecoveryPlanQuery = 0;
+        int onRecoveryPlanQueryCounter = 0;
+        int onRecoveryPlanCounter = 0;
+        int onRecordingLogQueryCounter = 0;
+        int onRecordingLogCounter = 0;
     }
 
     private static void checkOfferResult(final long result)

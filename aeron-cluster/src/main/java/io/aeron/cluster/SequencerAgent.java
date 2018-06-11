@@ -440,21 +440,14 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     public void onRecoveryPlanQuery(final long correlationId, final int leaderMemberId, final int requestMemberId)
     {
-        if (null != election)
+        if (leaderMemberId == memberId)
         {
-            election.onRecoveryPlanQuery(correlationId, leaderMemberId, requestMemberId);
-        }
-        else
-        {
-            if (leaderMemberId == memberId)
-            {
-                memberStatusPublisher.recoveryPlan(
-                    clusterMembers[requestMemberId].publication(),
-                    correlationId,
-                    requestMemberId,
-                    memberId,
-                    recoveryPlan);
-            }
+            memberStatusPublisher.recoveryPlan(
+                clusterMembers[requestMemberId].publication(),
+                correlationId,
+                requestMemberId,
+                memberId,
+                recoveryPlan);
         }
     }
 
@@ -463,6 +456,36 @@ class SequencerAgent implements Agent, MemberStatusListener
         if (null != election)
         {
             election.onRecoveryPlan(recoveryPlanDecoder);
+        }
+    }
+
+    public void onRecordingLogQuery(
+        final long correlationId,
+        final int leaderMemberId,
+        final int requestMemberId,
+        final long fromLeadershipTermId,
+        final int count,
+        final boolean includeSnapshots)
+    {
+        if (leaderMemberId == thisMember.id())
+        {
+            memberStatusPublisher.recordingLog(
+                clusterMembers[requestMemberId].publication(),
+                correlationId,
+                requestMemberId,
+                leaderMemberId,
+                recordingLog,
+                fromLeadershipTermId,
+                count,
+                includeSnapshots);
+        }
+    }
+
+    public void onRecordingLog(final RecordingLogDecoder recordingLogDecoder)
+    {
+        if (null != election)
+        {
+            election.onRecordingLog(recordingLogDecoder);
         }
     }
 

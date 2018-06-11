@@ -22,6 +22,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.cluster.codecs.RecordingLogDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.CountersReader;
@@ -183,6 +184,10 @@ class LogCatchup implements AutoCloseable
 
             replayChannel = extendChannel;
         }
+    }
+
+    public void onLeaderRecordingLog(final RecordingLogDecoder decoder)
+    {
     }
 
     private int init()

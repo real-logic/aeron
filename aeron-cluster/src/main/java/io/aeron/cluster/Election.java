@@ -235,27 +235,28 @@ class Election implements MemberStatusListener, AutoCloseable
 
     public void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
     {
-        if (logPosition < this.logPosition || candidateTermId <= leadershipTermId)
+        if (candidateTermId <= leadershipTermId)
         {
-            memberStatusPublisher.placeVote(
-                clusterMembers[candidateId].publication(),
-                candidateTermId,
-                candidateId,
-                thisMember.id(),
-                false);
+            placeVote(candidateTermId, candidateId, false);
         }
+        else if (candidateTermId == leadershipTermId + 1 && logPosition < this.logPosition)
+        {
+            placeVote(candidateTermId, candidateId, false);
 
-        leadershipTermId = candidateTermId;
-        final long nowMs = ctx.epochClock().time();
-        ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs);
-        state(State.FOLLOWER_BALLOT, nowMs);
+            leadershipTermId = candidateTermId;
+            final long nowMs = ctx.epochClock().time();
+            ctx.recordingLog().appendTerm(candidateTermId, this.logPosition, nowMs);
+            state(State.CANVASS, nowMs);
+        }
+        else
+        {
+            leadershipTermId = candidateTermId;
+            final long nowMs = ctx.epochClock().time();
+            ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs);
+            state(State.FOLLOWER_BALLOT, nowMs);
 
-        memberStatusPublisher.placeVote(
-            clusterMembers[candidateId].publication(),
-            candidateTermId,
-            candidateId,
-            thisMember.id(),
-            true);
+            placeVote(candidateTermId, candidateId, true);
+        }
     }
 
     public void onVote(
@@ -301,7 +302,7 @@ class Election implements MemberStatusListener, AutoCloseable
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
-            catchupToLeader(logPosition, leadershipTermId, leaderMemberId);
+            // TODO: query leader recovery log and catch up
         }
     }
 
@@ -346,7 +347,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         if (leadershipTermId > this.leadershipTermId)
         {
-            catchupToLeader(logPosition, leadershipTermId, leaderMemberId);
+            // TODO: query leader recovery log and catch up
         }
     }
 
@@ -625,6 +626,16 @@ class Election implements MemberStatusListener, AutoCloseable
         }
     }
 
+    private void placeVote(final long candidateTermId, final int candidateId, final boolean vote)
+    {
+        memberStatusPublisher.placeVote(
+            clusterMembers[candidateId].publication(),
+            candidateTermId,
+            candidateId,
+            thisMember.id(),
+            vote);
+    }
+
     private static ChannelUri followerLogChannel(final String logChannel, final String logEndpoint, final int sessionId)
     {
         final ChannelUri channelUri = ChannelUri.parse(logChannel);
@@ -632,10 +643,5 @@ class Election implements MemberStatusListener, AutoCloseable
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
 
         return channelUri;
-    }
-
-    private void catchupToLeader(final long logPosition, final long leadershipTermId, final int leaderMemberId)
-    {
-        // TODO: Need to implement catchup logic
     }
 }

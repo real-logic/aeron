@@ -43,7 +43,7 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
         CloseHelper.close(subscription);
     }
 
-    public int poll()
+    int poll()
     {
         return subscription.poll(this, 1);
     }

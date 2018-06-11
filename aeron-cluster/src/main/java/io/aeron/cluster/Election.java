@@ -164,7 +164,7 @@ class Election implements AutoCloseable
         CloseHelper.close(stateCounter);
     }
 
-    public int doWork(final long nowMs)
+    int doWork(final long nowMs)
     {
         int workCount = State.INIT == state ? init(nowMs) : 0;
         workCount += memberStatusAdapter.poll();
@@ -211,7 +211,7 @@ class Election implements AutoCloseable
         return workCount;
     }
 
-    public void onCanvassPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
+    void onCanvassPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
     {
         clusterMembers[followerMemberId]
             .logPosition(logPosition)
@@ -232,7 +232,7 @@ class Election implements AutoCloseable
         }
     }
 
-    public void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
+    void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
     {
         if (candidateTermId <= leadershipTermId)
         {
@@ -258,8 +258,7 @@ class Election implements AutoCloseable
         }
     }
 
-    public void onVote(
-        final long candidateTermId, final int candidateMemberId, final int followerMemberId, final boolean vote)
+    void onVote(final long candidateTermId, final int candidateMemberId, final int followerMemberId, final boolean vote)
     {
         if (Cluster.Role.CANDIDATE == sequencerAgent.role() &&
             candidateTermId == leadershipTermId &&
@@ -271,7 +270,7 @@ class Election implements AutoCloseable
         }
     }
 
-    public void onNewLeadershipTerm(
+    void onNewLeadershipTerm(
         final long logPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
     {
         if ((State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state) &&
@@ -307,7 +306,7 @@ class Election implements AutoCloseable
         }
     }
 
-    public void onRecordingLog(final RecordingLogDecoder decoder)
+    void onRecordingLog(final RecordingLogDecoder decoder)
     {
         if (null != logCatchup)
         {
@@ -315,14 +314,14 @@ class Election implements AutoCloseable
         }
     }
 
-    public void onAppendedPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
+    void onAppendedPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
     {
         clusterMembers[followerMemberId]
             .logPosition(logPosition)
             .leadershipTermId(leadershipTermId);
     }
 
-    public void onCommitPosition(final long logPosition, final long leadershipTermId, final int leaderMemberId)
+    void onCommitPosition(final long logPosition, final long leadershipTermId, final int leaderMemberId)
     {
         if (leadershipTermId > this.leadershipTermId)
         {

@@ -42,7 +42,7 @@ class MemberStatusPublisher
     private final RecordingLogQueryEncoder recordingLogQueryEncoder = new RecordingLogQueryEncoder();
     private final RecordingLogEncoder recordingLogEncoder = new RecordingLogEncoder();
 
-    public boolean canvassPosition(
+    boolean canvassPosition(
         final Publication publication, final long logPosition, final long leadershipTermId, final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CanvassPositionEncoder.BLOCK_LENGTH;
@@ -71,7 +71,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean requestVote(
+    boolean requestVote(
         final Publication publication, final long logPosition, final long candidateTermId, final int candidateMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + RequestVoteEncoder.BLOCK_LENGTH;
@@ -100,7 +100,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean placeVote(
+    boolean placeVote(
         final Publication publication,
         final long candidateTermId,
         final int candidateMemberId,
@@ -134,7 +134,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean newLeadershipTerm(
+    boolean newLeadershipTerm(
         final Publication publication,
         final long logPosition,
         final long leadershipTermId,
@@ -168,7 +168,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean appendedPosition(
+    boolean appendedPosition(
         final Publication publication, final long logPosition, final long leadershipTermId, final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
@@ -197,7 +197,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean commitPosition(
+    boolean commitPosition(
         final Publication publication, final long logPosition, final long leadershipTermId, final int leaderMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CommitPositionEncoder.BLOCK_LENGTH;
@@ -226,7 +226,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean recoveryPlanQuery(
+    boolean recoveryPlanQuery(
         final Publication publication, final long correlationId, final int leaderMemberId, final int memberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecoveryPlanQueryEncoder.BLOCK_LENGTH;
@@ -255,7 +255,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean recoveryPlan(
+    boolean recoveryPlan(
         final Publication publication,
         final long correlationId,
         final int requestMemberId,
@@ -285,7 +285,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean recordingLogQuery(
+    boolean recordingLogQuery(
         final Publication publication,
         final long correlationId,
         final int leaderMemberId,
@@ -323,7 +323,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    public boolean recordingLog(
+    boolean recordingLog(
         final Publication publication,
         final long correlationId,
         final int requestMemberId,

@@ -155,8 +155,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onRecoveryPlanQuery(
                     recoveryPlanQueryDecoder.correlationId(),
-                    recoveryPlanQueryDecoder.leaderMemberId(),
-                    recoveryPlanQueryDecoder.requestMemberId());
+                    recoveryPlanQueryDecoder.requestMemberId(), recoveryPlanQueryDecoder.leaderMemberId()
+                );
                 break;
 
             case RecoveryPlanDecoder.TEMPLATE_ID:
@@ -178,8 +178,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onRecordingLogQuery(
                     recordingLogQueryDecoder.correlationId(),
-                    recordingLogQueryDecoder.leaderMemberId(),
-                    recordingLogQueryDecoder.requestMemberId(),
+                    recordingLogQueryDecoder.requestMemberId(), recordingLogQueryDecoder.leaderMemberId(),
                     recordingLogQueryDecoder.fromLeadershipTermId(),
                     recordingLogQueryDecoder.count(),
                     recordingLogQueryDecoder.includeSnapshots() == BooleanType.TRUE);

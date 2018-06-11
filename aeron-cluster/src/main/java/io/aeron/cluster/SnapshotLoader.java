@@ -43,12 +43,12 @@ class SnapshotLoader implements ControlledFragmentHandler
         this.sequencerAgent = agent;
     }
 
-    public boolean isDone()
+    boolean isDone()
     {
         return isDone;
     }
 
-    public int poll()
+    int poll()
     {
         return image.controlledPoll(this, FRAGMENT_LIMIT);
     }

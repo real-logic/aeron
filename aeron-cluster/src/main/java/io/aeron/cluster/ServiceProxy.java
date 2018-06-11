@@ -39,7 +39,7 @@ final class ServiceProxy implements AutoCloseable
         CloseHelper.close(publication);
     }
 
-    public void joinLog(
+    void joinLog(
         final long leadershipTermId,
         final int commitPositionId,
         final int logSessionId,

@@ -35,7 +35,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         this.sequencerAgent = sequencerAgent;
     }
 
-    public int poll(final long nowMs)
+    int poll(final long nowMs)
     {
         return timerWheel.poll(nowMs, this, TIMER_POLL_LIMIT);
     }
@@ -48,7 +48,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         return sequencerAgent.onTimerEvent(correlationId, now);
     }
 
-    public void scheduleTimer(final long correlationId, final long deadlineMs)
+    void scheduleTimer(final long correlationId, final long deadlineMs)
     {
         cancelTimer(correlationId);
 
@@ -57,7 +57,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         correlationIdByTimerIdMap.put(timerId, correlationId);
     }
 
-    public boolean cancelTimer(final long correlationId)
+    boolean cancelTimer(final long correlationId)
     {
         final long timerId = timerIdByCorrelationIdMap.remove(correlationId);
         if (Long.MAX_VALUE != timerId)
@@ -71,7 +71,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         return false;
     }
 
-    public void snapshot(final ConsensusModuleSnapshotTaker snapshotTaker)
+    void snapshot(final ConsensusModuleSnapshotTaker snapshotTaker)
     {
         final Long2LongHashMap.EntryIterator iter =
             (Long2LongHashMap.EntryIterator)timerIdByCorrelationIdMap.entrySet().iterator();

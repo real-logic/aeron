@@ -32,7 +32,7 @@ class EgressPublisher
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
     private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
 
-    public boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
+    boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
     {
         final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
@@ -63,7 +63,7 @@ class EgressPublisher
         return false;
     }
 
-    public boolean sendChallenge(final ClusterSession session, final byte[] encodedChallenge)
+    boolean sendChallenge(final ClusterSession session, final byte[] encodedChallenge)
     {
         final Publication publication = session.responsePublication();
         if (!publication.isConnected())

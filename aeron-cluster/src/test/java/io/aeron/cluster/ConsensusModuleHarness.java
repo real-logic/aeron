@@ -648,12 +648,12 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             }
 
             public void onRecoveryPlanQuery(
-                final long correlationId, final int leaderMemberId, final int requestMemberId)
+                final long correlationId, final int requestMemberId, final int leaderMemberId)
             {
                 counters.onRecoveryPlanQueryCounter++;
                 stream.format("onRecoveryPlanQueryCounter[%d] %d %d %d%n",
                     index, correlationId, leaderMemberId, requestMemberId);
-                nextListener.onRecoveryPlanQuery(correlationId, leaderMemberId, requestMemberId);
+                nextListener.onRecoveryPlanQuery(correlationId, requestMemberId, leaderMemberId);
             }
 
             public void onRecoveryPlan(final RecoveryPlanDecoder decoder)
@@ -666,8 +666,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
             public void onRecordingLogQuery(
                 final long correlationId,
-                final int leaderMemberId,
-                final int requestMemberId,
+                final int requestMemberId, final int leaderMemberId,
                 final long fromLeadershipTermId,
                 final int count,
                 final boolean includeSnapshots)
@@ -676,7 +675,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 stream.format("onRecordingLogQuery[%d] %d %d %d%n",
                     index, correlationId, requestMemberId, leaderMemberId);
                 nextListener.onRecordingLogQuery(
-                    correlationId, leaderMemberId, requestMemberId, fromLeadershipTermId, count, includeSnapshots);
+                    correlationId, requestMemberId, leaderMemberId, fromLeadershipTermId, count, includeSnapshots);
             }
 
             public void onRecordingLog(final RecordingLogDecoder decoder)

@@ -35,12 +35,12 @@ class LogPublisher
     private final BufferClaim bufferClaim = new BufferClaim();
     private Publication publication;
 
-    public void connect(final Publication publication)
+    void connect(final Publication publication)
     {
         this.publication = publication;
     }
 
-    public void disconnect()
+    void disconnect()
     {
         if (null != publication)
         {
@@ -49,7 +49,7 @@ class LogPublisher
         }
     }
 
-    public long position()
+    long position()
     {
         if (null == publication)
         {
@@ -59,7 +59,7 @@ class LogPublisher
         return publication.position();
     }
 
-    public boolean appendMessage(final DirectBuffer buffer, final int offset, final int length, final long nowMs)
+    boolean appendMessage(final DirectBuffer buffer, final int offset, final int length, final long nowMs)
     {
         final int timestampOffset =
             offset + MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.timestampEncodingOffset();
@@ -82,7 +82,7 @@ class LogPublisher
         return false;
     }
 
-    public long appendSessionOpen(final ClusterSession session, final long nowMs)
+    long appendSessionOpen(final ClusterSession session, final long nowMs)
     {
         long result;
         final byte[] encodedPrincipal = session.encodedPrincipal();
@@ -115,7 +115,7 @@ class LogPublisher
         return result;
     }
 
-    public boolean appendSessionClose(final ClusterSession session, final long nowMs)
+    boolean appendSessionClose(final ClusterSession session, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseEventEncoder.BLOCK_LENGTH;
 
@@ -143,7 +143,7 @@ class LogPublisher
         return false;
     }
 
-    public boolean appendTimer(final long correlationId, final long nowMs)
+    boolean appendTimer(final long correlationId, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TimerEventEncoder.BLOCK_LENGTH;
 
@@ -170,7 +170,7 @@ class LogPublisher
         return false;
     }
 
-    public boolean appendClusterAction(
+    boolean appendClusterAction(
         final long logPosition, final long leadershipTermId, final long nowMs, final ClusterAction action)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionRequestEncoder.BLOCK_LENGTH;

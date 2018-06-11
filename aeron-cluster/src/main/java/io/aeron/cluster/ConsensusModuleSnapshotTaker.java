@@ -36,7 +36,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
         super(publication, idleStrategy, aeronClientInvoker);
     }
 
-    public void snapshotSession(final ClusterSession session)
+    void snapshotSession(final ClusterSession session)
     {
         final String responseChannel = session.responseChannel();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterSessionEncoder.BLOCK_LENGTH +
@@ -66,7 +66,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
         }
     }
 
-    public void snapshotTimer(final long correlationId, final long deadline)
+    void snapshotTimer(final long correlationId, final long deadline)
     {
         idleStrategy.reset();
         while (true)
@@ -87,7 +87,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
         }
     }
 
-    public void sequencerState(final long nextSessionId)
+    void sequencerState(final long nextSessionId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SequencerEncoder.BLOCK_LENGTH;
 

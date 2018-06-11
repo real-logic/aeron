@@ -18,7 +18,7 @@ package io.aeron.cluster;
 import io.aeron.cluster.codecs.RecordingLogDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 
-public interface MemberStatusListener
+interface MemberStatusListener
 {
     void onCanvassPosition(long logPosition, long leadershipTermId, int followerMemberId);
 
@@ -32,14 +32,14 @@ public interface MemberStatusListener
 
     void onCommitPosition(long logPosition, long leadershipTermId, int leaderMemberId);
 
-    void onRecoveryPlanQuery(long correlationId, int leaderMemberId, int requestMemberId);
+    void onRecoveryPlanQuery(long correlationId, int requestMemberId, int leaderMemberId);
 
     void onRecoveryPlan(RecoveryPlanDecoder recoveryPlanDecoder);
 
     void onRecordingLogQuery(
         long correlationId,
-        int leaderMemberId,
         int requestMemberId,
+        int leaderMemberId,
         long fromLeadershipTermId,
         int count,
         boolean includeSnapshots);

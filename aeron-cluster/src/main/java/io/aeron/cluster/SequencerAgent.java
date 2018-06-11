@@ -438,7 +438,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    public void onRecoveryPlanQuery(final long correlationId, final int leaderMemberId, final int requestMemberId)
+    public void onRecoveryPlanQuery(final long correlationId, final int requestMemberId, final int leaderMemberId)
     {
         if (leaderMemberId == memberId)
         {
@@ -446,7 +446,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                 clusterMembers[requestMemberId].publication(),
                 correlationId,
                 requestMemberId,
-                memberId,
+                leaderMemberId,
                 recoveryPlan);
         }
     }
@@ -457,13 +457,13 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     public void onRecordingLogQuery(
         final long correlationId,
-        final int leaderMemberId,
         final int requestMemberId,
+        final int leaderMemberId,
         final long fromLeadershipTermId,
         final int count,
         final boolean includeSnapshots)
     {
-        if (leaderMemberId == thisMember.id())
+        if (leaderMemberId == memberId)
         {
             memberStatusPublisher.recordingLog(
                 clusterMembers[requestMemberId].publication(),

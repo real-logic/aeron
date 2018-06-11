@@ -91,7 +91,7 @@ class ReplayToLive implements AutoCloseable
         state(State.CLOSED);
     }
 
-    public int doWork()
+    int doWork()
     {
         int workCount = 0;
 
@@ -125,20 +125,20 @@ class ReplayToLive implements AutoCloseable
         return workCount;
     }
 
-    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
+    int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
         doWork();
         return null == image ? 0 : image.poll(fragmentHandler, fragmentLimit);
     }
 
-    public int boundedControlledPoll(
+    int boundedControlledPoll(
         final ControlledFragmentHandler fragmentHandler, final long maxPosition, final int fragmentLimit)
     {
         doWork();
         return null == image ? 0 : image.boundedControlledPoll(fragmentHandler, maxPosition, fragmentLimit);
     }
 
-    public boolean isCaughtUp()
+    boolean isCaughtUp()
     {
         return (state == State.CAUGHT_UP);
     }

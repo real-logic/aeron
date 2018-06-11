@@ -90,7 +90,7 @@ class LogCatchup implements AutoCloseable
         CloseHelper.close(leaderArchive);
     }
 
-    public int doWork()
+    int doWork()
     {
         int workCount = 0;
 
@@ -124,12 +124,12 @@ class LogCatchup implements AutoCloseable
         return workCount;
     }
 
-    public boolean isDone()
+    boolean isDone()
     {
         return State.DONE == state;
     }
 
-    public long currentPosition()
+    long currentPosition()
     {
         if (recPosCounterId != CountersReader.NULL_COUNTER_ID)
         {
@@ -139,22 +139,22 @@ class LogCatchup implements AutoCloseable
         return NULL_POSITION;
     }
 
-    public long fromPosition()
+    long fromPosition()
     {
         return fromPosition;
     }
 
-    public long targetPosition()
+    long targetPosition()
     {
         return targetPosition;
     }
 
-    public long localRecordingId()
+    long localRecordingId()
     {
         return localRecordingId;
     }
 
-    public void onLeaderRecordingLog(final RecordingLogDecoder decoder)
+    void onLeaderRecordingLog(final RecordingLogDecoder decoder)
     {
         if (State.AWAIT_LEADER_CONNECTION == state &&
             decoder.correlationId() == activeCorrelationId &&

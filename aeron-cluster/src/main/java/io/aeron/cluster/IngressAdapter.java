@@ -53,7 +53,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         CloseHelper.close(subscription);
     }
 
-    public int poll()
+    int poll()
     {
         return subscription.controlledPoll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
     }

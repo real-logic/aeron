@@ -536,11 +536,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         timerService.cancelTimer(correlationId);
     }
 
-    void onServiceAck(
-        final long logPosition,
-        final long ackId,
-        final long relevantId,
-        final int serviceId)
+    void onServiceAck(final long logPosition, final long ackId, final long relevantId, final int serviceId)
     {
         validateServiceAck(logPosition, ackId, serviceId);
         serviceAcks[serviceId].logPosition(logPosition).ackId(ackId).relevantId(relevantId);
@@ -550,6 +546,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             switch (state)
             {
                 case SNAPSHOT:
+                    ++serviceAckId;
                     takeSnapshot(cachedTimeMs, logPosition);
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
@@ -557,7 +554,6 @@ class SequencerAgent implements Agent, MemberStatusListener
                     {
                         session.timeOfLastActivityMs(cachedTimeMs);
                     }
-                    ++serviceAckId;
                     break;
 
                 case SHUTDOWN:

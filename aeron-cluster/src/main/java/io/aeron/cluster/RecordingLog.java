@@ -503,6 +503,9 @@ public class RecordingLog
     public void reload()
     {
         entries.clear();
+        indexByLeadershipTermIdMap.clear();
+        indexByLeadershipTermIdMap.compact();
+
         final boolean newFile = !logFile.exists();
 
         try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE))
@@ -801,6 +804,12 @@ public class RecordingLog
             if (entry.leadershipTermId == leadershipTermId && entry.entryIndex == entryIndex)
             {
                 index = entry.entryIndex;
+
+                if (ENTRY_TYPE_TERM == entry.type)
+                {
+                    indexByLeadershipTermIdMap.remove(leadershipTermId);
+                }
+
                 break;
             }
         }

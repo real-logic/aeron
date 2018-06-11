@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -54,7 +53,7 @@ public class ElectionTest
     public void shouldElectSingleNodeClusterLeader()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
+        final long logPosition = 0;
         final ClusterMember[] clusterMembers = ClusterMember.parse(
             "0,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint");
 
@@ -63,7 +62,7 @@ public class ElectionTest
             .aeron(aeron);
 
         final ClusterMember thisMember = clusterMembers[0];
-        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, thisMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, thisMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -79,7 +78,6 @@ public class ElectionTest
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember candidateMember = clusterMembers[0];
@@ -88,7 +86,7 @@ public class ElectionTest
             .appointedLeaderId(candidateMember.id())
             .aeron(aeron);
 
-        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, candidateMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -162,7 +160,6 @@ public class ElectionTest
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final int candidateId = 0;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[1];
@@ -173,7 +170,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -215,7 +212,6 @@ public class ElectionTest
     {
         final long logPosition = 0;
         final long leaderShipTermId = Aeron.NULL_VALUE;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leaderShipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[1];
@@ -226,7 +222,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = newElection(leaderShipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leaderShipTermId, logPosition, clusterMembers, followerMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -254,7 +250,7 @@ public class ElectionTest
     public void shouldCanvassMembersForUnSuccessfulLeadershipBid()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
+        final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[0];
@@ -265,7 +261,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -290,7 +286,6 @@ public class ElectionTest
     {
         final long logPosition = 0;
         final long leadershipTermId = Aeron.NULL_VALUE;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[1];
@@ -301,7 +296,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -331,7 +326,7 @@ public class ElectionTest
     public void shouldTimeoutCanvassWithMajority()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
+        final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember followerMember = clusterMembers[1];
@@ -342,7 +337,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -366,7 +361,7 @@ public class ElectionTest
     public void shouldTimeoutCandidateBallotWithMajority()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
+        final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember candidateMember = clusterMembers[1];
@@ -377,7 +372,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, candidateMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -411,7 +406,7 @@ public class ElectionTest
     public void shouldElectCandidateWithMajorityOfFullVote()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
+        final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember candidateMember = clusterMembers[1];
@@ -422,7 +417,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, candidateMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -454,7 +449,7 @@ public class ElectionTest
     public void shouldTimeoutCandidateBallotWithoutMajority()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
+        final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
 
         final ClusterMember candidateMember = clusterMembers[1];
@@ -465,7 +460,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, candidateMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -494,10 +489,8 @@ public class ElectionTest
     public void shouldTimeoutFollowerBallotWithoutLeaderEmerging()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
-        final RecordingLog.RecoveryPlan recoveryPlan = recoveryPlan(leadershipTermId);
-        final ClusterMember[] clusterMembers = prepareClusterMembers();
-
         final long logPosition = 0L;
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
         final CachedEpochClock clock = new CachedEpochClock();
         final ConsensusModule.Context ctx = new ConsensusModule.Context()
@@ -506,7 +499,7 @@ public class ElectionTest
             .epochClock(clock)
             .aeron(aeron);
 
-        final Election election = newElection(leadershipTermId, recoveryPlan, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -529,7 +522,7 @@ public class ElectionTest
 
     private Election newElection(
         final long leadershipTermId,
-        final RecordingLog.RecoveryPlan recoveryPlan,
+        final long logPosition,
         final ClusterMember[] clusterMembers,
         final ClusterMember thisMember,
         final ConsensusModule.Context ctx)
@@ -537,11 +530,11 @@ public class ElectionTest
         return new Election(
             true,
             leadershipTermId,
+            logPosition,
             clusterMembers,
             thisMember,
             memberStatusAdapter,
             memberStatusPublisher,
-            recoveryPlan,
             ctx,
             null,
             sequencerAgent);
@@ -559,20 +552,5 @@ public class ElectionTest
         clusterMembers[2].publication(mock(Publication.class));
 
         return clusterMembers;
-    }
-
-    private static RecordingLog.RecoveryPlan recoveryPlan(final long leadershipTermId)
-    {
-        final long lastTermBaseLogPosition = 0;
-        final long lastAppendedTermPosition = 0;
-        final ArrayList<RecordingLog.Snapshot> snapshots = new ArrayList<>();
-        final ArrayList<RecordingLog.Log> logs = new ArrayList<>();
-
-        return new RecordingLog.RecoveryPlan(
-            leadershipTermId,
-            lastTermBaseLogPosition,
-            lastAppendedTermPosition,
-            snapshots,
-            logs);
     }
 }

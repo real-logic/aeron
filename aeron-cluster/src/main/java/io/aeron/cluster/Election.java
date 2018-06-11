@@ -114,7 +114,6 @@ class Election implements AutoCloseable
     private final MemberStatusAdapter memberStatusAdapter;
     private final MemberStatusPublisher memberStatusPublisher;
     private final ConsensusModule.Context ctx;
-    private final RecordingLog.RecoveryPlan recoveryPlan;
     private final AeronArchive localArchive;
     private final SequencerAgent sequencerAgent;
     private final Random random;
@@ -133,11 +132,11 @@ class Election implements AutoCloseable
     Election(
         final boolean isStartup,
         final long leadershipTermId,
+        final long logPosition,
         final ClusterMember[] clusterMembers,
         final ClusterMember thisMember,
         final MemberStatusAdapter memberStatusAdapter,
         final MemberStatusPublisher memberStatusPublisher,
-        final RecordingLog.RecoveryPlan recoveryPlan,
         final ConsensusModule.Context ctx,
         final AeronArchive localArchive,
         final SequencerAgent sequencerAgent)
@@ -146,16 +145,15 @@ class Election implements AutoCloseable
         this.statusIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
         this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
         this.leadershipTermId = leadershipTermId;
+        this.logPosition = logPosition;
         this.clusterMembers = clusterMembers;
         this.thisMember = thisMember;
         this.memberStatusAdapter = memberStatusAdapter;
         this.memberStatusPublisher = memberStatusPublisher;
-        this.recoveryPlan = recoveryPlan;
         this.ctx = ctx;
         this.localArchive = localArchive;
         this.sequencerAgent = sequencerAgent;
         this.random = ctx.random();
-        logPosition = recoveryPlan.lastAppendedLogPosition;
     }
 
     public void close()
@@ -288,7 +286,7 @@ class Election implements AutoCloseable
                     leaderMemberId,
                     thisMember.id(),
                     leadershipTermId,
-                    recoveryPlan.logs.get(0).recordingId,
+                    sequencerAgent.logRecordingId(),
                     this.logPosition,
                     ctx);
 
@@ -544,8 +542,8 @@ class Election implements AutoCloseable
         }
         else
         {
-            logPosition = logCatchup.targetPosition();
             sequencerAgent.catchupLog(logCatchup);
+            logPosition = logCatchup.targetPosition();
 
             state(State.FOLLOWER_TRANSITION, nowMs);
             workCount += 1;

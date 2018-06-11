@@ -222,11 +222,11 @@ class SequencerAgent implements Agent, MemberStatusListener
         election = new Election(
             true,
             leadershipTermId,
+            recoveryPlan.lastAppendedLogPosition,
             clusterMembers,
             thisMember,
             memberStatusAdapter,
             memberStatusPublisher,
-            recoveryPlan,
             ctx,
             archive,
             this);
@@ -483,6 +483,11 @@ class SequencerAgent implements Agent, MemberStatusListener
         {
             election.onRecordingLog(recordingLogDecoder);
         }
+    }
+
+    long logRecordingId()
+    {
+        return recoveryPlan.logs.get(0).recordingId;
     }
 
     void state(final ConsensusModule.State state)

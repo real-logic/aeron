@@ -69,7 +69,7 @@ public class ElectionTest
 
         final long t1 = 0;
         election.doWork(t1);
-        verify(recordingLog).appendTerm(0L, 0L, t1, thisMember.id());
+        verify(recordingLog).appendTerm(0L, 0L, t1);
         verify(sequencerAgent).becomeLeader();
         assertThat(election.state(), is(Election.State.LEADER_READY));
     }
@@ -96,7 +96,7 @@ public class ElectionTest
         final long t1 = 1;
         election.doWork(t1);
         verify(sequencerAgent).role(Cluster.Role.CANDIDATE);
-        verify(recordingLog).appendTerm(0L, 0L, t1, candidateMember.id());
+        verify(recordingLog).appendTerm(0L, 0L, t1);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
         assertThat(election.leadershipTermId(), is(candidateTermId));
 
@@ -185,7 +185,7 @@ public class ElectionTest
         final long t2 = 2;
         clock.update(t2);
         election.onRequestVote(logPosition, candidateTermId, candidateId);
-        verify(recordingLog).appendTerm(candidateTermId, 0, t2, candidateId);
+        verify(recordingLog).appendTerm(candidateTermId, 0, t2);
         verify(memberStatusPublisher).placeVote(
             clusterMembers[candidateId].publication(), candidateTermId, candidateId, followerMember.id(), true);
         election.doWork(t1);

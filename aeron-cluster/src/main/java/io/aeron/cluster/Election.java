@@ -246,7 +246,7 @@ class Election implements MemberStatusListener, AutoCloseable
 
         leadershipTermId = candidateTermId;
         final long nowMs = ctx.epochClock().time();
-        ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs, candidateId);
+        ctx.recordingLog().appendTerm(candidateTermId, logPosition, nowMs);
         state(State.FOLLOWER_BALLOT, nowMs);
 
         memberStatusPublisher.placeVote(
@@ -379,7 +379,7 @@ class Election implements MemberStatusListener, AutoCloseable
         {
             ++leadershipTermId;
             leaderMember = thisMember;
-            ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, thisMember.id());
+            ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs);
             state(State.LEADER_TRANSITION, nowMs);
         }
         else if (ctx.appointedLeaderId() == thisMember.id())
@@ -441,7 +441,7 @@ class Election implements MemberStatusListener, AutoCloseable
         {
             thisMember.leadershipTermId(++leadershipTermId);
             ClusterMember.becomeCandidate(clusterMembers, thisMember.id());
-            ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs, thisMember.id());
+            ctx.recordingLog().appendTerm(leadershipTermId, logPosition, nowMs);
             sequencerAgent.role(Cluster.Role.CANDIDATE);
 
             state(State.CANDIDATE_BALLOT, nowMs);

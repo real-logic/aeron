@@ -64,7 +64,7 @@ import static org.agrona.BitUtil.*;
  *  |               Timestamp when entry was created                |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |          Applicable ID (Member ID vote / Service ID)          |
+ *  |                  Service ID when a Snapshot                   |
  *  +---------------------------------------------------------------+
  *  |                 Entry Type (Log or Snapshot)                  |
  *  +---------------------------------------------------------------+
@@ -93,7 +93,7 @@ public class RecordingLog
         public final long termBaseLogPosition;
         public final long logPosition;
         public final long timestamp;
-        public final int applicableId;
+        public final int serviceId;
         public final int type;
         public final int entryIndex;
 
@@ -105,7 +105,7 @@ public class RecordingLog
          * @param termBaseLogPosition position of the log over leadership terms at the beginning of this term.
          * @param logPosition         position reached when the entry was created
          * @param timestamp           of this entry.
-         * @param applicableId        member id for vote or service id for snapshot.
+         * @param serviceId           service id for snapshot.
          * @param type                of the entry as a log of a term or a snapshot.
          * @param entryIndex          of the entry on disk.
          */
@@ -115,7 +115,7 @@ public class RecordingLog
             final long termBaseLogPosition,
             final long logPosition,
             final long timestamp,
-            final int applicableId,
+            final int serviceId,
             final int type,
             final int entryIndex)
         {
@@ -124,7 +124,7 @@ public class RecordingLog
             this.termBaseLogPosition = termBaseLogPosition;
             this.logPosition = logPosition;
             this.timestamp = timestamp;
-            this.applicableId = applicableId;
+            this.serviceId = serviceId;
             this.type = type;
             this.entryIndex = entryIndex;
         }
@@ -137,7 +137,7 @@ public class RecordingLog
                 ", termBaseLogPosition=" + termBaseLogPosition +
                 ", logPosition=" + logPosition +
                 ", timestamp=" + timestamp +
-                ", applicableId=" + applicableId +
+                ", serviceId=" + serviceId +
                 ", type=" + type +
                 ", entryIndex=" + entryIndex +
                 '}';
@@ -441,14 +441,14 @@ public class RecordingLog
     public static final int TIMESTAMP_OFFSET = LOG_POSITION_OFFSET + SIZE_OF_LONG;
 
     /**
-     * The offset at which the voted for member id or service id is recorded.
+     * The offset at which the service id is recorded.
      */
-    public static final int APPLICABLE_ID_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+    public static final int SERVICE_ID_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
 
     /**
      * The offset at which the type of the entry is stored.
      */
-    public static final int ENTRY_TYPE_OFFSET = APPLICABLE_ID_OFFSET + SIZE_OF_INT;
+    public static final int ENTRY_TYPE_OFFSET = SERVICE_ID_OFFSET + SIZE_OF_INT;
 
     /**
      * The length of each entry in the recording log (not the recordings in the archive).
@@ -554,7 +554,7 @@ public class RecordingLog
         for (int i = entries.size() - 1; i >= 0; i--)
         {
             final Entry entry = entries.get(i);
-            if (ENTRY_TYPE_SNAPSHOT == entry.type && serviceId == entry.applicableId)
+            if (ENTRY_TYPE_SNAPSHOT == entry.type && serviceId == entry.serviceId)
             {
                 return entry;
             }
@@ -614,13 +614,8 @@ public class RecordingLog
      * @param leadershipTermId    for the current term.
      * @param termBaseLogPosition reached at the beginning of the term.
      * @param timestamp           at the beginning of the term.
-     * @param votedForMemberId    in the leader election.
      */
-    public void appendTerm(
-        final long leadershipTermId,
-        final long termBaseLogPosition,
-        final long timestamp,
-        final int votedForMemberId)
+    public void appendTerm(final long leadershipTermId, final long termBaseLogPosition, final long timestamp)
     {
         final int size = entries.size();
         if (size > 0)
@@ -641,7 +636,7 @@ public class RecordingLog
             termBaseLogPosition,
             NULL_POSITION,
             timestamp,
-            votedForMemberId);
+            NULL_VALUE);
     }
 
     /**
@@ -702,7 +697,7 @@ public class RecordingLog
             entry.termBaseLogPosition,
             entry.logPosition,
             entry.timestamp,
-            entry.applicableId,
+            entry.serviceId,
             entry.type,
             entry.entryIndex));
     }
@@ -725,7 +720,7 @@ public class RecordingLog
             entry.termBaseLogPosition,
             logPosition,
             entry.timestamp,
-            entry.applicableId,
+            entry.serviceId,
             entry.type,
             entry.entryIndex));
     }
@@ -748,7 +743,7 @@ public class RecordingLog
             logPosition,
             entry.logPosition,
             entry.timestamp,
-            entry.applicableId,
+            entry.serviceId,
             entry.type,
             entry.entryIndex));
     }
@@ -809,14 +804,14 @@ public class RecordingLog
         final long termBaseLogPosition,
         final long logPosition,
         final long timestamp,
-        final int applicableId)
+        final int serviceId)
     {
         buffer.putLong(RECORDING_ID_OFFSET, recordingId, LITTLE_ENDIAN);
         buffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId, LITTLE_ENDIAN);
         buffer.putLong(TERM_BASE_LOG_POSITION_OFFSET, termBaseLogPosition, LITTLE_ENDIAN);
         buffer.putLong(LOG_POSITION_OFFSET, logPosition, LITTLE_ENDIAN);
         buffer.putLong(TIMESTAMP_OFFSET, timestamp, LITTLE_ENDIAN);
-        buffer.putInt(APPLICABLE_ID_OFFSET, applicableId, LITTLE_ENDIAN);
+        buffer.putInt(SERVICE_ID_OFFSET, serviceId, LITTLE_ENDIAN);
         buffer.putInt(ENTRY_TYPE_OFFSET, entryType, LITTLE_ENDIAN);
 
         byteBuffer.limit(ENTRY_LENGTH).position(0);
@@ -839,7 +834,7 @@ public class RecordingLog
             termBaseLogPosition,
             logPosition,
             timestamp,
-            applicableId,
+            serviceId,
             entryType,
             nextEntryIndex++));
     }
@@ -859,7 +854,7 @@ public class RecordingLog
                     buffer.getLong(i + TERM_BASE_LOG_POSITION_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(i + LOG_POSITION_OFFSET, LITTLE_ENDIAN),
                     buffer.getLong(i + TIMESTAMP_OFFSET, LITTLE_ENDIAN),
-                    buffer.getInt(i + APPLICABLE_ID_OFFSET, LITTLE_ENDIAN),
+                    buffer.getInt(i + SERVICE_ID_OFFSET, LITTLE_ENDIAN),
                     entryType,
                     nextEntryIndex));
             }
@@ -963,7 +958,7 @@ public class RecordingLog
                 snapshot.termBaseLogPosition,
                 snapshot.logPosition,
                 snapshot.timestamp,
-                snapshot.applicableId));
+                snapshot.serviceId));
 
             for (int i = 1; i <= serviceCount; i++)
             {
@@ -978,13 +973,13 @@ public class RecordingLog
                     entry.leadershipTermId == snapshot.leadershipTermId &&
                     entry.logPosition == snapshot.logPosition)
                 {
-                    snapshots.add(entry.applicableId + 1, new Snapshot(
+                    snapshots.add(entry.serviceId + 1, new Snapshot(
                         entry.recordingId,
                         entry.leadershipTermId,
                         entry.termBaseLogPosition,
                         entry.logPosition,
                         entry.timestamp,
-                        entry.applicableId));
+                        entry.serviceId));
                 }
             }
         }

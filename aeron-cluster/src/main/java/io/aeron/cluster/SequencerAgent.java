@@ -453,10 +453,6 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     public void onRecoveryPlan(final RecoveryPlanDecoder recoveryPlanDecoder)
     {
-        if (null != election)
-        {
-            election.onRecoveryPlan(recoveryPlanDecoder);
-        }
     }
 
     public void onRecordingLogQuery(

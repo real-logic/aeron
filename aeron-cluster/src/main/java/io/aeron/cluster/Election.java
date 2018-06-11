@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.RecordingLogDecoder;
-import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
 
@@ -30,7 +29,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 /**
  * Election process to determine a new cluster leader.
  */
-class Election implements MemberStatusListener, AutoCloseable
+class Election implements AutoCloseable
 {
     static final int ELECTION_STATE_TYPE_ID = 207;
 
@@ -289,7 +288,9 @@ class Election implements MemberStatusListener, AutoCloseable
                     clusterMembers,
                     leaderMemberId,
                     thisMember.id(),
-                    recoveryPlan,
+                    leadershipTermId,
+                    recoveryPlan.logs.get(0).recordingId,
+                    this.logPosition,
                     ctx);
 
                 state(State.FOLLOWER_CATCHUP, ctx.epochClock().time());
@@ -302,30 +303,8 @@ class Election implements MemberStatusListener, AutoCloseable
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
-            // TODO: query leader recovery log and catch up
+            // TODO: query leader recording log and catch up
         }
-    }
-
-    public void onRecoveryPlanQuery(final long correlationId, final int leaderMemberId, final int requestMemberId)
-    {
-    }
-
-    public void onRecoveryPlan(final RecoveryPlanDecoder decoder)
-    {
-        if (null != logCatchup)
-        {
-            logCatchup.onLeaderRecoveryPlan(decoder);
-        }
-    }
-
-    public void onRecordingLogQuery(
-        final long correlationId,
-        final int leaderMemberId,
-        final int requestMemberId,
-        final long fromLeadershipTermId,
-        final int count,
-        final boolean includeSnapshots)
-    {
     }
 
     public void onRecordingLog(final RecordingLogDecoder decoder)
@@ -347,7 +326,7 @@ class Election implements MemberStatusListener, AutoCloseable
     {
         if (leadershipTermId > this.leadershipTermId)
         {
-            // TODO: query leader recovery log and catch up
+            // TODO: query leader recording log and catch up
         }
     }
 

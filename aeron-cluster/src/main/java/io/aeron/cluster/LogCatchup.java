@@ -23,7 +23,6 @@ import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.cluster.codecs.RecordingLogDecoder;
-import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -45,7 +44,6 @@ class LogCatchup implements AutoCloseable
 
     private final MemberStatusPublisher memberStatusPublisher;
     private final ClusterMember[] clusterMembers;
-    private final RecordingLog.RecoveryPlan localRecoveryPlan;
     private final ConsensusModule.Context context;
     private final int leaderMemberId;
     private final int memberId;
@@ -57,11 +55,11 @@ class LogCatchup implements AutoCloseable
     private String extendChannel;
     private State state = State.INIT;
 
-    private long logPosition = NULL_POSITION;
+    private final long leadershipTermId;
+    private final long fromPosition;
+    private final long localRecordingId;
     private long targetPosition = NULL_POSITION;
-    private long fromPosition = NULL_POSITION;
     private long leaderRecordingId = Aeron.NULL_VALUE;
-    private long localRecordingId = Aeron.NULL_VALUE;
     private long activeCorrelationId = Aeron.NULL_VALUE;
     private int recPosCounterId = CountersReader.NULL_COUNTER_ID;
 
@@ -71,16 +69,20 @@ class LogCatchup implements AutoCloseable
         final ClusterMember[] clusterMembers,
         final int leaderMemberId,
         final int memberId,
-        final RecordingLog.RecoveryPlan localRecoveryPlan,
+        final long leadershipTermId,
+        final long logRecordingId,
+        final long logPosition,
         final ConsensusModule.Context context)
     {
         this.localArchive = localArchive;
         this.memberStatusPublisher = memberStatusPublisher;
         this.clusterMembers = clusterMembers;
-        this.localRecoveryPlan = localRecoveryPlan;
         this.context = context;
         this.leaderMemberId = leaderMemberId;
         this.memberId = memberId;
+        this.leadershipTermId = leadershipTermId;
+        this.localRecordingId = logRecordingId;
+        this.fromPosition = logPosition;
     }
 
     public void close()
@@ -147,35 +149,29 @@ class LogCatchup implements AutoCloseable
         return targetPosition;
     }
 
-    public long logPosition()
-    {
-        return logPosition;
-    }
-
     public long localRecordingId()
     {
         return localRecordingId;
     }
 
-    public void onLeaderRecoveryPlan(final RecoveryPlanDecoder recoveryPlanDecoder)
+    public void onLeaderRecordingLog(final RecordingLogDecoder decoder)
     {
         if (State.AWAIT_LEADER_CONNECTION == state &&
-            recoveryPlanDecoder.correlationId() == activeCorrelationId &&
-            recoveryPlanDecoder.requestMemberId() == memberId &&
-            recoveryPlanDecoder.leaderMemberId() == leaderMemberId)
+            decoder.correlationId() == activeCorrelationId &&
+            decoder.requestMemberId() == memberId &&
+            decoder.leaderMemberId() == leaderMemberId)
         {
-            final RecordingLog.RecoveryPlan leaderRecoveryPlan = new RecordingLog.RecoveryPlan(recoveryPlanDecoder);
-            final RecordingLog.Log localLog = localRecoveryPlan.logs.get(localRecoveryPlan.logs.size() - 1);
-            final RecordingLog.Log leaderLog = leaderRecoveryPlan.logs.get(leaderRecoveryPlan.logs.size() - 1);
+            final RecordingLogDecoder.EntriesDecoder entries = decoder.entries();
 
-            validateRecoveryPlans(leaderRecoveryPlan, leaderLog, localLog);
+            if (!entries.hasNext())
+            {
+                throw new IllegalStateException("no recording log for leadershipTermId=" + leadershipTermId);
+            }
 
-            leaderRecordingId = leaderLog.recordingId;
-            localRecordingId = localLog.recordingId;
+            final RecordingLogDecoder.EntriesDecoder logEntry = entries.next();
 
-            fromPosition = localLog.stopPosition;
-            targetPosition = leaderLog.stopPosition;
-            logPosition = leaderRecoveryPlan.lastAppendedLogPosition;
+            leaderRecordingId = logEntry.recordingId();
+            targetPosition = logEntry.termBaseLogPosition();
 
             extendChannel = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
@@ -186,10 +182,6 @@ class LogCatchup implements AutoCloseable
         }
     }
 
-    public void onLeaderRecordingLog(final RecordingLogDecoder decoder)
-    {
-    }
-
     private int init()
     {
         int workCount = 0;
@@ -198,8 +190,14 @@ class LogCatchup implements AutoCloseable
         {
             final long correlationId = context.aeron().nextCorrelationId();
 
-            if (memberStatusPublisher.recoveryPlanQuery(
-                clusterMembers[leaderMemberId].publication(), correlationId, leaderMemberId, memberId))
+            if (memberStatusPublisher.recordingLogQuery(
+                clusterMembers[leaderMemberId].publication(),
+                correlationId,
+                leaderMemberId,
+                memberId,
+                leadershipTermId,
+                1,
+                false))
             {
                 activeCorrelationId = correlationId;
             }
@@ -357,45 +355,6 @@ class LogCatchup implements AutoCloseable
         }
 
         return workCount;
-    }
-
-    private void validateRecoveryPlans(
-        final RecordingLog.RecoveryPlan leaderRecoveryPlan,
-        final RecordingLog.Log leaderLog,
-        final RecordingLog.Log localLog)
-    {
-        if (leaderRecoveryPlan.lastLeadershipTermId != localRecoveryPlan.lastLeadershipTermId)
-        {
-            throw new IllegalStateException(
-                "lastLeadershipTermIds are not equal, can not catch up: leader=" +
-                leaderRecoveryPlan.lastLeadershipTermId +
-                " local=" +
-                localRecoveryPlan.lastLeadershipTermId);
-        }
-
-        if (leaderRecoveryPlan.logs.size() != localRecoveryPlan.logs.size())
-        {
-            throw new IllegalStateException(
-                "replay steps are not equal, can not catch up: leader=" +
-                leaderRecoveryPlan.logs.size() +
-                " local=" +
-                localRecoveryPlan.logs.size());
-        }
-
-        if (localLog.leadershipTermId != leaderLog.leadershipTermId)
-        {
-            throw new IllegalStateException(
-                "last step leadershipTermIds are not equal, can not catch up: leader=" +
-                leaderLog.leadershipTermId +
-                " local=" +
-                localLog.leadershipTermId);
-        }
-
-        if (localLog.startPosition != leaderLog.startPosition)
-        {
-            throw new IllegalStateException(
-                "local start position does not match leader start position");
-        }
     }
 
     private void state(final State state)

@@ -36,7 +36,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
     private final RecoveryPlanQueryDecoder recoveryPlanQueryDecoder = new RecoveryPlanQueryDecoder();
     private final RecoveryPlanDecoder recoveryPlanDecoder = new RecoveryPlanDecoder();
-
+    private final RecordingLogQueryDecoder recordingLogQueryDecoder = new RecordingLogQueryDecoder();
+    private final RecordingLogDecoder recordingLogDecoder = new RecordingLogDecoder();
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
     private final MemberStatusListener memberStatusListener;
@@ -166,6 +167,32 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onRecoveryPlan(recoveryPlanDecoder);
+                break;
+
+            case RecordingLogQueryDecoder.TEMPLATE_ID:
+                recordingLogQueryDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onRecordingLogQuery(
+                    recordingLogQueryDecoder.correlationId(),
+                    recordingLogQueryDecoder.leaderMemberId(),
+                    recordingLogQueryDecoder.requestMemberId(),
+                    recordingLogQueryDecoder.fromLeadershipTermId(),
+                    recordingLogQueryDecoder.count(),
+                    recordingLogQueryDecoder.includeSnapshots() == BooleanType.TRUE);
+                break;
+
+            case RecordingLogDecoder.TEMPLATE_ID:
+                recordingLogDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onRecordingLog(recordingLogDecoder);
                 break;
 
             default:

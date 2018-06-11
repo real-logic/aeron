@@ -27,7 +27,7 @@ Here is a brief list of monitoring and diagnostic tools:
 
 - __AeronStat__: Monitoring tool that prints the labels and values of the counters in use by a media driver.
 - __ErrorStat__: Monitoring tool that prints the distinct errors observed by the media driver.
-- __LossStat__: Monitoring tool that prints a report of loss recorded buy stream.
+- __LossStat__: Monitoring tool that prints a report of loss recorded by stream.
 - __LogInspector__: Diagnostic tool that prints out the contents of a log buffer for a given stream for debugging.
 
 Also included is some performance tests that can run all in the same process for convenience without a media driver,

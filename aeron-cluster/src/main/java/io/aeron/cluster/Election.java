@@ -241,12 +241,12 @@ class Election implements MemberStatusListener, AutoCloseable
         }
         else if (candidateTermId == leadershipTermId + 1 && logPosition < this.logPosition)
         {
-            placeVote(candidateTermId, candidateId, false);
-
             leadershipTermId = candidateTermId;
             final long nowMs = ctx.epochClock().time();
             ctx.recordingLog().appendTerm(candidateTermId, this.logPosition, nowMs);
             state(State.CANVASS, nowMs);
+
+            placeVote(candidateTermId, candidateId, false);
         }
         else
         {

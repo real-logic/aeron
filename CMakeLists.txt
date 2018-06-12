@@ -36,6 +36,7 @@ option(SANITISE_BUILD "Enable sanitise options" OFF)
 option(COVERAGE_BUILD "Enable code coverage" OFF)
 option(AERON_TESTS "Enable tests" ${STANDALONE_BUILD})
 option(AERON_BUILD_SAMPLES "Enable building the sample projects" ${STANDALONE_BUILD})
+option(AERON_BUILD_DOCUMENTATION "Build Aeron documentation" ${STANDALONE_BUILD})
 
 unset(STANDALONE_BUILD)
 
@@ -137,7 +138,9 @@ find_package(Threads)
 ##########################################################
 # Doxygen for generating doc
 
-find_package(Doxygen)
+if(AERON_BUILD_DOCUMENTATION)
+   find_package(Doxygen)
+endif()
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -262,7 +265,7 @@ endif(BUILD_AERON_DRIVER)
 ##########################################################
 # doc target
 
-if(DOXYGEN_FOUND)
+if(AERON_BUILD_DOCUMENTATION AND DOXYGEN_FOUND)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
     add_custom_target(

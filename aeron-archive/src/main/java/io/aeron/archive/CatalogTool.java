@@ -91,6 +91,30 @@ public class CatalogTool
                 catalog.forEntry(CatalogTool::verify, Long.valueOf(args[2]));
             }
         }
+        else if (args.length == 2 && args[1].equals("entries"))
+        {
+            try (Catalog catalog = openCatalog())
+            {
+                System.out.println(catalog.entries());
+            }
+        }
+        else if (args.length == 2 && args[1].equals("max-entries"))
+        {
+            try (Catalog catalog = openCatalog())
+            {
+                System.out.println(catalog.maxEntries());
+            }
+        }
+        else if (args.length == 3 && args[1].equals("max-entries"))
+        {
+            final long newMaxEntries = Long.parseLong(args[2]);
+
+            try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, System::currentTimeMillis))
+            {
+                System.out.println(catalog.maxEntries());
+            }
+        }
+
         // TODO: add a manual override tool to force mark entries as unusable
     }
 
@@ -329,12 +353,13 @@ public class CatalogTool
 
     private static void printHelp()
     {
-        System.out.println("Usage: <archive-dir> <command> <optional recordingId>");
-        System.out.println("  describe: prints out all descriptors in the file. Optionally specify a recording id" +
-            " to describe a single recording.");
+        System.out.println("Usage: <archive-dir> <command>");
+        System.out.println("  describe <optional recordingId>: prints out descriptor(s) in the catalog.");
         System.out.println("  pid: prints just PID of archive.");
-        System.out.println("  verify: verifies all descriptors in the file, checking recording files availability %n" +
-            "and contents. Faulty entries are marked as unusable. Optionally specify a recording id%n" +
-            "to verify a single recording.");
+        System.out.println("  verify <optional recordingId>: verifies descriptor(s) in the catalog, checking");
+        System.out.println("     recording files availability and contents. Faulty entries are marked as unusable.");
+        System.out.println("  entries: gets the number of recording entries in the catalog.");
+        System.out.println("  max-entries <optional number of entries>: gets or increases the maximum number of");
+        System.out.println("     recording entries the catalog can store.");
     }
 }

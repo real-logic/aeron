@@ -287,6 +287,11 @@ class Catalog implements AutoCloseable
         return maxRecordingId + 1;
     }
 
+    public long entries()
+    {
+        return nextRecordingId;
+    }
+
     long addNewRecording(
         final long startPosition,
         final long startTimestamp,

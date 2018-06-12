@@ -136,5 +136,7 @@ target_link_libraries(aeron_client
     INTERFACE ${CMAKE_THREAD_LIBS_INIT}
 )
 
-install(TARGETS aeron_client ARCHIVE DESTINATION lib)
-install(DIRECTORY . DESTINATION  include FILES_MATCHING PATTERN "*.h")
+if (AERON_INSTALL_TARGETS)
+    install(TARGETS aeron_client ARCHIVE DESTINATION lib)
+    install(DIRECTORY . DESTINATION  include FILES_MATCHING PATTERN "*.h")
+endif()

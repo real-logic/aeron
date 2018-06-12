@@ -37,6 +37,7 @@ option(COVERAGE_BUILD "Enable code coverage" OFF)
 option(AERON_TESTS "Enable tests" ${STANDALONE_BUILD})
 option(AERON_BUILD_SAMPLES "Enable building the sample projects" ${STANDALONE_BUILD})
 option(AERON_BUILD_DOCUMENTATION "Build Aeron documentation" ${STANDALONE_BUILD})
+option(AERON_INSTALL_TARGETS "Enable installation step" ${STANDALONE_BUILD})
 
 unset(STANDALONE_BUILD)
 
@@ -277,8 +278,10 @@ if(AERON_BUILD_DOCUMENTATION AND DOXYGEN_FOUND)
         COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
 
-    # install the doc if it has been built
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc DESTINATION share OPTIONAL)
+   if(AERON_INSTALL_TARGETS)
+       # install the doc if it has been built
+       install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc DESTINATION share OPTIONAL)
+   endif()
 endif()
 
 ##########################################################

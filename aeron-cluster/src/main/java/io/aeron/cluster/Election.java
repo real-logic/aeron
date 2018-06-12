@@ -562,11 +562,9 @@ class Election implements AutoCloseable
         else
         {
             logPosition = logCatchup.targetPosition();
-
             sequencerAgent.updateMemberDetails();
 
             final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
-
             logSubscription.addDestination(channelUri.toString());
 
             state(State.FOLLOWER_READY, nowMs);
@@ -579,11 +577,9 @@ class Election implements AutoCloseable
     private int followerTransition(final long nowMs)
     {
         ensureSubscriptionsCreated();
-
         sequencerAgent.updateMemberDetails();
 
         final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
-
         logSubscription.addDestination(channelUri.toString());
         ensureLogImageAvailable();
 
@@ -643,8 +639,7 @@ class Election implements AutoCloseable
     {
         if (null == logSubscription)
         {
-            final ChannelUri logChannelUri = followerLogChannel(
-                ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
+            final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
 
             logSubscription = sequencerAgent.createAndRecordLogSubscriptionAsFollower(
                 logChannelUri.toString(), logSessionId, logPosition);
@@ -657,7 +652,7 @@ class Election implements AutoCloseable
         sequencerAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
     }
 
-    private static ChannelUri followerLogChannel(final String logChannel, final String logEndpoint, final int sessionId)
+    private static ChannelUri followerLogChannel(final String logChannel, final int sessionId)
     {
         final ChannelUri channelUri = ChannelUri.parse(logChannel);
         channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);

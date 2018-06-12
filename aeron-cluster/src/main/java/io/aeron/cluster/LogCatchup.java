@@ -142,19 +142,9 @@ class LogCatchup implements AutoCloseable
         return NULL_POSITION;
     }
 
-    long fromPosition()
-    {
-        return fromPosition;
-    }
-
     long targetPosition()
     {
         return targetPosition;
-    }
-
-    long localRecordingId()
-    {
-        return localRecordingId;
     }
 
     void onLeaderRecordingLog(final RecordingLogDecoder decoder)
@@ -186,7 +176,7 @@ class LogCatchup implements AutoCloseable
                 .media(CommonContext.UDP_MEDIA)
                 .endpoint(thisMember.transferEndpoint())
                 .isSessionIdTagReference(true)
-                .sessionId(ConsensusModule.Configuration.LOG_PUBLICATGION_SESSION_ID_TAG)
+                .sessionId(ConsensusModule.Configuration.LOG_PUBLICATION_SESSION_ID_TAG)
                 .build();
         }
     }

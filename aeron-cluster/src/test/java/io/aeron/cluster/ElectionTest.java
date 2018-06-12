@@ -193,7 +193,7 @@ public class ElectionTest
         election.onNewLeadershipTerm(logPosition, candidateTermId, candidateId, logSessionId);
         assertThat(election.state(), is(Election.State.FOLLOWER_TRANSITION));
 
-        when(sequencerAgent.createAndRecordLogSubscriptionAsFollower(anyString(), anyInt(), anyLong()))
+        when(sequencerAgent.createAndRecordLogSubscriptionAsFollower(anyString(), anyLong()))
             .thenReturn(mock(Subscription.class));
         final long t3 = 3;
         election.doWork(t3);

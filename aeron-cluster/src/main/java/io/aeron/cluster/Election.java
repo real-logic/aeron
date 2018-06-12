@@ -642,7 +642,7 @@ class Election implements AutoCloseable
             final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
 
             logSubscription = sequencerAgent.createAndRecordLogSubscriptionAsFollower(
-                logChannelUri.toString(), logSessionId, logPosition);
+                logChannelUri.toString(), logPosition);
             sequencerAgent.awaitServicesReady(logChannelUri, logSessionId);
         }
     }

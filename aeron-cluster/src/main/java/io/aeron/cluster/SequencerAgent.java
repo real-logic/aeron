@@ -697,7 +697,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         election.logSessionId(logSessionId);
 
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        startLogRecording(channelUri.toString(), logSessionId, SourceLocation.LOCAL);
+        startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
         awaitPositionCounters(logSessionId);
         createCommitPosCounter(election.logPosition());
         awaitServicesReady(channelUri, logSessionId);
@@ -734,12 +734,11 @@ class SequencerAgent implements Agent, MemberStatusListener
         updateClientConnectDetails(clusterMembers, leaderMember.id());
     }
 
-    Subscription createAndRecordLogSubscriptionAsFollower(
-        final String logChannel, final int logSessionId, final long logPosition)
+    Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel, final long logPosition)
     {
         closeExistingLog();
         final Subscription subscription = aeron.addSubscription(logChannel, ctx.logStreamId());
-        startLogRecording(logChannel, logSessionId, SourceLocation.REMOTE);
+        startLogRecording(logChannel, SourceLocation.REMOTE);
         createCommitPosCounter(logPosition);
 
         return subscription;
@@ -1434,7 +1433,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         return publication;
     }
 
-    private void startLogRecording(final String channel, final int sessionId, final SourceLocation sourceLocation)
+    private void startLogRecording(final String channel, final SourceLocation sourceLocation)
     {
         if (recoveryPlan.logs.isEmpty())
         {

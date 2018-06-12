@@ -637,14 +637,11 @@ class Election implements AutoCloseable
 
     private void ensureSubscriptionsCreated()
     {
-        if (null == logSubscription)
-        {
-            final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
+        final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
 
-            logSubscription = sequencerAgent.createAndRecordLogSubscriptionAsFollower(
-                logChannelUri.toString(), logPosition);
-            sequencerAgent.awaitServicesReady(logChannelUri, logSessionId);
-        }
+        logSubscription = sequencerAgent.createAndRecordLogSubscriptionAsFollower(
+            logChannelUri.toString(), logPosition);
+        sequencerAgent.awaitServicesReady(logChannelUri, logSessionId);
     }
 
     private void ensureLogImageAvailable()

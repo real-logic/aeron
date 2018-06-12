@@ -144,14 +144,14 @@ public class ClientSession
             return MOCKED_OFFER;
         }
 
+        if (null == responsePublication)
+        {
+            throw new IllegalStateException("ClientSession not connected id=" + id);
+        }
+
         sessionHeaderEncoder.correlationId(correlationId);
         sessionHeaderEncoder.timestamp(cluster.timeMs());
         messageBuffer.reset(buffer, offset, length);
-
-        if (null == responsePublication)
-        {
-            throw new IllegalStateException("ClientSession not connected");
-        }
 
         return responsePublication.offer(vectors, null);
     }

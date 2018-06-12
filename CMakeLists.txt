@@ -142,7 +142,9 @@ if(AERON_BUILD_DOCUMENTATION)
    find_package(Doxygen)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+   set(CMAKE_CXX_STANDARD 11)
+endif()
 
 # all UNIX-based platform compiler flags
 if(UNIX)

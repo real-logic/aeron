@@ -147,7 +147,7 @@ class Catalog implements AutoCloseable
             {
                 if (catalogPreExists)
                 {
-                    catalogLength = channel.size();
+                    catalogLength = Math.max(channel.size(), calculateCatalogLength(maxNumEntries));
                 }
                 else
                 {

@@ -287,9 +287,9 @@ class Catalog implements AutoCloseable
         return maxRecordingId + 1;
     }
 
-    public long entries()
+    public int countEntries()
     {
-        return nextRecordingId;
+        return (int)nextRecordingId;
     }
 
     long addNewRecording(

@@ -187,6 +187,17 @@ public class ChannelUri
     }
 
     /**
+     * Remove a key pair in the map of params.
+     *
+     * @param key of the param to be removed.
+     * @return the previous value of the param or null.
+     */
+    public String remove(final String key)
+    {
+        return params.remove(key);
+    }
+
+    /**
      * Does the URI contain a value for the given key.
      *
      * @param key to be lookup.

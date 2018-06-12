@@ -498,6 +498,10 @@ public class ConsensusModule implements AutoCloseable
          */
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
+        public static final int LOG_PUBLICATGION_SESSION_ID_TAG = 2;
+        public static final String LOG_PUBLICATION_TAGS = "1," + LOG_PUBLICATGION_SESSION_ID_TAG;
+        public static final String LOG_SUBSCRIPTION_TAGS = "3,4";
+
         /**
          * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
          * {@link #CLUSTER_MEMBER_ID_PROP_NAME} if set.

@@ -49,7 +49,9 @@ class Election implements AutoCloseable
 
         LEADER_READY(6),
 
-        FOLLOWER_CATCHUP(7)
+        FOLLOWER_CATCHUP_TRANSITION(7),
+
+        FOLLOWER_CATCHUP(8)
         {
             void exit(final Election election)
             {
@@ -57,9 +59,9 @@ class Election implements AutoCloseable
             }
         },
 
-        FOLLOWER_TRANSITION(8),
+        FOLLOWER_TRANSITION(9),
 
-        FOLLOWER_READY(9);
+        FOLLOWER_READY(10);
 
         static final State[] STATES;
 
@@ -128,6 +130,7 @@ class Election implements AutoCloseable
     private State state = State.INIT;
     private Counter stateCounter;
     private LogCatchup logCatchup;
+    private Subscription logSubscription;
 
     Election(
         final boolean isStartup,
@@ -191,6 +194,10 @@ class Election implements AutoCloseable
 
             case LEADER_READY:
                 workCount += leaderReady(nowMs);
+                break;
+
+            case FOLLOWER_CATCHUP_TRANSITION:
+                workCount += followerCatchupTransition(nowMs);
                 break;
 
             case FOLLOWER_CATCHUP:
@@ -285,12 +292,14 @@ class Election implements AutoCloseable
                     clusterMembers,
                     leaderMemberId,
                     thisMember.id(),
+                    logSessionId,
                     leadershipTermId,
                     sequencerAgent.logRecordingId(),
                     this.logPosition,
+                    sequencerAgent,
                     ctx);
 
-                state(State.FOLLOWER_CATCHUP, ctx.epochClock().time());
+                state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
             }
             else
             {
@@ -531,6 +540,15 @@ class Election implements AutoCloseable
         return workCount;
     }
 
+    private int followerCatchupTransition(final long nowMs)
+    {
+        ensureSubscriptionsCreated();
+        logCatchup.connect(logSubscription);
+        state(State.FOLLOWER_CATCHUP, nowMs);
+
+        return 1;
+    }
+
     private int followerCatchup(final long nowMs)
     {
         int workCount = 0;
@@ -539,13 +557,19 @@ class Election implements AutoCloseable
         {
             workCount += memberStatusAdapter.poll();
             workCount += logCatchup.doWork();
+            sequencerAgent.catchupLogPoll(logCatchup.targetPosition());
         }
         else
         {
-            sequencerAgent.catchupLog(logCatchup);
             logPosition = logCatchup.targetPosition();
 
-            state(State.FOLLOWER_TRANSITION, nowMs);
+            sequencerAgent.updateMemberDetails();
+
+            final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
+
+            logSubscription.addDestination(channelUri.toString());
+
+            state(State.FOLLOWER_READY, nowMs);
             workCount += 1;
         }
 
@@ -554,12 +578,15 @@ class Election implements AutoCloseable
 
     private int followerTransition(final long nowMs)
     {
+        ensureSubscriptionsCreated();
+
         sequencerAgent.updateMemberDetails();
 
-        final ChannelUri channelUri = followerLogChannel(ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
+        final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
 
-        sequencerAgent.recordLogAsFollower(channelUri.toString(), logSessionId);
-        sequencerAgent.awaitServicesReady(channelUri, logSessionId);
+        logSubscription.addDestination(channelUri.toString());
+        ensureLogImageAvailable();
+
         state(State.FOLLOWER_READY, nowMs);
 
         return 1;
@@ -612,11 +639,39 @@ class Election implements AutoCloseable
             vote);
     }
 
+    private void ensureSubscriptionsCreated()
+    {
+        if (null == logSubscription)
+        {
+            final ChannelUri logChannelUri = followerLogChannel(
+                ctx.logChannel(), thisMember.logEndpoint(), logSessionId);
+
+            logSubscription = sequencerAgent.createAndRecordLogSubscriptionAsFollower(
+                logChannelUri.toString(), logSessionId, logPosition);
+            sequencerAgent.awaitServicesReady(logChannelUri, logSessionId);
+        }
+    }
+
+    private void ensureLogImageAvailable()
+    {
+        sequencerAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
+    }
+
     private static ChannelUri followerLogChannel(final String logChannel, final String logEndpoint, final int sessionId)
     {
         final ChannelUri channelUri = ChannelUri.parse(logChannel);
-        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, logEndpoint);
+        channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
+        channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
+        channelUri.put(CommonContext.TAGS_PARAM_NAME, ConsensusModule.Configuration.LOG_SUBSCRIPTION_TAGS);
+
+        return channelUri;
+    }
+
+    private static ChannelUri followerLogDestination(final String logChannel, final String logEndpoint)
+    {
+        final ChannelUri channelUri = ChannelUri.parse(logChannel);
+        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, logEndpoint);
 
         return channelUri;
     }

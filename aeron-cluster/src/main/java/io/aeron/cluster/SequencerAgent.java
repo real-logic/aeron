@@ -697,7 +697,9 @@ class SequencerAgent implements Agent, MemberStatusListener
         election.logSessionId(logSessionId);
 
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-        startLogRecording(election.logPosition(), channelUri.toString(), logSessionId, SourceLocation.LOCAL);
+        startLogRecording(channelUri.toString(), logSessionId, SourceLocation.LOCAL);
+        awaitPositionCounters(logSessionId);
+        createCommitPosCounter(election.logPosition());
         awaitServicesReady(channelUri, logSessionId);
 
         for (final ClusterSession session : sessionByIdMap.values())
@@ -732,14 +734,27 @@ class SequencerAgent implements Agent, MemberStatusListener
         updateClientConnectDetails(clusterMembers, leaderMember.id());
     }
 
-    void recordLogAsFollower(final String logChannel, final int logSessionId)
+    Subscription createAndRecordLogSubscriptionAsFollower(
+        final String logChannel, final int logSessionId, final long logPosition)
     {
         closeExistingLog();
-        startLogRecording(election.logPosition(), logChannel, logSessionId, SourceLocation.REMOTE);
+        final Subscription subscription = aeron.addSubscription(logChannel, ctx.logStreamId());
+        startLogRecording(logChannel, logSessionId, SourceLocation.REMOTE);
+        createCommitPosCounter(logPosition);
 
-        final Image image = awaitImage(logSessionId, aeron.addSubscription(logChannel, ctx.logStreamId()));
-        logAdapter = new LogAdapter(image, this);
-        lastAppendedPosition = 0;
+        return subscription;
+    }
+
+    void awaitImageAndCreateFollowerLogAdapter(final Subscription subscription, final int logSessionId)
+    {
+        if (null == logAdapter)
+        {
+            final Image image = awaitImage(logSessionId, subscription);
+            logAdapter = new LogAdapter(image, this);
+            lastAppendedPosition = 0;
+
+            awaitPositionCounters(logSessionId);
+        }
     }
 
     void awaitServicesReady(final ChannelUri logChannelUri, final int logSessionId)
@@ -762,43 +777,35 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    void catchupLog(final LogCatchup logCatchup)
+    void catchupLogPoll(final long stopPosition)
     {
-        final long fromPosition = logCatchup.fromPosition();
-        final long targetPosition = logCatchup.targetPosition();
-        final long length = targetPosition - fromPosition;
-
-        final RecordingLog.Log log = recoveryPlan.logs.get(0);
-        final long originalLeadershipTermId = leadershipTermId;
-        leadershipTermId = log.leadershipTermId;
-        expectedAckPosition = fromPosition;
-
-        try (Counter counter = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, fromPosition, targetPosition))
+        if (null != logAdapter)
         {
-            final int streamId = ctx.replayStreamId();
-            final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
-            final int logSessionId = 1;
-            channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
-            final String channel = channelUri.toString();
+            expectedAckPosition = stopPosition;
 
-            try (Subscription subscription = aeron.addSubscription(channel, streamId))
+            final Image image = logAdapter.image();
+            if (logAdapter.poll(stopPosition) == 0)
             {
-                logAdapter = null;
-                serviceProxy.joinLog(leadershipTermId, counter.id(), logSessionId, streamId, channel);
-                awaitServiceAcks();
+                if (image.position() == stopPosition)
+                {
+                    while (!missedTimersSet.isEmpty())
+                    {
+                        idle();
+                        cancelMissedTimers();
+                    }
+                }
 
-                final int replaySessionId = (int)archive.startReplay(
-                    logCatchup.localRecordingId(), fromPosition, length, channel, streamId);
-
-                replayLog(awaitImage(replaySessionId, subscription), targetPosition, counter);
-
-                recordingLog.commitLogPosition(leadershipTermId, targetPosition);
-                expectedAckPosition = targetPosition;
-                awaitServiceAcks();
+                if (image.isClosed())
+                {
+                    throw new IllegalStateException("unexpected close of image when replaying log");
+                }
             }
-        }
 
-        leadershipTermId = originalLeadershipTermId;
+            commitPosition.setOrdered(image.position());
+
+            consensusModuleAdapter.poll();
+            cancelMissedTimers();
+        }
     }
 
     private int slowTickCycle(final long nowMs)
@@ -1050,13 +1057,17 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    private void createPositionCounters(final int logSessionId, final long logPosition)
+    private void createCommitPosCounter(final long logPosition)
+    {
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, Long.MAX_VALUE);
+    }
+
+    private void createPositionCounters(final int logSessionId)
     {
         final CountersReader counters = aeron.countersReader();
         final int recordingCounterId = awaitRecordingCounter(counters, logSessionId);
 
         appendedPosition = new ReadableCounter(counters, recordingCounterId);
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, Long.MAX_VALUE);
     }
 
     private void recoverFromSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
@@ -1388,6 +1399,8 @@ class SequencerAgent implements Agent, MemberStatusListener
     private Publication createLogPublication(
         final ChannelUri channelUri, final RecordingLog.RecoveryPlan plan, final long position)
     {
+        channelUri.put(TAGS_PARAM_NAME, ConsensusModule.Configuration.LOG_PUBLICATION_TAGS);
+
         if (!plan.logs.isEmpty())
         {
             final RecordingLog.Log log = plan.logs.get(0);
@@ -1421,8 +1434,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         return publication;
     }
 
-    private void startLogRecording(
-        final long position, final String channel, final int sessionId, final SourceLocation sourceLocation)
+    private void startLogRecording(final String channel, final int sessionId, final SourceLocation sourceLocation)
     {
         if (recoveryPlan.logs.isEmpty())
         {
@@ -1433,8 +1445,11 @@ class SequencerAgent implements Agent, MemberStatusListener
             final RecordingLog.Log log = recoveryPlan.logs.get(0);
             archive.extendRecording(log.recordingId, channel, ctx.logStreamId(), sourceLocation);
         }
+    }
 
-        createPositionCounters(sessionId, position);
+    private void awaitPositionCounters(final int sessionId)
+    {
+        createPositionCounters(sessionId);
 
         final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
         recordingLog.commitLeadershipRecordingId(leadershipTermId, recordingId);

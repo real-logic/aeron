@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.concurrent.CachedEpochClock;
 import org.junit.Before;
@@ -192,6 +193,8 @@ public class ElectionTest
         election.onNewLeadershipTerm(logPosition, candidateTermId, candidateId, logSessionId);
         assertThat(election.state(), is(Election.State.FOLLOWER_TRANSITION));
 
+        when(sequencerAgent.createAndRecordLogSubscriptionAsFollower(anyString(), anyInt(), anyLong()))
+            .thenReturn(mock(Subscription.class));
         final long t3 = 3;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.FOLLOWER_READY));

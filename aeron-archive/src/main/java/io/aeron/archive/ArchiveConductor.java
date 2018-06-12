@@ -679,7 +679,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             .media(channelUri.media())
             .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
             .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
-            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME));
+            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME))
+            .tags(channelUri.get(CommonContext.TAGS_PARAM_NAME));
 
         if (null != sessionIdStr && ChannelUri.isTagReference(sessionIdStr))
         {

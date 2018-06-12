@@ -1014,25 +1014,25 @@ class SequencerAgent implements Agent, MemberStatusListener
                         session.close(CloseReason.TIMEOUT);
                         if (logPublisher.appendSessionClose(session, nowMs))
                         {
-                            ctx.timedOutClientCounter().incrementOrdered();
                             i.remove();
+                            ctx.timedOutClientCounter().incrementOrdered();
                         }
                         break;
 
                     case CLOSED:
                         if (logPublisher.appendSessionClose(session, nowMs))
                         {
+                            i.remove();
                             if (session.closeReason() == CloseReason.TIMEOUT)
                             {
                                 ctx.timedOutClientCounter().incrementOrdered();
                             }
-                            i.remove();
                         }
                         break;
 
                     default:
-                        session.close();
                         i.remove();
+                        session.close();
                 }
 
                 workCount += 1;

@@ -274,7 +274,7 @@ if(DOXYGEN_FOUND)
 
     # install the doc if it has been built
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc DESTINATION share OPTIONAL)
-endif(DOXYGEN_FOUND)
+endif()
 
 ##########################################################
 # package target

@@ -138,6 +138,28 @@ public class CatalogTest
     }
 
     @Test
+    public void shouldIncreaseMaxEntries()
+    {
+        final long newMaxEntries = MAX_ENTRIES * 2;
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, clock))
+        {
+            assertEquals(newMaxEntries, catalog.maxEntries());
+        }
+    }
+
+    @Test
+    public void shouldNotDecreaseMaxEntries()
+    {
+        final long newMaxEntries = 1;
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, clock))
+        {
+            assertEquals(MAX_ENTRIES, catalog.maxEntries());
+        }
+    }
+
+    @Test
     public void shouldFixTimestampForEmptyRecordingAfterFailure()
     {
         final long newRecordingId = newRecording();

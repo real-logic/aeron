@@ -148,6 +148,11 @@ public class ClientSession
         sessionHeaderEncoder.timestamp(cluster.timeMs());
         messageBuffer.reset(buffer, offset, length);
 
+        if (null == responsePublication)
+        {
+            throw new IllegalStateException("ClientSession not connected");
+        }
+
         return responsePublication.offer(vectors, null);
     }
 

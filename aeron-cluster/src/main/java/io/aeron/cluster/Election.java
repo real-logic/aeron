@@ -24,6 +24,7 @@ import org.agrona.CloseHelper;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 /**
@@ -125,6 +126,7 @@ class Election implements AutoCloseable
     private long timeOfLastUpdateMs;
     private long nominationDeadlineMs;
     private long leadershipTermId;
+    private long candidateTermId = NULL_VALUE;
     private int logSessionId = CommonContext.NULL_SESSION_ID;
     private ClusterMember leaderMember = null;
     private State state = State.INIT;
@@ -226,8 +228,8 @@ class Election implements AutoCloseable
         {
             memberStatusPublisher.newLeadershipTerm(
                 clusterMembers[followerMemberId].publication(),
-                logPosition,
-                leadershipTermId,
+                this.logPosition,
+                this.leadershipTermId,
                 thisMember.id(),
                 logSessionId);
         }
@@ -239,13 +241,14 @@ class Election implements AutoCloseable
 
     void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
     {
-        if (candidateTermId <= leadershipTermId)
+        if (candidateTermId <= leadershipTermId || candidateTermId <= this.candidateTermId)
         {
             placeVote(candidateTermId, candidateId, false);
         }
-        else if (candidateTermId == leadershipTermId + 1 && logPosition < this.logPosition)
+        else if (candidateTermId == leadershipTermId + 1 &&
+            logPosition < this.logPosition && NULL_VALUE != this.candidateTermId)
         {
-            leadershipTermId = candidateTermId;
+            this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().candidateTermId(candidateTermId);
             state(State.CANVASS, ctx.epochClock().time());
 
@@ -253,7 +256,7 @@ class Election implements AutoCloseable
         }
         else
         {
-            leadershipTermId = candidateTermId;
+            this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().candidateTermId(candidateTermId);
             state(State.FOLLOWER_BALLOT, ctx.epochClock().time());
 
@@ -264,7 +267,7 @@ class Election implements AutoCloseable
     void onVote(final long candidateTermId, final int candidateMemberId, final int followerMemberId, final boolean vote)
     {
         if (Cluster.Role.CANDIDATE == sequencerAgent.role() &&
-            candidateTermId == leadershipTermId &&
+            candidateTermId == this.candidateTermId &&
             candidateMemberId == thisMember.id())
         {
             clusterMembers[followerMemberId]
@@ -277,8 +280,10 @@ class Election implements AutoCloseable
         final long logPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
     {
         if ((State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state) &&
-            leadershipTermId == this.leadershipTermId)
+            leadershipTermId == this.candidateTermId)
         {
+            this.leadershipTermId = leadershipTermId;
+            this.candidateTermId = NULL_VALUE;
             leaderMember = clusterMembers[leaderMemberId];
             this.logSessionId = logSessionId;
 
@@ -370,7 +375,7 @@ class Election implements AutoCloseable
 
         if (clusterMembers.length == 1)
         {
-            ++leadershipTermId;
+            candidateTermId = leadershipTermId + 1;
             leaderMember = thisMember;
             state(State.LEADER_TRANSITION, nowMs);
         }
@@ -381,6 +386,7 @@ class Election implements AutoCloseable
         }
         else
         {
+            candidateTermId = ctx.clusterMarkFile().candidateTermId();
             state(State.CANVASS, nowMs);
         }
 
@@ -406,7 +412,7 @@ class Election implements AutoCloseable
             workCount += 1;
         }
 
-        if (ctx.appointedLeaderId() != Aeron.NULL_VALUE)
+        if (ctx.appointedLeaderId() != NULL_VALUE)
         {
             return  workCount;
         }
@@ -431,9 +437,10 @@ class Election implements AutoCloseable
     {
         if (nowMs >= nominationDeadlineMs)
         {
-            thisMember.leadershipTermId(++leadershipTermId);
+            candidateTermId = leadershipTermId + 1;
+            thisMember.leadershipTermId(candidateTermId);
             ClusterMember.becomeCandidate(clusterMembers, thisMember.id());
-            ctx.clusterMarkFile().candidateTermId(leadershipTermId);
+            ctx.clusterMarkFile().candidateTermId(candidateTermId);
             sequencerAgent.role(Cluster.Role.CANDIDATE);
 
             state(State.CANDIDATE_BALLOT, nowMs);
@@ -447,7 +454,7 @@ class Election implements AutoCloseable
     {
         int workCount = 0;
 
-        if (ClusterMember.hasWonVoteOnFullCount(clusterMembers, leadershipTermId))
+        if (ClusterMember.hasWonVoteOnFullCount(clusterMembers, candidateTermId))
         {
             state(State.LEADER_TRANSITION, nowMs);
             leaderMember = thisMember;
@@ -455,16 +462,14 @@ class Election implements AutoCloseable
         }
         else if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())))
         {
-            if (ClusterMember.hasMajorityVote(clusterMembers, leadershipTermId))
+            if (ClusterMember.hasMajorityVote(clusterMembers, candidateTermId))
             {
                 state(State.LEADER_TRANSITION, nowMs);
                 leaderMember = thisMember;
             }
             else
             {
-                ctx.recordingLog().appendTerm(Aeron.NULL_VALUE, leadershipTermId, logPosition, nowMs);
-                ctx.clusterMarkFile().candidateTermId(Aeron.NULL_VALUE);
-
+                advanceEmptyTerm(nowMs);
                 state(State.CANVASS, nowMs);
             }
 
@@ -478,7 +483,7 @@ class Election implements AutoCloseable
                 {
                     workCount += 1;
                     member.isBallotSent(memberStatusPublisher.requestVote(
-                        member.publication(), logPosition, leadershipTermId, thisMember.id()));
+                        member.publication(), logPosition, candidateTermId, thisMember.id()));
                 }
             }
         }
@@ -492,6 +497,7 @@ class Election implements AutoCloseable
 
         if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())))
         {
+            advanceEmptyTerm(nowMs);
             state(State.CANVASS, nowMs);
             workCount += 1;
         }
@@ -501,10 +507,12 @@ class Election implements AutoCloseable
 
     private int leaderTransition(final long nowMs)
     {
+        leadershipTermId = candidateTermId;
+        candidateTermId = NULL_VALUE;
         sequencerAgent.becomeLeader();
 
         ctx.recordingLog().appendTerm(sequencerAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
-        ctx.clusterMarkFile().candidateTermId(Aeron.NULL_VALUE);
+        ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
 
         ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
         clusterMembers[thisMember.id()].logPosition(logPosition);
@@ -587,7 +595,7 @@ class Election implements AutoCloseable
         ensureLogImageAvailable();
 
         ctx.recordingLog().appendTerm(sequencerAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
-        ctx.clusterMarkFile().candidateTermId(Aeron.NULL_VALUE);
+        ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
 
         state(State.FOLLOWER_READY, nowMs);
 
@@ -639,6 +647,14 @@ class Election implements AutoCloseable
             candidateId,
             thisMember.id(),
             vote);
+    }
+
+    private void advanceEmptyTerm(final long nowMs)
+    {
+        ctx.recordingLog().appendTerm(NULL_VALUE, candidateTermId, logPosition, nowMs);
+        leadershipTermId = candidateTermId;
+        candidateTermId = NULL_VALUE;
+        ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
     }
 
     private void ensureSubscriptionsCreated()

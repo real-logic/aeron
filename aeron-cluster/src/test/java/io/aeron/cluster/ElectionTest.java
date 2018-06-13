@@ -59,6 +59,7 @@ public class ElectionTest
     {
         when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);
         when(sequencerAgent.logRecordingId()).thenReturn(RECORDING_ID);
+        when(clusterMarkFile.candidateTermId()).thenReturn((long)Aeron.NULL_VALUE);
     }
 
     @Test
@@ -102,7 +103,6 @@ public class ElectionTest
         election.doWork(t1);
         verify(sequencerAgent).role(Cluster.Role.CANDIDATE);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
-        assertThat(election.leadershipTermId(), is(candidateTermId));
 
         final long t2 = 2;
         clock.update(t2);
@@ -137,6 +137,7 @@ public class ElectionTest
         assertThat(clusterMembers[1].logPosition(), is(NULL_POSITION));
         assertThat(clusterMembers[2].logPosition(), is(NULL_POSITION));
         assertThat(election.state(), is(Election.State.LEADER_READY));
+        assertThat(election.leadershipTermId(), is(candidateTermId));
 
         final long t5 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
         clock.update(t5);

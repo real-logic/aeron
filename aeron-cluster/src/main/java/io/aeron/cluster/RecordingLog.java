@@ -76,7 +76,7 @@ import static org.agrona.BitUtil.*;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class RecordingLog
+public class RecordingLog implements AutoCloseable
 {
     /**
      * The ID assigned to the consensus module as its service id for taking snapshots,
@@ -457,8 +457,7 @@ public class RecordingLog
     private static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
 
     private int nextEntryIndex;
-    private final File parentDir;
-    private final File logFile;
+    private final FileChannel fileChannel;
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
     private final ArrayList<Entry> entries = new ArrayList<>();
@@ -471,10 +470,31 @@ public class RecordingLog
      */
     public RecordingLog(final File parentDir)
     {
-        this.parentDir = parentDir;
-        this.logFile = new File(parentDir, RECORDING_LOG_FILE_NAME);
+        final File logFile = new File(parentDir, RECORDING_LOG_FILE_NAME);
+        final boolean newFile = !logFile.exists();
 
-        reload();
+        try
+        {
+            fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE, SYNC);
+
+            if (newFile)
+            {
+                syncDirectory(parentDir);
+            }
+            else
+            {
+                reload();
+            }
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public void close()
+    {
+        CloseHelper.close(fileChannel);
     }
 
     /**
@@ -506,18 +526,11 @@ public class RecordingLog
         indexByLeadershipTermIdMap.clear();
         indexByLeadershipTermIdMap.compact();
 
-        final boolean newFile = !logFile.exists();
+        nextEntryIndex = 0;
+        byteBuffer.clear();
 
-        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE))
+        try
         {
-            if (newFile)
-            {
-                syncDirectory(parentDir);
-                return;
-            }
-
-            nextEntryIndex = 0;
-            byteBuffer.clear();
             while (true)
             {
                 final int bytes = fileChannel.read(byteBuffer);
@@ -540,7 +553,6 @@ public class RecordingLog
                     break;
                 }
             }
-
         }
         catch (final IOException ex)
         {
@@ -823,7 +835,7 @@ public class RecordingLog
         byteBuffer.limit(SIZE_OF_INT).position(0);
         final long filePosition = (index * ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
 
-        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
+        try
         {
             if (SIZE_OF_INT != fileChannel.write(byteBuffer, filePosition))
             {
@@ -839,8 +851,7 @@ public class RecordingLog
     public String toString()
     {
         return "RecordingLog{" +
-            "file=" + logFile.getAbsolutePath() +
-            ", entries=" + entries +
+            "entries=" + entries +
             '}';
     }
 
@@ -863,7 +874,7 @@ public class RecordingLog
 
         byteBuffer.limit(ENTRY_LENGTH).position(0);
 
-        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, APPEND, SYNC))
+        try
         {
             if (ENTRY_LENGTH != fileChannel.write(byteBuffer))
             {
@@ -957,7 +968,7 @@ public class RecordingLog
         byteBuffer.limit(SIZE_OF_LONG).position(0);
         final long filePosition = (entryIndex * ENTRY_LENGTH) + fieldOffset;
 
-        try (FileChannel fileChannel = FileChannel.open(logFile.toPath(), WRITE, SYNC))
+        try
         {
             if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
             {

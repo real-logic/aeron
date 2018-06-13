@@ -113,17 +113,19 @@ public class ClusterTool
 
     public static void recoveryPlan(final PrintStream out, final File clusterDir, final int serviceCount)
     {
-        try (AeronArchive archive = AeronArchive.connect())
+        try (AeronArchive archive = AeronArchive.connect();
+            RecordingLog recordingLog = new RecordingLog(clusterDir))
         {
-            final RecordingLog recordingLog = new RecordingLog(clusterDir);
             out.println(recordingLog.createRecoveryPlan(archive, serviceCount));
         }
     }
 
     public static void recordingLog(final PrintStream out, final File clusterDir)
     {
-        final RecordingLog recordingLog = new RecordingLog(clusterDir);
-        out.println(recordingLog.toString());
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        {
+            out.println(recordingLog.toString());
+        }
     }
 
     public static void errors(final PrintStream out, final File clusterDir)

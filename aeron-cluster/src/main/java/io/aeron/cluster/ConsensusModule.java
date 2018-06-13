@@ -21,7 +21,6 @@ import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
-import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -158,7 +157,6 @@ public class ConsensusModule implements AutoCloseable
         try (ConsensusModule consensusModule = launch())
         {
             consensusModule.context().shutdownSignalBarrier().await();
-
             System.out.println("Shutdown ConsensusModule...");
         }
     }
@@ -2370,6 +2368,7 @@ public class ConsensusModule implements AutoCloseable
         public void close()
         {
             CloseHelper.close(markFile);
+            CloseHelper.close(recordingLog);
 
             if (ownsAeronClient)
             {
@@ -2394,9 +2393,7 @@ public class ConsensusModule implements AutoCloseable
                 null,
                 authenticatorSupplier.getClass().toString());
 
-            final MarkFileHeaderEncoder encoder = markFile.encoder();
-
-            encoder
+            markFile.encoder()
                 .archiveStreamId(archiveContext.controlRequestStreamId())
                 .serviceStreamId(serviceStreamId)
                 .consensusModuleStreamId(consensusModuleStreamId)

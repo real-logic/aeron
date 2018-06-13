@@ -43,50 +43,59 @@ public class RecordingLogTest
     @Test
     public void shouldCreateNewIndex()
     {
-        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
-
-        assertThat(recordingLog.entries().size(), is(0));
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            assertThat(recordingLog.entries().size(), is(0));
+        }
     }
 
     @Test
     public void shouldAppendAndThenReloadLatestSnapshot()
     {
-        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
         final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, NULL_VALUE, ENTRY_TYPE_SNAPSHOT, 0);
 
-        recordingLog.appendSnapshot(
-            entry.recordingId,
-            entry.leadershipTermId,
-            entry.termBaseLogPosition,
-            777,
-            entry.timestamp,
-            CONSENSUS_MODULE_ID);
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendSnapshot(
+                entry.recordingId,
+                entry.leadershipTermId,
+                entry.termBaseLogPosition,
+                777,
+                entry.timestamp,
+                CONSENSUS_MODULE_ID);
+        }
 
-        final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
-        assertThat(recordingLogTwo.entries().size(), is(1));
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            assertThat(recordingLog.entries().size(), is(1));
 
-        final RecordingLog.Entry snapshot = recordingLogTwo.getLatestSnapshot(ClusteredService.NULL_SERVICE_ID);
-        assertEquals(entry.toString(), snapshot.toString());
+            final RecordingLog.Entry snapshot = recordingLog.getLatestSnapshot(ClusteredService.NULL_SERVICE_ID);
+            assertEquals(entry.toString(), snapshot.toString());
+        }
     }
 
     @Test
     public void shouldAppendAndThenCommitTermPosition()
     {
-        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
-        final long leadershipTermId = 1111L;
-        final long logPosition = 2222L;
-        final long timestamp = 3333L;
-
-        recordingLog.appendTerm(leadershipTermId, logPosition, timestamp);
-
         final long newPosition = 9999L;
-        recordingLog.commitLogPosition(leadershipTermId, newPosition);
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            final long leadershipTermId = 1111L;
+            final long logPosition = 2222L;
+            final long timestamp = 3333L;
 
-        final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
-        assertThat(recordingLogTwo.entries().size(), is(1));
+            recordingLog.appendTerm(leadershipTermId, logPosition, timestamp);
 
-        final RecordingLog.Entry actualEntry = recordingLogTwo.entries().get(0);
-        assertEquals(newPosition, actualEntry.logPosition);
+            recordingLog.commitLogPosition(leadershipTermId, newPosition);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            assertThat(recordingLog.entries().size(), is(1));
+
+            final RecordingLog.Entry actualEntry = recordingLog.entries().get(0);
+            assertEquals(newPosition, actualEntry.logPosition);
+        }
     }
 
     @Test
@@ -95,36 +104,43 @@ public class RecordingLogTest
         final long leadershipTermId = 1111L;
         final long termBaseLogPosition = 2222L;
         final long timestamp = 3333L;
-
-        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
-        recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, timestamp);
-
         final long newBaseLogPosition = 7777L;
-        recordingLog.commitTermBaseLogPosition(leadershipTermId, newBaseLogPosition);
 
-        final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
-        assertThat(recordingLogTwo.entries().size(), is(1));
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, timestamp);
+            recordingLog.commitTermBaseLogPosition(leadershipTermId, newBaseLogPosition);
+        }
 
-        final RecordingLog.Entry actualEntry = recordingLogTwo.entries().get(0);
-        assertEquals(newBaseLogPosition, actualEntry.termBaseLogPosition);
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            assertThat(recordingLog.entries().size(), is(1));
+
+            final RecordingLog.Entry actualEntry = recordingLog.entries().get(0);
+            assertEquals(newBaseLogPosition, actualEntry.termBaseLogPosition);
+        }
     }
 
     @Test
     public void shouldTombstoneEntry()
     {
-        final RecordingLog recordingLog = new RecordingLog(TEMP_DIR);
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            final RecordingLog.Entry entryOne = new RecordingLog.Entry(
+                NULL_VALUE, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, 0);
+            recordingLog.appendTerm(entryOne.leadershipTermId, entryOne.termBaseLogPosition, entryOne.timestamp);
 
-        final RecordingLog.Entry entryOne = new RecordingLog.Entry(
-            NULL_VALUE, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, 0);
-        recordingLog.appendTerm(entryOne.leadershipTermId, entryOne.termBaseLogPosition, entryOne.timestamp);
+            final RecordingLog.Entry entryTwo = new RecordingLog.Entry(
+                NULL_VALUE, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
+            recordingLog.appendTerm(entryTwo.leadershipTermId, entryTwo.termBaseLogPosition, entryTwo.timestamp);
 
-        final RecordingLog.Entry entryTwo = new RecordingLog.Entry(
-            NULL_VALUE, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
-        recordingLog.appendTerm(entryTwo.leadershipTermId, entryTwo.termBaseLogPosition, entryTwo.timestamp);
+            recordingLog.tombstoneEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
+        }
 
-        recordingLog.tombstoneEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
-        final RecordingLog recordingLogTwo = new RecordingLog(TEMP_DIR);
-        assertThat(recordingLogTwo.entries().size(), is(1));
-        assertThat(recordingLogTwo.nextEntryIndex(), is(2));
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            assertThat(recordingLog.entries().size(), is(1));
+            assertThat(recordingLog.nextEntryIndex(), is(2));
+        }
     }
 }

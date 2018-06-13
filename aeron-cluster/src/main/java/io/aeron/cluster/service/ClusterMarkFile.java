@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.Aeron;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
@@ -37,7 +38,7 @@ import java.util.function.Consumer;
 
 /**
  * Used to indicate if a cluster service is running and what configuration it is using. Errors encountered by
- * the service are recorded in within this file by a {@link org.agrona.concurrent.errors.DistinctErrorLog}.
+ * the service are recorded within this file by a {@link org.agrona.concurrent.errors.DistinctErrorLog}.
  */
 public class ClusterMarkFile implements AutoCloseable
 {
@@ -95,6 +96,10 @@ public class ClusterMarkFile implements AutoCloseable
 
             errorBuffer.setMemory(0, errorBufferLength, (byte)0);
         }
+        else
+        {
+            headerEncoder.candidateTermId(Aeron.NULL_VALUE);
+        }
 
         final ClusterComponentType existingType = headerDecoder.componentType();
 
@@ -142,6 +147,28 @@ public class ClusterMarkFile implements AutoCloseable
     public void close()
     {
         CloseHelper.close(markFile);
+    }
+
+    /**
+     * Get the current value of a candidate term id if a vote is placed in an election.
+     *
+     * @return the current candidate term id within an election after voting or {@link Aeron#NULL_VALUE} if
+     * no voting phase of an election is currently active.
+     */
+    public long candidateTermId()
+    {
+        return buffer.getLongVolatile(MarkFileHeaderDecoder.candidateTermIdEncodingOffset());
+    }
+
+    /**
+     * Record the fact that a node has positively voted in an election for a candidate so it can survive a restart.
+     *
+     * @param candidateTermId to record that a vote has taken place.
+     */
+    public void candidateTermId(final long candidateTermId)
+    {
+        buffer.putLongVolatile(MarkFileHeaderEncoder.candidateTermIdEncodingOffset(), candidateTermId);
+        markFile.mappedByteBuffer().force();
     }
 
     public void signalReady()

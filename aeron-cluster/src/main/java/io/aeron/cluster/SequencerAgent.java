@@ -441,7 +441,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             timeOfLastLogUpdateMs = cachedTimeMs;
             followerCommitPosition = logPosition;
         }
-        else if (Cluster.Role.LEADER == role && leadershipTermId > this.leadershipTermId)
+        else if (leadershipTermId > this.leadershipTermId)
         {
             // TODO: Follow new leader
         }

@@ -1333,7 +1333,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-                final long termBaseLogPosition = recoveryPlan.lastAppendedLogPosition; // TODO: fix after election
+                final long termBaseLogPosition = recordingLog.getTermEntry(leadershipTermId).termBaseLogPosition;
 
                 snapshotState(publication, logPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);

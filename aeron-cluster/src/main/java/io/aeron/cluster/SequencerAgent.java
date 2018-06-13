@@ -750,14 +750,11 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     void awaitImageAndCreateFollowerLogAdapter(final Subscription subscription, final int logSessionId)
     {
-        if (null == logAdapter)
-        {
-            final Image image = awaitImage(logSessionId, subscription);
-            logAdapter = new LogAdapter(image, this);
-            lastAppendedPosition = 0;
+        final Image image = awaitImage(logSessionId, subscription);
+        logAdapter = new LogAdapter(image, this);
+        lastAppendedPosition = 0;
 
-            createPositionCounters(logSessionId);
-        }
+        createPositionCounters(logSessionId);
     }
 
     void awaitServicesReady(final ChannelUri logChannelUri, final int logSessionId)

@@ -73,6 +73,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final ClusteredMediaDriver clusteredMediaDriver;
     private final ClusteredServiceContainer clusteredServiceContainer;
     private final AtomicBoolean isTerminated = new AtomicBoolean();
+    private final AtomicInteger roleValue = new AtomicInteger(-1);
     private final Aeron aeron;
     private final ClusteredService service;
     private final AtomicBoolean serviceOnStart = new AtomicBoolean();
@@ -413,6 +414,15 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
     }
 
+    void awaitServiceOnRoleChange(final Cluster.Role role)
+    {
+        idleStrategy.reset();
+        while (roleValue.get() != role.code())
+        {
+            idleStrategy.idle();
+        }
+    }
+
     public void onStart(final Cluster cluster)
     {
         service.onStart(cluster);
@@ -469,6 +479,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
     public void onRoleChange(final Cluster.Role newRole)
     {
+        roleValue.lazySet(newRole.code());
         service.onRoleChange(newRole);
     }
 

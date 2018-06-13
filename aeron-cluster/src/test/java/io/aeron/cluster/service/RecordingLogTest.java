@@ -80,11 +80,12 @@ public class RecordingLogTest
         final long newPosition = 9999L;
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
+            final long recordingId = 1L;
             final long leadershipTermId = 1111L;
             final long logPosition = 2222L;
             final long timestamp = 3333L;
 
-            recordingLog.appendTerm(leadershipTermId, logPosition, timestamp);
+            recordingLog.appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
 
             recordingLog.commitLogPosition(leadershipTermId, newPosition);
         }
@@ -104,12 +105,14 @@ public class RecordingLogTest
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
             final RecordingLog.Entry entryOne = new RecordingLog.Entry(
-                NULL_VALUE, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, 0);
-            recordingLog.appendTerm(entryOne.leadershipTermId, entryOne.termBaseLogPosition, entryOne.timestamp);
+                1L, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, 0);
+            recordingLog.appendTerm(
+                entryOne.recordingId, entryOne.leadershipTermId, entryOne.termBaseLogPosition, entryOne.timestamp);
 
             final RecordingLog.Entry entryTwo = new RecordingLog.Entry(
-                NULL_VALUE, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
-            recordingLog.appendTerm(entryTwo.leadershipTermId, entryTwo.termBaseLogPosition, entryTwo.timestamp);
+                1L, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
+            recordingLog.appendTerm(
+                entryTwo.recordingId, entryTwo.leadershipTermId, entryTwo.termBaseLogPosition, entryTwo.timestamp);
 
             recordingLog.tombstoneEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
         }

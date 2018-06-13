@@ -59,6 +59,11 @@ class LogPublisher
         return publication.position();
     }
 
+    int sessionId()
+    {
+        return publication.sessionId();
+    }
+
     boolean appendMessage(final DirectBuffer buffer, final int offset, final int length, final long nowMs)
     {
         final int timestampOffset =

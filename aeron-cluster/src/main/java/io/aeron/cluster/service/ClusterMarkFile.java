@@ -161,7 +161,7 @@ public class ClusterMarkFile implements AutoCloseable
     }
 
     /**
-     * Record the fact that a node has positively voted in an election for a candidate so it can survive a restart.
+     * Record the fact that a node has voted in a current election for a candidate so it can survive a restart.
      *
      * @param candidateTermId to record that a vote has taken place.
      */

@@ -561,6 +561,23 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
+     * Get the term {@link Entry} for a given leadership term id.
+     *
+     * @param leadershipTermId to get {@link Entry} for.
+     * @return the {@link Entry} if found or throw {@link IllegalArgumentException} if no entry exists for term.
+     */
+    public Entry getTermEntry(final long leadershipTermId)
+    {
+        final int index = (int)indexByLeadershipTermIdMap.get(leadershipTermId);
+        if (NULL_VALUE == index)
+        {
+            throw new IllegalArgumentException("Unknown leadershipTermId=" + leadershipTermId);
+        }
+
+        return entries.get(index);
+    }
+
+    /**
      * Find entries in a {@link RecordingLog} from a leadershipTermId inclusive. The results are limited to a count
      * and can optionally include snapshots or not.
      *
@@ -662,11 +679,13 @@ public class RecordingLog implements AutoCloseable
     /**
      * Append a log entry for a leadership term.
      *
+     * @param recordingId         of the log.
      * @param leadershipTermId    for the current term.
      * @param termBaseLogPosition reached at the beginning of the term.
      * @param timestamp           at the beginning of the term.
      */
-    public void appendTerm(final long leadershipTermId, final long termBaseLogPosition, final long timestamp)
+    public void appendTerm(
+        final long recordingId, final long leadershipTermId, final long termBaseLogPosition, final long timestamp)
     {
         final int size = entries.size();
         if (size > 0)
@@ -684,7 +703,7 @@ public class RecordingLog implements AutoCloseable
 
         append(
             ENTRY_TYPE_TERM,
-            NULL_VALUE,
+            recordingId,
             leadershipTermId,
             termBaseLogPosition,
             NULL_POSITION,
@@ -730,29 +749,6 @@ public class RecordingLog implements AutoCloseable
             logPosition,
             timestamp,
             serviceId);
-    }
-
-    /**
-     * Commit the recording id of the log for a leadership term.
-     *
-     * @param leadershipTermId for committing the recording id for the log.
-     * @param recordingId      for the log of the leadership term.
-     */
-    public void commitLeadershipRecordingId(final long leadershipTermId, final long recordingId)
-    {
-        final int index = getLeadershipTermEntryIndex(leadershipTermId);
-        commitEntryValue(index, recordingId, RECORDING_ID_OFFSET);
-
-        final Entry entry = entries.get(index);
-        entries.set(index, new Entry(
-            recordingId,
-            entry.leadershipTermId,
-            entry.termBaseLogPosition,
-            entry.logPosition,
-            entry.timestamp,
-            entry.serviceId,
-            entry.type,
-            entry.entryIndex));
     }
 
     /**

@@ -20,6 +20,7 @@ import io.aeron.Counter;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.cluster.service.Cluster;
+import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.concurrent.CachedEpochClock;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,17 +38,27 @@ import static org.mockito.Mockito.*;
 
 public class ElectionTest
 {
+    public static final long RECORDING_ID = 1L;
     private final Aeron aeron = mock(Aeron.class);
     private final Counter electionStateCounter = mock(Counter.class);
     private final RecordingLog recordingLog = mock(RecordingLog.class);
+    private final ClusterMarkFile clusterMarkFile = mock(ClusterMarkFile.class);
     private final MemberStatusAdapter memberStatusAdapter = mock(MemberStatusAdapter.class);
     private final MemberStatusPublisher memberStatusPublisher = mock(MemberStatusPublisher.class);
     private final SequencerAgent sequencerAgent = mock(SequencerAgent.class);
+
+    private final ConsensusModule.Context ctx = new ConsensusModule.Context()
+        .epochClock(new CachedEpochClock())
+        .aeron(aeron)
+        .recordingLog(recordingLog)
+        .random(new Random())
+        .clusterMarkFile(clusterMarkFile);
 
     @Before
     public void before()
     {
         when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);
+        when(sequencerAgent.logRecordingId()).thenReturn(RECORDING_ID);
     }
 
     @Test
@@ -58,10 +69,6 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = ClusterMember.parse(
             "0,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint");
 
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .recordingLog(recordingLog)
-            .aeron(aeron);
-
         final ClusterMember thisMember = clusterMembers[0];
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, thisMember, ctx);
 
@@ -69,8 +76,8 @@ public class ElectionTest
 
         final long t1 = 0;
         election.doWork(t1);
-        verify(recordingLog).appendTerm(0L, 0L, t1);
         verify(sequencerAgent).becomeLeader();
+        verify(recordingLog).appendTerm(RECORDING_ID, 0L, 0L, t1);
         assertThat(election.state(), is(Election.State.LEADER_READY));
     }
 
@@ -80,12 +87,10 @@ public class ElectionTest
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
-
         final ClusterMember candidateMember = clusterMembers[0];
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .recordingLog(recordingLog)
-            .appointedLeaderId(candidateMember.id())
-            .aeron(aeron);
+        final CachedEpochClock clock = (CachedEpochClock)ctx.epochClock();
+
+        ctx.appointedLeaderId(candidateMember.id());
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
 
@@ -93,13 +98,14 @@ public class ElectionTest
 
         final long candidateTermId = leadershipTermId + 1;
         final long t1 = 1;
+        clock.update(t1);
         election.doWork(t1);
         verify(sequencerAgent).role(Cluster.Role.CANDIDATE);
-        verify(recordingLog).appendTerm(0L, 0L, t1);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
         assertThat(election.leadershipTermId(), is(candidateTermId));
 
         final long t2 = 2;
+        clock.update(t2);
         election.doWork(t2);
         verify(memberStatusPublisher).requestVote(
             clusterMembers[1].publication(),
@@ -118,17 +124,22 @@ public class ElectionTest
         election.onVote(candidateTermId, candidateMember.id(), clusterMembers[2].id(), true);
 
         final long t3 = 3;
+        clock.update(t3);
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
 
         final long t4 = 4;
+        clock.update(t4);
         election.doWork(t4);
         verify(sequencerAgent).becomeLeader();
+        verify(recordingLog).appendTerm(RECORDING_ID, 0L, 0L, t4);
+
         assertThat(clusterMembers[1].logPosition(), is(NULL_POSITION));
         assertThat(clusterMembers[2].logPosition(), is(NULL_POSITION));
         assertThat(election.state(), is(Election.State.LEADER_READY));
 
         final long t5 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
+        clock.update(t5);
         final int logSessionId = -7;
         election.logSessionId(logSessionId);
         election.doWork(t5);
@@ -147,6 +158,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.LEADER_READY));
 
         final long t6 = t5 + 1;
+        clock.update(t6);
         election.onAppendedPosition(0, candidateTermId, clusterMembers[1].id());
         election.onAppendedPosition(0, candidateTermId, clusterMembers[2].id());
         election.doWork(t6);
@@ -162,14 +174,10 @@ public class ElectionTest
         final long logPosition = 0;
         final int candidateId = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
-
         final ClusterMember followerMember = clusterMembers[1];
-        final CachedEpochClock clock = new CachedEpochClock();
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .recordingLog(recordingLog)
-            .appointedLeaderId(candidateId)
-            .epochClock(clock)
-            .aeron(aeron);
+        final CachedEpochClock clock = (CachedEpochClock)ctx.epochClock();
+
+        ctx.appointedLeaderId(candidateId).epochClock(clock);
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
 
@@ -183,7 +191,6 @@ public class ElectionTest
         final long t2 = 2;
         clock.update(t2);
         election.onRequestVote(logPosition, candidateTermId, candidateId);
-        verify(recordingLog).appendTerm(candidateTermId, 0, t2);
         verify(memberStatusPublisher).placeVote(
             clusterMembers[candidateId].publication(), candidateTermId, candidateId, followerMember.id(), true);
         election.doWork(t1);
@@ -216,14 +223,7 @@ public class ElectionTest
         final long logPosition = 0;
         final long leaderShipTermId = Aeron.NULL_VALUE;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
-
         final ClusterMember followerMember = clusterMembers[1];
-        final CachedEpochClock clock = new CachedEpochClock();
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .random(new Random())
-            .recordingLog(recordingLog)
-            .epochClock(clock)
-            .aeron(aeron);
 
         final Election election = newElection(leaderShipTermId, logPosition, clusterMembers, followerMember, ctx);
 
@@ -255,14 +255,7 @@ public class ElectionTest
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
-
         final ClusterMember followerMember = clusterMembers[0];
-        final CachedEpochClock clock = new CachedEpochClock();
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .random(new Random())
-            .recordingLog(recordingLog)
-            .epochClock(clock)
-            .aeron(aeron);
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
 
@@ -290,14 +283,7 @@ public class ElectionTest
         final long logPosition = 0;
         final long leadershipTermId = Aeron.NULL_VALUE;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
-
         final ClusterMember followerMember = clusterMembers[1];
-        final CachedEpochClock clock = new CachedEpochClock();
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .random(new Random())
-            .recordingLog(recordingLog)
-            .epochClock(clock)
-            .aeron(aeron);
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
 
@@ -331,14 +317,7 @@ public class ElectionTest
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
-
         final ClusterMember followerMember = clusterMembers[1];
-        final CachedEpochClock clock = new CachedEpochClock();
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .random(new Random())
-            .recordingLog(recordingLog)
-            .epochClock(clock)
-            .aeron(aeron);
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
 
@@ -366,14 +345,7 @@ public class ElectionTest
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
-
         final ClusterMember candidateMember = clusterMembers[1];
-        final CachedEpochClock clock = new CachedEpochClock();
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .random(new Random())
-            .recordingLog(recordingLog)
-            .epochClock(clock)
-            .aeron(aeron);
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
 
@@ -411,14 +383,7 @@ public class ElectionTest
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
-
         final ClusterMember candidateMember = clusterMembers[1];
-        final CachedEpochClock clock = new CachedEpochClock();
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .random(new Random())
-            .recordingLog(recordingLog)
-            .epochClock(clock)
-            .aeron(aeron);
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
 
@@ -454,14 +419,7 @@ public class ElectionTest
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
-
         final ClusterMember candidateMember = clusterMembers[1];
-        final CachedEpochClock clock = new CachedEpochClock();
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .random(new Random())
-            .recordingLog(recordingLog)
-            .epochClock(clock)
-            .aeron(aeron);
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
 
@@ -495,12 +453,6 @@ public class ElectionTest
         final long logPosition = 0L;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
-        final CachedEpochClock clock = new CachedEpochClock();
-        final ConsensusModule.Context ctx = new ConsensusModule.Context()
-            .random(new Random())
-            .recordingLog(recordingLog)
-            .epochClock(clock)
-            .aeron(aeron);
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
 

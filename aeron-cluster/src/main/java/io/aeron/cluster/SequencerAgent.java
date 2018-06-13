@@ -371,7 +371,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     {
         if (null != election)
         {
-            election.onAppendedPosition(logPosition, leadershipTermId, followerMemberId);
+            election.onCanvassPosition(logPosition, leadershipTermId, followerMemberId);
         }
         else if (Cluster.Role.LEADER == role)
         {

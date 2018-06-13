@@ -779,29 +779,6 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Commit the position for the base of a leadership term.
-     *
-     * @param leadershipTermId for committing the base position.
-     * @param logPosition      for the base of a leadership term.
-     */
-    public void commitTermBaseLogPosition(final long leadershipTermId, final long logPosition)
-    {
-        final int index = getLeadershipTermEntryIndex(leadershipTermId);
-        commitEntryValue(index, logPosition, TERM_BASE_LOG_POSITION_OFFSET);
-
-        final Entry entry = entries.get(index);
-        entries.set(index, new Entry(
-            entry.recordingId,
-            entry.leadershipTermId,
-            logPosition,
-            entry.logPosition,
-            entry.timestamp,
-            entry.serviceId,
-            entry.type,
-            entry.entryIndex));
-    }
-
-    /**
      * Tombstone an entry in the log so it is no longer valid.
      *
      * @param leadershipTermId to match for validation.

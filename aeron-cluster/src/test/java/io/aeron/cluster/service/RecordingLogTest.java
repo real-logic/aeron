@@ -99,29 +99,6 @@ public class RecordingLogTest
     }
 
     @Test
-    public void shouldAppendAndThenCommitLogPosition()
-    {
-        final long leadershipTermId = 1111L;
-        final long termBaseLogPosition = 2222L;
-        final long timestamp = 3333L;
-        final long newBaseLogPosition = 7777L;
-
-        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
-        {
-            recordingLog.appendTerm(leadershipTermId, termBaseLogPosition, timestamp);
-            recordingLog.commitTermBaseLogPosition(leadershipTermId, newBaseLogPosition);
-        }
-
-        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
-        {
-            assertThat(recordingLog.entries().size(), is(1));
-
-            final RecordingLog.Entry actualEntry = recordingLog.entries().get(0);
-            assertEquals(newBaseLogPosition, actualEntry.termBaseLogPosition);
-        }
-    }
-
-    @Test
     public void shouldTombstoneEntry()
     {
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))

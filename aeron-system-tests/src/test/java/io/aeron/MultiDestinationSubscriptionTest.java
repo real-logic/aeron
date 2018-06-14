@@ -303,7 +303,7 @@ public class MultiDestinationSubscriptionTest
         builder
             .clear()
             .media(CommonContext.UDP_MEDIA)
-            .isSessionIdTagReference(true)
+            .isSessionIdTagged(true)
             .sessionId(pubTag)
             .initialTermId(initialTermId)
             .termId(termId)

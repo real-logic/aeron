@@ -85,7 +85,7 @@ public class ReplayToLiveTest
 
     private static final ChannelUriStringBuilder REPLAY_CHANNEL = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
-        .isSessionIdTagReference(true)
+        .isSessionIdTagged(true)
         .sessionId(PUBLICATION_TAG)
         .endpoint(REPLAY_ENDPOINT);
 

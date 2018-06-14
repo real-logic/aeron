@@ -175,7 +175,7 @@ class LogCatchup implements AutoCloseable
             replayChannel = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
                 .endpoint(thisMember.transferEndpoint())
-                .isSessionIdTagReference(true)
+                .isSessionIdTagged(true)
                 .sessionId(ConsensusModule.Configuration.LOG_PUBLICATION_SESSION_ID_TAG)
                 .build();
         }

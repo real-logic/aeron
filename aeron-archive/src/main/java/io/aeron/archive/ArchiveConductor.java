@@ -685,7 +685,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         if (null != sessionIdStr && ChannelUri.isTagged(sessionIdStr))
         {
             channelBuilder
-                .isSessionIdTagReference(true)
+                .isSessionIdTagged(true)
                 .sessionId((int)ChannelUri.getTag(sessionIdStr));
         }
         else
@@ -807,19 +807,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long position,
         final RecordingSummary recording)
     {
-        final int initialTermId = recording.initialTermId;
-        final int termBufferLength = recording.termBufferLength;
-
-        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termBufferLength);
-        final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
-        final int termOffset = (int)(position & (termBufferLength - 1));
-
         final String channel = strippedChannelBuilder(ChannelUri.parse(replayChannel))
+            .initialPosition(position, recording.initialTermId, recording.termBufferLength)
             .mtu(recording.mtuLength)
-            .termLength(termBufferLength)
-            .initialTermId(initialTermId)
-            .termId(termId)
-            .termOffset(termOffset)
             .build();
 
         try

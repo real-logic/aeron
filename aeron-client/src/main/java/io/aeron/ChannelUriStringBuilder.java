@@ -31,6 +31,8 @@ import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
  */
 public class ChannelUriStringBuilder
 {
+    public static final String TAG_PREFIX = "tag:";
+
     private StringBuilder sb = new StringBuilder(64);
 
     private String prefix;
@@ -49,7 +51,7 @@ public class ChannelUriStringBuilder
     private Integer termOffset;
     private Integer sessionId;
     private Integer linger;
-    private boolean isSessionIdTagRef;
+    private boolean isSessionIdTagged;
 
     /**
      * Clear out all the values thus setting back to the initial state.
@@ -73,7 +75,7 @@ public class ChannelUriStringBuilder
         termId = null;
         termOffset = null;
         sessionId = null;
-        isSessionIdTagRef = false;
+        isSessionIdTagged = false;
 
         return this;
     }
@@ -569,25 +571,45 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Is the value for {@link #sessionId()} a tag reference or not.
+     * Toggle the value for {@link #sessionId()} being tagged or not.
      *
-     * @param isSessionIdTagRef for session id
+     * @param isSessionIdTagged for session id
      * @return this for a fluent API.
      */
-    public ChannelUriStringBuilder isSessionIdTagReference(final boolean isSessionIdTagRef)
+    public ChannelUriStringBuilder isSessionIdTagged(final boolean isSessionIdTagged)
     {
-        this.isSessionIdTagRef = isSessionIdTagRef;
+        this.isSessionIdTagged = isSessionIdTagged;
         return this;
     }
 
     /**
-     * Is the value for {@link #sessionId()} a tag reference or not.
+     * Is the value for {@link #sessionId()} a tagged.
      *
      * @return whether the value for {@link #sessionId()} a tag reference or not.
      */
-    public boolean isSessionIdTagReference()
+    public boolean isSessionIdTagged()
     {
-        return isSessionIdTagRef;
+        return isSessionIdTagged;
+    }
+
+    /**
+     * Initialise a channel for restarting a publication at a given position.
+     *
+     * @param position      at which the publication should be started.
+     * @param initialTermId what which the stream would start.
+     * @param termLength    for the stream.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder initialPosition(final long position, final int initialTermId, final int termLength)
+    {
+        final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
+
+        this.initialTermId = initialTermId;
+        this.termId = LogBufferDescriptor.computeTermIdFromPosition(position, bitsToShift, initialTermId);
+        this.termOffset = (int)(position & (termLength - 1));
+        this.termLength = termLength;
+
+        return this;
     }
 
     /**
@@ -668,7 +690,7 @@ public class ChannelUriStringBuilder
 
         if (null != sessionId)
         {
-            sb.append(SESSION_ID_PARAM_NAME).append('=').append(prefixTag(isSessionIdTagRef, sessionId)).append('|');
+            sb.append(SESSION_ID_PARAM_NAME).append('=').append(prefixTag(isSessionIdTagged, sessionId)).append('|');
         }
 
         if (null != linger)
@@ -697,8 +719,8 @@ public class ChannelUriStringBuilder
         return null == value ? null : Integer.valueOf(value);
     }
 
-    private static String prefixTag(final boolean isTagReference, final Integer value)
+    private static String prefixTag(final boolean isTagged, final Integer value)
     {
-        return isTagReference ? "tag:" + value.toString() : value.toString();
+        return isTagged ? TAG_PREFIX + value.toString() : value.toString();
     }
 }

@@ -575,13 +575,8 @@ class Election implements AutoCloseable
         else
         {
             logPosition = logCatchup.targetPosition();
-            sequencerAgent.updateMemberDetails();
-
-            final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
-            logSubscription.addDestination(channelUri.toString());
-
-            ctx.recordingLog().appendTerm(sequencerAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
-            ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
+            addLiveLogDestination(false);
+            appendTerm(nowMs);
 
             state(State.FOLLOWER_READY, nowMs);
             workCount += 1;
@@ -593,14 +588,9 @@ class Election implements AutoCloseable
     private int followerTransition(final long nowMs)
     {
         ensureSubscriptionsCreated();
-        sequencerAgent.updateMemberDetails();
 
-        final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
-        logSubscription.addDestination(channelUri.toString());
-        ensureLogImageAvailable();
-
-        ctx.recordingLog().appendTerm(sequencerAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
-        ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
+        addLiveLogDestination(true);
+        appendTerm(nowMs);
 
         state(State.FOLLOWER_READY, nowMs);
 
@@ -674,6 +664,25 @@ class Election implements AutoCloseable
     private void ensureLogImageAvailable()
     {
         sequencerAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
+    }
+
+    private void addLiveLogDestination(final boolean ensureImageAvailable)
+    {
+        sequencerAgent.updateMemberDetails();
+
+        final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
+        logSubscription.addDestination(channelUri.toString());
+
+        if (ensureImageAvailable)
+        {
+            ensureLogImageAvailable();
+        }
+    }
+
+    private void appendTerm(final long nowMs)
+    {
+        ctx.recordingLog().appendTerm(sequencerAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
+        ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
     }
 
     private static ChannelUri followerLogChannel(final String logChannel, final int sessionId)

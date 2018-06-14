@@ -110,11 +110,13 @@ public class ElectionTest
         verify(memberStatusPublisher).requestVote(
             clusterMembers[1].publication(),
             logPosition,
+            leadershipTermId,
             candidateTermId,
             candidateMember.id());
         verify(memberStatusPublisher).requestVote(
             clusterMembers[2].publication(),
             logPosition,
+            leadershipTermId,
             candidateTermId,
             candidateMember.id());
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
@@ -191,7 +193,7 @@ public class ElectionTest
         final long candidateTermId = leadershipTermId + 1;
         final long t2 = 2;
         clock.update(t2);
-        election.onRequestVote(logPosition, candidateTermId, candidateId);
+        election.onRequestVote(logPosition, leadershipTermId, candidateTermId, candidateId);
         verify(memberStatusPublisher).placeVote(
             clusterMembers[candidateId].publication(), candidateTermId, candidateId, followerMember.id(), true);
         election.doWork(t1);
@@ -307,7 +309,7 @@ public class ElectionTest
 
         final long t4 = t3 + 1;
         final long candidateTermId = leadershipTermId + 1;
-        election.onRequestVote(logPosition, candidateTermId, 0);
+        election.onRequestVote(logPosition, leadershipTermId, candidateTermId, 0);
         election.doWork(t4);
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
     }
@@ -464,7 +466,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.CANVASS));
 
         final long candidateTermId = leadershipTermId + 1;
-        election.onRequestVote(logPosition, candidateTermId, 0);
+        election.onRequestVote(logPosition, leadershipTermId, candidateTermId, 0);
 
         final long t2 = t1 + 1;
         election.doWork(t2);

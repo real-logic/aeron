@@ -91,7 +91,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final AeronArchive.Context aeronArchiveContext;
 
     private int thisMemberIndex;
-    private int leaderIndex;
 
     ConsensusModuleHarness(
         final ConsensusModule.Context consensusModuleContext,
@@ -103,7 +102,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     {
         this.service = service;
         this.members = ClusterMember.parse(consensusModuleContext.clusterMembers());
-        this.leaderIndex = consensusModuleContext.appointedLeaderId();
         this.thisMemberIndex = consensusModuleContext.clusterMemberId();
 
         harnessDir = harnessDirectory(consensusModuleContext.clusterMemberId());
@@ -616,11 +614,16 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 nextListener.onCanvassPosition(logPosition, leadershipTermId, followerMemberId);
             }
 
-            public void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
+            public void onRequestVote(
+                final long logPosition,
+                final long logLeadershipTermId,
+                final long candidateTermId,
+                final int candidateId)
             {
                 counters.onRequestVoteCounter++;
-                stream.format("onRequestVote[%d] %d %d %d%n", index, candidateTermId, logPosition, candidateId);
-                nextListener.onRequestVote(logPosition, candidateTermId, candidateId);
+                stream.format("onRequestVote[%d] %d %d %d %d%n",
+                    index, logPosition, logLeadershipTermId, candidateTermId, candidateId);
+                nextListener.onRequestVote(logPosition, logLeadershipTermId, candidateTermId, candidateId);
             }
 
             public void onVote(

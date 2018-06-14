@@ -385,11 +385,12 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    public void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
+    public void onRequestVote(
+        final long logPosition, final long logLeadershipTermId, final long candidateTermId, final int candidateId)
     {
         if (null != election)
         {
-            election.onRequestVote(logPosition, candidateTermId, candidateId);
+            election.onRequestVote(logPosition, logLeadershipTermId, candidateTermId, candidateId);
         }
         else if (candidateTermId > this.leadershipTermId)
         {

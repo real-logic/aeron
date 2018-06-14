@@ -22,7 +22,7 @@ interface MemberStatusListener
 {
     void onCanvassPosition(long logPosition, long leadershipTermId, int followerMemberId);
 
-    void onRequestVote(long logPosition, long candidateTermId, int candidateId);
+    void onRequestVote(long logPosition, long logLeadershipTermId, long candidateTermId, int candidateId);
 
     void onVote(long candidateTermId, int candidateMemberId, int followerMemberId, boolean vote);
 

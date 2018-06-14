@@ -72,7 +72,11 @@ class MemberStatusPublisher
     }
 
     boolean requestVote(
-        final Publication publication, final long logPosition, final long candidateTermId, final int candidateMemberId)
+        final Publication publication,
+        final long logPosition,
+        final long logLeadershipTermId,
+        final long candidateTermId,
+        final int candidateMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + RequestVoteEncoder.BLOCK_LENGTH;
 
@@ -85,6 +89,7 @@ class MemberStatusPublisher
                 requestVoteEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logPosition(logPosition)
+                    .logLeadershipTermId(logLeadershipTermId)
                     .candidateTermId(candidateTermId)
                     .candidateMemberId(candidateMemberId);
 

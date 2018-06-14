@@ -239,14 +239,16 @@ class Election implements AutoCloseable
         }
     }
 
-    void onRequestVote(final long logPosition, final long candidateTermId, final int candidateId)
+    void onRequestVote(
+        final long logPosition, final long logLeadershipTermId, final long candidateTermId, final int candidateId)
     {
-        if (candidateTermId <= leadershipTermId || candidateTermId <= this.candidateTermId)
+        if (candidateTermId <= leadershipTermId ||
+            candidateTermId <= this.candidateTermId ||
+            logLeadershipTermId < leadershipTermId)
         {
             placeVote(candidateTermId, candidateId, false);
         }
-        else if (candidateTermId == leadershipTermId + 1 &&
-            logPosition < this.logPosition && NULL_VALUE != this.candidateTermId)
+        else if (logLeadershipTermId == leadershipTermId && logPosition < this.logPosition)
         {
             this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().candidateTermId(candidateTermId);
@@ -483,7 +485,7 @@ class Election implements AutoCloseable
                 {
                     workCount += 1;
                     member.isBallotSent(memberStatusPublisher.requestVote(
-                        member.publication(), logPosition, candidateTermId, thisMember.id()));
+                        member.publication(), logPosition, leadershipTermId, candidateTermId, thisMember.id()));
                 }
             }
         }

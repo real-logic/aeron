@@ -66,8 +66,8 @@ public class MultiNodeTest
             harness.awaitMemberStatusMessage(1, harness.onRequestVoteCounter(1));
             harness.awaitMemberStatusMessage(2, harness.onRequestVoteCounter(2));
 
-            verify(mockMemberStatusListeners[1]).onRequestVote(0, 0, 0);
-            verify(mockMemberStatusListeners[2]).onRequestVote(0, 0, 0);
+            verify(mockMemberStatusListeners[1]).onRequestVote(0, -1L, 0, 0);
+            verify(mockMemberStatusListeners[2]).onRequestVote(0, -1L, 0, 0);
 
             harness.memberStatusPublisher().placeVote(
                 harness.memberStatusPublication(1),
@@ -116,7 +116,7 @@ public class MultiNodeTest
             verify(mockMemberStatusListeners[1], atLeastOnce()).onCanvassPosition(0, -1, 0);
 
             harness.memberStatusPublisher().requestVote(
-                harness.memberStatusPublication(1), 0, 0, 1);
+                harness.memberStatusPublication(1), 0, -1L, 0, 1);
 
             harness.awaitMemberStatusMessage(1, harness.onVoteCounter(1));
 
@@ -153,8 +153,8 @@ public class MultiNodeTest
             harness.awaitMemberStatusMessage(1, harness.onRequestVoteCounter(1));
             harness.awaitMemberStatusMessage(2, harness.onRequestVoteCounter(2));
 
-            verify(mockMemberStatusListeners[1]).onRequestVote(position, 1, 0);
-            verify(mockMemberStatusListeners[2]).onRequestVote(position, 1, 0);
+            verify(mockMemberStatusListeners[1]).onRequestVote(position, 0L, 1L, 0);
+            verify(mockMemberStatusListeners[2]).onRequestVote(position, 0L, 1L, 0);
 
             harness.memberStatusPublisher().placeVote(
                 harness.memberStatusPublication(1),
@@ -214,7 +214,7 @@ public class MultiNodeTest
             verify(mockMemberStatusListeners[1], atLeastOnce()).onCanvassPosition(position, 0, 0);
 
             harness.memberStatusPublisher().requestVote(
-                harness.memberStatusPublication(1), position, 1, 1);
+                harness.memberStatusPublication(1), position, 0L, 1L, 1);
 
             harness.awaitMemberStatusMessage(1, harness.onVoteCounter(1));
 
@@ -283,7 +283,7 @@ public class MultiNodeTest
         {
             leaderHarness.awaitMemberStatusMessage(2, leaderHarness.onRequestVoteCounter(2));
 
-            verify(mockLeaderStatusListeners[2]).onRequestVote(position, 1, 0);
+            verify(mockLeaderStatusListeners[2]).onRequestVote(position, 0L, 1, 0);
 
             leaderHarness.memberStatusPublisher().placeVote(
                 leaderHarness.memberStatusPublication(2),

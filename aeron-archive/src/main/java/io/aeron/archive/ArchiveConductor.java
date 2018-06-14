@@ -267,10 +267,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     }
 
     void newListRecordingsSession(
-        final long correlationId,
-        final long fromId,
-        final int count,
-        final ControlSession controlSession)
+        final long correlationId, final long fromId, final int count, final ControlSession controlSession)
     {
         if (controlSession.activeListRecordingsSession() != null)
         {

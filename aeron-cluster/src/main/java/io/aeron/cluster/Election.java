@@ -578,6 +578,9 @@ class Election implements AutoCloseable
             final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
             logSubscription.addDestination(channelUri.toString());
 
+            ctx.recordingLog().appendTerm(sequencerAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
+            ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
+
             state(State.FOLLOWER_READY, nowMs);
             workCount += 1;
         }

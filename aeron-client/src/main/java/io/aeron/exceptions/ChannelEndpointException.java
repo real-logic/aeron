@@ -15,7 +15,7 @@
  */
 package io.aeron.exceptions;
 
-public class ChannelEndpointException extends RuntimeException
+public class ChannelEndpointException extends AeronException
 {
     private final int statusIndicatorId;
 

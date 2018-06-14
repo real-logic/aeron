@@ -96,6 +96,7 @@ class ControlResponseProxy
     void attemptErrorResponse(
         final long controlSessionId,
         final long correlationId,
+        final long relevantId,
         final String errorMessage,
         final Publication controlPublication)
     {
@@ -103,7 +104,7 @@ class ControlResponseProxy
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
-            .relevantId(0)
+            .relevantId(relevantId)
             .code(ControlResponseCode.ERROR)
             .errorMessage(null == errorMessage ? "" : errorMessage);
 

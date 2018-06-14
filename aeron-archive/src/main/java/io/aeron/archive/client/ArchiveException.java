@@ -15,34 +15,56 @@
  */
 package io.aeron.archive.client;
 
+import io.aeron.exceptions.AeronException;
+
 /**
  * Exception raised when communicating with the {@link AeronArchive}.
  */
-public class ArchiveException extends RuntimeException
+public class ArchiveException extends AeronException
 {
+    public static final int GENERIC = 0;
+    public static final int ACTIVE_LISTING = 1;
+    public static final int ACTIVE_RECORDING = 2;
+    public static final int ACTIVE_SUBSCRIPTION = 3;
+    public static final int UNKNOWN_SUBSCRIPTION = 4;
+    public static final int UNKNOWN_RECORDING = 5;
+    public static final int UNKNOWN_REPLAY = 6;
+    public static final int MAX_REPLAYS = 7;
+    public static final int MAX_RECORDINGS = 8;
+
+    private final int errorCode;
+
     public ArchiveException()
     {
         super();
+        errorCode = GENERIC;
     }
 
     public ArchiveException(final String message)
     {
         super(message);
+        errorCode = GENERIC;
     }
 
-    public ArchiveException(final String message, final Throwable cause)
+    public ArchiveException(final String message, final int errorCode)
+    {
+        super(message);
+        this.errorCode = errorCode;
+    }
+
+    public ArchiveException(final String message, final Throwable cause, final int errorCode)
     {
         super(message, cause);
+        this.errorCode = errorCode;
     }
 
-    public ArchiveException(final Throwable cause)
+    /**
+     * Error code providing more detail into what went wrong.
+     *
+     * @return code providing more detail into what went wrong.
+     */
+    public int errorCode()
     {
-        super(cause);
-    }
-
-    protected ArchiveException(
-        final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace)
-    {
-        super(message, cause, enableSuppression, writableStackTrace);
+        return errorCode;
     }
 }

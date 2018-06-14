@@ -26,6 +26,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.util.ArrayDeque;
 import java.util.function.BooleanSupplier;
 
+import static io.aeron.archive.client.ArchiveException.GENERIC;
 import static io.aeron.archive.codecs.ControlResponseCode.*;
 
 /**
@@ -256,9 +257,28 @@ class ControlSession implements Session
         }
     }
 
+    void sendResponse(
+        final long correlationId,
+        final long relevantId,
+        final ControlResponseCode code,
+        final String errorMessage,
+        final ControlResponseProxy proxy)
+    {
+        if (!proxy.sendResponse(controlSessionId, correlationId, 0, code, errorMessage, controlPublication))
+        {
+            queueResponse(correlationId, relevantId, code, errorMessage);
+        }
+    }
+
     void attemptErrorResponse(final long correlationId, final String errorMessage, final ControlResponseProxy proxy)
     {
-        proxy.attemptErrorResponse(controlSessionId, correlationId, errorMessage, controlPublication);
+        proxy.attemptErrorResponse(controlSessionId, GENERIC, correlationId, errorMessage, controlPublication);
+    }
+
+    void attemptErrorResponse(
+        final long correlationId, final long relevantId, final String errorMessage, final ControlResponseProxy proxy)
+    {
+        proxy.attemptErrorResponse(controlSessionId, correlationId, relevantId, errorMessage, controlPublication);
     }
 
     int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer, final ControlResponseProxy proxy)

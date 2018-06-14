@@ -43,7 +43,7 @@
         <field name="correlationId"        id="2" type="int64"
                description="Request correlation id with which this response is associated"/>
         <field name="relevantId"           id="3" type="int64"
-               description="Relevant identity of requested object, e.g. recordingId if RECORDING_UNKNOWN"/>
+               description="Relevant identity of an object, e.g. recordingId if RECORDING_UNKNOWN, or error code"/>
         <field name="code"                 id="4" type="ControlResponseCode"
                description="code type of the response"/>
         <data  name="errorMessage"         id="5" type="varAsciiEncoding"

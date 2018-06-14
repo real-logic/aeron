@@ -21,7 +21,7 @@ import io.aeron.*;
  * Caused when a error occurs during addition or release of {@link Publication}s
  * or {@link Subscription}s
  */
-public class RegistrationException extends RuntimeException
+public class RegistrationException extends AeronException
 {
     private final ErrorCode code;
 

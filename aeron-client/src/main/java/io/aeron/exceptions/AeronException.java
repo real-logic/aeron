@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,35 +16,31 @@
 package io.aeron.exceptions;
 
 /**
- * Generic timeout has occurred while waiting on some action or event.
+ * Base Aeron exception for catching all Aeron specific errors.
  */
-public class TimeoutException extends AeronException
+public class AeronException extends RuntimeException
 {
-    public TimeoutException()
+    public AeronException()
     {
-        super();
     }
 
-    public TimeoutException(final String message)
+    public AeronException(final String message)
     {
         super(message);
     }
 
-    public TimeoutException(final String message, final Throwable cause)
+    public AeronException(final String message, final Throwable cause)
     {
         super(message, cause);
     }
 
-    public TimeoutException(final Throwable cause)
+    public AeronException(final Throwable cause)
     {
         super(cause);
     }
 
-    protected TimeoutException(
-        final String message,
-        final Throwable cause,
-        final boolean enableSuppression,
-        final boolean writableStackTrace)
+    public AeronException(
+        final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace)
     {
         super(message, cause, enableSuppression, writableStackTrace);
     }

@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.*;
@@ -100,7 +101,7 @@ public class AeronArchive implements AutoCloseable
             if (!archiveProxy.connect(
                 ctx.controlResponseChannel(), ctx.controlResponseStreamId(), correlationId, aeronClientInvoker))
             {
-                throw new IllegalStateException("cannot connect to archive: " + ctx.controlRequestChannel());
+                throw new ArchiveException("cannot connect to archive: " + ctx.controlRequestChannel());
             }
 
             controlSessionId = awaitSessionOpened(correlationId);
@@ -325,16 +326,28 @@ public class AeronArchive implements AutoCloseable
      */
     public void checkForErrorResponse()
     {
-        final String errorMessage = pollForErrorResponse();
-        if (null != errorMessage)
+        lock.lock();
+        try
         {
-            throw new ArchiveException(errorMessage);
+            if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
+            {
+                if (controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
+                    controlResponsePoller.code() == ControlResponseCode.ERROR)
+                {
+                    throw new ArchiveException(
+                        controlResponsePoller.errorMessage(), (int)controlResponsePoller.relevantId());
+                }
+            }
+        }
+        finally
+        {
+            lock.unlock();
         }
     }
 
     /**
      * Add a {@link Publication} and set it up to be recorded. If this is not the first,
-     * i.e. {@link Publication#isOriginal()} is true,  then an {@link IllegalStateException}
+     * i.e. {@link Publication#isOriginal()} is true,  then an {@link AeronException}
      * will be thrown and the recording not initiated.
      * <p>
      * This is a sessionId specific recording.
@@ -352,7 +365,7 @@ public class AeronArchive implements AutoCloseable
             publication = aeron.addPublication(channel, streamId);
             if (!publication.isOriginal())
             {
-                throw new IllegalStateException(
+                throw new AeronException(
                     "publication already added for channel=" + channel + " streamId=" + streamId);
             }
 
@@ -424,7 +437,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.startRecording(channel, streamId, sourceLocation, correlationId, controlSessionId))
             {
-                throw new IllegalStateException("failed to send start recording request");
+                throw new ArchiveException("failed to send start recording request");
             }
 
             pollForResponse(correlationId);
@@ -459,7 +472,7 @@ public class AeronArchive implements AutoCloseable
             if (!archiveProxy.extendRecording(
                 channel, streamId, sourceLocation, recordingId, correlationId, controlSessionId))
             {
-                throw new IllegalStateException("failed to send extend recording request");
+                throw new ArchiveException("failed to send extend recording request");
             }
 
             pollForResponse(correlationId);
@@ -491,7 +504,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.stopRecording(channel, streamId, correlationId, controlSessionId))
             {
-                throw new IllegalStateException("failed to send stop recording request");
+                throw new ArchiveException("failed to send stop recording request");
             }
 
             pollForResponse(correlationId);
@@ -548,7 +561,7 @@ public class AeronArchive implements AutoCloseable
                 correlationId,
                 controlSessionId))
             {
-                throw new IllegalStateException("failed to send replay request");
+                throw new ArchiveException("failed to send replay request");
             }
 
             return pollForResponse(correlationId);
@@ -573,7 +586,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.stopReplay(replaySessionId, correlationId, controlSessionId))
             {
-                throw new IllegalStateException("failed to send stop recording request");
+                throw new ArchiveException("failed to send stop recording request");
             }
 
             pollForResponse(correlationId);
@@ -617,7 +630,7 @@ public class AeronArchive implements AutoCloseable
                 correlationId,
                 controlSessionId))
             {
-                throw new IllegalStateException("failed to send replay request");
+                throw new ArchiveException("failed to send replay request");
             }
 
             final int replaySessionId = (int)pollForResponse(correlationId);
@@ -668,7 +681,7 @@ public class AeronArchive implements AutoCloseable
                 correlationId,
                 controlSessionId))
             {
-                throw new IllegalStateException("failed to send replay request");
+                throw new ArchiveException("failed to send replay request");
             }
 
             final int replaySessionId = (int)pollForResponse(correlationId);
@@ -703,7 +716,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.listRecordings(fromRecordingId, recordCount, correlationId, controlSessionId))
             {
-                throw new IllegalStateException("failed to send list recordings request");
+                throw new ArchiveException("failed to send list recordings request");
             }
 
             return pollForDescriptors(correlationId, recordCount, consumer);
@@ -746,7 +759,7 @@ public class AeronArchive implements AutoCloseable
                 correlationId,
                 controlSessionId))
             {
-                throw new IllegalStateException("failed to send list recordings request");
+                throw new ArchiveException("failed to send list recordings request");
             }
 
             return pollForDescriptors(correlationId, recordCount, consumer);
@@ -775,7 +788,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.listRecording(recordingId, correlationId, controlSessionId))
             {
-                throw new IllegalStateException("failed to send list recording request");
+                throw new ArchiveException("failed to send list recording request");
             }
 
             return pollForDescriptors(correlationId, 1, consumer);
@@ -801,7 +814,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.getRecordingPosition(recordingId, correlationId, controlSessionId))
             {
-                throw new IllegalStateException("failed to send get recording position request");
+                throw new ArchiveException("failed to send get recording position request");
             }
 
             return pollForResponse(correlationId);
@@ -828,7 +841,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.truncateRecording(recordingId, position, correlationId, controlSessionId))
             {
-                throw new IllegalStateException("failed to send truncate recording request");
+                throw new ArchiveException("failed to send truncate recording request");
             }
 
             pollForResponse(correlationId);
@@ -861,10 +874,10 @@ public class AeronArchive implements AutoCloseable
             {
                 if (code == ControlResponseCode.ERROR)
                 {
-                    throw new IllegalStateException("error: " + poller.errorMessage());
+                    throw new ArchiveException("error: " + poller.errorMessage(), (int)poller.relevantId());
                 }
 
-                throw new IllegalStateException("unexpected response: code=" + code);
+                throw new ArchiveException("unexpected response: code=" + code);
             }
 
             return poller.controlSessionId();
@@ -905,14 +918,14 @@ public class AeronArchive implements AutoCloseable
 
             if (poller.code() == ControlResponseCode.ERROR)
             {
-                throw new IllegalStateException("response for correlationId=" + correlationId +
-                    ", error: " + poller.errorMessage());
+                throw new ArchiveException("response for correlationId=" + correlationId +
+                    ", error: " + poller.errorMessage(), (int)poller.relevantId());
             }
 
             final ControlResponseCode code = poller.code();
             if (ControlResponseCode.OK != code)
             {
-                throw new IllegalStateException("unexpected response code: " + code);
+                throw new ArchiveException("unexpected response code: " + code);
             }
 
             if (poller.correlationId() == correlationId)
@@ -942,7 +955,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!poller.subscription().isConnected())
             {
-                throw new IllegalStateException("subscription to archive is not connected");
+                throw new ArchiveException("subscription to archive is not connected");
             }
 
             if (nanoClock.nanoTime() > deadlineNs)
@@ -981,7 +994,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!poller.subscription().isConnected())
             {
-                throw new IllegalStateException("subscription to archive is not connected");
+                throw new ArchiveException("subscription to archive is not connected");
             }
 
             if (nanoClock.nanoTime() > deadlineNs)
@@ -1738,6 +1751,7 @@ public class AeronArchive implements AutoCloseable
             }
 
             controlResponsePoller.poll();
+
             if (controlResponsePoller.isPollComplete() &&
                 controlResponsePoller.correlationId() == connectCorrelationId &&
                 controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID)
@@ -1747,14 +1761,16 @@ public class AeronArchive implements AutoCloseable
                 {
                     if (code == ControlResponseCode.ERROR)
                     {
-                        throw new IllegalStateException("error: " + controlResponsePoller.errorMessage());
+                        throw new ArchiveException(
+                            "error: " + controlResponsePoller.errorMessage(), (int)controlResponsePoller.relevantId());
                     }
 
-                    throw new IllegalStateException("unexpected response: code=" + code);
+                    throw new ArchiveException("unexpected response: code=" + code);
                 }
 
                 final long controlSessionId = controlResponsePoller.controlSessionId();
                 final Subscription subscription = controlResponsePoller.subscription();
+
                 return new AeronArchive(
                     ctx,
                     controlResponsePoller,

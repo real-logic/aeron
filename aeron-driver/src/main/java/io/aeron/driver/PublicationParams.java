@@ -36,7 +36,7 @@ final class PublicationParams
     int sessionId = 0;
     boolean isReplay = false;
     boolean hasSessionId = false;
-    boolean isSessionIdTagReference = false;
+    boolean isSessionIdTagged = false;
 
     private PublicationParams(final MediaDriver.Context context, final boolean isIpc)
     {
@@ -95,11 +95,11 @@ final class PublicationParams
         final String sessionIdStr = channelUri.get(SESSION_ID_PARAM_NAME);
         if (null != sessionIdStr)
         {
-            isSessionIdTagReference = ChannelUri.isTagReference(sessionIdStr);
-            if (isSessionIdTagReference)
+            isSessionIdTagged = ChannelUri.isTagged(sessionIdStr);
+            if (isSessionIdTagged)
             {
-                final NetworkPublication publication =
-                    driverConductor.findNetworkPublicationByTag(ChannelUri.tagReferenced(sessionIdStr));
+                final NetworkPublication publication = driverConductor.findNetworkPublicationByTag(
+                    ChannelUri.getTag(sessionIdStr));
 
                 if (null == publication)
                 {
@@ -136,7 +136,7 @@ final class PublicationParams
 
     static void validateTermLength(final PublicationParams params, final int explicitTermLength)
     {
-        if (params.isSessionIdTagReference && explicitTermLength != params.termLength)
+        if (params.isSessionIdTagged && explicitTermLength != params.termLength)
         {
             throw new IllegalArgumentException(
                 TERM_LENGTH_PARAM_NAME + "=" + explicitTermLength + " does not match session-id tag value");
@@ -145,7 +145,7 @@ final class PublicationParams
 
     static void validateMtuLength(final PublicationParams params, final int explicitMtuLength)
     {
-        if (params.isSessionIdTagReference && explicitMtuLength != params.mtuLength)
+        if (params.isSessionIdTagged && explicitMtuLength != params.mtuLength)
         {
             throw new IllegalArgumentException(
                 MTU_LENGTH_PARAM_NAME + "=" + explicitMtuLength + " does not match session-id tag value");

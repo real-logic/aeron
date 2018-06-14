@@ -15,12 +15,13 @@
  */
 package io.aeron;
 
+import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.AsciiEncoding;
 import org.agrona.collections.ArrayUtil;
 
 import java.util.*;
 
-import static io.aeron.CommonContext.SPY_PREFIX;
-import static io.aeron.CommonContext.TAGS_PARAM_NAME;
+import static io.aeron.CommonContext.*;
 
 /**
  * Parser for Aeron channel URIs. The format is:
@@ -377,6 +378,27 @@ public class ChannelUri
     }
 
     /**
+     * Initialise a channel for restarting a publication at a given position.
+     *
+     * @param channelUri    to set the initial values for.
+     * @param position      at which the publication should be started.
+     * @param initialTermId what which the stream would start.
+     * @param termLength    for the stream.
+     */
+    public static void initialPosition(
+        final ChannelUri channelUri, final long position, final int initialTermId, final int termLength)
+    {
+        final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
+        final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, bitsToShift, initialTermId);
+        final int termOffset = (int)(position & (termLength - 1));
+
+        channelUri.put(INITIAL_TERM_ID_PARAM_NAME, Integer.toString(initialTermId));
+        channelUri.put(TERM_ID_PARAM_NAME, Integer.toString(termId));
+        channelUri.put(TERM_OFFSET_PARAM_NAME, Integer.toString(termOffset));
+        channelUri.put(TERM_LENGTH_PARAM_NAME, Integer.toString(termLength));
+    }
+
+    /**
      * Add a sessionId to a given channel.
      *
      * @param channel   to add sessionId to.
@@ -386,20 +408,32 @@ public class ChannelUri
     public static String addSessionId(final String channel, final int sessionId)
     {
         final ChannelUri channelUri = ChannelUri.parse(channel);
-
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
 
         return channelUri.toString();
     }
 
-    public static boolean isTagReference(final String paramValue)
+    /**
+     * Is the param tagged? That is does it start with the "tag:" prefix.
+     *
+     * @param paramValue to check if tagged.
+     * @return true if tagged or false if not.
+     */
+    public static boolean isTagged(final String paramValue)
     {
         return startsWith(paramValue, "tag:");
     }
 
-    public static long tagReferenced(final String paramValue)
+    /**
+     * Get the value of the tag from a given parameter.
+     *
+     * @param paramValue to extra the tag value from.
+     * @return the value of the tag or {@link #INVALID_TAG} if not tagged.
+     */
+    public static long getTag(final String paramValue)
     {
-        return isTagReference(paramValue) ? Long.parseLong(paramValue.substring(4)) : INVALID_TAG;
+        return isTagged(paramValue) ?
+            AsciiEncoding.parseLongAscii(paramValue, 4, paramValue.length() - 4) : INVALID_TAG;
     }
 
     private static boolean startsWith(final CharSequence input, final int position, final CharSequence prefix)

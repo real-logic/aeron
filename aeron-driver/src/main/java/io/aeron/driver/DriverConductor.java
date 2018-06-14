@@ -358,7 +358,7 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            if (params.hasSessionId && !params.isSessionIdTagReference)
+            if (params.hasSessionId && !params.isSessionIdTagged)
             {
                 confirmSessionIdNotInUse(params.sessionId);
             }
@@ -1364,7 +1364,7 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            if (params.hasSessionId && !params.isSessionIdTagReference)
+            if (params.hasSessionId && !params.isSessionIdTagged)
             {
                 confirmSessionIdNotInUse(params.sessionId);
             }

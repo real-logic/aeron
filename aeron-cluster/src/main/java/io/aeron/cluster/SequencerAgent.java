@@ -49,6 +49,7 @@ import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 import static io.aeron.cluster.RecordingLog.CONSENSUS_MODULE_ID;
 import static io.aeron.cluster.ServiceAck.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static java.lang.Long.MAX_VALUE;
 
 class SequencerAgent implements Agent, MemberStatusListener
 {
@@ -702,8 +703,8 @@ class SequencerAgent implements Agent, MemberStatusListener
 
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
-        createPositionCounters(logSessionId);
-        createCommitPosCounter(election.logPosition());
+        createAppendPosition(logSessionId);
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, election.logPosition(), MAX_VALUE);
         awaitServicesReady(channelUri, logSessionId);
 
         for (final ClusterSession session : sessionByIdMap.values())
@@ -743,18 +744,16 @@ class SequencerAgent implements Agent, MemberStatusListener
         closeExistingLog();
         final Subscription subscription = aeron.addSubscription(logChannel, ctx.logStreamId());
         startLogRecording(logChannel, SourceLocation.REMOTE);
-        createCommitPosCounter(logPosition);
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, MAX_VALUE);
 
         return subscription;
     }
 
     void awaitImageAndCreateFollowerLogAdapter(final Subscription subscription, final int logSessionId)
     {
-        final Image image = awaitImage(logSessionId, subscription);
-        logAdapter = new LogAdapter(image, this);
+        logAdapter = new LogAdapter(awaitImage(logSessionId, subscription), this);
         lastAppendedPosition = 0;
-
-        createPositionCounters(logSessionId);
+        createAppendPosition(logSessionId);
     }
 
     void awaitServicesReady(final ChannelUri logChannelUri, final int logSessionId)
@@ -1067,12 +1066,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    private void createCommitPosCounter(final long logPosition)
-    {
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, Long.MAX_VALUE);
-    }
-
-    private void createPositionCounters(final int logSessionId)
+    private void createAppendPosition(final int logSessionId)
     {
         final CountersReader counters = aeron.countersReader();
         final int recordingCounterId = awaitRecordingCounter(counters, logSessionId);
@@ -1414,17 +1408,8 @@ class SequencerAgent implements Agent, MemberStatusListener
         if (!plan.logs.isEmpty())
         {
             final RecordingLog.Log log = plan.logs.get(0);
-            final int termLength = log.termBufferLength;
-            final int initialTermId = log.initialTermId;
-            final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
-            final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, bitsToShift, initialTermId);
-            final int termOffset = (int)(position & (termLength - 1));
-
+            ChannelUri.initialPosition(channelUri, position, log.initialTermId, log.termBufferLength);
             channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(log.mtuLength));
-            channelUri.put(TERM_LENGTH_PARAM_NAME, Integer.toString(termLength));
-            channelUri.put(INITIAL_TERM_ID_PARAM_NAME, Integer.toString(initialTermId));
-            channelUri.put(TERM_ID_PARAM_NAME, Integer.toString(termId));
-            channelUri.put(TERM_OFFSET_PARAM_NAME, Integer.toString(termOffset));
         }
 
         final Publication publication = aeron.addExclusivePublication(channelUri.toString(), ctx.logStreamId());

@@ -20,7 +20,7 @@ import io.aeron.cluster.codecs.RecordingLogDecoder;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
-public class RecordingLogQuerier
+class RecordingLogQuery
 {
     enum State
     {
@@ -40,7 +40,7 @@ public class RecordingLogQuerier
     private long targetPosition = NULL_POSITION;
     private long leaderRecordingId = Aeron.NULL_VALUE;
 
-    RecordingLogQuerier(
+    RecordingLogQuery(
         final MemberStatusPublisher memberStatusPublisher,
         final ClusterMember[] clusterMembers,
         final int leaderMemberId,

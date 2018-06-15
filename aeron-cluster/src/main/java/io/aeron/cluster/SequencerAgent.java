@@ -67,6 +67,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private long followerCommitPosition = 0;
     private long timeOfLastLogUpdateMs = 0;
     private long cachedTimeMs;
+    private long clusterTimeMs;
     private ReadableCounter appendedPosition;
     private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -217,7 +218,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             state(ConsensusModule.State.ACTIVE);
         }
 
-        timeOfLastLogUpdateMs = cachedTimeMs = epochClock.time();
+        timeOfLastLogUpdateMs = clusterTimeMs = cachedTimeMs = epochClock.time();
         leadershipTermId = recoveryPlan.lastLeadershipTermId;
 
         election = new Election(
@@ -242,6 +243,11 @@ class SequencerAgent implements Agent, MemberStatusListener
         if (cachedTimeMs != nowMs)
         {
             cachedTimeMs = nowMs;
+            if (Cluster.Role.LEADER == role)
+            {
+                clusterTimeMs = nowMs;
+            }
+
             isSlowTickCycle = true;
         }
 
@@ -288,11 +294,11 @@ class SequencerAgent implements Agent, MemberStatusListener
         final long sessionId = nextSessionId++;
         final ClusterSession session = new ClusterSession(sessionId, responseStreamId, responseChannel);
         session.connect(aeron);
-        session.lastActivity(cachedTimeMs, correlationId);
+        session.lastActivity(clusterTimeMs, correlationId);
 
         if (pendingSessions.size() + sessionByIdMap.size() < ctx.maxConcurrentSessions())
         {
-            authenticator.onConnectRequest(sessionId, encodedCredentials, cachedTimeMs);
+            authenticator.onConnectRequest(sessionId, encodedCredentials, clusterTimeMs);
             pendingSessions.add(session);
         }
         else
@@ -308,7 +314,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         {
             session.close(CloseReason.CLIENT_ACTION);
 
-            if (logPublisher.appendSessionClose(session, cachedTimeMs))
+            if (logPublisher.appendSessionClose(session, clusterTimeMs))
             {
                 sessionByIdMap.remove(clusterSessionId);
             }
@@ -328,9 +334,9 @@ class SequencerAgent implements Agent, MemberStatusListener
             return ControlledFragmentHandler.Action.CONTINUE;
         }
 
-        if (session.state() == OPEN && logPublisher.appendMessage(buffer, offset, length, cachedTimeMs))
+        if (session.state() == OPEN && logPublisher.appendMessage(buffer, offset, length, clusterTimeMs))
         {
-            session.lastActivity(cachedTimeMs, correlationId);
+            session.lastActivity(clusterTimeMs, correlationId);
             return ControlledFragmentHandler.Action.CONTINUE;
         }
 
@@ -342,7 +348,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session && session.state() == OPEN)
         {
-            session.timeOfLastActivityMs(cachedTimeMs);
+            session.timeOfLastActivityMs(clusterTimeMs);
         }
     }
 
@@ -355,9 +361,8 @@ class SequencerAgent implements Agent, MemberStatusListener
 
             if (session.id() == clusterSessionId && session.state() == CHALLENGED)
             {
-                final long nowMs = cachedTimeMs;
-                session.lastActivity(nowMs, correlationId);
-                authenticator.onChallengeResponse(clusterSessionId, encodedCredentials, nowMs);
+                session.lastActivity(clusterTimeMs, correlationId);
+                authenticator.onChallengeResponse(clusterSessionId, encodedCredentials, clusterTimeMs);
                 break;
             }
         }
@@ -530,7 +535,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         {
             session.close(CloseReason.SERVICE_ACTION);
 
-            if (Cluster.Role.LEADER == role && logPublisher.appendSessionClose(session, cachedTimeMs))
+            if (Cluster.Role.LEADER == role && logPublisher.appendSessionClose(session, clusterTimeMs))
             {
                 sessionByIdMap.remove(clusterSessionId);
             }
@@ -558,17 +563,17 @@ class SequencerAgent implements Agent, MemberStatusListener
             {
                 case SNAPSHOT:
                     ++serviceAckId;
-                    takeSnapshot(cachedTimeMs, logPosition);
+                    takeSnapshot(clusterTimeMs, logPosition);
                     state(ConsensusModule.State.ACTIVE);
                     ClusterControl.ToggleState.reset(controlToggle);
                     for (final ClusterSession session : sessionByIdMap.values())
                     {
-                        session.timeOfLastActivityMs(cachedTimeMs);
+                        session.timeOfLastActivityMs(clusterTimeMs);
                     }
                     break;
 
                 case SHUTDOWN:
-                    takeSnapshot(cachedTimeMs, logPosition);
+                    takeSnapshot(clusterTimeMs, logPosition);
                     recordingLog.commitLogPosition(leadershipTermId, logPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
@@ -593,13 +598,13 @@ class SequencerAgent implements Agent, MemberStatusListener
         final int length,
         final Header header)
     {
-        cachedTimeMs = timestamp;
+        clusterTimeMs = timestamp;
         sessionByIdMap.get(clusterSessionId).lastActivity(timestamp, correlationId);
     }
 
     void onReplayTimerEvent(final long correlationId, final long timestamp)
     {
-        cachedTimeMs = timestamp;
+        clusterTimeMs = timestamp;
 
         if (!timerService.cancelTimer(correlationId))
         {
@@ -615,7 +620,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         final int responseStreamId,
         final String responseChannel)
     {
-        cachedTimeMs = timestamp;
+        clusterTimeMs = timestamp;
 
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
         session.open(logPosition);
@@ -650,7 +655,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     void onReplaySessionClose(
         final long correlationId, final long clusterSessionId, final long timestamp, final CloseReason closeReason)
     {
-        cachedTimeMs = timestamp;
+        clusterTimeMs = timestamp;
         sessionByIdMap.remove(clusterSessionId).close();
     }
 
@@ -658,7 +663,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     void onReplayClusterAction(
         final long logPosition, final long leadershipTermId, final long timestamp, final ClusterAction action)
     {
-        cachedTimeMs = timestamp;
+        clusterTimeMs = timestamp;
 
         switch (action)
         {
@@ -1077,7 +1082,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     private void recoverFromSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
     {
-        cachedTimeMs = snapshot.timestamp;
+        clusterTimeMs = snapshot.timestamp;
         expectedAckPosition = snapshot.logPosition;
         leadershipTermId = snapshot.leadershipTermId;
 
@@ -1162,7 +1167,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                     awaitServiceAcks();
 
                     int workCount;
-                    while (0 != (workCount = timerService.poll(cachedTimeMs)))
+                    while (0 != (workCount = timerService.poll(clusterTimeMs)))
                     {
                         idle(workCount);
                     }

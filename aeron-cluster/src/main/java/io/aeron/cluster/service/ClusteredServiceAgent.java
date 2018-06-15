@@ -51,7 +51,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final ClusterMarkFile markFile;
 
     private long ackId = 0;
-    private long timestampMs;
+    private long clusterTimeMs;
     private long cachedTimeMs;
     private BoundedLogAdapter logAdapter;
     private ActiveLogEvent activeLogEvent;
@@ -190,7 +190,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public long timeMs()
     {
-        return timestampMs;
+        return clusterTimeMs;
     }
 
     public boolean scheduleTimer(final long correlationId, final long deadlineMs)
@@ -228,7 +228,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final int length,
         final Header header)
     {
-        this.timestampMs = timestampMs;
+        this.clusterTimeMs = timestampMs;
 
         service.onSessionMessage(
             clusterSessionId,
@@ -242,7 +242,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     void onTimerEvent(final long correlationId, final long timestampMs)
     {
-        this.timestampMs = timestampMs;
+        this.clusterTimeMs = timestampMs;
 
         service.onTimerEvent(correlationId, timestampMs);
     }
@@ -254,7 +254,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final String responseChannel,
         final byte[] encodedPrincipal)
     {
-        this.timestampMs = timestampMs;
+        this.clusterTimeMs = timestampMs;
 
         final ClientSession session = new ClientSession(
             clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this);
@@ -270,7 +270,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     void onSessionClose(final long clusterSessionId, final long timestampMs, final CloseReason closeReason)
     {
-        this.timestampMs = timestampMs;
+        this.clusterTimeMs = timestampMs;
 
         final ClientSession session = sessionByIdMap.remove(clusterSessionId);
         session.disconnect();
@@ -280,7 +280,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     void onServiceAction(
         final long logPosition, final long leadershipTermId, final long timestampMs, final ClusterAction action)
     {
-        this.timestampMs = timestampMs;
+        this.clusterTimeMs = timestampMs;
 
         executeAction(action, logPosition, leadershipTermId);
     }
@@ -307,7 +307,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
     {
         final long leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
-        timestampMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
+        clusterTimeMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
 
         if (NULL_VALUE != leadershipTermId)
         {

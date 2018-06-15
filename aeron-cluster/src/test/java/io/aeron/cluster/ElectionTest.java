@@ -149,12 +149,14 @@ public class ElectionTest
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
             logPosition,
+            leadershipTermId,
             candidateTermId,
             candidateMember.id(),
             logSessionId);
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[2].publication(),
             logPosition,
+            leadershipTermId,
             candidateTermId,
             candidateMember.id(),
             logSessionId);
@@ -200,7 +202,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
 
         final int logSessionId = -7;
-        election.onNewLeadershipTerm(logPosition, candidateTermId, candidateId, logSessionId);
+        election.onNewLeadershipTerm(logPosition, leadershipTermId, candidateTermId, candidateId, logSessionId);
         assertThat(election.state(), is(Election.State.FOLLOWER_TRANSITION));
 
         when(sequencerAgent.createAndRecordLogSubscriptionAsFollower(anyString(), anyLong()))

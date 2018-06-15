@@ -373,17 +373,18 @@ class SequencerAgent implements Agent, MemberStatusListener
         return Cluster.Role.LEADER != role || logPublisher.appendTimer(correlationId, nowMs);
     }
 
-    public void onCanvassPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
+    public void onCanvassPosition(final long logPosition, final long logLeadershipTermId, final int followerMemberId)
     {
         if (null != election)
         {
-            election.onCanvassPosition(logPosition, leadershipTermId, followerMemberId);
+            election.onCanvassPosition(logPosition, logLeadershipTermId, followerMemberId);
         }
         else if (Cluster.Role.LEADER == role)
         {
             memberStatusPublisher.newLeadershipTerm(
                 clusterMembers[followerMemberId].publication(),
                 recordingLog.getTermEntry(this.leadershipTermId).termBaseLogPosition,
+                this.leadershipTermId,
                 this.leadershipTermId,
                 thisMember.id(),
                 logPublisher.sessionId());
@@ -404,11 +405,16 @@ class SequencerAgent implements Agent, MemberStatusListener
     }
 
     public void onNewLeadershipTerm(
-        final long logPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
+        final long logPosition,
+        final long logLeadershipTermId,
+        final long leadershipTermId,
+        final int leaderMemberId,
+        final int logSessionId)
     {
         if (null != election)
         {
-            election.onNewLeadershipTerm(logPosition, leadershipTermId, leaderMemberId, logSessionId);
+            election.onNewLeadershipTerm(
+                logPosition, logLeadershipTermId, leadershipTermId, leaderMemberId, logSessionId);
         }
         else if (leadershipTermId > this.leadershipTermId)
         {

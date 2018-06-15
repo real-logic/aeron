@@ -75,7 +75,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onCanvassPosition(
                     canvassPositionDecoder.logPosition(),
-                    canvassPositionDecoder.leadershipTermId(),
+                    canvassPositionDecoder.logLeadershipTermId(),
                     canvassPositionDecoder.followerMemberId());
                 break;
 
@@ -116,6 +116,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onNewLeadershipTerm(
                     newLeadershipTermDecoder.logPosition(),
+                    newLeadershipTermDecoder.logLeadershipTermId(),
                     newLeadershipTermDecoder.leadershipTermId(),
                     newLeadershipTermDecoder.leaderMemberId(),
                     newLeadershipTermDecoder.logSessionId());

@@ -597,6 +597,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return truncatePosition;
     }
 
+    @SuppressWarnings("MethodLength")
     static MemberStatusListener memberStatusMixIn(
         final int index,
         final PrintStream stream,
@@ -606,12 +607,12 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return new MemberStatusListener()
         {
             public void onCanvassPosition(
-                final long logPosition, final long leadershipTermId, final int followerMemberId)
+                final long logPosition, final long logLeadershipTermId, final int followerMemberId)
             {
                 counters.onCanvassPositionCounter++;
                 stream.format("onCanvassPositionCounter[%d] %d %d %d%n",
-                    index, logPosition, leadershipTermId, followerMemberId);
-                nextListener.onCanvassPosition(logPosition, leadershipTermId, followerMemberId);
+                    index, logPosition, logLeadershipTermId, followerMemberId);
+                nextListener.onCanvassPosition(logPosition, logLeadershipTermId, followerMemberId);
             }
 
             public void onRequestVote(
@@ -636,12 +637,17 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             }
 
             public void onNewLeadershipTerm(
-                final long logPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
+                final long logPosition,
+                final long logLeadershipTermId,
+                final long leadershipTermId,
+                final int leaderMemberId,
+                final int logSessionId)
             {
                 counters.onNewLeadershipTermCounter++;
-                stream.format("onNewLeadershipTerm[%d] %d %d %d %d%n",
-                    index, logPosition, leadershipTermId, leaderMemberId, logSessionId);
-                nextListener.onNewLeadershipTerm(logPosition, leadershipTermId, leaderMemberId, logSessionId);
+                stream.format("onNewLeadershipTerm[%d] %d %d %d %d %d%n",
+                    index, logPosition, logLeadershipTermId, leadershipTermId, leaderMemberId, logSessionId);
+                nextListener.onNewLeadershipTerm(
+                    logPosition, logLeadershipTermId, leadershipTermId, leaderMemberId, logSessionId);
             }
 
             public void onAppendedPosition(

@@ -112,6 +112,7 @@ class Election implements AutoCloseable
     private final boolean isStartup;
     private final long statusIntervalMs;
     private final long leaderHeartbeatIntervalMs;
+    private final long logLeadershipTermId;
     private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
     private final MemberStatusAdapter memberStatusAdapter;
@@ -121,10 +122,10 @@ class Election implements AutoCloseable
     private final SequencerAgent sequencerAgent;
     private final Random random;
 
-    private long logPosition;
     private long timeOfLastStateChangeMs;
     private long timeOfLastUpdateMs;
     private long nominationDeadlineMs;
+    private long logPosition;
     private long leadershipTermId;
     private long candidateTermId = NULL_VALUE;
     private int logSessionId = CommonContext.NULL_SESSION_ID;
@@ -149,8 +150,9 @@ class Election implements AutoCloseable
         this.isStartup = isStartup;
         this.statusIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
         this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
-        this.leadershipTermId = leadershipTermId;
         this.logPosition = logPosition;
+        this.logLeadershipTermId = leadershipTermId;
+        this.leadershipTermId = leadershipTermId;
         this.clusterMembers = clusterMembers;
         this.thisMember = thisMember;
         this.memberStatusAdapter = memberStatusAdapter;
@@ -218,22 +220,23 @@ class Election implements AutoCloseable
         return workCount;
     }
 
-    void onCanvassPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
+    void onCanvassPosition(final long logPosition, final long logLeadershipTermId, final int followerMemberId)
     {
         clusterMembers[followerMemberId]
             .logPosition(logPosition)
-            .leadershipTermId(leadershipTermId);
+            .leadershipTermId(logLeadershipTermId);
 
-        if (State.LEADER_READY == state && leadershipTermId <= this.leadershipTermId)
+        if (State.LEADER_READY == state && logLeadershipTermId < leadershipTermId)
         {
             memberStatusPublisher.newLeadershipTerm(
                 clusterMembers[followerMemberId].publication(),
                 this.logPosition,
+                this.logLeadershipTermId,
                 this.leadershipTermId,
                 thisMember.id(),
                 logSessionId);
         }
-        else if (State.CANVASS != state && leadershipTermId > this.leadershipTermId)
+        else if (State.CANVASS != state && logLeadershipTermId > leadershipTermId)
         {
             state(State.CANVASS, ctx.epochClock().time());
         }
@@ -244,11 +247,11 @@ class Election implements AutoCloseable
     {
         if (candidateTermId <= leadershipTermId ||
             candidateTermId <= this.candidateTermId ||
-            logLeadershipTermId < leadershipTermId)
+            logLeadershipTermId < this.logLeadershipTermId)
         {
             placeVote(candidateTermId, candidateId, false);
         }
-        else if (logLeadershipTermId == leadershipTermId && logPosition < this.logPosition)
+        else if (logLeadershipTermId == this.leadershipTermId && logPosition < this.logPosition)
         {
             this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().candidateTermId(candidateTermId);
@@ -279,7 +282,11 @@ class Election implements AutoCloseable
     }
 
     void onNewLeadershipTerm(
-        final long logPosition, final long leadershipTermId, final int leaderMemberId, final int logSessionId)
+        final long logPosition,
+        final long logLeadershipTermId,
+        final long leadershipTermId,
+        final int leaderMemberId,
+        final int logSessionId)
     {
         if ((State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state) &&
             leadershipTermId == this.candidateTermId)
@@ -551,7 +558,12 @@ class Election implements AutoCloseable
                 if (member != thisMember)
                 {
                     memberStatusPublisher.newLeadershipTerm(
-                        member.publication(), logPosition, leadershipTermId, thisMember.id(), logSessionId);
+                        member.publication(),
+                        logPosition,
+                        logLeadershipTermId,
+                        leadershipTermId,
+                        thisMember.id(),
+                        logSessionId);
                 }
             }
 

@@ -43,7 +43,10 @@ class MemberStatusPublisher
     private final RecordingLogEncoder recordingLogEncoder = new RecordingLogEncoder();
 
     boolean canvassPosition(
-        final Publication publication, final long logPosition, final long leadershipTermId, final int followerMemberId)
+        final Publication publication,
+        final long logPosition,
+        final long logLeadershipTermId,
+        final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CanvassPositionEncoder.BLOCK_LENGTH;
 
@@ -56,7 +59,7 @@ class MemberStatusPublisher
                 canvassPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logPosition(logPosition)
-                    .leadershipTermId(leadershipTermId)
+                    .logLeadershipTermId(logLeadershipTermId)
                     .followerMemberId(followerMemberId);
 
                 bufferClaim.commit();
@@ -142,6 +145,7 @@ class MemberStatusPublisher
     boolean newLeadershipTerm(
         final Publication publication,
         final long logPosition,
+        final long logLeadershipTermId,
         final long leadershipTermId,
         final int leaderMemberId,
         final int logSessionId)
@@ -157,6 +161,7 @@ class MemberStatusPublisher
                 newLeadershipTermEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logPosition(logPosition)
+                    .logLeadershipTermId(logLeadershipTermId)
                     .leadershipTermId(leadershipTermId)
                     .leaderMemberId(leaderMemberId)
                     .logSessionId(logSessionId);

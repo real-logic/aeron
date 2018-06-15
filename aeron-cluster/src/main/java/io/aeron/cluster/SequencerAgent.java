@@ -218,7 +218,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             state(ConsensusModule.State.ACTIVE);
         }
 
-        timeOfLastLogUpdateMs = clusterTimeMs = cachedTimeMs = epochClock.time();
+        timeOfLastLogUpdateMs = cachedTimeMs = epochClock.time();
         leadershipTermId = recoveryPlan.lastLeadershipTermId;
 
         election = new Election(

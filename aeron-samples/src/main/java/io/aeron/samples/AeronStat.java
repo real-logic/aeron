@@ -62,7 +62,7 @@ public class AeronStat
     private static final String ANSI_HOME = "\u001b[H";
 
     /**
-     * The delay in second between each update.
+     * The delay in seconds between each update.
      */
     private static final String DELAY = "delay";
 

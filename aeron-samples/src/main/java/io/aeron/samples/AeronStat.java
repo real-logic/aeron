@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -137,7 +138,7 @@ public class AeronStat
         final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
 
-        if (CncFileDescriptor.CNC_VERSION != cncVersion)
+        if (CNC_VERSION != cncVersion)
         {
             throw new IllegalStateException(
                 "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
@@ -212,12 +213,16 @@ public class AeronStat
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
+        final String header = String.format(" - Aeron Stat (Cnc v%d), pid %d", CNC_VERSION, SystemUtil.getPid());
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+
         while (running.get())
         {
             clearScreen();
 
-            System.out.format("%1$tH:%1$tM:%1$tS - Aeron Stat%n", new Date());
-            System.out.println("=========================");
+            System.out.print(dateFormat.format(new Date()));
+            System.out.println(header);
+            System.out.println("======================================================================");
 
             aeronStat.print(System.out);
             System.out.println("--");

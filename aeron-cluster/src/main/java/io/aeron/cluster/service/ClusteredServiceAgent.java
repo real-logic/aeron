@@ -419,6 +419,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             if (Role.LEADER == role)
             {
                 session.connect(aeron);
+                session.resetClosing();
             }
             else
             {

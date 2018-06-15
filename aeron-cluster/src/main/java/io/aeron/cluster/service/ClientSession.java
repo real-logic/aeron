@@ -169,6 +169,11 @@ public class ClientSession
         this.isClosing = true;
     }
 
+    void resetClosing()
+    {
+        isClosing = false;
+    }
+
     void disconnect()
     {
         CloseHelper.close(responsePublication);

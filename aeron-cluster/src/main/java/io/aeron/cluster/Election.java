@@ -361,6 +361,11 @@ class Election implements AutoCloseable
         return leadershipTermId;
     }
 
+    long candidateTermId()
+    {
+        return candidateTermId;
+    }
+
     void logSessionId(final int logSessionId)
     {
         this.logSessionId = logSessionId;
@@ -439,7 +444,7 @@ class Election implements AutoCloseable
     {
         if (nowMs >= nominationDeadlineMs)
         {
-            candidateTermId = leadershipTermId + 1;
+            candidateTermId = NULL_VALUE == candidateTermId ? leadershipTermId + 1 : candidateTermId + 1;
             thisMember.leadershipTermId(candidateTermId);
             ClusterMember.becomeCandidate(clusterMembers, thisMember.id());
             ctx.clusterMarkFile().candidateTermId(candidateTermId);
@@ -471,7 +476,6 @@ class Election implements AutoCloseable
             }
             else
             {
-                advanceEmptyTerm(nowMs);
                 state(State.CANVASS, nowMs);
             }
 
@@ -499,7 +503,6 @@ class Election implements AutoCloseable
 
         if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())))
         {
-            advanceEmptyTerm(nowMs);
             state(State.CANVASS, nowMs);
             workCount += 1;
         }
@@ -509,6 +512,11 @@ class Election implements AutoCloseable
 
     private int leaderTransition(final long nowMs)
     {
+        for (long termId = leadershipTermId + 1; termId < candidateTermId; termId++)
+        {
+            ctx.recordingLog().appendTerm(NULL_VALUE, termId, logPosition, nowMs);
+        }
+
         leadershipTermId = candidateTermId;
         candidateTermId = NULL_VALUE;
         sequencerAgent.becomeLeader();
@@ -642,14 +650,6 @@ class Election implements AutoCloseable
             candidateId,
             thisMember.id(),
             vote);
-    }
-
-    private void advanceEmptyTerm(final long nowMs)
-    {
-        ctx.recordingLog().appendTerm(NULL_VALUE, candidateTermId, logPosition, nowMs);
-        leadershipTermId = candidateTermId;
-        candidateTermId = NULL_VALUE;
-        ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
     }
 
     private void ensureSubscriptionsCreated()

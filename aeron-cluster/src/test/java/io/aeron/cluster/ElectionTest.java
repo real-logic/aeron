@@ -381,7 +381,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldElectCandidateWithMajorityOfFullVote()
+    public void shouldElectCandidateWithFullVote()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
@@ -416,6 +416,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
     }
 
+
     @Test
     public void shouldTimeoutCandidateBallotWithoutMajority()
     {
@@ -446,7 +447,73 @@ public class ElectionTest
         final long t4 = t3 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
         election.doWork(t4);
         assertThat(election.state(), is(Election.State.CANVASS));
-        assertThat(election.leadershipTermId(), is(leadershipTermId + 1));
+        assertThat(election.leadershipTermId(), is(leadershipTermId));
+        assertThat(election.candidateTermId(), is(leadershipTermId + 1));
+    }
+
+    @Test
+    public void shouldTimeoutFailedCandidateBallotOnSplitVoteThenSucceedOnRetry()
+    {
+        final long leadershipTermId = Aeron.NULL_VALUE;
+        final long logPosition = 0;
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+        final ClusterMember candidateMember = clusterMembers[1];
+
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
+
+        assertThat(election.state(), is(Election.State.INIT));
+
+        final long t1 = 1;
+        election.doWork(t1);
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        election.onCanvassPosition(0, leadershipTermId, 0);
+
+        final long t2 = t1 + ctx.statusIntervalNs();
+        election.doWork(t2);
+        assertThat(election.state(), is(Election.State.NOMINATE));
+
+        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        election.doWork(t3);
+        assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
+
+        final long t4 = t3 + 1;
+        when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
+        election.onVote(leadershipTermId + 1, candidateMember.id(), clusterMembers[2].id(), false);
+        election.doWork(t4);
+        assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
+
+        final long t5 = t4 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+        election.doWork(t5);
+        assertThat(election.state(), is(Election.State.CANVASS));
+
+        election.onCanvassPosition(0, leadershipTermId, 0);
+
+        final long t6 = t5 + 1;
+        election.doWork(t6);
+
+        final long t7 = t6 + TimeUnit.NANOSECONDS.toMillis(ctx.startupStatusTimeoutNs());
+        election.doWork(t7);
+        assertThat(election.state(), is(Election.State.NOMINATE));
+
+        final long t8 = t7 + ctx.statusIntervalNs();
+        election.doWork(t8);
+        assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
+
+        final long t9 = t8 + 1;
+        election.doWork(t9);
+
+        final long candidateTermId = leadershipTermId + 2;
+        election.onVote(candidateTermId, candidateMember.id(), clusterMembers[2].id(), true);
+
+        final long t10 = t9 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+        election.doWork(t10);
+        assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
+
+        final long t11 = t10 + 1;
+        election.doWork(t11);
+        assertThat(election.state(), is(Election.State.LEADER_READY));
+        assertThat(election.leadershipTermId(), is(candidateTermId));
     }
 
     @Test
@@ -475,7 +542,7 @@ public class ElectionTest
         final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANVASS));
-        assertThat(election.leadershipTermId(), is(candidateTermId));
+        assertThat(election.leadershipTermId(), is(leadershipTermId));
     }
 
     private Election newElection(

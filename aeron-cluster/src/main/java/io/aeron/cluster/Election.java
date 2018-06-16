@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.cluster.ClusterMember.compareLog;
 
 /**
  * Election process to determine a new cluster leader.
@@ -220,7 +221,7 @@ class Election implements AutoCloseable
         return workCount;
     }
 
-    void onCanvassPosition(final long logPosition, final long logLeadershipTermId, final int followerMemberId)
+    void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
     {
         clusterMembers[followerMemberId]
             .logPosition(logPosition)
@@ -230,8 +231,7 @@ class Election implements AutoCloseable
         {
             memberStatusPublisher.newLeadershipTerm(
                 clusterMembers[followerMemberId].publication(),
-                this.logPosition,
-                this.logLeadershipTermId,
+                this.logLeadershipTermId, this.logPosition,
                 this.leadershipTermId,
                 thisMember.id(),
                 logSessionId);
@@ -243,15 +243,13 @@ class Election implements AutoCloseable
     }
 
     void onRequestVote(
-        final long logPosition, final long logLeadershipTermId, final long candidateTermId, final int candidateId)
+        final long logLeadershipTermId, final long logPosition, final long candidateTermId, final int candidateId)
     {
-        if (candidateTermId <= leadershipTermId ||
-            candidateTermId <= this.candidateTermId ||
-            logLeadershipTermId < this.logLeadershipTermId)
+        if (candidateTermId <= leadershipTermId || candidateTermId <= this.candidateTermId)
         {
             placeVote(candidateTermId, candidateId, false);
         }
-        else if (logLeadershipTermId == this.leadershipTermId && logPosition < this.logPosition)
+        else if (compareLog(this.logLeadershipTermId, this.logPosition, logLeadershipTermId, logPosition) > 0)
         {
             this.candidateTermId = candidateTermId;
             ctx.clusterMarkFile().candidateTermId(candidateTermId);
@@ -282,8 +280,8 @@ class Election implements AutoCloseable
     }
 
     void onNewLeadershipTerm(
-        final long logPosition,
         final long logLeadershipTermId,
+        final long logPosition,
         final long leadershipTermId,
         final int leaderMemberId,
         final int logSessionId)
@@ -318,7 +316,7 @@ class Election implements AutoCloseable
                 state(State.FOLLOWER_TRANSITION, ctx.epochClock().time());
             }
         }
-        else if (leadershipTermId > this.leadershipTermId)
+        else if (0 != compareLog(this.logLeadershipTermId, this.logPosition, logLeadershipTermId, logPosition))
         {
             // TODO: query leader recording log and catch up
         }
@@ -332,14 +330,14 @@ class Election implements AutoCloseable
         }
     }
 
-    void onAppendedPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
+    void onAppendedPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
         clusterMembers[followerMemberId]
             .logPosition(logPosition)
             .leadershipTermId(leadershipTermId);
     }
 
-    void onCommitPosition(final long logPosition, final long leadershipTermId, final int leaderMemberId)
+    void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
         if (leadershipTermId > this.leadershipTermId)
         {
@@ -419,7 +417,7 @@ class Election implements AutoCloseable
                 if (member != thisMember)
                 {
                     memberStatusPublisher.canvassPosition(
-                        member.publication(), logPosition, leadershipTermId, thisMember.id());
+                        member.publication(), leadershipTermId, logPosition, thisMember.id());
                 }
             }
 
@@ -496,7 +494,7 @@ class Election implements AutoCloseable
                 {
                     workCount += 1;
                     member.isBallotSent(memberStatusPublisher.requestVote(
-                        member.publication(), logPosition, leadershipTermId, candidateTermId, thisMember.id()));
+                        member.publication(), leadershipTermId, logPosition, candidateTermId, thisMember.id()));
                 }
             }
         }
@@ -559,8 +557,8 @@ class Election implements AutoCloseable
                 {
                     memberStatusPublisher.newLeadershipTerm(
                         member.publication(),
-                        logPosition,
                         logLeadershipTermId,
+                        logPosition,
                         leadershipTermId,
                         thisMember.id(),
                         logSessionId);
@@ -622,7 +620,7 @@ class Election implements AutoCloseable
         int workCount = 1;
         final Publication publication = leaderMember.publication();
 
-        if (memberStatusPublisher.appendedPosition(publication, logPosition, leadershipTermId, thisMember.id()))
+        if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, logPosition, thisMember.id()))
         {
             sequencerAgent.electionComplete();
             close();

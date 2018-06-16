@@ -109,14 +109,14 @@ public class ElectionTest
         election.doWork(t2);
         verify(memberStatusPublisher).requestVote(
             clusterMembers[1].publication(),
-            logPosition,
             leadershipTermId,
+            logPosition,
             candidateTermId,
             candidateMember.id());
         verify(memberStatusPublisher).requestVote(
             clusterMembers[2].publication(),
-            logPosition,
             leadershipTermId,
+            logPosition,
             candidateTermId,
             candidateMember.id());
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
@@ -148,15 +148,15 @@ public class ElectionTest
         election.doWork(t5);
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
-            logPosition,
             leadershipTermId,
+            logPosition,
             candidateTermId,
             candidateMember.id(),
             logSessionId);
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[2].publication(),
-            logPosition,
             leadershipTermId,
+            logPosition,
             candidateTermId,
             candidateMember.id(),
             logSessionId);
@@ -164,8 +164,8 @@ public class ElectionTest
 
         final long t6 = t5 + 1;
         clock.update(t6);
-        election.onAppendedPosition(0, candidateTermId, clusterMembers[1].id());
-        election.onAppendedPosition(0, candidateTermId, clusterMembers[2].id());
+        election.onAppendedPosition(candidateTermId, 0, clusterMembers[1].id());
+        election.onAppendedPosition(candidateTermId, 0, clusterMembers[2].id());
         election.doWork(t6);
         final InOrder inOrder = inOrder(sequencerAgent, electionStateCounter);
         inOrder.verify(sequencerAgent).electionComplete();
@@ -195,14 +195,14 @@ public class ElectionTest
         final long candidateTermId = leadershipTermId + 1;
         final long t2 = 2;
         clock.update(t2);
-        election.onRequestVote(logPosition, leadershipTermId, candidateTermId, candidateId);
+        election.onRequestVote(leadershipTermId, logPosition, candidateTermId, candidateId);
         verify(memberStatusPublisher).placeVote(
             clusterMembers[candidateId].publication(), candidateTermId, candidateId, followerMember.id(), true);
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
 
         final int logSessionId = -7;
-        election.onNewLeadershipTerm(logPosition, leadershipTermId, candidateTermId, candidateId, logSessionId);
+        election.onNewLeadershipTerm(leadershipTermId, logPosition, candidateTermId, candidateId, logSessionId);
         assertThat(election.state(), is(Election.State.FOLLOWER_TRANSITION));
 
         when(sequencerAgent.createAndRecordLogSubscriptionAsFollower(anyString(), anyLong()))
@@ -217,7 +217,7 @@ public class ElectionTest
         election.doWork(t4);
         final InOrder inOrder = inOrder(memberStatusPublisher, sequencerAgent, electionStateCounter);
         inOrder.verify(memberStatusPublisher).appendedPosition(
-            clusterMembers[candidateId].publication(), 0, candidateTermId, followerMember.id());
+            clusterMembers[candidateId].publication(), candidateTermId, 0, followerMember.id());
         inOrder.verify(sequencerAgent).electionComplete();
         inOrder.verify(electionStateCounter).close();
     }
@@ -241,13 +241,13 @@ public class ElectionTest
         final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
         election.doWork(t2);
         verify(memberStatusPublisher).canvassPosition(
-            clusterMembers[0].publication(), logPosition, leaderShipTermId, followerMember.id());
+            clusterMembers[0].publication(), leaderShipTermId, logPosition, followerMember.id());
         verify(memberStatusPublisher).canvassPosition(
-            clusterMembers[2].publication(), logPosition, leaderShipTermId, followerMember.id());
+            clusterMembers[2].publication(), leaderShipTermId, logPosition, followerMember.id());
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onCanvassPosition(0, leaderShipTermId, 0);
-        election.onCanvassPosition(0, leaderShipTermId, 2);
+        election.onCanvassPosition(leaderShipTermId, 0, 0);
+        election.onCanvassPosition(leaderShipTermId, 0, 2);
 
         final long t3 = t2 + 1;
         election.doWork(t3);
@@ -274,8 +274,8 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onCanvassPosition(0, leadershipTermId + 1, 1);
-        election.onCanvassPosition(0, leadershipTermId, 2);
+        election.onCanvassPosition(leadershipTermId + 1, 0, 1);
+        election.onCanvassPosition(leadershipTermId, 0, 2);
 
         final long t3 = t2 + 1;
         election.doWork(t3);
@@ -302,8 +302,8 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onCanvassPosition(0, leadershipTermId, 0);
-        election.onCanvassPosition(0, leadershipTermId, 2);
+        election.onCanvassPosition(leadershipTermId, 0, 0);
+        election.onCanvassPosition(leadershipTermId, 0, 2);
 
         final long t3 = t2 + 1;
         election.doWork(t3);
@@ -311,7 +311,7 @@ public class ElectionTest
 
         final long t4 = t3 + 1;
         final long candidateTermId = leadershipTermId + 1;
-        election.onRequestVote(logPosition, leadershipTermId, candidateTermId, 0);
+        election.onRequestVote(leadershipTermId, logPosition, candidateTermId, 0);
         election.doWork(t4);
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
     }
@@ -332,7 +332,7 @@ public class ElectionTest
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onAppendedPosition(0, leadershipTermId, 0);
+        election.onAppendedPosition(leadershipTermId, 0, 0);
         assertThat(election.state(), is(Election.State.CANVASS));
 
         final long t2 = t1 + 1;
@@ -360,8 +360,8 @@ public class ElectionTest
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onCanvassPosition(0, leadershipTermId, 0);
-        election.onCanvassPosition(0, leadershipTermId, 2);
+        election.onCanvassPosition(leadershipTermId, 0, 0);
+        election.onCanvassPosition(leadershipTermId, 0, 2);
 
         final long t2 = t1 + 1;
         election.doWork(t2);
@@ -398,8 +398,8 @@ public class ElectionTest
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onCanvassPosition(0, leadershipTermId, 0);
-        election.onCanvassPosition(0, leadershipTermId, 2);
+        election.onCanvassPosition(leadershipTermId, 0, 0);
+        election.onCanvassPosition(leadershipTermId, 0, 2);
 
         final long t2 = t1 + 1;
         election.doWork(t2);
@@ -435,8 +435,8 @@ public class ElectionTest
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onCanvassPosition(0, leadershipTermId, 0);
-        election.onCanvassPosition(0, leadershipTermId, 2);
+        election.onCanvassPosition(leadershipTermId, 0, 0);
+        election.onCanvassPosition(leadershipTermId, 0, 2);
 
         final long t2 = t1 + 1;
         election.doWork(t2);
@@ -469,7 +469,7 @@ public class ElectionTest
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onCanvassPosition(0, leadershipTermId, 0);
+        election.onCanvassPosition(leadershipTermId, 0, 0);
 
         final long t2 = t1 + ctx.statusIntervalNs();
         election.doWork(t2);
@@ -489,7 +489,7 @@ public class ElectionTest
         election.doWork(t5);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        election.onCanvassPosition(0, leadershipTermId, 0);
+        election.onCanvassPosition(leadershipTermId, 0, 0);
 
         final long t6 = t5 + 1;
         election.doWork(t6);
@@ -535,7 +535,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.CANVASS));
 
         final long candidateTermId = leadershipTermId + 1;
-        election.onRequestVote(logPosition, leadershipTermId, candidateTermId, 0);
+        election.onRequestVote(leadershipTermId, logPosition, candidateTermId, 0);
 
         final long t2 = t1 + 1;
         election.doWork(t2);
@@ -548,7 +548,7 @@ public class ElectionTest
     }
 
     private Election newElection(
-        final long leadershipTermId,
+        final long logLeadershipTermId,
         final long logPosition,
         final ClusterMember[] clusterMembers,
         final ClusterMember thisMember,
@@ -556,7 +556,7 @@ public class ElectionTest
     {
         return new Election(
             true,
-            leadershipTermId,
+            logLeadershipTermId,
             logPosition,
             clusterMembers,
             thisMember,

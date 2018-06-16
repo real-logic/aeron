@@ -20,18 +20,18 @@ import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 
 interface MemberStatusListener
 {
-    void onCanvassPosition(long logPosition, long logLeadershipTermId, int followerMemberId);
+    void onCanvassPosition(long logLeadershipTermId, long logPosition, int followerMemberId);
 
-    void onRequestVote(long logPosition, long logLeadershipTermId, long candidateTermId, int candidateId);
+    void onRequestVote(long logLeadershipTermId, long logPosition, long candidateTermId, int candidateId);
 
     void onVote(long candidateTermId, int candidateMemberId, int followerMemberId, boolean vote);
 
     void onNewLeadershipTerm(
-        long logPosition, long logLeadershipTermId, long leadershipTermId, int leaderMemberId, int logSessionId);
+        long logLeadershipTermId, long logPosition, long leadershipTermId, int leaderMemberId, int logSessionId);
 
-    void onAppendedPosition(long logPosition, long leadershipTermId, int followerMemberId);
+    void onAppendedPosition(long leadershipTermId, long logPosition, int followerMemberId);
 
-    void onCommitPosition(long logPosition, long leadershipTermId, int leaderMemberId);
+    void onCommitPosition(long leadershipTermId, long logPosition, int leaderMemberId);
 
     void onRecoveryPlanQuery(long correlationId, int requestMemberId, int leaderMemberId);
 

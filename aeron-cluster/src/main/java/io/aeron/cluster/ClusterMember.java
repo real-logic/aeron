@@ -587,4 +587,41 @@ public final class ClusterMember
 
         return possibleVotes >= ClusterMember.quorumThreshold(clusterMembers.length);
     }
+
+    /**
+     * The result is positive if lhs has the more recent log, zero if logs are equal, and negative if rhs has the more
+     * recent log.
+     *
+     * @param lhsLogLeadershipTermId term for which the position is most recent.
+     * @param lhsLogPosition         reached in the provided term.
+     * @param rhsLogLeadershipTermId term for which the position is most recent.
+     * @param rhsLogPosition         reached in the provided term.
+     * @return positive if lhs has the more recent log, zero if logs are equal, and negative if rhs has the more
+     *         recent log.
+     */
+    public static int compareLog(
+        final long lhsLogLeadershipTermId,
+        final long lhsLogPosition,
+        final long rhsLogLeadershipTermId,
+        final long rhsLogPosition)
+    {
+        if (lhsLogLeadershipTermId > rhsLogLeadershipTermId)
+        {
+            return 1;
+        }
+        else if (lhsLogLeadershipTermId < rhsLogLeadershipTermId)
+        {
+            return -1;
+        }
+        else if (lhsLogPosition > rhsLogPosition)
+        {
+            return 1;
+        }
+        else if (lhsLogPosition < rhsLogPosition)
+        {
+            return -1;
+        }
+
+        return 0;
+    }
 }

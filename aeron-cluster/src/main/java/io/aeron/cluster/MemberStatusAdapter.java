@@ -74,8 +74,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onCanvassPosition(
-                    canvassPositionDecoder.logPosition(),
                     canvassPositionDecoder.logLeadershipTermId(),
+                    canvassPositionDecoder.logPosition(),
                     canvassPositionDecoder.followerMemberId());
                 break;
 
@@ -87,8 +87,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onRequestVote(
-                    requestVoteDecoder.logPosition(),
                     requestVoteDecoder.logLeadershipTermId(),
+                    requestVoteDecoder.logPosition(),
                     requestVoteDecoder.candidateTermId(),
                     requestVoteDecoder.candidateMemberId());
                 break;
@@ -115,8 +115,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onNewLeadershipTerm(
-                    newLeadershipTermDecoder.logPosition(),
                     newLeadershipTermDecoder.logLeadershipTermId(),
+                    newLeadershipTermDecoder.logPosition(),
                     newLeadershipTermDecoder.leadershipTermId(),
                     newLeadershipTermDecoder.leaderMemberId(),
                     newLeadershipTermDecoder.logSessionId());
@@ -130,8 +130,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onAppendedPosition(
-                    appendedPositionDecoder.logPosition(),
                     appendedPositionDecoder.leadershipTermId(),
+                    appendedPositionDecoder.logPosition(),
                     appendedPositionDecoder.followerMemberId());
                 break;
 
@@ -143,8 +143,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onCommitPosition(
-                    commitPositionDecoder.logPosition(),
                     commitPositionDecoder.leadershipTermId(),
+                    commitPositionDecoder.logPosition(),
                     commitPositionDecoder.leaderMemberId());
                 break;
 
@@ -157,8 +157,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onRecoveryPlanQuery(
                     recoveryPlanQueryDecoder.correlationId(),
-                    recoveryPlanQueryDecoder.requestMemberId(), recoveryPlanQueryDecoder.leaderMemberId()
-                );
+                    recoveryPlanQueryDecoder.requestMemberId(),
+                    recoveryPlanQueryDecoder.leaderMemberId());
                 break;
 
             case RecoveryPlanDecoder.TEMPLATE_ID:
@@ -180,7 +180,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onRecordingLogQuery(
                     recordingLogQueryDecoder.correlationId(),
-                    recordingLogQueryDecoder.requestMemberId(), recordingLogQueryDecoder.leaderMemberId(),
+                    recordingLogQueryDecoder.requestMemberId(),
+                    recordingLogQueryDecoder.leaderMemberId(),
                     recordingLogQueryDecoder.fromLeadershipTermId(),
                     recordingLogQueryDecoder.count(),
                     recordingLogQueryDecoder.includeSnapshots() == BooleanType.TRUE);

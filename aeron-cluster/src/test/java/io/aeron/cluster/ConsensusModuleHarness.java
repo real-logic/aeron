@@ -607,24 +607,24 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return new MemberStatusListener()
         {
             public void onCanvassPosition(
-                final long logPosition, final long logLeadershipTermId, final int followerMemberId)
+                final long logLeadershipTermId, final long logPosition, final int followerMemberId)
             {
                 counters.onCanvassPositionCounter++;
                 stream.format("onCanvassPositionCounter[%d] %d %d %d%n",
                     index, logPosition, logLeadershipTermId, followerMemberId);
-                nextListener.onCanvassPosition(logPosition, logLeadershipTermId, followerMemberId);
+                nextListener.onCanvassPosition(logLeadershipTermId, logPosition, followerMemberId);
             }
 
             public void onRequestVote(
-                final long logPosition,
                 final long logLeadershipTermId,
+                final long logPosition,
                 final long candidateTermId,
                 final int candidateId)
             {
                 counters.onRequestVoteCounter++;
                 stream.format("onRequestVote[%d] %d %d %d %d%n",
                     index, logPosition, logLeadershipTermId, candidateTermId, candidateId);
-                nextListener.onRequestVote(logPosition, logLeadershipTermId, candidateTermId, candidateId);
+                nextListener.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
             }
 
             public void onVote(
@@ -637,8 +637,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             }
 
             public void onNewLeadershipTerm(
-                final long logPosition,
                 final long logLeadershipTermId,
+                final long logPosition,
                 final long leadershipTermId,
                 final int leaderMemberId,
                 final int logSessionId)
@@ -647,24 +647,24 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 stream.format("onNewLeadershipTerm[%d] %d %d %d %d %d%n",
                     index, logPosition, logLeadershipTermId, leadershipTermId, leaderMemberId, logSessionId);
                 nextListener.onNewLeadershipTerm(
-                    logPosition, logLeadershipTermId, leadershipTermId, leaderMemberId, logSessionId);
+                    logLeadershipTermId, logPosition, leadershipTermId, leaderMemberId, logSessionId);
             }
 
             public void onAppendedPosition(
-                final long logPosition, final long leadershipTermId, final int followerMemberId)
+                final long leadershipTermId, final long logPosition, final int followerMemberId)
             {
                 counters.onAppendedPositionCounter++;
                 stream.format("onAppendedPosition[%d] %d %d %d%n",
                     index, logPosition, leadershipTermId, followerMemberId);
-                nextListener.onAppendedPosition(logPosition, leadershipTermId, followerMemberId);
+                nextListener.onAppendedPosition(leadershipTermId, logPosition, followerMemberId);
             }
 
-            public void onCommitPosition(final long logPosition, final long leadershipTermId, final int leaderMemberId)
+            public void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
             {
                 counters.onCommitPositionCounter++;
                 stream.format("onCommitPosition[%d] %d %d %d%n",
                     index, logPosition, leadershipTermId, leaderMemberId);
-                nextListener.onCommitPosition(logPosition, leadershipTermId, leaderMemberId);
+                nextListener.onCommitPosition(leadershipTermId, logPosition, leaderMemberId);
             }
 
             public void onRecoveryPlanQuery(
@@ -686,7 +686,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
             public void onRecordingLogQuery(
                 final long correlationId,
-                final int requestMemberId, final int leaderMemberId,
+                final int requestMemberId,
+                final int leaderMemberId,
                 final long fromLeadershipTermId,
                 final int count,
                 final boolean includeSnapshots)

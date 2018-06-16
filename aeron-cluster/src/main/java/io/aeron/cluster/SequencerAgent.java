@@ -374,18 +374,18 @@ class SequencerAgent implements Agent, MemberStatusListener
         return Cluster.Role.LEADER != role || logPublisher.appendTimer(correlationId, nowMs);
     }
 
-    public void onCanvassPosition(final long logPosition, final long logLeadershipTermId, final int followerMemberId)
+    public void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
     {
         if (null != election)
         {
-            election.onCanvassPosition(logPosition, logLeadershipTermId, followerMemberId);
+            election.onCanvassPosition(logLeadershipTermId, logPosition, followerMemberId);
         }
         else if (Cluster.Role.LEADER == role)
         {
             memberStatusPublisher.newLeadershipTerm(
                 clusterMembers[followerMemberId].publication(),
-                recordingLog.getTermEntry(this.leadershipTermId).termBaseLogPosition,
                 this.leadershipTermId,
+                recordingLog.getTermEntry(this.leadershipTermId).termBaseLogPosition,
                 this.leadershipTermId,
                 thisMember.id(),
                 logPublisher.sessionId());
@@ -393,11 +393,11 @@ class SequencerAgent implements Agent, MemberStatusListener
     }
 
     public void onRequestVote(
-        final long logPosition, final long logLeadershipTermId, final long candidateTermId, final int candidateId)
+        final long logLeadershipTermId, final long logPosition, final long candidateTermId, final int candidateId)
     {
         if (null != election)
         {
-            election.onRequestVote(logPosition, logLeadershipTermId, candidateTermId, candidateId);
+            election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
         else if (candidateTermId > this.leadershipTermId)
         {
@@ -406,8 +406,8 @@ class SequencerAgent implements Agent, MemberStatusListener
     }
 
     public void onNewLeadershipTerm(
-        final long logPosition,
         final long logLeadershipTermId,
+        final long logPosition,
         final long leadershipTermId,
         final int leaderMemberId,
         final int logSessionId)
@@ -415,7 +415,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         if (null != election)
         {
             election.onNewLeadershipTerm(
-                logPosition, logLeadershipTermId, leadershipTermId, leaderMemberId, logSessionId);
+                logLeadershipTermId, logPosition, leadershipTermId, leaderMemberId, logSessionId);
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
@@ -432,11 +432,11 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    public void onAppendedPosition(final long logPosition, final long leadershipTermId, final int followerMemberId)
+    public void onAppendedPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
         if (null != election)
         {
-            election.onAppendedPosition(logPosition, leadershipTermId, followerMemberId);
+            election.onAppendedPosition(leadershipTermId, logPosition, followerMemberId);
         }
         else if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
@@ -444,11 +444,11 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    public void onCommitPosition(final long logPosition, final long leadershipTermId, final int leaderMemberId)
+    public void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
         if (null != election)
         {
-            election.onCommitPosition(logPosition, leadershipTermId, leaderMemberId);
+            election.onCommitPosition(leadershipTermId, logPosition, leaderMemberId);
         }
         else if (Cluster.Role.FOLLOWER == role && leadershipTermId == this.leadershipTermId)
         {
@@ -1269,7 +1269,7 @@ class SequencerAgent implements Agent, MemberStatusListener
                     if (member != thisMember)
                     {
                         final Publication publication = member.publication();
-                        memberStatusPublisher.commitPosition(publication, quorumPosition, leadershipTermId, memberId);
+                        memberStatusPublisher.commitPosition(publication, leadershipTermId, quorumPosition, memberId);
                     }
                 }
 
@@ -1285,7 +1285,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             if (appendedPosition != lastAppendedPosition)
             {
                 final Publication publication = leaderMember.publication();
-                if (memberStatusPublisher.appendedPosition(publication, appendedPosition, leadershipTermId, memberId))
+                if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, appendedPosition, memberId))
                 {
                     lastAppendedPosition = appendedPosition;
                 }

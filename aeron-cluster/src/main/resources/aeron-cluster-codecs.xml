@@ -282,16 +282,16 @@
     <sbe:message name="CanvassPosition"
                  id="50"
                  description="The highest position a follower has appended to their local log when canvassing for leadership">
-        <field name="logPosition"          id="1" type="int64"/>
-        <field name="logLeadershipTermId"  id="2" type="int64"/>
+        <field name="logLeadershipTermId"  id="1" type="int64"/>
+        <field name="logPosition"          id="2" type="int64"/>
         <field name="followerMemberId"     id="3" type="int32"/>
     </sbe:message>
 
     <sbe:message name="RequestVote"
                  id="51"
                  description="Request the vote from another member to become the cluster leader">
-        <field name="logPosition"          id="1" type="int64"/>
-        <field name="logLeadershipTermId"  id="2" type="int64"/>
+        <field name="logLeadershipTermId"  id="1" type="int64"/>
+        <field name="logPosition"          id="2" type="int64"/>
         <field name="candidateTermId"      id="3" type="int64"/>
         <field name="candidateMemberId"    id="4" type="int32"/>
     </sbe:message>
@@ -308,8 +308,8 @@
     <sbe:message name="NewLeadershipTerm"
                  id="53"
                  description="A leader has been successfully elected and has begun a new term">
-        <field name="logPosition"          id="1" type="int64"/>
-        <field name="logLeadershipTermId"  id="2" type="int64"/>
+        <field name="logLeadershipTermId"  id="1" type="int64"/>
+        <field name="logPosition"          id="2" type="int64"/>
         <field name="leadershipTermId"     id="3" type="int64"/>
         <field name="leaderMemberId"       id="4" type="int32"/>
         <field name="logSessionId"         id="5" type="int32"/>
@@ -318,16 +318,16 @@
     <sbe:message name="AppendedPosition"
                  id="54"
                  description="The highest position a follower has appended to their local log">
-        <field name="logPosition"          id="1" type="int64"/>
-        <field name="leadershipTermId"     id="2" type="int64"/>
+        <field name="leadershipTermId"     id="1" type="int64"/>
+        <field name="logPosition"          id="2" type="int64"/>
         <field name="followerMemberId"     id="3" type="int32"/>
     </sbe:message>
 
     <sbe:message name="CommitPosition"
                  id="55"
                  description="The highest position reached by quorum of the cluster as determined by the leader">
-        <field name="logPosition"          id="1" type="int64"/>
-        <field name="leadershipTermId"     id="2" type="int64"/>
+        <field name="leadershipTermId"     id="1" type="int64"/>
+        <field name="logPosition"          id="2" type="int64"/>
         <field name="leaderMemberId"       id="3" type="int32"/>
     </sbe:message>
 

@@ -44,8 +44,8 @@ class MemberStatusPublisher
 
     boolean canvassPosition(
         final Publication publication,
-        final long logPosition,
         final long logLeadershipTermId,
+        final long logPosition,
         final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CanvassPositionEncoder.BLOCK_LENGTH;
@@ -58,8 +58,8 @@ class MemberStatusPublisher
             {
                 canvassPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .logPosition(logPosition)
                     .logLeadershipTermId(logLeadershipTermId)
+                    .logPosition(logPosition)
                     .followerMemberId(followerMemberId);
 
                 bufferClaim.commit();
@@ -76,8 +76,8 @@ class MemberStatusPublisher
 
     boolean requestVote(
         final Publication publication,
-        final long logPosition,
         final long logLeadershipTermId,
+        final long logPosition,
         final long candidateTermId,
         final int candidateMemberId)
     {
@@ -91,8 +91,8 @@ class MemberStatusPublisher
             {
                 requestVoteEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .logPosition(logPosition)
                     .logLeadershipTermId(logLeadershipTermId)
+                    .logPosition(logPosition)
                     .candidateTermId(candidateTermId)
                     .candidateMemberId(candidateMemberId);
 
@@ -144,8 +144,8 @@ class MemberStatusPublisher
 
     boolean newLeadershipTerm(
         final Publication publication,
-        final long logPosition,
         final long logLeadershipTermId,
+        final long logPosition,
         final long leadershipTermId,
         final int leaderMemberId,
         final int logSessionId)
@@ -160,8 +160,8 @@ class MemberStatusPublisher
             {
                 newLeadershipTermEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .logPosition(logPosition)
                     .logLeadershipTermId(logLeadershipTermId)
+                    .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
                     .leaderMemberId(leaderMemberId)
                     .logSessionId(logSessionId);
@@ -179,7 +179,7 @@ class MemberStatusPublisher
     }
 
     boolean appendedPosition(
-        final Publication publication, final long logPosition, final long leadershipTermId, final int followerMemberId)
+        final Publication publication, final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
 
@@ -191,8 +191,8 @@ class MemberStatusPublisher
             {
                 appendedPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
+                    .logPosition(logPosition)
                     .followerMemberId(followerMemberId);
 
                 bufferClaim.commit();
@@ -208,7 +208,7 @@ class MemberStatusPublisher
     }
 
     boolean commitPosition(
-        final Publication publication, final long logPosition, final long leadershipTermId, final int leaderMemberId)
+        final Publication publication, final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CommitPositionEncoder.BLOCK_LENGTH;
 
@@ -220,8 +220,8 @@ class MemberStatusPublisher
             {
                 commitPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
+                    .logPosition(logPosition)
                     .leaderMemberId(leaderMemberId);
 
                 bufferClaim.commit();

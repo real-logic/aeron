@@ -260,6 +260,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
             {
                 workCount += ingressAdapter.poll();
+                workCount += timerService.poll(nowMs);
             }
             else if (Cluster.Role.FOLLOWER == role &&
                 (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state))
@@ -846,7 +847,6 @@ class SequencerAgent implements Agent, MemberStatusListener
                 workCount += processPendingSessions(pendingSessions, nowMs);
                 workCount += checkSessions(sessionByIdMap, nowMs);
                 workCount += processRejectedSessions(rejectedSessions, nowMs);
-                workCount += timerService.poll(nowMs);
             }
         }
         else

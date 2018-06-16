@@ -494,7 +494,7 @@ public class ElectionTest
         final long t6 = t5 + 1;
         election.doWork(t6);
 
-        final long t7 = t6 + TimeUnit.NANOSECONDS.toMillis(ctx.startupStatusTimeoutNs());
+        final long t7 = t6 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
         election.doWork(t7);
         assertThat(election.state(), is(Election.State.NOMINATE));
 

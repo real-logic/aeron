@@ -110,7 +110,7 @@ class Election implements AutoCloseable
         }
     }
 
-    private final boolean isStartup;
+    private boolean isStartup;
     private final long statusIntervalMs;
     private final long leaderHeartbeatIntervalMs;
     private final long logLeadershipTermId;
@@ -481,6 +481,7 @@ class Election implements AutoCloseable
             }
             else
             {
+                isStartup = false;
                 state(State.CANVASS, nowMs);
             }
 

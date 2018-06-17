@@ -113,7 +113,6 @@ class Election implements AutoCloseable
     private boolean isStartup;
     private final long statusIntervalMs;
     private final long leaderHeartbeatIntervalMs;
-    private final long logLeadershipTermId;
     private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
     private final MemberStatusAdapter memberStatusAdapter;
@@ -128,6 +127,7 @@ class Election implements AutoCloseable
     private long nominationDeadlineMs;
     private long logPosition;
     private long leadershipTermId;
+    private long logLeadershipTermId;
     private long candidateTermId = NULL_VALUE;
     private int logSessionId = CommonContext.NULL_SESSION_ID;
     private ClusterMember leaderMember = null;
@@ -318,7 +318,28 @@ class Election implements AutoCloseable
         }
         else if (0 != compareLog(this.logLeadershipTermId, this.logPosition, logLeadershipTermId, logPosition))
         {
-            // TODO: query leader recording log and catch up
+            if (this.logLeadershipTermId < logLeadershipTermId)
+            {
+                this.leadershipTermId = this.logLeadershipTermId;
+                this.candidateTermId = leadershipTermId;
+                leaderMember = clusterMembers[leaderMemberId];
+                this.logSessionId = logSessionId;
+
+                logCatchup = new LogCatchup(
+                    localArchive,
+                    memberStatusPublisher,
+                    clusterMembers,
+                    leaderMemberId,
+                    thisMember.id(),
+                    logSessionId,
+                    this.leadershipTermId + 1,
+                    this.logPosition,
+                    sequencerAgent.logRecordingId(),
+                    sequencerAgent,
+                    ctx);
+
+                state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
+            }
         }
     }
 
@@ -594,10 +615,24 @@ class Election implements AutoCloseable
         else
         {
             logPosition = logCatchup.targetPosition();
-            addLiveLogDestination(false);
-            appendTerm(nowMs);
 
-            state(State.FOLLOWER_READY, nowMs);
+            if (NULL_VALUE == candidateTermId)
+            {
+                addLiveLogDestination(false);
+                appendTerm(nowMs);
+
+                state(State.FOLLOWER_READY, nowMs);
+            }
+            else if (leadershipTermId < candidateTermId)
+            {
+                CloseHelper.close(logCatchup);
+                logCatchup = null;
+                logLeadershipTermId = leadershipTermId;
+
+                ctx.recordingLog().appendTerm(sequencerAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
+
+                state(State.FOLLOWER_BALLOT, nowMs);
+            }
             workCount += 1;
         }
 

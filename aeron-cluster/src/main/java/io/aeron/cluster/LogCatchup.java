@@ -237,7 +237,15 @@ class LogCatchup implements AutoCloseable
             }
             else
             {
-                state(State.AWAIT_REPLAY);
+                if (fromPosition >= targetPosition)
+                {
+                    state(State.DONE);
+                }
+                else
+                {
+                    state(State.AWAIT_REPLAY);
+                }
+
                 activeCorrelationId = Aeron.NULL_VALUE;
                 workCount += 1;
             }

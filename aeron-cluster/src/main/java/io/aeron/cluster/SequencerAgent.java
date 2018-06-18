@@ -405,7 +405,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             election = new Election(
                 false,
                 leadershipTermId,
-                logCommitPosition(),
+                commitPosition.getWeak(),
                 clusterMembers,
                 thisMember,
                 memberStatusAdapter,
@@ -557,6 +557,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             archive.truncateRecording(recordingId, logPosition);
         }
 
+        lastAppendedPosition = recordingExtent.stopPosition;
         followerCommitPosition = recordingExtent.stopPosition;
         commitPosition.setOrdered(recordingExtent.stopPosition);
         clearSessionsAfter(recordingExtent.stopPosition);
@@ -573,16 +574,6 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    long logAppendedPosition()
-    {
-        if (null != appendedPosition)
-        {
-            return appendedPosition.get();
-        }
-
-        return recoveryPlan.lastAppendedLogPosition;
-    }
-
     void appendedPositionCounter(final ReadableCounter appendedPositionCounter)
     {
         this.appendedPosition = appendedPositionCounter;
@@ -591,18 +582,6 @@ class SequencerAgent implements Agent, MemberStatusListener
     void commitPositionCounter(final Counter commitPositionCounter)
     {
         this.commitPosition = commitPositionCounter;
-    }
-
-    long logCommitPosition()
-    {
-        if (Cluster.Role.LEADER == role)
-        {
-            return commitPosition.getWeak();
-        }
-        else
-        {
-            return followerCommitPosition;
-        }
     }
 
     void clearSessionsAfter(final long logPosition)
@@ -1387,7 +1366,19 @@ class SequencerAgent implements Agent, MemberStatusListener
 
             if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
             {
-                throw new AgentTerminationException("no heartbeat from cluster leader");
+                election = new Election(
+                    false,
+                    leadershipTermId,
+                    commitPosition.getWeak(),
+                    clusterMembers,
+                    thisMember,
+                    memberStatusAdapter,
+                    memberStatusPublisher,
+                    ctx,
+                    archive,
+                    this);
+
+                election.doWork(nowMs);
             }
         }
 

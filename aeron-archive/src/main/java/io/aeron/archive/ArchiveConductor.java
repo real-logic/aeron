@@ -714,36 +714,24 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         validateMaxConcurrentRecordings(controlSession, correlationId, originalChannel, image);
         validateImageForExtendRecording(correlationId, controlSession, image, originalRecordingSummary);
 
-        final int sessionId = image.sessionId();
-        final int streamId = image.subscription().streamId();
-        final long newStartPosition = image.joinPosition();
-
         final Counter position = RecordingPos.allocate(
-            aeron, tempBuffer, recordingId, sessionId, streamId, strippedChannel);
-        position.setOrdered(newStartPosition);
+            aeron, tempBuffer, recordingId, image.sessionId(), image.subscription().streamId(), strippedChannel);
+        position.setOrdered(image.joinPosition());
 
-        try
-        {
-            final RecordingSession session = new RecordingSession(
-                recordingId,
-                originalRecordingSummary.startPosition,
-                originalChannel,
-                recordingEventsProxy,
-                image,
-                position,
-                archiveDirChannel,
-                ctx);
+        catalog.extendRecording(recordingId);
 
-            catalog.extendRecording(recordingId);
-            recordingSessionByIdMap.put(recordingId, session);
-            recorder.addSession(session);
-        }
-        catch (final Exception ex)
-        {
-            errorHandler.onError(ex);
-            position.close();
-            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
-        }
+        final RecordingSession session = new RecordingSession(
+            recordingId,
+            originalRecordingSummary.startPosition,
+            originalChannel,
+            recordingEventsProxy,
+            image,
+            position,
+            archiveDirChannel,
+            ctx);
+
+        recordingSessionByIdMap.put(recordingId, session);
+        recorder.addSession(session);
     }
 
     private ExclusivePublication newReplayPublication(

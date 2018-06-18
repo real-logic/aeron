@@ -547,6 +547,23 @@ public class ElectionTest
         assertThat(election.leadershipTermId(), is(leadershipTermId));
     }
 
+    @Test
+    public void shouldBecomeFollowerIfEnteringNewElection()
+    {
+        final long leadershipTermId = 1;
+        final long logPosition = 0;
+        final ClusterMember[] clusterMembers = prepareClusterMembers();
+        final ClusterMember thisMember = clusterMembers[0];
+
+        when(sequencerAgent.role()).thenReturn(Cluster.Role.LEADER);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, thisMember, ctx);
+
+        final long t1 = 1;
+        election.doWork(t1);
+        assertThat(election.state(), is(Election.State.CANVASS));
+        verify(sequencerAgent).role(Cluster.Role.FOLLOWER);
+    }
+
     private Election newElection(
         final long logLeadershipTermId,
         final long logPosition,

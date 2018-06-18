@@ -401,7 +401,20 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
         else if (candidateTermId > this.leadershipTermId)
         {
-            // TODO: Create an election
+            election = new Election(
+                false,
+                leadershipTermId,
+                logPosition(),
+                clusterMembers,
+                thisMember,
+                memberStatusAdapter,
+                memberStatusPublisher,
+                ctx,
+                archive,
+                this);
+
+            election.doWork(cachedTimeMs);
+            election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
     }
 

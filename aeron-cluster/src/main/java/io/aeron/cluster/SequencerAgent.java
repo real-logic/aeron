@@ -539,7 +539,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         return role;
     }
 
-    void prepareForElection(final long logPosition)
+    long prepareForElection(final long logPosition)
     {
         final RecordingExtent recordingExtent = new RecordingExtent();
         final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
@@ -557,7 +557,11 @@ class SequencerAgent implements Agent, MemberStatusListener
             archive.truncateRecording(recordingId, logPosition);
         }
 
-        clearSessionsAfter(logPosition);
+        followerCommitPosition = recordingExtent.stopPosition;
+        commitPosition.setOrdered(recordingExtent.stopPosition);
+        clearSessionsAfter(recordingExtent.stopPosition);
+
+        return recordingExtent.stopPosition;
     }
 
     void stopLogRecording()

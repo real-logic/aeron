@@ -421,7 +421,7 @@ class Election implements AutoCloseable
 
         if (!isStartup)
         {
-            sequencerAgent.prepareForElection(logPosition);
+            logPosition = sequencerAgent.prepareForElection(logPosition);
         }
 
         if (clusterMembers.length == 1)

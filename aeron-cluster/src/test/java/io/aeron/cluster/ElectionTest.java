@@ -71,7 +71,7 @@ public class ElectionTest
             "0,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint");
 
         final ClusterMember thisMember = clusterMembers[0];
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, thisMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, thisMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -93,7 +93,7 @@ public class ElectionTest
 
         ctx.appointedLeaderId(candidateMember.id());
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -184,7 +184,7 @@ public class ElectionTest
 
         ctx.appointedLeaderId(candidateId).epochClock(clock);
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -230,7 +230,7 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
 
-        final Election election = newElection(leaderShipTermId, logPosition, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leaderShipTermId, logPosition, clusterMembers, followerMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -262,7 +262,7 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[0];
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -290,7 +290,7 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -324,7 +324,7 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -352,7 +352,7 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember candidateMember = clusterMembers[1];
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -390,7 +390,7 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember candidateMember = clusterMembers[1];
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -427,7 +427,7 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember candidateMember = clusterMembers[1];
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -461,7 +461,7 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember candidateMember = clusterMembers[1];
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -526,7 +526,7 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember followerMember = clusterMembers[1];
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember, ctx);
+        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 
@@ -551,25 +551,45 @@ public class ElectionTest
     public void shouldBecomeFollowerIfEnteringNewElection()
     {
         final long leadershipTermId = 1;
-        final long logPosition = 0;
+        final long logPosition = 120;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember thisMember = clusterMembers[0];
 
         when(sequencerAgent.role()).thenReturn(Cluster.Role.LEADER);
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, thisMember, ctx);
+        final Election election = newElection(false, leadershipTermId, logPosition, clusterMembers, thisMember);
 
         final long t1 = 1;
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
+        verify(sequencerAgent).prepareForElection(logPosition);
         verify(sequencerAgent).role(Cluster.Role.FOLLOWER);
+    }
+
+    private Election newElection(
+        final boolean isStartup,
+        final long logLeadershipTermId,
+        final long logPosition,
+        final ClusterMember[] clusterMembers,
+        final ClusterMember thisMember)
+    {
+        return new Election(
+            isStartup,
+            logLeadershipTermId,
+            logPosition,
+            clusterMembers,
+            thisMember,
+            memberStatusAdapter,
+            memberStatusPublisher,
+            ctx,
+            null,
+            sequencerAgent);
     }
 
     private Election newElection(
         final long logLeadershipTermId,
         final long logPosition,
         final ClusterMember[] clusterMembers,
-        final ClusterMember thisMember,
-        final ConsensusModule.Context ctx)
+        final ClusterMember thisMember)
     {
         return new Election(
             true,

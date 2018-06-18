@@ -107,6 +107,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private final RecordingLog recordingLog;
     private RecordingLog.RecoveryPlan recoveryPlan;
     private Election election;
+    private String logRecordingChannel;
 
     SequencerAgent(final ConsensusModule.Context ctx)
     {
@@ -404,7 +405,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             election = new Election(
                 false,
                 leadershipTermId,
-                logPosition(),
+                logCommitPosition(),
                 clusterMembers,
                 thisMember,
                 memberStatusAdapter,
@@ -538,6 +539,46 @@ class SequencerAgent implements Agent, MemberStatusListener
         return role;
     }
 
+    void prepareForElection(final long logPosition)
+    {
+        final RecordingExtent recordingExtent = new RecordingExtent();
+        final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
+
+        stopLogRecording();
+
+        do
+        {
+            archive.listRecording(recordingId, recordingExtent);
+        }
+        while (AeronArchive.NULL_POSITION == recordingExtent.stopPosition);
+
+        if (recordingExtent.stopPosition > logPosition)
+        {
+            archive.truncateRecording(recordingId, logPosition);
+        }
+
+        clearSessionsAfter(logPosition);
+    }
+
+    void stopLogRecording()
+    {
+        if (null != logRecordingChannel)
+        {
+            archive.stopRecording(logRecordingChannel, ctx.logStreamId());
+            logRecordingChannel = null;
+        }
+    }
+
+    long logAppendedPosition()
+    {
+        if (null != appendedPosition)
+        {
+            return appendedPosition.get();
+        }
+
+        return recoveryPlan.lastAppendedLogPosition;
+    }
+
     void appendedPositionCounter(final ReadableCounter appendedPositionCounter)
     {
         this.appendedPosition = appendedPositionCounter;
@@ -546,6 +587,38 @@ class SequencerAgent implements Agent, MemberStatusListener
     void commitPositionCounter(final Counter commitPositionCounter)
     {
         this.commitPosition = commitPositionCounter;
+    }
+
+    long logCommitPosition()
+    {
+        if (Cluster.Role.LEADER == role)
+        {
+            return commitPosition.getWeak();
+        }
+        else
+        {
+            return followerCommitPosition;
+        }
+    }
+
+    void clearSessionsAfter(final long logPosition)
+    {
+        for (final Iterator<ClusterSession> i = sessionByIdMap.values().iterator(); i.hasNext(); )
+        {
+            final ClusterSession session = i.next();
+            if (session.openedLogPosition() >= logPosition)
+            {
+                i.remove();
+            }
+            session.close();
+        }
+
+        for (final ClusterSession session : pendingSessions)
+        {
+            session.close();
+        }
+
+        pendingSessions.clear();
     }
 
     void onServiceCloseSession(final long clusterSessionId)
@@ -1233,6 +1306,11 @@ class SequencerAgent implements Agent, MemberStatusListener
         ++serviceAckId;
     }
 
+    private long logPosition()
+    {
+        return null != logAdapter ? logAdapter.position() : logPublisher.position();
+    }
+
     private void validateServiceAck(final long logPosition, final long ackId, final int serviceId)
     {
         if (logPosition != expectedAckPosition || ackId != serviceAckId)
@@ -1242,11 +1320,6 @@ class SequencerAgent implements Agent, MemberStatusListener
                 ", logPosition=" + logPosition + " expected " + expectedAckPosition +
                 ", ackId=" + ackId + " expected " + serviceAckId);
         }
-    }
-
-    private long logPosition()
-    {
-        return null != logAdapter ? logAdapter.position() : logPublisher.position();
     }
 
     private void updateClientConnectDetails(final ClusterMember[] members, final int leaderMemberId)
@@ -1465,6 +1538,8 @@ class SequencerAgent implements Agent, MemberStatusListener
             final RecordingLog.Log log = recoveryPlan.logs.get(0);
             archive.extendRecording(log.recordingId, channel, ctx.logStreamId(), sourceLocation);
         }
+
+        logRecordingChannel = channel;
     }
 
     private void replayLog(final Image image, final long stopPosition, final Counter commitPosition)

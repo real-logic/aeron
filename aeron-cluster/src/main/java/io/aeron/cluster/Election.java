@@ -39,7 +39,13 @@ class Election implements AutoCloseable
     {
         INIT(0),
 
-        CANVASS(1),
+        CANVASS(1)
+        {
+            void exit(final Election election)
+            {
+                election.isStartup(false);
+            }
+        },
 
         NOMINATE(2),
 
@@ -340,6 +346,8 @@ class Election implements AutoCloseable
 
                 state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
             }
+
+            // TODO: state may be out of step which requires log truncation and recovery.
         }
     }
 
@@ -370,6 +378,11 @@ class Election implements AutoCloseable
     {
         CloseHelper.close(logCatchup);
         logCatchup = null;
+    }
+
+    void isStartup(final boolean isStartup)
+    {
+        this.isStartup = isStartup;
     }
 
     State state()
@@ -405,6 +418,11 @@ class Election implements AutoCloseable
     private int init(final long nowMs)
     {
         stateCounter = ctx.aeron().addCounter(0, "Election State");
+
+        if (!isStartup)
+        {
+            sequencerAgent.prepareForElection(logPosition);
+        }
 
         if (clusterMembers.length == 1)
         {
@@ -502,7 +520,6 @@ class Election implements AutoCloseable
             }
             else
             {
-                isStartup = false;
                 state(State.CANVASS, nowMs);
             }
 

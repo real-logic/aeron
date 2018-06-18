@@ -240,10 +240,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     }
 
     void stopRecording(
-        final long correlationId,
-        final ControlSession controlSession,
-        final int streamId,
-        final String channel)
+        final long correlationId, final ControlSession controlSession, final int streamId, final String channel)
     {
         try
         {
@@ -325,7 +322,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
     }
 
-    public void listRecording(final long correlationId, final ControlSession controlSession, final long recordingId)
+    void listRecording(final long correlationId, final ControlSession controlSession, final long recordingId)
     {
         if (controlSession.activeListRecordingsSession() != null)
         {
@@ -412,46 +409,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         replayer.addSession(replaySession);
     }
 
-    private boolean validateReplayPosition(
-        final long correlationId,
-        final ControlSession controlSession,
-        final long recordingId,
-        final long position,
-        final RecordingSummary recordingSummary)
-    {
-        if ((position & (FRAME_ALIGNMENT - 1)) != 0)
-        {
-            final String msg = "requested replay start position " + position +
-                " is not a multiple of FRAME_ALIGNMENT (" + FRAME_ALIGNMENT + ") for recording " + recordingId;
-            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
-
-            return false;
-        }
-
-        final long startPosition = recordingSummary.startPosition;
-        if (position - startPosition < 0)
-        {
-            final String msg = "requested replay start position " + position +
-                ") is less than recording start position " + startPosition + " for recording " + recordingId;
-            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
-
-            return false;
-        }
-
-        final long stopPosition = recordingSummary.stopPosition;
-        if (stopPosition != NULL_POSITION && position >= stopPosition)
-        {
-            final String msg = "requested replay start position " + position +
-                " must be less than highest recorded position " + stopPosition + " for recording " + recordingId;
-            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    public void stopReplay(final long correlationId, final ControlSession controlSession, final long replaySessionId)
+    void stopReplay(final long correlationId, final ControlSession controlSession, final long replaySessionId)
     {
         final ReplaySession replaySession = replaySessionByIdMap.get(replaySessionId);
         if (null == replaySession)
@@ -466,7 +424,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
     }
 
-    public void extendRecording(
+    void extendRecording(
         final long correlationId,
         final ControlSession controlSession,
         final long recordingId,
@@ -541,8 +499,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
     }
 
-    public void getRecordingPosition(
-        final long correlationId, final ControlSession controlSession, final long recordingId)
+    void getRecordingPosition(final long correlationId, final ControlSession controlSession, final long recordingId)
     {
         final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
         final long position = null == recordingSession ? NULL_POSITION : recordingSession.recordingPosition().get();
@@ -551,7 +508,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void truncateRecording(
+    void truncateRecording(
         final long correlationId, final ControlSession controlSession, final long recordingId, final long position)
     {
         final RecordingSummary summary = validateFramePosition(correlationId, controlSession, recordingId, position);
@@ -727,32 +684,22 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             originalChannel,
             sourceIdentity);
 
-        final long controlSessionId = controlSession.sessionId();
         final Counter position = RecordingPos.allocate(
-            aeron, tempBuffer, recordingId, controlSessionId, correlationId, sessionId, streamId, strippedChannel);
+            aeron, tempBuffer, recordingId, sessionId, streamId, strippedChannel);
         position.setOrdered(startPosition);
 
-        try
-        {
-            final RecordingSession session = new RecordingSession(
-                recordingId,
-                startPosition,
-                originalChannel,
-                recordingEventsProxy,
-                image,
-                position,
-                archiveDirChannel,
-                ctx);
+        final RecordingSession session = new RecordingSession(
+            recordingId,
+            startPosition,
+            originalChannel,
+            recordingEventsProxy,
+            image,
+            position,
+            archiveDirChannel,
+            ctx);
 
-            recordingSessionByIdMap.put(recordingId, session);
-            recorder.addSession(session);
-        }
-        catch (final Exception ex)
-        {
-            errorHandler.onError(ex);
-            position.close();
-            controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
-        }
+        recordingSessionByIdMap.put(recordingId, session);
+        recorder.addSession(session);
     }
 
     private void extendRecordingSession(
@@ -770,10 +717,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final int sessionId = image.sessionId();
         final int streamId = image.subscription().streamId();
         final long newStartPosition = image.joinPosition();
-        final long controlSessionId = controlSession.sessionId();
 
         final Counter position = RecordingPos.allocate(
-            aeron, tempBuffer, recordingId, controlSessionId, correlationId, sessionId, streamId, strippedChannel);
+            aeron, tempBuffer, recordingId, sessionId, streamId, strippedChannel);
         position.setOrdered(newStartPosition);
 
         try
@@ -925,5 +871,44 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
 
         return recordingSummary;
+    }
+
+    private boolean validateReplayPosition(
+        final long correlationId,
+        final ControlSession controlSession,
+        final long recordingId,
+        final long position,
+        final RecordingSummary recordingSummary)
+    {
+        if ((position & (FRAME_ALIGNMENT - 1)) != 0)
+        {
+            final String msg = "requested replay start position " + position +
+                " is not a multiple of FRAME_ALIGNMENT (" + FRAME_ALIGNMENT + ") for recording " + recordingId;
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
+
+            return false;
+        }
+
+        final long startPosition = recordingSummary.startPosition;
+        if (position - startPosition < 0)
+        {
+            final String msg = "requested replay start position " + position +
+                ") is less than recording start position " + startPosition + " for recording " + recordingId;
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
+
+            return false;
+        }
+
+        final long stopPosition = recordingSummary.stopPosition;
+        if (stopPosition != NULL_POSITION && position >= stopPosition)
+        {
+            final String msg = "requested replay start position " + position +
+                " must be less than highest recorded position " + stopPosition + " for recording " + recordingId;
+            controlSession.sendResponse(correlationId, ERROR, msg, controlResponseProxy);
+
+            return false;
+        }
+
+        return true;
     }
 }

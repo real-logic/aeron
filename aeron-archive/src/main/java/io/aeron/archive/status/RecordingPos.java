@@ -36,15 +36,7 @@ import static org.agrona.concurrent.status.CountersReader.*;
  *  |                        Recording ID                           |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                     Control Session ID                        |
- *  |                                                               |
- *  +---------------------------------------------------------------+
- *  |                       Correlation ID                          |
- *  |                                                               |
- *  +---------------------------------------------------------------+
  *  |                         Session ID                            |
- *  +---------------------------------------------------------------+
- *  |                         Stream ID                             |
  *  +---------------------------------------------------------------+
  * </pre>
  */
@@ -66,27 +58,19 @@ public class RecordingPos
     public static final String NAME = "rec-pos";
 
     public static final int RECORDING_ID_OFFSET = 0;
-    public static final int CONTROL_SESSION_ID_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
-    public static final int CORRELATION_ID_OFFSET = CONTROL_SESSION_ID_OFFSET + SIZE_OF_LONG;
-    public static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-    public static final int STREAM_ID_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-    public static final int KEY_LENGTH = STREAM_ID_OFFSET + SIZE_OF_INT;
+    public static final int SESSION_ID_OFFSET = RECORDING_ID_OFFSET + SIZE_OF_LONG;
+    public static final int KEY_LENGTH = SESSION_ID_OFFSET + SIZE_OF_INT;
 
     public static Counter allocate(
         final Aeron aeron,
         final UnsafeBuffer tempBuffer,
         final long recordingId,
-        final long controlSessionId,
-        final long correlationId,
         final int sessionId,
         final int streamId,
         final String strippedChannel)
     {
         tempBuffer.putLong(RECORDING_ID_OFFSET, recordingId);
-        tempBuffer.putLong(CONTROL_SESSION_ID_OFFSET, controlSessionId);
-        tempBuffer.putLong(CORRELATION_ID_OFFSET, correlationId);
         tempBuffer.putInt(SESSION_ID_OFFSET, sessionId);
-        tempBuffer.putInt(STREAM_ID_OFFSET, streamId);
 
         int labelLength = 0;
         labelLength += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH, NAME + ": ");
@@ -135,36 +119,6 @@ public class RecordingPos
         }
 
         return NULL_COUNTER_ID;
-    }
-
-    /**
-     * Count the number of counters for a given session. It is possible for different recording to exist on the
-     * same session if there are images under subscriptions with different channel and stream id.
-     *
-     * @param countersReader to search within.
-     * @param sessionId      to search for.
-     * @return the count of recordings matching a session id.
-     */
-    public static int countBySession(final CountersReader countersReader, final int sessionId)
-    {
-        int count = 0;
-        final DirectBuffer buffer = countersReader.metaDataBuffer();
-
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
-        {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
-            {
-                final int recordOffset = CountersReader.metaDataOffset(i);
-
-                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
-                    buffer.getInt(recordOffset + KEY_OFFSET + SESSION_ID_OFFSET) == sessionId)
-                {
-                    ++count;
-                }
-            }
-        }
-
-        return count;
     }
 
     /**

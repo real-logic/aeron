@@ -357,9 +357,23 @@ public final class MediaDriver implements AutoCloseable
             final int observations = ctx.saveErrorLog(new PrintStream(baos, false, "UTF-8"), cncByteBuffer);
             if (observations > 0)
             {
+                final StringBuilder builder = new StringBuilder();
+                builder.append(ctx.aeronDirectoryName());
+                while (builder.length() > 1)
+                {
+                    final int lastCharIndex = builder.length() - 1;
+                    final char c = builder.charAt(lastCharIndex);
+                    if ('/' == c || '\\' == c)
+                    {
+                        builder.setLength(lastCharIndex);
+                    }
+                }
+
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
-                final String errorLogFilename =
-                    ctx.aeronDirectoryName() + '-' + dateFormat.format(new Date()) + "-error.log";
+                builder.append(dateFormat.format(new Date()));
+                builder.append("-error.log");
+
+                final String errorLogFilename = builder.toString();
 
                 System.err.println("WARNING: Existing errors saved to: " + errorLogFilename);
                 try (FileOutputStream out = new FileOutputStream(errorLogFilename))

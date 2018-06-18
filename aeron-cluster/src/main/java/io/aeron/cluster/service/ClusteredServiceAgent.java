@@ -523,7 +523,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             try
             {
                 final CountersReader counters = aeron.countersReader();
-                final int counterId = awaitRecordingCounter(publication, counters);
+                final int counterId = awaitRecordingCounter(publication.sessionId(), counters);
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
                 snapshotState(publication, logPosition, leadershipTermId);
@@ -602,15 +602,15 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
     }
 
-    private int awaitRecordingCounter(final Publication publication, final CountersReader counters)
+    private int awaitRecordingCounter(final int sessionId, final CountersReader counters)
     {
         idleStrategy.reset();
-        int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+        int counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
         while (NULL_COUNTER_ID == counterId)
         {
             checkInterruptedStatus();
             idleStrategy.idle();
-            counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+            counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
         }
 
         return counterId;

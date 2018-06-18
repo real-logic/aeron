@@ -546,11 +546,21 @@ class SequencerAgent implements Agent, MemberStatusListener
 
         stopLogRecording();
 
-        do
+        idleStrategy.reset();
+        while (true)
         {
-            archive.listRecording(recordingId, recordingExtent);
+            if (0 == archive.listRecording(recordingId, recordingExtent))
+            {
+                throw new IllegalStateException("Recording not found id=" + recordingId);
+            }
+
+            if ((AeronArchive.NULL_POSITION != recordingExtent.stopPosition))
+            {
+                break;
+            }
+
+            idle();
         }
-        while (AeronArchive.NULL_POSITION == recordingExtent.stopPosition);
 
         if (recordingExtent.stopPosition > logPosition)
         {

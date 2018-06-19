@@ -41,6 +41,7 @@ public class ClientSession
     public static final long MOCKED_OFFER = 1;
 
     private final long id;
+    private long lastCorrelationId;
     private final int responseStreamId;
     private final String responseChannel;
     private final byte[] encodedPrincipal;
@@ -53,12 +54,14 @@ public class ClientSession
 
     ClientSession(
         final long sessionId,
+        final long correlationId,
         final int responseStreamId,
         final String responseChannel,
         final byte[] encodedPrincipal,
         final Cluster cluster)
     {
         this.id = sessionId;
+        this.lastCorrelationId = correlationId;
         this.responseStreamId = responseStreamId;
         this.responseChannel = responseChannel;
         this.encodedPrincipal = encodedPrincipal;
@@ -124,6 +127,16 @@ public class ClientSession
     }
 
     /**
+     * Get the last correlation id processed on this session.
+     *
+     * @return the last correlation id processed on this session.
+     */
+    public long lastCorrelationId()
+    {
+        return lastCorrelationId;
+    }
+
+    /**
      * Non-blocking publish of a partial buffer containing a message to a cluster.
      *
      * @param correlationId to be used to identify the message to the cluster.
@@ -178,5 +191,10 @@ public class ClientSession
     {
         CloseHelper.close(responsePublication);
         responsePublication = null;
+    }
+
+    void lastCorrelationId(final long correlationId)
+    {
+        lastCorrelationId = correlationId;
     }
 }

@@ -31,10 +31,7 @@ public class StubEgressListener implements EgressListener
     }
 
     public void newLeader(
-        final long correlationId,
         final long clusterSessionId,
-        final long lastMessageTimestamp,
-        final long leadershipTimestamp,
         final long leadershipTermId,
         final int leaderMemberId,
         final String memberEndpoints)

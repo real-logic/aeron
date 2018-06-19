@@ -229,6 +229,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final Header header)
     {
         this.clusterTimeMs = timestampMs;
+        final ClientSession clientSession = sessionByIdMap.get(clusterSessionId);
 
         service.onSessionMessage(
             clusterSessionId,
@@ -238,6 +239,8 @@ class ClusteredServiceAgent implements Agent, Cluster
             offset,
             length,
             header);
+
+        clientSession.lastCorrelationId(correlationId);
     }
 
     void onTimerEvent(final long correlationId, final long timestampMs)
@@ -249,6 +252,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     void onSessionOpen(
         final long clusterSessionId,
+        final long correlationId,
         final long timestampMs,
         final int responseStreamId,
         final String responseChannel,
@@ -257,7 +261,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         this.clusterTimeMs = timestampMs;
 
         final ClientSession session = new ClientSession(
-            clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this);
+            clusterSessionId, correlationId, responseStreamId, responseChannel, encodedPrincipal, this);
 
         if (Role.LEADER == role)
         {
@@ -287,12 +291,13 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     void addSession(
         final long clusterSessionId,
+        final long lastCorrelationId,
         final int responseStreamId,
         final String responseChannel,
         final byte[] encodedPrincipal)
     {
         sessionByIdMap.put(clusterSessionId, new ClientSession(
-            clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this));
+            clusterSessionId, lastCorrelationId, responseStreamId, responseChannel, encodedPrincipal, this));
     }
 
     private void role(final Role newRole)

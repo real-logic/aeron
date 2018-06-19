@@ -96,10 +96,7 @@ public class EgressAdapter implements FragmentHandler
                 if (sessionId == clusterSessionId)
                 {
                     listener.newLeader(
-                        newLeaderEventDecoder.lastCorrelationId(),
                         sessionId,
-                        newLeaderEventDecoder.lastMessageTimestamp(),
-                        newLeaderEventDecoder.leadershipTimestamp(),
                         newLeaderEventDecoder.leadershipTermId(),
                         newLeaderEventDecoder.leaderMemberId(),
                         newLeaderEventDecoder.memberEndpoints());

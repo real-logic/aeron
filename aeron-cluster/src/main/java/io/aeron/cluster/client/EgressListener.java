@@ -23,14 +23,7 @@ public interface EgressListener
 {
     void sessionEvent(long correlationId, long clusterSessionId, EventCode code, String detail);
 
-    void newLeader(
-        long correlationId,
-        long clusterSessionId,
-        long lastMessageTimestamp,
-        long leadershipTimestamp,
-        long leadershipTermId,
-        int leaderMemberId,
-        String memberEndpoints);
+    void newLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String memberEndpoints);
 
     void onMessage(
         long correlationId,

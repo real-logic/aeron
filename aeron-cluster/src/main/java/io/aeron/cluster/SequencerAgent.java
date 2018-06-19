@@ -779,7 +779,13 @@ class SequencerAgent implements Agent, MemberStatusListener
     void onReplayNewLeadershipTermEvent(
         final long leadershipTermId, final long timestamp, final int leaderMemberId, final int logSessionId)
     {
+        clusterTimeMs = timestamp;
+        this.leadershipTermId = leadershipTermId;
 
+        if (null != election)
+        {
+            election.onReplayNewLeadershipTermEvent(leadershipTermId, cachedTimeMs);
+        }
     }
 
     void onReloadState(final long nextSessionId)

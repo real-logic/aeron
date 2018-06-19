@@ -327,7 +327,7 @@ class Election implements AutoCloseable
             if (this.logLeadershipTermId < logLeadershipTermId)
             {
                 this.leadershipTermId = this.logLeadershipTermId;
-                this.candidateTermId = leadershipTermId;
+                this.candidateTermId = NULL_VALUE;
                 leaderMember = clusterMembers[leaderMemberId];
                 this.logSessionId = logSessionId;
 
@@ -338,9 +338,9 @@ class Election implements AutoCloseable
                     leaderMemberId,
                     thisMember.id(),
                     logSessionId,
-                    this.leadershipTermId + 1,
-                    this.logPosition,
+                    leadershipTermId,
                     sequencerAgent.logRecordingId(),
+                    this.logPosition,
                     sequencerAgent,
                     ctx);
 
@@ -371,6 +371,16 @@ class Election implements AutoCloseable
         if (leadershipTermId > this.leadershipTermId)
         {
             // TODO: query leader recording log and catch up
+        }
+    }
+
+    void onReplayNewLeadershipTermEvent(final long leadershipTermId, final long nowMs)
+    {
+        if (State.FOLLOWER_CATCHUP == state)
+        {
+            logLeadershipTermId = leadershipTermId;
+
+            ctx.recordingLog().appendTerm(sequencerAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
         }
     }
 
@@ -635,23 +645,10 @@ class Election implements AutoCloseable
         {
             logPosition = logCatchup.targetPosition();
 
-            if (NULL_VALUE == candidateTermId)
-            {
-                addLiveLogDestination(false);
-                appendTerm(nowMs);
+            addLiveLogDestination(false);
+            appendTerm(nowMs);
 
-                state(State.FOLLOWER_READY, nowMs);
-            }
-            else if (leadershipTermId < candidateTermId)
-            {
-                CloseHelper.close(logCatchup);
-                logCatchup = null;
-                logLeadershipTermId = leadershipTermId;
-
-                ctx.recordingLog().appendTerm(sequencerAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
-
-                state(State.FOLLOWER_BALLOT, nowMs);
-            }
+            state(State.FOLLOWER_READY, nowMs);
             workCount += 1;
         }
 

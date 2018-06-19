@@ -775,6 +775,13 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
+    @SuppressWarnings("unused")
+    void onNewLeadershipTermEvent(
+        final long leadershipTermId, final long timestamp, final int leaderMemberId, final int logSessionId)
+    {
+
+    }
+
     void onReloadState(final long nextSessionId)
     {
         this.nextSessionId = nextSessionId;
@@ -867,15 +874,29 @@ class SequencerAgent implements Agent, MemberStatusListener
         return RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
     }
 
-    void electionComplete()
+    boolean electionComplete(final long nowMs)
     {
-        election = null;
+        boolean result = false;
+
+        if (Cluster.Role.LEADER == role &&
+            logPublisher.appendNewLeadershipTermEvent(leadershipTermId, nowMs, memberId, logPublisher.sessionId()))
+        {
+            election = null;
+            result = true;
+        }
+        else if (Cluster.Role.FOLLOWER == role)
+        {
+            election = null;
+            result = true;
+        }
 
         cancelMissedTimers();
         if (missedTimersSet.capacity() > LongHashSet.DEFAULT_INITIAL_CAPACITY)
         {
             missedTimersSet.compact();
         }
+
+        return result;
     }
 
     void catchupLogPoll(final long stopPosition)

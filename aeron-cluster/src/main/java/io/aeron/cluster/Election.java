@@ -581,8 +581,10 @@ class Election implements AutoCloseable
 
         if (ClusterMember.haveVotersReachedPosition(clusterMembers, logPosition, leadershipTermId))
         {
-            sequencerAgent.electionComplete();
-            close();
+            if (sequencerAgent.electionComplete(nowMs))
+            {
+                close();
+            }
 
             workCount += 1;
         }
@@ -675,8 +677,10 @@ class Election implements AutoCloseable
 
         if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, logPosition, thisMember.id()))
         {
-            sequencerAgent.electionComplete();
-            close();
+            if (sequencerAgent.electionComplete(nowMs))
+            {
+                close();
+            }
 
             workCount += 0;
         }

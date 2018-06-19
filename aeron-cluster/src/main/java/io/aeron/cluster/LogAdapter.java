@@ -41,6 +41,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder clusterActionRequestDecoder = new ClusterActionRequestDecoder();
+    private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
 
     LogAdapter(final Image image, final SequencerAgent sequencerAgent)
     {
@@ -132,6 +133,20 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     sessionCloseEventDecoder.clusterSessionId(),
                     sessionCloseEventDecoder.timestamp(),
                     sessionCloseEventDecoder.closeReason());
+                break;
+
+            case NewLeadershipTermEventDecoder.TEMPLATE_ID:
+                newLeadershipTermEventDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                sequencerAgent.onNewLeadershipTermEvent(
+                    newLeadershipTermEventDecoder.leadershipTermId(),
+                    newLeadershipTermEventDecoder.timestamp(),
+                    newLeadershipTermEventDecoder.leaderMemberId(),
+                    newLeadershipTermEventDecoder.logSessionId());
                 break;
 
             case ClusterActionRequestDecoder.TEMPLATE_ID:

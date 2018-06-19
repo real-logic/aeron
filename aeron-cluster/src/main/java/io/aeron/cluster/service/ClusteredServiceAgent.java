@@ -289,6 +289,13 @@ class ClusteredServiceAgent implements Agent, Cluster
         executeAction(action, logPosition, leadershipTermId);
     }
 
+    @SuppressWarnings("unused")
+    void onyNewLeadershipTermEvent(
+        final long leadershipTermId, final long timestampMs, final int leaderMemberId, final int logSessionId)
+    {
+        this.clusterTimeMs = timestampMs;
+    }
+
     void addSession(
         final long clusterSessionId,
         final long lastCorrelationId,

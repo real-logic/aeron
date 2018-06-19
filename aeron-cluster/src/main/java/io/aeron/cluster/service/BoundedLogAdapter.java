@@ -41,6 +41,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder actionRequestDecoder = new ClusterActionRequestDecoder();
+    private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
 
     private final Image image;
     private final ReadableCounter upperBound;
@@ -80,7 +81,6 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         switch (messageHeaderDecoder.templateId())
         {
             case SessionHeaderDecoder.TEMPLATE_ID:
-            {
                 sessionHeaderDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -95,12 +95,9 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     offset + ClientSession.SESSION_HEADER_LENGTH,
                     length - ClientSession.SESSION_HEADER_LENGTH,
                     header);
-
                 break;
-            }
 
             case TimerEventDecoder.TEMPLATE_ID:
-            {
                 timerEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -109,10 +106,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 
                 agent.onTimerEvent(timerEventDecoder.correlationId(), timerEventDecoder.timestamp());
                 break;
-            }
 
             case SessionOpenEventDecoder.TEMPLATE_ID:
-            {
                 openEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -131,10 +126,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     responseChannel,
                     encodedPrincipal);
                 break;
-            }
 
             case SessionCloseEventDecoder.TEMPLATE_ID:
-            {
                 closeEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -146,10 +139,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     closeEventDecoder.timestamp(),
                     closeEventDecoder.closeReason());
                 break;
-            }
 
             case ClusterActionRequestDecoder.TEMPLATE_ID:
-            {
                 actionRequestDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -162,7 +153,20 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     actionRequestDecoder.timestamp(),
                     actionRequestDecoder.action());
                 break;
-            }
+
+            case NewLeadershipTermEventDecoder.TEMPLATE_ID:
+                newLeadershipTermEventDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                agent.onyNewLeadershipTermEvent(
+                    newLeadershipTermEventDecoder.leadershipTermId(),
+                    newLeadershipTermEventDecoder.timestamp(),
+                    newLeadershipTermEventDecoder.leaderMemberId(),
+                    newLeadershipTermEventDecoder.logSessionId());
+                break;
         }
 
         return Action.CONTINUE;

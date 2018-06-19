@@ -142,7 +142,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onNewLeadershipTermEvent(
+                sequencerAgent.onReplayNewLeadershipTermEvent(
                     newLeadershipTermEventDecoder.leadershipTermId(),
                     newLeadershipTermEventDecoder.timestamp(),
                     newLeadershipTermEventDecoder.leaderMemberId(),

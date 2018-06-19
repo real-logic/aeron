@@ -776,7 +776,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     }
 
     @SuppressWarnings("unused")
-    void onNewLeadershipTermEvent(
+    void onReplayNewLeadershipTermEvent(
         final long leadershipTermId, final long timestamp, final int leaderMemberId, final int logSessionId)
     {
 

@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.ChannelUri;
 import io.aeron.Publication;
+import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import org.agrona.IoUtil;
 import org.agrona.collections.Long2LongHashMap;
@@ -188,7 +189,7 @@ public class MultiNodeTest
             harness.awaitServiceOnMessageCounter(10);
 
             verify(mockService, times(10))
-                .onSessionMessage(anyLong(), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
+                .onSessionMessage(any(ClientSession.class), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
         }
     }
 
@@ -234,7 +235,7 @@ public class MultiNodeTest
             harness.awaitServiceOnMessageCounter(10);
 
             verify(mockService, times(10))
-                .onSessionMessage(anyLong(), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
+                .onSessionMessage(any(ClientSession.class), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
         }
     }
 
@@ -306,7 +307,7 @@ public class MultiNodeTest
             followerHarness.awaitServiceOnMessageCounter(10);
 
             verify(mockFollowerService, times(10))
-                .onSessionMessage(anyLong(), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
+                .onSessionMessage(any(ClientSession.class), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
 
             // wait until Leader sends commitPosition after election. This will only work while Leader waits for
             // all followers.

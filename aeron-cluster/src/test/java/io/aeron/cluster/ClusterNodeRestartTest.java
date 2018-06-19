@@ -22,6 +22,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.SessionDecorator;
+import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
@@ -344,7 +345,7 @@ public class ClusterNodeRestartTest
                 private int counterValue = 0;
 
                 public void onSessionMessage(
-                    final long clusterSessionId,
+                    final ClientSession session,
                     final long correlationId,
                     final long timestampMs,
                     final DirectBuffer buffer,

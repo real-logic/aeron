@@ -253,8 +253,7 @@ public class ReplayToLiveTest
     {
         int counterId;
 
-        while (NULL_COUNTER_ID ==
-            (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
+        while (NULL_COUNTER_ID == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
         {
             checkInterruptedStatus();
             Thread.yield();

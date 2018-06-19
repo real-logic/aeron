@@ -232,7 +232,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final ClientSession clientSession = sessionByIdMap.get(clusterSessionId);
 
         service.onSessionMessage(
-            clusterSessionId,
+            clientSession,
             correlationId,
             timestampMs,
             buffer,

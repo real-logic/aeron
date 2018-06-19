@@ -205,7 +205,7 @@ public class ClusterNodeTest
         final ClusteredService echoService = new StubClusteredService()
         {
             public void onSessionMessage(
-                final long clusterSessionId,
+                final ClientSession session,
                 final long correlationId,
                 final long timestampMs,
                 final DirectBuffer buffer,
@@ -213,8 +213,6 @@ public class ClusterNodeTest
                 final int length,
                 final Header header)
             {
-                final ClientSession session = cluster.getClientSession(clusterSessionId);
-
                 while (session.offer(correlationId, buffer, offset, length) < 0)
                 {
                     TestUtil.checkInterruptedStatus();
@@ -238,7 +236,7 @@ public class ClusterNodeTest
             String msg;
 
             public void onSessionMessage(
-                final long clusterSessionId,
+                final ClientSession session,
                 final long correlationId,
                 final long timestampMs,
                 final DirectBuffer buffer,
@@ -246,7 +244,7 @@ public class ClusterNodeTest
                 final int length,
                 final Header header)
             {
-                this.clusterSessionId = clusterSessionId;
+                this.clusterSessionId = session.id();
                 this.correlationId = correlationId;
                 this.msg = buffer.getStringWithoutLengthAscii(offset, length);
 

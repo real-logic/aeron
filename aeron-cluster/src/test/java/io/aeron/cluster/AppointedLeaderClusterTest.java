@@ -274,7 +274,7 @@ public class AppointedLeaderClusterTest
         }
 
         public void onSessionMessage(
-            final long clusterSessionId,
+            final ClientSession session,
             final long correlationId,
             final long timestampMs,
             final DirectBuffer buffer,
@@ -282,8 +282,6 @@ public class AppointedLeaderClusterTest
             final int length,
             final Header header)
         {
-            final ClientSession session = cluster.getClientSession(clusterSessionId);
-
             while (session.offer(correlationId, buffer, offset, length) < 0)
             {
                 cluster.idle();

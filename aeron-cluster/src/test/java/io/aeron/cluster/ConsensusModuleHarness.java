@@ -438,7 +438,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     }
 
     public void onSessionMessage(
-        final long clusterSessionId,
+        final ClientSession session,
         final long correlationId,
         final long timestampMs,
         final DirectBuffer buffer,
@@ -446,7 +446,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final int length,
         final Header header)
     {
-        service.onSessionMessage(clusterSessionId, correlationId, timestampMs, buffer, offset, length, header);
+        service.onSessionMessage(session, correlationId, timestampMs, buffer, offset, length, header);
         serviceOnMessageCounter.getAndIncrement();
     }
 

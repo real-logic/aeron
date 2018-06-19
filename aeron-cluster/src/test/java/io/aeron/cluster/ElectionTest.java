@@ -162,13 +162,15 @@ public class ElectionTest
             logSessionId);
         assertThat(election.state(), is(Election.State.LEADER_READY));
 
+        when(sequencerAgent.electionComplete(anyLong())).thenReturn(true);
+
         final long t6 = t5 + 1;
         clock.update(t6);
         election.onAppendedPosition(candidateTermId, 0, clusterMembers[1].id());
         election.onAppendedPosition(candidateTermId, 0, clusterMembers[2].id());
         election.doWork(t6);
         final InOrder inOrder = inOrder(sequencerAgent, electionStateCounter);
-        inOrder.verify(sequencerAgent).electionComplete();
+        inOrder.verify(sequencerAgent).electionComplete(t6);
         inOrder.verify(electionStateCounter).close();
     }
 
@@ -212,13 +214,14 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.FOLLOWER_READY));
 
         when(memberStatusPublisher.appendedPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
+        when(sequencerAgent.electionComplete(anyLong())).thenReturn(true);
 
         final long t4 = 4;
         election.doWork(t4);
         final InOrder inOrder = inOrder(memberStatusPublisher, sequencerAgent, electionStateCounter);
         inOrder.verify(memberStatusPublisher).appendedPosition(
             clusterMembers[candidateId].publication(), candidateTermId, 0, followerMember.id());
-        inOrder.verify(sequencerAgent).electionComplete();
+        inOrder.verify(sequencerAgent).electionComplete(t4);
         inOrder.verify(electionStateCounter).close();
     }
 

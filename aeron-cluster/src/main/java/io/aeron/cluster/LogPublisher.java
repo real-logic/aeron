@@ -31,6 +31,7 @@ class LogPublisher
     private final SessionCloseEventEncoder sessionCloseEventEncoder = new SessionCloseEventEncoder();
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
     private final ClusterActionRequestEncoder clusterActionRequestEncoder = new ClusterActionRequestEncoder();
+    private final NewLeadershipTermEventEncoder newLeadershipTermEventEncoder = new NewLeadershipTermEventEncoder();
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
     private Publication publication;
@@ -192,6 +193,36 @@ class LogPublisher
                     .leadershipTermId(leadershipTermId)
                     .timestamp(nowMs)
                     .action(action);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean appendNewLeadershipTermEvent(
+        final long leadershipTermId, final long nowMs, final int leaderMemberId, final int logSessionId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEventEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                newLeadershipTermEventEncoder.wrapAndApplyHeader(
+                    bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
+                    .timestamp(nowMs)
+                    .leaderMemberId(leaderMemberId)
+                    .logSessionId(logSessionId);
 
                 bufferClaim.commit();
 

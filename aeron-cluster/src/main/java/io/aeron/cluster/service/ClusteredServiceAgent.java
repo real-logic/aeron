@@ -231,16 +231,21 @@ class ClusteredServiceAgent implements Agent, Cluster
         this.clusterTimeMs = timestampMs;
         final ClientSession clientSession = sessionByIdMap.get(clusterSessionId);
 
-        service.onSessionMessage(
-            clientSession,
-            correlationId,
-            timestampMs,
-            buffer,
-            offset,
-            length,
-            header);
-
-        clientSession.lastCorrelationId(correlationId);
+        try
+        {
+            service.onSessionMessage(
+                clientSession,
+                correlationId,
+                timestampMs,
+                buffer,
+                offset,
+                length,
+                header);
+        }
+        finally
+        {
+            clientSession.lastCorrelationId(correlationId);
+        }
     }
 
     void onTimerEvent(final long correlationId, final long timestampMs)

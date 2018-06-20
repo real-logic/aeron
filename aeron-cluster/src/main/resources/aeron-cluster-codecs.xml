@@ -178,7 +178,7 @@
         <data  name="encodedCredentials"   id="3" type="varDataEncoding"/>
     </sbe:message>
 
-    <!-- Events from the Consensus Module to the clustered services which get appended to the log  -->
+    <!-- Events from the leader consensus module to the followers and services which get appended to the log  -->
 
     <sbe:message name="TimerEvent"
                  id="20"

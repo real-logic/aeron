@@ -17,6 +17,8 @@ package io.aeron.cluster;
 
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
+import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.AtomicBuffer;
@@ -129,7 +131,7 @@ public class ClusterControl
          *
          * @param controlToggle to get the current state for.
          * @return the state for the current control toggle.
-         * @throws IllegalStateException if the counter is not one of the valid values.
+         * @throws ClusterException if the counter is not one of the valid values.
          */
         public static ToggleState get(final AtomicCounter controlToggle)
         {
@@ -137,7 +139,7 @@ public class ClusterControl
 
             if (toggleValue < 0 || toggleValue > (STATES.length - 1))
             {
-                throw new IllegalStateException("invalid toggle value: " + toggleValue);
+                throw new ClusterException("invalid toggle value: " + toggleValue);
             }
 
             return STATES[(int)toggleValue];
@@ -184,7 +186,7 @@ public class ClusterControl
 
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
-            throw new IllegalStateException(
+            throw new AeronException(
                 "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
         }
 

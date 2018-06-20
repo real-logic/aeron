@@ -17,6 +17,7 @@ package io.aeron.cluster.client;
 
 import io.aeron.*;
 import io.aeron.cluster.codecs.*;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
@@ -442,7 +443,7 @@ public final class AeronCluster implements AutoCloseable
 
             if (Publication.CLOSED == result)
             {
-                throw new IllegalStateException("unexpected close from cluster");
+                throw new ClusterException("unexpected close from cluster");
             }
 
             if (nanoClock.nanoTime() > deadlineNs)
@@ -503,7 +504,7 @@ public final class AeronCluster implements AutoCloseable
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("unexpected publication state: " + result);
+            throw new AeronException("unexpected publication state: " + result);
         }
     }
 

@@ -21,6 +21,7 @@ import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.FragmentHandler;
 
@@ -325,7 +326,7 @@ class ReplayToLive implements AutoCloseable
             {
                 if (poller.code() == ControlResponseCode.ERROR)
                 {
-                    throw new IllegalStateException("archive response for correlationId=" + correlationId +
+                    throw new ClusterException("archive response for correlationId=" + correlationId +
                         ", error: " + poller.errorMessage());
                 }
 

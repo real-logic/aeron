@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterException;
 import org.agrona.CloseHelper;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
@@ -332,7 +333,7 @@ public final class ClusterMember
             final String[] memberAttributes = endpointsDetail.split(",");
             if (memberAttributes.length != 6)
             {
-                throw new IllegalStateException("invalid member value: " + endpointsDetail + " within: " + value);
+                throw new ClusterException("invalid member value: " + endpointsDetail + " within: " + value);
             }
 
             members[i] = new ClusterMember(
@@ -552,13 +553,13 @@ public final class ClusterMember
     {
         if (!UDP_MEDIA.equals(archiveControlRequestUri.media()))
         {
-            throw new IllegalStateException("archive control request channel must be udp");
+            throw new ClusterException("archive control request channel must be udp");
         }
 
         final String archiveEndpoint = archiveControlRequestUri.get(ENDPOINT_PARAM_NAME);
         if (archiveEndpoint != null && !archiveEndpoint.equals(member.archiveEndpoint))
         {
-            throw new IllegalStateException(
+            throw new ClusterException(
                 "archive control request endpoint must match cluster member configuration: " + archiveEndpoint +
                 " != " + member.archiveEndpoint);
         }

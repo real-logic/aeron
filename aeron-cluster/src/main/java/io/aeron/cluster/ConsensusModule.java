@@ -20,6 +20,7 @@ import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
 import org.agrona.*;
@@ -105,7 +106,7 @@ public class ConsensusModule implements AutoCloseable
                 final int code = state.code();
                 if (null != STATES[code])
                 {
-                    throw new IllegalStateException("code already in use: " + code);
+                    throw new ClusterException("code already in use: " + code);
                 }
 
                 STATES[code] = state;
@@ -129,7 +130,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param counter to get the current state for.
          * @return the state for the {@link ConsensusModule}.
-         * @throws IllegalStateException if the counter is not one of the valid values.
+         * @throws ClusterException if the counter is not one of the valid values.
          */
         public static State get(final AtomicCounter counter)
         {
@@ -137,7 +138,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (code < 0 || code > (STATES.length - 1))
             {
-                throw new IllegalStateException("invalid state counter code: " + code);
+                throw new ClusterException("invalid state counter code: " + code);
             }
 
             return STATES[(int)code];
@@ -856,7 +857,7 @@ public class ConsensusModule implements AutoCloseable
 
             if (!clusterDir.exists() && !clusterDir.mkdirs())
             {
-                throw new IllegalStateException("failed to create cluster dir: " + clusterDir.getAbsolutePath());
+                throw new ClusterException("failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
             if (null == tempBuffer)
@@ -914,12 +915,12 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == aeron.conductorAgentInvoker())
             {
-                throw new IllegalStateException("Aeron client must use conductor agent invoker");
+                throw new ClusterException("Aeron client must use conductor agent invoker");
             }
 
             if (null == errorCounter)
             {
-                throw new IllegalStateException("error counter must be supplied if aeron client is");
+                throw new ClusterException("error counter must be supplied if aeron client is");
             }
 
             if (null == countedErrorHandler)

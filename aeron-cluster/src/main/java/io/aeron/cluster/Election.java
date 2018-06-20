@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.RecordingLogDecoder;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
@@ -82,7 +83,7 @@ class Election implements AutoCloseable
                 final int code = state.code();
                 if (null != STATES[code])
                 {
-                    throw new IllegalStateException("code already in use: " + code);
+                    throw new ClusterException("code already in use: " + code);
                 }
 
                 STATES[code] = state;
@@ -109,7 +110,7 @@ class Election implements AutoCloseable
         {
             if (code < 0 || code > (STATES.length - 1))
             {
-                throw new IllegalStateException("invalid state counter code: " + code);
+                throw new ClusterException("invalid state counter code: " + code);
             }
 
             return STATES[code];

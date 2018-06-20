@@ -131,7 +131,7 @@ public class EgressAdapter implements FragmentHandler
                 break;
 
             default:
-                throw new IllegalStateException("unknown templateId: " + templateId);
+                throw new ClusterException("unknown templateId: " + templateId);
         }
     }
 }

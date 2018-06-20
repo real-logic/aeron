@@ -18,6 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SessionHeaderEncoder;
 import org.agrona.CloseHelper;
@@ -159,7 +160,7 @@ public class ClientSession
 
         if (null == responsePublication)
         {
-            throw new IllegalStateException("ClientSession not connected id=" + id);
+            throw new ClusterException("ClientSession not connected id=" + id);
         }
 
         sessionHeaderEncoder.correlationId(correlationId);

@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.cluster.client.ClusterException;
 
 import java.util.Collection;
 
@@ -52,7 +53,7 @@ public interface Cluster
                 final int code = role.code();
                 if (null != ROLES[code])
                 {
-                    throw new IllegalStateException("code already in use: " + code);
+                    throw new ClusterException("code already in use: " + code);
                 }
 
                 ROLES[code] = role;

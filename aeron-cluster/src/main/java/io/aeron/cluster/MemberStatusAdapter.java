@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -199,7 +200,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                 break;
 
             default:
-                throw new IllegalStateException("unknown template id: " + templateId);
+                throw new ClusterException("unknown template id: " + templateId);
         }
     }
 }

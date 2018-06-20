@@ -18,6 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
 import org.agrona.CloseHelper;
@@ -451,8 +452,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (!clusterDir.exists() && !clusterDir.mkdirs())
             {
-                throw new IllegalStateException(
-                    "Failed to create cluster dir: " + clusterDir.getAbsolutePath());
+                throw new ClusterException(
+                    "failed to create cluster dir: " + clusterDir.getAbsolutePath());
             }
 
             if (null == markFile)
@@ -528,8 +529,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 final String className = System.getProperty(Configuration.SERVICE_CLASS_NAME_PROP_NAME);
                 if (null == className)
                 {
-                    throw new IllegalStateException(
-                        "Either a ClusteredService instance or class name for the service must be provided");
+                    throw new ClusterException(
+                        "either a ClusteredService instance or class name for the service must be provided");
                 }
 
                 try

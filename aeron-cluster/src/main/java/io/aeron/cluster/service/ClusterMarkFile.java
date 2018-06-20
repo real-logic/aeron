@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
@@ -75,7 +76,7 @@ public class ClusterMarkFile implements AutoCloseable
             {
                 if (version != MarkFileHeaderDecoder.SCHEMA_VERSION)
                 {
-                    throw new IllegalArgumentException("mark file version " + version +
+                    throw new ClusterException("mark file version " + version +
                         " does not match software:" + MarkFileHeaderDecoder.SCHEMA_VERSION);
                 }
             },
@@ -277,7 +278,7 @@ public class ClusterMarkFile implements AutoCloseable
 
         if (lengthRequired > HEADER_LENGTH)
         {
-            throw new IllegalArgumentException(
+            throw new ClusterException(
                 "MarkFile length required " + lengthRequired + " greater than " + HEADER_LENGTH);
         }
     }

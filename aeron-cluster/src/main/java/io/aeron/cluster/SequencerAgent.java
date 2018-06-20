@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
@@ -555,7 +556,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         {
             if (0 == archive.listRecording(recordingId, recordingExtent))
             {
-                throw new IllegalStateException("Recording not found id=" + recordingId);
+                throw new ClusterException("recording not found id=" + recordingId);
             }
 
             if ((AeronArchive.NULL_POSITION != recordingExtent.stopPosition))
@@ -929,7 +930,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
                 if (image.isClosed())
                 {
-                    throw new IllegalStateException("unexpected close of image when replaying log");
+                    throw new ClusterException("unexpected close of image when replaying log");
                 }
             }
 
@@ -1224,7 +1225,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
                     if (image.isClosed())
                     {
-                        throw new IllegalStateException("snapshot ended unexpectedly");
+                        throw new ClusterException("snapshot ended unexpectedly");
                     }
                 }
 
@@ -1339,7 +1340,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     {
         if (logPosition != expectedAckPosition || ackId != serviceAckId)
         {
-            throw new IllegalStateException("invalid service ACK" +
+            throw new ClusterException("invalid service ACK" +
                 ": serviceId=" + serviceId +
                 ", logPosition=" + logPosition + " expected " + expectedAckPosition +
                 ", ackId=" + ackId + " expected " + serviceAckId);
@@ -1444,7 +1445,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     {
         if (Thread.currentThread().isInterrupted())
         {
-            throw new RuntimeException("unexpected interrupt");
+            throw new TimeoutException("unexpected interrupt");
         }
     }
 
@@ -1492,7 +1493,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
             if (!RecordingPos.isActive(counters, counterId, recordingId))
             {
-                throw new IllegalStateException("recording has stopped unexpectedly: " + recordingId);
+                throw new ClusterException("recording has stopped unexpectedly: " + recordingId);
             }
         }
         while (counters.getCounterValue(counterId) < position);
@@ -1600,7 +1601,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
                 if (image.isClosed())
                 {
-                    throw new IllegalStateException("unexpected close of image when replaying log");
+                    throw new ClusterException("unexpected close of image when replaying log");
                 }
             }
 

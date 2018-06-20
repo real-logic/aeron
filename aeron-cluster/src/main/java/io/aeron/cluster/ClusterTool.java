@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.CncFileDescriptor;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.collections.ArrayUtil;
@@ -213,7 +214,7 @@ public class ClusterTool
 
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
-            throw new IllegalStateException(
+            throw new AeronException(
                 "Aeron CnC version does not match: version=" + cncVersion +
                     " required=" + CncFileDescriptor.CNC_VERSION);
         }

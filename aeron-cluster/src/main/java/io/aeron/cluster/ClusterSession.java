@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
@@ -116,7 +117,7 @@ class ClusterSession
     {
         if (null != responsePublication)
         {
-            throw new IllegalStateException("response publication already added");
+            throw new ClusterException("response publication already added");
         }
 
         responsePublication = aeron.addPublication(responseChannel, responseStreamId);
@@ -194,7 +195,7 @@ class ClusterSession
     {
         if (null != encodedPrincipal && encodedPrincipal.length > MAX_ENCODED_PRINCIPAL_LENGTH)
         {
-            throw new IllegalArgumentException(
+            throw new ClusterException(
                 "Encoded Principal max length " +
                 MAX_ENCODED_PRINCIPAL_LENGTH +
                 " exceeded: length=" +

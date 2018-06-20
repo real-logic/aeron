@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Image;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -70,7 +71,7 @@ class SnapshotLoader implements ControlledFragmentHandler
                 final long typeId = snapshotMarkerDecoder.typeId();
                 if (typeId != SNAPSHOT_TYPE_ID)
                 {
-                    throw new IllegalStateException("Unexpected snapshot type: " + typeId);
+                    throw new ClusterException("unexpected snapshot type: " + typeId);
                 }
 
                 switch (snapshotMarkerDecoder.mark())
@@ -78,7 +79,7 @@ class SnapshotLoader implements ControlledFragmentHandler
                     case BEGIN:
                         if (inSnapshot)
                         {
-                            throw new IllegalStateException("Already in snapshot");
+                            throw new ClusterException("already in snapshot");
                         }
                         inSnapshot = true;
                         return Action.CONTINUE;
@@ -86,7 +87,7 @@ class SnapshotLoader implements ControlledFragmentHandler
                     case END:
                         if (!inSnapshot)
                         {
-                            throw new IllegalStateException("Missing begin snapshot");
+                            throw new ClusterException("missing begin snapshot");
                         }
                         isDone = true;
                         return Action.BREAK;
@@ -131,7 +132,7 @@ class SnapshotLoader implements ControlledFragmentHandler
                 break;
 
             default:
-                throw new IllegalStateException("Unknown template id: " + templateId);
+                throw new ClusterException("unknown template id: " + templateId);
         }
 
         return ControlledFragmentHandler.Action.CONTINUE;

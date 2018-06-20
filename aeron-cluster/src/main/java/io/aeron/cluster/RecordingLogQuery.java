@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.RecordingLogDecoder;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -99,7 +100,7 @@ class RecordingLogQuery
 
             if (!entries.hasNext())
             {
-                throw new IllegalStateException("no recording log for leadershipTermId=" + leadershipTermId);
+                throw new ClusterException("no recording log for leadershipTermId=" + leadershipTermId);
             }
 
             final RecordingLogDecoder.EntriesDecoder logEntry = entries.next();

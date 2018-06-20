@@ -16,7 +16,9 @@
 package io.aeron.cluster;
 
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 
@@ -72,7 +74,7 @@ final class ServiceProxy implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("failed to send log connect request");
+        throw new ClusterException("failed to send log connect request");
     }
 
     private static void checkResult(final long result)
@@ -81,7 +83,7 @@ final class ServiceProxy implements AutoCloseable
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("unexpected publication state: " + result);
+            throw new AeronException("unexpected publication state: " + result);
         }
     }
 }

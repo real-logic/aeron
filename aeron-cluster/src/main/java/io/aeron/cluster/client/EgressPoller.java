@@ -207,7 +207,7 @@ public class EgressPoller implements ControlledFragmentHandler
                 break;
 
             default:
-                throw new IllegalStateException("unknown templateId: " + templateId);
+                throw new ClusterException("unknown templateId: " + templateId);
         }
 
         pollComplete = true;

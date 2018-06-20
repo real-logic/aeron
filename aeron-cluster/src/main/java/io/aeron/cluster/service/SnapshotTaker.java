@@ -19,6 +19,7 @@ import io.aeron.Publication;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SnapshotMark;
 import io.aeron.cluster.codecs.SnapshotMarkerEncoder;
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.AgentTerminationException;
@@ -98,7 +99,7 @@ public class SnapshotTaker
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("unexpected publication state: " + result);
+            throw new AeronException("unexpected publication state: " + result);
         }
     }
 

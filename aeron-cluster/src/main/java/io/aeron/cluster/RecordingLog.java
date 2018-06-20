@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanEncoder;
 import org.agrona.*;
@@ -488,7 +489,7 @@ public class RecordingLog implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            throw new ClusterException(ex);
         }
     }
 
@@ -571,7 +572,7 @@ public class RecordingLog implements AutoCloseable
         final int index = (int)indexByLeadershipTermIdMap.get(leadershipTermId);
         if (NULL_VALUE == index)
         {
-            throw new IllegalArgumentException("Unknown leadershipTermId=" + leadershipTermId);
+            throw new ClusterException("Unknown leadershipTermId=" + leadershipTermId);
         }
 
         return entries.get(index);
@@ -694,7 +695,7 @@ public class RecordingLog implements AutoCloseable
 
             if (entry.type != NULL_VALUE && entry.leadershipTermId > leadershipTermId)
             {
-                throw new IllegalStateException("leadershipTermId out of sequence: previous " +
+                throw new ClusterException("leadershipTermId out of sequence: previous " +
                     entry.leadershipTermId + " this " + leadershipTermId);
             }
         }
@@ -736,7 +737,7 @@ public class RecordingLog implements AutoCloseable
 
             if (entry.type == ENTRY_TYPE_TERM && entry.leadershipTermId != leadershipTermId)
             {
-                throw new IllegalStateException("leadershipTermId out of sequence: previous " +
+                throw new ClusterException("leadershipTermId out of sequence: previous " +
                     entry.leadershipTermId + " this " + leadershipTermId);
             }
         }
@@ -801,7 +802,7 @@ public class RecordingLog implements AutoCloseable
 
         if (-1 == index)
         {
-            throw new IllegalArgumentException("unknown entry index: " + entryIndex);
+            throw new ClusterException("unknown entry index: " + entryIndex);
         }
 
         buffer.putInt(0, NULL_VALUE, LITTLE_ENDIAN);
@@ -812,7 +813,7 @@ public class RecordingLog implements AutoCloseable
         {
             if (SIZE_OF_INT != fileChannel.write(byteBuffer, filePosition))
             {
-                throw new IllegalStateException("failed to write field atomically");
+                throw new ClusterException("failed to write field atomically");
             }
         }
         catch (final Exception ex)
@@ -851,7 +852,7 @@ public class RecordingLog implements AutoCloseable
         {
             if (ENTRY_LENGTH != fileChannel.write(byteBuffer))
             {
-                throw new IllegalStateException("failed to write entry atomically");
+                throw new ClusterException("failed to write entry atomically");
             }
         }
         catch (final Exception ex)
@@ -917,7 +918,7 @@ public class RecordingLog implements AutoCloseable
     {
         if (archive.listRecording(entry.recordingId, recordingExtent) == 0)
         {
-            throw new IllegalStateException("unknown recording id: " + entry.recordingId);
+            throw new ClusterException("unknown recording id: " + entry.recordingId);
         }
     }
 
@@ -932,7 +933,7 @@ public class RecordingLog implements AutoCloseable
             }
         }
 
-        throw new IllegalArgumentException("unknown leadershipTermId: " + leadershipTermId);
+        throw new ClusterException("unknown leadershipTermId: " + leadershipTermId);
     }
 
     private void commitEntryValue(final int entryIndex, final long value, final int fieldOffset)
@@ -945,7 +946,7 @@ public class RecordingLog implements AutoCloseable
         {
             if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
             {
-                throw new IllegalStateException("failed to write field atomically");
+                throw new ClusterException("failed to write field atomically");
             }
         }
         catch (final Exception ex)
@@ -1002,7 +1003,7 @@ public class RecordingLog implements AutoCloseable
             {
                 if ((snapshotIndex - i) < 0)
                 {
-                    throw new IllegalStateException("Snapshot missing for service at index " + i + " in " + entries);
+                    throw new ClusterException("Snapshot missing for service at index " + i + " in " + entries);
                 }
 
                 final Entry entry = entries.get(snapshotIndex - 1);

@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Image;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -68,7 +69,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
                 final long typeId = snapshotMarkerDecoder.typeId();
                 if (typeId != SNAPSHOT_TYPE_ID)
                 {
-                    throw new IllegalStateException("unexpected snapshot type: " + typeId);
+                    throw new ClusterException("unexpected snapshot type: " + typeId);
                 }
 
                 switch (snapshotMarkerDecoder.mark())
@@ -76,7 +77,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
                     case BEGIN:
                         if (inSnapshot)
                         {
-                            throw new IllegalStateException("already in snapshot");
+                            throw new ClusterException("already in snapshot");
                         }
                         inSnapshot = true;
                         return Action.CONTINUE;
@@ -84,7 +85,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
                     case END:
                         if (!inSnapshot)
                         {
-                            throw new IllegalStateException("missing begin snapshot");
+                            throw new ClusterException("missing begin snapshot");
                         }
                         isDone = true;
                         return Action.BREAK;
@@ -111,8 +112,7 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
                 break;
 
             default:
-                System.out.println("offset = " + offset);
-                throw new IllegalStateException("unknown template id: " + templateId);
+                throw new ClusterException("unknown template id: " + templateId);
         }
 
         return Action.CONTINUE;

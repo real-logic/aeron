@@ -17,7 +17,9 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 
@@ -127,7 +129,7 @@ final class ConsensusModuleProxy implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new IllegalStateException("failed to send ACK");
+        throw new ClusterException("failed to send ACK");
     }
 
     public boolean closeSession(final long clusterSessionId)
@@ -162,7 +164,7 @@ final class ConsensusModuleProxy implements AutoCloseable
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("unexpected publication state: " + result);
+            throw new AeronException("unexpected publication state: " + result);
         }
     }
 }

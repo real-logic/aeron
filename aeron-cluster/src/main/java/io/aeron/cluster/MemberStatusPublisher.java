@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
 
@@ -392,7 +393,7 @@ class MemberStatusPublisher
     {
         if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new IllegalStateException("unexpected publication state: " + result);
+            throw new AeronException("unexpected publication state: " + result);
         }
     }
 }

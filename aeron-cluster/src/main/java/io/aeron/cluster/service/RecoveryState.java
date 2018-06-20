@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
+import io.aeron.cluster.client.ClusterException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -107,7 +108,7 @@ public class RecoveryState
         final int maxRecordingIdsLength = SNAPSHOT_RECORDING_IDS_OFFSET + (SIZE_OF_LONG * serviceCount);
         if (maxRecordingIdsLength > MAX_KEY_LENGTH)
         {
-            throw new IllegalArgumentException(maxRecordingIdsLength + " exceeds max key length " + MAX_KEY_LENGTH);
+            throw new ClusterException(maxRecordingIdsLength + " exceeds max key length " + MAX_KEY_LENGTH);
         }
 
         for (int i = 0; i < serviceCount; i++)
@@ -269,8 +270,7 @@ public class RecoveryState
                 final int serviceCount = buffer.getInt(recordOffset + KEY_OFFSET + SERVICE_COUNT_OFFSET);
                 if (serviceId < 0 || serviceId >= serviceCount)
                 {
-                    throw new IllegalArgumentException(
-                        "Invalid serviceId " + serviceId + " for count of " + serviceCount);
+                    throw new ClusterException("invalid serviceId " + serviceId + " for count of " + serviceCount);
                 }
 
                 return buffer.getLong(
@@ -278,6 +278,6 @@ public class RecoveryState
             }
         }
 
-        throw new IllegalArgumentException("Active counter not found " + counterId);
+        throw new ClusterException("Active counter not found " + counterId);
     }
 }

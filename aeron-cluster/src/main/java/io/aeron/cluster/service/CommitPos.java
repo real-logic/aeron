@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
+import io.aeron.cluster.client.ClusterException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
@@ -171,7 +172,7 @@ public class CommitPos
      * @param counters  to search within.
      * @param counterId for the active commit position.
      * @param value     to set for the new max position.
-     * @throws IllegalStateException if the counter id is not valid.
+     * @throws ClusterException if the counter id is not valid.
      */
     public static void setMaxLogPosition(final CountersReader counters, final int counterId, final long value)
     {
@@ -188,7 +189,7 @@ public class CommitPos
             }
         }
 
-        throw new IllegalStateException("Counter id not valid: " + counterId);
+        throw new ClusterException("Counter id not valid: " + counterId);
     }
 
     /**

@@ -18,6 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
@@ -171,7 +172,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final ClientSession clientSession = sessionByIdMap.get(clusterSessionId);
         if (clientSession == null)
         {
-            throw new IllegalArgumentException("unknown clusterSessionId: " + clusterSessionId);
+            throw new ClusterException("unknown clusterSessionId: " + clusterSessionId);
         }
 
         if (clientSession.isClosing())
@@ -387,7 +388,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
                 if (image.isClosed())
                 {
-                    throw new IllegalStateException("unexpected close of replay");
+                    throw new ClusterException("unexpected close of replay");
                 }
             }
 
@@ -417,7 +418,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final int commitPositionId = activeLogEvent.commitPositionId;
         if (!CommitPos.isActive(counters, commitPositionId))
         {
-            throw new IllegalStateException("CommitPos counter not active: " + commitPositionId);
+            throw new ClusterException("CommitPos counter not active: " + commitPositionId);
         }
 
         final Subscription logSubscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId);
@@ -521,7 +522,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
                 if (image.isClosed())
                 {
-                    throw new IllegalStateException("snapshot ended unexpectedly");
+                    throw new ClusterException("snapshot ended unexpectedly");
                 }
 
                 idleStrategy.idle(fragments);
@@ -572,7 +573,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
             if (!RecordingPos.isActive(counters, counterId, recordingId))
             {
-                throw new IllegalStateException("recording has stopped unexpectedly: " + recordingId);
+                throw new ClusterException("recording has stopped unexpectedly: " + recordingId);
             }
 
             archive.checkForErrorResponse();

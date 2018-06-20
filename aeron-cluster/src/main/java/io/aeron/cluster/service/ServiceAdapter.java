@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Subscription;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -53,7 +54,7 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         if (JoinLogDecoder.TEMPLATE_ID != templateId)
         {
-            throw new IllegalArgumentException("unknown template id: " + templateId);
+            throw new ClusterException("unknown template id: " + templateId);
         }
 
         joinLogDecoder.wrap(

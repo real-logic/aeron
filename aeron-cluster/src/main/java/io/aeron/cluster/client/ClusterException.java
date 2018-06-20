@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,32 +17,28 @@ package io.aeron.cluster.client;
 
 import io.aeron.exceptions.AeronException;
 
-/**
- * Used to indicated a failed authentication attempt when connecting to the cluster.
- */
-public class AuthenticationException extends AeronException
+public class ClusterException extends AeronException
 {
-    public AuthenticationException()
+    public ClusterException()
     {
-        super();
     }
 
-    public AuthenticationException(final String message)
+    public ClusterException(final String message)
     {
         super(message);
     }
 
-    public AuthenticationException(final String message, final Throwable cause)
+    public ClusterException(final String message, final Throwable cause)
     {
         super(message, cause);
     }
 
-    public AuthenticationException(final Throwable cause)
+    public ClusterException(final Throwable cause)
     {
         super(cause);
     }
 
-    protected AuthenticationException(
+    public ClusterException(
         final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace)
     {
         super(message, cause, enableSuppression, writableStackTrace);

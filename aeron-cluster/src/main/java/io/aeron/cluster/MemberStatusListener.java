@@ -25,7 +25,12 @@ interface MemberStatusListener
     void onRequestVote(long logLeadershipTermId, long logPosition, long candidateTermId, int candidateId);
 
     void onVote(
-        long candidateTermId, long followerLogPosition, int candidateMemberId, int followerMemberId, boolean vote);
+        long candidateTermId,
+        long logLeadershipTermId,
+        long logPosition,
+        int candidateMemberId,
+        int followerMemberId,
+        boolean vote);
 
     void onNewLeadershipTerm(
         long logLeadershipTermId, long logPosition, long leadershipTermId, int leaderMemberId, int logSessionId);

@@ -122,8 +122,10 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
         when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
-        election.onVote(candidateTermId, logPosition, candidateMember.id(), clusterMembers[1].id(), true);
-        election.onVote(candidateTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
+        election.onVote(
+            candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[1].id(), true);
+        election.onVote(
+            candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
 
         final long t3 = 3;
         clock.update(t3);
@@ -201,6 +203,7 @@ public class ElectionTest
         verify(memberStatusPublisher).placeVote(
             clusterMembers[candidateId].publication(),
             candidateTermId,
+            leadershipTermId,
             logPosition,
             candidateId,
             followerMember.id(),
@@ -381,7 +384,8 @@ public class ElectionTest
 
         final long t4 = t3 + 1;
         when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
-        election.onVote(leadershipTermId + 1, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
+        election.onVote(
+            leadershipTermId + 1, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
         election.doWork(t4);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -420,8 +424,10 @@ public class ElectionTest
         final long t4 = t3 + 1;
         final long candidateTermId = leadershipTermId + 1;
         when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
-        election.onVote(candidateTermId, logPosition, candidateMember.id(), clusterMembers[0].id(), false);
-        election.onVote(candidateTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
+        election.onVote(
+            candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[0].id(), false);
+        election.onVote(
+            candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
         election.doWork(t4);
         assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
     }
@@ -489,7 +495,8 @@ public class ElectionTest
 
         final long t4 = t3 + 1;
         when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
-        election.onVote(leadershipTermId + 1, logPosition, candidateMember.id(), clusterMembers[2].id(), false);
+        election.onVote(
+            leadershipTermId + 1, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), false);
         election.doWork(t4);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -514,7 +521,8 @@ public class ElectionTest
         election.doWork(t9);
 
         final long candidateTermId = leadershipTermId + 2;
-        election.onVote(candidateTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
+        election.onVote(
+            candidateTermId, leadershipTermId + 1, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
 
         final long t10 = t9 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
         election.doWork(t10);

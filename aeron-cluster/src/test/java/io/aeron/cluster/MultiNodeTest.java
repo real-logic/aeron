@@ -73,6 +73,7 @@ public class MultiNodeTest
             harness.memberStatusPublisher().placeVote(
                 harness.memberStatusPublication(1),
                 0L,
+                -1L,
                 0,
                 0,
                 1,
@@ -81,6 +82,7 @@ public class MultiNodeTest
             harness.memberStatusPublisher().placeVote(
                 harness.memberStatusPublication(2),
                 0L,
+                -1L,
                 0,
                 0,
                 2,
@@ -123,7 +125,7 @@ public class MultiNodeTest
 
             harness.awaitMemberStatusMessage(1, harness.onVoteCounter(1));
 
-            verify(mockMemberStatusListeners[1]).onVote(0L, 0L, 1, 0, true);
+            verify(mockMemberStatusListeners[1]).onVote(0L, -1L, 0L, 1, 0, true);
 
             final Publication publication = harness.createLogPublication(
                 ChannelUri.parse(context.logChannel()), null, 0L, true);
@@ -162,6 +164,7 @@ public class MultiNodeTest
             harness.memberStatusPublisher().placeVote(
                 harness.memberStatusPublication(1),
                 1L,
+                0L,
                 position,
                 0,
                 1,
@@ -170,6 +173,7 @@ public class MultiNodeTest
             harness.memberStatusPublisher().placeVote(
                 harness.memberStatusPublication(2),
                 1L,
+                0L,
                 position,
                 0,
                 2,
@@ -223,7 +227,7 @@ public class MultiNodeTest
 
             harness.awaitMemberStatusMessage(1, harness.onVoteCounter(1));
 
-            verify(mockMemberStatusListeners[1]).onVote(1L, position, 1, 0, true);
+            verify(mockMemberStatusListeners[1]).onVote(1L, 0L, position, 1, 0, true);
 
             final Publication publication = harness.createLogPublication(
                 ChannelUri.parse(context.logChannel()), recordingExtent, position, false);
@@ -294,6 +298,7 @@ public class MultiNodeTest
             leaderHarness.memberStatusPublisher().placeVote(
                 leaderHarness.memberStatusPublication(2),
                 1L,
+                0L,
                 position,
                 0,
                 2,

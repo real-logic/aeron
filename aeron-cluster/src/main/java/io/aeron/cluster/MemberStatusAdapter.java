@@ -103,7 +103,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onVote(
                     voteDecoder.candidateTermId(),
-                    voteDecoder.followerLogPosition(),
+                    voteDecoder.logLeaderhipTermId(),
+                    voteDecoder.logPosition(),
                     voteDecoder.candidateMemberId(),
                     voteDecoder.followerMemberId(),
                     voteDecoder.vote() == BooleanType.TRUE);

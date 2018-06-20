@@ -276,7 +276,8 @@ class Election implements AutoCloseable
 
     void onVote(
         final long candidateTermId,
-        final long followerLogPosition,
+        final long logLeadershipTermId,
+        final long logPosition,
         final int candidateMemberId,
         final int followerMemberId,
         final boolean vote)
@@ -287,7 +288,7 @@ class Election implements AutoCloseable
         {
             clusterMembers[followerMemberId]
                 .leadershipTermId(candidateTermId)
-                .voteLogPosition(followerLogPosition)
+                .voteLogPosition(logPosition)
                 .votedFor(vote ? Boolean.TRUE : Boolean.FALSE);
         }
     }
@@ -718,6 +719,7 @@ class Election implements AutoCloseable
         memberStatusPublisher.placeVote(
             clusterMembers[candidateId].publication(),
             candidateTermId,
+            logLeadershipTermId,
             logPosition,
             candidateId,
             thisMember.id(),

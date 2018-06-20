@@ -111,6 +111,7 @@ class MemberStatusPublisher
     boolean placeVote(
         final Publication publication,
         final long candidateTermId,
+        final long followerLogPosition,
         final int candidateMemberId,
         final int followerMemberId,
         final boolean vote)
@@ -126,6 +127,7 @@ class MemberStatusPublisher
                 voteEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .candidateTermId(candidateTermId)
+                    .followerLogPosition(followerLogPosition)
                     .candidateMemberId(candidateMemberId)
                     .followerMemberId(followerMemberId)
                     .vote(vote ? BooleanType.TRUE : BooleanType.FALSE);

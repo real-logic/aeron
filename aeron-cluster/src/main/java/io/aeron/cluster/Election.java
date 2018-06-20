@@ -273,7 +273,12 @@ class Election implements AutoCloseable
         }
     }
 
-    void onVote(final long candidateTermId, final int candidateMemberId, final int followerMemberId, final boolean vote)
+    void onVote(
+        final long candidateTermId,
+        final long followerLogPosition,
+        final int candidateMemberId,
+        final int followerMemberId,
+        final boolean vote)
     {
         if (Cluster.Role.CANDIDATE == sequencerAgent.role() &&
             candidateTermId == this.candidateTermId &&
@@ -281,6 +286,7 @@ class Election implements AutoCloseable
         {
             clusterMembers[followerMemberId]
                 .leadershipTermId(candidateTermId)
+                .voteLogPosition(followerLogPosition)
                 .votedFor(vote ? Boolean.TRUE : Boolean.FALSE);
         }
     }
@@ -711,6 +717,7 @@ class Election implements AutoCloseable
         memberStatusPublisher.placeVote(
             clusterMembers[candidateId].publication(),
             candidateTermId,
+            logPosition,
             candidateId,
             thisMember.id(),
             vote);

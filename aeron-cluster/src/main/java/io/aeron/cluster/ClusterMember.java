@@ -34,6 +34,7 @@ public final class ClusterMember
     private final int id;
     private long leadershipTermId = Aeron.NULL_VALUE;
     private long logPosition = NULL_POSITION;
+    private long voteLogPosition = NULL_POSITION;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
@@ -204,6 +205,28 @@ public final class ClusterMember
     public long logPosition()
     {
         return logPosition;
+    }
+
+    /**
+     * The log position this member included in its vote as its log position.
+     *
+     * @param logPosition this member included in its vote.
+     * @return this for a fluent API.
+     */
+    public ClusterMember voteLogPosition(final long logPosition)
+    {
+        this.voteLogPosition = logPosition;
+        return this;
+    }
+
+    /**
+     * The log position this member included in its vote as its log position.
+     *
+     * @return the log position this member included in its vote.
+     */
+    public long voteLogPosition()
+    {
+        return voteLogPosition;
     }
 
     /**

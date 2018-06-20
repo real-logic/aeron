@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
@@ -539,7 +540,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                         byteBuffer.clear();
                         if (DataHeaderFlyweight.HEADER_LENGTH != fileChannel.read(byteBuffer, segmentOffset))
                         {
-                            throw new IllegalStateException("failed to read fragment header");
+                            throw new ArchiveException("failed to read fragment header");
                         }
 
                         final long termCount = position >> LogBufferDescriptor.positionBitsToShift(termLength);
@@ -771,7 +772,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 image.subscription().streamId() + ":" + originalChannel;
 
             controlSession.attemptErrorResponse(correlationId, MAX_RECORDINGS, msg, controlResponseProxy);
-            throw new IllegalStateException(msg);
+            throw new ArchiveException(msg);
         }
     }
 
@@ -788,7 +789,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 " not equal to recording stopPosition " + originalRecordingSummary.stopPosition;
 
             controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
-            throw new IllegalStateException(msg);
+            throw new ArchiveException(msg);
         }
 
         if (image.termBufferLength() != originalRecordingSummary.termBufferLength)
@@ -798,7 +799,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 " not equal to recording termBufferLength " + originalRecordingSummary.termBufferLength;
 
             controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
-            throw new IllegalStateException(msg);
+            throw new ArchiveException(msg);
         }
 
         if (image.mtuLength() != originalRecordingSummary.mtuLength)
@@ -808,7 +809,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 " not equal to recording mtuLength " + originalRecordingSummary.mtuLength;
 
             controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
-            throw new IllegalStateException(msg);
+            throw new ArchiveException(msg);
         }
     }
 

@@ -182,7 +182,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
                 break;
 
             default:
-                throw new IllegalStateException("unknown templateId: " + templateId);
+                throw new ArchiveException("unknown templateId: " + templateId);
         }
 
         pollComplete = true;

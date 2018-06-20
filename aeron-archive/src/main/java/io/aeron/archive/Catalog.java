@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.AsciiEncoding;
@@ -307,13 +308,13 @@ class Catalog implements AutoCloseable
     {
         if (nextRecordingId > maxRecordingId)
         {
-            throw new IllegalStateException("catalog is full, max recordings reached: " + maxRecordingId);
+            throw new ArchiveException("catalog is full, max recordings reached: " + maxRecordingId);
         }
 
         final int combinedStringsLen = strippedChannel.length() + sourceIdentity.length() + originalChannel.length();
         if (combinedStringsLen > maxDescriptorStringsCombinedLength)
         {
-            throw new IllegalArgumentException("combined length of channel:'" + strippedChannel +
+            throw new ArchiveException("combined length of channel:'" + strippedChannel +
                 "' and sourceIdentity:'" + sourceIdentity +
                 "' and originalChannel:'" + originalChannel +
                 "' exceeds max allowed:" + maxDescriptorStringsCombinedLength);
@@ -587,7 +588,7 @@ class Catalog implements AutoCloseable
                 buffer.clear();
                 if (HEADER_LENGTH != segment.read(buffer, nextFragmentOffset))
                 {
-                    throw new IllegalStateException("unexpected read failure from file: " +
+                    throw new ArchiveException("unexpected read failure from file: " +
                         segmentFile.getAbsolutePath() + " at position:" + nextFragmentOffset);
                 }
 

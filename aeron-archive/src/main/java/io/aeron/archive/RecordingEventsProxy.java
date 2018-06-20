@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Publication;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.IdleStrategy;
@@ -93,12 +94,12 @@ class RecordingEventsProxy
 
             if (result == Publication.CLOSED)
             {
-                throw new IllegalStateException("recording events publication is closed");
+                throw new ArchiveException("recording events publication is closed");
             }
 
             if (result == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new IllegalStateException("recording events publication at max position");
+                throw new ArchiveException("recording events publication at max position");
             }
 
             idleStrategy.idle();

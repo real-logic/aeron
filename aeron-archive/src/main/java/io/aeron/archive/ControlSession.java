@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
@@ -209,7 +210,7 @@ class ControlSession implements Session
     {
         if (listRecordingsSession != activeListRecordingsSession)
         {
-            throw new IllegalStateException();
+            throw new ArchiveException();
         }
 
         activeListRecordingsSession = null;

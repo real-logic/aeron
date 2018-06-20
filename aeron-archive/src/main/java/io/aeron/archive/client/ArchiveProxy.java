@@ -460,17 +460,17 @@ public class ArchiveProxy
 
             if (result == Publication.CLOSED)
             {
-                throw new IllegalStateException("connection to the archive has been closed");
+                throw new ArchiveException("connection to the archive has been closed");
             }
 
             if (result == Publication.NOT_CONNECTED)
             {
-                throw new IllegalStateException("connection to the archive is no longer available");
+                throw new ArchiveException("connection to the archive is no longer available");
             }
 
             if (result == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new IllegalStateException("offer failed due to max position being reached");
+                throw new ArchiveException("offer failed due to max position being reached");
             }
 
             if (--attempts <= 0)
@@ -497,12 +497,12 @@ public class ArchiveProxy
 
             if (result == Publication.CLOSED)
             {
-                throw new IllegalStateException("connection to the archive has been closed");
+                throw new ArchiveException("connection to the archive has been closed");
             }
 
             if (result == Publication.MAX_POSITION_EXCEEDED)
             {
-                throw new IllegalStateException("offer failed due to max position being reached");
+                throw new ArchiveException("offer failed due to max position being reached");
             }
 
             if (nanoClock.nanoTime() > deadlineNs)

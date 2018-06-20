@@ -156,7 +156,7 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
 
                 if (ControlResponseCode.ERROR == code)
                 {
-                    throw new IllegalStateException("response for expectedCorrelationId=" + expectedCorrelationId +
+                    throw new ArchiveException("response for expectedCorrelationId=" + expectedCorrelationId +
                         ", error: " + controlResponseDecoder.errorMessage());
                 }
                 break;
@@ -201,7 +201,7 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
                 break;
 
             default:
-                throw new IllegalStateException("unknown templateId: " + templateId);
+                throw new ArchiveException("unknown templateId: " + templateId);
         }
 
         return Action.CONTINUE;

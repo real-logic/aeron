@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Counter;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BlockHandler;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -119,7 +120,7 @@ class RecordingWriter implements BlockHandler
             //noinspection ResultOfMethodCallIgnored
             Thread.interrupted();
             close();
-            throw new IllegalStateException("file closed by interrupt, recording aborted", ex);
+            throw new ArchiveException("file closed by interrupt, recording aborted", ex, ArchiveException.GENERIC);
         }
         catch (final Exception ex)
         {

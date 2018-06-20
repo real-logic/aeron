@@ -19,7 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.driver.exceptions.ConfigurationException;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -385,7 +385,7 @@ public class Archive implements AutoCloseable
 
             if (null == aeron.conductorAgentInvoker())
             {
-                throw new IllegalStateException("Aeron client must use conductor agent invoker");
+                throw new ArchiveException("Aeron client must use conductor agent invoker");
             }
 
             Objects.requireNonNull(errorCounter, "Error counter must be supplied if aeron client is");
@@ -421,7 +421,7 @@ public class Archive implements AutoCloseable
 
             if (!archiveDir.exists() && !archiveDir.mkdirs())
             {
-                throw new IllegalArgumentException(
+                throw new ArchiveException(
                     "failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
@@ -429,11 +429,11 @@ public class Archive implements AutoCloseable
 
             if (!BitUtil.isPowerOfTwo(segmentFileLength))
             {
-                throw new ConfigurationException("segment file length not a power of 2: " + segmentFileLength);
+                throw new ArchiveException("segment file length not a power of 2: " + segmentFileLength);
             }
             else if (segmentFileLength < TERM_MIN_LENGTH || segmentFileLength > TERM_MAX_LENGTH)
             {
-                throw new ConfigurationException("segment file length not in valid range: " + segmentFileLength);
+                throw new ArchiveException("segment file length not in valid range: " + segmentFileLength);
             }
 
             if (null == markFile)

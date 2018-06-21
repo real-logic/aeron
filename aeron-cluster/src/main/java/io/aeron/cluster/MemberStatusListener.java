@@ -39,6 +39,8 @@ interface MemberStatusListener
 
     void onCommitPosition(long leadershipTermId, long logPosition, int leaderMemberId);
 
+    void onCatchupPosition(long leadershipTermId, long logPosition, int followerMemberId);
+
     void onRecoveryPlanQuery(long correlationId, int requestMemberId, int leaderMemberId);
 
     void onRecoveryPlan(RecoveryPlanDecoder recoveryPlanDecoder);

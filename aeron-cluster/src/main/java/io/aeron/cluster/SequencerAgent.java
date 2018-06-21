@@ -482,6 +482,10 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
+    public void onCatchupPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
+    {
+    }
+
     public void onRecoveryPlanQuery(final long correlationId, final int requestMemberId, final int leaderMemberId)
     {
         if (leaderMemberId == memberId)

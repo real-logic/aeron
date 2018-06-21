@@ -323,6 +323,7 @@
         <field name="logSessionId"         id="5" type="int32"/>
     </sbe:message>
 
+    <!-- keep this under 32 - 8 = 24 bytes for efficiency -->
     <sbe:message name="AppendedPosition"
                  id="54"
                  description="The highest position a follower has appended to their local log">
@@ -331,12 +332,21 @@
         <field name="followerMemberId"     id="3" type="int32"/>
     </sbe:message>
 
+    <!-- keep this under 32 - 8 = 24 bytes for efficiency -->
     <sbe:message name="CommitPosition"
                  id="55"
                  description="The highest position reached by quorum of the cluster as determined by the leader">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="logPosition"          id="2" type="int64"/>
         <field name="leaderMemberId"       id="3" type="int32"/>
+    </sbe:message>
+
+    <sbe:message name="CatchupPosition"
+                 id="56"
+                 description="The follower requests catchup from the leader starting at the given position">
+        <field name="leadershipTermId"     id="1" type="int64"/>
+        <field name="logPosition"          id="2" type="int64"/>
+        <field name="followerMemberId"     id="3" type="int32"/>
     </sbe:message>
 
     <sbe:message name="RecoveryPlanQuery"

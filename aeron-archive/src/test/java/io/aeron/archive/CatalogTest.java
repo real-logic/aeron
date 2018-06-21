@@ -339,7 +339,17 @@ public class CatalogTest
             for (int i = 0; i < maxEntries; i++)
             {
                 recordingOneId = catalog.addNewRecording(
-                    0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
+                    0L,
+                    0L,
+                    0,
+                    SEGMENT_FILE_SIZE,
+                    TERM_BUFFER_LENGTH,
+                    1024,
+                    6,
+                    1,
+                    "channelG",
+                    "channelG?tag=f",
+                    "sourceA");
             }
         }
 

@@ -236,13 +236,7 @@ class Election implements AutoCloseable
 
         if (State.LEADER_READY == state && logLeadershipTermId < leadershipTermId)
         {
-            memberStatusPublisher.newLeadershipTerm(
-                clusterMembers[followerMemberId].publication(),
-                this.logLeadershipTermId,
-                this.logPosition,
-                this.leadershipTermId,
-                thisMember.id(),
-                logSessionId);
+            publishNewLeadershipTerm(clusterMembers[followerMemberId].publication());
         }
         else if (State.CANVASS != state && logLeadershipTermId > leadershipTermId)
         {
@@ -615,13 +609,7 @@ class Election implements AutoCloseable
             {
                 if (member != thisMember)
                 {
-                    memberStatusPublisher.newLeadershipTerm(
-                        member.publication(),
-                        logLeadershipTermId,
-                        logPosition,
-                        leadershipTermId,
-                        thisMember.id(),
-                        logSessionId);
+                    publishNewLeadershipTerm(member.publication());
                 }
             }
 
@@ -725,6 +713,17 @@ class Election implements AutoCloseable
             candidateId,
             thisMember.id(),
             vote);
+    }
+
+    private void publishNewLeadershipTerm(final Publication publication)
+    {
+        memberStatusPublisher.newLeadershipTerm(
+            publication,
+            logLeadershipTermId,
+            logPosition,
+            leadershipTermId,
+            thisMember.id(),
+            logSessionId);
     }
 
     private void ensureSubscriptionsCreated()

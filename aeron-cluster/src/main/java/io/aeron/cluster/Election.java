@@ -231,14 +231,15 @@ class Election implements AutoCloseable
     void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
     {
         clusterMembers[followerMemberId]
-            .logPosition(logPosition)
-            .leadershipTermId(logLeadershipTermId);
+            .leadershipTermId(logLeadershipTermId)
+            .logPosition(logPosition);
 
         if (State.LEADER_READY == state && logLeadershipTermId < leadershipTermId)
         {
             memberStatusPublisher.newLeadershipTerm(
                 clusterMembers[followerMemberId].publication(),
-                this.logLeadershipTermId, this.logPosition,
+                this.logLeadershipTermId,
+                this.logPosition,
                 this.leadershipTermId,
                 thisMember.id(),
                 logSessionId);
@@ -287,8 +288,9 @@ class Election implements AutoCloseable
             candidateMemberId == thisMember.id())
         {
             clusterMembers[followerMemberId]
-                .leadershipTermId(candidateTermId)
-                .voteLogPosition(logPosition)
+                .candidateTermId(candidateTermId)
+                .leadershipTermId(logLeadershipTermId)
+                .logPosition(logPosition)
                 .votedFor(vote ? Boolean.TRUE : Boolean.FALSE);
         }
     }
@@ -507,8 +509,7 @@ class Election implements AutoCloseable
         if (nowMs >= nominationDeadlineMs)
         {
             candidateTermId = NULL_VALUE == candidateTermId ? leadershipTermId + 1 : candidateTermId + 1;
-            thisMember.leadershipTermId(candidateTermId);
-            ClusterMember.becomeCandidate(clusterMembers, thisMember.id());
+            ClusterMember.becomeCandidate(clusterMembers, candidateTermId, thisMember.id());
             ctx.clusterMarkFile().candidateTermId(candidateTermId);
             sequencerAgent.role(Cluster.Role.CANDIDATE);
 

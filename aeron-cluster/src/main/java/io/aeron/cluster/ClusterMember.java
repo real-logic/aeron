@@ -35,7 +35,7 @@ public final class ClusterMember
     private final int id;
     private long leadershipTermId = Aeron.NULL_VALUE;
     private long logPosition = NULL_POSITION;
-    private long voteLogPosition = NULL_POSITION;
+    private long candidateTermId = Aeron.NULL_VALUE;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
@@ -82,6 +82,7 @@ public final class ClusterMember
         isBallotSent = false;
         isLeader = false;
         votedFor = null;
+        candidateTermId = Aeron.NULL_VALUE;
         leadershipTermId = Aeron.NULL_VALUE;
         logPosition = NULL_POSITION;
     }
@@ -209,25 +210,25 @@ public final class ClusterMember
     }
 
     /**
-     * The log position this member included in its vote as its log position.
+     * The candidate term id used when voting.
      *
-     * @param logPosition this member included in its vote.
+     * @param candidateTermId used when voting.
      * @return this for a fluent API.
      */
-    public ClusterMember voteLogPosition(final long logPosition)
+    public ClusterMember candidateTermId(final long candidateTermId)
     {
-        this.voteLogPosition = logPosition;
+        this.candidateTermId = candidateTermId;
         return this;
     }
 
     /**
-     * The log position this member included in its vote as its log position.
+     * The candidate term id used when voting.
      *
-     * @return the log position this member included in its vote.
+     * @return the candidate term id used when voting.
      */
-    public long voteLogPosition()
+    public long candidateTermId()
     {
-        return voteLogPosition;
+        return candidateTermId;
     }
 
     /**
@@ -461,7 +462,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.votedFor != null && member.logPosition < position && member.leadershipTermId == leadershipTermId)
+            if (member.votedFor != null && member.logPosition < position && member.leadershipTermId != leadershipTermId)
             {
                 return false;
             }
@@ -487,14 +488,28 @@ public final class ClusterMember
      * Become a candidate by voting for yourself and resetting the other votes to {@link Aeron#NULL_VALUE}.
      *
      * @param clusterMembers    to reset the votes for.
+     * @param candidateTermId   for the candidacy.
      * @param candidateMemberId for the election.
      */
-    public static void becomeCandidate(final ClusterMember[] clusterMembers, final int candidateMemberId)
+    public static void becomeCandidate(
+        final ClusterMember[] clusterMembers, final long candidateTermId, final int candidateMemberId)
     {
         for (final ClusterMember member : clusterMembers)
         {
-            member.votedFor(member.id == candidateMemberId ? Boolean.TRUE : null);
-            member.isBallotSent(member.id == candidateMemberId);
+            if (member.id == candidateMemberId)
+            {
+                member.votedFor(Boolean.TRUE)
+                    .candidateTermId(candidateTermId)
+                    .isBallotSent(true);
+            }
+            else
+            {
+                member.votedFor(Boolean.FALSE)
+                    .candidateTermId(Aeron.NULL_VALUE)
+                    .leadershipTermId(Aeron.NULL_VALUE)
+                    .logPosition(Aeron.NULL_VALUE)
+                    .isBallotSent(false);
+            }
         }
     }
 
@@ -511,7 +526,7 @@ public final class ClusterMember
 
         for (final ClusterMember member : clusterMembers)
         {
-            if (null == member.votedFor || member.leadershipTermId != candidateTermId)
+            if (null == member.votedFor || member.candidateTermId != candidateTermId)
             {
                 return false;
             }
@@ -534,7 +549,7 @@ public final class ClusterMember
         int votes = 0;
         for (final ClusterMember member : clusterMembers)
         {
-            if (Boolean.TRUE.equals(member.votedFor) && member.leadershipTermId == candidateTermId)
+            if (member.candidateTermId == candidateTermId && Boolean.TRUE.equals(member.votedFor))
             {
                 ++votes;
             }
@@ -576,9 +591,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (NULL_POSITION == member.logPosition ||
-                candidate.leadershipTermId != member.leadershipTermId ||
-                candidate.logPosition < member.logPosition)
+            if (Aeron.NULL_VALUE == member.logPosition || compareLog(candidate, member) < 0)
             {
                 return false;
             }
@@ -599,9 +612,7 @@ public final class ClusterMember
         int possibleVotes = 0;
         for (final ClusterMember member : clusterMembers)
         {
-            if (NULL_POSITION == member.logPosition ||
-                candidate.leadershipTermId != member.leadershipTermId ||
-                candidate.logPosition < member.logPosition)
+            if (Aeron.NULL_VALUE == member.logPosition || compareLog(candidate, member) < 0)
             {
                 continue;
             }
@@ -647,5 +658,20 @@ public final class ClusterMember
         }
 
         return 0;
+    }
+
+    /**
+     * The result is positive if lhs has the more recent log, zero if logs are equal, and negative if rhs has the more
+     * recent log.
+     *
+     * @param lhsMember to compare.
+     * @param rhsMember to compare.
+     * @return positive if lhs has the more recent log, zero if logs are equal, and negative if rhs has the more
+     *         recent log.
+     */
+    public static int compareLog(final ClusterMember lhsMember, final ClusterMember rhsMember)
+    {
+        return compareLog(
+            lhsMember.leadershipTermId, lhsMember.logPosition, rhsMember.leadershipTermId, rhsMember.logPosition);
     }
 }

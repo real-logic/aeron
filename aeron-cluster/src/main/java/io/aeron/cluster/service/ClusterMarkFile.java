@@ -114,6 +114,7 @@ public class ClusterMarkFile implements AutoCloseable
         headerEncoder.headerLength(HEADER_LENGTH);
         headerEncoder.errorBufferLength(errorBufferLength);
         headerEncoder.pid(SystemUtil.getPid());
+        headerEncoder.startTimestamp(epochClock.time());
     }
 
     public ClusterMarkFile(

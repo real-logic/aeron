@@ -193,7 +193,7 @@ public class ClusterTool
     {
         out.print("Type: " + markFile.decoder().componentType() + " ");
         out.format(
-            "%1$tH:%1$tM:%1$tS (start: %2tF %2$tH:%2$tM:%2$tS, activity: %3tF %3$tH:%3$tM:%3$tS)%n",
+            "%1$tH:%1$tM:%1$tS (start: %2$tF %2$tH:%2$tM:%2$tS, activity: %3$tF %3$tH:%3$tM:%3$tS)%n",
             new Date(),
             new Date(markFile.decoder().startTimestamp()),
             new Date(markFile.activityTimestampVolatile()));

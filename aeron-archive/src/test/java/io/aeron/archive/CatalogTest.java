@@ -329,6 +329,27 @@ public class CatalogTest
     }
 
     @Test
+    public void shouldBeAbleToCreateMaxEntries()
+    {
+        final File archiveDir = TestUtil.makeTestDirectory();
+        final long maxEntries = 2;
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock))
+        {
+            for (int i = 0; i < maxEntries; i++)
+            {
+                recordingOneId = catalog.addNewRecording(
+                    0L, 0L, 0, SEGMENT_FILE_SIZE, TERM_BUFFER_LENGTH, 1024, 6, 1, "channelG", "channelG?tag=f", "sourceA");
+            }
+        }
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock))
+        {
+            assertEquals(maxEntries, catalog.countEntries());
+        }
+    }
+
+    @Test
     public void shouldNotThrowWhenOldRecordingLogsAreDeleted() throws IOException
     {
         createSegmentFile(recordingThreeId);

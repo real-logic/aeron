@@ -308,7 +308,7 @@ class Catalog implements AutoCloseable
     {
         if (nextRecordingId > maxRecordingId)
         {
-            throw new ArchiveException("catalog is full, max recordings reached: " + maxRecordingId);
+            throw new ArchiveException("catalog is full, max recordings reached: " + maxEntries());
         }
 
         final int combinedStringsLen = strippedChannel.length() + sourceIdentity.length() + originalChannel.length();
@@ -357,7 +357,7 @@ class Catalog implements AutoCloseable
 
     boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
     {
-        if (recordingId < 0 || recordingId >= maxRecordingId)
+        if (recordingId < 0 || recordingId > maxRecordingId)
         {
             return false;
         }
@@ -369,7 +369,7 @@ class Catalog implements AutoCloseable
 
     boolean wrapAndValidateDescriptor(final long recordingId, final UnsafeBuffer buffer)
     {
-        if (recordingId < 0 || recordingId >= maxRecordingId)
+        if (recordingId < 0 || recordingId > maxRecordingId)
         {
             return false;
         }
@@ -390,7 +390,7 @@ class Catalog implements AutoCloseable
     void forEach(final CatalogEntryProcessor consumer)
     {
         long recordingId = 0L;
-        while (recordingId < maxRecordingId && wrapDescriptor(recordingId, catalogBuffer))
+        while (recordingId <= maxRecordingId && wrapDescriptor(recordingId, catalogBuffer))
         {
             descriptorHeaderDecoder.wrap(
                 catalogBuffer, 0, DESCRIPTOR_HEADER_LENGTH, RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);

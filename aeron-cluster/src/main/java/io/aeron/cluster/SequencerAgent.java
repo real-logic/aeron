@@ -1545,7 +1545,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         if (!plan.logs.isEmpty())
         {
             final RecordingLog.Log log = plan.logs.get(0);
-            ChannelUri.initialPosition(channelUri, position, log.initialTermId, log.termBufferLength);
+            channelUri.initialPosition(position, log.initialTermId, log.termBufferLength);
             channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(log.mtuLength));
         }
 

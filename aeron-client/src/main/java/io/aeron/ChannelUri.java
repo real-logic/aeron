@@ -270,6 +270,25 @@ public class ChannelUri
     }
 
     /**
+     * Initialise a channel for restarting a publication at a given position.
+     *
+     * @param position      at which the publication should be started.
+     * @param initialTermId what which the stream would start.
+     * @param termLength    for the stream.
+     */
+    public void initialPosition(final long position, final int initialTermId, final int termLength)
+    {
+        final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
+        final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, bitsToShift, initialTermId);
+        final int termOffset = (int)(position & (termLength - 1));
+
+        put(INITIAL_TERM_ID_PARAM_NAME, Integer.toString(initialTermId));
+        put(TERM_ID_PARAM_NAME, Integer.toString(termId));
+        put(TERM_OFFSET_PARAM_NAME, Integer.toString(termOffset));
+        put(TERM_LENGTH_PARAM_NAME, Integer.toString(termLength));
+    }
+
+    /**
      * Parse a {@link CharSequence} which contains an Aeron URI.
      *
      * @param cs to be parsed.
@@ -375,27 +394,6 @@ public class ChannelUri
         }
 
         return new ChannelUri(prefix, media, params);
-    }
-
-    /**
-     * Initialise a channel for restarting a publication at a given position.
-     *
-     * @param channelUri    to set the initial values for.
-     * @param position      at which the publication should be started.
-     * @param initialTermId what which the stream would start.
-     * @param termLength    for the stream.
-     */
-    public static void initialPosition(
-        final ChannelUri channelUri, final long position, final int initialTermId, final int termLength)
-    {
-        final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
-        final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, bitsToShift, initialTermId);
-        final int termOffset = (int)(position & (termLength - 1));
-
-        channelUri.put(INITIAL_TERM_ID_PARAM_NAME, Integer.toString(initialTermId));
-        channelUri.put(TERM_ID_PARAM_NAME, Integer.toString(termId));
-        channelUri.put(TERM_OFFSET_PARAM_NAME, Integer.toString(termOffset));
-        channelUri.put(TERM_LENGTH_PARAM_NAME, Integer.toString(termLength));
     }
 
     /**

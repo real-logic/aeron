@@ -32,7 +32,6 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.*;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.EpochClock;
@@ -362,17 +361,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     {
         if (!emptyLog)
         {
-            final int termLength = recordingExtent.termBufferLength;
-            final int initialTermId = recordingExtent.initialTermId;
-            final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
-            final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, bitsToShift, initialTermId);
-            final int termOffset = (int)(position & (termLength - 1));
-
+            channelUri.initialPosition(position, recordingExtent.initialTermId, recordingExtent.termBufferLength);
             channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(recordingExtent.mtuLength));
-            channelUri.put(TERM_LENGTH_PARAM_NAME, Integer.toString(termLength));
-            channelUri.put(INITIAL_TERM_ID_PARAM_NAME, Integer.toString(initialTermId));
-            channelUri.put(TERM_ID_PARAM_NAME, Integer.toString(termId));
-            channelUri.put(TERM_OFFSET_PARAM_NAME, Integer.toString(termOffset));
         }
 
         final Publication publication = aeron.addExclusivePublication(

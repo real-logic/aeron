@@ -549,7 +549,7 @@ public final class ClusterMember
         int votes = 0;
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.candidateTermId == candidateTermId && Boolean.TRUE.equals(member.vote))
+            if (Boolean.TRUE.equals(member.vote) && member.candidateTermId == candidateTermId)
             {
                 ++votes;
             }

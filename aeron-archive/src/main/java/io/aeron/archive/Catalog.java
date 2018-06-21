@@ -390,7 +390,7 @@ class Catalog implements AutoCloseable
     void forEach(final CatalogEntryProcessor consumer)
     {
         long recordingId = 0L;
-        while (recordingId <= maxRecordingId && wrapDescriptor(recordingId, catalogBuffer))
+        while (wrapDescriptor(recordingId, catalogBuffer))
         {
             descriptorHeaderDecoder.wrap(
                 catalogBuffer, 0, DESCRIPTOR_HEADER_LENGTH, RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);

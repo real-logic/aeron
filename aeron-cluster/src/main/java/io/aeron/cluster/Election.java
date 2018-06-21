@@ -291,7 +291,7 @@ class Election implements AutoCloseable
                 .candidateTermId(candidateTermId)
                 .leadershipTermId(logLeadershipTermId)
                 .logPosition(logPosition)
-                .votedFor(vote ? Boolean.TRUE : Boolean.FALSE);
+                .vote(vote ? Boolean.TRUE : Boolean.FALSE);
         }
     }
 

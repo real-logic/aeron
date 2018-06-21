@@ -432,7 +432,6 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
     }
 
-
     @Test
     public void shouldTimeoutCandidateBallotWithoutMajority()
     {

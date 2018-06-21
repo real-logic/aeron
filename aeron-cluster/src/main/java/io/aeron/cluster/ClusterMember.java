@@ -43,7 +43,7 @@ public final class ClusterMember
     private final String archiveEndpoint;
     private final String endpointsDetail;
     private Publication publication;
-    private Boolean votedFor = null;
+    private Boolean vote = null;
 
     /**
      * Construct a new member of the cluster.
@@ -81,7 +81,7 @@ public final class ClusterMember
     {
         isBallotSent = false;
         isLeader = false;
-        votedFor = null;
+        vote = null;
         candidateTermId = Aeron.NULL_VALUE;
         leadershipTermId = Aeron.NULL_VALUE;
         logPosition = NULL_POSITION;
@@ -145,12 +145,12 @@ public final class ClusterMember
      * Set the result of the vote for this member. {@link Boolean#TRUE} means they voted for this member,
      * {@link Boolean#FALSE} means they voted against this member, and null means no vote was received.
      *
-     * @param votedFor this member in the election.
+     * @param vote for this member in the election.
      * @return this for a fluent API.
      */
-    public ClusterMember votedFor(final Boolean votedFor)
+    public ClusterMember vote(final Boolean vote)
     {
-        this.votedFor = votedFor;
+        this.vote = vote;
         return this;
     }
 
@@ -160,9 +160,9 @@ public final class ClusterMember
      *
      * @return the status of the vote for this member in an election.
      */
-    public Boolean votedFor()
+    public Boolean vote()
     {
-        return votedFor;
+        return vote;
     }
 
     /**
@@ -462,7 +462,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.votedFor != null && member.logPosition < position && member.leadershipTermId != leadershipTermId)
+            if (member.vote != null && member.logPosition < position && member.leadershipTermId != leadershipTermId)
             {
                 return false;
             }
@@ -498,13 +498,13 @@ public final class ClusterMember
         {
             if (member.id == candidateMemberId)
             {
-                member.votedFor(Boolean.TRUE)
+                member.vote(Boolean.TRUE)
                     .candidateTermId(candidateTermId)
                     .isBallotSent(true);
             }
             else
             {
-                member.votedFor(Boolean.FALSE)
+                member.vote(null)
                     .candidateTermId(Aeron.NULL_VALUE)
                     .leadershipTermId(Aeron.NULL_VALUE)
                     .logPosition(Aeron.NULL_VALUE)
@@ -526,12 +526,12 @@ public final class ClusterMember
 
         for (final ClusterMember member : clusterMembers)
         {
-            if (null == member.votedFor || member.candidateTermId != candidateTermId)
+            if (null == member.vote || member.candidateTermId != candidateTermId)
             {
                 return false;
             }
 
-            votes += member.votedFor ? 1 : 0;
+            votes += member.vote ? 1 : 0;
         }
 
         return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
@@ -549,7 +549,7 @@ public final class ClusterMember
         int votes = 0;
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.candidateTermId == candidateTermId && Boolean.TRUE.equals(member.votedFor))
+            if (member.candidateTermId == candidateTermId && Boolean.TRUE.equals(member.vote))
             {
                 ++votes;
             }

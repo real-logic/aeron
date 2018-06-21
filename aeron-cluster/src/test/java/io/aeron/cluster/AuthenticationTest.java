@@ -422,8 +422,7 @@ public class AuthenticationTest
 
     private void sendCountedMessageIntoCluster(final int value)
     {
-        final long msgCorrelationId = aeronCluster.context().aeron().nextCorrelationId();
-
+        final long msgCorrelationId = sessionDecorator.nextCorrelationId();
         msgBuffer.putInt(0, value);
 
         while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, SIZE_OF_INT) < 0)
@@ -441,9 +440,7 @@ public class AuthenticationTest
             {
                 private int counterValue = 0;
 
-                public void onSessionOpen(
-                    final ClientSession session,
-                    final long timestampMs)
+                public void onSessionOpen(final ClientSession session, final long timestampMs)
                 {
                     sessionId.value = session.id();
                     encodedPrincipal.set(session.encodedPrincipal());

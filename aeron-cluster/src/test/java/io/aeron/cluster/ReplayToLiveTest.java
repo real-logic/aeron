@@ -232,8 +232,7 @@ public class ReplayToLiveTest
         }
     }
 
-    private void offer(
-        final Publication publication, final int startIndex, final int count, final String prefix)
+    private void offer(final Publication publication, final int startIndex, final int count, final String prefix)
     {
         for (int i = startIndex; i < (startIndex + count); i++)
         {

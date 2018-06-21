@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Publication;
 import io.aeron.Subscription;
@@ -166,12 +165,11 @@ public class AppointedLeaderClusterTest
     @Test(timeout = 10_000)
     public void shouldEchoMessagesViaService() throws InterruptedException
     {
-        final Aeron aeron = client.context().aeron();
         final SessionDecorator sessionDecorator = new SessionDecorator(client.clusterSessionId());
         final Publication publication = client.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        final long msgCorrelationId = aeron.nextCorrelationId();
+        final long msgCorrelationId = sessionDecorator.nextCorrelationId();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
 
         final EchoConsumer consumer = new EchoConsumer(client.egressSubscription(), client.clusterSessionId());

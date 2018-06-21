@@ -318,8 +318,7 @@ public class ClusterNodeRestartTest
 
     private void sendCountedMessageIntoCluster(final int value)
     {
-        final long msgCorrelationId = aeronCluster.context().aeron().nextCorrelationId();
-
+        final long msgCorrelationId = sessionDecorator.nextCorrelationId();
         msgBuffer.putInt(0, value);
 
         while (true)

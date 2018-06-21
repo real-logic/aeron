@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster.client;
 
+import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
@@ -37,6 +38,7 @@ public class SessionDecorator
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
 
+    private long lastCorrelationId = Aeron.NULL_VALUE;
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
@@ -65,6 +67,29 @@ public class SessionDecorator
     public void clusterSessionId(final long clusterSessionId)
     {
         sessionHeaderEncoder.clusterSessionId(clusterSessionId);
+    }
+
+    /**
+     * Get the last correlation id generated for this session. Starts with {@link Aeron#NULL_VALUE}.
+     *
+     * @return the last correlation id generated for this session.
+     * @see #nextCorrelationId()
+     */
+    public long lastCorrelationId()
+    {
+        return lastCorrelationId;
+    }
+
+    /**
+     * Generate a new correlation id to be used for this session. This is not threadsafe. If you require a threadsafe
+     * correlation id generation then use {@link Aeron#nextCorrelationId()}.
+     *
+     * @return  a new correlation id to be used for this session.
+     * @see #lastCorrelationId()
+     */
+    public long nextCorrelationId()
+    {
+        return ++lastCorrelationId;
     }
 
     /**

@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
@@ -98,12 +97,11 @@ public class ClusterNodeTest
         container = launchEchoService();
         aeronCluster = connectToCluster();
 
-        final Aeron aeron = aeronCluster.context().aeron();
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         final Publication publication = aeronCluster.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        final long msgCorrelationId = aeron.nextCorrelationId();
+        final long msgCorrelationId = sessionDecorator.nextCorrelationId();
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 
@@ -152,12 +150,11 @@ public class ClusterNodeTest
         container = launchTimedService();
         aeronCluster = connectToCluster();
 
-        final Aeron aeron = aeronCluster.context().aeron();
         final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
         final Publication publication = aeronCluster.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        final long msgCorrelationId = aeron.nextCorrelationId();
+        final long msgCorrelationId = sessionDecorator.nextCorrelationId();
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 

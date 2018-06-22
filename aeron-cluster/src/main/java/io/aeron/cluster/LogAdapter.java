@@ -34,7 +34,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
 
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);
     private final Image image;
-    private final SequencerAgent sequencerAgent;
+    private final ConsensusModuleAgent consensusModuleAgent;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder sessionOpenEventDecoder = new SessionOpenEventDecoder();
     private final SessionCloseEventDecoder sessionCloseEventDecoder = new SessionCloseEventDecoder();
@@ -43,10 +43,10 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     private final ClusterActionRequestDecoder clusterActionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
 
-    LogAdapter(final Image image, final SequencerAgent sequencerAgent)
+    LogAdapter(final Image image, final ConsensusModuleAgent consensusModuleAgent)
     {
         this.image = image;
-        this.sequencerAgent = sequencerAgent;
+        this.consensusModuleAgent = consensusModuleAgent;
     }
 
     public void close()
@@ -83,7 +83,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onReplaySessionMessage(
+                consensusModuleAgent.onReplaySessionMessage(
                     sessionHeaderDecoder.correlationId(),
                     sessionHeaderDecoder.clusterSessionId(),
                     sessionHeaderDecoder.timestamp(),
@@ -100,7 +100,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onReplayTimerEvent(
+                consensusModuleAgent.onReplayTimerEvent(
                     timerEventDecoder.correlationId(),
                     timerEventDecoder.timestamp());
                 break;
@@ -112,7 +112,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onReplaySessionOpen(
+                consensusModuleAgent.onReplaySessionOpen(
                     header.position(),
                     sessionOpenEventDecoder.correlationId(),
                     sessionOpenEventDecoder.clusterSessionId(),
@@ -128,7 +128,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onReplaySessionClose(
+                consensusModuleAgent.onReplaySessionClose(
                     sessionCloseEventDecoder.correlationId(),
                     sessionCloseEventDecoder.clusterSessionId(),
                     sessionCloseEventDecoder.timestamp(),
@@ -142,7 +142,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onReplayNewLeadershipTermEvent(
+                consensusModuleAgent.onReplayNewLeadershipTermEvent(
                     newLeadershipTermEventDecoder.leadershipTermId(),
                     newLeadershipTermEventDecoder.logPosition(),
                     newLeadershipTermEventDecoder.timestamp(),
@@ -157,7 +157,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onReplayClusterAction(
+                consensusModuleAgent.onReplayClusterAction(
                     clusterActionRequestDecoder.logPosition(),
                     clusterActionRequestDecoder.leadershipTermId(),
                     clusterActionRequestDecoder.timestamp(),

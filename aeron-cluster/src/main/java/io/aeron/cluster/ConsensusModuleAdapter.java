@@ -26,17 +26,17 @@ import org.agrona.DirectBuffer;
 final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
 {
     private final Subscription subscription;
-    private final SequencerAgent sequencerAgent;
+    private final ConsensusModuleAgent consensusModuleAgent;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ScheduleTimerDecoder scheduleTimerDecoder = new ScheduleTimerDecoder();
     private final CancelTimerDecoder cancelTimerDecoder = new CancelTimerDecoder();
     private final ServiceAckDecoder serviceAckDecoder = new ServiceAckDecoder();
     private final CloseSessionDecoder closeSessionDecoder = new CloseSessionDecoder();
 
-    ConsensusModuleAdapter(final Subscription subscription, final SequencerAgent sequencerAgent)
+    ConsensusModuleAdapter(final Subscription subscription, final ConsensusModuleAgent consensusModuleAgent)
     {
         this.subscription = subscription;
-        this.sequencerAgent = sequencerAgent;
+        this.consensusModuleAgent = consensusModuleAgent;
     }
 
     public void close()
@@ -63,7 +63,7 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onServiceCloseSession(closeSessionDecoder.clusterSessionId());
+                consensusModuleAgent.onServiceCloseSession(closeSessionDecoder.clusterSessionId());
                 break;
 
             case ScheduleTimerDecoder.TEMPLATE_ID:
@@ -73,7 +73,7 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onScheduleTimer(
+                consensusModuleAgent.onScheduleTimer(
                     scheduleTimerDecoder.correlationId(),
                     scheduleTimerDecoder.deadline());
                 break;
@@ -85,7 +85,7 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onCancelTimer(scheduleTimerDecoder.correlationId());
+                consensusModuleAgent.onCancelTimer(scheduleTimerDecoder.correlationId());
                 break;
 
             case ServiceAckDecoder.TEMPLATE_ID:
@@ -95,7 +95,7 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onServiceAck(
+                consensusModuleAgent.onServiceAck(
                     serviceAckDecoder.logPosition(),
                     serviceAckDecoder.ackId(),
                     serviceAckDecoder.relevantId(),

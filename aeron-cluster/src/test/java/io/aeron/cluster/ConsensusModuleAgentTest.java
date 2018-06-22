@@ -44,7 +44,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
-public class SequencerAgentTest
+public class ConsensusModuleAgentTest
 {
     private static final String RESPONSE_CHANNEL_ONE = "responseChannelOne";
     private static final String RESPONSE_CHANNEL_TWO = "responseChannelTwo";
@@ -94,7 +94,7 @@ public class SequencerAgentTest
         ctx.maxConcurrentSessions(1);
         ctx.epochClock(clock);
 
-        final SequencerAgent agent = new SequencerAgent(ctx);
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
 
         final long correlationIdOne = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
@@ -126,7 +126,7 @@ public class SequencerAgentTest
 
         ctx.epochClock(clock);
 
-        final SequencerAgent agent = new SequencerAgent(ctx);
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
 
         final long correlationId = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
@@ -184,7 +184,7 @@ public class SequencerAgentTest
         ctx.controlToggleCounter(mockControlToggle);
         ctx.epochClock(clock);
 
-        final SequencerAgent agent = new SequencerAgent(ctx);
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
         agent.commitPositionCounter(mock(Counter.class));
         agent.appendedPositionCounter(mock(ReadableCounter.class));
 

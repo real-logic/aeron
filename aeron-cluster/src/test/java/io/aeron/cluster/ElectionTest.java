@@ -45,7 +45,7 @@ public class ElectionTest
     private final ClusterMarkFile clusterMarkFile = mock(ClusterMarkFile.class);
     private final MemberStatusAdapter memberStatusAdapter = mock(MemberStatusAdapter.class);
     private final MemberStatusPublisher memberStatusPublisher = mock(MemberStatusPublisher.class);
-    private final SequencerAgent sequencerAgent = mock(SequencerAgent.class);
+    private final ConsensusModuleAgent consensusModuleAgent = mock(ConsensusModuleAgent.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
         .epochClock(new CachedEpochClock())
@@ -58,7 +58,7 @@ public class ElectionTest
     public void before()
     {
         when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);
-        when(sequencerAgent.logRecordingId()).thenReturn(RECORDING_ID);
+        when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
         when(clusterMarkFile.candidateTermId()).thenReturn((long)Aeron.NULL_VALUE);
     }
 
@@ -77,7 +77,7 @@ public class ElectionTest
 
         final long t1 = 0;
         election.doWork(t1);
-        verify(sequencerAgent).becomeLeader();
+        verify(consensusModuleAgent).becomeLeader();
         verify(recordingLog).appendTerm(RECORDING_ID, 0L, 0L, t1);
         assertThat(election.state(), is(Election.State.LEADER_READY));
     }
@@ -101,7 +101,7 @@ public class ElectionTest
         final long t1 = 1;
         clock.update(t1);
         election.doWork(t1);
-        verify(sequencerAgent).role(Cluster.Role.CANDIDATE);
+        verify(consensusModuleAgent).role(Cluster.Role.CANDIDATE);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
         final long t2 = 2;
@@ -121,7 +121,7 @@ public class ElectionTest
             candidateMember.id());
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
-        when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
         election.onVote(
             candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[1].id(), true);
         election.onVote(
@@ -135,7 +135,7 @@ public class ElectionTest
         final long t4 = 4;
         clock.update(t4);
         election.doWork(t4);
-        verify(sequencerAgent).becomeLeader();
+        verify(consensusModuleAgent).becomeLeader();
         verify(recordingLog).appendTerm(RECORDING_ID, 0L, 0L, t4);
 
         assertThat(clusterMembers[1].logPosition(), is(NULL_POSITION));
@@ -164,15 +164,15 @@ public class ElectionTest
             logSessionId);
         assertThat(election.state(), is(Election.State.LEADER_READY));
 
-        when(sequencerAgent.electionComplete(anyLong())).thenReturn(true);
+        when(consensusModuleAgent.electionComplete(anyLong())).thenReturn(true);
 
         final long t6 = t5 + 1;
         clock.update(t6);
         election.onAppendedPosition(candidateTermId, 0, clusterMembers[1].id());
         election.onAppendedPosition(candidateTermId, 0, clusterMembers[2].id());
         election.doWork(t6);
-        final InOrder inOrder = inOrder(sequencerAgent, electionStateCounter);
-        inOrder.verify(sequencerAgent).electionComplete(t6);
+        final InOrder inOrder = inOrder(consensusModuleAgent, electionStateCounter);
+        inOrder.verify(consensusModuleAgent).electionComplete(t6);
         inOrder.verify(electionStateCounter).close();
     }
 
@@ -215,21 +215,21 @@ public class ElectionTest
         election.onNewLeadershipTerm(leadershipTermId, logPosition, candidateTermId, candidateId, logSessionId);
         assertThat(election.state(), is(Election.State.FOLLOWER_TRANSITION));
 
-        when(sequencerAgent.createAndRecordLogSubscriptionAsFollower(anyString(), anyLong()))
+        when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString(), anyLong()))
             .thenReturn(mock(Subscription.class));
         final long t3 = 3;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.FOLLOWER_READY));
 
         when(memberStatusPublisher.appendedPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
-        when(sequencerAgent.electionComplete(anyLong())).thenReturn(true);
+        when(consensusModuleAgent.electionComplete(anyLong())).thenReturn(true);
 
         final long t4 = 4;
         election.doWork(t4);
-        final InOrder inOrder = inOrder(memberStatusPublisher, sequencerAgent, electionStateCounter);
+        final InOrder inOrder = inOrder(memberStatusPublisher, consensusModuleAgent, electionStateCounter);
         inOrder.verify(memberStatusPublisher).appendedPosition(
             clusterMembers[candidateId].publication(), candidateTermId, 0, followerMember.id());
-        inOrder.verify(sequencerAgent).electionComplete(t4);
+        inOrder.verify(consensusModuleAgent).electionComplete(t4);
         inOrder.verify(electionStateCounter).close();
     }
 
@@ -383,7 +383,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
         final long t4 = t3 + 1;
-        when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
         election.onVote(
             leadershipTermId + 1, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
         election.doWork(t4);
@@ -423,7 +423,7 @@ public class ElectionTest
 
         final long t4 = t3 + 1;
         final long candidateTermId = leadershipTermId + 1;
-        when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
         election.onVote(
             candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[0].id(), false);
         election.onVote(
@@ -493,7 +493,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
         final long t4 = t3 + 1;
-        when(sequencerAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
         election.onVote(
             leadershipTermId + 1, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), false);
         election.doWork(t4);
@@ -570,14 +570,14 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember thisMember = clusterMembers[0];
 
-        when(sequencerAgent.role()).thenReturn(Cluster.Role.LEADER);
+        when(consensusModuleAgent.role()).thenReturn(Cluster.Role.LEADER);
         final Election election = newElection(false, leadershipTermId, logPosition, clusterMembers, thisMember);
 
         final long t1 = 1;
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
-        verify(sequencerAgent).prepareForElection(logPosition);
-        verify(sequencerAgent).role(Cluster.Role.FOLLOWER);
+        verify(consensusModuleAgent).prepareForElection(logPosition);
+        verify(consensusModuleAgent).role(Cluster.Role.FOLLOWER);
     }
 
     private Election newElection(
@@ -597,7 +597,7 @@ public class ElectionTest
             memberStatusPublisher,
             ctx,
             null,
-            sequencerAgent);
+            consensusModuleAgent);
     }
 
     private Election newElection(
@@ -616,7 +616,7 @@ public class ElectionTest
             memberStatusPublisher,
             ctx,
             null,
-            sequencerAgent);
+            consensusModuleAgent);
     }
 
     private static ClusterMember[] prepareClusterMembers()

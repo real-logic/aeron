@@ -37,14 +37,16 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
-    private final SequencerAgent sequencerAgent;
+    private final ConsensusModuleAgent consensusModuleAgent;
     private final AtomicCounter invalidRequests;
 
     IngressAdapter(
-        final Subscription subscription, final SequencerAgent sequencerAgent, final AtomicCounter invalidRequests)
+        final Subscription subscription,
+        final ConsensusModuleAgent consensusModuleAgent,
+        final AtomicCounter invalidRequests)
     {
         this.subscription = subscription;
-        this.sequencerAgent = sequencerAgent;
+        this.consensusModuleAgent = consensusModuleAgent;
         this.invalidRequests = invalidRequests;
     }
 
@@ -79,7 +81,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                 credentials = new byte[connectRequestDecoder.encodedCredentialsLength()];
                 connectRequestDecoder.getEncodedCredentials(credentials, 0, credentials.length);
 
-                sequencerAgent.onSessionConnect(
+                consensusModuleAgent.onSessionConnect(
                     connectRequestDecoder.correlationId(),
                     connectRequestDecoder.responseStreamId(),
                     responseChannel,
@@ -93,7 +95,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                return sequencerAgent.onSessionMessage(
+                return consensusModuleAgent.onSessionMessage(
                     buffer,
                     offset,
                     length,
@@ -107,7 +109,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onSessionClose(closeRequestDecoder.clusterSessionId());
+                consensusModuleAgent.onSessionClose(closeRequestDecoder.clusterSessionId());
                 break;
 
             case SessionKeepAliveRequestDecoder.TEMPLATE_ID:
@@ -117,7 +119,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onSessionKeepAlive(keepAliveRequestDecoder.clusterSessionId());
+                consensusModuleAgent.onSessionKeepAlive(keepAliveRequestDecoder.clusterSessionId());
                 break;
 
             case ChallengeResponseDecoder.TEMPLATE_ID:
@@ -130,7 +132,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                 credentials = new byte[challengeResponseDecoder.encodedCredentialsLength()];
                 challengeResponseDecoder.getEncodedCredentials(credentials, 0, credentials.length);
 
-                sequencerAgent.onChallengeResponse(
+                consensusModuleAgent.onChallengeResponse(
                     challengeResponseDecoder.correlationId(),
                     challengeResponseDecoder.clusterSessionId(),
                     credentials);

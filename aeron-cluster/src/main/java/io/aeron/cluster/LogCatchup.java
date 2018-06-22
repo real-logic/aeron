@@ -43,7 +43,7 @@ class LogCatchup implements AutoCloseable
 
     private final MemberStatusPublisher memberStatusPublisher;
     private final ClusterMember[] clusterMembers;
-    private final SequencerAgent sequencerAgent;
+    private final ConsensusModuleAgent consensusModuleAgent;
     private final ConsensusModule.Context context;
     private final int leaderMemberId;
     private final int memberId;
@@ -75,13 +75,13 @@ class LogCatchup implements AutoCloseable
         final long leadershipTermId,
         final long logRecordingId,
         final long logPosition,
-        final SequencerAgent sequencerAgent,
+        final ConsensusModuleAgent consensusModuleAgent,
         final ConsensusModule.Context context)
     {
         this.localArchive = localArchive;
         this.memberStatusPublisher = memberStatusPublisher;
         this.clusterMembers = clusterMembers;
-        this.sequencerAgent = sequencerAgent;
+        this.consensusModuleAgent = consensusModuleAgent;
         this.context = context;
         this.leaderMemberId = leaderMemberId;
         this.memberId = memberId;
@@ -280,7 +280,7 @@ class LogCatchup implements AutoCloseable
         }
         else if (pollForResponse(leaderArchive, activeCorrelationId))
         {
-            sequencerAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
+            consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
 
             state(State.AWAIT_TRANSFER);
             activeCorrelationId = Aeron.NULL_VALUE;

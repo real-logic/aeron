@@ -25,14 +25,14 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class TimerService implements DeadlineTimerWheel.TimerHandler
 {
-    private final SequencerAgent sequencerAgent;
+    private final ConsensusModuleAgent consensusModuleAgent;
     private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(MILLISECONDS, 0, 1, 128);
     private Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
 
-    TimerService(final SequencerAgent sequencerAgent)
+    TimerService(final ConsensusModuleAgent consensusModuleAgent)
     {
-        this.sequencerAgent = sequencerAgent;
+        this.consensusModuleAgent = consensusModuleAgent;
     }
 
     int poll(final long nowMs)
@@ -45,7 +45,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         final long correlationId = correlationIdByTimerIdMap.remove(timerId);
         timerIdByCorrelationIdMap.remove(correlationId);
 
-        return sequencerAgent.onTimerEvent(correlationId, now);
+        return consensusModuleAgent.onTimerEvent(correlationId, now);
     }
 
     void scheduleTimer(final long correlationId, final long deadlineMs)

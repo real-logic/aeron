@@ -52,7 +52,7 @@ import static io.aeron.cluster.ServiceAck.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.lang.Long.MAX_VALUE;
 
-class SequencerAgent implements Agent, MemberStatusListener
+class ConsensusModuleAgent implements Agent, MemberStatusListener
 {
     private boolean isRecovering;
     private final int memberId;
@@ -111,7 +111,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private String logRecordingChannel;
     private String clientFacingEndpoints;
 
-    SequencerAgent(final ConsensusModule.Context ctx)
+    ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
         this.ctx = ctx;
         this.aeron = ctx.aeron();
@@ -286,7 +286,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     public String roleName()
     {
-        return "sequencer";
+        return "consensus-module";
     }
 
     public void onSessionConnect(
@@ -1556,7 +1556,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         aeronClientInvoker.invoke();
 
         timerService.snapshot(snapshotTaker);
-        snapshotTaker.sequencerState(nextSessionId);
+        snapshotTaker.consenseModuleState(nextSessionId);
 
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }

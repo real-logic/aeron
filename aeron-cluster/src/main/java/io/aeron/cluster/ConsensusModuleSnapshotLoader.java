@@ -34,14 +34,14 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
     private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
     private final ClusterSessionDecoder clusterSessionDecoder = new ClusterSessionDecoder();
     private final TimerDecoder timerDecoder = new TimerDecoder();
-    private final SequencerDecoder sequencerDecoder = new SequencerDecoder();
+    private final ConsensusModuleDecoder consensusModuleDecoder = new ConsensusModuleDecoder();
     private final Image image;
-    private final SequencerAgent sequencerAgent;
+    private final ConsensusModuleAgent consensusModuleAgent;
 
-    ConsensusModuleSnapshotLoader(final Image image, final SequencerAgent agent)
+    ConsensusModuleSnapshotLoader(final Image image, final ConsensusModuleAgent agent)
     {
         this.image = image;
-        this.sequencerAgent = agent;
+        this.consensusModuleAgent = agent;
     }
 
     boolean isDone()
@@ -101,7 +101,7 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onLoadSession(
+                consensusModuleAgent.onLoadSession(
                     clusterSessionDecoder.openedLogPosition(),
                     clusterSessionDecoder.lastCorrelationId(),
                     clusterSessionDecoder.clusterSessionId(),
@@ -118,17 +118,17 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onScheduleTimer(timerDecoder.correlationId(), timerDecoder.deadline());
+                consensusModuleAgent.onScheduleTimer(timerDecoder.correlationId(), timerDecoder.deadline());
                 break;
 
-            case SequencerDecoder.TEMPLATE_ID:
-                sequencerDecoder.wrap(
+            case ConsensusModuleDecoder.TEMPLATE_ID:
+                consensusModuleDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                sequencerAgent.onReloadState(sequencerDecoder.nextSessionId());
+                consensusModuleAgent.onReloadState(consensusModuleDecoder.nextSessionId());
                 break;
 
             default:

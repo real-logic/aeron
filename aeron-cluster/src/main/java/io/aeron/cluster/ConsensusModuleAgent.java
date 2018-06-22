@@ -86,7 +86,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final Counter controlToggle;
     private final TimerService timerService;
     private final ConsensusModuleAdapter consensusModuleAdapter;
-    private final ServiceProxy serviceProxy;
+    private final ServicePublisher servicePublisher;
     private final IngressAdapter ingressAdapter;
     private final EgressPublisher egressPublisher;
     private final LogPublisher logPublisher;
@@ -168,7 +168,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         consensusModuleAdapter = new ConsensusModuleAdapter(
             aeron.addSubscription(ctx.serviceControlChannel(), ctx.consensusModuleStreamId()), this);
-        serviceProxy = new ServiceProxy(aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceStreamId()));
+        servicePublisher = new ServicePublisher(
+            aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceStreamId()));
 
         authenticator = ctx.authenticatorSupplier().newAuthenticator(ctx);
     }
@@ -189,7 +190,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             logPublisher.disconnect();
             CloseHelper.close(ingressAdapter);
-            CloseHelper.close(serviceProxy);
+            CloseHelper.close(servicePublisher);
             CloseHelper.close(consensusModuleAdapter);
         }
     }
@@ -882,7 +883,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(logChannelUri.media()) ?
             logChannelUri.prefix(SPY_QUALIFIER).toString() : logChannelUri.toString();
-        serviceProxy.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), channel);
+        servicePublisher.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), channel);
 
         awaitServiceAcks();
     }
@@ -1298,7 +1299,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     aeron, tempBuffer, leadershipTermId, startPosition, stopPosition);
                     Subscription subscription = aeron.addSubscription(channel, streamId))
                 {
-                    serviceProxy.joinLog(leadershipTermId, counter.id(), log.sessionId, streamId, channel);
+                    servicePublisher.joinLog(leadershipTermId, counter.id(), log.sessionId, streamId, channel);
                     expectedAckPosition = startPosition;
                     awaitServiceAcks();
 

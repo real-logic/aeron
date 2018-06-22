@@ -188,6 +188,7 @@ public class CatalogTest
         new File(archiveDir, segmentFileName(newRecordingId, 1)).createNewFile();
         new File(archiveDir, segmentFileName(newRecordingId, 2)).createNewFile();
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 3));
+
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {
             final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
@@ -331,6 +332,7 @@ public class CatalogTest
     @Test
     public void shouldBeAbleToCreateMaxEntries()
     {
+        after();
         final File archiveDir = TestUtil.makeTestDirectory();
         final long maxEntries = 2;
 

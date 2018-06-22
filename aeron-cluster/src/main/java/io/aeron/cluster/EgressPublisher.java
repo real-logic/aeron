@@ -31,6 +31,7 @@ class EgressPublisher
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionEventEncoder sessionEventEncoder = new SessionEventEncoder();
     private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
+    private final NewLeaderEventEncoder newLeaderEventEncoder = new NewLeaderEventEncoder();
 
     boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
     {
@@ -85,6 +86,41 @@ class EgressPublisher
             final long result = publication.offer(buffer, 0, length);
             if (result > 0)
             {
+                return true;
+            }
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean newLeader(
+        final ClusterSession session,
+        final long leadershipTermId,
+        final int leaderMemberId,
+        final String memberEndpoints)
+    {
+        final Publication publication = session.responsePublication();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
+            NewLeaderEventEncoder.BLOCK_LENGTH +
+            NewLeaderEventEncoder.memberEndpointsHeaderLength() +
+            memberEndpoints.length();
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                newLeaderEventEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .clusterSessionId(session.id())
+                    .leadershipTermId(leadershipTermId)
+                    .leaderMemberId(leaderMemberId)
+                    .memberEndpoints(memberEndpoints);
+
+                bufferClaim.commit();
+
                 return true;
             }
         }

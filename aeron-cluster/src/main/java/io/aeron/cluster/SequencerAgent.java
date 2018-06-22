@@ -109,6 +109,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private RecordingLog.RecoveryPlan recoveryPlan;
     private Election election;
     private String logRecordingChannel;
+    private String memberEndpointsDetail;
 
     SequencerAgent(final ConsensusModule.Context ctx)
     {
@@ -837,6 +838,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             if (session.state() != CLOSED)
             {
                 session.timeOfLastActivityMs(nowMs);
+                session.hasNewLeaderEventPending(true);
             }
         }
     }
@@ -1181,9 +1183,22 @@ class SequencerAgent implements Agent, MemberStatusListener
                 appendSessionOpen(session, nowMs);
                 workCount += 1;
             }
+            else if (session.hasNewLeaderEventPending())
+            {
+                sendNewLeaderEvent(session);
+                workCount += 1;
+            }
         }
 
         return workCount;
+    }
+
+    private void sendNewLeaderEvent(final ClusterSession session)
+    {
+        if (egressPublisher.newLeader(session, leadershipTermId, leaderMember.id(), memberEndpointsDetail))
+        {
+            session.hasNewLeaderEventPending(false);
+        }
     }
 
     private void appendSessionOpen(final ClusterSession session, final long nowMs)
@@ -1366,7 +1381,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             }
         }
 
-        sessionProxy.memberEndpointsDetail(builder.toString());
+        memberEndpointsDetail = builder.toString();
     }
 
     private int updateMemberPosition(final long nowMs)

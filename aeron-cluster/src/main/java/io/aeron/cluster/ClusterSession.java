@@ -35,6 +35,7 @@ class ClusterSession
         INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSED
     }
 
+    private boolean hasNewLeaderEventPending = false;
     private long timeOfLastActivityMs;
     private long lastCorrelationId;
     private long openedLogPosition = Aeron.NULL_VALUE;
@@ -191,6 +192,16 @@ class ClusterSession
         return openedLogPosition;
     }
 
+    void hasNewLeaderEventPending(final boolean flag)
+    {
+        hasNewLeaderEventPending = flag;
+    }
+
+    boolean hasNewLeaderEventPending()
+    {
+        return hasNewLeaderEventPending;
+    }
+
     static void checkEncodedPrincipalLength(final byte[] encodedPrincipal)
     {
         if (null != encodedPrincipal && encodedPrincipal.length > MAX_ENCODED_PRINCIPAL_LENGTH)
@@ -210,6 +221,7 @@ class ClusterSession
             ", timeOfLastActivityMs=" + timeOfLastActivityMs +
             ", lastCorrelationId=" + lastCorrelationId +
             ", openedLogPosition=" + openedLogPosition +
+            ", hasNewLeaderEventPending=" + hasNewLeaderEventPending +
             ", responseStreamId=" + responseStreamId +
             ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +

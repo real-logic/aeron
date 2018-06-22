@@ -34,7 +34,6 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.IoUtil;
-import org.agrona.concurrent.NoOpLock;
 import org.junit.*;
 
 import java.io.File;
@@ -127,8 +126,7 @@ public class AppointedLeaderClusterTest
             new AeronCluster.Context()
                 .aeronDirectoryName(aeronDirName + "-0")
                 .ingressChannel("aeron:udp")
-                .clusterMemberEndpoints("localhost:20110", "localhost:20111", "localhost:20112")
-                .lock(new NoOpLock()));
+                .clusterMemberEndpoints("localhost:20110", "localhost:20111", "localhost:20112"));
     }
 
     @After

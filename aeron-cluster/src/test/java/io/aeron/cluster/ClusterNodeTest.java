@@ -31,7 +31,6 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.NoOpLock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -276,7 +275,6 @@ public class ClusterNodeTest
         return AeronCluster.connect(
             new AeronCluster.Context()
                 .ingressChannel("aeron:udp")
-                .clusterMemberEndpoints("localhost:9010", "localhost:9011", "localhost:9012")
-                .lock(new NoOpLock()));
+                .clusterMemberEndpoints("localhost:9010", "localhost:9011", "localhost:9012"));
     }
 }

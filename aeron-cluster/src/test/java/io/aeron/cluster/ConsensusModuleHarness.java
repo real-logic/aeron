@@ -36,7 +36,6 @@ import org.agrona.*;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
 import java.io.*;
@@ -510,8 +509,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             harness.awaitServiceOnStart();
 
             final AeronCluster.Context clusterContext = new AeronCluster.Context()
-                .aeronDirectoryName(harness.aeron().context().aeronDirectoryName())
-                .lock(new NoOpLock());
+                .aeronDirectoryName(harness.aeron().context().aeronDirectoryName());
 
             try (AeronCluster aeronCluster = AeronCluster.connect(clusterContext))
             {

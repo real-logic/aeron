@@ -31,7 +31,6 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.*;
@@ -410,9 +409,7 @@ public class ClusterNodeRestartTest
 
     private AeronCluster connectToCluster()
     {
-        return AeronCluster.connect(
-            new AeronCluster.Context()
-                .lock(new NoOpLock()));
+        return AeronCluster.connect();
     }
 
     private void connectClient()

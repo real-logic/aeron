@@ -24,8 +24,6 @@ import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static org.agrona.SystemUtil.getDurationInNanos;
 
@@ -51,7 +49,6 @@ public final class AeronCluster implements AutoCloseable
     private final Subscription subscription;
     private final Publication publication;
     private final NanoClock nanoClock;
-    private final Lock lock;
     private final IdleStrategy idleStrategy;
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
@@ -90,7 +87,6 @@ public final class AeronCluster implements AutoCloseable
             ctx.conclude();
 
             this.aeron = ctx.aeron();
-            this.lock = ctx.lock();
             this.idleStrategy = ctx.idleStrategy();
             this.nanoClock = aeron.context().nanoClock();
             this.isUnicast = ctx.clusterMemberEndpoints() != null;
@@ -121,26 +117,18 @@ public final class AeronCluster implements AutoCloseable
      */
     public void close()
     {
-        lock.lock();
-        try
+        if (publication.isConnected())
         {
-            if (publication.isConnected())
-            {
-                closeSession();
-            }
-
-            if (!ctx.ownsAeronClient())
-            {
-                CloseHelper.close(subscription);
-                CloseHelper.close(publication);
-            }
-
-            ctx.close();
+            closeSession();
         }
-        finally
+
+        if (!ctx.ownsAeronClient())
         {
-            lock.unlock();
+            CloseHelper.close(subscription);
+            CloseHelper.close(publication);
         }
+
+        ctx.close();
     }
 
     /**
@@ -218,45 +206,37 @@ public final class AeronCluster implements AutoCloseable
      */
     public boolean sendKeepAlive()
     {
-        lock.lock();
-        try
+        idleStrategy.reset();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveRequestEncoder.BLOCK_LENGTH;
+        int attempts = SEND_ATTEMPTS;
+
+        while (true)
         {
-            idleStrategy.reset();
-            final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveRequestEncoder.BLOCK_LENGTH;
-            int attempts = SEND_ATTEMPTS;
+            final long result = publication.tryClaim(length, bufferClaim);
 
-            while (true)
+            if (result > 0)
             {
-                final long result = publication.tryClaim(length, bufferClaim);
+                keepAliveRequestEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(Aeron.NULL_VALUE)
+                    .clusterSessionId(clusterSessionId);
 
-                if (result > 0)
-                {
-                    keepAliveRequestEncoder
-                        .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                        .correlationId(Aeron.NULL_VALUE)
-                        .clusterSessionId(clusterSessionId);
+                bufferClaim.commit();
 
-                    bufferClaim.commit();
-
-                    return true;
-                }
-
-                checkResult(result);
-
-                if (--attempts <= 0)
-                {
-                    break;
-                }
-
-                idleStrategy.idle();
+                return true;
             }
 
-            return false;
+            checkResult(result);
+
+            if (--attempts <= 0)
+            {
+                break;
+            }
+
+            idleStrategy.idle();
         }
-        finally
-        {
-            lock.unlock();
-        }
+
+        return false;
     }
 
     private void closeSession()
@@ -690,7 +670,6 @@ public final class AeronCluster implements AutoCloseable
         private String egressChannel = Configuration.egressChannel();
         private int egressStreamId = Configuration.egressStreamId();
         private IdleStrategy idleStrategy;
-        private Lock lock;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private CredentialsSupplier credentialsSupplier;
@@ -727,11 +706,6 @@ public final class AeronCluster implements AutoCloseable
             if (null == idleStrategy)
             {
                 idleStrategy = new BackoffIdleStrategy(1, 10, 1000, 1000);
-            }
-
-            if (null == lock)
-            {
-                lock = new ReentrantLock();
             }
 
             if (null == credentialsSupplier)
@@ -989,31 +963,6 @@ public final class AeronCluster implements AutoCloseable
         public boolean ownsAeronClient()
         {
             return ownsAeronClient;
-        }
-
-        /**
-         * The {@link Lock} that is used to provide mutual exclusion in the {@link AeronCluster} client.
-         * <p>
-         * If the {@link AeronCluster} is used from only a single thread then the lock can be set to
-         * {@link NoOpLock} to elide the lock overhead.
-         *
-         * @param lock that is used to provide mutual exclusion in the {@link AeronCluster} client.
-         * @return this for a fluent API.
-         */
-        public Context lock(final Lock lock)
-        {
-            this.lock = lock;
-            return this;
-        }
-
-        /**
-         * Get the {@link Lock} that is used to provide mutual exclusion in the {@link AeronCluster} client.
-         *
-         * @return the {@link Lock} that is used to provide mutual exclusion in the {@link AeronCluster} client.
-         */
-        public Lock lock()
-        {
-            return lock;
         }
 
         /**

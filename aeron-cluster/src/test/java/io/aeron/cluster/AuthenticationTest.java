@@ -33,7 +33,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
-import org.agrona.concurrent.NoOpLock;
 import org.junit.After;
 import org.junit.Test;
 
@@ -473,8 +472,7 @@ public class AuthenticationTest
     {
         return AeronCluster.connect(
             new AeronCluster.Context()
-                .credentialsSupplier(credentialsSupplier)
-                .lock(new NoOpLock()));
+                .credentialsSupplier(credentialsSupplier));
     }
 
     private void connectClient(final CredentialsSupplier credentialsSupplier)

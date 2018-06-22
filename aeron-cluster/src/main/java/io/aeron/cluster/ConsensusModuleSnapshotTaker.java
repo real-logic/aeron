@@ -87,7 +87,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
         }
     }
 
-    void consenseModuleState(final long nextSessionId)
+    void consensusModuleState(final long nextSessionId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ConsensusModuleEncoder.BLOCK_LENGTH;
 

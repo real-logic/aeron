@@ -1556,7 +1556,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         aeronClientInvoker.invoke();
 
         timerService.snapshot(snapshotTaker);
-        snapshotTaker.consenseModuleState(nextSessionId);
+        snapshotTaker.consensusModuleState(nextSessionId);
 
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }

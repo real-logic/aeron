@@ -49,7 +49,7 @@ public class ClientSession
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
-    private final Cluster cluster;
+    private final ClusteredServiceAgent cluster;
     private Publication responsePublication;
     private boolean isClosing;
 
@@ -59,7 +59,7 @@ public class ClientSession
         final int responseStreamId,
         final String responseChannel,
         final byte[] encodedPrincipal,
-        final Cluster cluster)
+        final ClusteredServiceAgent cluster)
     {
         this.id = sessionId;
         this.lastCorrelationId = correlationId;
@@ -160,11 +160,50 @@ public class ClientSession
 
         if (null == responsePublication)
         {
-            throw new ClusterException("ClientSession not connected id=" + id);
+            throw new ClusterException("session not connected id=" + id);
         }
 
-        sessionHeaderEncoder.correlationId(correlationId);
-        sessionHeaderEncoder.timestamp(cluster.timeMs());
+        sessionHeaderEncoder
+            .correlationId(correlationId)
+            .timestamp(cluster.timeMs());
+
+        messageBuffer.reset(buffer, offset, length);
+
+        return responsePublication.offer(vectors, null);
+    }
+
+    /**
+     * Non-blocking publish of a partial buffer containing a message to a cluster.
+     *
+     * @param correlationId to be used to identify the message to the cluster.
+     * @param timestampMs   to be used for when the response was generated.
+     * @param buffer        containing message.
+     * @param offset        offset in the buffer at which the encoded message begins.
+     * @param length        in bytes of the encoded message.
+     * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.Role#LEADER}
+     * otherwise {@link #MOCKED_OFFER}.
+     */
+    public long offer(
+        final long correlationId,
+        final long timestampMs,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
+    {
+        if (cluster.role() != Cluster.Role.LEADER)
+        {
+            return MOCKED_OFFER;
+        }
+
+        if (null == responsePublication)
+        {
+            throw new ClusterException("session not connected id=" + id);
+        }
+
+        sessionHeaderEncoder
+            .correlationId(correlationId)
+            .timestamp(timestampMs);
+
         messageBuffer.reset(buffer, offset, length);
 
         return responsePublication.offer(vectors, null);

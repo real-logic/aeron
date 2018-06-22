@@ -583,7 +583,7 @@ class Election implements AutoCloseable
         ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
 
         ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
-        clusterMembers[thisMember.id()].logPosition(logPosition);
+        clusterMembers[thisMember.id()].logPosition(logPosition).leadershipTermId(leadershipTermId);
         state(State.LEADER_READY, nowMs);
 
         return 1;

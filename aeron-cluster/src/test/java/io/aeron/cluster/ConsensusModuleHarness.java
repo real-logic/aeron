@@ -600,7 +600,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             {
                 counters.onCanvassPositionCounter++;
                 stream.format("onCanvassPositionCounter[%d] %d %d %d%n",
-                    index, logPosition, logLeadershipTermId, followerMemberId);
+                    index, logLeadershipTermId, logPosition, followerMemberId);
                 nextListener.onCanvassPosition(logLeadershipTermId, logPosition, followerMemberId);
             }
 
@@ -612,7 +612,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             {
                 counters.onRequestVoteCounter++;
                 stream.format("onRequestVote[%d] %d %d %d %d%n",
-                    index, logPosition, logLeadershipTermId, candidateTermId, candidateId);
+                    index, logLeadershipTermId, logPosition, candidateTermId, candidateId);
                 nextListener.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
             }
 
@@ -646,7 +646,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             {
                 counters.onNewLeadershipTermCounter++;
                 stream.format("onNewLeadershipTerm[%d] %d %d %d %d %d%n",
-                    index, logPosition, logLeadershipTermId, leadershipTermId, leaderMemberId, logSessionId);
+                    index, logLeadershipTermId, logPosition, leadershipTermId, leaderMemberId, logSessionId);
                 nextListener.onNewLeadershipTerm(
                     logLeadershipTermId, logPosition, leadershipTermId, leaderMemberId, logSessionId);
             }
@@ -656,7 +656,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             {
                 counters.onAppendedPositionCounter++;
                 stream.format("onAppendedPosition[%d] %d %d %d%n",
-                    index, logPosition, leadershipTermId, followerMemberId);
+                    index, leadershipTermId, logPosition, followerMemberId);
                 nextListener.onAppendedPosition(leadershipTermId, logPosition, followerMemberId);
             }
 
@@ -664,7 +664,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             {
                 counters.onCommitPositionCounter++;
                 stream.format("onCommitPosition[%d] %d %d %d%n",
-                    index, logPosition, leadershipTermId, leaderMemberId);
+                    index, leadershipTermId, logPosition, leaderMemberId);
                 nextListener.onCommitPosition(leadershipTermId, logPosition, leaderMemberId);
             }
 
@@ -673,7 +673,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             {
                 counters.onCatchupPositionCounter++;
                 stream.format("onCatchupPosition[%d] %d %d %d%n",
-                    index, logPosition, leadershipTermId, followerMemberId);
+                    index, leadershipTermId, logPosition, followerMemberId);
                 nextListener.onCatchupPosition(leadershipTermId, logPosition, followerMemberId);
             }
 
@@ -682,7 +682,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             {
                 counters.onRecoveryPlanQueryCounter++;
                 stream.format("onRecoveryPlanQueryCounter[%d] %d %d %d%n",
-                    index, correlationId, leaderMemberId, requestMemberId);
+                    index, correlationId, requestMemberId, leaderMemberId);
                 nextListener.onRecoveryPlanQuery(correlationId, requestMemberId, leaderMemberId);
             }
 

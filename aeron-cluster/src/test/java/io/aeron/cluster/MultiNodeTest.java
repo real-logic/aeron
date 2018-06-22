@@ -188,10 +188,10 @@ public class MultiNodeTest
                 eq(0L), eq(position), eq(1L), eq(0), anyInt());
 
             harness.memberStatusPublisher().appendedPosition(
-                harness.memberStatusPublication(1), 1L, 0L, 1);
+                harness.memberStatusPublication(1), 1L, position, 1);
 
             harness.memberStatusPublisher().appendedPosition(
-                harness.memberStatusPublication(2), 1L, 0L, 2);
+                harness.memberStatusPublication(2), 1L, position, 2);
 
             harness.awaitServiceOnStart();
             harness.awaitServiceOnMessageCounter(10);

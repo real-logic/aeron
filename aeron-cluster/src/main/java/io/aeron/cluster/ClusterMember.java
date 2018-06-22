@@ -462,7 +462,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.vote != null && member.logPosition < position && member.leadershipTermId != leadershipTermId)
+            if (member.vote != null && (member.logPosition < position || member.leadershipTermId != leadershipTermId))
             {
                 return false;
             }

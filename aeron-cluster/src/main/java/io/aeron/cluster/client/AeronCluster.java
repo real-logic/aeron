@@ -837,6 +837,16 @@ public final class AeronCluster implements AutoCloseable
             {
                 credentialsSupplier = new NullCredentialsSupplier();
             }
+
+            if (null == sessionMessageListener)
+            {
+                sessionMessageListener =
+                    (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
+                    {
+                        throw new IllegalStateException(
+                            "sessionMessageListener must be specified on AeronCluster.Context");
+                    };
+            }
         }
 
         /**

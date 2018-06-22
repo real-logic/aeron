@@ -109,8 +109,16 @@
 
     -->
 
-    <sbe:message name="SessionEvent"
+    <sbe:message name="SessionHeader"
                  id="1"
+                 description="Header for request and response messages within a communication session with the clustered service">
+        <field name="correlationId"        id="1" type="int64"/>
+        <field name="clusterSessionId"     id="2" type="int64"/>
+        <field name="timestamp"            id="3" type="time_t"/>
+    </sbe:message>
+
+    <sbe:message name="SessionEvent"
+                 id="2"
                  description="Generic event response to a connect request or async event. Details will be empty if code is OK">
         <field name="clusterSessionId"     id="1" type="int64"
                description="Session id for a multiplexed session over a shared connection, i.e. same Image"/>
@@ -123,21 +131,13 @@
     </sbe:message>
 
     <sbe:message name="SessionConnectRequest"
-                 id="2"
+                 id="3"
                  description="Connect to the cluster and if successful then open a session">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
         <field name="responseStreamId"     id="3" type="int32"/>
         <data  name="responseChannel"      id="4" type="varAsciiEncoding"/>
         <data  name="encodedCredentials"   id="5" type="varDataEncoding"/>
-    </sbe:message>
-
-    <sbe:message name="SessionHeader"
-                 id="3"
-                 description="Header for request and response messages within a communication session with the clustered service">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="clusterSessionId"     id="2" type="int64"/>
-        <field name="timestamp"            id="3" type="time_t"/>
     </sbe:message>
 
     <sbe:message name="SessionCloseRequest"
@@ -157,9 +157,8 @@
                  id="6"
                  description="Event to indicate a new leader has been elected for the cluster">
         <field name="clusterSessionId"     id="1" type="int64"/>
-        <field name="leadershipTermId"     id="2" type="int64"/>
-        <field name="leaderMemberId"       id="3" type="int32"/>
-        <data  name="memberEndpoints"      id="4" type="varAsciiEncoding"/>
+        <field name="leaderMemberId"       id="2" type="int32"/>
+        <data  name="memberEndpoints"      id="3" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="Challenge"

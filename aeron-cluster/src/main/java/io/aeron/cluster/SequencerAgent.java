@@ -1195,7 +1195,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     private void sendNewLeaderEvent(final ClusterSession session)
     {
-        if (egressPublisher.newLeader(session, leadershipTermId, leaderMember.id(), clientFacingEndpoints))
+        if (egressPublisher.newLeader(session, leaderMember.id(), clientFacingEndpoints))
         {
             session.hasNewLeaderEventPending(false);
         }

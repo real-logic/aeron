@@ -22,22 +22,6 @@ import org.agrona.DirectBuffer;
 
 public class StubEgressListener implements EgressListener
 {
-    public void sessionEvent(
-        final long correlationId,
-        final long clusterSessionId,
-        final EventCode code,
-        final String detail)
-    {
-    }
-
-    public void newLeader(
-        final long clusterSessionId,
-        final long leadershipTermId,
-        final int leaderMemberId,
-        final String memberEndpoints)
-    {
-    }
-
     public void onMessage(
         final long correlationId,
         final long clusterSessionId,
@@ -46,6 +30,18 @@ public class StubEgressListener implements EgressListener
         final int offset,
         final int length,
         final Header header)
+    {
+    }
+
+    public void sessionEvent(
+        final long correlationId,
+        final long clusterSessionId,
+        final EventCode code,
+        final String detail)
+    {
+    }
+
+    public void newLeader(final long clusterSessionId, final int leaderMemberId, final String memberEndpoints)
     {
     }
 }

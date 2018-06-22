@@ -64,6 +64,29 @@ public class EgressAdapter implements FragmentHandler
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
+            case SessionHeaderDecoder.TEMPLATE_ID:
+            {
+                sessionHeaderDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long sessionId = sessionHeaderDecoder.clusterSessionId();
+                if (sessionId == clusterSessionId)
+                {
+                    listener.onMessage(
+                        sessionHeaderDecoder.correlationId(),
+                        sessionId,
+                        sessionHeaderDecoder.timestamp(),
+                        buffer,
+                        offset + SESSION_HEADER_LENGTH,
+                        length - SESSION_HEADER_LENGTH,
+                        header);
+                }
+                break;
+            }
+
             case SessionEventDecoder.TEMPLATE_ID:
             {
                 sessionEventDecoder.wrap(
@@ -97,32 +120,8 @@ public class EgressAdapter implements FragmentHandler
                 {
                     listener.newLeader(
                         sessionId,
-                        newLeaderEventDecoder.leadershipTermId(),
                         newLeaderEventDecoder.leaderMemberId(),
                         newLeaderEventDecoder.memberEndpoints());
-                }
-                break;
-            }
-
-            case SessionHeaderDecoder.TEMPLATE_ID:
-            {
-                sessionHeaderDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                final long sessionId = sessionHeaderDecoder.clusterSessionId();
-                if (sessionId == clusterSessionId)
-                {
-                    listener.onMessage(
-                        sessionHeaderDecoder.correlationId(),
-                        sessionId,
-                        sessionHeaderDecoder.timestamp(),
-                        buffer,
-                        offset + SESSION_HEADER_LENGTH,
-                        length - SESSION_HEADER_LENGTH,
-                        header);
                 }
                 break;
             }

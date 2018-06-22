@@ -94,11 +94,7 @@ class EgressPublisher
         return false;
     }
 
-    boolean newLeader(
-        final ClusterSession session,
-        final long leadershipTermId,
-        final int leaderMemberId,
-        final String memberEndpoints)
+    boolean newLeader(final ClusterSession session, final int leaderMemberId, final String memberEndpoints)
     {
         final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
@@ -115,7 +111,6 @@ class EgressPublisher
                 newLeaderEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
-                    .leadershipTermId(leadershipTermId)
                     .leaderMemberId(leaderMemberId)
                     .memberEndpoints(memberEndpoints);
 

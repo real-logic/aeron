@@ -61,6 +61,7 @@ public final class AeronCluster implements AutoCloseable
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
+    private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment, 4096, true);
@@ -319,6 +320,31 @@ public final class AeronCluster implements AutoCloseable
                     header);
             }
         }
+        else if (NewLeaderEventDecoder.TEMPLATE_ID == templateId)
+        {
+            newLeaderEventDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            final long sessionId = newLeaderEventDecoder.clusterSessionId();
+            if (sessionId == clusterSessionId)
+            {
+                onNewLeader(sessionId, newLeaderEventDecoder.leaderMemberId(), newLeaderEventDecoder.memberEndpoints());
+            }
+        }
+    }
+
+    public void onNewLeader(final long clusterSessionId, final int leaderMemberId, final String memberEndpoints)
+    {
+        if (clusterSessionId != this.clusterSessionId)
+        {
+            throw new ClusterException(
+                "invalid cluster session clusterSessionId=" + clusterSessionId + " expected " + this.clusterSessionId);
+        }
+
+
     }
 
     private void closeSession()
@@ -781,7 +807,9 @@ public final class AeronCluster implements AutoCloseable
             if (null == aeron)
             {
                 aeron = Aeron.connect(
-                        new Aeron.Context().aeronDirectoryName(aeronDirectoryName).errorHandler(errorHandler));
+                    new Aeron.Context()
+                        .aeronDirectoryName(aeronDirectoryName)
+                        .errorHandler(errorHandler));
                 ownsAeronClient = true;
             }
 

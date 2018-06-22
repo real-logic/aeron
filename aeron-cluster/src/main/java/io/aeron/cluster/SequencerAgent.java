@@ -789,14 +789,18 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     @SuppressWarnings("unused")
     void onReplayNewLeadershipTermEvent(
-        final long leadershipTermId, final long timestamp, final int leaderMemberId, final int logSessionId)
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestamp,
+        final int leaderMemberId,
+        final int logSessionId)
     {
         clusterTimeMs = timestamp;
         this.leadershipTermId = leadershipTermId;
 
         if (null != election)
         {
-            election.onReplayNewLeadershipTermEvent(leadershipTermId, cachedTimeMs);
+            election.onReplayNewLeadershipTermEvent(leadershipTermId, logPosition, cachedTimeMs);
         }
     }
 
@@ -898,7 +902,8 @@ class SequencerAgent implements Agent, MemberStatusListener
         boolean result = false;
 
         if (Cluster.Role.LEADER == role &&
-            logPublisher.appendNewLeadershipTermEvent(leadershipTermId, nowMs, memberId, logPublisher.sessionId()))
+            logPublisher.appendNewLeadershipTermEvent(
+            leadershipTermId, election.logPosition(), nowMs, memberId, logPublisher.sessionId()))
         {
             election = null;
             result = true;

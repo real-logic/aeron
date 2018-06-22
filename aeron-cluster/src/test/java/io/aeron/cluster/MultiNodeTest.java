@@ -273,8 +273,8 @@ public class MultiNodeTest
         IoUtil.delete(new File(leaderHarnessDir, ConsensusModuleHarness.DRIVER_DIRECTORY), true);
         ConsensusModuleHarness.copyDirectory(leaderHarnessDir, followerHarnessDir);
 
-        // 64 for NewLeadershipTermEvent at start of the log
-        final long truncatePosition = positionMap.get(5) + 64;
+        // 96 for NewLeadershipTermEvent at start of the log
+        final long truncatePosition = positionMap.get(5) + 96;
 
         ConsensusModuleHarness.truncateRecordingLog(followerHarnessDir, 0, truncatePosition);
 

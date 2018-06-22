@@ -546,8 +546,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
                 harness.awaitServiceOnMessageCounter(numMessages);
 
-                // 96 is for the close session appended at the end and 64 for NewLeadershipTermEvent at the start
-                return publication.position() + 160;
+                // 96 is for the close session appended at the end and 96 for NewLeadershipTermEvent at the start
+                return publication.position() + 192;
             }
         }
     }

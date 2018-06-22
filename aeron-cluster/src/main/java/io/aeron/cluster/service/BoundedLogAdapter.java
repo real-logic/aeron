@@ -163,6 +163,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 
                 agent.onyNewLeadershipTermEvent(
                     newLeadershipTermEventDecoder.leadershipTermId(),
+                    newLeadershipTermEventDecoder.logPosition(),
                     newLeadershipTermEventDecoder.timestamp(),
                     newLeadershipTermEventDecoder.leaderMemberId(),
                     newLeadershipTermEventDecoder.logSessionId());

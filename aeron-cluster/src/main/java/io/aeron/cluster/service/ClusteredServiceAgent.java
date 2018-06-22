@@ -297,7 +297,11 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     @SuppressWarnings("unused")
     void onyNewLeadershipTermEvent(
-        final long leadershipTermId, final long timestampMs, final int leaderMemberId, final int logSessionId)
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestampMs,
+        final int leaderMemberId,
+        final int logSessionId)
     {
         this.clusterTimeMs = timestampMs;
     }

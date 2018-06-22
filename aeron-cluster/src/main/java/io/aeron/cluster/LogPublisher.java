@@ -208,7 +208,11 @@ class LogPublisher
     }
 
     boolean appendNewLeadershipTermEvent(
-        final long leadershipTermId, final long nowMs, final int leaderMemberId, final int logSessionId)
+        final long leadershipTermId,
+        final long logPosition,
+        final long nowMs,
+        final int leaderMemberId,
+        final int logSessionId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEventEncoder.BLOCK_LENGTH;
 
@@ -221,6 +225,7 @@ class LogPublisher
                 newLeadershipTermEventEncoder.wrapAndApplyHeader(
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
+                    .logPosition(logPosition)
                     .timestamp(nowMs)
                     .leaderMemberId(leaderMemberId)
                     .logSessionId(logSessionId);

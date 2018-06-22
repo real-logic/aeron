@@ -51,7 +51,7 @@ public final class AeronCluster implements AutoCloseable
     private final Context ctx;
     private final Aeron aeron;
     private final Subscription subscription;
-    private final Publication publication;
+    private Publication publication;
     private final NanoClock nanoClock;
     private final IdleStrategy idleStrategy;
 
@@ -93,7 +93,6 @@ public final class AeronCluster implements AutoCloseable
         this.ctx = ctx;
 
         Subscription subscription = null;
-        Publication publication = null;
 
         try
         {
@@ -109,8 +108,6 @@ public final class AeronCluster implements AutoCloseable
             this.subscription = subscription;
 
             publication = connectToCluster();
-            this.publication = publication;
-
             this.clusterSessionId = openSession();
 
             final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
@@ -140,7 +137,7 @@ public final class AeronCluster implements AutoCloseable
      */
     public void close()
     {
-        if (publication.isConnected())
+        if (null != publication && publication.isConnected())
         {
             closeSession();
         }
@@ -294,6 +291,35 @@ public final class AeronCluster implements AutoCloseable
         return subscription.poll(fragmentAssembler, SESSION_FRAGMENT_LIMIT);
     }
 
+    /**
+     * To be called when a new leader event is delivered. This method needs to be called when using the
+     * {@link EgressAdapter} or {@link EgressPoller} rather than {@link #pollEgress()} method.
+     *
+     * @param clusterSessionId which must match {@link #clusterSessionId()}.
+     * @param leaderMemberId   which has become the new leader.
+     * @param memberEndpoints  comma separated list of cluster members endpoints to connect to with the leader first.
+     */
+    public void onNewLeader(final long clusterSessionId, final int leaderMemberId, final String memberEndpoints)
+    {
+        if (clusterSessionId != this.clusterSessionId)
+        {
+            throw new ClusterException(
+                "invalid clusterSessionId=" + clusterSessionId + " expected " + this.clusterSessionId);
+        }
+
+        if (isUnicast)
+        {
+            CloseHelper.close(publication);
+
+            final String[] endpoints = memberEndpoints.split(",");
+            ctx.clusterMemberEndpoints(endpoints);
+
+            final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
+            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, endpoints[0]);
+            publication = addIngressPublication(channelUri.toString(), ctx.ingressStreamId());
+        }
+    }
+
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -334,17 +360,6 @@ public final class AeronCluster implements AutoCloseable
                 onNewLeader(sessionId, newLeaderEventDecoder.leaderMemberId(), newLeaderEventDecoder.memberEndpoints());
             }
         }
-    }
-
-    public void onNewLeader(final long clusterSessionId, final int leaderMemberId, final String memberEndpoints)
-    {
-        if (clusterSessionId != this.clusterSessionId)
-        {
-            throw new ClusterException(
-                "invalid cluster session clusterSessionId=" + clusterSessionId + " expected " + this.clusterSessionId);
-        }
-
-
     }
 
     private void closeSession()

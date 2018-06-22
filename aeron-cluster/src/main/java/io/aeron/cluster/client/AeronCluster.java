@@ -232,7 +232,7 @@ public final class AeronCluster implements AutoCloseable
                 {
                     keepAliveRequestEncoder
                         .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                        .correlationId(0L)
+                        .correlationId(Aeron.NULL_VALUE)
                         .clusterSessionId(clusterSessionId);
 
                     bufferClaim.commit();

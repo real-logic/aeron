@@ -18,7 +18,7 @@ package io.aeron.cluster;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.EgressAdapter;
+import io.aeron.cluster.client.SessionMessageListener;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -29,6 +29,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +41,6 @@ import static org.junit.Assert.assertTrue;
 public class ClusterNodeTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;
-    private static final int FRAGMENT_LIMIT = 1;
 
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
@@ -83,7 +83,7 @@ public class ClusterNodeTest
     public void shouldConnectAndSendKeepAlive()
     {
         container = launchEchoService();
-        aeronCluster = connectToCluster();
+        aeronCluster = connectToCluster(null);
 
         assertTrue(aeronCluster.sendKeepAlive());
     }
@@ -91,46 +91,36 @@ public class ClusterNodeTest
     @Test(timeout = 10_000)
     public void shouldEchoMessageViaService()
     {
-        container = launchEchoService();
-        aeronCluster = connectToCluster();
-
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        final long msgCorrelationId = aeronCluster.nextCorrelationId();
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 
-        while (aeronCluster.offer(msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
+        final MutableLong msgCorrelationId = new MutableLong();
+        final MutableInteger messageCount = new MutableInteger();
+
+        final SessionMessageListener listener =
+            (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
+            {
+                assertThat(correlationId, is(msgCorrelationId.value));
+                assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
+
+                messageCount.value += 1;
+            };
+
+        container = launchEchoService();
+        aeronCluster = connectToCluster(listener);
+
+        msgCorrelationId.value = aeronCluster.nextCorrelationId();
+
+        while (aeronCluster.offer(msgCorrelationId.value, msgBuffer, 0, msg.length()) < 0)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
-        final MutableInteger messageCount = new MutableInteger();
-        final EgressAdapter adapter = new EgressAdapter(
-            new StubEgressListener()
-            {
-                public void onMessage(
-                    final long correlationId,
-                    final long clusterSessionId,
-                    final long timestamp,
-                    final DirectBuffer buffer,
-                    final int offset,
-                    final int length,
-                    final Header header)
-                {
-                    assertThat(correlationId, is(msgCorrelationId));
-                    assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
-
-                    messageCount.value += 1;
-                }
-            },
-            aeronCluster.clusterSessionId(),
-            aeronCluster.egressSubscription(),
-            FRAGMENT_LIMIT);
-
         while (messageCount.get() == 0)
         {
-            if (adapter.poll() <= 0)
+            if (aeronCluster.pollEgress() <= 0)
             {
                 TestUtil.checkInterruptedStatus();
                 Thread.yield();
@@ -141,46 +131,36 @@ public class ClusterNodeTest
     @Test(timeout = 10_000)
     public void shouldScheduleEventInService()
     {
-        container = launchTimedService();
-        aeronCluster = connectToCluster();
-
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        final long msgCorrelationId = aeronCluster.nextCorrelationId();
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 
-        while (aeronCluster.offer(msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
+        final MutableLong msgCorrelationId = new MutableLong();
+        final MutableInteger messageCount = new MutableInteger();
+
+        final SessionMessageListener listener =
+            (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
+            {
+                assertThat(correlationId, is(msgCorrelationId.value));
+                assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg + "-scheduled"));
+
+                messageCount.value += 1;
+            };
+
+        container = launchTimedService();
+        aeronCluster = connectToCluster(listener);
+
+        msgCorrelationId.value = aeronCluster.nextCorrelationId();
+
+        while (aeronCluster.offer(msgCorrelationId.value, msgBuffer, 0, msg.length()) < 0)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
         }
 
-        final MutableInteger messageCount = new MutableInteger();
-        final EgressAdapter adapter = new EgressAdapter(
-            new StubEgressListener()
-            {
-                public void onMessage(
-                    final long correlationId,
-                    final long clusterSessionId,
-                    final long timestamp,
-                    final DirectBuffer buffer,
-                    final int offset,
-                    final int length,
-                    final Header header)
-                {
-                    assertThat(correlationId, is(msgCorrelationId));
-                    assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg + "-scheduled"));
-
-                    messageCount.value += 1;
-                }
-            },
-            aeronCluster.clusterSessionId(),
-            aeronCluster.egressSubscription(),
-            FRAGMENT_LIMIT);
-
         while (messageCount.get() == 0)
         {
-            if (adapter.poll() <= 0)
+            if (aeronCluster.pollEgress() <= 0)
             {
                 TestUtil.checkInterruptedStatus();
                 Thread.yield();
@@ -262,10 +242,11 @@ public class ClusterNodeTest
                 .errorHandler(Throwable::printStackTrace));
     }
 
-    private AeronCluster connectToCluster()
+    private AeronCluster connectToCluster(final SessionMessageListener sessionMessageListener)
     {
         return AeronCluster.connect(
             new AeronCluster.Context()
+                .sessionMessageListener(sessionMessageListener)
                 .ingressChannel("aeron:udp")
                 .clusterMemberEndpoints("localhost:9010", "localhost:9011", "localhost:9012"));
     }

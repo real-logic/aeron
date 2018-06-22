@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
@@ -41,7 +42,8 @@ import static org.agrona.SystemUtil.getDurationInNanos;
 public final class AeronCluster implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
-    private static final int FRAGMENT_LIMIT = 1;
+    private static final int CONNECT_FRAGMENT_LIMIT = 1;
+    private static final int SESSION_FRAGMENT_LIMIT = 1;
 
     private long lastCorrelationId = Aeron.NULL_VALUE;
     private final long clusterSessionId;
@@ -52,12 +54,17 @@ public final class AeronCluster implements AutoCloseable
     private final Publication publication;
     private final NanoClock nanoClock;
     private final IdleStrategy idleStrategy;
+
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionKeepAliveRequestEncoder keepAliveRequestEncoder = new SessionKeepAliveRequestEncoder();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
+    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
+    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment, 4096, true);
+    private final SessionMessageListener sessionMessageListener;
 
     /**
      * Connect to the cluster using default configuration.
@@ -95,6 +102,7 @@ public final class AeronCluster implements AutoCloseable
             this.idleStrategy = ctx.idleStrategy();
             this.nanoClock = aeron.context().nanoClock();
             this.isUnicast = ctx.clusterMemberEndpoints() != null;
+            this.sessionMessageListener = ctx.sessionMessageListener();
 
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
             this.subscription = subscription;
@@ -246,7 +254,6 @@ public final class AeronCluster implements AutoCloseable
         while (true)
         {
             final long result = publication.tryClaim(length, bufferClaim);
-
             if (result > 0)
             {
                 keepAliveRequestEncoder
@@ -272,6 +279,48 @@ public final class AeronCluster implements AutoCloseable
         return false;
     }
 
+    /**
+     * Poll the {@link #egressSubscription()} for session messages which are dispatched to
+     * {@link Context#sessionMessageListener()}.
+     * <p>
+     * <b>Note:</b> if {@link Context#sessionMessageListener()} is not set then a {@link NullPointerException} could
+     * result.
+     *
+     * @return the number of fragments processed.
+     */
+    public int pollEgress()
+    {
+        return subscription.poll(fragmentAssembler, SESSION_FRAGMENT_LIMIT);
+    }
+
+    private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    {
+        messageHeaderDecoder.wrap(buffer, offset);
+
+        final int templateId = messageHeaderDecoder.templateId();
+        if (SessionHeaderDecoder.TEMPLATE_ID == templateId)
+        {
+            sessionHeaderDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            final long sessionId = sessionHeaderDecoder.clusterSessionId();
+            if (sessionId == clusterSessionId)
+            {
+                sessionMessageListener.onMessage(
+                    sessionHeaderDecoder.correlationId(),
+                    sessionId,
+                    sessionHeaderDecoder.timestamp(),
+                    buffer,
+                    offset + SESSION_HEADER_LENGTH,
+                    length - SESSION_HEADER_LENGTH,
+                    header);
+            }
+        }
+    }
+
     private void closeSession()
     {
         idleStrategy.reset();
@@ -282,7 +331,6 @@ public final class AeronCluster implements AutoCloseable
         while (true)
         {
             final long result = publication.tryClaim(length, bufferClaim);
-
             if (result > 0)
             {
                 sessionCloseRequestEncoder
@@ -403,7 +451,7 @@ public final class AeronCluster implements AutoCloseable
     {
         final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
         long correlationId = sendConnectRequest(ctx.credentialsSupplier().encodedCredentials(), deadlineNs);
-        final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
+        final EgressPoller poller = new EgressPoller(subscription, CONNECT_FRAGMENT_LIMIT);
 
         while (true)
         {
@@ -709,6 +757,7 @@ public final class AeronCluster implements AutoCloseable
         private boolean ownsAeronClient = false;
         private boolean isIngressExclusive = true;
         private ErrorHandler errorHandler = Aeron.DEFAULT_ERROR_HANDLER;
+        private SessionMessageListener sessionMessageListener;
 
         /**
          * Perform a shallow copy of the object.
@@ -1061,6 +1110,31 @@ public final class AeronCluster implements AutoCloseable
         public Context errorHandler(final ErrorHandler errorHandler)
         {
             this.errorHandler = errorHandler;
+            return this;
+        }
+
+        /**
+         * Get the {@link SessionMessageListener} function that will be called when polling for egress via
+         * {@link AeronCluster#pollEgress()}.
+         *
+         * @return the {@link SessionMessageListener} function that will be called when polling for egress via
+         *         {@link AeronCluster#pollEgress()}.
+         */
+        public SessionMessageListener sessionMessageListener()
+        {
+            return sessionMessageListener;
+        }
+
+        /**
+         * Get the {@link SessionMessageListener} function that will be called when polling for egress via
+         * {@link AeronCluster#pollEgress()}.
+         *
+         * @param listener function that will be called when polling for egress via {@link AeronCluster#pollEgress()}.
+         * @return this for a fluent API.
+         */
+        public Context sessionMessageListener(final SessionMessageListener listener)
+        {
+            this.sessionMessageListener = listener;
             return this;
         }
 

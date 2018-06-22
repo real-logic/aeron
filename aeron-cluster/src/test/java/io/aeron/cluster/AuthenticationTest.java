@@ -15,13 +15,11 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.AuthenticationException;
 import io.aeron.cluster.client.CredentialsSupplier;
-import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -57,8 +55,6 @@ public class AuthenticationTest
 
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private AeronCluster aeronCluster;
-    private SessionDecorator sessionDecorator;
-    private Publication publication;
 
     private final byte[] encodedCredentials = CREDENTIALS_STRING.getBytes();
     private final byte[] encodedChallenge = CHALLENGE_STRING.getBytes();
@@ -421,10 +417,10 @@ public class AuthenticationTest
 
     private void sendCountedMessageIntoCluster(final int value)
     {
-        final long msgCorrelationId = sessionDecorator.nextCorrelationId();
+        final long msgCorrelationId = aeronCluster.nextCorrelationId();
         msgBuffer.putInt(0, value);
 
-        while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, SIZE_OF_INT) < 0)
+        while (aeronCluster.offer(msgCorrelationId, msgBuffer, 0, SIZE_OF_INT) < 0)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
@@ -478,10 +474,7 @@ public class AuthenticationTest
     private void connectClient(final CredentialsSupplier credentialsSupplier)
     {
         aeronCluster = null;
-
         aeronCluster = connectToCluster(credentialsSupplier);
-        sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
-        publication = aeronCluster.ingressPublication();
     }
 
     private void launchClusteredMediaDriver(final AuthenticatorSupplier authenticatorSupplier)

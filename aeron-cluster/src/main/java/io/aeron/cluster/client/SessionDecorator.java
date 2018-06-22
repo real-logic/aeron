@@ -111,8 +111,7 @@ public class SessionDecorator
         final int offset,
         final int length)
     {
-        sessionHeaderEncoder.correlationId(correlationId);
-        sessionHeaderEncoder.timestamp(0L);
+        sessionHeaderEncoder.correlationId(correlationId).timestamp(Aeron.NULL_VALUE);
         messageBuffer.reset(buffer, offset, length);
 
         return publication.offer(vectors, null);
@@ -137,8 +136,7 @@ public class SessionDecorator
         final int offset,
         final int length)
     {
-        sessionHeaderEncoder.correlationId(correlationId);
-        sessionHeaderEncoder.timestamp(timestampMs);
+        sessionHeaderEncoder.correlationId(correlationId).timestamp(timestampMs);
         messageBuffer.reset(buffer, offset, length);
 
         return publication.offer(vectors, null);

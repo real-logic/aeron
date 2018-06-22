@@ -15,12 +15,10 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressAdapter;
-import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -96,15 +94,12 @@ public class ClusterNodeTest
         container = launchEchoService();
         aeronCluster = connectToCluster();
 
-        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
-        final Publication publication = aeronCluster.ingressPublication();
-
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        final long msgCorrelationId = sessionDecorator.nextCorrelationId();
+        final long msgCorrelationId = aeronCluster.nextCorrelationId();
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 
-        while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
+        while (aeronCluster.offer(msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
@@ -149,15 +144,12 @@ public class ClusterNodeTest
         container = launchTimedService();
         aeronCluster = connectToCluster();
 
-        final SessionDecorator sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
-        final Publication publication = aeronCluster.ingressPublication();
-
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        final long msgCorrelationId = sessionDecorator.nextCorrelationId();
+        final long msgCorrelationId = aeronCluster.nextCorrelationId();
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 
-        while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
+        while (aeronCluster.offer(msgCorrelationId, msgBuffer, 0, msg.length()) < 0)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();

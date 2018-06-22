@@ -21,7 +21,6 @@ import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -56,8 +55,6 @@ public class ClusterNodeRestartTest
 
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private AeronCluster aeronCluster;
-    private SessionDecorator sessionDecorator;
-    private Publication publication;
     private final AtomicReference<String> serviceState = new AtomicReference<>();
     private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final AtomicLong snapshotCount = new AtomicLong();
@@ -317,12 +314,12 @@ public class ClusterNodeRestartTest
 
     private void sendCountedMessageIntoCluster(final int value)
     {
-        final long msgCorrelationId = sessionDecorator.nextCorrelationId();
+        final long msgCorrelationId = aeronCluster.nextCorrelationId();
         msgBuffer.putInt(0, value);
 
         while (true)
         {
-            final long result = sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, SIZE_OF_INT);
+            final long result = aeronCluster.offer(msgCorrelationId, msgBuffer, 0, SIZE_OF_INT);
             if (result > 0)
             {
                 break;
@@ -415,10 +412,7 @@ public class ClusterNodeRestartTest
     private void connectClient()
     {
         aeronCluster = null;
-
         aeronCluster = connectToCluster();
-        sessionDecorator = new SessionDecorator(aeronCluster.clusterSessionId());
-        publication = aeronCluster.ingressPublication();
     }
 
     private void launchClusteredMediaDriver(final boolean initialLaunch)

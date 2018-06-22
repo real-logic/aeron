@@ -20,11 +20,13 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
 
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.cluster.client.SessionDecorator.SESSION_HEADER_LENGTH;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -53,6 +55,9 @@ public final class AeronCluster implements AutoCloseable
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionKeepAliveRequestEncoder keepAliveRequestEncoder = new SessionKeepAliveRequestEncoder();
+    private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
+    private final DirectBufferVector[] vectors = new DirectBufferVector[2];
+    private final DirectBufferVector messageBuffer = new DirectBufferVector();
 
     /**
      * Connect to the cluster using default configuration.
@@ -98,6 +103,15 @@ public final class AeronCluster implements AutoCloseable
             this.publication = publication;
 
             this.clusterSessionId = openSession();
+
+            final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
+            sessionHeaderEncoder
+                .wrapAndApplyHeader(headerBuffer, 0, messageHeaderEncoder)
+                .clusterSessionId(clusterSessionId)
+                .timestamp(Aeron.NULL_VALUE);
+
+            vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
+            vectors[1] = messageBuffer;
         }
         catch (final Exception ex)
         {
@@ -197,6 +211,25 @@ public final class AeronCluster implements AutoCloseable
     public Subscription egressSubscription()
     {
         return subscription;
+    }
+
+    /**
+     * Non-blocking publish of a partial buffer containing a message plus session header to a cluster.
+     * <p>
+     * This version of the method will set the timestamp value in the header to zero.
+     *
+     * @param correlationId to be used to identify the message to the cluster.
+     * @param buffer        containing message.
+     * @param offset        offset in the buffer at which the encoded message begins.
+     * @param length        in bytes of the encoded message.
+     * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
+     */
+    public long offer(final long correlationId, final DirectBuffer buffer, final int offset, final int length)
+    {
+        sessionHeaderEncoder.correlationId(correlationId);
+        messageBuffer.reset(buffer, offset, length);
+
+        return publication.offer(vectors, null);
     }
 
     /**

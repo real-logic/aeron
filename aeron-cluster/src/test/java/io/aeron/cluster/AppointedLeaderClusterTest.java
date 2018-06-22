@@ -16,14 +16,12 @@
 package io.aeron.cluster;
 
 import io.aeron.CommonContext;
-import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressAdapter;
-import io.aeron.cluster.client.SessionDecorator;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
@@ -163,9 +161,6 @@ public class AppointedLeaderClusterTest
     @Test(timeout = 10_000)
     public void shouldEchoMessagesViaService() throws InterruptedException
     {
-        final SessionDecorator sessionDecorator = new SessionDecorator(client.clusterSessionId());
-        final Publication publication = client.ingressPublication();
-
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final long msgCorrelationId = client.nextCorrelationId();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
@@ -178,7 +173,7 @@ public class AppointedLeaderClusterTest
 
         for (int i = 0; i < MESSAGE_COUNT; i++)
         {
-            while (sessionDecorator.offer(publication, msgCorrelationId, msgBuffer, 0, MSG.length()) < 0)
+            while (client.offer(msgCorrelationId, msgBuffer, 0, MSG.length()) < 0)
             {
                 TestUtil.checkInterruptedStatus();
                 Thread.yield();

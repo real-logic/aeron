@@ -38,7 +38,7 @@ public class SessionDecorator
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
 
-    private long lastCorrelationId = Aeron.NULL_VALUE;
+    private long lastCorrelationId;
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
     private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
@@ -50,6 +50,17 @@ public class SessionDecorator
      */
     public SessionDecorator(final long clusterSessionId)
     {
+        this(clusterSessionId, Aeron.NULL_VALUE);
+    }
+
+    /**
+     * Construct a new session header wrapper.
+     *
+     * @param clusterSessionId that has been allocated by the cluster.
+     * @param lastCorrelationId the last correlation id that was sent to the cluster with this session.
+     */
+    public SessionDecorator(final long clusterSessionId, final long lastCorrelationId)
+    {
         final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
         sessionHeaderEncoder
             .wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder())
@@ -58,6 +69,8 @@ public class SessionDecorator
 
         vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
         vectors[1] = messageBuffer;
+
+        this.lastCorrelationId = lastCorrelationId;
     }
 
     /**

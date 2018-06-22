@@ -17,7 +17,6 @@ package io.aeron.cluster.client;
 
 import io.aeron.*;
 import io.aeron.cluster.codecs.*;
-import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
@@ -36,6 +35,8 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  * A client will connect to open a session and then offer ingress messages which are replicated to clustered service
  * for reliability. If the clustered service responds then these response messages and events come back via the egress
  * stream.
+ * <p>
+ * <b>Note:</b> Instances of this class are not threadsafe.
  */
 public final class AeronCluster implements AutoCloseable
 {
@@ -528,7 +529,7 @@ public final class AeronCluster implements AutoCloseable
             result == Publication.CLOSED ||
             result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new AeronException("unexpected publication state: " + result);
+            throw new ClusterException("unexpected publication state: " + result);
         }
     }
 

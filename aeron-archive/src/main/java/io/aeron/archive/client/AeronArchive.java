@@ -19,7 +19,6 @@ import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.SourceLocation;
-import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.*;
@@ -347,7 +346,7 @@ public class AeronArchive implements AutoCloseable
 
     /**
      * Add a {@link Publication} and set it up to be recorded. If this is not the first,
-     * i.e. {@link Publication#isOriginal()} is true,  then an {@link AeronException}
+     * i.e. {@link Publication#isOriginal()} is true,  then an {@link ArchiveException}
      * will be thrown and the recording not initiated.
      * <p>
      * This is a sessionId specific recording.
@@ -365,7 +364,7 @@ public class AeronArchive implements AutoCloseable
             publication = aeron.addPublication(channel, streamId);
             if (!publication.isOriginal())
             {
-                throw new AeronException(
+                throw new ArchiveException(
                     "publication already added for channel=" + channel + " streamId=" + streamId);
             }
 

@@ -16,21 +16,13 @@
 package io.aeron.cluster.client;
 
 import io.aeron.cluster.codecs.EventCode;
-import io.aeron.logbuffer.Header;
-import org.agrona.DirectBuffer;
 
-public interface EgressListener
+/**
+ * Interface for consuming messages coming from the cluster that also include administrative events.
+ */
+public interface EgressListener extends SessionMessageListener
 {
     void sessionEvent(long correlationId, long clusterSessionId, EventCode code, String detail);
 
     void newLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String memberEndpoints);
-
-    void onMessage(
-        long correlationId,
-        long clusterSessionId,
-        long timestamp,
-        DirectBuffer buffer,
-        int offset,
-        int length,
-        Header header);
 }

@@ -53,7 +53,8 @@ public class SessionDecorator
         final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
         sessionHeaderEncoder
             .wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder())
-            .clusterSessionId(clusterSessionId);
+            .clusterSessionId(clusterSessionId)
+            .timestamp(Aeron.NULL_VALUE);
 
         vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
         vectors[1] = messageBuffer;
@@ -111,32 +112,7 @@ public class SessionDecorator
         final int offset,
         final int length)
     {
-        sessionHeaderEncoder.correlationId(correlationId).timestamp(Aeron.NULL_VALUE);
-        messageBuffer.reset(buffer, offset, length);
-
-        return publication.offer(vectors, null);
-    }
-
-    /**
-     * Non-blocking publish of a partial buffer containing a message plus session header to a cluster.
-     *
-     * @param publication   to be offer to.
-     * @param correlationId to be used to identify the message to the cluster.
-     * @param timestampMs   for the message.
-     * @param buffer        containing message.
-     * @param offset        offset in the buffer at which the encoded message begins.
-     * @param length        in bytes of the encoded message.
-     * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
-     */
-    public long offer(
-        final Publication publication,
-        final long correlationId,
-        final long timestampMs,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length)
-    {
-        sessionHeaderEncoder.correlationId(correlationId).timestamp(timestampMs);
+        sessionHeaderEncoder.correlationId(correlationId);
         messageBuffer.reset(buffer, offset, length);
 
         return publication.offer(vectors, null);

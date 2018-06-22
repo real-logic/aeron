@@ -42,6 +42,7 @@ public final class AeronCluster implements AutoCloseable
     private static final int SEND_ATTEMPTS = 3;
     private static final int FRAGMENT_LIMIT = 1;
 
+    private long lastCorrelationId = Aeron.NULL_VALUE;
     private final long clusterSessionId;
     private final boolean isUnicast;
     private final Context ctx;
@@ -159,6 +160,29 @@ public final class AeronCluster implements AutoCloseable
     public long clusterSessionId()
     {
         return clusterSessionId;
+    }
+
+    /**
+     * Get the last correlation id generated for this session. Starts with {@link Aeron#NULL_VALUE}.
+     *
+     * @return the last correlation id generated for this session.
+     * @see #nextCorrelationId()
+     */
+    public long lastCorrelationId()
+    {
+        return lastCorrelationId;
+    }
+
+    /**
+     * Generate a new correlation id to be used for this session. This is not threadsafe. If you require a threadsafe
+     * correlation id generation then use {@link Aeron#nextCorrelationId()}.
+     *
+     * @return  a new correlation id to be used for this session.
+     * @see #lastCorrelationId()
+     */
+    public long nextCorrelationId()
+    {
+        return ++lastCorrelationId;
     }
 
     /**
@@ -412,7 +436,7 @@ public final class AeronCluster implements AutoCloseable
 
     private long sendConnectRequest(final byte[] encodedCredentials, final long deadlineNs)
     {
-        final long correlationId = aeron.nextCorrelationId();
+        lastCorrelationId = aeron.nextCorrelationId();
 
         final SessionConnectRequestEncoder sessionConnectRequestEncoder = new SessionConnectRequestEncoder();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
@@ -431,7 +455,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 sessionConnectRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
+                    .correlationId(lastCorrelationId)
                     .responseStreamId(ctx.egressStreamId())
                     .responseChannel(ctx.egressChannel())
                     .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
@@ -454,12 +478,12 @@ public final class AeronCluster implements AutoCloseable
             idleStrategy.idle();
         }
 
-        return correlationId;
+        return lastCorrelationId;
     }
 
     private long sendChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long deadlineNs)
     {
-        final long correlationId = aeron.nextCorrelationId();
+        lastCorrelationId = aeron.nextCorrelationId();
 
         final ChallengeResponseEncoder challengeResponseEncoder = new ChallengeResponseEncoder();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
@@ -476,7 +500,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 challengeResponseEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
+                    .correlationId(lastCorrelationId)
                     .clusterSessionId(sessionId)
                     .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
@@ -495,7 +519,7 @@ public final class AeronCluster implements AutoCloseable
             idleStrategy.idle();
         }
 
-        return correlationId;
+        return lastCorrelationId;
     }
 
     private static void checkResult(final long result)

@@ -169,7 +169,7 @@ public class AppointedLeaderClusterTest
         final Publication publication = client.ingressPublication();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        final long msgCorrelationId = sessionDecorator.nextCorrelationId();
+        final long msgCorrelationId = client.nextCorrelationId();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
 
         final EchoConsumer consumer = new EchoConsumer(client.egressSubscription(), client.clusterSessionId());

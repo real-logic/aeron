@@ -24,7 +24,7 @@ import org.agrona.DirectBuffer;
 
 import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
 
-class SnapshotLoader implements ControlledFragmentHandler
+class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
 {
     private static final int FRAGMENT_LIMIT = 10;
 
@@ -38,7 +38,7 @@ class SnapshotLoader implements ControlledFragmentHandler
     private final Image image;
     private final SequencerAgent sequencerAgent;
 
-    SnapshotLoader(final Image image, final SequencerAgent agent)
+    ConsensusModuleSnapshotLoader(final Image image, final SequencerAgent agent)
     {
         this.image = image;
         this.sequencerAgent = agent;

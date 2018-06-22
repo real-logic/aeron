@@ -1237,7 +1237,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
         {
             final Image image = awaitImage(sessionId, subscription);
-            final SnapshotLoader snapshotLoader = new SnapshotLoader(image, this);
+            final ConsensusModuleSnapshotLoader snapshotLoader = new ConsensusModuleSnapshotLoader(image, this);
 
             while (true)
             {

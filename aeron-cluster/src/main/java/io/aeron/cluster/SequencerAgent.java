@@ -109,7 +109,7 @@ class SequencerAgent implements Agent, MemberStatusListener
     private RecordingLog.RecoveryPlan recoveryPlan;
     private Election election;
     private String logRecordingChannel;
-    private String memberEndpointsDetail;
+    private String clientFacingEndpoints;
 
     SequencerAgent(final ConsensusModule.Context ctx)
     {
@@ -854,7 +854,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             clusterMember.isLeader(clusterMember.id() == leaderMember.id());
         }
 
-        updateClientConnectDetails(clusterMembers, leaderMember.id());
+        updateClientFacingEndpoints(clusterMembers, leaderMember.id());
     }
 
     Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel, final long logPosition)
@@ -1195,7 +1195,7 @@ class SequencerAgent implements Agent, MemberStatusListener
 
     private void sendNewLeaderEvent(final ClusterSession session)
     {
-        if (egressPublisher.newLeader(session, leadershipTermId, leaderMember.id(), memberEndpointsDetail))
+        if (egressPublisher.newLeader(session, leadershipTermId, leaderMember.id(), clientFacingEndpoints))
         {
             session.hasNewLeaderEventPending(false);
         }
@@ -1368,7 +1368,7 @@ class SequencerAgent implements Agent, MemberStatusListener
         }
     }
 
-    private void updateClientConnectDetails(final ClusterMember[] members, final int leaderMemberId)
+    private void updateClientFacingEndpoints(final ClusterMember[] members, final int leaderMemberId)
     {
         final StringBuilder builder = new StringBuilder(100);
         builder.append(members[leaderMemberId].clientFacingEndpoint());
@@ -1381,7 +1381,7 @@ class SequencerAgent implements Agent, MemberStatusListener
             }
         }
 
-        memberEndpointsDetail = builder.toString();
+        clientFacingEndpoints = builder.toString();
     }
 
     private int updateMemberPosition(final long nowMs)

@@ -236,7 +236,20 @@ class Election implements AutoCloseable
 
         if (State.LEADER_READY == state && logLeadershipTermId < leadershipTermId)
         {
-            publishNewLeadershipTerm(clusterMembers[followerMemberId].publication());
+            if (this.logLeadershipTermId == logLeadershipTermId)
+            {
+                publishNewLeadershipTerm(clusterMembers[followerMemberId].publication());
+            }
+            else
+            {
+                memberStatusPublisher.newLeadershipTerm(
+                    clusterMembers[followerMemberId].publication(),
+                    logLeadershipTermId,
+                    consensusModuleAgent.logStopPosition(logLeadershipTermId),
+                    logLeadershipTermId + 1,
+                    thisMember.id(),
+                    logSessionId);
+            }
         }
         else if (State.CANVASS != state && logLeadershipTermId > leadershipTermId)
         {
@@ -321,9 +334,13 @@ class Election implements AutoCloseable
         }
         else if (0 != compareLog(this.logLeadershipTermId, this.logPosition, logLeadershipTermId, logPosition))
         {
-            if (this.logLeadershipTermId < logLeadershipTermId)
+            if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
             {
-                this.leadershipTermId = this.logLeadershipTermId;
+                consensusModuleAgent.truncateLogEntryAndAbort(logLeadershipTermId, logPosition);
+            }
+            else if (this.logLeadershipTermId < logLeadershipTermId)
+            {
+                this.leadershipTermId = leadershipTermId;
                 this.candidateTermId = NULL_VALUE;
                 leaderMember = clusterMembers[leaderMemberId];
                 this.logSessionId = logSessionId;
@@ -332,8 +349,6 @@ class Election implements AutoCloseable
 
                 state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
             }
-
-            // TODO: state may be out of step which requires log truncation and recovery.
         }
     }
 
@@ -350,9 +365,18 @@ class Election implements AutoCloseable
 
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
-        if (leadershipTermId > this.leadershipTermId)
+        if (State.FOLLOWER_BALLOT == state && leadershipTermId > this.leadershipTermId)
         {
-            // TODO: query leader recording log and catch up
+            if (this.logPosition > logPosition)
+            {
+                consensusModuleAgent.truncateLogEntryAndAbort(logLeadershipTermId, logPosition);
+            }
+            else
+            {
+                catchupLogPosition = logPosition;
+
+                state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
+            }
         }
     }
 
@@ -723,18 +747,6 @@ class Election implements AutoCloseable
     {
         return memberStatusPublisher.catchupPosition(
             leaderMember.publication(), leadershipTermId, logPosition, thisMember.id());
-    }
-
-    private void ensureSubscriptionsCreated()
-    {
-        if (null == logSubscription)
-        {
-            final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
-
-            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(
-                logChannelUri.toString(), logPosition);
-            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId);
-        }
     }
 
     private void addLiveLogDestination()

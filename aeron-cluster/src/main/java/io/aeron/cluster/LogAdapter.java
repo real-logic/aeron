@@ -72,27 +72,30 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
-
         final int templateId = messageHeaderDecoder.templateId();
+
+        if (templateId == SessionHeaderDecoder.TEMPLATE_ID)
+        {
+            sessionHeaderDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            consensusModuleAgent.onReplaySessionMessage(
+                sessionHeaderDecoder.correlationId(),
+                sessionHeaderDecoder.clusterSessionId(),
+                sessionHeaderDecoder.timestamp(),
+                buffer,
+                offset + SESSION_HEADER_LENGTH,
+                length - SESSION_HEADER_LENGTH,
+                header);
+
+            return Action.CONTINUE;
+        }
+
         switch (templateId)
         {
-            case SessionHeaderDecoder.TEMPLATE_ID:
-                sessionHeaderDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                consensusModuleAgent.onReplaySessionMessage(
-                    sessionHeaderDecoder.correlationId(),
-                    sessionHeaderDecoder.clusterSessionId(),
-                    sessionHeaderDecoder.timestamp(),
-                    buffer,
-                    offset + SESSION_HEADER_LENGTH,
-                    length - SESSION_HEADER_LENGTH,
-                    header);
-                break;
-
             case TimerEventDecoder.TEMPLATE_ID:
                 timerEventDecoder.wrap(
                     buffer,

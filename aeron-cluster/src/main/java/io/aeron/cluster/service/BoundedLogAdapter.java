@@ -74,29 +74,34 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         return image.boundedControlledPoll(fragmentAssembler, upperBound.get(), FRAGMENT_LIMIT);
     }
 
+    @SuppressWarnings("MethodLength")
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
+        final int templateId = messageHeaderDecoder.templateId();
 
-        switch (messageHeaderDecoder.templateId())
+        if (templateId == SessionHeaderDecoder.TEMPLATE_ID)
         {
-            case SessionHeaderDecoder.TEMPLATE_ID:
-                sessionHeaderDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+            sessionHeaderDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
 
-                agent.onSessionMessage(
-                    sessionHeaderDecoder.clusterSessionId(),
-                    sessionHeaderDecoder.correlationId(),
-                    sessionHeaderDecoder.timestamp(),
-                    buffer,
-                    offset + ClientSession.SESSION_HEADER_LENGTH,
-                    length - ClientSession.SESSION_HEADER_LENGTH,
-                    header);
-                break;
+            agent.onSessionMessage(
+                sessionHeaderDecoder.clusterSessionId(),
+                sessionHeaderDecoder.correlationId(),
+                sessionHeaderDecoder.timestamp(),
+                buffer,
+                offset + ClientSession.SESSION_HEADER_LENGTH,
+                length - ClientSession.SESSION_HEADER_LENGTH,
+                header);
 
+            return Action.CONTINUE;
+        }
+
+        switch (templateId)
+        {
             case TimerEventDecoder.TEMPLATE_ID:
                 timerEventDecoder.wrap(
                     buffer,

@@ -28,7 +28,7 @@ import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
 /**
  * Allocates {@link UnsafeBufferPosition} counters on a stream of messages. Positions tracked in bytes include:
  * <ul>
- * <li>{@link PublisherPos}: Highest position on a {@link io.aeron.Publication} reached for offers and claims.</li>
+ * <li>{@link PublisherPos}: Highest position on a {@link io.aeron.Publication} reached for offers and claims as an approximation sampled once per second.</li>
  * <li>{@link PublisherLimit}: Limit for flow controlling a {@link io.aeron.Publication} offers and claims.</li>
  * <li>{@link SenderPos}: Highest position on a {@link io.aeron.Publication} stream sent to the media.</li>
  * <li>{@link SenderLimit}: Limit for flow controlling a {@link io.aeron.driver.Sender} of a stream.</li>
@@ -36,6 +36,8 @@ import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
  * <li>{@link ReceiverPos}: Highest contiguous position rebuilt by the Receiver on an {@link io.aeron.Image} of a stream.</li>
  * <li>{@link SubscriberPos}: Consumption position on an {@link io.aeron.Image} of a stream by individual Subscriber.</li>
  * </ul>
+ * <b>Note:</b> All counters are real-time with the exception of {@link PublisherPos} which is sampled once per second
+ * so it can be behind.
  */
 public class StreamPositionCounter
 {

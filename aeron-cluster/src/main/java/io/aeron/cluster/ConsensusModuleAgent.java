@@ -974,6 +974,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 }
             }
 
+            final long appendedPosition = this.appendedPosition.get();
+            if (appendedPosition != lastAppendedPosition)
+            {
+                final Publication publication = election.leader().publication();
+                if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, appendedPosition, memberId))
+                {
+                    lastAppendedPosition = appendedPosition;
+                }
+            }
+
             commitPosition.setOrdered(image.position());
 
             consensusModuleAdapter.poll();

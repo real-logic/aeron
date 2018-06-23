@@ -60,13 +60,7 @@ class Election implements AutoCloseable
 
         FOLLOWER_CATCHUP_TRANSITION(7),
 
-        FOLLOWER_CATCHUP(8)
-        {
-            void exit(final Election election)
-            {
-                election.closeCatchUp();
-            }
-        },
+        FOLLOWER_CATCHUP(8),
 
         FOLLOWER_TRANSITION(9),
 
@@ -128,7 +122,6 @@ class Election implements AutoCloseable
     private final AeronArchive localArchive;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final Random random;
-    private final String replayDestination;
 
     private long timeOfLastStateChangeMs;
     private long timeOfLastUpdateMs;
@@ -143,6 +136,7 @@ class Election implements AutoCloseable
     private State state = State.INIT;
     private Counter stateCounter;
     private Subscription logSubscription;
+    private String replayDestination;
 
     Election(
         final boolean isStartup,
@@ -170,15 +164,17 @@ class Election implements AutoCloseable
         this.localArchive = localArchive;
         this.consensusModuleAgent = consensusModuleAgent;
         this.random = ctx.random();
-        this.replayDestination = new ChannelUriStringBuilder()
-            .media(CommonContext.UDP_MEDIA)
-            .endpoint(thisMember.transferEndpoint())
-            .build();
     }
 
     public void close()
     {
         CloseHelper.close(stateCounter);
+
+        if (null != logSubscription && null != replayDestination)
+        {
+            logSubscription.removeDestination(replayDestination);
+            replayDestination = null;
+        }
     }
 
     int doWork(final long nowMs)
@@ -369,12 +365,6 @@ class Election implements AutoCloseable
 
             ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
         }
-    }
-
-    void closeCatchUp()
-    {
-//        CloseHelper.close(logCatchup);
-//        logCatchup = null;
     }
 
     void isStartup(final boolean isStartup)
@@ -611,6 +601,12 @@ class Election implements AutoCloseable
             logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(
                 logChannelUri.toString(), logPosition);
             consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId);
+
+            replayDestination = new ChannelUriStringBuilder()
+                .media(CommonContext.UDP_MEDIA)
+                .endpoint(thisMember.transferEndpoint())
+                .build();
+
             logSubscription.addDestination(replayDestination);
         }
 
@@ -631,6 +627,7 @@ class Election implements AutoCloseable
         {
             logPosition = catchupLogPosition;
             logSubscription.removeDestination(replayDestination);
+            replayDestination = null;
 
             state(State.FOLLOWER_TRANSITION, nowMs);
             workCount += 1;

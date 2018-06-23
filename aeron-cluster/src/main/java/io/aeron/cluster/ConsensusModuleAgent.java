@@ -941,6 +941,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
     }
 
+    void truncateLogEntryAndAbort(final long leadershipTermId, final long logPosition)
+    {
+        // TODO: this is brutal. Need to handle the service.
+        archive.truncateRecording(logRecordingId(), logPosition);
+        recordingLog.commitLogPosition(leadershipTermId, logPosition);
+        state(ConsensusModule.State.CLOSED);
+        ctx.terminationHook().run();
+    }
+
     boolean electionComplete(final long nowMs)
     {
         boolean result = false;

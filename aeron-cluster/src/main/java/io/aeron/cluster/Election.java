@@ -312,7 +312,7 @@ class Election implements AutoCloseable
             }
             else if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
             {
-                // TODO: truncate to logPosition for recording and abort
+                consensusModuleAgent.truncateLogEntryAndAbort(logLeadershipTermId, logPosition);
             }
             else
             {

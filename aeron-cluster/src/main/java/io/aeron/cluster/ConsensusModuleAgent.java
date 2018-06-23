@@ -872,11 +872,37 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return subscription;
     }
 
+    boolean pollImageAndLogAdapter(final Subscription subscription, final int logSessionId)
+    {
+        boolean result = false;
+
+        if (null == logAdapter)
+        {
+            final Image image = subscription.imageBySessionId(logSessionId);
+            if (null != image)
+            {
+                logAdapter = new LogAdapter(image, this);
+                lastAppendedPosition = 0;
+                createAppendPosition(logSessionId);
+
+                result = true;
+            }
+        }
+        else
+        {
+            result = true;
+        }
+
+        return result;
+    }
+
     void awaitImageAndCreateFollowerLogAdapter(final Subscription subscription, final int logSessionId)
     {
-        logAdapter = new LogAdapter(awaitImage(logSessionId, subscription), this);
-        lastAppendedPosition = 0;
-        createAppendPosition(logSessionId);
+        idleStrategy.reset();
+        while (!pollImageAndLogAdapter(subscription, logSessionId))
+        {
+            idle();
+        }
     }
 
     void awaitServicesReady(final ChannelUri logChannelUri, final int logSessionId)
@@ -924,9 +950,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return result;
     }
 
-    void catchupLogPoll(final long stopPosition)
+    void catchupLogPoll(final Subscription logSubscription, final int logSessionId, final long stopPosition)
     {
-        if (null != logAdapter)
+        if (pollImageAndLogAdapter(logSubscription, logSessionId))
         {
             expectedAckPosition = stopPosition;
 

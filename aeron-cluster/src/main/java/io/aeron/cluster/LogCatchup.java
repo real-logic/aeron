@@ -43,7 +43,6 @@ class LogCatchup implements AutoCloseable
 
     private final MemberStatusPublisher memberStatusPublisher;
     private final ClusterMember[] clusterMembers;
-    private final ConsensusModuleAgent consensusModuleAgent;
     private final ConsensusModule.Context context;
     private final int leaderMemberId;
     private final int memberId;
@@ -58,7 +57,6 @@ class LogCatchup implements AutoCloseable
     private final long leadershipTermId;
     private final long fromPosition;
     private final long localRecordingId;
-    private final int logSessionId;
     private long targetPosition = NULL_POSITION;
     private long leaderRecordingId = Aeron.NULL_VALUE;
     private long activeCorrelationId = Aeron.NULL_VALUE;
@@ -71,23 +69,19 @@ class LogCatchup implements AutoCloseable
         final ClusterMember[] clusterMembers,
         final int leaderMemberId,
         final int memberId,
-        final int logSessionId,
         final long leadershipTermId,
         final long logRecordingId,
         final long logPosition,
-        final ConsensusModuleAgent consensusModuleAgent,
         final ConsensusModule.Context context)
     {
         this.localArchive = localArchive;
         this.memberStatusPublisher = memberStatusPublisher;
         this.clusterMembers = clusterMembers;
-        this.consensusModuleAgent = consensusModuleAgent;
         this.context = context;
         this.leaderMemberId = leaderMemberId;
         this.memberId = memberId;
         this.leadershipTermId = leadershipTermId;
         this.localRecordingId = logRecordingId;
-        this.logSessionId = logSessionId;
         this.fromPosition = logPosition;
     }
 
@@ -280,8 +274,6 @@ class LogCatchup implements AutoCloseable
         }
         else if (pollForResponse(leaderArchive, activeCorrelationId))
         {
-            consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
-
             state(State.AWAIT_TRANSFER);
             activeCorrelationId = Aeron.NULL_VALUE;
             workCount += 1;

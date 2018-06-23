@@ -133,6 +133,7 @@ class Election implements AutoCloseable
     private long timeOfLastUpdateMs;
     private long nominationDeadlineMs;
     private long logPosition;
+    private long catchupLogPosition = NULL_POSITION;
     private long leadershipTermId;
     private long logLeadershipTermId;
     private long candidateTermId = NULL_VALUE;
@@ -304,22 +305,26 @@ class Election implements AutoCloseable
             leaderMember = clusterMembers[leaderMemberId];
             this.logSessionId = logSessionId;
 
-            if (this.logPosition < logPosition && null == logCatchup)
+            if (this.logPosition < logPosition && NULL_POSITION == catchupLogPosition)
             {
+                catchupLogPosition = logPosition;
+
                 logCatchup = new LogCatchup(
                     localArchive,
                     memberStatusPublisher,
                     clusterMembers,
                     leaderMemberId,
                     thisMember.id(),
-                    logSessionId,
                     leadershipTermId,
                     consensusModuleAgent.logRecordingId(),
                     this.logPosition,
-                    consensusModuleAgent,
                     ctx);
 
                 state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
+            }
+            else if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
+            {
+                // TODO: truncate to logPosition for recording and abort
             }
             else
             {
@@ -341,11 +346,9 @@ class Election implements AutoCloseable
                     clusterMembers,
                     leaderMemberId,
                     thisMember.id(),
-                    logSessionId,
                     leadershipTermId,
                     consensusModuleAgent.logRecordingId(),
                     this.logPosition,
-                    consensusModuleAgent,
                     ctx);
 
                 state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
@@ -635,18 +638,14 @@ class Election implements AutoCloseable
 
         if (!logCatchup.isDone())
         {
-            workCount += memberStatusAdapter.poll();
             workCount += logCatchup.doWork();
-            consensusModuleAgent.catchupLogPoll(logCatchup.targetPosition());
+            consensusModuleAgent.catchupLogPoll(logSubscription, logSessionId, logCatchup.targetPosition());
         }
         else
         {
             logPosition = logCatchup.targetPosition();
 
-            addLiveLogDestination(false);
-            appendTerm(nowMs);
-
-            state(State.FOLLOWER_READY, nowMs);
+            state(State.FOLLOWER_TRANSITION, nowMs);
             workCount += 1;
         }
 
@@ -656,9 +655,10 @@ class Election implements AutoCloseable
     private int followerTransition(final long nowMs)
     {
         ensureSubscriptionsCreated();
-
-        addLiveLogDestination(true);
-        appendTerm(nowMs);
+        addLiveLogDestination();
+        consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
+        ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
+        ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
 
         state(State.FOLLOWER_READY, nowMs);
 
@@ -729,35 +729,22 @@ class Election implements AutoCloseable
 
     private void ensureSubscriptionsCreated()
     {
-        final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
+        if (null == logSubscription)
+        {
+            final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
 
-        logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(
-            logChannelUri.toString(), logPosition);
-        consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId);
+            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(
+                logChannelUri.toString(), logPosition);
+            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId);
+        }
     }
 
-    private void ensureLogImageAvailable()
-    {
-        consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
-    }
-
-    private void addLiveLogDestination(final boolean ensureImageAvailable)
+    private void addLiveLogDestination()
     {
         consensusModuleAgent.updateMemberDetails();
 
         final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
         logSubscription.addDestination(channelUri.toString());
-
-        if (ensureImageAvailable)
-        {
-            ensureLogImageAvailable();
-        }
-    }
-
-    private void appendTerm(final long nowMs)
-    {
-        ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
-        ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
     }
 
     private static ChannelUri followerLogChannel(final String logChannel, final int sessionId)

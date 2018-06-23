@@ -170,8 +170,8 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     public void addSubscriber(final ReadablePosition subscriberPosition)
     {
-        subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
         LogBufferDescriptor.isConnected(metaDataBuffer, true);
+        subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
     }
 
     public void removeSubscriber(final ReadablePosition subscriberPosition)

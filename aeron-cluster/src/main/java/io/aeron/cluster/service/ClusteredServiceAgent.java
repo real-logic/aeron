@@ -116,8 +116,18 @@ class ClusteredServiceAgent implements Agent, Cluster
         if (cachedTimeMs != nowMs)
         {
             cachedTimeMs = nowMs;
-            markFile.updateActivityTimestamp(nowMs);
-            heartbeatCounter.setOrdered(nowMs);
+
+            if (consensusModuleProxy.isConnected())
+            {
+                markFile.updateActivityTimestamp(nowMs);
+                heartbeatCounter.setOrdered(nowMs);
+            }
+            else
+            {
+                ctx.errorHandler().onError(new ClusterException("Consensus Module not connected"));
+                ctx.terminationHook().run();
+            }
+
             workCount += serviceAdapter.poll();
 
             if (null != activeLogEvent && null == logAdapter)
@@ -131,7 +141,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             final int polled = logAdapter.poll();
             if (0 == polled && logAdapter.isConsumed(aeron.countersReader()))
             {
-                consensusModuleProxy.ack(logAdapter.image().position(), ackId++, serviceId);
+                consensusModuleProxy.ack(logAdapter.position(), ackId++, serviceId);
                 logAdapter.close();
                 logAdapter = null;
             }

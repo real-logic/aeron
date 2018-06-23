@@ -45,6 +45,11 @@ final class ConsensusModuleProxy implements AutoCloseable
         CloseHelper.close(publication);
     }
 
+    public boolean isConnected()
+    {
+        return publication.isConnected();
+    }
+
     public boolean scheduleTimer(final long correlationId, final long deadlineMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ScheduleTimerEncoder.BLOCK_LENGTH;

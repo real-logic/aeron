@@ -43,7 +43,7 @@ public final class AeronCluster implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
     private static final int CONNECT_FRAGMENT_LIMIT = 1;
-    private static final int SESSION_FRAGMENT_LIMIT = 1;
+    private static final int SESSION_FRAGMENT_LIMIT = 10;
 
     private long lastCorrelationId = Aeron.NULL_VALUE;
     private final long clusterSessionId;

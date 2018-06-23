@@ -55,11 +55,6 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         CloseHelper.close(subscription);
     }
 
-    int poll()
-    {
-        return subscription.controlledPoll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
-    }
-
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -151,5 +146,15 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         }
 
         return Action.CONTINUE;
+    }
+
+    int poll()
+    {
+        return subscription.controlledPoll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
+    }
+
+    void freeSessionBuffer(final int imageSessionId)
+    {
+        fragmentAssembler.freeSessionBuffer(imageSessionId);
     }
 }

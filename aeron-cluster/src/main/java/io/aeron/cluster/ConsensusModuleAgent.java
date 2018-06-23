@@ -159,7 +159,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         ingressAdapter = new IngressAdapter(
-            aeron.addSubscription(ingressUri.toString(), ctx.ingressStreamId()), this, ctx.invalidRequestCounter());
+            aeron.addSubscription(ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableImage),
+            this,
+            ctx.invalidRequestCounter());
 
         final ChannelUri archiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
         ClusterMember.checkArchiveEndpoint(thisMember, archiveUri);
@@ -1724,5 +1726,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 i.remove();
             }
         }
+    }
+
+    private void onUnavailableImage(final Image image)
+    {
+        ingressAdapter.freeSessionBuffer(image.sessionId());
     }
 }

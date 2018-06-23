@@ -15,10 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.ConcurrentPublication;
-import io.aeron.Counter;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.EventCode;
@@ -84,6 +81,8 @@ public class ConsensusModuleAgentTest
             .thenReturn(TRUE);
         when(mockAeron.addPublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
         when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mock(Subscription.class));
+        when(mockAeron.addSubscription(anyString(), anyInt(), eq(null), any(UnavailableImageHandler.class)))
+            .thenReturn(mock(Subscription.class));
         when(mockResponsePublication.isConnected()).thenReturn(TRUE);
     }
 

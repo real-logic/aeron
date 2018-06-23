@@ -22,7 +22,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 
-final class ServicePublisher implements AutoCloseable
+final class ServiceProxy implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
 
@@ -31,7 +31,7 @@ final class ServicePublisher implements AutoCloseable
     private final JoinLogEncoder joinLogEncoder = new JoinLogEncoder();
     private final Publication publication;
 
-    ServicePublisher(final Publication publication)
+    ServiceProxy(final Publication publication)
     {
         this.publication = publication;
     }

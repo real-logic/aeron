@@ -64,7 +64,7 @@ public final class AeronCluster implements AutoCloseable
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageBuffer = new DirectBufferVector();
-    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment, 4096, true);
+    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment, 0, true);
     private final SessionMessageListener sessionMessageListener;
 
     /**
@@ -310,6 +310,7 @@ public final class AeronCluster implements AutoCloseable
         if (isUnicast)
         {
             CloseHelper.close(publication);
+            fragmentAssembler.clear();
 
             final String[] endpoints = memberEndpoints.split(",");
             ctx.clusterMemberEndpoints(endpoints);

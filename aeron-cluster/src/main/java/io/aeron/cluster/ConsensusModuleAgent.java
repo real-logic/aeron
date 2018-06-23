@@ -486,6 +486,21 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onCatchupPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
+        if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
+        {
+            final long length = (null != election) ? (election.logPosition() - logPosition) : Long.MAX_VALUE;
+
+            final String replayChannel = new ChannelUriStringBuilder()
+                .media(CommonContext.UDP_MEDIA)
+                .endpoint(clusterMembers[followerMemberId].transferEndpoint())
+                .isSessionIdTagged(true)
+                .sessionId(ConsensusModule.Configuration.LOG_PUBLICATION_SESSION_ID_TAG)
+                .build();
+
+            // TODO: save replaySessionId for member if replay is continuous
+            final int replaySessionId =
+                (int)archive.startReplay(logRecordingId(), logPosition, length, replayChannel, ctx.logStreamId());
+        }
     }
 
     public void onRecoveryPlanQuery(final long correlationId, final int requestMemberId, final int leaderMemberId)
@@ -989,6 +1004,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             consensusModuleAdapter.poll();
             cancelMissedTimers();
         }
+    }
+
+    boolean hasAppendReachedPosition(final Subscription logSubscription, final int logSessionId, final long position)
+    {
+        return pollImageAndLogAdapter(logSubscription, logSessionId) && (appendedPosition.get() >= position);
     }
 
     private int slowTickCycle(final long nowMs)

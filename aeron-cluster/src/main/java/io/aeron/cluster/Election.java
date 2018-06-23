@@ -128,6 +128,7 @@ class Election implements AutoCloseable
     private final AeronArchive localArchive;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final Random random;
+    private final String replayDestination;
 
     private long timeOfLastStateChangeMs;
     private long timeOfLastUpdateMs;
@@ -141,7 +142,6 @@ class Election implements AutoCloseable
     private ClusterMember leaderMember = null;
     private State state = State.INIT;
     private Counter stateCounter;
-    private LogCatchup logCatchup;
     private Subscription logSubscription;
 
     Election(
@@ -170,11 +170,14 @@ class Election implements AutoCloseable
         this.localArchive = localArchive;
         this.consensusModuleAgent = consensusModuleAgent;
         this.random = ctx.random();
+        this.replayDestination = new ChannelUriStringBuilder()
+            .media(CommonContext.UDP_MEDIA)
+            .endpoint(thisMember.transferEndpoint())
+            .build();
     }
 
     public void close()
     {
-        CloseHelper.close(logCatchup);
         CloseHelper.close(stateCounter);
     }
 
@@ -309,17 +312,6 @@ class Election implements AutoCloseable
             {
                 catchupLogPosition = logPosition;
 
-                logCatchup = new LogCatchup(
-                    localArchive,
-                    memberStatusPublisher,
-                    clusterMembers,
-                    leaderMemberId,
-                    thisMember.id(),
-                    leadershipTermId,
-                    consensusModuleAgent.logRecordingId(),
-                    this.logPosition,
-                    ctx);
-
                 state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
             }
             else if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
@@ -340,16 +332,7 @@ class Election implements AutoCloseable
                 leaderMember = clusterMembers[leaderMemberId];
                 this.logSessionId = logSessionId;
 
-                logCatchup = new LogCatchup(
-                    localArchive,
-                    memberStatusPublisher,
-                    clusterMembers,
-                    leaderMemberId,
-                    thisMember.id(),
-                    leadershipTermId,
-                    consensusModuleAgent.logRecordingId(),
-                    this.logPosition,
-                    ctx);
+                catchupLogPosition = logPosition;
 
                 state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
             }
@@ -360,10 +343,6 @@ class Election implements AutoCloseable
 
     void onRecordingLog(final RecordingLogDecoder decoder)
     {
-        if (null != logCatchup)
-        {
-            logCatchup.onLeaderRecordingLog(decoder);
-        }
     }
 
     void onAppendedPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
@@ -394,8 +373,8 @@ class Election implements AutoCloseable
 
     void closeCatchUp()
     {
-        CloseHelper.close(logCatchup);
-        logCatchup = null;
+//        CloseHelper.close(logCatchup);
+//        logCatchup = null;
     }
 
     void isStartup(final boolean isStartup)
@@ -625,9 +604,20 @@ class Election implements AutoCloseable
 
     private int followerCatchupTransition(final long nowMs)
     {
-        ensureSubscriptionsCreated();
-        logCatchup.connect(logSubscription);
-        state(State.FOLLOWER_CATCHUP, nowMs);
+        if (null == logSubscription)
+        {
+            final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
+
+            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(
+                logChannelUri.toString(), logPosition);
+            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId);
+            logSubscription.addDestination(replayDestination);
+        }
+
+        if (catchupPosition(leadershipTermId, logPosition))
+        {
+            state(State.FOLLOWER_CATCHUP, nowMs);
+        }
 
         return 1;
     }
@@ -636,14 +626,11 @@ class Election implements AutoCloseable
     {
         int workCount = 0;
 
-        if (!logCatchup.isDone())
+        consensusModuleAgent.catchupLogPoll(logSubscription, logSessionId, catchupLogPosition);
+        if (consensusModuleAgent.hasAppendReachedPosition(logSubscription, logSessionId, catchupLogPosition))
         {
-            workCount += logCatchup.doWork();
-            consensusModuleAgent.catchupLogPoll(logSubscription, logSessionId, logCatchup.targetPosition());
-        }
-        else
-        {
-            logPosition = logCatchup.targetPosition();
+            logPosition = catchupLogPosition;
+            logSubscription.removeDestination(replayDestination);
 
             state(State.FOLLOWER_TRANSITION, nowMs);
             workCount += 1;
@@ -654,7 +641,15 @@ class Election implements AutoCloseable
 
     private int followerTransition(final long nowMs)
     {
-        ensureSubscriptionsCreated();
+        if (null == logSubscription)
+        {
+            final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
+
+            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(
+                logChannelUri.toString(), logPosition);
+            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId);
+        }
+
         addLiveLogDestination();
         consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
         ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
@@ -725,6 +720,12 @@ class Election implements AutoCloseable
             leadershipTermId,
             thisMember.id(),
             logSessionId);
+    }
+
+    private boolean catchupPosition(final long leadershipTermId, final long logPosition)
+    {
+        return memberStatusPublisher.catchupPosition(
+            leaderMember.publication(), leadershipTermId, logPosition, thisMember.id());
     }
 
     private void ensureSubscriptionsCreated()

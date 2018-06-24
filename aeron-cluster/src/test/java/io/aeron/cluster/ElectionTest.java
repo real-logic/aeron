@@ -596,7 +596,6 @@ public class ElectionTest
             memberStatusAdapter,
             memberStatusPublisher,
             ctx,
-            null,
             consensusModuleAgent);
     }
 
@@ -615,7 +614,6 @@ public class ElectionTest
             memberStatusAdapter,
             memberStatusPublisher,
             ctx,
-            null,
             consensusModuleAgent);
     }
 

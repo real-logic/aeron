@@ -16,9 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.*;
-import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.RecordingLogDecoder;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
 
@@ -119,7 +117,6 @@ class Election implements AutoCloseable
     private final MemberStatusAdapter memberStatusAdapter;
     private final MemberStatusPublisher memberStatusPublisher;
     private final ConsensusModule.Context ctx;
-    private final AeronArchive localArchive;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final Random random;
 
@@ -147,7 +144,6 @@ class Election implements AutoCloseable
         final MemberStatusAdapter memberStatusAdapter,
         final MemberStatusPublisher memberStatusPublisher,
         final ConsensusModule.Context ctx,
-        final AeronArchive localArchive,
         final ConsensusModuleAgent consensusModuleAgent)
     {
         this.isStartup = isStartup;
@@ -161,7 +157,6 @@ class Election implements AutoCloseable
         this.memberStatusAdapter = memberStatusAdapter;
         this.memberStatusPublisher = memberStatusPublisher;
         this.ctx = ctx;
-        this.localArchive = localArchive;
         this.consensusModuleAgent = consensusModuleAgent;
         this.random = ctx.random();
     }
@@ -350,10 +345,6 @@ class Election implements AutoCloseable
                 state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
             }
         }
-    }
-
-    void onRecordingLog(final RecordingLogDecoder decoder)
-    {
     }
 
     void onAppendedPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)

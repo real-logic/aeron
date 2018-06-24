@@ -236,7 +236,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             memberStatusAdapter,
             memberStatusPublisher,
             ctx,
-            archive,
             this);
     }
 
@@ -416,7 +415,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 memberStatusAdapter,
                 memberStatusPublisher,
                 ctx,
-                archive,
                 this);
 
             election.doWork(cachedTimeMs);
@@ -546,10 +544,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onRecordingLog(final RecordingLogDecoder recordingLogDecoder)
     {
-        if (null != election)
-        {
-            election.onRecordingLog(recordingLogDecoder);
-        }
     }
 
     void state(final ConsensusModule.State state)
@@ -1516,7 +1510,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     memberStatusAdapter,
                     memberStatusPublisher,
                     ctx,
-                    archive,
                     this);
 
                 election.doWork(nowMs);

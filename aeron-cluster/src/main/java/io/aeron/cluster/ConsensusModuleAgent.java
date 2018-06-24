@@ -812,7 +812,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (null != election)
         {
-            election.onReplayNewLeadershipTermEvent(leadershipTermId, logPosition, cachedTimeMs);
+            final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
+            election.onReplayNewLeadershipTermEvent(recordingId, leadershipTermId, logPosition, cachedTimeMs);
         }
     }
 

@@ -371,14 +371,15 @@ class Election implements AutoCloseable
         }
     }
 
-    void onReplayNewLeadershipTermEvent(final long leadershipTermId, final long logPosition, final long nowMs)
+    void onReplayNewLeadershipTermEvent(
+        final long logRecordingId, final long leadershipTermId, final long logPosition, final long nowMs)
     {
         if (State.FOLLOWER_CATCHUP == state)
         {
             this.logLeadershipTermId = leadershipTermId;
             this.logPosition = logPosition;
 
-            ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
+            ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, logPosition, nowMs);
         }
     }
 

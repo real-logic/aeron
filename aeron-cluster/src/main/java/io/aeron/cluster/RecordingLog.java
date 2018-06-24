@@ -976,7 +976,7 @@ public class RecordingLog implements AutoCloseable
             {
                 snapshotIndex = i;
             }
-            else if (-1 == logIndex && ENTRY_TYPE_TERM == entry.type)
+            else if (-1 == logIndex && ENTRY_TYPE_TERM == entry.type && NULL_VALUE != entry.recordingId)
             {
                 logIndex = i;
             }

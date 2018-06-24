@@ -230,7 +230,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         election = new Election(
             true,
             leadershipTermId,
-            recoveryPlan.lastAppendedLogPosition,
+            recoveryPlan.appendedLogPosition,
             clusterMembers,
             thisMember,
             memberStatusAdapter,

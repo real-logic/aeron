@@ -60,7 +60,7 @@ import static org.agrona.BitUtil.*;
  *  |              Log Position at beginning of term                |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |              Log Position when entry was created              |
+ *  |              Log Position reached for the entry               |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |               Timestamp when entry was created                |
@@ -311,20 +311,23 @@ public class RecordingLog implements AutoCloseable
     {
         public final long lastLeadershipTermId;
         public final long lastTermBaseLogPosition;
-        public final long lastAppendedLogPosition;
+        public final long appendedLogPosition;
+        public final long committedLogPosition;
         public final ArrayList<Snapshot> snapshots;
         public final ArrayList<Log> logs;
 
         public RecoveryPlan(
             final long lastLeadershipTermId,
             final long lastTermBaseLogPosition,
-            final long lastAppendedLogPosition,
+            final long appendedLogPosition,
+            final long committedLogPosition,
             final ArrayList<Snapshot> snapshots,
             final ArrayList<Log> logs)
         {
             this.lastLeadershipTermId = lastLeadershipTermId;
             this.lastTermBaseLogPosition = lastTermBaseLogPosition;
-            this.lastAppendedLogPosition = lastAppendedLogPosition;
+            this.appendedLogPosition = appendedLogPosition;
+            this.committedLogPosition = committedLogPosition;
             this.snapshots = snapshots;
             this.logs = logs;
         }
@@ -333,7 +336,8 @@ public class RecordingLog implements AutoCloseable
         {
             this.lastLeadershipTermId = decoder.lastLeadershipTermId();
             this.lastTermBaseLogPosition = decoder.lastTermBaseLogPosition();
-            this.lastAppendedLogPosition = decoder.lastAppendedLogPosition();
+            this.appendedLogPosition = decoder.appendedLogPosition();
+            this.committedLogPosition = decoder.committedLogPosition();
 
             snapshots = new ArrayList<>();
             logs = new ArrayList<>();
@@ -354,7 +358,8 @@ public class RecordingLog implements AutoCloseable
             encoder
                 .lastLeadershipTermId(lastLeadershipTermId)
                 .lastTermBaseLogPosition(lastTermBaseLogPosition)
-                .lastAppendedLogPosition(lastAppendedLogPosition);
+                .appendedLogPosition(appendedLogPosition)
+                .committedLogPosition(committedLogPosition);
 
             final RecoveryPlanEncoder.SnapshotsEncoder snapshotsEncoder = encoder.snapshotsCount(snapshots.size());
             for (int i = 0, size = snapshots.size(); i < size; i++)
@@ -395,7 +400,8 @@ public class RecordingLog implements AutoCloseable
             return "RecoveryPlan{" +
                 "lastLeadershipTermId=" + lastLeadershipTermId +
                 ", lastTermBaseLogPosition=" + lastTermBaseLogPosition +
-                ", lastAppendedLogPosition=" + lastAppendedLogPosition +
+                ", appendedLogPosition=" + appendedLogPosition +
+                ", committedLogPosition=" + committedLogPosition +
                 ", snapshots=" + snapshots +
                 ", logs=" + logs +
                 '}';
@@ -648,7 +654,8 @@ public class RecordingLog implements AutoCloseable
 
         long lastLeadershipTermId = NULL_VALUE;
         long lastTermBaseLogPosition = 0;
-        long lastAppendedLogPosition = 0;
+        long committedLogPosition = -1;
+        long appendedLogPosition = 0;
 
         final int snapshotStepsSize = snapshots.size();
         if (snapshotStepsSize > 0)
@@ -657,7 +664,8 @@ public class RecordingLog implements AutoCloseable
 
             lastLeadershipTermId = snapshot.leadershipTermId;
             lastTermBaseLogPosition = snapshot.termBaseLogPosition;
-            lastAppendedLogPosition = snapshot.logPosition;
+            appendedLogPosition = snapshot.logPosition;
+            committedLogPosition = snapshot.logPosition;
         }
 
         if (!logs.isEmpty())
@@ -666,13 +674,15 @@ public class RecordingLog implements AutoCloseable
 
             lastLeadershipTermId = log.leadershipTermId;
             lastTermBaseLogPosition = log.termBaseLogPosition;
-            lastAppendedLogPosition = log.stopPosition;
+            appendedLogPosition = log.stopPosition;
+            committedLogPosition = log.logPosition;
         }
 
         return new RecoveryPlan(
             lastLeadershipTermId,
             lastTermBaseLogPosition,
-            lastAppendedLogPosition,
+            appendedLogPosition,
+            committedLogPosition,
             snapshots,
             logs);
     }

@@ -270,7 +270,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             else if (Cluster.Role.FOLLOWER == role &&
                 (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state))
             {
-                workCount += logAdapter.poll(followerCommitPosition);
+                final int count = logAdapter.poll(followerCommitPosition);
+                if (0 == count && logAdapter.isImageClosed())
+                {
+                    stopLogRecording();
+                    ctx.errorHandler().onError(new ClusterException("unexpected close of image for log"));
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.terminationHook().run();
+                }
+
+                workCount += count;
             }
 
             workCount += memberStatusAdapter.poll();

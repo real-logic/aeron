@@ -64,6 +64,11 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
         return image.boundedControlledPoll(fragmentAssembler, boundPosition, FRAGMENT_LIMIT);
     }
 
+    boolean isImageClosed()
+    {
+        return image.isClosed();
+    }
+
     Image image()
     {
         return image;

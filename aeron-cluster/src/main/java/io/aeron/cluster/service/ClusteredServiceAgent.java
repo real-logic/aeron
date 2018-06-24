@@ -139,11 +139,19 @@ class ClusteredServiceAgent implements Agent, Cluster
         if (null != logAdapter)
         {
             final int polled = logAdapter.poll();
-            if (0 == polled && logAdapter.isConsumed(aeron.countersReader()))
+            if (0 == polled)
             {
-                consensusModuleProxy.ack(logAdapter.position(), ackId++, serviceId);
-                logAdapter.close();
-                logAdapter = null;
+                if (logAdapter.isConsumed(aeron.countersReader()))
+                {
+                    consensusModuleProxy.ack(logAdapter.position(), ackId++, serviceId);
+                    logAdapter.close();
+                    logAdapter = null;
+                }
+                else if (logAdapter.isImageClosed())
+                {
+                    ctx.errorHandler().onError(new ClusterException("unexpected close of image for log"));
+                    ctx.terminationHook().run();
+                }
             }
 
             workCount += polled;

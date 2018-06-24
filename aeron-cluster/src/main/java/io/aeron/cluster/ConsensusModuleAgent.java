@@ -952,9 +952,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void truncateLogEntryAndAbort(final long leadershipTermId, final long logPosition)
     {
+        final long recordingId = logRecordingId();
+
         // TODO: this is brutal. Need to handle the service.
-        archive.truncateRecording(logRecordingId(), logPosition);
+        archive.truncateRecording(recordingId, logPosition);
         recordingLog.commitLogPosition(leadershipTermId, logPosition);
+        ctx.errorHandler().onError(new ClusterException(
+            "leadershipTermId " + leadershipTermId + ": truncated recording log " + recordingId + " @ " + logPosition));
         state(ConsensusModule.State.CLOSED);
         ctx.terminationHook().run();
     }

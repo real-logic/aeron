@@ -1351,7 +1351,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             final long length = stopPosition - startPosition;
             leadershipTermId = log.leadershipTermId;
 
-            if (NULL_VALUE == log.logPosition)
+            if (log.logPosition < 0)
             {
                 recordingLog.commitLogPosition(leadershipTermId, stopPosition);
             }

@@ -1573,6 +1573,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 recordingLog.appendSnapshot(
                     recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, CONSENSUS_MODULE_ID);
+
+                recordingLog.force();
             }
             finally
             {

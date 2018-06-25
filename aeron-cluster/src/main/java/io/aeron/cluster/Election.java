@@ -380,6 +380,7 @@ class Election implements AutoCloseable
             this.logPosition = logPosition;
 
             ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, logPosition, nowMs);
+            ctx.recordingLog().force();
         }
     }
 
@@ -568,6 +569,7 @@ class Election implements AutoCloseable
         consensusModuleAgent.becomeLeader();
 
         ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
+        ctx.recordingLog().force();
         ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
 
         ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
@@ -666,6 +668,7 @@ class Election implements AutoCloseable
         addLiveLogDestination();
         consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
         ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
+        ctx.recordingLog().force();
         ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
 
         state(State.FOLLOWER_READY, nowMs);

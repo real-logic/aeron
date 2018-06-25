@@ -482,7 +482,7 @@ public class RecordingLog implements AutoCloseable
 
         try
         {
-            fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE, SYNC);
+            fileChannel = FileChannel.open(logFile.toPath(), CREATE, READ, WRITE);
 
             if (newFile)
             {
@@ -502,6 +502,21 @@ public class RecordingLog implements AutoCloseable
     public void close()
     {
         CloseHelper.close(fileChannel);
+    }
+
+    /**
+     * Force the file to backing storage. Same as calling {@link FileChannel#force(boolean)} with true.
+     */
+    public void force()
+    {
+        try
+        {
+            fileChannel.force(true);
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 
     /**

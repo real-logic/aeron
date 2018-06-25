@@ -1513,6 +1513,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void enterElection(final long nowMs)
     {
+        commitPosition.proposeMaxOrdered(followerCommitPosition);
+
         election = new Election(
             false,
             leadershipTermId,

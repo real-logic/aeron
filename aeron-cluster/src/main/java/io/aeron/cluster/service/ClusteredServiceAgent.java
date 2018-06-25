@@ -149,8 +149,8 @@ class ClusteredServiceAgent implements Agent, Cluster
                 }
                 else if (logAdapter.isImageClosed())
                 {
-                    ctx.errorHandler().onError(new ClusterException("unexpected close of image for log"));
-                    ctx.terminationHook().run();
+                    logAdapter.close();
+                    logAdapter = null;
                 }
             }
 

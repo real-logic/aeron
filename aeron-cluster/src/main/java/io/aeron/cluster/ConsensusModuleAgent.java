@@ -273,16 +273,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 final int count = logAdapter.poll(followerCommitPosition);
                 if (0 == count && logAdapter.isImageClosed())
                 {
-                    election = new Election(
-                        false,
-                        leadershipTermId,
-                        commitPosition.getWeak(),
-                        clusterMembers,
-                        thisMember,
-                        memberStatusAdapter,
-                        memberStatusPublisher,
-                        ctx,
-                        this);
+                    enterElection(nowMs);
 
                     return 1;
                 }
@@ -423,18 +414,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (candidateTermId > this.leadershipTermId)
         {
-            election = new Election(
-                false,
-                leadershipTermId,
-                commitPosition.getWeak(),
-                clusterMembers,
-                thisMember,
-                memberStatusAdapter,
-                memberStatusPublisher,
-                ctx,
-                this);
-
-            election.doWork(cachedTimeMs);
+            enterElection(cachedTimeMs);
             election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
     }
@@ -1516,29 +1496,35 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     lastAppendedPosition = appendedPosition;
                 }
 
-                workCount = 1;
+                workCount += 1;
             }
 
             commitPosition.proposeMaxOrdered(logAdapter.position());
 
             if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
             {
-                election = new Election(
-                    false,
-                    leadershipTermId,
-                    commitPosition.getWeak(),
-                    clusterMembers,
-                    thisMember,
-                    memberStatusAdapter,
-                    memberStatusPublisher,
-                    ctx,
-                    this);
-
-                election.doWork(nowMs);
+                enterElection(nowMs);
+                workCount += 1;
             }
         }
 
         return workCount;
+    }
+
+    private void enterElection(final long nowMs)
+    {
+        election = new Election(
+            false,
+            leadershipTermId,
+            commitPosition.getWeak(),
+            clusterMembers,
+            thisMember,
+            memberStatusAdapter,
+            memberStatusPublisher,
+            ctx,
+            this);
+
+        election.doWork(nowMs);
     }
 
     private void idle()

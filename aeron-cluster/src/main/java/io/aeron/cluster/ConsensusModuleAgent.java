@@ -159,7 +159,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         ingressAdapter = new IngressAdapter(
-            aeron.addSubscription(ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableImage),
+            aeron.addSubscription(ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage),
             this,
             ctx.invalidRequestCounter());
 
@@ -1747,7 +1747,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    private void onUnavailableImage(final Image image)
+    private void onUnavailableIngressImage(final Image image)
     {
         ingressAdapter.freeSessionBuffer(image.sessionId());
     }

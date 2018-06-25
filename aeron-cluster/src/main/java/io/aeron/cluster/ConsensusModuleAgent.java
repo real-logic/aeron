@@ -273,10 +273,18 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 final int count = logAdapter.poll(followerCommitPosition);
                 if (0 == count && logAdapter.isImageClosed())
                 {
-                    stopLogRecording();
-                    ctx.errorHandler().onError(new ClusterException("unexpected close of image for log"));
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.terminationHook().run();
+                    election = new Election(
+                        false,
+                        leadershipTermId,
+                        commitPosition.getWeak(),
+                        clusterMembers,
+                        thisMember,
+                        memberStatusAdapter,
+                        memberStatusPublisher,
+                        ctx,
+                        this);
+
+                    return 1;
                 }
 
                 workCount += count;

@@ -442,6 +442,11 @@ class Election implements AutoCloseable
         else
         {
             candidateTermId = ctx.clusterMarkFile().candidateTermId();
+            if (candidateTermId <= leadershipTermId)
+            {
+                candidateTermId = NULL_VALUE;
+                ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
+            }
             state(State.CANVASS, nowMs);
         }
 
@@ -492,7 +497,7 @@ class Election implements AutoCloseable
     {
         if (nowMs >= nominationDeadlineMs)
         {
-            candidateTermId = NULL_VALUE == candidateTermId ? leadershipTermId + 1 : candidateTermId + 1;
+            candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
             ClusterMember.becomeCandidate(clusterMembers, candidateTermId, thisMember.id());
             ctx.clusterMarkFile().candidateTermId(candidateTermId);
             consensusModuleAgent.role(Cluster.Role.CANDIDATE);

@@ -442,11 +442,6 @@ class Election implements AutoCloseable
         else
         {
             candidateTermId = ctx.clusterMarkFile().candidateTermId();
-            if (candidateTermId <= leadershipTermId)
-            {
-                candidateTermId = NULL_VALUE;
-                ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
-            }
             state(State.CANVASS, nowMs);
         }
 
@@ -575,7 +570,6 @@ class Election implements AutoCloseable
 
         ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
         ctx.recordingLog().force();
-        ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
 
         ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
         clusterMembers[thisMember.id()].logPosition(logPosition).leadershipTermId(leadershipTermId);
@@ -674,7 +668,6 @@ class Election implements AutoCloseable
         consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
         ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
         ctx.recordingLog().force();
-        ctx.clusterMarkFile().candidateTermId(NULL_VALUE);
 
         state(State.FOLLOWER_READY, nowMs);
 

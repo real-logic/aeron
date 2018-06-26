@@ -172,10 +172,7 @@ public class ClusterMarkFile implements AutoCloseable
     public void candidateTermId(final long candidateTermId)
     {
         buffer.putLongVolatile(MarkFileHeaderEncoder.candidateTermIdEncodingOffset(), candidateTermId);
-        if (NULL_VALUE != candidateTermId)
-        {
-            markFile.mappedByteBuffer().force();
-        }
+        markFile.mappedByteBuffer().force();
     }
 
     public void signalReady()

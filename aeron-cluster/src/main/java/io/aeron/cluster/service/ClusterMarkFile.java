@@ -37,6 +37,8 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import static io.aeron.Aeron.NULL_VALUE;
+
 /**
  * Used to indicate if a cluster service is running and what configuration it is using. Errors encountered by
  * the service are recorded within this file by a {@link org.agrona.concurrent.errors.DistinctErrorLog}.
@@ -99,7 +101,7 @@ public class ClusterMarkFile implements AutoCloseable
         }
         else
         {
-            headerEncoder.candidateTermId(Aeron.NULL_VALUE);
+            headerEncoder.candidateTermId(NULL_VALUE);
         }
 
         final ClusterComponentType existingType = headerDecoder.componentType();
@@ -170,7 +172,10 @@ public class ClusterMarkFile implements AutoCloseable
     public void candidateTermId(final long candidateTermId)
     {
         buffer.putLongVolatile(MarkFileHeaderEncoder.candidateTermIdEncodingOffset(), candidateTermId);
-        markFile.mappedByteBuffer().force();
+        if (NULL_VALUE != candidateTermId)
+        {
+            markFile.mappedByteBuffer().force();
+        }
     }
 
     public void signalReady()

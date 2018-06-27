@@ -699,7 +699,7 @@ class Election implements AutoCloseable
 
     private void state(final State state, final long nowMs)
     {
-        //System.out.println(this.state + " -> " + state);
+        //System.out.println("memberId=" + thisMember.id() + " " + this.state + " -> " + state);
         timeOfLastStateChangeMs = nowMs;
         this.state.exit(this);
         this.state = state;

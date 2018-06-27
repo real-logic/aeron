@@ -36,6 +36,8 @@ import org.mockito.Mockito;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ClusterControl.ToggleState.*;
+import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_LIMIT_MSG;
+import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
 import static java.lang.Boolean.TRUE;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -74,7 +76,7 @@ public class ConsensusModuleAgentTest
     public void before()
     {
         when(mockAeron.conductorAgentInvoker()).thenReturn(mock(AgentInvoker.class));
-        when(mockEgressPublisher.sendEvent(any(), any(), any())).thenReturn(TRUE);
+        when(mockEgressPublisher.sendEvent(any(), anyInt(), any(), any())).thenReturn(TRUE);
         when(mockLogPublisher.appendSessionClose(any(), anyLong())).thenReturn(TRUE);
         when(mockLogPublisher.appendSessionOpen(any(), anyLong())).thenReturn(128L);
         when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), anyLong(), any(ClusterAction.class)))
@@ -113,7 +115,7 @@ public class ConsensusModuleAgentTest
         agent.doWork();
 
         verify(mockEgressPublisher).sendEvent(
-            any(ClusterSession.class), eq(EventCode.ERROR), eq(ConsensusModule.Configuration.SESSION_LIMIT_MSG));
+            any(ClusterSession.class), anyInt(), eq(EventCode.ERROR), eq(SESSION_LIMIT_MSG));
     }
 
     @Test
@@ -149,7 +151,7 @@ public class ConsensusModuleAgentTest
         verify(mockTimedOutClientCounter).incrementOrdered();
         verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(
-            any(ClusterSession.class), eq(EventCode.ERROR), eq(ConsensusModule.Configuration.SESSION_TIMEOUT_MSG));
+            any(ClusterSession.class), anyInt(), eq(EventCode.ERROR), eq(SESSION_TIMEOUT_MSG));
     }
 
     @Test

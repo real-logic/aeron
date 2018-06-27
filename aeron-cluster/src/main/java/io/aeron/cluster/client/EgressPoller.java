@@ -36,6 +36,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private long clusterSessionId = Aeron.NULL_VALUE;
     private long correlationId = Aeron.NULL_VALUE;
     private int templateId = Aeron.NULL_VALUE;
+    private int leaderMemberId = Aeron.NULL_VALUE;
     private boolean pollComplete = false;
     private EventCode eventCode;
     private String detail = "";
@@ -85,6 +86,16 @@ public class EgressPoller implements ControlledFragmentHandler
     public long correlationId()
     {
         return correlationId;
+    }
+
+    /**
+     * Leader cluster member id of the last polled event or {@link Aeron#NULL_VALUE} if poll returned nothing.
+     *
+     * @return leader cluster member id of the last polled event or {@link Aeron#NULL_VALUE} if poll returned nothing.
+     */
+    public int leaderMemberId()
+    {
+        return leaderMemberId;
     }
 
     /**
@@ -139,9 +150,10 @@ public class EgressPoller implements ControlledFragmentHandler
 
     public int poll()
     {
-        clusterSessionId = -1;
-        correlationId = -1;
-        templateId = -1;
+        clusterSessionId = Aeron.NULL_VALUE;
+        correlationId = Aeron.NULL_VALUE;
+        leaderMemberId = Aeron.NULL_VALUE;
+        templateId = Aeron.NULL_VALUE;
         eventCode = null;
         detail = "";
         encodedChallenge = null;
@@ -167,6 +179,7 @@ public class EgressPoller implements ControlledFragmentHandler
 
                 clusterSessionId = sessionEventDecoder.clusterSessionId();
                 correlationId = sessionEventDecoder.correlationId();
+                leaderMemberId = sessionEventDecoder.leaderMemberId();
                 eventCode = sessionEventDecoder.code();
                 detail = sessionEventDecoder.detail();
                 break;

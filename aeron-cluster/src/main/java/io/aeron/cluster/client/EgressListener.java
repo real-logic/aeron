@@ -22,7 +22,7 @@ import io.aeron.cluster.codecs.EventCode;
  */
 public interface EgressListener extends SessionMessageListener
 {
-    void sessionEvent(long correlationId, long clusterSessionId, EventCode code, String detail);
+    void sessionEvent(long correlationId, long clusterSessionId, int leaderMemberId, EventCode code, String detail);
 
     void newLeader(long clusterSessionId, int leaderMemberId, String memberEndpoints);
 }

@@ -101,6 +101,7 @@ public class EgressAdapter implements FragmentHandler
                     listener.sessionEvent(
                         sessionEventDecoder.correlationId(),
                         sessionId,
+                        sessionEventDecoder.leaderMemberId(),
                         sessionEventDecoder.code(),
                         sessionEventDecoder.detail());
                 }

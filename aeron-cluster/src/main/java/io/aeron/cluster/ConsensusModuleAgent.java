@@ -143,6 +143,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         role(Cluster.Role.FOLLOWER);
 
         thisMember = clusterMembers[memberId];
+        leaderMember = thisMember;
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
         memberStatusUri.put(ENDPOINT_PARAM_NAME, thisMember.memberFacingEndpoint());
 
@@ -485,7 +486,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
-            final long length = (null != election) ? (election.logPosition() - logPosition) : Long.MAX_VALUE;
+            final long length = null != election ? (election.logPosition() - logPosition) : Long.MAX_VALUE;
 
             final String replayChannel = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
@@ -862,6 +863,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         leadershipTermId = election.leadershipTermId();
         leaderMember = election.leader();
         followerCommitPosition = election.logPosition();
+        sessionProxy.leaderMemberId(leaderMember.id());
 
         for (final ClusterMember clusterMember : clusterMembers)
         {
@@ -1196,7 +1198,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 eventCode = EventCode.AUTHENTICATION_REJECTED;
             }
 
-            if (egressPublisher.sendEvent(session, eventCode, detail) ||
+            if (egressPublisher.sendEvent(session, leaderMember.id(), eventCode, detail) ||
                 nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
                 ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex--);
@@ -1223,7 +1225,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     case OPEN:
                         if (session.isResponsePublicationConnected())
                         {
-                            egressPublisher.sendEvent(session, EventCode.ERROR, SESSION_TIMEOUT_MSG);
+                            egressPublisher.sendEvent(session, leaderMember.id(), EventCode.ERROR, SESSION_TIMEOUT_MSG);
                         }
 
                         session.close(CloseReason.TIMEOUT);

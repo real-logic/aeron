@@ -29,6 +29,7 @@ public class SessionProxy
 {
     private final EgressPublisher egressPublisher;
     private ClusterSession clusterSession;
+    private int leaderMemberId;
 
     public SessionProxy(final EgressPublisher egressPublisher)
     {
@@ -38,6 +39,12 @@ public class SessionProxy
     public final SessionProxy session(final ClusterSession clusterSession)
     {
         this.clusterSession = clusterSession;
+        return this;
+    }
+
+    public final SessionProxy leaderMemberId(final int leaderMemberId)
+    {
+        this.leaderMemberId = leaderMemberId;
         return this;
     }
 
@@ -78,7 +85,7 @@ public class SessionProxy
     {
         ClusterSession.checkEncodedPrincipalLength(encodedPrincipal);
 
-        if (egressPublisher.sendEvent(clusterSession, EventCode.OK, ""))
+        if (egressPublisher.sendEvent(clusterSession, leaderMemberId, EventCode.OK, ""))
         {
             clusterSession.authenticate(encodedPrincipal);
             return true;

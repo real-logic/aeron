@@ -33,7 +33,7 @@ class EgressPublisher
     private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
     private final NewLeaderEventEncoder newLeaderEventEncoder = new NewLeaderEventEncoder();
 
-    boolean sendEvent(final ClusterSession session, final EventCode code, final String detail)
+    boolean sendEvent(final ClusterSession session, final int leaderMemberId, final EventCode code, final String detail)
     {
         final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
@@ -51,6 +51,7 @@ class EgressPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .correlationId(session.lastCorrelationId())
+                    .leaderMemberId(leaderMemberId)
                     .code(code)
                     .detail(detail);
 

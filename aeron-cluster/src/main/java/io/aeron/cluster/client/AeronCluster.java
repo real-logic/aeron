@@ -548,6 +548,7 @@ public final class AeronCluster implements AutoCloseable
                 switch (poller.eventCode())
                 {
                     case OK:
+                        this.leaderMemberId = poller.leaderMemberId();
                         return poller.clusterSessionId();
 
                     case ERROR:

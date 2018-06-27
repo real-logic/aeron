@@ -36,6 +36,7 @@ public class StubEgressListener implements EgressListener
     public void sessionEvent(
         final long correlationId,
         final long clusterSessionId,
+        final int leaderMemberId,
         final EventCode code,
         final String detail)
     {

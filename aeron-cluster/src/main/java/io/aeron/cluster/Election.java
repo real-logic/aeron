@@ -333,7 +333,7 @@ class Election implements AutoCloseable
             {
                 consensusModuleAgent.truncateLogEntryAndAbort(logLeadershipTermId, logPosition);
             }
-            else if (this.logLeadershipTermId < logLeadershipTermId)
+            else if (this.logPosition < logPosition && NULL_POSITION == catchupLogPosition)
             {
                 this.leadershipTermId = leadershipTermId;
                 this.candidateTermId = NULL_VALUE;
@@ -643,8 +643,11 @@ class Election implements AutoCloseable
         if (consensusModuleAgent.hasAppendReachedPosition(logSubscription, logSessionId, catchupLogPosition))
         {
             logPosition = catchupLogPosition;
-            logSubscription.removeDestination(replayDestination);
-            replayDestination = null;
+            if (null != replayDestination)
+            {
+                logSubscription.removeDestination(replayDestination);
+                replayDestination = null;
+            }
 
             state(State.FOLLOWER_TRANSITION, nowMs);
             workCount += 1;
@@ -699,7 +702,7 @@ class Election implements AutoCloseable
 
     private void state(final State state, final long nowMs)
     {
-        //System.out.println("memberId=" + thisMember.id() + " " + this.state + " -> " + state);
+//        System.out.println("memberId=" + thisMember.id() + " " + this.state + " -> " + state);
         timeOfLastStateChangeMs = nowMs;
         this.state.exit(this);
         this.state = state;

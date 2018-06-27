@@ -35,7 +35,6 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-@Ignore
 public class ClusterTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;

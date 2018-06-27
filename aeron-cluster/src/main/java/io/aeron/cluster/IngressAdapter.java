@@ -35,17 +35,13 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final SessionKeepAliveRequestDecoder keepAliveRequestDecoder = new SessionKeepAliveRequestDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
 
+    private Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
-    private final Subscription subscription;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final AtomicCounter invalidRequests;
 
-    IngressAdapter(
-        final Subscription subscription,
-        final ConsensusModuleAgent consensusModuleAgent,
-        final AtomicCounter invalidRequests)
+    IngressAdapter(final ConsensusModuleAgent consensusModuleAgent, final AtomicCounter invalidRequests)
     {
-        this.subscription = subscription;
         this.consensusModuleAgent = consensusModuleAgent;
         this.invalidRequests = invalidRequests;
     }
@@ -53,6 +49,8 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     public void close()
     {
         CloseHelper.close(subscription);
+        subscription = null;
+        fragmentAssembler.clear();
     }
 
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -148,8 +146,18 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         return Action.CONTINUE;
     }
 
+    void subscription(final Subscription subscription)
+    {
+        this.subscription = subscription;
+    }
+
     int poll()
     {
+        if (null == subscription)
+        {
+            return 0;
+        }
+
         return subscription.controlledPoll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
     }
 

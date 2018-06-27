@@ -153,16 +153,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         ClusterMember.addMemberStatusPublications(clusterMembers, thisMember, memberStatusUri, statusStreamId, aeron);
 
-        final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
-        if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
-        {
-            ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.clientFacingEndpoint());
-        }
-
-        ingressAdapter = new IngressAdapter(
-            aeron.addSubscription(ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage),
-            this,
-            ctx.invalidRequestCounter());
+        ingressAdapter = new IngressAdapter(this, ctx.invalidRequestCounter());
 
         final ChannelUri archiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
         ClusterMember.checkArchiveEndpoint(thisMember, archiveUri);
@@ -838,6 +829,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         createAppendPosition(logSessionId);
         commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, election.logPosition(), MAX_VALUE);
         awaitServicesReady(channelUri, logSessionId);
+
+        final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
+        if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
+        {
+            ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.clientFacingEndpoint());
+        }
+
+        ingressAdapter.subscription(aeron.addSubscription(
+            ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
 
         for (final ClusterSession session : sessionByIdMap.values())
         {
@@ -1523,6 +1523,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void enterElection(final long nowMs)
     {
+        ingressAdapter.close();
+
         commitPosition.proposeMaxOrdered(followerCommitPosition);
 
         election = new Election(

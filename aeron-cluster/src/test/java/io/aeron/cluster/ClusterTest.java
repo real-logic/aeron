@@ -25,6 +25,7 @@ import io.aeron.cluster.service.*;
 import io.aeron.driver.*;
 import io.aeron.logbuffer.Header;
 import org.agrona.*;
+import org.agrona.concurrent.EpochClock;
 import org.junit.*;
 
 import java.io.File;
@@ -50,6 +51,8 @@ public class ClusterTest
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
 
+    private volatile long timeOffset = 0;
+    private final EpochClock epochClock = () -> System.currentTimeMillis() + timeOffset;
     private final CountDownLatch latch = new CountDownLatch(MEMBER_COUNT);
 
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
@@ -78,6 +81,7 @@ public class ClusterTest
 
             clusteredMediaDrivers[i] = ClusteredMediaDriver.launch(
                 new MediaDriver.Context()
+                    .epochClock(epochClock)
                     .aeronDirectoryName(baseDirName)
                     .threadingMode(ThreadingMode.SHARED)
                     .termBufferSparseFile(true)
@@ -85,6 +89,7 @@ public class ClusterTest
                     .errorHandler(Throwable::printStackTrace)
                     .dirDeleteOnStart(true),
                 new Archive.Context()
+                    .epochClock(epochClock)
                     .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                     .aeronDirectoryName(baseDirName)
                     .archiveDir(new File(baseDirName, "archive"))
@@ -95,6 +100,7 @@ public class ClusterTest
                     .threadingMode(ArchiveThreadingMode.SHARED)
                     .deleteArchiveOnStart(true),
                 new ConsensusModule.Context()
+                    .epochClock(epochClock)
                     .errorHandler(Throwable::printStackTrace)
                     .clusterMemberId(i)
                     .clusterMembers(CLUSTER_MEMBERS)
@@ -107,6 +113,7 @@ public class ClusterTest
 
             containers[i] = ClusteredServiceContainer.launch(
                 new ClusteredServiceContainer.Context()
+                    .epochClock(epochClock)
                     .aeronDirectoryName(baseDirName)
                     .archiveContext(archiveCtx.clone())
                     .clusterDir(new File(baseDirName, "service"))
@@ -116,6 +123,7 @@ public class ClusterTest
 
         clientMediaDriver = MediaDriver.launch(
             new MediaDriver.Context()
+                .epochClock(epochClock)
                 .aeronDirectoryName(aeronDirName));
 
         client = AeronCluster.connect(

@@ -248,6 +248,6 @@ public class ClusterNodeTest
             new AeronCluster.Context()
                 .sessionMessageListener(sessionMessageListener)
                 .ingressChannel("aeron:udp")
-                .clusterMemberEndpoints("localhost:9010", "localhost:9011", "localhost:9012"));
+                .clusterMemberEndpoints("0=localhost:9010,1=localhost:9011,2=localhost:9012"));
     }
 }

@@ -128,7 +128,7 @@ public class AppointedLeaderClusterTest
             new AeronCluster.Context()
                 .aeronDirectoryName(aeronDirName)
                 .ingressChannel("aeron:udp")
-                .clusterMemberEndpoints("localhost:20110", "localhost:20111", "localhost:20112"));
+                .clusterMemberEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
     }
 
     @After

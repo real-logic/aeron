@@ -1445,13 +1445,21 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private void updateClientFacingEndpoints(final ClusterMember[] members, final int leaderMemberId)
     {
         final StringBuilder builder = new StringBuilder(100);
-        builder.append(members[leaderMemberId].clientFacingEndpoint());
+        builder
+            .append(leaderMemberId)
+            .append('=')
+            .append(members[leaderMemberId].clientFacingEndpoint());
 
         for (int i = 0, length = members.length; i < length; i++)
         {
-            if (i != leaderMemberId)
+            final ClusterMember member = members[i];
+            if (member.id() != leaderMemberId)
             {
-                builder.append(',').append(members[i].clientFacingEndpoint());
+                builder
+                    .append(',')
+                    .append(member.id())
+                    .append('=')
+                    .append(member.clientFacingEndpoint());
             }
         }
 

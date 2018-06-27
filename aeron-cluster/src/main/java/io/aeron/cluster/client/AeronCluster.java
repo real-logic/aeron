@@ -17,14 +17,18 @@ package io.aeron.cluster.client;
 
 import io.aeron.*;
 import io.aeron.cluster.codecs.*;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
+import org.agrona.AsciiEncoding;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.client.SessionDecorator.SESSION_HEADER_LENGTH;
@@ -47,6 +51,7 @@ public final class AeronCluster implements AutoCloseable
 
     private long lastCorrelationId = Aeron.NULL_VALUE;
     private final long clusterSessionId;
+    private int leaderMemberId = Aeron.NULL_VALUE;
     private final boolean isUnicast;
     private final Context ctx;
     private final Aeron aeron;
@@ -55,6 +60,7 @@ public final class AeronCluster implements AutoCloseable
     private final NanoClock nanoClock;
     private final IdleStrategy idleStrategy;
 
+    private final Int2ObjectHashMap<String> endpointByMemberIdMap = new Int2ObjectHashMap<>();
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionKeepAliveRequestEncoder keepAliveRequestEncoder = new SessionKeepAliveRequestEncoder();
@@ -103,6 +109,7 @@ public final class AeronCluster implements AutoCloseable
             this.nanoClock = aeron.context().nanoClock();
             this.isUnicast = ctx.clusterMemberEndpoints() != null;
             this.sessionMessageListener = ctx.sessionMessageListener();
+            updateMemberEndpoints(ctx.clusterMemberEndpoints());
 
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
             this.subscription = subscription;
@@ -172,6 +179,16 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
+     * Get the current leader member id for the cluster.
+     *
+     * @return the current leader member id for the cluster.
+     */
+    public int leaderMemberId()
+    {
+        return leaderMemberId;
+    }
+
+    /**
      * Get the last correlation id generated for this session. Starts with {@link Aeron#NULL_VALUE}.
      *
      * @return the last correlation id generated for this session.
@@ -186,7 +203,7 @@ public final class AeronCluster implements AutoCloseable
      * Generate a new correlation id to be used for this session. This is not threadsafe. If you require a threadsafe
      * correlation id generation then use {@link Aeron#nextCorrelationId()}.
      *
-     * @return  a new correlation id to be used for this session.
+     * @return a new correlation id to be used for this session.
      * @see #lastCorrelationId()
      */
     public long nextCorrelationId()
@@ -307,17 +324,38 @@ public final class AeronCluster implements AutoCloseable
                 "invalid clusterSessionId=" + clusterSessionId + " expected " + this.clusterSessionId);
         }
 
+        this.leaderMemberId = leaderMemberId;
+
         if (isUnicast)
         {
             CloseHelper.close(publication);
             fragmentAssembler.clear();
-
-            final String[] endpoints = memberEndpoints.split(",");
-            ctx.clusterMemberEndpoints(endpoints);
+            updateMemberEndpoints(memberEndpoints);
 
             final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
-            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, endpoints[0]);
+            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, endpointByMemberIdMap.get(leaderMemberId));
             publication = addIngressPublication(channelUri.toString(), ctx.ingressStreamId());
+        }
+    }
+
+    private void updateMemberEndpoints(final String memberEndpoints)
+    {
+        endpointByMemberIdMap.clear();
+
+        if (null != memberEndpoints)
+        {
+            for (final String member : memberEndpoints.split(","))
+            {
+                final int separatorIndex = member.indexOf('=');
+                if (-1 == separatorIndex)
+                {
+                    throw new ConfigurationException(
+                        "invalid format - member missing '=' separator: " + memberEndpoints);
+                }
+
+                final int memberId = AsciiEncoding.parseIntAscii(member, 0, separatorIndex);
+                endpointByMemberIdMap.put(memberId, member.substring(separatorIndex + 1));
+            }
         }
     }
 
@@ -404,15 +442,14 @@ public final class AeronCluster implements AutoCloseable
         if (isUnicast)
         {
             final ChannelUri channelUri = ChannelUri.parse(ingressChannel);
-            final String[] memberEndpoints = ctx.clusterMemberEndpoints();
-            final int memberCount = memberEndpoints.length;
+            final int memberCount = endpointByMemberIdMap.size();
             final Publication[] publications = new Publication[memberCount];
 
-            for (int i = 0; i < memberCount; i++)
+            for (final Map.Entry<Integer, String> entry : endpointByMemberIdMap.entrySet())
             {
-                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, memberEndpoints[i]);
+                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, entry.getValue());
                 final String channel = channelUri.toString();
-                publications[i] = addIngressPublication(channel, ingressStreamId);
+                publications[entry.getKey()] = addIngressPublication(channel, ingressStreamId);
             }
 
             int connectedIndex = -1;
@@ -655,6 +692,8 @@ public final class AeronCluster implements AutoCloseable
          * Property name for the comma separated list of cluster member endpoints for use with unicast. This is the
          * endpoint values which get substituted into the {@link #INGRESS_CHANNEL_PROP_NAME} when using UDP unicast.
          * <p>
+         * {@code "0=endpoint,1=endpoint,2=endpoint"}
+         * <p>
          * Each member of the list will be substituted for the endpoint in the {@link #INGRESS_CHANNEL_PROP_NAME} value.
          */
         public static final String CLUSTER_MEMBER_ENDPOINTS_PROP_NAME = "aeron.cluster.member.endpoints";
@@ -724,12 +763,10 @@ public final class AeronCluster implements AutoCloseable
          * @return {@link #CLUSTER_MEMBER_ENDPOINTS_DEFAULT} or system property
          * {@link #CLUSTER_MEMBER_ENDPOINTS_PROP_NAME} if set.
          */
-        public static String[] clusterMemberEndpoints()
+        public static String clusterMemberEndpoints()
         {
-            final String memberEndpoints = System.getProperty(
+            return System.getProperty(
                 CLUSTER_MEMBER_ENDPOINTS_PROP_NAME, CLUSTER_MEMBER_ENDPOINTS_DEFAULT);
-
-            return null == memberEndpoints ? null : memberEndpoints.split(",");
         }
 
         /**
@@ -787,7 +824,7 @@ public final class AeronCluster implements AutoCloseable
     public static class Context implements AutoCloseable, Cloneable
     {
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
-        private String[] clusterMemberEndpoints = Configuration.clusterMemberEndpoints();
+        private String clusterMemberEndpoints = Configuration.clusterMemberEndpoints();
         private String ingressChannel = Configuration.ingressChannel();
         private int ingressStreamId = Configuration.ingressStreamId();
         private String egressChannel = Configuration.egressChannel();
@@ -826,6 +863,7 @@ public final class AeronCluster implements AutoCloseable
                     new Aeron.Context()
                         .aeronDirectoryName(aeronDirectoryName)
                         .errorHandler(errorHandler));
+
                 ownsAeronClient = true;
             }
 
@@ -883,7 +921,7 @@ public final class AeronCluster implements AutoCloseable
          * @return this for a fluent API.
          * @see Configuration#CLUSTER_MEMBER_ENDPOINTS_PROP_NAME
          */
-        public Context clusterMemberEndpoints(final String... clusterMembers)
+        public Context clusterMemberEndpoints(final String clusterMembers)
         {
             this.clusterMemberEndpoints = clusterMembers;
             return this;
@@ -897,7 +935,7 @@ public final class AeronCluster implements AutoCloseable
          * @return members of the cluster which are all candidates to be leader.
          * @see Configuration#CLUSTER_MEMBER_ENDPOINTS_PROP_NAME
          */
-        public String[] clusterMemberEndpoints()
+        public String clusterMemberEndpoints()
         {
             return clusterMemberEndpoints;
         }
@@ -1172,7 +1210,7 @@ public final class AeronCluster implements AutoCloseable
          * {@link AeronCluster#pollEgress()}.
          *
          * @return the {@link SessionMessageListener} function that will be called when polling for egress via
-         *         {@link AeronCluster#pollEgress()}.
+         * {@link AeronCluster#pollEgress()}.
          */
         public SessionMessageListener sessionMessageListener()
         {

@@ -19,7 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.Publication;
-import io.aeron.driver.exceptions.ConfigurationException;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.logbuffer.FrameDescriptor;

@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver.exceptions;
+package io.aeron.exceptions;
 
-public class ConfigurationException extends IllegalArgumentException
+public class ConfigurationException extends AeronException
 {
     public ConfigurationException(final String message)
     {

@@ -24,13 +24,9 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressAdapter;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import io.aeron.driver.MediaDriver;
-import io.aeron.driver.MinMulticastFlowControlSupplier;
-import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.*;
 import io.aeron.logbuffer.Header;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.*;
 import org.junit.*;
 
 import java.io.File;
@@ -38,9 +34,8 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
-public class AppointedLeaderClusterTest
+public class ClusterTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int MEMBER_COUNT = 3;
@@ -103,7 +98,6 @@ public class AppointedLeaderClusterTest
                     .errorHandler(Throwable::printStackTrace)
                     .clusterMemberId(i)
                     .clusterMembers(CLUSTER_MEMBERS)
-                    .appointedLeaderId(0)
                     .aeronDirectoryName(baseDirName)
                     .clusterDir(new File(baseDirName, "consensus-module"))
                     .ingressChannel("aeron:udp?term-length=64k")
@@ -156,12 +150,6 @@ public class AppointedLeaderClusterTest
                 driver.mediaDriver().context().deleteAeronDirectory();
             }
         }
-    }
-
-    @Test(timeout = 10_000)
-    public void shouldConnectAndSendKeepAlive()
-    {
-        assertTrue(client.sendKeepAlive());
     }
 
     @Test(timeout = 10_000)

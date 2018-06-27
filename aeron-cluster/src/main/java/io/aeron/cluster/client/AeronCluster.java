@@ -1233,7 +1233,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Close the context and free applicable resources.
          * <p>
-         * If the {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
+         * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
          */
         public void close()
         {

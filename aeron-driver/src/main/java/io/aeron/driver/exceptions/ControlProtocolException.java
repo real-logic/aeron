@@ -16,8 +16,9 @@
 package io.aeron.driver.exceptions;
 
 import io.aeron.ErrorCode;
+import io.aeron.exceptions.AeronException;
 
-public class ControlProtocolException extends IllegalArgumentException
+public class ControlProtocolException extends AeronException
 {
     private final ErrorCode code;
 

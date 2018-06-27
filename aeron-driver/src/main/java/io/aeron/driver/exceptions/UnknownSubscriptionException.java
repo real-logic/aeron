@@ -15,7 +15,9 @@
  */
 package io.aeron.driver.exceptions;
 
-public class UnknownSubscriptionException extends IllegalArgumentException
+import io.aeron.exceptions.AeronException;
+
+public class UnknownSubscriptionException extends AeronException
 {
     public UnknownSubscriptionException(final String message)
     {

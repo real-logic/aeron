@@ -15,7 +15,9 @@
  */
 package io.aeron.driver.exceptions;
 
-public class ActiveDriverException extends IllegalStateException
+import io.aeron.exceptions.AeronException;
+
+public class ActiveDriverException extends AeronException
 {
     public ActiveDriverException(final String message)
     {

@@ -15,15 +15,13 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.CommonContext;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressAdapter;
-import io.aeron.cluster.service.ClientSession;
-import io.aeron.cluster.service.ClusteredServiceContainer;
+import io.aeron.cluster.service.*;
 import io.aeron.driver.*;
 import io.aeron.logbuffer.Header;
 import org.agrona.*;
@@ -32,9 +30,11 @@ import org.junit.*;
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
+@Ignore
 public class ClusterTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;
@@ -53,7 +53,7 @@ public class ClusterTest
     private final CountDownLatch latch = new CountDownLatch(MEMBER_COUNT);
 
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
-    private ClusteredMediaDriver[] drivers = new ClusteredMediaDriver[MEMBER_COUNT];
+    private ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MEMBER_COUNT];
     private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
@@ -76,7 +76,7 @@ public class ClusterTest
                 .controlResponseStreamId(110 + i)
                 .aeronDirectoryName(baseDirName);
 
-            drivers[i] = ClusteredMediaDriver.launch(
+            clusteredMediaDrivers[i] = ClusteredMediaDriver.launch(
                 new MediaDriver.Context()
                     .aeronDirectoryName(baseDirName)
                     .threadingMode(ThreadingMode.SHARED)
@@ -141,7 +141,7 @@ public class ClusterTest
             CloseHelper.close(container);
         }
 
-        for (final ClusteredMediaDriver driver : drivers)
+        for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
         {
             CloseHelper.close(driver);
 
@@ -155,6 +155,9 @@ public class ClusterTest
     @Test(timeout = 10_000)
     public void shouldEchoMessagesViaService() throws InterruptedException
     {
+        final int leaderMemberId = findLeaderId();
+        assertThat(leaderMemberId, not(Aeron.NULL_VALUE));
+
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final long msgCorrelationId = client.nextCorrelationId();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
@@ -277,5 +280,24 @@ public class ClusterTest
                 latch.countDown();
             }
         }
+    }
+
+    private int findLeaderId()
+    {
+        int leaderMemberId = Aeron.NULL_VALUE;
+
+        for (int i = 0; i < 3; i++)
+        {
+            final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
+            final Cluster.Role role = Cluster.Role.get(
+                (int)driver.consensusModule().context().clusterNodeCounter().get());
+
+            if (Cluster.Role.LEADER == role)
+            {
+                leaderMemberId = driver.consensusModule().context().clusterMemberId();
+            }
+        }
+
+        return leaderMemberId;
     }
 }

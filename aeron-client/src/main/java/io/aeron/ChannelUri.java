@@ -412,7 +412,7 @@ public class ChannelUri
     }
 
     /**
-     * Is the param tagged? That is does it start with the "tag:" prefix.
+     * Is the param tagged? (starts with the "tag:" prefix)
      *
      * @param paramValue to check if tagged.
      * @return true if tagged or false if not.
@@ -425,7 +425,7 @@ public class ChannelUri
     /**
      * Get the value of the tag from a given parameter.
      *
-     * @param paramValue to extra the tag value from.
+     * @param paramValue to extract the tag value from.
      * @return the value of the tag or {@link #INVALID_TAG} if not tagged.
      */
     public static long getTag(final String paramValue)

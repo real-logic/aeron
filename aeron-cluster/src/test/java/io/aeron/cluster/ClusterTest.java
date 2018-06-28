@@ -187,6 +187,7 @@ public class ClusterTest
 
         assertThat(client.leaderMemberId(), is(leaderMemberId));
         latch.await();
+        consumer.halt();
 
         for (final EchoService service : echoServices)
         {
@@ -221,6 +222,7 @@ public class ClusterTest
 
     static class EchoConsumer extends StubEgressListener implements Runnable
     {
+        private volatile boolean halt;
         private int messageCount;
         private final EgressAdapter egressAdapter;
 
@@ -229,12 +231,22 @@ public class ClusterTest
             egressAdapter = new EgressAdapter(this, clusterSessionId, egressSubscription, 10);
         }
 
+        void halt()
+        {
+            halt = true;
+        }
+
         public void run()
         {
             while (messageCount < MESSAGE_COUNT)
             {
                 if (egressAdapter.poll() <= 0)
                 {
+                    if (halt)
+                    {
+                        break;
+                    }
+
                     Thread.yield();
                 }
             }

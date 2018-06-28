@@ -105,10 +105,9 @@ public class RecoveryState
         tempBuffer.putInt(SERVICE_COUNT_OFFSET, serviceCount);
 
         final int keyLength = SNAPSHOT_RECORDING_IDS_OFFSET + (serviceCount * SIZE_OF_LONG);
-        final int maxRecordingIdsLength = SNAPSHOT_RECORDING_IDS_OFFSET + (SIZE_OF_LONG * serviceCount);
-        if (maxRecordingIdsLength > MAX_KEY_LENGTH)
+        if (keyLength > MAX_KEY_LENGTH)
         {
-            throw new ClusterException(maxRecordingIdsLength + " exceeds max key length " + MAX_KEY_LENGTH);
+            throw new ClusterException(keyLength + " exceeds max key length " + MAX_KEY_LENGTH);
         }
 
         for (int i = 0; i < serviceCount; i++)
@@ -123,8 +122,7 @@ public class RecoveryState
         labelOffset += tempBuffer.putLongAscii(keyLength + labelOffset, logPosition);
         labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, " hasReplay=" + hasReplay);
 
-        return aeron.addCounter(
-            RECOVERY_STATE_TYPE_ID, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelOffset);
+        return aeron.addCounter(RECOVERY_STATE_TYPE_ID, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelOffset);
     }
 
     /**

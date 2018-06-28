@@ -314,7 +314,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     }
 
     @SuppressWarnings("unused")
-    void onyNewLeadershipTermEvent(
+    void onNewLeadershipTermEvent(
         final long leadershipTermId,
         final long logPosition,
         final long timestampMs,

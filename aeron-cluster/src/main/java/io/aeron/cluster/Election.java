@@ -285,7 +285,7 @@ class Election implements AutoCloseable
         final int followerMemberId,
         final boolean vote)
     {
-        if (Cluster.Role.CANDIDATE == consensusModuleAgent.role() &&
+        if (State.CANDIDATE_BALLOT == state &&
             candidateTermId == this.candidateTermId &&
             candidateMemberId == thisMember.id())
         {
@@ -469,7 +469,7 @@ class Election implements AutoCloseable
 
         if (ctx.appointedLeaderId() != NULL_VALUE)
         {
-            return  workCount;
+            return workCount;
         }
 
         final long canvassDeadlineMs = (isStartup ?
@@ -653,7 +653,7 @@ class Election implements AutoCloseable
             workCount += 1;
         }
 
-        return  workCount;
+        return workCount;
     }
 
     private int followerTransition(final long nowMs)
@@ -679,7 +679,6 @@ class Election implements AutoCloseable
 
     private int followerReady(final long nowMs)
     {
-        int workCount = 1;
         final Publication publication = leaderMember.publication();
 
         if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, logPosition, thisMember.id()))
@@ -688,22 +687,25 @@ class Election implements AutoCloseable
             {
                 close();
             }
-
-            workCount += 0;
         }
-        else if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())))
+        else if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatTimeoutNs())))
         {
             state(State.CANVASS, nowMs);
-            workCount += 1;
         }
 
-        return workCount;
+        return 1;
     }
 
     private void state(final State state, final long nowMs)
     {
 //        System.out.println("memberId=" + thisMember.id() + " " + this.state + " -> " + state);
         timeOfLastStateChangeMs = nowMs;
+
+        if (State.CANDIDATE_BALLOT == this.state && State.LEADER_TRANSITION != state)
+        {
+            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
+        }
+
         this.state.exit(this);
         this.state = state;
         stateCounter.setOrdered(state.code());

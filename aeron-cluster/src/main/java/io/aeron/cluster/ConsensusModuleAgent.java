@@ -957,14 +957,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         boolean result = false;
 
-        if (Cluster.Role.LEADER == role &&
-            logPublisher.appendNewLeadershipTermEvent(
-            leadershipTermId, election.logPosition(), nowMs, memberId, logPublisher.sessionId()))
+        if (Cluster.Role.LEADER == role)
         {
-            election = null;
-            result = true;
+            if (logPublisher.appendNewLeadershipTermEvent(
+                leadershipTermId, election.logPosition(), nowMs, memberId, logPublisher.sessionId()))
+            {
+                election = null;
+                result = true;
+            }
         }
-        else if (Cluster.Role.FOLLOWER == role)
+        else
         {
             election = null;
             result = true;

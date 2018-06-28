@@ -40,6 +40,16 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         return timerWheel.poll(nowMs, this, TIMER_POLL_LIMIT);
     }
 
+    long timerCount()
+    {
+        return timerWheel.timerCount();
+    }
+
+    long currentTickTimeMs()
+    {
+        return timerWheel.currentTickTime();
+    }
+
     public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId)
     {
         final long correlationId = correlationIdByTimerIdMap.remove(timerId);

@@ -1380,10 +1380,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     replayLog(image, stopPosition, counter);
                     awaitServiceAcks();
 
-                    int workCount;
-                    while (0 != (workCount = timerService.poll(clusterTimeMs)))
+                    while (0 != timerService.poll(clusterTimeMs) ||
+                        (timerService.currentTickTimeMs() < clusterTimeMs && timerService.timerCount() > 0))
                     {
-                        idle(workCount);
+                        idle();
                     }
                 }
             }
@@ -1750,13 +1750,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void cancelMissedTimers()
     {
-        for (LongHashSet.LongIterator i = missedTimersSet.iterator(); i.hasNext(); )
-        {
-            if (timerService.cancelTimer(i.next()))
-            {
-                i.remove();
-            }
-        }
+        missedTimersSet.removeIf(timerService::cancelTimer);
     }
 
     private void onUnavailableIngressImage(final Image image)

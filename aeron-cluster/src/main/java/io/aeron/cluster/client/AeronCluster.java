@@ -298,7 +298,7 @@ public final class AeronCluster implements AutoCloseable
      * Poll the {@link #egressSubscription()} for session messages which are dispatched to
      * {@link Context#sessionMessageListener()}.
      * <p>
-     * <b>Note:</b> if {@link Context#sessionMessageListener()} is not set then a {@link NullPointerException} could
+     * <b>Note:</b> if {@link Context#sessionMessageListener()} is not set then a {@link ConfigurationException} could
      * result.
      *
      * @return the number of fragments processed.
@@ -883,7 +883,7 @@ public final class AeronCluster implements AutoCloseable
                 sessionMessageListener =
                     (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
                     {
-                        throw new IllegalStateException(
+                        throw new ConfigurationException(
                             "sessionMessageListener must be specified on AeronCluster.Context");
                     };
             }

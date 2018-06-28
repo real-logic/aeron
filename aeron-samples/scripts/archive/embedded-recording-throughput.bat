@@ -20,7 +20,7 @@
     -XX:BiasedLockingStartupDelay=0 ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.sample.messageLength=32 ^
-    -Daeron.sample.messages=50000000 ^
+    -Daeron.sample.messages=100000000 ^
     -Daeron.term.buffer.sparse.file=false ^
     -Daeron.mtu.length=16384 ^
     -Daeron.socket.so_sndbuf=2m ^

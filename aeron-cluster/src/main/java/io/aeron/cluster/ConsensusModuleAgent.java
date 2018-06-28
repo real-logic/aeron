@@ -813,7 +813,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void becomeLeader()
     {
-        role(Cluster.Role.LEADER);
         closeExistingLog();
         updateMemberDetails();
 

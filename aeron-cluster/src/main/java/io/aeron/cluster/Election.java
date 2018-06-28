@@ -37,31 +37,18 @@ class Election implements AutoCloseable
     enum State
     {
         INIT(0),
-
-        CANVASS(1)
-        {
-            void exit(final Election election)
-            {
-                election.isStartup(false);
-            }
-        },
+        CANVASS(1),
 
         NOMINATE(2),
-
         CANDIDATE_BALLOT(3),
-
         FOLLOWER_BALLOT(4),
 
         LEADER_TRANSITION(5),
-
         LEADER_READY(6),
 
         FOLLOWER_CATCHUP_TRANSITION(7),
-
         FOLLOWER_CATCHUP(8),
-
         FOLLOWER_TRANSITION(9),
-
         FOLLOWER_READY(10);
 
         static final State[] STATES;
@@ -87,10 +74,6 @@ class Election implements AutoCloseable
         State(final int code)
         {
             this.code = code;
-        }
-
-        void exit(final Election election)
-        {
         }
 
         int code()
@@ -495,8 +478,6 @@ class Election implements AutoCloseable
             candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
             ClusterMember.becomeCandidate(clusterMembers, candidateTermId, thisMember.id());
             ctx.clusterMarkFile().candidateTermId(candidateTermId);
-            consensusModuleAgent.role(Cluster.Role.CANDIDATE);
-
             state(State.CANDIDATE_BALLOT, nowMs);
             return 1;
         }
@@ -696,28 +677,6 @@ class Election implements AutoCloseable
         return 1;
     }
 
-    private void state(final State state, final long nowMs)
-    {
-//        System.out.println("memberId=" + thisMember.id() + " " + this.state + " -> " + state);
-        timeOfLastStateChangeMs = nowMs;
-
-        if (State.CANDIDATE_BALLOT == this.state && State.LEADER_TRANSITION != state)
-        {
-            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
-        }
-
-        this.state.exit(this);
-        this.state = state;
-        stateCounter.setOrdered(state.code());
-
-        if (State.CANVASS == state)
-        {
-            ClusterMember.reset(clusterMembers);
-            thisMember.leadershipTermId(leadershipTermId).logPosition(logPosition);
-            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
-        }
-    }
-
     private void placeVote(final long candidateTermId, final int candidateId, final boolean vote)
     {
         memberStatusPublisher.placeVote(
@@ -772,5 +731,41 @@ class Election implements AutoCloseable
         channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, logEndpoint);
 
         return channelUri;
+    }
+
+    private void state(final State newState, final long nowMs)
+    {
+//        System.out.println("memberId=" + thisMember.id() + " " + this.state + " -> " + newState);
+
+        if (State.CANVASS == newState)
+        {
+            ClusterMember.reset(clusterMembers);
+            thisMember.leadershipTermId(leadershipTermId).logPosition(logPosition);
+            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
+        }
+
+        if (State.CANVASS == this.state)
+        {
+            isStartup = false;
+        }
+
+        if (State.CANDIDATE_BALLOT == this.state && State.LEADER_TRANSITION != newState)
+        {
+            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
+        }
+
+        if (State.CANDIDATE_BALLOT == newState)
+        {
+            consensusModuleAgent.role(Cluster.Role.CANDIDATE);
+        }
+
+        if (State.LEADER_TRANSITION == newState)
+        {
+            consensusModuleAgent.role(Cluster.Role.LEADER);
+        }
+
+        this.state = newState;
+        stateCounter.setOrdered(newState.code());
+        timeOfLastStateChangeMs = nowMs;
     }
 }

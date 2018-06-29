@@ -16,13 +16,13 @@
 package io.aeron;
 
 import io.aeron.command.*;
+import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import static io.aeron.command.ControlProtocolEvents.*;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Separates the concern of communicating with the client conductor away from the rest of the client.
@@ -33,13 +33,7 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  */
 public class DriverProxy
 {
-    /**
-     * Maximum capacity of the write buffer
-     */
-    public static final int MSG_BUFFER_CAPACITY = 1024;
-
-    private final UnsafeBuffer buffer = new UnsafeBuffer(
-        allocateDirectAligned(MSG_BUFFER_CAPACITY, CACHE_LINE_LENGTH * 2));
+    private final MutableDirectBuffer buffer = new ExpandableArrayBuffer(1024);
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
@@ -78,7 +72,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_PUBLICATION, buffer, 0, publicationMessage.length()))
         {
-            throw new IllegalStateException("Could not write add publication command");
+            throw new AeronException("could not write add publication command");
         }
 
         return correlationId;
@@ -95,7 +89,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_EXCLUSIVE_PUBLICATION, buffer, 0, publicationMessage.length()))
         {
-            throw new IllegalStateException("Could not write add exclusive publication command");
+            throw new AeronException("could not write add exclusive publication command");
         }
 
         return correlationId;
@@ -111,7 +105,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(REMOVE_PUBLICATION, buffer, 0, RemoveMessageFlyweight.length()))
         {
-            throw new IllegalStateException("Could not write remove publication command");
+            throw new AeronException("could not write remove publication command");
         }
 
         return correlationId;
@@ -130,7 +124,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_SUBSCRIPTION, buffer, 0, subscriptionMessage.length()))
         {
-            throw new IllegalStateException("Could not write add subscription command");
+            throw new AeronException("could not write add subscription command");
         }
 
         return correlationId;
@@ -146,7 +140,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(REMOVE_SUBSCRIPTION, buffer, 0, RemoveMessageFlyweight.length()))
         {
-            throw new IllegalStateException("Could not write remove subscription message");
+            throw new AeronException("could not write remove subscription message");
         }
 
         return correlationId;
@@ -158,7 +152,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(CLIENT_KEEPALIVE, buffer, 0, CorrelatedMessageFlyweight.LENGTH))
         {
-            throw new IllegalStateException("Could not send client keepalive command");
+            throw new AeronException("could not send client keepalive command");
         }
     }
 
@@ -173,7 +167,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_DESTINATION, buffer, 0, destinationMessage.length()))
         {
-            throw new IllegalStateException("Could not write destination command");
+            throw new AeronException("could not write destination command");
         }
 
         return correlationId;
@@ -190,7 +184,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(REMOVE_DESTINATION, buffer, 0, destinationMessage.length()))
         {
-            throw new IllegalStateException("Could not write destination command");
+            throw new AeronException("could not write destination command");
         }
 
         return correlationId;
@@ -207,7 +201,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_RCV_DESTINATION, buffer, 0, destinationMessage.length()))
         {
-            throw new IllegalStateException("Could not write rcv destination command");
+            throw new AeronException("could not write rcv destination command");
         }
 
         return correlationId;
@@ -224,7 +218,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(REMOVE_RCV_DESTINATION, buffer, 0, destinationMessage.length()))
         {
-            throw new IllegalStateException("Could not write rcv destination command");
+            throw new AeronException("could not write rcv destination command");
         }
 
         return correlationId;
@@ -249,7 +243,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_COUNTER, buffer, 0, counterMessage.length()))
         {
-            throw new IllegalStateException("Could not write add counter command");
+            throw new AeronException("could not write add counter command");
         }
 
         return correlationId;
@@ -267,7 +261,7 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(ADD_COUNTER, buffer, 0, counterMessage.length()))
         {
-            throw new IllegalStateException("Could not write add counter command");
+            throw new AeronException("could not write add counter command");
         }
 
         return correlationId;
@@ -283,23 +277,15 @@ public class DriverProxy
 
         if (!toDriverCommandBuffer.write(REMOVE_COUNTER, buffer, 0, RemoveMessageFlyweight.length()))
         {
-            throw new IllegalStateException("Could not write remove counter command");
+            throw new AeronException("could not write remove counter command");
         }
 
         return correlationId;
     }
 
-    public long clientClose()
+    public void clientClose()
     {
-        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        correlatedMessage.correlationId(correlationId);
-
-        if (!toDriverCommandBuffer.write(CLIENT_CLOSE, buffer, 0, CorrelatedMessageFlyweight.LENGTH))
-        {
-            throw new IllegalStateException("Could not send client close command");
-        }
-
-        return correlationId;
+        correlatedMessage.correlationId(toDriverCommandBuffer.nextCorrelationId());
+        toDriverCommandBuffer.write(CLIENT_CLOSE, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 }

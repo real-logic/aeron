@@ -28,7 +28,7 @@ import org.agrona.DirectBuffer;
 public interface ClusteredService
 {
     /**
-     * Used to represent a null service identifier.
+     * Used to represent a null service identifier. Services should be numbered from 0 and be contiguous.
      */
     int NULL_SERVICE_ID = Aeron.NULL_VALUE;
 

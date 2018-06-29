@@ -83,8 +83,7 @@ public class ClientProxy
             .logFileName(logFileName)
             .sourceIdentity(sourceIdentity);
 
-        final int length = imageReady.length();
-        transmit(ON_AVAILABLE_IMAGE, buffer, length);
+        transmit(ON_AVAILABLE_IMAGE, buffer, imageReady.length());
     }
 
     public void onPublicationReady(
@@ -106,9 +105,8 @@ public class ClientProxy
             .channelStatusCounterId(channelStatusCounterId)
             .logFileName(logFileName);
 
-        final int length = publicationReady.length();
         final int msgTypeId = isExclusive ? ON_EXCLUSIVE_PUBLICATION_READY : ON_PUBLICATION_READY;
-        transmit(msgTypeId, buffer, length);
+        transmit(msgTypeId, buffer, publicationReady.length());
     }
 
     public void onSubscriptionReady(
@@ -137,8 +135,7 @@ public class ClientProxy
             .streamId(streamId)
             .channel(channel);
 
-        final int length = imageMessage.length();
-        transmit(ON_UNAVAILABLE_IMAGE, buffer, length);
+        transmit(ON_UNAVAILABLE_IMAGE, buffer, imageMessage.length());
     }
 
     public void onCounterReady(final long correlationId, final int counterId)

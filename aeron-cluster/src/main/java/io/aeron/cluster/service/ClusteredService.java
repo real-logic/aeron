@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster.service;
 
-import io.aeron.Aeron;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
@@ -27,11 +26,6 @@ import org.agrona.DirectBuffer;
  */
 public interface ClusteredService
 {
-    /**
-     * Used to represent a null service identifier. Services should be numbered from 0 and be contiguous.
-     */
-    int NULL_SERVICE_ID = Aeron.NULL_VALUE;
-
     /**
      * Start event for the service where the service can perform any initialisation required. This will be called
      * before any snapshot or logs are replayed.

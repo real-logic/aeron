@@ -21,6 +21,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder;
+import io.aeron.exceptions.ConfigurationException;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -430,6 +431,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
         @SuppressWarnings("MethodLength")
         public void conclude()
         {
+            if (serviceId < 0)
+            {
+                throw new ConfigurationException("service id must be not be negative: " + serviceId);
+            }
+
             if (null == threadFactory)
             {
                 threadFactory = Thread::new;

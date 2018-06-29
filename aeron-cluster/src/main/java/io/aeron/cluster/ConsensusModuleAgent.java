@@ -45,9 +45,9 @@ import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.cluster.ClusterSession.State.*;
+import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
-import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
-import static io.aeron.cluster.RecordingLog.CONSENSUS_MODULE_ID;
+import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_TYPE_ID;
 import static io.aeron.cluster.ServiceAck.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.lang.Long.MAX_VALUE;
@@ -1587,7 +1587,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 }
 
                 recordingLog.appendSnapshot(
-                    recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, CONSENSUS_MODULE_ID);
+                    recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, SERVICE_ID);
 
                 recordingLog.force();
             }

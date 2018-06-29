@@ -49,10 +49,6 @@ import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
  */
 public class ConsensusModule implements AutoCloseable
 {
-    /**
-     * Type of snapshot for this component.
-     */
-    public static final long SNAPSHOT_TYPE_ID = 1;
 
     /**
      * Possible states for the {@link ConsensusModule}.
@@ -223,6 +219,16 @@ public class ConsensusModule implements AutoCloseable
     public static class Configuration
     {
         static final int TIMER_POLL_LIMIT = 10;
+
+        /**
+         * Type of snapshot for this component.
+         */
+        public static final long SNAPSHOT_TYPE_ID = 1;
+
+        /**
+         * Service ID to identify a snapshot in the {@link RecordingLog}.
+         */
+        public static final int SERVICE_ID = Aeron.NULL_VALUE;
 
         /**
          * Property name for the identity of the cluster member.
@@ -2400,7 +2406,7 @@ public class ConsensusModule implements AutoCloseable
                 .consensusModuleStreamId(consensusModuleStreamId)
                 .ingressStreamId(ingressStreamId)
                 .memberId(clusterMemberId)
-                .serviceId(ClusteredService.NULL_SERVICE_ID)
+                .serviceId(SERVICE_ID)
                 .aeronDirectory(aeron.context().aeronDirectoryName())
                 .archiveChannel(archiveContext.controlRequestChannel())
                 .serviceControlChannel(serviceControlChannel)

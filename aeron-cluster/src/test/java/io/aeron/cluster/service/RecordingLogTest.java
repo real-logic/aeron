@@ -24,7 +24,7 @@ import java.io.File;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.cluster.RecordingLog.CONSENSUS_MODULE_ID;
+import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
 import static org.hamcrest.CoreMatchers.is;
@@ -62,14 +62,14 @@ public class RecordingLogTest
                 entry.termBaseLogPosition,
                 777,
                 entry.timestamp,
-                CONSENSUS_MODULE_ID);
+                SERVICE_ID);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
             assertThat(recordingLog.entries().size(), is(1));
 
-            final RecordingLog.Entry snapshot = recordingLog.getLatestSnapshot(ClusteredService.NULL_SERVICE_ID);
+            final RecordingLog.Entry snapshot = recordingLog.getLatestSnapshot(SERVICE_ID);
             assertEquals(entry.toString(), snapshot.toString());
         }
     }

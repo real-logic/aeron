@@ -80,12 +80,6 @@ import static org.agrona.BitUtil.*;
 public class RecordingLog implements AutoCloseable
 {
     /**
-     * The ID assigned to the consensus module as its service id for taking snapshots,
-     * which will be {@link io.aeron.Aeron#NULL_VALUE} with services numbered from 0 upwards.
-     */
-    public static final int CONSENSUS_MODULE_ID = NULL_VALUE;
-
-    /**
      * Representation of the entry in the {@link RecordingLog}.
      */
     public static final class Entry

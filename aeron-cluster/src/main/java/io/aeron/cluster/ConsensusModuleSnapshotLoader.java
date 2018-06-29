@@ -22,7 +22,7 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
-import static io.aeron.cluster.ConsensusModule.SNAPSHOT_TYPE_ID;
+import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_TYPE_ID;
 
 class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
 {

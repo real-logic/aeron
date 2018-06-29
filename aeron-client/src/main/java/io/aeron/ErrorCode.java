@@ -15,6 +15,8 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.AeronException;
+
 /**
  * Error codes between media driver and client and the on-wire protocol.
  */
@@ -61,7 +63,7 @@ public enum ErrorCode
             final int value = errorCode.value();
             if (null != ERROR_CODES[value])
             {
-                throw new IllegalStateException("value already in use: " + value);
+                throw new AeronException("value already in use: " + value);
             }
 
             ERROR_CODES[value] = errorCode;

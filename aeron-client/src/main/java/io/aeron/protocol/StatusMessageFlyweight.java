@@ -15,6 +15,7 @@
  */
 package io.aeron.protocol;
 
+import io.aeron.exceptions.AeronException;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
@@ -266,7 +267,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
         {
             if (frameLength > capacity())
             {
-                throw new IllegalStateException(String.format(
+                throw new AeronException(String.format(
                     "SM application specific feedback (%d) is truncated (%d)",
                     frameLength - HEADER_LENGTH,
                     capacity() - HEADER_LENGTH));

@@ -15,10 +15,7 @@
  */
 package io.aeron;
 
-import io.aeron.exceptions.ChannelEndpointException;
-import io.aeron.exceptions.ConductorServiceTimeoutException;
-import io.aeron.exceptions.DriverTimeoutException;
-import io.aeron.exceptions.RegistrationException;
+import io.aeron.exceptions.*;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.ManagedResource;
@@ -662,7 +659,7 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         if (isClosed)
         {
-            throw new IllegalStateException("Aeron client conductor is closed");
+            throw new AeronException("Aeron client conductor is closed");
         }
     }
 

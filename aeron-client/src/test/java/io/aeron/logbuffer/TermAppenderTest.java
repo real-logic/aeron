@@ -17,6 +17,7 @@ package io.aeron.logbuffer;
 
 import io.aeron.DirectBufferVector;
 import io.aeron.ReservedValueSupplier;
+import io.aeron.exceptions.AeronException;
 import org.agrona.BitUtil;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -334,7 +335,7 @@ public class TermAppenderTest
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameTwoLength);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AeronException.class)
     public void shouldDetectInvalidTerm()
     {
         final int length = 128;

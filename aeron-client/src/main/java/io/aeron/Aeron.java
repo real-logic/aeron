@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.DirectBuffer;
@@ -331,7 +332,7 @@ public class Aeron implements AutoCloseable
     {
         if (1 == isClosed)
         {
-            throw new IllegalStateException("Client is closed");
+            throw new AeronException("Client is closed");
         }
 
         return commandBuffer.nextCorrelationId();
@@ -346,7 +347,7 @@ public class Aeron implements AutoCloseable
     {
         if (1 == isClosed)
         {
-            throw new IllegalStateException("Client is closed");
+            throw new AeronException("Client is closed");
         }
 
         return conductor.countersReader();
@@ -1013,7 +1014,7 @@ public class Aeron implements AutoCloseable
 
                 if (CncFileDescriptor.CNC_VERSION != cncVersion)
                 {
-                    throw new IllegalStateException("CnC file version not supported: version=" + cncVersion);
+                    throw new AeronException("CnC file version not supported: version=" + cncVersion);
                 }
 
                 final ManyToOneRingBuffer ringBuffer = new ManyToOneRingBuffer(
@@ -1059,7 +1060,7 @@ public class Aeron implements AutoCloseable
             {
                 if (epochClock.time() > deadlineMs)
                 {
-                    throw new IllegalStateException("CnC file is created but not populated");
+                    throw new AeronException("CnC file is created but not populated");
                 }
 
                 sleep(IDLE_SLEEP_MS);
@@ -1069,7 +1070,7 @@ public class Aeron implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            throw new IllegalStateException("cannot open CnC file", ex);
+            throw new AeronException("cannot open CnC file", ex);
         }
     }
 

@@ -17,6 +17,7 @@ package io.aeron.logbuffer;
 
 import io.aeron.DirectBufferVector;
 import io.aeron.ReservedValueSupplier;
+import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
 import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -421,7 +422,7 @@ public class TermAppender
     {
         if (termId != expectedTermId)
         {
-            throw new IllegalStateException(
+            throw new AeronException(
                 "Action possibly delayed: expectedTermId=" + expectedTermId + " termId=" + termId);
         }
     }

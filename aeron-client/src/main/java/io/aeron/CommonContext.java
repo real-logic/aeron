@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.DriverTimeoutException;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
@@ -519,7 +520,7 @@ public class CommonContext implements AutoCloseable, Cloneable
 
         if (CNC_VERSION != cncVersion)
         {
-            throw new IllegalStateException(
+            throw new AeronException(
                 "Aeron CnC version does not match: required=" + CNC_VERSION + " version=" + cncVersion);
         }
 
@@ -573,7 +574,7 @@ public class CommonContext implements AutoCloseable, Cloneable
 
         if (CNC_VERSION != cncVersion)
         {
-            throw new IllegalStateException(
+            throw new AeronException(
                 "Aeron CnC version does not match: required=" + CNC_VERSION + " version=" + cncVersion);
         }
 

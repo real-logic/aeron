@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.*;
 import io.aeron.logbuffer.ControlledFragmentHandler.Action;
 import org.agrona.*;
@@ -217,7 +218,7 @@ public class Image
     {
         if (isClosed)
         {
-            throw new IllegalStateException("Image is closed");
+            throw new AeronException("Image is closed");
         }
 
         validatePosition(newPosition);

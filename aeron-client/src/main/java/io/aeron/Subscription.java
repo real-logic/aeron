@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.*;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.collections.ArrayUtil;
@@ -430,7 +431,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     {
         if (isClosed)
         {
-            throw new IllegalStateException("Subscription is closed");
+            throw new AeronException("Subscription is closed");
         }
 
         conductor.addRcvDestination(registrationId, endpointChannel);
@@ -445,7 +446,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     {
         if (isClosed)
         {
-            throw new IllegalStateException("Subscription is closed");
+            throw new AeronException("Subscription is closed");
         }
 
         conductor.removeRcvDestination(registrationId, endpointChannel);

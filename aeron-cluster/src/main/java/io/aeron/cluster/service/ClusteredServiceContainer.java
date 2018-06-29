@@ -124,7 +124,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
     public static class Configuration
     {
         /**
-         * Identity for a clustered service.
+         * Identity for a clustered service. Services should be numbered from 0 and be contiguous.
          */
         public static final String SERVICE_ID_PROP_NAME = "aeron.cluster.service.id";
 
@@ -547,7 +547,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the id for this clustered service.
+         * Set the id for this clustered service. Services should be numbered from 0 and be contiguous.
          *
          * @param serviceId for this clustered service.
          * @return this for a fluent API
@@ -560,7 +560,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Get the id for this clustered service.
+         * Get the id for this clustered service.Services should be numbered from 0 and be contiguous.
          *
          * @return the id for this clustered service.
          * @see Configuration#SERVICE_ID_PROP_NAME
@@ -571,9 +571,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the name for a clustered service to be the role of the {@link Agent}.
+         * Set the name for a clustered service to be the {@link Agent#roleName()} for the {@link Agent}.
          *
-         * @param serviceName for a clustered service to be the role of the {@link Agent}.
+         * @param serviceName for a clustered service to be the role for the {@link Agent}.
          * @return this for a fluent API.
          * @see Configuration#SERVICE_NAME_PROP_NAME
          */
@@ -584,7 +584,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Get the name for a clustered service to be the role of the {@link Agent}.
+         * Get the name for a clustered service to be the {@link Agent#roleName()} for the {@link Agent}.
          *
          * @return the name for a clustered service to be the role of the {@link Agent}.
          * @see Configuration#SERVICE_NAME_PROP_NAME

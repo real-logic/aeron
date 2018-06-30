@@ -296,7 +296,7 @@ public class AppointedLeaderClusterTest
                 cluster.idle();
             }
 
-            if (++messageCount >= MESSAGE_COUNT)
+            if (++messageCount == MESSAGE_COUNT)
             {
                 latch.countDown();
             }

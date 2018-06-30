@@ -166,9 +166,9 @@ class ClientConductor implements Agent, DriverEventsListener
         return isClosed;
     }
 
-    public void onError(final long correlationId, final ErrorCode errorCode, final String message)
+    public void onError(final long correlationId, final ErrorCode errorCode, final int codeValue, final String message)
     {
-        driverException = new RegistrationException(errorCode, message);
+        driverException = new RegistrationException(errorCode, codeValue, message);
     }
 
     public void onChannelEndpointError(final int statusIndicatorId, final String message)

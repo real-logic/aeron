@@ -71,15 +71,18 @@ class DriverEventsAdapter implements MessageHandler
                 errorResponse.wrap(buffer, index);
 
                 final int correlationId = (int)errorResponse.offendingCommandCorrelationId();
+                final int errorCodeValue = errorResponse.errorCodeValue();
+                final ErrorCode errorCode = ErrorCode.get(errorCodeValue);
+                final String message = errorResponse.errorMessage();
 
-                if (CHANNEL_ENDPOINT_ERROR == errorResponse.errorCode())
+                if (CHANNEL_ENDPOINT_ERROR == errorCode)
                 {
-                    listener.onChannelEndpointError(correlationId, errorResponse.errorMessage());
+                    listener.onChannelEndpointError(correlationId, message);
                 }
                 else if (correlationId == activeCorrelationId)
                 {
                     receivedCorrelationId = correlationId;
-                    listener.onError(correlationId, errorResponse.errorCode(), errorResponse.errorMessage());
+                    listener.onError(correlationId, errorCode, errorCodeValue, message);
                 }
                 break;
             }

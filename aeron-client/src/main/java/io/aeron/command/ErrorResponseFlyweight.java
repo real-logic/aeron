@@ -93,6 +93,16 @@ public class ErrorResponseFlyweight
     }
 
     /**
+     * Error code value for the command.
+     *
+     * @return error code value for the command
+     */
+    public int errorCodeValue()
+    {
+        return buffer.getInt(offset + ERROR_CODE_OFFSET);
+    }
+
+    /**
      * Set the error code for the command.
      *
      * @param code for the error

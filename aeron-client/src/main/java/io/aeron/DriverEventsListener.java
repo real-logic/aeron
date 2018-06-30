@@ -20,7 +20,7 @@ package io.aeron;
  */
 interface DriverEventsListener
 {
-    void onError(long correlationId, ErrorCode errorCode, String message);
+    void onError(long correlationId, ErrorCode errorCode, int codeValue, String message);
 
     void onAvailableImage(
         long correlationId,

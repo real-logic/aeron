@@ -18,17 +18,18 @@ package io.aeron.exceptions;
 import io.aeron.*;
 
 /**
- * Caused when a error occurs during addition or release of {@link Publication}s
- * or {@link Subscription}s
+ * Caused when a error occurs during addition or release of {@link Publication}s or {@link Subscription}s
  */
 public class RegistrationException extends AeronException
 {
     private final ErrorCode code;
+    private final int value;
 
-    public RegistrationException(final ErrorCode code, final String msg)
+    public RegistrationException(final ErrorCode code, final int value, final String msg)
     {
         super(msg);
         this.code = code;
+        this.value = value;
     }
 
     /**
@@ -39,5 +40,21 @@ public class RegistrationException extends AeronException
     public ErrorCode errorCode()
     {
         return code;
+    }
+
+    /**
+     * Value of the code encoded. This can provide additional information when a {@link ErrorCode#UNKNOWN_CODE_VALUE} is
+     * returned.
+     *
+     * @return of the code encoded.
+     */
+    public int value()
+    {
+        return value;
+    }
+
+    public String getMessage()
+    {
+        return "value=" + value + " " + super.getMessage();
     }
 }

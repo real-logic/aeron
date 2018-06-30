@@ -722,7 +722,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
             service(correlationId);
 
-            if (driverEventsAdapter.lastReceivedCorrelationId() == correlationId)
+            if (driverEventsAdapter.receivedCorrelationId() == correlationId)
             {
                 if (null != driverException)
                 {

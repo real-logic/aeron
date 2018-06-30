@@ -40,7 +40,7 @@ class DriverEventsAdapter implements MessageHandler
     private final DriverEventsListener listener;
 
     private long activeCorrelationId;
-    private long lastReceivedCorrelationId;
+    private long receivedCorrelationId;
 
     DriverEventsAdapter(final CopyBroadcastReceiver broadcastReceiver, final DriverEventsListener listener)
     {
@@ -51,14 +51,14 @@ class DriverEventsAdapter implements MessageHandler
     public int receive(final long activeCorrelationId)
     {
         this.activeCorrelationId = activeCorrelationId;
-        this.lastReceivedCorrelationId = Aeron.NULL_VALUE;
+        this.receivedCorrelationId = Aeron.NULL_VALUE;
 
         return broadcastReceiver.receive(this);
     }
 
-    public long lastReceivedCorrelationId()
+    public long receivedCorrelationId()
     {
-        return lastReceivedCorrelationId;
+        return receivedCorrelationId;
     }
 
     @SuppressWarnings("MethodLength")
@@ -78,9 +78,8 @@ class DriverEventsAdapter implements MessageHandler
                 }
                 else if (correlationId == activeCorrelationId)
                 {
+                    receivedCorrelationId = correlationId;
                     listener.onError(correlationId, errorResponse.errorCode(), errorResponse.errorMessage());
-
-                    lastReceivedCorrelationId = correlationId;
                 }
                 break;
             }
@@ -107,6 +106,7 @@ class DriverEventsAdapter implements MessageHandler
                 final long correlationId = publicationReady.correlationId();
                 if (correlationId == activeCorrelationId)
                 {
+                    receivedCorrelationId = correlationId;
                     listener.onNewPublication(
                         correlationId,
                         publicationReady.registrationId(),
@@ -115,8 +115,6 @@ class DriverEventsAdapter implements MessageHandler
                         publicationReady.publicationLimitCounterId(),
                         publicationReady.channelStatusCounterId(),
                         publicationReady.logFileName());
-
-                    lastReceivedCorrelationId = correlationId;
                 }
                 break;
             }
@@ -128,9 +126,8 @@ class DriverEventsAdapter implements MessageHandler
                 final long correlationId = subscriptionReady.correlationId();
                 if (correlationId == activeCorrelationId)
                 {
+                    receivedCorrelationId = correlationId;
                     listener.onNewSubscription(correlationId, subscriptionReady.channelStatusCounterId());
-
-                    lastReceivedCorrelationId = correlationId;
                 }
                 break;
             }
@@ -142,7 +139,7 @@ class DriverEventsAdapter implements MessageHandler
                 final long correlationId = operationSucceeded.correlationId();
                 if (correlationId == activeCorrelationId)
                 {
-                    lastReceivedCorrelationId = correlationId;
+                    receivedCorrelationId = correlationId;
                 }
                 break;
             }
@@ -163,6 +160,7 @@ class DriverEventsAdapter implements MessageHandler
                 final long correlationId = publicationReady.correlationId();
                 if (correlationId == activeCorrelationId)
                 {
+                    receivedCorrelationId = correlationId;
                     listener.onNewExclusivePublication(
                         correlationId,
                         publicationReady.registrationId(),
@@ -171,8 +169,6 @@ class DriverEventsAdapter implements MessageHandler
                         publicationReady.publicationLimitCounterId(),
                         publicationReady.channelStatusCounterId(),
                         publicationReady.logFileName());
-
-                    lastReceivedCorrelationId = correlationId;
                 }
                 break;
             }
@@ -185,9 +181,8 @@ class DriverEventsAdapter implements MessageHandler
                 final long correlationId = counterUpdate.correlationId();
                 if (correlationId == activeCorrelationId)
                 {
+                    receivedCorrelationId = correlationId;
                     listener.onNewCounter(correlationId, counterId);
-
-                    lastReceivedCorrelationId = correlationId;
                 }
                 else
                 {

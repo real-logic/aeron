@@ -929,7 +929,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             final RecordingLog.Log log = plan.logs.get(0);
             final long startPosition = log.startPosition;
-            final long stopPosition = log.stopPosition;
+            final long stopPosition = Math.min(log.stopPosition, electionCommitPosition);
             leadershipTermId = log.leadershipTermId;
 
             if (log.logPosition < 0)
@@ -1022,17 +1022,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return recordingLog.getTermEntry(leadershipTermId).logPosition;
     }
 
-    void truncateLogEntryAndAbort(final long leadershipTermId, final long logPosition)
+    void truncateLogEntry(final long leadershipTermId, final long logPosition)
     {
         final long recordingId = logRecordingId();
 
-        // TODO: this is brutal. Need to handle the service.
         archive.truncateRecording(recordingId, logPosition);
         recordingLog.commitLogPosition(leadershipTermId, logPosition);
-        ctx.errorHandler().onError(new ClusterException(
-            "leadershipTermId " + leadershipTermId + ": truncated recording log " + recordingId + " @ " + logPosition));
-        state(ConsensusModule.State.CLOSED);
-        ctx.terminationHook().run();
     }
 
     boolean electionComplete(final long nowMs)

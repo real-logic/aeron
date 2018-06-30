@@ -117,7 +117,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 if (lingeringResources.size() > lingeringResourcesSize)
                 {
-                    sleep(1);
+                    sleep(16);
                 }
 
                 for (int i = 0, size = lingeringResources.size(); i < size; i++)

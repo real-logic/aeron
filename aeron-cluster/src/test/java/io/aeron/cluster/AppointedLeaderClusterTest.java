@@ -16,12 +16,11 @@
 package io.aeron.cluster;
 
 import io.aeron.CommonContext;
-import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.EgressAdapter;
+import io.aeron.cluster.client.SessionMessageListener;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
@@ -31,6 +30,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.MutableInteger;
 import org.junit.*;
 
 import java.io.File;
@@ -56,12 +56,15 @@ public class AppointedLeaderClusterTest
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
 
     private final CountDownLatch latch = new CountDownLatch(MEMBER_COUNT);
-
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
     private ClusteredMediaDriver[] drivers = new ClusteredMediaDriver[MEMBER_COUNT];
     private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
+
+    private final MutableInteger responseCount = new MutableInteger();
+    private final SessionMessageListener sessionMessageListener =
+        (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) -> responseCount.value++;
 
     @Before
     public void before()
@@ -126,6 +129,7 @@ public class AppointedLeaderClusterTest
 
         client = AeronCluster.connect(
             new AeronCluster.Context()
+                .sessionMessageListener(sessionMessageListener)
                 .aeronDirectoryName(aeronDirName)
                 .ingressChannel("aeron:udp")
                 .clusterMemberEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
@@ -165,17 +169,11 @@ public class AppointedLeaderClusterTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldEchoMessagesViaService() throws InterruptedException
+    public void shouldEchoMessagesViaService() throws Exception
     {
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final long msgCorrelationId = client.nextCorrelationId();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
-
-        final EchoConsumer consumer = new EchoConsumer(client.egressSubscription(), client.clusterSessionId());
-        final Thread thread = new Thread(consumer);
-        thread.setName("consumer");
-        thread.setDaemon(true);
-        thread.start();
 
         for (int i = 0; i < MESSAGE_COUNT; i++)
         {
@@ -184,10 +182,18 @@ public class AppointedLeaderClusterTest
                 TestUtil.checkInterruptedStatus();
                 Thread.yield();
             }
+
+            client.pollEgress();
+        }
+
+        while (responseCount.get() < MESSAGE_COUNT)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+            client.pollEgress();
         }
 
         latch.await();
-        consumer.halt();
 
         for (final EchoService service : echoServices)
         {
@@ -218,53 +224,6 @@ public class AppointedLeaderClusterTest
         builder.setLength(builder.length() - 1);
 
         return builder.toString();
-    }
-
-    static class EchoConsumer extends StubEgressListener implements Runnable
-    {
-        private volatile boolean halt;
-        private int messageCount;
-        private final EgressAdapter egressAdapter;
-
-        EchoConsumer(final Subscription egressSubscription, final long clusterSessionId)
-        {
-            egressAdapter = new EgressAdapter(this, clusterSessionId, egressSubscription, 10);
-        }
-
-        void halt()
-        {
-            halt = true;
-        }
-
-        public void run()
-        {
-            while (messageCount < MESSAGE_COUNT)
-            {
-                if (egressAdapter.poll() <= 0)
-                {
-                    if (halt)
-                    {
-                        break;
-                    }
-
-                    Thread.yield();
-                }
-            }
-        }
-
-        public void onMessage(
-            final long correlationId,
-            final long clusterSessionId,
-            final long timestamp,
-            final DirectBuffer buffer,
-            final int offset,
-            final int length,
-            final Header header)
-        {
-            assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(MSG));
-
-            messageCount++;
-        }
     }
 
     static class EchoService extends StubClusteredService

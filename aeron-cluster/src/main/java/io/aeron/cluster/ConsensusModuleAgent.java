@@ -203,12 +203,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
 
             awaitServiceAcks();
-
-            if (!recoveryPlan.logs.isEmpty())
-            {
-                recoverFromLog(recoveryPlan, archive);
-            }
-            isRecovering = false;
         }
 
         if (ConsensusModule.State.SUSPENDED != state)
@@ -799,7 +793,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         clusterTimeMs = timestamp;
         this.leadershipTermId = leadershipTermId;
 
-        if (null != election)
+        if (null != election && null != appendedPosition)
         {
             final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
             election.onReplayNewLeadershipTermEvent(recordingId, leadershipTermId, logPosition, cachedTimeMs);
@@ -924,6 +918,42 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         awaitServiceAcks();
     }
 
+    ReplayFromLog replayFromLog(final long electionCommitPosition)
+    {
+        final RecordingLog.RecoveryPlan plan = recoveryPlan;
+        ReplayFromLog replayFromLog = null;
+
+        // TODO: fix up log indicating commit position.
+
+        if (!plan.logs.isEmpty())
+        {
+            final RecordingLog.Log log = plan.logs.get(0);
+            final long startPosition = log.startPosition;
+            final long stopPosition = log.stopPosition;
+            leadershipTermId = log.leadershipTermId;
+
+            if (log.logPosition < 0)
+            {
+                recordingLog.commitLogPosition(leadershipTermId, stopPosition);
+            }
+
+            if (plan.hasReplay())
+            {
+                replayFromLog = new ReplayFromLog(
+                    archive,
+                    log.recordingId,
+                    startPosition,
+                    stopPosition,
+                    leadershipTermId,
+                    log.sessionId,
+                    this,
+                    ctx);
+            }
+        }
+
+        return replayFromLog;
+    }
+
     void awaitServicesReadyForReplay(
         final String channel,
         final int streamId,
@@ -947,6 +977,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             idle();
         }
+
+        isRecovering = false;
     }
 
     void replayLogPoll(final LogAdapter logAdapter, final long stopPosition, final Counter commitPosition)

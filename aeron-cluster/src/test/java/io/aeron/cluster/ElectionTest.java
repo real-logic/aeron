@@ -77,6 +77,7 @@ public class ElectionTest
 
         final long t1 = 0;
         election.doWork(t1);
+        election.doWork(t1);
         verify(consensusModuleAgent).becomeLeader();
         verify(recordingLog).appendTerm(RECORDING_ID, 0L, 0L, t1);
         assertThat(election.state(), is(Election.State.LEADER_READY));
@@ -130,10 +131,11 @@ public class ElectionTest
         final long t3 = 3;
         clock.update(t3);
         election.doWork(t3);
-        assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
+        assertThat(election.state(), is(Election.State.LEADER_REPLAY));
 
         final long t4 = 4;
         clock.update(t4);
+        election.doWork(t4);
         election.doWork(t4);
         verify(consensusModuleAgent).becomeLeader();
         verify(recordingLog).appendTerm(RECORDING_ID, 0L, 0L, t4);
@@ -213,11 +215,12 @@ public class ElectionTest
 
         final int logSessionId = -7;
         election.onNewLeadershipTerm(leadershipTermId, logPosition, candidateTermId, candidateId, logSessionId);
-        assertThat(election.state(), is(Election.State.FOLLOWER_TRANSITION));
+        assertThat(election.state(), is(Election.State.FOLLOWER_REPLAY));
 
         when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString(), anyLong()))
             .thenReturn(mock(Subscription.class));
         final long t3 = 3;
+        election.doWork(t3);
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.FOLLOWER_READY));
 
@@ -391,7 +394,7 @@ public class ElectionTest
 
         final long t5 = t4 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
         election.doWork(t5);
-        assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
+        assertThat(election.state(), is(Election.State.LEADER_REPLAY));
     }
 
     @Test
@@ -429,7 +432,7 @@ public class ElectionTest
         election.onVote(
             candidateTermId, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
         election.doWork(t4);
-        assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
+        assertThat(election.state(), is(Election.State.LEADER_REPLAY));
     }
 
     @Test
@@ -525,9 +528,10 @@ public class ElectionTest
 
         final long t10 = t9 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
         election.doWork(t10);
-        assertThat(election.state(), is(Election.State.LEADER_TRANSITION));
+        assertThat(election.state(), is(Election.State.LEADER_REPLAY));
 
         final long t11 = t10 + 1;
+        election.doWork(t11);
         election.doWork(t11);
         assertThat(election.state(), is(Election.State.LEADER_READY));
         assertThat(election.leadershipTermId(), is(candidateTermId));

@@ -43,13 +43,15 @@ class Election implements AutoCloseable
         CANDIDATE_BALLOT(3),
         FOLLOWER_BALLOT(4),
 
-        LEADER_TRANSITION(5),
-        LEADER_READY(6),
+        LEADER_REPLAY(5),
+        LEADER_TRANSITION(6),
+        LEADER_READY(7),
 
-        FOLLOWER_CATCHUP_TRANSITION(7),
-        FOLLOWER_CATCHUP(8),
-        FOLLOWER_TRANSITION(9),
-        FOLLOWER_READY(10);
+        FOLLOWER_REPLAY(8),
+        FOLLOWER_CATCHUP_TRANSITION(9),
+        FOLLOWER_CATCHUP(10),
+        FOLLOWER_TRANSITION(11),
+        FOLLOWER_READY(12);
 
         static final State[] STATES;
 
@@ -117,6 +119,7 @@ class Election implements AutoCloseable
     private Counter stateCounter;
     private Subscription logSubscription;
     private String replayDestination;
+    private ReplayFromLog replayFromLog = null;
 
     Election(
         final boolean isStartup,
@@ -178,12 +181,20 @@ class Election implements AutoCloseable
                 workCount += followerBallot(nowMs);
                 break;
 
+            case LEADER_REPLAY:
+                workCount += leaderReplay(nowMs);
+                break;
+
             case LEADER_TRANSITION:
                 workCount += leaderTransition(nowMs);
                 break;
 
             case LEADER_READY:
                 workCount += leaderReady(nowMs);
+                break;
+
+            case FOLLOWER_REPLAY:
+                workCount += followerReplay(nowMs);
                 break;
 
             case FOLLOWER_CATCHUP_TRANSITION:
@@ -299,7 +310,7 @@ class Election implements AutoCloseable
             {
                 catchupLogPosition = logPosition;
 
-                state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
+                state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
             else if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
             {
@@ -307,7 +318,7 @@ class Election implements AutoCloseable
             }
             else
             {
-                state(State.FOLLOWER_TRANSITION, ctx.epochClock().time());
+                state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
         }
         else if (0 != compareLog(this.logLeadershipTermId, this.logPosition, logLeadershipTermId, logPosition))
@@ -325,7 +336,7 @@ class Election implements AutoCloseable
 
                 catchupLogPosition = logPosition;
 
-                state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
+                state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
         }
     }
@@ -349,7 +360,7 @@ class Election implements AutoCloseable
             {
                 catchupLogPosition = logPosition;
 
-                state(State.FOLLOWER_CATCHUP_TRANSITION, ctx.epochClock().time());
+                state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
         }
     }
@@ -415,7 +426,7 @@ class Election implements AutoCloseable
         {
             candidateTermId = leadershipTermId + 1;
             leaderMember = thisMember;
-            state(State.LEADER_TRANSITION, nowMs);
+            state(State.LEADER_REPLAY, nowMs);
         }
         else if (ctx.appointedLeaderId() == thisMember.id())
         {
@@ -491,7 +502,7 @@ class Election implements AutoCloseable
 
         if (ClusterMember.hasWonVoteOnFullCount(clusterMembers, candidateTermId))
         {
-            state(State.LEADER_TRANSITION, nowMs);
+            state(State.LEADER_REPLAY, nowMs);
             leaderMember = thisMember;
             workCount += 1;
         }
@@ -499,7 +510,7 @@ class Election implements AutoCloseable
         {
             if (ClusterMember.hasMajorityVote(clusterMembers, candidateTermId))
             {
-                state(State.LEADER_TRANSITION, nowMs);
+                state(State.LEADER_REPLAY, nowMs);
                 leaderMember = thisMember;
             }
             else
@@ -533,6 +544,34 @@ class Election implements AutoCloseable
         {
             state(State.CANVASS, nowMs);
             workCount += 1;
+        }
+
+        return workCount;
+    }
+
+    private int leaderReplay(final long nowMs)
+    {
+        int workCount = 0;
+
+        // TODO: send new leadership term on entry and periodically to let followers know leader is alive.
+
+        if (null == replayFromLog)
+        {
+            if ((replayFromLog = consensusModuleAgent.replayFromLog(logPosition)) == null)
+            {
+                state(State.LEADER_TRANSITION, nowMs);
+                workCount = 1;
+            }
+        }
+        else
+        {
+            workCount += replayFromLog.doWork(nowMs);
+            if (replayFromLog.isDone())
+            {
+                replayFromLog.close();
+                replayFromLog = null;
+                state(State.LEADER_TRANSITION, nowMs);
+            }
         }
 
         return workCount;
@@ -585,6 +624,42 @@ class Election implements AutoCloseable
             }
 
             workCount += 1;
+        }
+
+        return workCount;
+    }
+
+    private int followerReplay(final long nowMs)
+    {
+        int workCount = 0;
+
+        // TODO: periodically send appendPosition (of highest point in log) to indicate liveness
+
+        if (null == replayFromLog)
+        {
+            if ((replayFromLog = consensusModuleAgent.replayFromLog(logPosition)) == null)
+            {
+                state(
+                    (NULL_POSITION != catchupLogPosition) ?
+                    State.FOLLOWER_CATCHUP_TRANSITION :
+                    State.FOLLOWER_TRANSITION,
+                    nowMs);
+                workCount = 1;
+            }
+        }
+        else
+        {
+            workCount += replayFromLog.doWork(nowMs);
+            if (replayFromLog.isDone())
+            {
+                replayFromLog.close();
+                replayFromLog = null;
+                state(
+                    (NULL_POSITION != catchupLogPosition) ?
+                    State.FOLLOWER_CATCHUP_TRANSITION :
+                    State.FOLLOWER_TRANSITION,
+                    nowMs);
+            }
         }
 
         return workCount;

@@ -561,7 +561,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 throw new ClusterException("recording not found id=" + recordingId);
             }
 
-            if ((AeronArchive.NULL_POSITION != recordingExtent.stopPosition))
+            if (AeronArchive.NULL_POSITION != recordingExtent.stopPosition)
             {
                 break;
             }

@@ -924,6 +924,57 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         awaitServiceAcks();
     }
 
+    void awaitServicesReadyForReplay(
+        final String channel,
+        final int streamId,
+        final int logSessionId,
+        final int counterId,
+        final long leadershipTermId,
+        final long startPosition)
+    {
+        serviceProxy.joinLog(leadershipTermId, counterId, logSessionId, streamId, channel);
+        expectedAckPosition = startPosition;
+        awaitServiceAcks();
+    }
+
+    void awaitServicesReplayComplete(final long stopPosition)
+    {
+        expectedAckPosition = stopPosition;
+        awaitServiceAcks();
+
+        while (0 != timerService.poll(clusterTimeMs) ||
+            (timerService.currentTickTimeMs() < clusterTimeMs && timerService.timerCount() > 0))
+        {
+            idle();
+        }
+    }
+
+    void replayLogPoll(final LogAdapter logAdapter, final long stopPosition, final Counter commitPosition)
+    {
+        final int workCount = logAdapter.poll(stopPosition);
+        if (0 == workCount)
+        {
+            if (logAdapter.position() == stopPosition)
+            {
+                while (!missedTimersSet.isEmpty())
+                {
+                    idle();
+                    cancelMissedTimers();
+                }
+            }
+
+            if (logAdapter.isImageClosed())
+            {
+                throw new ClusterException("unexpected close of image when replaying log");
+            }
+        }
+
+        commitPosition.setOrdered(logAdapter.position());
+
+        consensusModuleAdapter.poll();
+        cancelMissedTimers();
+    }
+
     long logRecordingId()
     {
         if (!recoveryPlan.logs.isEmpty())

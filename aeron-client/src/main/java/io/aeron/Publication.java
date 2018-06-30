@@ -487,7 +487,7 @@ public abstract class Publication implements AutoCloseable
         return logBuffers;
     }
 
-    long backPressureStatus(final long currentPosition, final int messageLength)
+    final long backPressureStatus(final long currentPosition, final int messageLength)
     {
         if ((currentPosition + messageLength) >= maxPossiblePosition)
         {
@@ -502,7 +502,7 @@ public abstract class Publication implements AutoCloseable
         return NOT_CONNECTED;
     }
 
-    void checkForMaxPayloadLength(final int length)
+    final void checkForMaxPayloadLength(final int length)
     {
         if (length > maxPayloadLength)
         {
@@ -511,7 +511,7 @@ public abstract class Publication implements AutoCloseable
         }
     }
 
-    void checkForMaxMessageLength(final int length)
+    final void checkForMaxMessageLength(final int length)
     {
         if (length > maxMessageLength)
         {

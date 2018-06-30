@@ -34,6 +34,7 @@ import org.agrona.collections.MutableInteger;
 import org.junit.*;
 
 import java.io.File;
+import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -54,6 +55,7 @@ public class AppointedLeaderClusterTest
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
 
+    private final CountDownLatch latch = new CountDownLatch(MEMBER_COUNT);
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
     private ClusteredMediaDriver[] drivers = new ClusteredMediaDriver[MEMBER_COUNT];
     private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
@@ -71,7 +73,7 @@ public class AppointedLeaderClusterTest
 
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
-            echoServices[i] = new EchoService();
+            echoServices[i] = new EchoService(latch);
 
             final String baseDirName = aeronDirName + "-" + i;
 
@@ -167,7 +169,7 @@ public class AppointedLeaderClusterTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldEchoMessagesViaService()
+    public void shouldEchoMessagesViaService() throws Exception
     {
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final long msgCorrelationId = client.nextCorrelationId();
@@ -180,6 +182,8 @@ public class AppointedLeaderClusterTest
                 TestUtil.checkInterruptedStatus();
                 Thread.yield();
             }
+
+            client.pollEgress();
         }
 
         while (responseCount.get() < MESSAGE_COUNT)
@@ -188,6 +192,8 @@ public class AppointedLeaderClusterTest
             Thread.yield();
             client.pollEgress();
         }
+
+        latch.await();
 
         for (final EchoService service : echoServices)
         {
@@ -223,6 +229,12 @@ public class AppointedLeaderClusterTest
     static class EchoService extends StubClusteredService
     {
         private int messageCount;
+        private final CountDownLatch latch;
+
+        EchoService(final CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
 
         int messageCount()
         {
@@ -243,7 +255,10 @@ public class AppointedLeaderClusterTest
                 cluster.idle();
             }
 
-            ++messageCount;
+            if (++messageCount >= MESSAGE_COUNT)
+            {
+                latch.countDown();
+            }
         }
     }
 }

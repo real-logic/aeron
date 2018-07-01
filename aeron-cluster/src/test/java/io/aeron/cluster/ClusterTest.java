@@ -32,6 +32,7 @@ import org.junit.*;
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -163,6 +164,9 @@ public class ClusterTest
     @Test(timeout = 10_000)
     public void shouldEchoMessagesViaService() throws Exception
     {
+        final int leaderMemberId = findLeaderId();
+        assertThat(leaderMemberId, not(Aeron.NULL_VALUE));
+
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         final long msgCorrelationId = client.nextCorrelationId();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
@@ -185,6 +189,7 @@ public class ClusterTest
             client.pollEgress();
         }
 
+        assertThat(client.leaderMemberId(), is(leaderMemberId));
         latch.await();
 
         for (final EchoService service : echoServices)
@@ -252,5 +257,24 @@ public class ClusterTest
                 latch.countDown();
             }
         }
+    }
+
+    private int findLeaderId()
+    {
+        int leaderMemberId = Aeron.NULL_VALUE;
+
+        for (int i = 0; i < 3; i++)
+        {
+            final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
+            final Cluster.Role role = Cluster.Role.get(
+                (int)driver.consensusModule().context().clusterNodeCounter().get());
+
+            if (Cluster.Role.LEADER == role)
+            {
+                leaderMemberId = driver.consensusModule().context().clusterMemberId();
+            }
+        }
+
+        return leaderMemberId;
     }
 }

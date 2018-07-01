@@ -82,7 +82,7 @@ class DriverEventsAdapter implements MessageHandler
                 else if (correlationId == activeCorrelationId)
                 {
                     receivedCorrelationId = correlationId;
-                    listener.onError(correlationId, errorCode, errorCodeValue, message);
+                    listener.onError(correlationId, errorCodeValue, errorCode, message);
                 }
                 break;
             }

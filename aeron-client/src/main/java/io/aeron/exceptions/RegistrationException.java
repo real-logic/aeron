@@ -22,14 +22,14 @@ import io.aeron.*;
  */
 public class RegistrationException extends AeronException
 {
-    private final ErrorCode code;
-    private final int value;
+    private final int errorCodeValue;
+    private final ErrorCode errorCode;
 
-    public RegistrationException(final ErrorCode code, final int value, final String msg)
+    public RegistrationException(final int errorCodeValue, final ErrorCode errorCode, final String msg)
     {
         super(msg);
-        this.code = code;
-        this.value = value;
+        this.errorCode = errorCode;
+        this.errorCodeValue = errorCodeValue;
     }
 
     /**
@@ -39,22 +39,22 @@ public class RegistrationException extends AeronException
      */
     public ErrorCode errorCode()
     {
-        return code;
+        return errorCode;
     }
 
     /**
-     * Value of the code encoded. This can provide additional information when a {@link ErrorCode#UNKNOWN_CODE_VALUE} is
-     * returned.
+     * Value of the errorCode encoded. This can provide additional information when a
+     * {@link ErrorCode#UNKNOWN_CODE_VALUE} is returned.
      *
-     * @return of the code encoded.
+     * @return value of the errorCode encoded as an int.
      */
-    public int value()
+    public int errorCodeValue()
     {
-        return value;
+        return errorCodeValue;
     }
 
     public String getMessage()
     {
-        return "value=" + value + " " + super.getMessage();
+        return "errorCodeValue=" + errorCodeValue + " " + super.getMessage();
     }
 }

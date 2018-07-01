@@ -195,6 +195,7 @@ public class AppointedLeaderClusterTest
 
         latch.await();
 
+        assertThat(responseCount.get(), is(MESSAGE_COUNT));
         for (final EchoService service : echoServices)
         {
             assertThat(service.messageCount(), is(MESSAGE_COUNT));

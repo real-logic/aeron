@@ -172,11 +172,11 @@ public class AppointedLeaderClusterTest
     public void shouldEchoMessagesViaService() throws Exception
     {
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        final long msgCorrelationId = client.nextCorrelationId();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
 
         for (int i = 0; i < MESSAGE_COUNT; i++)
         {
+            final long msgCorrelationId = client.nextCorrelationId();
             while (client.offer(msgCorrelationId, msgBuffer, 0, MSG.length()) < 0)
             {
                 TestUtil.checkInterruptedStatus();

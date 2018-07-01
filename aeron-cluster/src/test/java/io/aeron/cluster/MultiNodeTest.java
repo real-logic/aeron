@@ -312,7 +312,7 @@ public class MultiNodeTest
 
             leaderHarness.awaitMemberStatusMessage(2, leaderHarness.onNewLeadershipTermCounter(2));
 
-            verify(mockLeaderStatusListeners[2]).onNewLeadershipTerm(
+            verify(mockLeaderStatusListeners[2], atLeastOnce()).onNewLeadershipTerm(
                 eq(0L), eq(position), eq(1L), eq(0), anyInt());
 
             leaderHarness.memberStatusPublisher().appendedPosition(

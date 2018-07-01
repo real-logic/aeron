@@ -1549,36 +1549,32 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             thisMember.logPosition(appendedPosition.get());
 
-            final long quorumPosition = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
-            final long commitPosition = this.commitPosition.getWeak();
-            if (quorumPosition > commitPosition || nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatIntervalMs))
+            if (commitPosition.proposeMaxOrdered(ClusterMember.quorumPosition(clusterMembers, rankedPositions)) ||
+                nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatIntervalMs))
             {
+                final long commitPosition = this.commitPosition.getWeak();
                 for (final ClusterMember member : clusterMembers)
                 {
                     if (member != thisMember)
                     {
                         final Publication publication = member.publication();
-                        memberStatusPublisher.commitPosition(publication, leadershipTermId, quorumPosition, memberId);
+                        memberStatusPublisher.commitPosition(publication, leadershipTermId, commitPosition, memberId);
                     }
                 }
 
-                this.commitPosition.setOrdered(quorumPosition);
                 timeOfLastLogUpdateMs = nowMs;
-
-                workCount = 1;
+                workCount += 1;
             }
         }
-        else if (Cluster.Role.FOLLOWER == role)
+        else
         {
             final long appendedPosition = this.appendedPosition.get();
-            if (appendedPosition != lastAppendedPosition)
-            {
-                final Publication publication = leaderMember.publication();
-                if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, appendedPosition, memberId))
-                {
-                    lastAppendedPosition = appendedPosition;
-                }
+            final Publication publication = leaderMember.publication();
 
+            if (appendedPosition != lastAppendedPosition &&
+                memberStatusPublisher.appendedPosition(publication, leadershipTermId, appendedPosition, memberId))
+            {
+                lastAppendedPosition = appendedPosition;
                 workCount += 1;
             }
 

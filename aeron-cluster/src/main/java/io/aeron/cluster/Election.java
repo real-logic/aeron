@@ -857,7 +857,7 @@ class Election implements AutoCloseable
             isStartup = false;
         }
 
-        if (State.CANDIDATE_BALLOT == this.state && State.LEADER_TRANSITION != newState)
+        if (State.CANDIDATE_BALLOT == this.state && State.LEADER_REPLAY != newState)
         {
             consensusModuleAgent.role(Cluster.Role.FOLLOWER);
         }
@@ -867,7 +867,7 @@ class Election implements AutoCloseable
             consensusModuleAgent.role(Cluster.Role.CANDIDATE);
         }
 
-        if (State.LEADER_TRANSITION == newState)
+        if (State.LEADER_REPLAY == newState)
         {
             consensusModuleAgent.role(Cluster.Role.LEADER);
         }

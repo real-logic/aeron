@@ -674,4 +674,23 @@ public final class ClusterMember
         return compareLog(
             lhsMember.leadershipTermId, lhsMember.logPosition, rhsMember.leadershipTermId, rhsMember.logPosition);
     }
+
+    public String toString()
+    {
+        return "ClusterMember{" +
+            "id=" + id +
+            ", isLeader=" + isLeader +
+            ", isBallotSent=" + isBallotSent +
+            ", vote=" + vote +
+            ", leadershipTermId=" + leadershipTermId +
+            ", logPosition=" + logPosition +
+            ", candidateTermId=" + candidateTermId +
+            ", clientFacingEndpoint='" + clientFacingEndpoint + '\'' +
+            ", memberFacingEndpoint='" + memberFacingEndpoint + '\'' +
+            ", logEndpoint='" + logEndpoint + '\'' +
+            ", transferEndpoint='" + transferEndpoint + '\'' +
+            ", archiveEndpoint='" + archiveEndpoint + '\'' +
+            ", endpointsDetail='" + endpointsDetail + '\'' +
+            '}';
+    }
 }

@@ -549,7 +549,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     long prepareForElection(final long logPosition)
     {
         final RecordingExtent recordingExtent = new RecordingExtent();
-        final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
+
+        long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
+        if (RecordingPos.NULL_RECORDING_ID == recordingId)
+        {
+            recordingId = recordingLog.getTermEntry(leadershipTermId).recordingId;
+        }
 
         stopLogRecording();
 

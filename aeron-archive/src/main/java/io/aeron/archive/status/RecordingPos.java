@@ -39,7 +39,8 @@ import static org.agrona.concurrent.status.CountersReader.*;
  *  +---------------------------------------------------------------+
  *  |                         Session ID                            |
  *  +---------------------------------------------------------------+
- *  |                Source Identity for the Image                 ...
+ *  |                Source Identity for the Image                  |
+ *  |                                                              ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>

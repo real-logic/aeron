@@ -867,7 +867,7 @@ class Election implements AutoCloseable
             consensusModuleAgent.role(Cluster.Role.CANDIDATE);
         }
 
-        if (State.LEADER_REPLAY == newState)
+        if (State.LEADER_TRANSITION == newState)
         {
             consensusModuleAgent.role(Cluster.Role.LEADER);
         }

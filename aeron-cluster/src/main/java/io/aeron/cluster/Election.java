@@ -665,8 +665,6 @@ class Election implements AutoCloseable
     {
         int workCount = 0;
 
-        // TODO: periodically send appendPosition (of highest point in log) to indicate liveness
-
         if (null == replayFromLog)
         {
             if (!shouldReplay || (replayFromLog = consensusModuleAgent.replayFromLog(logPosition)) == null)

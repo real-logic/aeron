@@ -930,8 +930,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final RecordingLog.RecoveryPlan plan = recoveryPlan;
         ReplayFromLog replayFromLog = null;
 
-        // TODO: fix up log indicating commit position.
-
         if (!plan.logs.isEmpty())
         {
             final RecordingLog.Log log = plan.logs.get(0);

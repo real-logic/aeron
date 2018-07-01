@@ -107,12 +107,4 @@ public interface ClusteredService
      * @param newRole that the node has assumed.
      */
     void onRoleChange(Cluster.Role newRole);
-
-    /**
-     * Notify the service that recovery has finished so that it can check external state is consistent.
-     * <p>
-     * If the service is in an invalid state and wished to terminate operation it can throw a
-     * {@link org.agrona.concurrent.AgentTerminationException}.
-     */
-    void onReady();
 }

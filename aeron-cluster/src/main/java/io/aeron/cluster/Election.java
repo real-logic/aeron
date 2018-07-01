@@ -669,9 +669,9 @@ class Election implements AutoCloseable
             if (!shouldReplay || (replayFromLog = consensusModuleAgent.replayFromLog(logPosition)) == null)
             {
                 state(
-                    (NULL_POSITION != catchupLogPosition) ?
-                        State.FOLLOWER_CATCHUP_TRANSITION :
-                        State.FOLLOWER_TRANSITION,
+                    NULL_POSITION != catchupLogPosition ?
+                    State.FOLLOWER_CATCHUP_TRANSITION :
+                    State.FOLLOWER_TRANSITION,
                     nowMs);
                 workCount = 1;
             }
@@ -685,9 +685,9 @@ class Election implements AutoCloseable
                 replayFromLog = null;
                 shouldReplay = false;
                 state(
-                    (NULL_POSITION != catchupLogPosition) ?
-                        State.FOLLOWER_CATCHUP_TRANSITION :
-                        State.FOLLOWER_TRANSITION,
+                    NULL_POSITION != catchupLogPosition ?
+                    State.FOLLOWER_CATCHUP_TRANSITION :
+                    State.FOLLOWER_TRANSITION,
                     nowMs);
             }
         }

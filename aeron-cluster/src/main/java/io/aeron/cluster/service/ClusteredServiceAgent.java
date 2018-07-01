@@ -90,7 +90,6 @@ class ClusteredServiceAgent implements Agent, Cluster
         checkForSnapshot(counters, recoveryCounterId);
         checkForReplay(counters, recoveryCounterId);
         isRecovering = false;
-        service.onReady();
     }
 
     public void onClose()

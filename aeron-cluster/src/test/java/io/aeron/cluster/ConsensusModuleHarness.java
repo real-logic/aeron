@@ -465,11 +465,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         service.onRoleChange(newRole);
     }
 
-    public void onReady()
-    {
-        service.onReady();
-    }
-
     void recordingExtent(final long recordingId, final RecordingExtent recordingExtent)
     {
         try (AeronArchive archive = AeronArchive.connect(aeronArchiveContext.clone()))

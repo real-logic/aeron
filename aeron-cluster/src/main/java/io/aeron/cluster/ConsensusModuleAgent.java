@@ -930,8 +930,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final RecordingLog.RecoveryPlan plan = recoveryPlan;
         ReplayFromLog replayFromLog = null;
 
-        // TODO: fix up log indicating commit position.
-
         if (!plan.logs.isEmpty())
         {
             final RecordingLog.Log log = plan.logs.get(0);
@@ -1727,41 +1725,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         logRecordingChannel = channel;
-    }
-
-    private void replayLog(final Image image, final long stopPosition, final Counter commitPosition)
-    {
-        final LogAdapter logAdapter = new LogAdapter(image, this);
-        expectedAckPosition = stopPosition;
-
-        while (true)
-        {
-            int workCount = logAdapter.poll(stopPosition);
-            if (workCount == 0)
-            {
-                if (image.position() == stopPosition)
-                {
-                    while (!missedTimersSet.isEmpty())
-                    {
-                        idle();
-                        cancelMissedTimers();
-                    }
-                    break;
-                }
-
-                if (image.isClosed())
-                {
-                    throw new ClusterException("unexpected close of image when replaying log");
-                }
-            }
-
-            commitPosition.setOrdered(image.position());
-
-            workCount += consensusModuleAdapter.poll();
-            cancelMissedTimers();
-
-            idle(workCount);
-        }
     }
 
     private void replayClusterAction(

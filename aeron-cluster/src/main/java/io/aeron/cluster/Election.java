@@ -363,6 +363,7 @@ class Election implements AutoCloseable
             .leadershipTermId(leadershipTermId);
     }
 
+    @SuppressWarnings("unused")
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
         if (State.FOLLOWER_BALLOT == state && leadershipTermId > this.leadershipTermId)
@@ -662,8 +663,6 @@ class Election implements AutoCloseable
     private int followerReplay(final long nowMs)
     {
         int workCount = 0;
-
-        // TODO: periodically send appendPosition (of highest point in log) to indicate liveness
 
         if (null == replayFromLog)
         {

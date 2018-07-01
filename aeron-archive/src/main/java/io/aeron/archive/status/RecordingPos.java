@@ -17,6 +17,7 @@ package io.aeron.archive.status;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
+import io.aeron.Image;
 import io.aeron.archive.client.ArchiveException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -178,11 +179,12 @@ public class RecordingPos
     }
 
     /**
-     * Get the recording id for a given counter id.
+     * Get the {@link Image#sourceIdentity()} for the recording.
      *
      * @param countersReader to search within.
      * @param counterId      for the active recording.
-     * @return the counter id if found otherwise {@link #NULL_RECORDING_ID}.
+     * @return {@link Image#sourceIdentity()} for the recording.
+     * @throws ArchiveException if counter is not found or active.
      */
     public static String getSourceIdentity(final CountersReader countersReader, final int counterId)
     {

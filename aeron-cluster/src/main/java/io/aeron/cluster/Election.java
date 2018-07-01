@@ -562,10 +562,13 @@ class Election implements AutoCloseable
     {
         int workCount = 0;
 
-        // TODO: send new leadership term on entry and periodically to let followers know leader is alive.
-
         if (null == replayFromLog)
         {
+            logSessionId = consensusModuleAgent.createLogPublicationSessionId();
+
+            ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
+            clusterMembers[thisMember.id()].logPosition(logPosition).leadershipTermId(candidateTermId);
+
             if (!shouldReplay || (replayFromLog = consensusModuleAgent.replayFromLog(logPosition)) == null)
             {
                 state(State.LEADER_TRANSITION, nowMs);
@@ -582,6 +585,26 @@ class Election implements AutoCloseable
                 shouldReplay = false;
                 state(State.LEADER_TRANSITION, nowMs);
             }
+            else if (nowMs > (timeOfLastUpdateMs + leaderHeartbeatIntervalMs))
+            {
+                timeOfLastUpdateMs = nowMs;
+
+                for (final ClusterMember member : clusterMembers)
+                {
+                    if (member != thisMember)
+                    {
+                        memberStatusPublisher.newLeadershipTerm(
+                            member.publication(),
+                            logLeadershipTermId,
+                            logPosition,
+                            candidateTermId,
+                            thisMember.id(),
+                            logSessionId);
+                    }
+                }
+
+                workCount += 1;
+            }
         }
 
         return workCount;
@@ -595,13 +618,13 @@ class Election implements AutoCloseable
         }
 
         leadershipTermId = candidateTermId;
-        consensusModuleAgent.becomeLeader();
+        candidateTermId = NULL_VALUE;
+
+        consensusModuleAgent.becomeLeader(logSessionId);
 
         ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
         ctx.recordingLog().force();
 
-        ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
-        clusterMembers[thisMember.id()].logPosition(logPosition).leadershipTermId(leadershipTermId);
         state(State.LEADER_READY, nowMs);
 
         return 1;

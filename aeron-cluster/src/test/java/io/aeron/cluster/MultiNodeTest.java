@@ -198,6 +198,12 @@ public class MultiNodeTest
 
             verify(mockService, times(10))
                 .onSessionMessage(any(ClientSession.class), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
+
+            harness.awaitMemberStatusMessage(1, harness.onCommitPosition(1));
+            harness.awaitMemberStatusMessage(2, harness.onCommitPosition(2));
+
+            verify(mockMemberStatusListeners[1]).onCommitPosition(1, position, 0);
+            verify(mockMemberStatusListeners[2]).onCommitPosition(1, position, 0);
         }
     }
 
@@ -321,11 +327,9 @@ public class MultiNodeTest
 
             // wait until Leader sends commitPosition after election. This will only work while Leader waits for
             // all followers.
-            do
-            {
-                leaderHarness.awaitMemberStatusMessage(2);
-            }
-            while (leaderHarness.memberStatusCounters(2).onCommitPositionCounter == 0);
+            leaderHarness.awaitMemberStatusMessage(2, leaderHarness.onCommitPosition(2));
+
+            verify(mockLeaderStatusListeners[2]).onCommitPosition(1, position, 0);
         }
     }
 }

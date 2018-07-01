@@ -805,7 +805,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.nextSessionId = nextSessionId;
     }
 
-    void becomeLeader()
+    int createLogPublicationSessionId()
     {
         closeExistingLog();
         updateMemberDetails();
@@ -814,9 +814,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final Publication publication = createLogPublication(channelUri, recoveryPlan, election.logPosition());
 
         logPublisher.connect(publication);
-        final int logSessionId = publication.sessionId();
-        election.logSessionId(logSessionId);
 
+        return publication.sessionId();
+    }
+
+    void becomeLeader(final int logSessionId)
+    {
+        leadershipTermId = election.leadershipTermId();
+
+        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
@@ -853,7 +859,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void updateMemberDetails()
     {
-        leadershipTermId = election.leadershipTermId();
         leaderMember = election.leader();
         followerCommitPosition = election.logPosition();
         sessionProxy.leaderMemberId(leaderMember.id());
@@ -902,6 +907,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void awaitImageAndCreateFollowerLogAdapter(final Subscription subscription, final int logSessionId)
     {
+        leadershipTermId = election.leadershipTermId();
         idleStrategy.reset();
         while (!pollImageAndLogAdapter(subscription, logSessionId))
         {
@@ -1459,6 +1465,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         ++serviceAckId;
+    }
+
+    private void awaitServiceAcks()
+    {
+        awaitServiceAcks(logPosition());
     }
 
     private long logPosition()

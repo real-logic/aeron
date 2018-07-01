@@ -290,6 +290,11 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return () -> memberStatusCounters[index].onCanvassPositionCounter;
     }
 
+    IntSupplier onCommitPosition(final int index)
+    {
+        return () -> memberStatusCounters[index].onCommitPositionCounter;
+    }
+
     int pollMemberStatusAdapter(final int index)
     {
         if (null != memberStatusAdapters[index])

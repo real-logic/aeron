@@ -363,6 +363,7 @@ class Election implements AutoCloseable
             .leadershipTermId(leadershipTermId);
     }
 
+    @SuppressWarnings("unused")
     void onCommitPosition(final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
         if (State.FOLLOWER_BALLOT == state && leadershipTermId > this.leadershipTermId)

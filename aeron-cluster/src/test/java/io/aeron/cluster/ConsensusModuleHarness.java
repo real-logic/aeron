@@ -581,12 +581,15 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     {
         final Archive.Context archiveContext = new Archive.Context()
             .archiveDir(new File(harnessDir, ARCHIVE_DIRECTORY));
+        final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
 
-        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(new MediaDriver.Context(), archiveContext);
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(mediaDriverContext, archiveContext);
             AeronArchive archive = AeronArchive.connect())
         {
             archive.truncateRecording(truncateRecordingId, truncatePosition);
         }
+
+        mediaDriverContext.deleteAeronDirectory();
 
         return truncatePosition;
     }

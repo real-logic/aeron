@@ -515,18 +515,16 @@ class Election implements AutoCloseable
             leaderMember = thisMember;
             workCount += 1;
         }
+        else if (ClusterMember.hasMajorityVote(clusterMembers, candidateTermId) &&
+            ctx.appointedLeaderId() != thisMember.id())
+        {
+            state(State.LEADER_REPLAY, nowMs);
+            leaderMember = thisMember;
+            workCount += 1;
+        }
         else if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())))
         {
-            if (ClusterMember.hasMajorityVote(clusterMembers, candidateTermId))
-            {
-                state(State.LEADER_REPLAY, nowMs);
-                leaderMember = thisMember;
-            }
-            else
-            {
-                state(State.CANVASS, nowMs);
-            }
-
+            state(State.CANVASS, nowMs);
             workCount += 1;
         }
         else
@@ -673,8 +671,8 @@ class Election implements AutoCloseable
             {
                 state(
                     (NULL_POSITION != catchupLogPosition) ?
-                    State.FOLLOWER_CATCHUP_TRANSITION :
-                    State.FOLLOWER_TRANSITION,
+                        State.FOLLOWER_CATCHUP_TRANSITION :
+                        State.FOLLOWER_TRANSITION,
                     nowMs);
                 workCount = 1;
             }
@@ -689,8 +687,8 @@ class Election implements AutoCloseable
                 shouldReplay = false;
                 state(
                     (NULL_POSITION != catchupLogPosition) ?
-                    State.FOLLOWER_CATCHUP_TRANSITION :
-                    State.FOLLOWER_TRANSITION,
+                        State.FOLLOWER_CATCHUP_TRANSITION :
+                        State.FOLLOWER_TRANSITION,
                     nowMs);
             }
         }
@@ -857,14 +855,14 @@ class Election implements AutoCloseable
             isStartup = false;
         }
 
-        if (State.CANDIDATE_BALLOT == this.state && State.LEADER_REPLAY != newState)
-        {
-            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
-        }
-
         if (State.CANDIDATE_BALLOT == newState)
         {
             consensusModuleAgent.role(Cluster.Role.CANDIDATE);
+        }
+
+        if (State.CANDIDATE_BALLOT == this.state && State.LEADER_REPLAY != newState)
+        {
+            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
         }
 
         if (State.LEADER_TRANSITION == newState)

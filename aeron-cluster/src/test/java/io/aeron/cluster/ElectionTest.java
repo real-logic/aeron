@@ -360,7 +360,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldTimeoutCandidateBallotWithMajority()
+    public void shouldWinCandidateBallotWithMajority()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;
@@ -391,10 +391,6 @@ public class ElectionTest
         election.onVote(
             leadershipTermId + 1, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
         election.doWork(t4);
-        assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
-
-        final long t5 = t4 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
-        election.doWork(t5);
         assertThat(election.state(), is(Election.State.LEADER_REPLAY));
     }
 

@@ -79,7 +79,7 @@ public class ElectionTest
         final long t1 = 0;
         election.doWork(t1);
         election.doWork(t1);
-        verify(consensusModuleAgent).becomeLeader(anyInt());
+        verify(consensusModuleAgent).becomeLeader(anyLong(), anyInt());
         verify(recordingLog).appendTerm(RECORDING_ID, 0L, 0L, t1);
         assertThat(election.state(), is(Election.State.LEADER_READY));
     }
@@ -138,7 +138,7 @@ public class ElectionTest
         clock.update(t4);
         election.doWork(t4);
         election.doWork(t4);
-        verify(consensusModuleAgent).becomeLeader(anyInt());
+        verify(consensusModuleAgent).becomeLeader(anyLong(), anyInt());
         verify(recordingLog).appendTerm(RECORDING_ID, 0L, 0L, t4);
 
         assertThat(clusterMembers[1].logPosition(), is(NULL_POSITION));

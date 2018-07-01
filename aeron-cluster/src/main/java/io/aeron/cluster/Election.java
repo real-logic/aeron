@@ -611,6 +611,8 @@ class Election implements AutoCloseable
 
     private int leaderTransition(final long nowMs)
     {
+        consensusModuleAgent.becomeLeader(candidateTermId, logSessionId);
+
         for (long termId = leadershipTermId + 1; termId < candidateTermId; termId++)
         {
             ctx.recordingLog().appendTerm(NULL_VALUE, termId, logPosition, nowMs);
@@ -618,8 +620,6 @@ class Election implements AutoCloseable
 
         leadershipTermId = candidateTermId;
         candidateTermId = NULL_VALUE;
-
-        consensusModuleAgent.becomeLeader(logSessionId);
 
         ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
         ctx.recordingLog().force();

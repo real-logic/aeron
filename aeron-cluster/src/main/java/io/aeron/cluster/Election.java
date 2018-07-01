@@ -309,7 +309,7 @@ class Election implements AutoCloseable
         final int leaderMemberId,
         final int logSessionId)
     {
-        if ((State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state) &&
+        if ((State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state || State.CANVASS == state) &&
             leadershipTermId == this.candidateTermId)
         {
             this.leadershipTermId = leadershipTermId;

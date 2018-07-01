@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.cluster.Election.NOMINATION_TIMEOUT_MULTIPLIER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -381,7 +382,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs()) * NOMINATION_TIMEOUT_MULTIPLIER;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -420,7 +421,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs()) * NOMINATION_TIMEOUT_MULTIPLIER;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -458,7 +459,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs()) * NOMINATION_TIMEOUT_MULTIPLIER;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -491,7 +492,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs()) * NOMINATION_TIMEOUT_MULTIPLIER;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 

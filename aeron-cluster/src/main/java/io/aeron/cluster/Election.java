@@ -32,6 +32,15 @@ import static io.aeron.cluster.ClusterMember.compareLog;
  */
 class Election implements AutoCloseable
 {
+    /**
+     * The multiplier applied to the {@link ConsensusModule.Configuration#STATUS_INTERVAL_PROP_NAME} for the nomination
+     * timeout.
+     */
+    static final int NOMINATION_TIMEOUT_MULTIPLIER = 7;
+
+    /**
+     * The type id of the {@link Counter} used for the election state.
+     */
     static final int ELECTION_STATE_TYPE_ID = 207;
 
     enum State
@@ -474,7 +483,7 @@ class Election implements AutoCloseable
         if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember) ||
             (ClusterMember.isQuorumCandidate(clusterMembers, thisMember) && nowMs >= canvassDeadlineMs))
         {
-            nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs);
+            nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER);
             state(State.NOMINATE, nowMs);
             workCount += 1;
         }

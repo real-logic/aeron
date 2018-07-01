@@ -686,7 +686,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             sourceIdentity);
 
         final Counter position = RecordingPos.allocate(
-            aeron, tempBuffer, recordingId, sessionId, streamId, strippedChannel);
+            aeron, tempBuffer, recordingId, sessionId, streamId, strippedChannel, image.sourceIdentity());
         position.setOrdered(startPosition);
 
         final RecordingSession session = new RecordingSession(
@@ -716,7 +716,14 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         validateImageForExtendRecording(correlationId, controlSession, image, originalRecordingSummary);
 
         final Counter position = RecordingPos.allocate(
-            aeron, tempBuffer, recordingId, image.sessionId(), image.subscription().streamId(), strippedChannel);
+            aeron,
+            tempBuffer,
+            recordingId,
+            image.sessionId(),
+            image.subscription().streamId(),
+            strippedChannel,
+            image.sourceIdentity());
+
         position.setOrdered(image.joinPosition());
 
         catalog.extendRecording(recordingId);

@@ -144,6 +144,7 @@ public class BasicArchiveTest
 
             final CountersReader counters = aeron.countersReader();
             final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+            assertThat(RecordingPos.getSourceIdentity(counters, counterId), is(CommonContext.IPC_CHANNEL));
             recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             consume(subscription, messageCount, messagePrefix);

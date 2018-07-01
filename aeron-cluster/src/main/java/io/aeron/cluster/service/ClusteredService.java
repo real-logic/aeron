@@ -102,22 +102,11 @@ public interface ClusteredService
     void onLoadSnapshot(Image snapshotImage);
 
     /**
-     * Notify the service that a replay of existing logs is about to begin.
-     */
-    void onReplayBegin();
-
-    /**
-     * Notify the service that a replay of existing logs has ended.
-     */
-    void onReplayEnd();
-
-    /**
      * Notify that the cluster node has changed role.
      *
      * @param newRole that the node has assumed.
      */
     void onRoleChange(Cluster.Role newRole);
-
 
     /**
      * Notify the service that recovery has finished so that it can check external state is consistent.

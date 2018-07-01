@@ -362,7 +362,6 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         if (RecoveryState.hasReplay(counters, recoveryCounterId))
         {
-            service.onReplayBegin();
             awaitActiveLog();
 
             final int counterId = activeLogEvent.commitPositionId;
@@ -380,7 +379,6 @@ class ClusteredServiceAgent implements Agent, Cluster
 
             activeLogEvent = null;
             heartbeatCounter.setOrdered(epochClock.time());
-            service.onReplayEnd();
         }
     }
 

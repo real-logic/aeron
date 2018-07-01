@@ -459,16 +459,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         service.onLoadSnapshot(snapshotImage);
     }
 
-    public void onReplayBegin()
-    {
-        service.onReplayBegin();
-    }
-
-    public void onReplayEnd()
-    {
-        service.onReplayEnd();
-    }
-
     public void onRoleChange(final Cluster.Role newRole)
     {
         roleValue.lazySet(newRole.code());

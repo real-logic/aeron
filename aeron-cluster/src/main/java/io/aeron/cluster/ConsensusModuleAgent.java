@@ -202,7 +202,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
             }
 
-            awaitServiceAcks();
+            awaitServiceAcks(expectedAckPosition);
         }
 
         if (ConsensusModule.State.SUSPENDED != state)
@@ -650,7 +650,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         validateServiceAck(logPosition, ackId, serviceId);
         serviceAcks[serviceId].logPosition(logPosition).ackId(ackId).relevantId(relevantId);
 
-        if (hasReachedThreshold(logPosition, serviceAckId, serviceAcks))
+        if (hasReachedPosition(logPosition, serviceAckId, serviceAcks))
         {
             switch (state)
             {
@@ -821,7 +821,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
         commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, election.logPosition(), MAX_VALUE);
-        awaitServicesReady(channelUri, logSessionId);
+        awaitServicesReady(channelUri, logSessionId, election.logPosition());
 
         final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
         if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
@@ -909,13 +909,14 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    void awaitServicesReady(final ChannelUri logChannelUri, final int logSessionId)
+    void awaitServicesReady(final ChannelUri logChannelUri, final int logSessionId, final long logPosition)
     {
         final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(logChannelUri.media()) ?
             logChannelUri.prefix(SPY_QUALIFIER).toString() : logChannelUri.toString();
         serviceProxy.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), channel);
 
-        awaitServiceAcks();
+        expectedAckPosition = logPosition;
+        awaitServiceAcks(logPosition);
     }
 
     ReplayFromLog replayFromLog(final long electionCommitPosition)
@@ -964,13 +965,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         serviceProxy.joinLog(leadershipTermId, counterId, logSessionId, streamId, channel);
         expectedAckPosition = startPosition;
-        awaitServiceAcks();
+        awaitServiceAcks(startPosition);
     }
 
     void awaitServicesReplayComplete(final long stopPosition)
     {
         expectedAckPosition = stopPosition;
-        awaitServiceAcks();
+        awaitServiceAcks(stopPosition);
 
         while (0 != timerService.poll(clusterTimeMs) ||
             (timerService.currentTickTimeMs() < clusterTimeMs && timerService.timerCount() > 0))
@@ -1422,53 +1423,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return image;
     }
 
-    private void recoverFromLog(final RecordingLog.RecoveryPlan plan, final AeronArchive archive)
-    {
-        if (!plan.logs.isEmpty())
-        {
-            final RecordingLog.Log log = plan.logs.get(0);
-            final long startPosition = log.startPosition;
-            final long stopPosition = log.stopPosition;
-            final long length = stopPosition - startPosition;
-            leadershipTermId = log.leadershipTermId;
-
-            if (log.logPosition < 0)
-            {
-                recordingLog.commitLogPosition(leadershipTermId, stopPosition);
-            }
-
-            if (plan.hasReplay())
-            {
-                final int streamId = ctx.replayStreamId();
-                final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
-                channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(log.sessionId));
-                final String channel = channelUri.toString();
-
-                try (Counter counter = CommitPos.allocate(
-                    aeron, tempBuffer, leadershipTermId, startPosition, stopPosition);
-                    Subscription subscription = aeron.addSubscription(channel, streamId))
-                {
-                    serviceProxy.joinLog(leadershipTermId, counter.id(), log.sessionId, streamId, channel);
-                    expectedAckPosition = startPosition;
-                    awaitServiceAcks();
-
-                    final Image image = awaitImage(
-                        (int)archive.startReplay(log.recordingId, startPosition, length, channel, streamId),
-                        subscription);
-
-                    replayLog(image, stopPosition, counter);
-                    awaitServiceAcks();
-
-                    while (0 != timerService.poll(clusterTimeMs) ||
-                        (timerService.currentTickTimeMs() < clusterTimeMs && timerService.timerCount() > 0))
-                    {
-                        idle();
-                    }
-                }
-            }
-        }
-    }
-
     private Counter addRecoveryStateCounter(final RecordingLog.RecoveryPlan plan)
     {
         final int snapshotsCount = plan.snapshots.size();
@@ -1497,13 +1451,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, 0, 0, plan.hasReplay());
     }
 
-    private void awaitServiceAcks()
+    private void awaitServiceAcks(final long logPosition)
     {
-        final long logPosition = logPosition();
-        while (!hasReachedThreshold(logPosition, serviceAckId, serviceAcks))
+        while (!hasReachedPosition(logPosition, serviceAckId, serviceAcks))
         {
             idle(consensusModuleAdapter.poll());
         }
+
         ++serviceAckId;
     }
 

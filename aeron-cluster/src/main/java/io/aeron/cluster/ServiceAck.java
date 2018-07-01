@@ -59,7 +59,7 @@ class ServiceAck
         return this;
     }
 
-    static boolean hasReachedThreshold(final long position, final long ackId, final ServiceAck[] serviceAcks)
+    static boolean hasReachedPosition(final long position, final long ackId, final ServiceAck[] serviceAcks)
     {
         for (final ServiceAck serviceAck : serviceAcks)
         {

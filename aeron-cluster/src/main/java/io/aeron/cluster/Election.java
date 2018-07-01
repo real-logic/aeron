@@ -365,7 +365,6 @@ class Election implements AutoCloseable
             else
             {
                 catchupLogPosition = logPosition;
-
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
         }
@@ -382,11 +381,6 @@ class Election implements AutoCloseable
             ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, logPosition, nowMs);
             ctx.recordingLog().force();
         }
-    }
-
-    void isStartup(final boolean isStartup)
-    {
-        this.isStartup = isStartup;
     }
 
     State state()
@@ -592,7 +586,6 @@ class Election implements AutoCloseable
         }
 
         leadershipTermId = candidateTermId;
-        candidateTermId = NULL_VALUE;
         consensusModuleAgent.becomeLeader();
 
         ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
@@ -681,7 +674,7 @@ class Election implements AutoCloseable
 
             logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(
                 logChannelUri.toString(), logPosition);
-            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId);
+            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
 
             replayDestination = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
@@ -728,7 +721,7 @@ class Election implements AutoCloseable
 
             logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(
                 logChannelUri.toString(), logPosition);
-            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId);
+            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
         }
 
         addLiveLogDestination();

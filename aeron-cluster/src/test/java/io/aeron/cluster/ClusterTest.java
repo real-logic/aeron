@@ -31,7 +31,9 @@ import org.junit.*;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -40,7 +42,7 @@ public class ClusterTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int MEMBER_COUNT = 3;
-    private static final int MESSAGE_COUNT = 1000;
+    private static final int MESSAGE_COUNT = 10;
     private static final String MSG = "Hello World!";
 
     private static final String CLUSTER_MEMBERS = clusterMembersString();
@@ -51,10 +53,12 @@ public class ClusterTest
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
 
-    private volatile long timeOffset = 0;
-    private final EpochClock epochClock = () -> System.currentTimeMillis() + timeOffset;
+    private final AtomicLong timeOffset = new AtomicLong();
+    private final EpochClock epochClock = () -> System.currentTimeMillis() + timeOffset.get();
 
-    private final CountDownLatch latch = new CountDownLatch(MEMBER_COUNT);
+    private final CountDownLatch latchOne = new CountDownLatch(MEMBER_COUNT);
+    private final CountDownLatch latchTwo = new CountDownLatch(MEMBER_COUNT);
+
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
     private ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MEMBER_COUNT];
     private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
@@ -72,7 +76,7 @@ public class ClusterTest
 
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
-            echoServices[i] = new EchoService(latch);
+            echoServices[i] = new EchoService(latchOne, latchTwo);
 
             final String baseDirName = aeronDirName + "-" + i;
 
@@ -161,18 +165,56 @@ public class ClusterTest
         }
     }
 
-    @Test(timeout = 10_000)
-    public void shouldEchoMessagesViaService() throws Exception
+    @Ignore
+    @Test(timeout = 30_000)
+    public void shouldEchoMessagesThenContinueOnNewLeader() throws Exception
     {
-        final int leaderMemberId = findLeaderId();
-        assertThat(leaderMemberId, not(Aeron.NULL_VALUE));
+        final int leaderMemberId = findLeaderId(NULL_VALUE);
+        assertThat(leaderMemberId, not(NULL_VALUE));
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-        final long msgCorrelationId = client.nextCorrelationId();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
 
+        sendMessages(msgBuffer);
+        awaitResponses(MESSAGE_COUNT);
+
+        latchOne.await();
+
+        assertThat(client.leaderMemberId(), is(leaderMemberId));
+        assertThat(responseCount.get(), is(MESSAGE_COUNT));
+        for (final EchoService service : echoServices)
+        {
+            assertThat(service.messageCount(), is(MESSAGE_COUNT));
+        }
+
+        containers[leaderMemberId].close();
+        clusteredMediaDrivers[leaderMemberId].close();
+
+        int newLeaderMemberId;
+        while (NULL_VALUE == (newLeaderMemberId = findLeaderId(leaderMemberId)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        assertThat(newLeaderMemberId, not(leaderMemberId));
+
+        sendMessages(msgBuffer);
+        awaitResponses(MESSAGE_COUNT * 2);
+
+        latchTwo.await();
+        assertThat(responseCount.get(), is(MESSAGE_COUNT * 2));
+        for (final EchoService service : echoServices)
+        {
+            assertThat(service.messageCount(), is(MESSAGE_COUNT * 2));
+        }
+    }
+
+    private void sendMessages(final ExpandableArrayBuffer msgBuffer)
+    {
         for (int i = 0; i < MESSAGE_COUNT; i++)
         {
+            final long msgCorrelationId = client.nextCorrelationId();
             while (client.offer(msgCorrelationId, msgBuffer, 0, MSG.length()) < 0)
             {
                 TestUtil.checkInterruptedStatus();
@@ -181,20 +223,15 @@ public class ClusterTest
 
             client.pollEgress();
         }
+    }
 
-        while (responseCount.get() < MESSAGE_COUNT)
+    private void awaitResponses(final int messageCount)
+    {
+        while (responseCount.get() < messageCount)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
             client.pollEgress();
-        }
-
-        assertThat(client.leaderMemberId(), is(leaderMemberId));
-        latch.await();
-
-        for (final EchoService service : echoServices)
-        {
-            assertThat(service.messageCount(), is(MESSAGE_COUNT));
         }
     }
 
@@ -226,11 +263,13 @@ public class ClusterTest
     static class EchoService extends StubClusteredService
     {
         private int messageCount;
-        private final CountDownLatch latch;
+        private final CountDownLatch latchOne;
+        private final CountDownLatch latchTwo;
 
-        EchoService(final CountDownLatch latch)
+        EchoService(final CountDownLatch latchOne, final CountDownLatch latchTwo)
         {
-            this.latch = latch;
+            this.latchOne = latchOne;
+            this.latchTwo = latchTwo;
         }
 
         int messageCount()
@@ -252,20 +291,33 @@ public class ClusterTest
                 cluster.idle();
             }
 
-            if (++messageCount >= MESSAGE_COUNT)
+            ++messageCount;
+
+            if (messageCount == MESSAGE_COUNT)
             {
-                latch.countDown();
+                latchOne.countDown();
+            }
+
+            if (messageCount == (MESSAGE_COUNT * 2))
+            {
+                latchTwo.countDown();
             }
         }
     }
 
-    private int findLeaderId()
+    private int findLeaderId(final int skipMemberId)
     {
-        int leaderMemberId = Aeron.NULL_VALUE;
+        int leaderMemberId = NULL_VALUE;
 
         for (int i = 0; i < 3; i++)
         {
+            if (i == skipMemberId)
+            {
+                continue;
+            }
+
             final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
+
             final Cluster.Role role = Cluster.Role.get(
                 (int)driver.consensusModule().context().clusterNodeCounter().get());
 

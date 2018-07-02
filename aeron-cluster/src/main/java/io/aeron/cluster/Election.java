@@ -432,6 +432,8 @@ class Election implements AutoCloseable
             logPosition = consensusModuleAgent.prepareForElection(logPosition);
         }
 
+        candidateTermId = Math.max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);
+
         if (clusterMembers.length == 1)
         {
             candidateTermId = leadershipTermId + 1;
@@ -445,7 +447,6 @@ class Election implements AutoCloseable
         }
         else
         {
-            candidateTermId = ctx.clusterMarkFile().candidateTermId();
             state(State.CANVASS, nowMs);
         }
 

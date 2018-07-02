@@ -22,7 +22,6 @@ import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.IoUtil;
@@ -35,7 +34,6 @@ import org.junit.Test;
 import java.io.File;
 
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -46,7 +44,6 @@ public class ExtendRecordingTest
     private static final int FRAGMENT_LIMIT = 10;
     private static final int TERM_BUFFER_LENGTH = 64 * 1024;
     private static final int MTU_LENGTH = Configuration.MTU_LENGTH;
-    private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH);
 
     private static final int RECORDING_STREAM_ID = 33;
     private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
@@ -87,13 +84,11 @@ public class ExtendRecordingTest
         final long firstStopPosition;
 
         final long recordingId;
-        final int sessionId;
         final int initialTermId;
 
         try (Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
             Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
-            sessionId = publication.sessionId();
             initialTermId = publication.initialTermId();
 
             aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
@@ -127,18 +122,13 @@ public class ExtendRecordingTest
         final String publicationExtendChannel = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:3333")
-            .termLength(TERM_BUFFER_LENGTH)
-            .sessionId(sessionId)
-            .initialTermId(initialTermId)
+            .initialPosition(firstStopPosition, initialTermId, TERM_BUFFER_LENGTH)
             .mtu(MTU_LENGTH)
-            .termOffset((int)(firstStopPosition & (TERM_BUFFER_LENGTH - 1)))
-            .termId(computeTermIdFromPosition(firstStopPosition, POSITION_BITS_TO_SHIFT, initialTermId))
             .build();
 
         final String subscriptionExtendChannel = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:3333")
-            .sessionId(sessionId)
             .build();
 
         final long secondStopPosition;
@@ -153,7 +143,7 @@ public class ExtendRecordingTest
                 offer(publication, messageCount, messageCount, MESSAGE_PREFIX);
 
                 final CountersReader counters = aeron.countersReader();
-                final int counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
+                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
 
                 consume(subscription, messageCount, messageCount, MESSAGE_PREFIX);
 

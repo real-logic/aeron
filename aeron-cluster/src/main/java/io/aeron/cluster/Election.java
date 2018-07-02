@@ -817,7 +817,10 @@ class Election implements AutoCloseable
         consensusModuleAgent.updateMemberDetails();
 
         final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
-        logSubscription.addDestination(channelUri.toString());
+        final String liveLogDestination = channelUri.toString();
+
+        logSubscription.addDestination(liveLogDestination);
+        consensusModuleAgent.liveLogDestination(liveLogDestination);
     }
 
     private static ChannelUri followerLogChannel(final String logChannel, final int sessionId)

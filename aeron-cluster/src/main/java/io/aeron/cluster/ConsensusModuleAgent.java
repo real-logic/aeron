@@ -119,6 +119,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private RecordingLog.RecoveryPlan recoveryPlan;
     private Election election;
     private String logRecordingChannel;
+    private String liveLogDestination;
     private String clientFacingEndpoints;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
@@ -610,6 +611,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             archive.stopRecording(logRecordingChannel, ctx.logStreamId());
             logRecordingChannel = null;
         }
+
+        if (null != logAdapter && null != liveLogDestination)
+        {
+            logAdapter.removeDestination(liveLogDestination);
+            liveLogDestination = null;
+        }
     }
 
     void appendedPositionCounter(final ReadableCounter appendedPositionCounter)
@@ -890,6 +897,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         updateClientFacingEndpoints(clusterMembers);
+    }
+
+    void liveLogDestination(final String liveLogDestination)
+    {
+        this.liveLogDestination = liveLogDestination;
     }
 
     Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel, final long logPosition)

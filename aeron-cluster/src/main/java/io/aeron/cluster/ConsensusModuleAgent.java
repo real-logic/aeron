@@ -415,6 +415,21 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
+    public void onVote(
+        final long candidateTermId,
+        final long logLeadershipTermId,
+        final long logPosition,
+        final int candidateMemberId,
+        final int followerMemberId,
+        final boolean vote)
+    {
+        if (null != election)
+        {
+            election.onVote(
+                candidateTermId, logLeadershipTermId, logPosition, candidateMemberId, followerMemberId, vote);
+        }
+    }
+
     public void onNewLeadershipTerm(
         final long logLeadershipTermId,
         final long logPosition,
@@ -430,21 +445,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         else if (leadershipTermId > this.leadershipTermId)
         {
             // TODO: Follow new leader
-        }
-    }
-
-    public void onVote(
-        final long candidateTermId,
-        final long logLeadershipTermId,
-        final long logPosition,
-        final int candidateMemberId,
-        final int followerMemberId,
-        final boolean vote)
-    {
-        if (null != election)
-        {
-            election.onVote(
-                candidateTermId, logLeadershipTermId, logPosition, candidateMemberId, followerMemberId, vote);
         }
     }
 
@@ -1140,7 +1140,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         checkServiceHeartbeats(nowMs);
         workCount += aeronClientInvoker.invoke();
 
-        if (Cluster.Role.LEADER == role)
+        if (Cluster.Role.LEADER == role && null == election)
         {
             workCount += checkControlToggle(nowMs);
 

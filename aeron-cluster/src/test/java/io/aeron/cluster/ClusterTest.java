@@ -57,7 +57,7 @@ public class ClusterTest
     private final EpochClock epochClock = () -> System.currentTimeMillis() + timeOffset.get();
 
     private final CountDownLatch latchOne = new CountDownLatch(MEMBER_COUNT);
-    private final CountDownLatch latchTwo = new CountDownLatch(MEMBER_COUNT);
+    private final CountDownLatch latchTwo = new CountDownLatch(MEMBER_COUNT - 1);
 
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
     private ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MEMBER_COUNT];
@@ -76,7 +76,7 @@ public class ClusterTest
 
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
-            echoServices[i] = new EchoService(latchOne, latchTwo);
+            echoServices[i] = new EchoService(i, latchOne, latchTwo);
 
             final String baseDirName = aeronDirName + "-" + i;
 
@@ -207,7 +207,10 @@ public class ClusterTest
         assertThat(responseCount.get(), is(MESSAGE_COUNT * 2));
         for (final EchoService service : echoServices)
         {
-            assertThat(service.messageCount(), is(MESSAGE_COUNT * 2));
+            if (service.index() != leaderMemberId)
+            {
+                assertThat(service.messageCount(), is(MESSAGE_COUNT * 2));
+            }
         }
     }
 
@@ -219,6 +222,7 @@ public class ClusterTest
             while (client.offer(msgCorrelationId, msgBuffer, 0, MSG.length()) < 0)
             {
                 TestUtil.checkInterruptedStatus();
+                client.pollEgress();
                 Thread.yield();
             }
 
@@ -263,14 +267,21 @@ public class ClusterTest
 
     static class EchoService extends StubClusteredService
     {
-        private int messageCount;
+        private volatile int messageCount;
+        private final int index;
         private final CountDownLatch latchOne;
         private final CountDownLatch latchTwo;
 
-        EchoService(final CountDownLatch latchOne, final CountDownLatch latchTwo)
+        EchoService(final int index, final CountDownLatch latchOne, final CountDownLatch latchTwo)
         {
+            this.index = index;
             this.latchOne = latchOne;
             this.latchTwo = latchTwo;
+        }
+
+        int index()
+        {
+            return index;
         }
 
         int messageCount()

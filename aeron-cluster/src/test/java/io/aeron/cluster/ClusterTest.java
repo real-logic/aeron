@@ -202,6 +202,7 @@ public class ClusterTest
 
         sendMessages(msgBuffer);
         awaitResponses(MESSAGE_COUNT * 2);
+        assertThat(client.leaderMemberId(), is(newLeaderMemberId));
 
         latchTwo.await();
         assertThat(responseCount.get(), is(MESSAGE_COUNT * 2));

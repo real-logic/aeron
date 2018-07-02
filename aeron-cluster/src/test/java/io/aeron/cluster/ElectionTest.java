@@ -367,7 +367,7 @@ public class ElectionTest
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember candidateMember = clusterMembers[1];
 
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember);
+        final Election election = newElection(false, leadershipTermId, logPosition, clusterMembers, candidateMember);
 
         assertThat(election.state(), is(Election.State.INIT));
 

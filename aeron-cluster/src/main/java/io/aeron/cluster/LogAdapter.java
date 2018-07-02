@@ -76,7 +76,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
 
     void removeDestination(final String destination)
     {
-        if (null != image && null != image.subscription())
+        if (null != image)
         {
             image.subscription().removeDestination(destination);
         }

@@ -225,6 +225,7 @@ class ClusterSession
             ", responseStreamId=" + responseStreamId +
             ", responseChannel='" + responseChannel + '\'' +
             ", state=" + state +
+            ", closeReason=" + closeReason +
             ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
             '}';
     }

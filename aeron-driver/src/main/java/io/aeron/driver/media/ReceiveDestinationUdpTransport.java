@@ -18,6 +18,7 @@ package io.aeron.driver.media;
 import io.aeron.driver.MediaDriver;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 
@@ -49,5 +50,10 @@ public class ReceiveDestinationUdpTransport extends UdpChannelTransport
     public InetSocketAddress explicitControlAddress()
     {
         return udpChannel.hasExplicitControl() ? udpChannel.localControl() : null;
+    }
+
+    public void selectionKey(final SelectionKey key)
+    {
+        selectionKey = key;
     }
 }

@@ -28,6 +28,7 @@ import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 
 import static io.aeron.driver.Configuration.PENDING_SETUPS_TIMEOUT_NS;
@@ -172,7 +173,8 @@ public class Receiver implements Agent
         transport.openChannel();
 
         final int transportIndex = channelEndpoint.addDestination(transport);
-        dataTransportPoller.registerForRead(channelEndpoint, transport, transportIndex);
+        final SelectionKey key = dataTransportPoller.registerForRead(channelEndpoint, transport, transportIndex);
+        transport.selectionKey(key);
 
         if (transport.hasExplicitControl())
         {
@@ -200,8 +202,10 @@ public class Receiver implements Agent
         {
             final ReceiveDestinationUdpTransport transport = channelEndpoint.destination(transportIndex);
 
+            dataTransportPoller.cancelRead(channelEndpoint, transport);
             channelEndpoint.removeDestination(transportIndex);
             CloseHelper.close(transport);
+            dataTransportPoller.selectNowWithoutProcessing();
 
             for (final PublicationImage image : publicationImages)
             {

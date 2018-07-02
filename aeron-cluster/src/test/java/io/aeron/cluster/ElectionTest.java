@@ -386,7 +386,7 @@ public class ElectionTest
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
-        final long t4 = t3 + 1;
+        final long t4 = t3 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
         election.onVote(
             leadershipTermId + 1, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);

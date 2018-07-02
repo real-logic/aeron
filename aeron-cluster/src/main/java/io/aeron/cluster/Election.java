@@ -105,7 +105,6 @@ class Election implements AutoCloseable
 
     private boolean isStartup;
     private boolean shouldReplay;
-    private boolean needsFullCount;
     private final long statusIntervalMs;
     private final long leaderHeartbeatIntervalMs;
     private final ClusterMember[] clusterMembers;
@@ -145,7 +144,6 @@ class Election implements AutoCloseable
     {
         this.isStartup = isStartup;
         this.shouldReplay = isStartup;
-        this.needsFullCount = isStartup;
         this.statusIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
         this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
         this.logPosition = logPosition;
@@ -515,21 +513,22 @@ class Election implements AutoCloseable
 
         if (ClusterMember.hasWonVoteOnFullCount(clusterMembers, candidateTermId))
         {
-            state(State.LEADER_REPLAY, nowMs);
             leaderMember = thisMember;
-            workCount += 1;
-        }
-        else if (ClusterMember.hasMajorityVote(clusterMembers, candidateTermId) &&
-            ctx.appointedLeaderId() != thisMember.id() && !needsFullCount)
-        {
             state(State.LEADER_REPLAY, nowMs);
-            leaderMember = thisMember;
             workCount += 1;
         }
         else if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())))
         {
-            state(State.CANVASS, nowMs);
-            needsFullCount = false;
+            if (ClusterMember.hasMajorityVote(clusterMembers, candidateTermId))
+            {
+                leaderMember = thisMember;
+                state(State.LEADER_REPLAY, nowMs);
+            }
+            else
+            {
+                state(State.CANVASS, nowMs);
+            }
+
             workCount += 1;
         }
         else

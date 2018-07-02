@@ -128,6 +128,7 @@ public class ClusterTest
 
         clientMediaDriver = MediaDriver.launch(
             new MediaDriver.Context()
+                .threadingMode(ThreadingMode.SHARED)
                 .aeronDirectoryName(aeronDirName));
 
         client = AeronCluster.connect(

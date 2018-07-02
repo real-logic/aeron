@@ -151,7 +151,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
             receiveDatagramChannel = null;
 
             throw new RuntimeException(
-                "channel error: " + ex.getMessage() +
+                "channel error - " + ex.getMessage() +
                 " (at " + ex.getStackTrace()[0].toString() + "): " +
                 udpChannel.originalUriString(), ex);
         }

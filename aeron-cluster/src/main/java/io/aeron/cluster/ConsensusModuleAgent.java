@@ -1500,11 +1500,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         ++serviceAckId;
     }
 
-    private void awaitServiceAcks()
-    {
-        awaitServiceAcks(logPosition());
-    }
-
     private long logPosition()
     {
         return null != logAdapter ? logAdapter.position() : logPublisher.position();

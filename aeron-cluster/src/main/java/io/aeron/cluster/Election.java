@@ -129,6 +129,7 @@ class Election implements AutoCloseable
     private Counter stateCounter;
     private Subscription logSubscription;
     private String replayDestination;
+    private String liveLogDestination;
     private ReplayFromLog replayFromLog = null;
 
     Election(
@@ -779,6 +780,13 @@ class Election implements AutoCloseable
         }
         else if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatTimeoutNs())))
         {
+            if (null != liveLogDestination)
+            {
+                logSubscription.removeDestination(liveLogDestination);
+                liveLogDestination = null;
+                consensusModuleAgent.liveLogDestination(null);
+            }
+
             state(State.CANVASS, nowMs);
         }
 
@@ -819,7 +827,7 @@ class Election implements AutoCloseable
         consensusModuleAgent.updateMemberDetails();
 
         final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
-        final String liveLogDestination = channelUri.toString();
+        liveLogDestination = channelUri.toString();
 
         logSubscription.addDestination(liveLogDestination);
         consensusModuleAgent.liveLogDestination(liveLogDestination);

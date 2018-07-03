@@ -321,6 +321,12 @@ public class MultiNodeTest
             ConsensusModuleHarness followerHarness = new ConsensusModuleHarness(
                 followerContext, mockFollowerService, mockFollowerStatusListeners, false, true, false))
         {
+            leaderHarness.memberStatusPublisher().canvassPosition(
+                leaderHarness.memberStatusPublication(2),
+                0L,
+                position,
+                2);
+
             leaderHarness.awaitMemberStatusMessage(2, leaderHarness.onRequestVoteCounter(2));
 
             verify(mockLeaderStatusListeners[2]).onRequestVote(0L, position, 1L, 0);

@@ -64,6 +64,18 @@ public class MultiNodeTest
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
             context, mockService, mockMemberStatusListeners, true, true, false))
         {
+            harness.memberStatusPublisher().canvassPosition(
+                harness.memberStatusPublication(1),
+                -1L,
+                0L,
+                1);
+
+            harness.memberStatusPublisher().canvassPosition(
+                harness.memberStatusPublication(2),
+                -1L,
+                0L,
+                2);
+
             harness.awaitMemberStatusMessage(1, harness.onRequestVoteCounter(1));
             harness.awaitMemberStatusMessage(2, harness.onRequestVoteCounter(2));
 
@@ -155,6 +167,18 @@ public class MultiNodeTest
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
             context, mockService, mockMemberStatusListeners, false, true, false))
         {
+            harness.memberStatusPublisher().canvassPosition(
+                harness.memberStatusPublication(1),
+                0L,
+                position,
+                1);
+
+            harness.memberStatusPublisher().canvassPosition(
+                harness.memberStatusPublication(2),
+                0L,
+                position,
+                2);
+
             harness.awaitMemberStatusMessage(1, harness.onRequestVoteCounter(1));
             harness.awaitMemberStatusMessage(2, harness.onRequestVoteCounter(2));
 

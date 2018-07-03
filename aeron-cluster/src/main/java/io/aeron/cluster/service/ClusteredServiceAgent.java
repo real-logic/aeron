@@ -84,11 +84,14 @@ class ClusteredServiceAgent implements Agent, Cluster
         heartbeatCounter = awaitHeartbeatCounter(counters);
 
         service.onStart(this);
+
         isRecovering = true;
+
         final int recoveryCounterId = awaitRecoveryCounter(counters);
         heartbeatCounter.setOrdered(epochClock.time());
         checkForSnapshot(counters, recoveryCounterId);
         checkForReplay(counters, recoveryCounterId);
+
         isRecovering = false;
     }
 
@@ -111,28 +114,10 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         int workCount = 0;
 
-        final long nowMs = epochClock.time();
-        if (cachedTimeMs != nowMs)
+        if (checkForClockTick())
         {
-            cachedTimeMs = nowMs;
-
-            if (consensusModuleProxy.isConnected())
-            {
-                markFile.updateActivityTimestamp(nowMs);
-                heartbeatCounter.setOrdered(nowMs);
-            }
-            else
-            {
-                ctx.errorHandler().onError(new ClusterException("Consensus Module not connected"));
-                ctx.terminationHook().run();
-            }
-
-            workCount += serviceAdapter.poll();
-
-            if (null != activeLogEvent && null == logAdapter)
-            {
-                joinActiveLog();
-            }
+            pollServiceAdapter();
+            workCount += 1;
         }
 
         if (null != logAdapter)
@@ -223,8 +208,11 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public void idle()
     {
-        checkInterruptedStatus();
-        idleStrategy.idle();
+        if (!checkForClockTick())
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+        }
     }
 
     public void onJoinLog(
@@ -658,6 +646,41 @@ class ClusteredServiceAgent implements Agent, Cluster
         if (Thread.currentThread().isInterrupted())
         {
             throw new AgentTerminationException("unexpected interrupt during operation");
+        }
+    }
+
+    private boolean checkForClockTick()
+    {
+        final long nowMs = epochClock.time();
+
+        if (cachedTimeMs != nowMs)
+        {
+            cachedTimeMs = nowMs;
+
+            if (consensusModuleProxy.isConnected())
+            {
+                markFile.updateActivityTimestamp(nowMs);
+                heartbeatCounter.setOrdered(nowMs);
+            }
+            else
+            {
+                ctx.errorHandler().onError(new ClusterException("Consensus Module not connected"));
+                ctx.terminationHook().run();
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private void pollServiceAdapter()
+    {
+        serviceAdapter.poll();
+
+        if (null != activeLogEvent && null == logAdapter)
+        {
+            joinActiveLog();
         }
     }
 }

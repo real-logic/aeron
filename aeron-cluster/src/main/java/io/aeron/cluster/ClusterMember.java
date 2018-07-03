@@ -506,8 +506,6 @@ public final class ClusterMember
             {
                 member.vote(null)
                     .candidateTermId(Aeron.NULL_VALUE)
-                    .leadershipTermId(Aeron.NULL_VALUE)
-                    .logPosition(Aeron.NULL_VALUE)
                     .isBallotSent(false);
             }
         }
@@ -532,6 +530,33 @@ public final class ClusterMember
             }
 
             votes += member.vote ? 1 : 0;
+        }
+
+        return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
+    }
+
+    /**
+     * Has sufficient votes being counted for a majority for all members observed during {@link Election.State#CANVASS}?
+     *
+     * @param clusterMembers  to check for votes.
+     * @param candidateTermId for the vote.
+     * @return false if any member has not voted for the candidate.
+     */
+    public static boolean hasMajorityVoteWithCanvassMembers(
+        final ClusterMember[] clusterMembers, final long candidateTermId)
+    {
+        int votes = 0;
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (Aeron.NULL_VALUE != member.leadershipTermId && null == member.vote)
+            {
+                return false;
+            }
+
+            if (Boolean.TRUE.equals(member.vote) && member.candidateTermId == candidateTermId)
+            {
+                ++votes;
+            }
         }
 
         return votes >= ClusterMember.quorumThreshold(clusterMembers.length);

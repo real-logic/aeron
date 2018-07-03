@@ -444,11 +444,6 @@ class Election implements AutoCloseable
             leaderMember = thisMember;
             state(State.LEADER_REPLAY, nowMs);
         }
-        else if (ctx.appointedLeaderId() == thisMember.id())
-        {
-            nominationDeadlineMs = nowMs;
-            state(State.NOMINATE, nowMs);
-        }
         else
         {
             state(State.CANVASS, nowMs);
@@ -476,7 +471,7 @@ class Election implements AutoCloseable
             workCount += 1;
         }
 
-        if (ctx.appointedLeaderId() != NULL_VALUE)
+        if (ctx.appointedLeaderId() != NULL_VALUE && ctx.appointedLeaderId() != thisMember.id())
         {
             return workCount;
         }
@@ -515,7 +510,8 @@ class Election implements AutoCloseable
     {
         int workCount = 0;
 
-        if (ClusterMember.hasWonVoteOnFullCount(clusterMembers, candidateTermId))
+        if (ClusterMember.hasWonVoteOnFullCount(clusterMembers, candidateTermId) ||
+            ClusterMember.hasMajorityVoteWithCanvassMembers(clusterMembers, candidateTermId))
         {
             leaderMember = thisMember;
             state(State.LEADER_REPLAY, nowMs);

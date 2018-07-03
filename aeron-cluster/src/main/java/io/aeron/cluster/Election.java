@@ -33,7 +33,7 @@ import static io.aeron.cluster.ClusterMember.compareLog;
 class Election implements AutoCloseable
 {
     /**
-     * The multiplier applied to the {@link ConsensusModule.Configuration#STATUS_INTERVAL_PROP_NAME} for the nomination
+     * The multiplier applied to the {@link ConsensusModule.Configuration#ELECTION_STATUS_INTERVAL_PROP_NAME} for the nomination
      * timeout.
      */
     static final int NOMINATION_TIMEOUT_MULTIPLIER = 7;
@@ -105,8 +105,10 @@ class Election implements AutoCloseable
 
     private boolean isStartup;
     private boolean shouldReplay;
-    private final long statusIntervalMs;
+    private final long electionStatusIntervalMs;
+    private final long electionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
+    private final long leaderHeartbeatTimeoutMs;
     private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
     private final MemberStatusAdapter memberStatusAdapter;
@@ -145,8 +147,10 @@ class Election implements AutoCloseable
     {
         this.isStartup = isStartup;
         this.shouldReplay = isStartup;
-        this.statusIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        this.electionStatusIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.electionStatusIntervalNs());
+        this.electionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
         this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
+        this.leaderHeartbeatTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatTimeoutNs());
         this.logPosition = logPosition;
         this.logLeadershipTermId = leadershipTermId;
         this.leadershipTermId = leadershipTermId;
@@ -457,7 +461,7 @@ class Election implements AutoCloseable
     {
         int workCount = 0;
 
-        if (nowMs >= (timeOfLastUpdateMs + statusIntervalMs))
+        if (nowMs >= (timeOfLastUpdateMs + electionStatusIntervalMs))
         {
             timeOfLastUpdateMs = nowMs;
             for (final ClusterMember member : clusterMembers)
@@ -478,14 +482,14 @@ class Election implements AutoCloseable
         }
 
         final long canvassDeadlineMs = (isStartup ?
-            TimeUnit.NANOSECONDS.toMillis(ctx.startupStatusTimeoutNs()) :
-            TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())) +
+            TimeUnit.NANOSECONDS.toMillis(ctx.startupCanvassTimeoutNs()) : electionTimeoutMs) +
             timeOfLastStateChangeMs;
 
         if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember) ||
             (ClusterMember.isQuorumCandidate(clusterMembers, thisMember) && nowMs >= canvassDeadlineMs))
         {
-            nominationDeadlineMs = nowMs + random.nextInt((int)statusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER);
+            nominationDeadlineMs =
+                nowMs + random.nextInt((int)electionStatusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER);
             state(State.NOMINATE, nowMs);
             workCount += 1;
         }
@@ -517,7 +521,7 @@ class Election implements AutoCloseable
             state(State.LEADER_REPLAY, nowMs);
             workCount += 1;
         }
-        else if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())))
+        else if (nowMs >= (timeOfLastStateChangeMs + electionTimeoutMs))
         {
             if (ClusterMember.hasMajorityVote(clusterMembers, candidateTermId))
             {
@@ -551,7 +555,7 @@ class Election implements AutoCloseable
     {
         int workCount = 0;
 
-        if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs())))
+        if (nowMs >= (timeOfLastStateChangeMs + electionTimeoutMs))
         {
             state(State.CANVASS, nowMs);
             workCount += 1;
@@ -776,7 +780,7 @@ class Election implements AutoCloseable
                 close();
             }
         }
-        else if (nowMs >= (timeOfLastStateChangeMs + TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatTimeoutNs())))
+        else if (nowMs >= (timeOfLastStateChangeMs + leaderHeartbeatTimeoutMs))
         {
             if (null != liveLogDestination)
             {

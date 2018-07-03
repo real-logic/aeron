@@ -439,28 +439,16 @@ public class ConsensusModule implements AutoCloseable
         public static final long SERVICE_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
-         * Timeout after which an election vote will be attempted after startup and recovery is complete
-         * while waiting to hear the status of all members if a majority has been heard from.
+         * Timeout after which an election vote will be attempted after startup while waiting to canvass the status
+         * of members if a majority has been heard from.
          */
-        public static final String STARTUP_STATUS_TIMEOUT_PROP_NAME = "aeron.cluster.startup.status.timeout";
+        public static final String STARTUP_CANVASS_TIMEOUT_PROP_NAME = "aeron.cluster.startup.canvass.timeout";
 
         /**
-         * Default timeout after which an election vote will be attempted after startup and recovery is complete
-         * while waiting to hear the status of all members before going for a majority if possible.
+         * Default timeout after which an election vote will be attempted on startup when waiting to canvass the
+         * status of all members before going for a majority if possible.
          */
-        public static final long STARTUP_STATUS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(60);
-
-        /**
-         * Timeout after which an election vote will be attempted after a leader failure is suspected
-         * while waiting to hear the status of all remaining members if a majority has been heard from.
-         */
-        public static final String FAILURE_STATUS_TIMEOUT_PROP_NAME = "aeron.cluster.failure.status.timeout";
-
-        /**
-         * Default timeout after which an election vote will be attempted after a leader failure is suspected
-         * while waiting to hear the status of all remaining members if a majority has been heard from.
-         */
-        public static final long FAILURE_STATUS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
+        public static final long STARTUP_CANVASS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(60);
 
         /**
          * Timeout after which an election fails if the candidate does not get a majority of votes.
@@ -475,12 +463,12 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Interval at which a member will send out status updates during election phases.
          */
-        public static final String STATUS_INTERVAL_PROP_NAME = "aeron.cluster.status.interval";
+        public static final String ELECTION_STATUS_INTERVAL_PROP_NAME = "aeron.cluster.election.status.interval";
 
         /**
          * Default interval at which a member will send out status updates during election phases.
          */
-        public static final long STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(20);
+        public static final long ELECTION_STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(20);
 
         /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.
@@ -656,26 +644,14 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Timeout waiting to hear the status of all cluster members before voting if a majority have been heard from.
+         * Timeout waiting to canvass the status of cluster members before voting if a majority have been heard from.
          *
          * @return timeout in nanoseconds to wait for the status of other cluster members before voting.
-         * @see #STARTUP_STATUS_TIMEOUT_PROP_NAME
+         * @see #STARTUP_CANVASS_TIMEOUT_PROP_NAME
          */
-        public static long startupStatusTimeoutNs()
+        public static long startupCanvassTimeoutNs()
         {
-            return getDurationInNanos(STARTUP_STATUS_TIMEOUT_PROP_NAME, STARTUP_STATUS_TIMEOUT_DEFAULT_NS);
-        }
-
-        /**
-         * Timeout waiting to hear the status of all remaining cluster members before voting if a majority have been
-         * heard from.
-         *
-         * @return timeout in nanoseconds to wait for the status of other cluster members before voting.
-         * @see #FAILURE_STATUS_TIMEOUT_PROP_NAME
-         */
-        public static long failureStatusTimeoutNs()
-        {
-            return getDurationInNanos(FAILURE_STATUS_TIMEOUT_PROP_NAME, FAILURE_STATUS_TIMEOUT_DEFAULT_NS);
+            return getDurationInNanos(STARTUP_CANVASS_TIMEOUT_PROP_NAME, STARTUP_CANVASS_TIMEOUT_DEFAULT_NS);
         }
 
         /**
@@ -693,11 +669,11 @@ public class ConsensusModule implements AutoCloseable
          * Interval at which a member will send out status messages during the election phases.
          *
          * @return interval at which a member will send out status messages during the election phases.
-         * @see #STATUS_INTERVAL_PROP_NAME
+         * @see #ELECTION_STATUS_INTERVAL_PROP_NAME
          */
-        public static long statusIntervalNs()
+        public static long electionStatusIntervalNs()
         {
-            return getDurationInNanos(STATUS_INTERVAL_PROP_NAME, STATUS_INTERVAL_DEFAULT_NS);
+            return getDurationInNanos(ELECTION_STATUS_INTERVAL_PROP_NAME, ELECTION_STATUS_INTERVAL_DEFAULT_NS);
         }
 
         /**
@@ -802,10 +778,9 @@ public class ConsensusModule implements AutoCloseable
         private long leaderHeartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
         private long leaderHeartbeatIntervalNs = Configuration.leaderHeartbeatIntervalNs();
         private long serviceHeartbeatTimeoutNs = Configuration.serviceHeartbeatTimeoutNs();
-        private long startupStatusTimeoutNs = Configuration.startupStatusTimeoutNs();
-        private long failureStatusTimeoutNs = Configuration.failureStatusTimeoutNs();
+        private long startupCanvassTimeoutNs = Configuration.startupCanvassTimeoutNs();
         private long electionTimeoutNs = Configuration.electionTimeoutNs();
-        private long statusIntervalNs = Configuration.statusIntervalNs();
+        private long electionStatusIntervalNs = Configuration.electionStatusIntervalNs();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -1715,11 +1690,11 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param timeoutNs to wait on startup after recovery before commencing an election.
          * @return this for a fluent API.
-         * @see Configuration#STARTUP_STATUS_TIMEOUT_PROP_NAME
+         * @see Configuration#STARTUP_CANVASS_TIMEOUT_PROP_NAME
          */
-        public Context startupStatusTimeoutNs(final long timeoutNs)
+        public Context startupCanvassTimeoutNs(final long timeoutNs)
         {
-            this.startupStatusTimeoutNs = timeoutNs;
+            this.startupCanvassTimeoutNs = timeoutNs;
             return this;
         }
 
@@ -1728,37 +1703,11 @@ public class ConsensusModule implements AutoCloseable
          * election if a majority of members has been heard from.
          *
          * @return the timeout to wait on startup after recovery before commencing an election.
-         * @see Configuration#STARTUP_STATUS_TIMEOUT_PROP_NAME
+         * @see Configuration#STARTUP_CANVASS_TIMEOUT_PROP_NAME
          */
-        public long startupStatusTimeoutNs()
+        public long startupCanvassTimeoutNs()
         {
-            return startupStatusTimeoutNs;
-        }
-
-        /**
-         * Timeout to wait for hearing the status of all remaining cluster members on startup after recovery before
-         * commencing an election if a majority of members has been heard from.
-         *
-         * @param timeoutNs to wait after detecting a leader failure before commencing an election.
-         * @return this for a fluent API.
-         * @see Configuration#FAILURE_STATUS_TIMEOUT_PROP_NAME
-         */
-        public Context failureStatusTimeoutNs(final long timeoutNs)
-        {
-            this.failureStatusTimeoutNs = timeoutNs;
-            return this;
-        }
-
-        /**
-         * Timeout to wait for hearing the status of all remaining cluster members on startup after recovery before
-         * commencing an election if a majority of members has been heard from.
-         *
-         * @return the timeout to wait after detecting a leader failure before commencing an election.
-         * @see Configuration#FAILURE_STATUS_TIMEOUT_PROP_NAME
-         */
-        public long failureStatusTimeoutNs()
-        {
-            return failureStatusTimeoutNs;
+            return startupCanvassTimeoutNs;
         }
 
         /**
@@ -1788,14 +1737,14 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Interval at which a member will send out status messages during the election phases.
          *
-         * @param statusIntervalNs between status message updates.
+         * @param electionStatusIntervalNs between status message updates.
          * @return this for a fluent API.
-         * @see Configuration#STATUS_INTERVAL_PROP_NAME
-         * @see Configuration#STATUS_INTERVAL_DEFAULT_NS
+         * @see Configuration#ELECTION_STATUS_INTERVAL_PROP_NAME
+         * @see Configuration#ELECTION_STATUS_INTERVAL_DEFAULT_NS
          */
-        public Context statusIntervalNs(final long statusIntervalNs)
+        public Context electionStatusIntervalNs(final long electionStatusIntervalNs)
         {
-            this.statusIntervalNs = statusIntervalNs;
+            this.electionStatusIntervalNs = electionStatusIntervalNs;
             return this;
         }
 
@@ -1803,12 +1752,12 @@ public class ConsensusModule implements AutoCloseable
          * Interval at which a member will send out status messages during the election phases.
          *
          * @return the interval at which a member will send out status messages during the election phases.
-         * @see Configuration#STATUS_INTERVAL_PROP_NAME
-         * @see Configuration#STATUS_INTERVAL_DEFAULT_NS
+         * @see Configuration#ELECTION_STATUS_INTERVAL_PROP_NAME
+         * @see Configuration#ELECTION_STATUS_INTERVAL_DEFAULT_NS
          */
-        public long statusIntervalNs()
+        public long electionStatusIntervalNs()
         {
-            return statusIntervalNs;
+            return electionStatusIntervalNs;
         }
 
         /**

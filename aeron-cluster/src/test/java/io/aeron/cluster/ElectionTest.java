@@ -55,6 +55,10 @@ public class ElectionTest
         .random(new Random())
         .clusterMarkFile(clusterMarkFile);
 
+    private final long electionStatusIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.electionStatusIntervalNs());
+    private final long electionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+    private final long startupCanvassTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.startupCanvassTimeoutNs());
+
     @Before
     public void before()
     {
@@ -253,7 +257,7 @@ public class ElectionTest
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        final long t2 = t1 + electionStatusIntervalMs;
         election.doWork(t2);
         verify(memberStatusPublisher).canvassPosition(
             clusterMembers[0].publication(), leaderShipTermId, logPosition, followerMember.id());
@@ -285,7 +289,7 @@ public class ElectionTest
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        final long t2 = t1 + electionStatusIntervalMs;
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.CANVASS));
 
@@ -313,7 +317,7 @@ public class ElectionTest
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        final long t2 = t1 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs());
+        final long t2 = t1 + electionStatusIntervalMs;
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.CANVASS));
 
@@ -354,7 +358,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.startupStatusTimeoutNs());
+        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.startupCanvassTimeoutNs());
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.NOMINATE));
     }
@@ -382,11 +386,11 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs()) * NOMINATION_TIMEOUT_MULTIPLIER;
+        final long t3 = t2 + electionStatusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
-        final long t4 = t3 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+        final long t4 = t3 + electionTimeoutMs;
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.CANDIDATE);
         election.onVote(
             leadershipTermId + 1, leadershipTermId, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
@@ -417,7 +421,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs()) * NOMINATION_TIMEOUT_MULTIPLIER;
+        final long t3 = t2 + electionStatusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -455,11 +459,11 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs()) * NOMINATION_TIMEOUT_MULTIPLIER;
+        final long t3 = t2 + electionStatusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
-        final long t4 = t3 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+        final long t4 = t3 + electionTimeoutMs;
         election.doWork(t4);
         assertThat(election.state(), is(Election.State.CANVASS));
         assertThat(election.leadershipTermId(), is(leadershipTermId));
@@ -484,11 +488,11 @@ public class ElectionTest
 
         election.onCanvassPosition(leadershipTermId, 0, 0);
 
-        final long t2 = t1 + ctx.statusIntervalNs();
+        final long t2 = t1 + startupCanvassTimeoutMs;
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.statusIntervalNs()) * NOMINATION_TIMEOUT_MULTIPLIER;
+        final long t3 = t2 + electionStatusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -499,7 +503,7 @@ public class ElectionTest
         election.doWork(t4);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
-        final long t5 = t4 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+        final long t5 = t4 + electionTimeoutMs;
         election.doWork(t5);
         assertThat(election.state(), is(Election.State.CANVASS));
 
@@ -508,11 +512,11 @@ public class ElectionTest
         final long t6 = t5 + 1;
         election.doWork(t6);
 
-        final long t7 = t6 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+        final long t7 = t6 + electionTimeoutMs;
         election.doWork(t7);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t8 = t7 + ctx.statusIntervalNs();
+        final long t8 = t7 + electionTimeoutMs;
         election.doWork(t8);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -523,7 +527,7 @@ public class ElectionTest
         election.onVote(
             candidateTermId, leadershipTermId + 1, logPosition, candidateMember.id(), clusterMembers[2].id(), true);
 
-        final long t10 = t9 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+        final long t10 = t9 + electionTimeoutMs;
         election.doWork(t10);
         assertThat(election.state(), is(Election.State.LEADER_REPLAY));
 
@@ -557,7 +561,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.electionTimeoutNs());
+        final long t3 = t2 + electionTimeoutMs;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANVASS));
         assertThat(election.leadershipTermId(), is(leadershipTermId));

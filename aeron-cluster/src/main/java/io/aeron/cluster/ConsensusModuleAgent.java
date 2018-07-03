@@ -445,7 +445,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
-            // TODO: Follow new leader
+            enterElection(cachedTimeMs);
         }
     }
 
@@ -474,7 +474,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
-            // TODO: Follow new leader
+            enterElection(cachedTimeMs);
         }
     }
 

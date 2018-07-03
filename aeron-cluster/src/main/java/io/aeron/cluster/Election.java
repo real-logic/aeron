@@ -314,7 +314,6 @@ class Election implements AutoCloseable
             leadershipTermId == this.candidateTermId)
         {
             this.leadershipTermId = leadershipTermId;
-            this.candidateTermId = NULL_VALUE;
             leaderMember = clusterMembers[leaderMemberId];
             this.logSessionId = logSessionId;
 
@@ -437,7 +436,7 @@ class Election implements AutoCloseable
 
         if (clusterMembers.length == 1)
         {
-            candidateTermId = leadershipTermId + 1;
+            candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
             leaderMember = thisMember;
             state(State.LEADER_REPLAY, nowMs);
         }
@@ -623,7 +622,6 @@ class Election implements AutoCloseable
         }
 
         leadershipTermId = candidateTermId;
-        candidateTermId = NULL_VALUE;
 
         ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
         ctx.recordingLog().force();

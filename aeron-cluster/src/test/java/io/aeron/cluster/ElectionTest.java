@@ -225,7 +225,7 @@ public class ElectionTest
             candidateId,
             followerMember.id(),
             true);
-        election.doWork(t1);
+        election.doWork(t2);
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
 
         final int logSessionId = -7;
@@ -368,7 +368,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.CANVASS));
 
-        final long t3 = t2 + TimeUnit.NANOSECONDS.toMillis(ctx.startupCanvassTimeoutNs());
+        final long t3 = t2 + startupCanvassTimeoutMs;
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.NOMINATE));
     }

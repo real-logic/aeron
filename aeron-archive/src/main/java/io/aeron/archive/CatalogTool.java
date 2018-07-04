@@ -296,61 +296,6 @@ public class CatalogTool
         return false;
     }
 
-    private static boolean verifyFirstFile(
-        final long recordingId, final RecordingDescriptorDecoder decoder, final long joinSegmentOffset)
-    {
-        final File firstSegmentFile = new File(archiveDir, segmentFileName(recordingId, 0));
-        try (FileChannel firstFile = FileChannel.open(firstSegmentFile.toPath(), READ))
-        {
-            TEMP_BUFFER.clear();
-            TEMP_BUFFER.limit(DataHeaderFlyweight.HEADER_LENGTH);
-            if (firstFile.read(TEMP_BUFFER, joinSegmentOffset) != DataHeaderFlyweight.HEADER_LENGTH)
-            {
-                System.err.println("(recordingId=" + recordingId + ") ERR: missing reading first fragment header.");
-                return true;
-            }
-
-            if (HEADER_FLYWEIGHT.sessionId() != decoder.sessionId())
-            {
-                System.err.println("(recordingId=" + recordingId + ") ERR: first fragment sessionId=" +
-                    HEADER_FLYWEIGHT.sessionId() + " (expected=" + decoder.sessionId() + ")");
-                return true;
-            }
-
-            if (HEADER_FLYWEIGHT.streamId() != decoder.streamId())
-            {
-                System.err.println("(recordingId=" + recordingId + ") ERR: first fragment sessionId=" +
-                    HEADER_FLYWEIGHT.streamId() + " (expected=" + decoder.streamId() + ")");
-                return true;
-            }
-
-            final int joinTermOffset = (int)joinSegmentOffset;
-            if (HEADER_FLYWEIGHT.termOffset() != joinTermOffset)
-            {
-                System.err.println("(recordingId=" + recordingId + ") ERR: first fragment termOffset=" +
-                    HEADER_FLYWEIGHT.termOffset() + " (expected=" + joinTermOffset + ")");
-                return true;
-            }
-
-            final long joinTermId = decoder.initialTermId() + (decoder.startPosition() / decoder.termBufferLength());
-            if (HEADER_FLYWEIGHT.termId() != joinTermId)
-            {
-                System.err.println("(recordingId=" + recordingId + ") ERR: first fragment termId=" +
-                    HEADER_FLYWEIGHT.termId() + " (expected=" + joinTermId + ")");
-                return true;
-            }
-        }
-        catch (final Exception ex)
-        {
-            System.err.println("(recordingId=" + recordingId + ") ERR: fail to verify file:" +
-                segmentFileName(recordingId, 0));
-            ex.printStackTrace(System.err);
-            return true;
-        }
-
-        return false;
-    }
-
     private static void printHelp()
     {
         System.out.println("Usage: <archive-dir> <command>");

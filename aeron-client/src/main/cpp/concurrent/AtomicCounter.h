@@ -46,7 +46,7 @@ public:
     {
     }
 
-    virtual ~AtomicCounter()
+    ~AtomicCounter()
     {
         if (nullptr != m_countersManager)
         {

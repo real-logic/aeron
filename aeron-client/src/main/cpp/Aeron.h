@@ -64,7 +64,7 @@ public:
      * @param context for configuration of the client.
      */
     Aeron(Context& context);
-    virtual ~Aeron();
+    ~Aeron();
 
     /**
      * Create an Aeron instance and connect to the media driver.

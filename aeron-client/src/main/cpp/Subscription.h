@@ -56,7 +56,7 @@ public:
         std::int32_t streamId,
         std::int32_t channelStatusId);
     /// @endcond
-    virtual ~Subscription();
+    ~Subscription();
 
     /**
      * Media address for delivery to the channel.

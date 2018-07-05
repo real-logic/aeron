@@ -181,8 +181,6 @@ public:
         return *this;
     }
 
-    virtual ~Image() = default;
-
     /**
      * Get the length in bytes for each term partition in the log buffer.
      *

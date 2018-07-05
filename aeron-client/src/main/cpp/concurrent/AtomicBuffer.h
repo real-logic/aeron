@@ -99,7 +99,7 @@ public:
         buffer.fill(initialValue);
     }
 
-    virtual ~AtomicBuffer() = default;
+    COND_MOCK_VIRTUAL ~AtomicBuffer() = default;
 
     /**
      * Wrap a buffer of memory for a given length.

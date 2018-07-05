@@ -18,5 +18,5 @@ package io.aeron.cluster;
 @FunctionalInterface
 public interface AuthenticatorSupplier
 {
-    Authenticator newAuthenticator(ConsensusModule.Context context);
+    Authenticator newAuthenticator();
 }

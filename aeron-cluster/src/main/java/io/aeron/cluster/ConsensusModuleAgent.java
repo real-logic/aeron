@@ -176,7 +176,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         serviceProxy = new ServiceProxy(
             aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceStreamId()));
 
-        authenticator = ctx.authenticatorSupplier().newAuthenticator(ctx);
+        authenticator = ctx.authenticatorSupplier().newAuthenticator();
     }
 
     public void onClose()

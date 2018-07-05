@@ -22,9 +22,9 @@ import org.agrona.collections.ArrayUtil;
  */
 public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
 {
-    private static final byte[] NULL_ENCODED_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
+    public static final byte[] NULL_ENCODED_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
 
-    public Authenticator newAuthenticator(final ConsensusModule.Context context)
+    public Authenticator newAuthenticator()
     {
         return new Authenticator()
         {

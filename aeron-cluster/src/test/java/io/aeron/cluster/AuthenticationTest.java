@@ -123,7 +123,7 @@ public class AuthenticationTest
                 }
             });
 
-        launchClusteredMediaDriver((ctx) -> authenticator);
+        launchClusteredMediaDriver(() -> authenticator);
         launchService(serviceSessionId, encodedPrincipal, serviceMsgCounter);
 
         connectClient(credentialsSupplier);
@@ -188,7 +188,7 @@ public class AuthenticationTest
                 }
             });
 
-        launchClusteredMediaDriver((ctx) -> authenticator);
+        launchClusteredMediaDriver(() -> authenticator);
         launchService(serviceSessionId, encodedPrincipal, serviceMsgCounter);
 
         connectClient(credentialsSupplier);
@@ -261,7 +261,7 @@ public class AuthenticationTest
                 }
             });
 
-        launchClusteredMediaDriver((ctx) -> authenticator);
+        launchClusteredMediaDriver(() -> authenticator);
         launchService(serviceSessionId, encodedPrincipal, serviceMsgCounter);
 
         connectClient(credentialsSupplier);
@@ -326,7 +326,7 @@ public class AuthenticationTest
                 }
             });
 
-        launchClusteredMediaDriver((ctx) -> authenticator);
+        launchClusteredMediaDriver(() -> authenticator);
         launchService(serviceSessionId, encodedPrincipal, serviceMsgCounter);
 
         try
@@ -399,7 +399,7 @@ public class AuthenticationTest
                 }
             });
 
-        launchClusteredMediaDriver((ctx) -> authenticator);
+        launchClusteredMediaDriver(() -> authenticator);
         launchService(serviceSessionId, encodedPrincipal, serviceMsgCounter);
 
         try

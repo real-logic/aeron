@@ -228,7 +228,7 @@ class ControlSession implements Session
     {
         if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, OK, null, controlPublication))
         {
-            queueResponse(correlationId, 0, OK, null);
+            queueResponse(correlationId, relevantId, OK, null);
         }
     }
 

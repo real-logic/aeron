@@ -15,48 +15,17 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.cluster.codecs.EventCode;
-
-import static io.aeron.cluster.ClusterSession.State.CHALLENGED;
-import static io.aeron.cluster.ClusterSession.State.REJECTED;
-
 /**
- * Proxy for a session when performing authentication. Used to inform system of client authentication status.
- * <p>
- * <b>Note:</b> The object is not threadsafe.
+ * Representation for a session which is going through the authentication process.
  */
-public class SessionProxy
+public interface SessionProxy
 {
-    private final EgressPublisher egressPublisher;
-    private ClusterSession clusterSession;
-    private int leaderMemberId;
-
-    public SessionProxy(final EgressPublisher egressPublisher)
-    {
-        this.egressPublisher = egressPublisher;
-    }
-
-    public final SessionProxy session(final ClusterSession clusterSession)
-    {
-        this.clusterSession = clusterSession;
-        return this;
-    }
-
-    public final SessionProxy leaderMemberId(final int leaderMemberId)
-    {
-        this.leaderMemberId = leaderMemberId;
-        return this;
-    }
-
     /**
-     * The session Id of the potential session assigned by the consensus module.
+     * The session Id of the potential session assigned by the system.
      *
      * @return session id for the potential session
      */
-    public final long sessionId()
-    {
-        return clusterSession.id();
-    }
+    long sessionId();
 
     /**
      * Inform the system that the session requires a challenge and to send the provided encoded challenge.
@@ -64,41 +33,18 @@ public class SessionProxy
      * @param encodedChallenge to send to the client.
      * @return true if challenge was sent or false if challenge could not be sent.
      */
-    public final boolean challenge(final byte[] encodedChallenge)
-    {
-        if (egressPublisher.sendChallenge(clusterSession, encodedChallenge))
-        {
-            clusterSession.state(CHALLENGED);
-            return true;
-        }
-
-        return false;
-    }
+    boolean challenge(byte[] encodedChallenge);
 
     /**
-     * Inform the system that the session is met authentication requirements.
+     * Inform the system that the session has met authentication requirements.
      *
-     * @param encodedPrincipal to pass to the on session open cluster event.
+     * @param encodedPrincipal that has passed authentication.
      * @return true if success event was sent or false if success event could not be sent.
      */
-    public final boolean authenticate(final byte[] encodedPrincipal)
-    {
-        ClusterSession.checkEncodedPrincipalLength(encodedPrincipal);
-
-        if (egressPublisher.sendEvent(clusterSession, leaderMemberId, EventCode.OK, ""))
-        {
-            clusterSession.authenticate(encodedPrincipal);
-            return true;
-        }
-
-        return false;
-    }
+    boolean authenticate(byte[] encodedPrincipal);
 
     /**
      * Inform the system that the session has NOT met authentication requirements and should be rejected.
      */
-    public final void reject()
-    {
-        clusterSession.state(REJECTED);
-    }
+    void reject();
 }

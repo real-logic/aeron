@@ -108,7 +108,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
     private final LongHashSet missedTimersSet = new LongHashSet();
     private final Authenticator authenticator;
-    private final SessionProxy sessionProxy;
+    private final ClusterSessionProxy sessionProxy;
     private final Aeron aeron;
     private AeronArchive archive;
     private final ConsensusModule.Context ctx;
@@ -138,7 +138,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.idleStrategy = ctx.idleStrategy();
         this.timerService = new TimerService(this);
         this.clusterMembers = ClusterMember.parse(ctx.clusterMembers());
-        this.sessionProxy = new SessionProxy(egressPublisher);
+        this.sessionProxy = new ClusterSessionProxy(egressPublisher);
         this.memberId = ctx.clusterMemberId();
         this.clusterRoleCounter = ctx.clusterNodeCounter();
         this.markFile = ctx.clusterMarkFile();

@@ -265,7 +265,7 @@ class ControlSession implements Session
         final String errorMessage,
         final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, 0, code, errorMessage, controlPublication))
+        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, controlPublication))
         {
             queueResponse(correlationId, relevantId, code, errorMessage);
         }

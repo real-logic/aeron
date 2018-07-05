@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.security;
 
+/**
+ * Used to supply instances of {@link Authenticator}.
+ */
 @FunctionalInterface
 public interface AuthenticatorSupplier
 {

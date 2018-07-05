@@ -18,8 +18,7 @@ package io.aeron.cluster;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.AuthenticationException;
-import io.aeron.cluster.client.CredentialsSupplier;
+import io.aeron.security.*;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -36,7 +35,7 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.aeron.cluster.client.NullCredentialsSupplier.NULL_CREDENTIAL;
+import static io.aeron.security.NullCredentialsSupplier.NULL_CREDENTIAL;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;

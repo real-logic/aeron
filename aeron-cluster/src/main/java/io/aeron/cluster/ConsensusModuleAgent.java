@@ -29,6 +29,7 @@ import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.security.Authenticator;
 import io.aeron.status.ReadableCounter;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;

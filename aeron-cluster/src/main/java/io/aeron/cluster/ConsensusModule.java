@@ -23,6 +23,8 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
+import io.aeron.security.Authenticator;
+import io.aeron.security.AuthenticatorSupplier;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -479,7 +481,7 @@ public class ConsensusModule implements AutoCloseable
          * Name of the class to use as a supplier of {@link Authenticator} for the cluster. Default is
          * a non-authenticating option.
          */
-        public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.cluster.DefaultAuthenticatorSupplier";
+        public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.security.DefaultAuthenticatorSupplier";
 
         /**
          * Size in bytes of the error buffer for the cluster.

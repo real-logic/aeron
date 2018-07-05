@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.security;
 
 /**
- * Interface for Authenticator to handle authentication of clients to a cluster.
+ * Interface for Authenticator to handle authentication of clients to a system.
  */
 public interface Authenticator
 {
     /**
      * Called upon reception of a Connect Request.
      *
-     * @param sessionId          of the unauthenticated client assigned by the consensus module.
+     * @param sessionId          to identify the client session connecting.
      * @param encodedCredentials from the Connect Request. Will not be null, but may be 0 length.
      * @param nowMs              current time in milliseconds.
      */
@@ -32,7 +32,7 @@ public interface Authenticator
     /**
      * Called upon reception of a Challenge Response from an unauthenticated client.
      *
-     * @param sessionId          of the unauthenticated client assigned by the consensus module.
+     * @param sessionId          to identify the client session connecting.
      * @param encodedCredentials from the Challenge Response. Will not be null, but may be 0 length.
      * @param nowMs              current time in milliseconds.
      */

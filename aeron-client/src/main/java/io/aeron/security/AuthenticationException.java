@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster.client;
+package io.aeron.security;
 
 import io.aeron.exceptions.AeronException;
 
 /**
- * Used to indicated a failed authentication attempt when connecting to the cluster.
+ * Used to indicated a failed authentication attempt when connecting to a system.
  */
 public class AuthenticationException extends AeronException
 {

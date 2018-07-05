@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.codecs.EventCode;
+import io.aeron.security.SessionProxy;
 
 import static io.aeron.cluster.ClusterSession.State.CHALLENGED;
 import static io.aeron.cluster.ClusterSession.State.REJECTED;

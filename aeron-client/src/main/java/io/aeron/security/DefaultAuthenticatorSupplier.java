@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster;
+package io.aeron.security;
 
 import org.agrona.collections.ArrayUtil;
 
@@ -23,28 +23,31 @@ import org.agrona.collections.ArrayUtil;
 public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
 {
     public static final byte[] NULL_ENCODED_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
+    public static final DefaultAuthenticator DEFAULT_AUTHENTICATOR = new DefaultAuthenticator();
 
     public Authenticator newAuthenticator()
     {
-        return new Authenticator()
+        return DEFAULT_AUTHENTICATOR;
+    }
+
+    private static class DefaultAuthenticator implements Authenticator
+    {
+        public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
         {
-            public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
-            {
-            }
+        }
 
-            public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
-            {
-            }
+        public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+        {
+        }
 
-            public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
-            {
-                sessionProxy.authenticate(NULL_ENCODED_PRINCIPAL);
-            }
+        public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+        {
+            sessionProxy.authenticate(NULL_ENCODED_PRINCIPAL);
+        }
 
-            public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
-            {
-                sessionProxy.authenticate(NULL_ENCODED_PRINCIPAL);
-            }
-        };
+        public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+        {
+            sessionProxy.authenticate(NULL_ENCODED_PRINCIPAL);
+        }
     }
 }

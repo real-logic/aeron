@@ -211,8 +211,8 @@
     <sbe:message name="ClusterActionRequest"
                  id="23"
                  description="Request an action to be taken by the service">
-        <field name="logPosition"          id="1" type="int64"/>
-        <field name="leadershipTermId"     id="2" type="int64"/>
+        <field name="leadershipTermId"     id="1" type="int64"/>
+        <field name="logPosition"          id="2" type="int64"/>
         <field name="timestamp"            id="3" type="time_t"/>
         <field name="action"               id="4" type="ClusterAction"/>
     </sbe:message>
@@ -308,7 +308,7 @@
                  id="52"
                  description="Response to a vote request from a follower to the candidate">
         <field name="candidateTermId"      id="1" type="int64"/>
-        <field name="logLeaderhipTermId"   id="2" type="int64"/>
+        <field name="logLeadershipTermId"  id="2" type="int64"/>
         <field name="logPosition"          id="3" type="int64"/>
         <field name="candidateMemberId"    id="4" type="int32"/>
         <field name="followerMemberId"     id="5" type="int32"/>

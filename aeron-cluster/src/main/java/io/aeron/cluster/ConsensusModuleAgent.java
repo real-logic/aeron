@@ -782,7 +782,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     @SuppressWarnings("unused")
     void onReplayClusterAction(
-        final long logPosition, final long leadershipTermId, final long timestamp, final ClusterAction action)
+        final long leadershipTermId, final long logPosition, final long timestamp, final ClusterAction action)
     {
         clusterTimeMs = timestamp;
 
@@ -797,15 +797,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 break;
 
             case SNAPSHOT:
-                replayClusterAction(logPosition, leadershipTermId, ConsensusModule.State.SNAPSHOT);
+                replayClusterAction(leadershipTermId, logPosition, ConsensusModule.State.SNAPSHOT);
                 break;
 
             case SHUTDOWN:
-                replayClusterAction(logPosition, leadershipTermId, ConsensusModule.State.SHUTDOWN);
+                replayClusterAction(leadershipTermId, logPosition, ConsensusModule.State.SHUTDOWN);
                 break;
 
             case ABORT:
-                replayClusterAction(logPosition, leadershipTermId, ConsensusModule.State.ABORT);
+                replayClusterAction(leadershipTermId, logPosition, ConsensusModule.State.ABORT);
                 break;
         }
     }
@@ -1248,7 +1248,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         final long position = logPublisher.position() + BitUtil.align(headersLength, FRAME_ALIGNMENT);
 
-        return logPublisher.appendClusterAction(position, leadershipTermId, nowMs, action);
+        return logPublisher.appendClusterAction(leadershipTermId, position, nowMs, action);
     }
 
     private int processPendingSessions(final ArrayList<ClusterSession> pendingSessions, final long nowMs)
@@ -1770,7 +1770,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     }
 
     private void replayClusterAction(
-        final long logPosition, final long leadershipTermId, final ConsensusModule.State newState)
+        final long leadershipTermId, final long logPosition, final ConsensusModule.State newState)
     {
         if (!isRecovering)
         {

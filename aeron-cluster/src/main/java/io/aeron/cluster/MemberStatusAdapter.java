@@ -104,7 +104,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onVote(
                     voteDecoder.candidateTermId(),
-                    voteDecoder.logLeaderhipTermId(),
+                    voteDecoder.logLeadershipTermId(),
                     voteDecoder.logPosition(),
                     voteDecoder.candidateMemberId(),
                     voteDecoder.followerMemberId(),

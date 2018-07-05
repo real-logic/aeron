@@ -130,7 +130,7 @@ class MemberStatusPublisher
                 voteEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .candidateTermId(candidateTermId)
-                    .logLeaderhipTermId(logLeadershipTermId)
+                    .logLeadershipTermId(logLeadershipTermId)
                     .logPosition(logPosition)
                     .candidateMemberId(candidateMemberId)
                     .followerMemberId(followerMemberId)

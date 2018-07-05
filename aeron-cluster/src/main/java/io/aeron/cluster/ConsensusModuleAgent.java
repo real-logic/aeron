@@ -207,7 +207,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
         {
-            isRecovering = true;
             if (!recoveryPlan.snapshots.isEmpty())
             {
                 recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
@@ -977,6 +976,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (plan.hasReplay())
             {
+                isRecovering = true;
+
                 replayFromLog = new ReplayFromLog(
                     archive,
                     log.recordingId,

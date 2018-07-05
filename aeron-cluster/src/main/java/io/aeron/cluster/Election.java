@@ -573,6 +573,7 @@ class Election implements AutoCloseable
 
             if (!shouldReplay || (replayFromLog = consensusModuleAgent.replayFromLog(logPosition)) == null)
             {
+                shouldReplay = false;
                 state(State.LEADER_TRANSITION, nowMs);
                 workCount = 1;
             }
@@ -670,6 +671,7 @@ class Election implements AutoCloseable
         {
             if (!shouldReplay || (replayFromLog = consensusModuleAgent.replayFromLog(logPosition)) == null)
             {
+                shouldReplay = false;
                 state(
                     NULL_POSITION != catchupLogPosition ?
                     State.FOLLOWER_CATCHUP_TRANSITION :

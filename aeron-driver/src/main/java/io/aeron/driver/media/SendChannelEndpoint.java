@@ -195,7 +195,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 try
                 {
                     sendHook(buffer, connectAddress);
-                    bytesSent = sendDatagramChannel.write(buffer);
+                    if (sendDatagramChannel.isOpen())
+                    {
+                        bytesSent = sendDatagramChannel.write(buffer);
+                    }
                 }
                 catch (final PortUnreachableException | ClosedChannelException | NotYetConnectedException ignore)
                 {

@@ -42,7 +42,8 @@ abstract class MultiDestination
 
     abstract void removeDestination(InetSocketAddress address);
 
-    static int send(final DatagramChannel datagramChannel,
+    static int send(
+        final DatagramChannel datagramChannel,
         final ByteBuffer buffer,
         final SendChannelEndpoint channelEndpoint,
         final int bytesToSend,
@@ -55,7 +56,10 @@ abstract class MultiDestination
             channelEndpoint.sendHook(buffer, destination);
 
             buffer.position(position);
-            bytesSent = datagramChannel.send(buffer, destination);
+            if (datagramChannel.isOpen())
+            {
+                bytesSent = datagramChannel.send(buffer, destination);
+            }
         }
         catch (final PortUnreachableException | ClosedChannelException ignore)
         {

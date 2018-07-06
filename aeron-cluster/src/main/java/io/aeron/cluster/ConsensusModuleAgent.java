@@ -61,7 +61,6 @@ import static java.lang.Long.MAX_VALUE;
 
 class ConsensusModuleAgent implements Agent, MemberStatusListener
 {
-    private boolean isRecovering;
     private final int memberId;
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
@@ -977,8 +976,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (plan.hasReplay())
             {
-                isRecovering = true;
-
                 replayFromLog = new ReplayFromLog(
                     archive,
                     log.recordingId,
@@ -1017,8 +1014,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             idle();
         }
-
-        isRecovering = false;
     }
 
     void replayLogPoll(final LogAdapter logAdapter, final long stopPosition, final Counter commitPosition)
@@ -1774,7 +1769,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private void replayClusterAction(
         final long leadershipTermId, final long logPosition, final ConsensusModule.State newState)
     {
-        if (!isRecovering)
+        if (null == election || election.notReplaying())
         {
             this.leadershipTermId = leadershipTermId;
             expectedAckPosition = logPosition;

@@ -402,6 +402,11 @@ class Election implements AutoCloseable
         return state;
     }
 
+    boolean notReplaying()
+    {
+        return State.FOLLOWER_READY != state && State.LEADER_REPLAY != state;
+    }
+
     ClusterMember leader()
     {
         return leaderMember;

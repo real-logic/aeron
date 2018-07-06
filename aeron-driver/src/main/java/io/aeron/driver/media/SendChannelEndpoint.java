@@ -29,8 +29,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.NotYetConnectedException;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.status.ChannelEndpointStatus.status;
@@ -195,12 +193,12 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 try
                 {
                     sendHook(buffer, connectAddress);
-                    if (sendDatagramChannel.isOpen())
+                    if (sendDatagramChannel.isConnected())
                     {
                         bytesSent = sendDatagramChannel.write(buffer);
                     }
                 }
-                catch (final PortUnreachableException | ClosedChannelException | NotYetConnectedException ignore)
+                catch (final PortUnreachableException ignore)
                 {
                 }
                 catch (final IOException ex)

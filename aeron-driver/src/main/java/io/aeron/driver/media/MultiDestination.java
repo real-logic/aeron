@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 
@@ -61,7 +60,7 @@ abstract class MultiDestination
                 bytesSent = datagramChannel.send(buffer, destination);
             }
         }
-        catch (final PortUnreachableException | ClosedChannelException ignore)
+        catch (final PortUnreachableException ignore)
         {
         }
         catch (final IOException ex)

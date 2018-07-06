@@ -548,7 +548,7 @@ public final class ClusterMember
         int votes = 0;
         for (final ClusterMember member : clusterMembers)
         {
-            if (Aeron.NULL_VALUE != member.leadershipTermId && null == member.vote)
+            if (NULL_POSITION != member.logPosition && null == member.vote)
             {
                 return false;
             }
@@ -616,7 +616,7 @@ public final class ClusterMember
     {
         for (final ClusterMember member : clusterMembers)
         {
-            if (Aeron.NULL_VALUE == member.logPosition || compareLog(candidate, member) < 0)
+            if (NULL_POSITION == member.logPosition || compareLog(candidate, member) < 0)
             {
                 return false;
             }
@@ -637,7 +637,7 @@ public final class ClusterMember
         int possibleVotes = 0;
         for (final ClusterMember member : clusterMembers)
         {
-            if (Aeron.NULL_VALUE == member.logPosition || compareLog(candidate, member) < 0)
+            if (NULL_POSITION == member.logPosition || compareLog(candidate, member) < 0)
             {
                 continue;
             }

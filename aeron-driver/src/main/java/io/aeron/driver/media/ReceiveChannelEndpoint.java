@@ -20,6 +20,7 @@ import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.PublicationImage;
+import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.*;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.collections.Hashing;
@@ -143,7 +144,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final long currentStatus = statusIndicator.get();
         if (currentStatus != ChannelEndpointStatus.INITIALIZING)
         {
-            throw new IllegalStateException(
+            throw new AeronException(
                 "channel cannot be registered unless INITIALISING: status=" + status(currentStatus));
         }
 
@@ -264,7 +265,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     {
         if (null == multiRcvDestination)
         {
-            throw new IllegalArgumentException("channel does not allow manual control");
+            throw new AeronException("channel does not allow manual control");
         }
     }
 

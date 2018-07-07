@@ -17,6 +17,8 @@ package io.aeron.security;
 
 /**
  * Interface for Authenticator to handle authentication of clients to a system.
+ * <p>
+ * The session-id refers to the authentication session and not the Aeron transport session assigned to a publication.
  */
 public interface Authenticator
 {
@@ -25,7 +27,7 @@ public interface Authenticator
      *
      * @param sessionId          to identify the client session connecting.
      * @param encodedCredentials from the Connect Request. Will not be null, but may be 0 length.
-     * @param nowMs              current time in milliseconds.
+     * @param nowMs              current epoch time in milliseconds.
      */
     void onConnectRequest(long sessionId, byte[] encodedCredentials, long nowMs);
 
@@ -34,28 +36,31 @@ public interface Authenticator
      *
      * @param sessionId          to identify the client session connecting.
      * @param encodedCredentials from the Challenge Response. Will not be null, but may be 0 length.
-     * @param nowMs              current time in milliseconds.
+     * @param nowMs              current epoch time in milliseconds.
      */
     void onChallengeResponse(long sessionId, byte[] encodedCredentials, long nowMs);
 
     /**
-     * Called when a connected client should be able to accept a response from the authenticator.
+     * Called when a client's response channel has been connected. This method may be called multiple times until the
+     * session is timeouts, is challenged, authenticated, or rejected.
      *
      * @param sessionProxy to use to inform client of status.
-     * @param nowMs        current time in milliseconds.
+     * @param nowMs        current epoch time in milliseconds.
      * @see SessionProxy
      */
-    void onProcessConnectedSession(SessionProxy sessionProxy, long nowMs);
+    void onConnectedSession(SessionProxy sessionProxy, long nowMs);
 
     /**
-     * Called when a previously challenged client should be able to accept a response from the authenticator.
-     *
-     * When this is called, there is no assumption that a Challenge Response has been received. And this method
-     * may be called multiple times. In addition, it is up to the concrete class to provide any timeout management.
+     * Called when a challenged client should be able to accept a response from the authenticator.
+     * <p>
+     * When this is called, there is no assumption that a Challenge Response has been received, plus this method
+     * may be called multiple times.
+     * <p>
+     * It is up to the concrete class to provide any timeout management.
      *
      * @param sessionProxy to use to inform client of status.
-     * @param nowMs        current time in milliseconds.
+     * @param nowMs        current epoch time in milliseconds.
      * @see SessionProxy
      */
-    void onProcessChallengedSession(SessionProxy sessionProxy, long nowMs);
+    void onChallengedSession(SessionProxy sessionProxy, long nowMs);
 }

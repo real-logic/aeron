@@ -25,7 +25,7 @@ public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
     public static final byte[] NULL_ENCODED_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
     public static final DefaultAuthenticator DEFAULT_AUTHENTICATOR = new DefaultAuthenticator();
 
-    public Authenticator newAuthenticator()
+    public Authenticator get()
     {
         return DEFAULT_AUTHENTICATOR;
     }
@@ -40,12 +40,12 @@ public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
         {
         }
 
-        public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+        public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
         {
             sessionProxy.authenticate(NULL_ENCODED_PRINCIPAL);
         }
 
-        public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+        public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
         {
             sessionProxy.authenticate(NULL_ENCODED_PRINCIPAL);
         }

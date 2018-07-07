@@ -22,12 +22,11 @@ import static io.aeron.cluster.ClusterSession.State.CHALLENGED;
 import static io.aeron.cluster.ClusterSession.State.REJECTED;
 
 /**
- * Proxy for a session when performing authentication. Used to inform system of client authentication status.
- * <p>
- * <b>Note:</b> The object is not threadsafe.
+ * Proxy for a session being authenticated by an {@link io.aeron.security.Authenticator}.
  */
 class ClusterSessionProxy implements SessionProxy
 {
+    private static final String EMPTY_DETAIL = "";
     private final EgressPublisher egressPublisher;
     private ClusterSession clusterSession;
     private int leaderMemberId;
@@ -69,7 +68,7 @@ class ClusterSessionProxy implements SessionProxy
     {
         ClusterSession.checkEncodedPrincipalLength(encodedPrincipal);
 
-        if (egressPublisher.sendEvent(clusterSession, leaderMemberId, EventCode.OK, ""))
+        if (egressPublisher.sendEvent(clusterSession, leaderMemberId, EventCode.OK, EMPTY_DETAIL))
         {
             clusterSession.authenticate(encodedPrincipal);
             return true;

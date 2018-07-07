@@ -15,11 +15,12 @@
  */
 package io.aeron.security;
 
+import java.util.function.Supplier;
+
 /**
  * Used to supply instances of {@link Authenticator}.
  */
 @FunctionalInterface
-public interface AuthenticatorSupplier
+public interface AuthenticatorSupplier extends Supplier<Authenticator>
 {
-    Authenticator newAuthenticator();
 }

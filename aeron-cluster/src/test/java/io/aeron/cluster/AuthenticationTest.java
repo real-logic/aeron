@@ -110,13 +110,13 @@ public class AuthenticationTest
                     fail();
                 }
 
-                public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+                public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
                     sessionProxy.authenticate(null);
                 }
 
-                public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+                public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     fail();
                 }
@@ -175,13 +175,13 @@ public class AuthenticationTest
                     fail();
                 }
 
-                public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+                public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
                     sessionProxy.authenticate(PRINCIPAL_STRING.getBytes());
                 }
 
-                public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+                public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     fail();
                 }
@@ -244,13 +244,13 @@ public class AuthenticationTest
                     challengeSuccessful = true;
                 }
 
-                public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+                public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
                     sessionProxy.challenge(encodedChallenge);
                 }
 
-                public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+                public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     if (challengeSuccessful)
                     {
@@ -313,13 +313,13 @@ public class AuthenticationTest
                     fail();
                 }
 
-                public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+                public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
                     sessionProxy.reject();
                 }
 
-                public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+                public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     fail();
                 }
@@ -382,13 +382,13 @@ public class AuthenticationTest
                     challengeRespondedTo = true;
                 }
 
-                public void onProcessConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+                public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
                     sessionProxy.challenge(encodedChallenge);
                 }
 
-                public void onProcessChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+                public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
                     if (challengeRespondedTo)
                     {

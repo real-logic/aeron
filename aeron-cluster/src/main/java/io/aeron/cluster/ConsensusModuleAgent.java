@@ -176,7 +176,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         serviceProxy = new ServiceProxy(
             aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceStreamId()));
 
-        authenticator = ctx.authenticatorSupplier().newAuthenticator();
+        authenticator = ctx.authenticatorSupplier().get();
     }
 
     public void onClose()
@@ -1261,7 +1261,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 if (session.isResponsePublicationConnected())
                 {
                     session.state(CONNECTED);
-                    authenticator.onProcessConnectedSession(sessionProxy.session(session), nowMs);
+                    authenticator.onConnectedSession(sessionProxy.session(session), nowMs);
                 }
             }
 
@@ -1269,7 +1269,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 if (session.isResponsePublicationConnected())
                 {
-                    authenticator.onProcessChallengedSession(sessionProxy.session(session), nowMs);
+                    authenticator.onChallengedSession(sessionProxy.session(session), nowMs);
                 }
             }
 

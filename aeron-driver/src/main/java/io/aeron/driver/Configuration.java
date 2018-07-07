@@ -288,7 +288,7 @@ public class Configuration
     /**
      * The ratio for sending data to polling status messages in the Sender.
      */
-    public static final int SEND_TO_STATUS_POLL_RATIO_DEFAULT = 4;
+    public static final int SEND_TO_STATUS_POLL_RATIO_DEFAULT = 6;
 
     /**
      * Property name for SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).

@@ -224,7 +224,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
 
                 recordingSubscriptionMap.put(key, subscription);
-                controlSession.sendOkResponse(correlationId, controlResponseProxy);
+                controlSession.sendOkResponse(correlationId, subscription.registrationId(), controlResponseProxy);
             }
             else
             {
@@ -484,7 +484,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
 
                 recordingSubscriptionMap.put(key, subscription);
-                controlSession.sendOkResponse(correlationId, controlResponseProxy);
+                controlSession.sendOkResponse(correlationId, subscription.registrationId(), controlResponseProxy);
             }
             else
             {

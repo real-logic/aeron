@@ -172,7 +172,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                     image.poll(NOOP_FRAGMENT_HANDLER, 10);
                 }
 
-                waitRecordingComplete(position);
+                awaitRecordingComplete(position);
 
                 return position;
             }
@@ -183,7 +183,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         }
     }
 
-    private void waitRecordingComplete(final long position)
+    private void awaitRecordingComplete(final long position)
     {
         final CountersReader counters = aeron.countersReader();
         final int counterId = RecordingPos.findCounterIdBySession(counters, publicationSessionId);

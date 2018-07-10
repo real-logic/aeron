@@ -69,4 +69,6 @@ interface ControlRequestListener
     void onGetRecordingPosition(long controlSessionId, long correlationId, long recordingId);
 
     void onTruncateRecording(long controlSessionId, long correlationId, long recordingId, long position);
+
+    void onStopRecordingSubscription(long controlSessionId, long correlationId, long subscriptionId);
 }

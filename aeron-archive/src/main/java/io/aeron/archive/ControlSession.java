@@ -131,6 +131,11 @@ class ControlSession implements Session
         conductor.stopRecording(correlationId, this, streamId, channel);
     }
 
+    public void onStopRecordingSubscription(final long correlationId, final long subscriptionId)
+    {
+        conductor.stopRecordingSubscription(correlationId, this, subscriptionId);
+    }
+
     public void onStartRecording(
         final long correlationId, final String channel, final int streamId, final SourceLocation sourceLocation)
     {

@@ -26,6 +26,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.EpochClock;
@@ -38,7 +39,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -66,7 +67,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
-    private final Map<String, Subscription> recordingSubscriptionMap = new HashMap<>();
+    private final Object2ObjectHashMap<String, Subscription> recordingSubscriptionMap = new Object2ObjectHashMap<>();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final RecordingSummary recordingSummary = new RecordingSummary();
@@ -265,6 +266,28 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             errorHandler.onError(ex);
             controlSession.sendResponse(correlationId, ERROR, ex.getMessage(), controlResponseProxy);
         }
+    }
+
+    void stopRecordingSubscription(
+        final long correlationId, final ControlSession controlSession, final long subscriptionId)
+    {
+        final Iterator<Map.Entry<String, Subscription>> iter = recordingSubscriptionMap.entrySet().iterator();
+        while (iter.hasNext())
+        {
+            final Map.Entry<String, Subscription> entry = iter.next();
+            final Subscription subscription = entry.getValue();
+            if (subscription.registrationId() == subscriptionId)
+            {
+                iter.remove();
+                subscription.close();
+                controlSession.sendOkResponse(correlationId, controlResponseProxy);
+
+                return;
+            }
+        }
+
+        final String errorMessage = "no recording subscription found for " + subscriptionId;
+        controlSession.sendResponse(correlationId, UNKNOWN_SUBSCRIPTION, ERROR, errorMessage, controlResponseProxy);
     }
 
     void newListRecordingsSession(

@@ -135,7 +135,7 @@ public class BasicArchiveTest
         final int messageCount = 10;
         final long stopPosition;
 
-        aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+        final long subscriptionId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
         final long recordingIdFromCounter;
 
         try (Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
@@ -161,7 +161,7 @@ public class BasicArchiveTest
             assertThat(aeronArchive.getRecordingPosition(recordingIdFromCounter), is(stopPosition));
         }
 
-        aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+        aeronArchive.stopRecording(subscriptionId);
 
         final long recordingId = queryRecordingId(stopPosition);
         assertEquals(recordingIdFromCounter, recordingId);

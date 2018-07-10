@@ -425,7 +425,7 @@ public class AeronArchive implements AutoCloseable
      * @param channel        to be recorded.
      * @param streamId       to be recorded.
      * @param sourceLocation of the publication to be recorded.
-     * @return the correlationId used to identify the request.
+     * @return the subscriptionId of the recording.
      */
     public long startRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
     {
@@ -439,9 +439,7 @@ public class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send start recording request");
             }
 
-            pollForResponse(correlationId);
-
-            return correlationId;
+            return pollForResponse(correlationId);
         }
         finally
         {
@@ -458,7 +456,7 @@ public class AeronArchive implements AutoCloseable
      * @param channel        to be recorded.
      * @param streamId       to be recorded.
      * @param sourceLocation of the publication to be recorded.
-     * @return the correlationId used to identify the request.
+     * @return the subscriptionId of the recording.
      */
     public long extendRecording(
         final long recordingId, final String channel, final int streamId, final SourceLocation sourceLocation)
@@ -474,9 +472,7 @@ public class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send extend recording request");
             }
 
-            pollForResponse(correlationId);
-
-            return correlationId;
+            return pollForResponse(correlationId);
         }
         finally
         {
@@ -524,6 +520,33 @@ public class AeronArchive implements AutoCloseable
         final String recordingChannel = ChannelUri.addSessionId(publication.channel(), publication.sessionId());
 
         stopRecording(recordingChannel, publication.streamId());
+    }
+
+    /**
+     * Stop recording for a subscriptionId that has been returned from
+     * {@link #startRecording(String, int, SourceLocation)} or
+     * {@link #extendRecording(long, String, int, SourceLocation)}.
+     *
+     * @param subscriptionId the subscription was registered with for the recording.
+     */
+    public void stopRecording(final long subscriptionId)
+    {
+        lock.lock();
+        try
+        {
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.stopRecording(subscriptionId, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send stop recording request");
+            }
+
+            pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     /**

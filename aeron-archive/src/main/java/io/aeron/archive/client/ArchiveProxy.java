@@ -16,6 +16,7 @@
 package io.aeron.archive.client;
 
 import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.archive.codecs.*;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.*;
@@ -46,6 +47,8 @@ public class ArchiveProxy
     private final ReplayRequestEncoder replayRequestEncoder = new ReplayRequestEncoder();
     private final StopReplayRequestEncoder stopReplayRequestEncoder = new StopReplayRequestEncoder();
     private final StopRecordingRequestEncoder stopRecordingRequestEncoder = new StopRecordingRequestEncoder();
+    private final StopRecordingSubscriptionRequestEncoder stopRecordingSubscriptionRequestEncoder =
+        new StopRecordingSubscriptionRequestEncoder();
     private final ListRecordingsRequestEncoder listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
     private final ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder =
         new ListRecordingsForUriRequestEncoder();
@@ -239,6 +242,28 @@ public class ArchiveProxy
             .channel(channel);
 
         return offer(stopRecordingRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Stop an active recording by the {@link Subscription#registrationId()} it was registered with.
+     *
+     * @param subscriptionId   that identifies the subscription in the archive doing the recording.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean stopRecording(
+        final long subscriptionId,
+        final long correlationId,
+        final long controlSessionId)
+    {
+        stopRecordingSubscriptionRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .subscriptionId(subscriptionId);
+
+        return offer(stopRecordingSubscriptionRequestEncoder.encodedLength());
     }
 
     /**

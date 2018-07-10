@@ -52,6 +52,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
+import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.ServiceAck.hasReachedPosition;
@@ -1624,9 +1625,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void takeSnapshot(final long timestampMs, final long logPosition)
     {
-        try (Publication publication = archive.addRecordedExclusivePublication(
-            ctx.snapshotChannel(), ctx.snapshotStreamId()))
+        try (Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
         {
+            final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
+            final long subscriptionId = archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL);
             try
             {
                 final CountersReader counters = aeron.countersReader();
@@ -1651,7 +1653,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
             finally
             {
-                archive.stopRecording(publication);
+                archive.stopRecording(subscriptionId);
             }
 
             ctx.snapshotCounter().incrementOrdered();

@@ -32,6 +32,7 @@ import org.agrona.concurrent.status.CountersReader;
 import java.util.Collection;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -542,9 +543,10 @@ class ClusteredServiceAgent implements Agent, Cluster
         final long recordingId;
 
         try (AeronArchive archive = AeronArchive.connect(archiveCtx);
-            Publication publication = archive.addRecordedExclusivePublication(
-                ctx.snapshotChannel(), ctx.snapshotStreamId()))
+            Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
         {
+            final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
+            final long subscriptionId = archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL);
             try
             {
                 final CountersReader counters = aeron.countersReader();
@@ -558,7 +560,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             }
             finally
             {
-                archive.stopRecording(publication);
+                archive.stopRecording(subscriptionId);
             }
         }
 

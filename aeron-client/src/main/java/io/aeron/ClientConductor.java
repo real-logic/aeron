@@ -53,6 +53,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private long timeOfLastResourcesCheckNs;
     private long timeOfLastServiceNs;
     private boolean isClosed;
+    private boolean isInCallback;
     private String stashedChannel;
     private RegistrationException driverException;
 
@@ -272,6 +273,7 @@ class ClientConductor implements Agent, DriverEventsListener
             final AvailableImageHandler handler = subscription.availableImageHandler();
             if (null != handler)
             {
+                isInCallback = true;
                 try
                 {
                     handler.onAvailableImage(image);
@@ -279,6 +281,10 @@ class ClientConductor implements Agent, DriverEventsListener
                 catch (final Throwable ex)
                 {
                     handleError(ex);
+                }
+                finally
+                {
+                    isInCallback = false;
                 }
             }
 
@@ -297,6 +303,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 final UnavailableImageHandler handler = subscription.unavailableImageHandler();
                 if (null != handler)
                 {
+                    isInCallback = true;
                     try
                     {
                         handler.onUnavailableImage(image);
@@ -304,6 +311,10 @@ class ClientConductor implements Agent, DriverEventsListener
                     catch (final Throwable ex)
                     {
                         handleError(ex);
+                    }
+                    finally
+                    {
+                        isInCallback = false;
                     }
                 }
             }
@@ -320,6 +331,7 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         if (null != availableCounterHandler)
         {
+            isInCallback = true;
             try
             {
                 availableCounterHandler.onAvailableCounter(countersReader, registrationId, counterId);
@@ -328,6 +340,10 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 handleError(ex);
             }
+            finally
+            {
+                isInCallback = false;
+            }
         }
     }
 
@@ -335,6 +351,7 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         if (null != unavailableCounterHandler)
         {
+            isInCallback = true;
             try
             {
                 unavailableCounterHandler.onUnavailableCounter(countersReader, registrationId, counterId);
@@ -342,6 +359,10 @@ class ClientConductor implements Agent, DriverEventsListener
             catch (final Exception ex)
             {
                 handleError(ex);
+            }
+            finally
+            {
+                isInCallback = false;
             }
         }
     }
@@ -362,6 +383,7 @@ class ClientConductor implements Agent, DriverEventsListener
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             stashedChannel = channel;
             final long registrationId = driverProxy.addPublication(channel, streamId);
@@ -381,6 +403,7 @@ class ClientConductor implements Agent, DriverEventsListener
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             stashedChannel = channel;
             final long registrationId = driverProxy.addExclusivePublication(channel, streamId);
@@ -404,6 +427,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 publication.internalClose();
 
                 ensureOpen();
+                ensureNotReentrant();
 
                 if (publication == resourceByRegIdMap.remove(publication.registrationId()))
                 {
@@ -433,6 +457,7 @@ class ClientConductor implements Agent, DriverEventsListener
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = driverProxy.addSubscription(channel, streamId);
             final Subscription subscription = new Subscription(
@@ -465,6 +490,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 subscription.internalClose();
 
                 ensureOpen();
+                ensureNotReentrant();
 
                 final long registrationId = subscription.registrationId();
                 awaitResponse(driverProxy.removeSubscription(registrationId));
@@ -483,6 +509,7 @@ class ClientConductor implements Agent, DriverEventsListener
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             awaitResponse(driverProxy.addDestination(registrationId, endpointChannel));
         }
@@ -498,6 +525,7 @@ class ClientConductor implements Agent, DriverEventsListener
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel));
         }
@@ -513,6 +541,7 @@ class ClientConductor implements Agent, DriverEventsListener
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             awaitResponse(driverProxy.addRcvDestination(registrationId, endpointChannel));
         }
@@ -528,6 +557,7 @@ class ClientConductor implements Agent, DriverEventsListener
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             awaitResponse(driverProxy.removeRcvDestination(registrationId, endpointChannel));
         }
@@ -550,6 +580,7 @@ class ClientConductor implements Agent, DriverEventsListener
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             if (keyLength < 0 || keyLength > CountersManager.MAX_KEY_LENGTH)
             {
@@ -580,6 +611,7 @@ class ClientConductor implements Agent, DriverEventsListener
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             if (label.length() > CountersManager.MAX_LABEL_LENGTH)
             {
@@ -608,6 +640,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 counter.internalClose();
 
                 ensureOpen();
+                ensureNotReentrant();
 
                 final long registrationId = counter.registrationId();
                 awaitResponse(driverProxy.removeCounter(registrationId));
@@ -660,6 +693,14 @@ class ClientConductor implements Agent, DriverEventsListener
         if (isClosed)
         {
             throw new AeronException("Aeron client conductor is closed");
+        }
+    }
+
+    private void ensureNotReentrant()
+    {
+        if (isInCallback)
+        {
+            throw new AeronException("Reentrant calls not permitted during callbacks");
         }
     }
 

@@ -382,6 +382,10 @@ class Election implements AutoCloseable
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
         }
+        else if (State.FOLLOWER_CATCHUP == state && NULL_POSITION != catchupLogPosition)
+        {
+            catchupLogPosition = Math.max(catchupLogPosition, logPosition);
+        }
     }
 
     void onReplayNewLeadershipTermEvent(
@@ -735,6 +739,13 @@ class Election implements AutoCloseable
         int workCount = 0;
 
         consensusModuleAgent.catchupLogPoll(logSubscription, logSessionId, catchupLogPosition);
+
+        if (null == liveLogDestination &&
+            consensusModuleAgent.hasAppendReachedLivePosition(logSubscription, logSessionId, catchupLogPosition))
+        {
+            addLiveLogDestination();
+        }
+
         if (consensusModuleAgent.hasAppendReachedPosition(logSubscription, logSessionId, catchupLogPosition))
         {
             logPosition = catchupLogPosition;
@@ -762,7 +773,13 @@ class Election implements AutoCloseable
             consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
         }
 
-        addLiveLogDestination();
+        consensusModuleAgent.updateMemberDetails();
+
+        if (null == liveLogDestination)
+        {
+            addLiveLogDestination();
+        }
+
         consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
         ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
         ctx.recordingLog().force();
@@ -829,8 +846,6 @@ class Election implements AutoCloseable
 
     private void addLiveLogDestination()
     {
-        consensusModuleAgent.updateMemberDetails();
-
         final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
         liveLogDestination = channelUri.toString();
 

@@ -581,6 +581,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                     }
                     catch (final IOException ex)
                     {
+                        controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
                         LangUtil.rethrowUnchecked(ex);
                     }
                 }

@@ -31,12 +31,8 @@ import static io.aeron.archive.client.ArchiveException.GENERIC;
 import static io.aeron.archive.codecs.ControlResponseCode.*;
 
 /**
- * Control sessions are interacted with from both the {@link ArchiveConductor} and the replay
- * {@link SessionWorker}s. The interaction may result in pending send actions being queued for execution by the
- * {@link ArchiveConductor}.
- * This complexity reflects the fact that replay/record/list requests happen in the context of a session, and that they
- * share the sessions request/reply channels. The relationship does not imply a lifecycle dependency however. A
- * {@link RecordingSession}/{@link ReplaySession} can outlive their 'parent' {@link ControlSession}.
+ * Control sessions are interacted with from the {@link ArchiveConductor}. The interaction may result in pending
+ * send actions being queued for execution by the {@link ArchiveConductor}.
  */
 class ControlSession implements Session
 {
@@ -251,28 +247,20 @@ class ControlSession implements Session
         }
     }
 
-    void sendResponse(
-        final long correlationId,
-        final ControlResponseCode code,
-        final String errorMessage,
-        final ControlResponseProxy proxy)
+    void sendErrorResponse(final long correlationId, final String errorMessage, final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, 0, code, errorMessage, controlPublication))
+        if (!proxy.sendResponse(controlSessionId, correlationId, 0, ERROR, errorMessage, controlPublication))
         {
-            queueResponse(correlationId, 0, code, errorMessage);
+            queueResponse(correlationId, 0, ERROR, errorMessage);
         }
     }
 
-    void sendResponse(
-        final long correlationId,
-        final long relevantId,
-        final ControlResponseCode code,
-        final String errorMessage,
-        final ControlResponseProxy proxy)
+    void sendErrorResponse(
+        final long correlationId, final long relevantId, final String errorMessage, final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, controlPublication))
+        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, ERROR, errorMessage, controlPublication))
         {
-            queueResponse(correlationId, relevantId, code, errorMessage);
+            queueResponse(correlationId, relevantId, ERROR, errorMessage);
         }
     }
 

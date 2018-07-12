@@ -58,12 +58,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
     protected SessionWorker<ReplaySession> newReplayer()
     {
-        return new DedicatedModeReplayer(
-            errorHandler,
-            ctx.errorCounter(),
-            closeQueue,
-            new ControlResponseProxy(),
-            ctx.maxConcurrentReplays());
+        return new DedicatedModeReplayer(errorHandler, ctx.errorCounter(), closeQueue, ctx.maxConcurrentReplays());
     }
 
     protected int preWork()
@@ -110,9 +105,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             }
             else if (session instanceof ReplaySession)
             {
-                final ReplaySession replaySession = (ReplaySession)session;
-                replaySession.setThreadLocalControlResponseProxy(controlResponseProxy);
-                closeReplaySession(replaySession);
+                closeReplaySession((ReplaySession)session);
             }
             else
             {
@@ -185,27 +178,23 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
     {
         private final OneToOneConcurrentArrayQueue<ReplaySession> sessionsQueue;
         private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
-        private final ControlResponseProxy proxy;
         private final AtomicCounter errorCounter;
 
         DedicatedModeReplayer(
             final ErrorHandler errorHandler,
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentArrayQueue<Session> closeQueue,
-            final ControlResponseProxy proxy,
             final int maxConcurrentSessions)
         {
             super("archive-replayer", errorHandler);
 
             this.closeQueue = closeQueue;
-            this.proxy = proxy;
             this.errorCounter = errorCounter;
             this.sessionsQueue = new OneToOneConcurrentArrayQueue<>(maxConcurrentSessions);
         }
 
         public void accept(final ReplaySession session)
         {
-            session.setThreadLocalControlResponseProxy(proxy);
             super.addSession(session);
         }
 

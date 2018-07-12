@@ -61,10 +61,10 @@ class ReplaySession implements Session, SimpleFragmentHandler
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final ExclusivePublication replayPublication;
     private final RecordingFragmentReader cursor;
-    private ControlResponseProxy threadLocalControlResponseProxy;
     private final ControlSession controlSession;
     private final EpochClock epochClock;
     private State state = State.INIT;
+    private String errorMessage = null;
     private volatile boolean isAborted;
 
     @SuppressWarnings("ConstantConditions")
@@ -74,7 +74,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
         final Catalog catalog,
         final ControlSession controlSession,
         final File archiveDir,
-        final ControlResponseProxy threadLocalControlResponseProxy,
+        final ControlResponseProxy controlResponseProxy,
         final long correlationId,
         final EpochClock epochClock,
         final ExclusivePublication replayPublication,
@@ -82,7 +82,6 @@ class ReplaySession implements Session, SimpleFragmentHandler
         final Counter recordingPosition)
     {
         this.controlSession = controlSession;
-        this.threadLocalControlResponseProxy = threadLocalControlResponseProxy;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
         this.replayPublication = replayPublication;
@@ -101,13 +100,14 @@ class ReplaySession implements Session, SimpleFragmentHandler
         catch (final Exception ex)
         {
             CloseHelper.close(replayPublication);
-            onError("failed to replay recording id " + recordingSummary.recordingId + " - " + ex.getMessage());
+            final String msg = "replay recording id " + recordingSummary.recordingId + " - " + ex.getMessage();
+            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
             LangUtil.rethrowUnchecked(ex);
         }
 
         this.cursor = cursor;
 
-        controlSession.sendOkResponse(correlationId, replayPublication.sessionId(), threadLocalControlResponseProxy);
+        controlSession.sendOkResponse(correlationId, replayPublication.sessionId(), controlResponseProxy);
         connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
     }
 
@@ -192,9 +192,12 @@ class ReplaySession implements Session, SimpleFragmentHandler
         return state;
     }
 
-    void setThreadLocalControlResponseProxy(final ControlResponseProxy proxy)
+    void sendError(final ControlResponseProxy controlResponseProxy)
     {
-        threadLocalControlResponseProxy = proxy;
+        if (null != errorMessage && !controlSession.isDone())
+        {
+            controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
+        }
     }
 
     private int init()
@@ -263,10 +266,6 @@ class ReplaySession implements Session, SimpleFragmentHandler
     private void onError(final String errorMessage)
     {
         state = State.INACTIVE;
-
-        if (!controlSession.isDone())
-        {
-            controlSession.attemptErrorResponse(correlationId, errorMessage, threadLocalControlResponseProxy);
-        }
+        this.errorMessage = errorMessage;
     }
 }

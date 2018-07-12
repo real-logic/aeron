@@ -192,7 +192,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
         return state;
     }
 
-    void sendError(final ControlResponseProxy controlResponseProxy)
+    void sendPendingError(final ControlResponseProxy controlResponseProxy)
     {
         if (null != errorMessage && !controlSession.isDone())
         {

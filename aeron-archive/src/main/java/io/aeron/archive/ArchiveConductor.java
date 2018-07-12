@@ -644,8 +644,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     void closeReplaySession(final ReplaySession session)
     {
         replaySessionByIdMap.remove(session.sessionId());
+        session.sendPendingError(controlResponseProxy);
         closeSession(session);
-        session.sendError(controlResponseProxy);
     }
 
     private int runTasks(final ArrayDeque<Runnable> taskQueue)

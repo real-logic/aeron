@@ -36,6 +36,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
     private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
     private final CatchupPositionDecoder catchupPositionDecoder = new CatchupPositionDecoder();
+    private final StopCatchupDecoder stopCatchupDecoder = new StopCatchupDecoder();
     private final RecoveryPlanQueryDecoder recoveryPlanQueryDecoder = new RecoveryPlanQueryDecoder();
     private final RecoveryPlanDecoder recoveryPlanDecoder = new RecoveryPlanDecoder();
     private final RecordingLogQueryDecoder recordingLogQueryDecoder = new RecordingLogQueryDecoder();
@@ -163,6 +164,18 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     catchupPositionDecoder.leadershipTermId(),
                     catchupPositionDecoder.logPosition(),
                     catchupPositionDecoder.followerMemberId());
+                break;
+
+            case StopCatchupDecoder.TEMPLATE_ID:
+                stopCatchupDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onStopCatchup(
+                    stopCatchupDecoder.replaySessionId(),
+                    stopCatchupDecoder.followerMemberId());
                 break;
 
             case RecoveryPlanQueryDecoder.TEMPLATE_ID:

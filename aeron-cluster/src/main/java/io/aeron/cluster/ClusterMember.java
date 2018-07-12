@@ -36,6 +36,7 @@ public final class ClusterMember
     private long leadershipTermId = Aeron.NULL_VALUE;
     private long logPosition = NULL_POSITION;
     private long candidateTermId = Aeron.NULL_VALUE;
+    private long catchupReplaySessionId = Aeron.NULL_VALUE;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
@@ -229,6 +230,17 @@ public final class ClusterMember
     public long candidateTermId()
     {
         return candidateTermId;
+    }
+
+    public ClusterMember catchupReplaySessionId(final long replaySessionId)
+    {
+        this.catchupReplaySessionId = replaySessionId;
+        return this;
+    }
+
+    public long catchupReplaySessionId()
+    {
+        return catchupReplaySessionId;
     }
 
     /**

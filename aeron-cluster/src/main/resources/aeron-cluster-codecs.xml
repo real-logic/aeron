@@ -351,6 +351,13 @@
         <field name="followerMemberId"     id="3" type="int32"/>
     </sbe:message>
 
+    <sbe:message name="StopCatchup"
+                 id="57"
+                 description="The follower requests to stop any active catchup replay to the follower">
+        <field name="replaySessionId"      id="1" type="int32"/>
+        <field name="followerMemberId"     id="2" type="int32"/>
+    </sbe:message>
+
     <sbe:message name="RecoveryPlanQuery"
                  id="61"
                  description="Query a leader for their recovery plan">

@@ -39,6 +39,7 @@ class MemberStatusPublisher
     private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
     private final CatchupPositionEncoder catchupPositionEncoder = new CatchupPositionEncoder();
+    private final StopCatchupEncoder stopCatchupEncoder = new StopCatchupEncoder();
     private final RecoveryPlanQueryEncoder recoveryPlanQueryEncoder = new RecoveryPlanQueryEncoder();
     private final RecoveryPlanEncoder recoveryPlanEncoder = new RecoveryPlanEncoder();
     private final RecordingLogQueryEncoder recordingLogQueryEncoder = new RecordingLogQueryEncoder();
@@ -257,6 +258,34 @@ class MemberStatusPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
+                    .followerMemberId(followerMemerId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean stopCatchup(
+        final Publication publication, final int replaySessionId, final int followerMemerId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + StopCatchupEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                stopCatchupEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .replaySessionId(replaySessionId)
                     .followerMemberId(followerMemerId);
 
                 bufferClaim.commit();

@@ -749,14 +749,11 @@ class Election implements AutoCloseable
         if (consensusModuleAgent.hasAppendReachedPosition(logSubscription, logSessionId, catchupLogPosition))
         {
             logPosition = catchupLogPosition;
-            if (null != replayDestination)
+            if (memberStatusPublisher.stopCatchup(leaderMember.publication(), logSessionId, thisMember.id()))
             {
-                logSubscription.removeDestination(replayDestination);
-                replayDestination = null;
+                state(State.FOLLOWER_TRANSITION, nowMs);
+                workCount += 1;
             }
-
-            state(State.FOLLOWER_TRANSITION, nowMs);
-            workCount += 1;
         }
 
         return workCount;
@@ -797,6 +794,12 @@ class Election implements AutoCloseable
         {
             if (consensusModuleAgent.electionComplete(nowMs))
             {
+                if (null != replayDestination)
+                {
+                    logSubscription.removeDestination(replayDestination);
+                    replayDestination = null;
+                }
+
                 close();
             }
         }
@@ -878,6 +881,7 @@ class Election implements AutoCloseable
 
         if (State.CANVASS == newState)
         {
+            consensusModuleAgent.stopAllCatchups();
             ClusterMember.reset(clusterMembers);
             thisMember.leadershipTermId(leadershipTermId).logPosition(logPosition);
             consensusModuleAgent.role(Cluster.Role.FOLLOWER);

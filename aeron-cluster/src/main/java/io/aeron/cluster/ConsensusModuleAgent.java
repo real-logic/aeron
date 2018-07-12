@@ -482,8 +482,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
-            final long length = null != election ? (election.logPosition() - logPosition) : Long.MAX_VALUE;
-
             final String replayChannel = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
                 .endpoint(clusterMembers[followerMemberId].transferEndpoint())
@@ -491,9 +489,19 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 .sessionId(ConsensusModule.Configuration.LOG_PUBLICATION_SESSION_ID_TAG)
                 .build();
 
-            // TODO: save replaySessionId for member if replay is continuous
-            final int replaySessionId =
-                (int)archive.startReplay(logRecordingId(), logPosition, length, replayChannel, ctx.logStreamId());
+            clusterMembers[followerMemberId].catchupReplaySessionId(
+                archive.startReplay(logRecordingId(), logPosition, Long.MAX_VALUE, replayChannel, ctx.logStreamId()));
+        }
+    }
+
+    public void onStopCatchup(final int replaySessionId, final int followerMemberId)
+    {
+        final ClusterMember member = clusterMembers[followerMemberId];
+
+        if (member.catchupReplaySessionId() == replaySessionId)
+        {
+            archive.stopReplay(member.catchupReplaySessionId());
+            member.catchupReplaySessionId(Aeron.NULL_VALUE);
         }
     }
 
@@ -1156,6 +1164,18 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         return result;
+    }
+
+    void stopAllCatchups()
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member.catchupReplaySessionId() != Aeron.NULL_VALUE)
+            {
+                archive.stopReplay(member.catchupReplaySessionId());
+                member.catchupReplaySessionId(Aeron.NULL_VALUE);
+            }
+        }
     }
 
     private int slowTickCycle(final long nowMs)

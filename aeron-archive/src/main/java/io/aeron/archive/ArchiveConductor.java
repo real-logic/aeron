@@ -75,6 +75,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight(byteBuffer);
+    private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
 
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -93,7 +94,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final int maxConcurrentReplays;
 
     protected final Archive.Context ctx;
-    protected final ControlResponseProxy controlResponseProxy;
     protected SessionWorker<ReplaySession> replayer;
     protected SessionWorker<RecordingSession> recorder;
 
@@ -111,7 +111,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         epochClock = ctx.epochClock();
         archiveDir = ctx.archiveDir();
         archiveDirChannel = ctx.archiveDirChannel();
-        controlResponseProxy = new ControlResponseProxy();
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
 

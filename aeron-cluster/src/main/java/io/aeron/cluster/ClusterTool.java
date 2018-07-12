@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -45,7 +44,7 @@ import java.util.function.Consumer;
  */
 public class ClusterTool
 {
-    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
+    private static final long TIMEOUT_MS = Long.getLong("aeron.ClusterTool.timeoutMs", 0);
 
     public static void main(final String[] args)
     {
@@ -94,21 +93,35 @@ public class ClusterTool
 
     public static void describe(final PrintStream out, final File clusterDir)
     {
-        try (ClusterMarkFile markFile = openMarkFile(clusterDir, out::println))
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            printTypeAndActivityTimestamp(out, markFile);
-            out.println(markFile.decoder());
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, out::println))
+            {
+                printTypeAndActivityTimestamp(out, markFile);
+                out.println(markFile.decoder());
+            }
+        }
+        else
+        {
+            out.println(ClusterMarkFile.FILENAME + " does not exist.");
         }
 
-        final ClusterMarkFile[] serviceMarkFile = openServiceMarkFiles(clusterDir, out::println);
-        describe(out, serviceMarkFile);
+        final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println);
+        describe(out, serviceMarkFiles);
     }
 
     public static void pid(final PrintStream out, final File clusterDir)
     {
-        try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            out.println(markFile.decoder().pid());
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+            {
+                out.println(markFile.decoder().pid());
+            }
+        }
+        else
+        {
+            System.exit(-1);
         }
     }
 
@@ -131,14 +144,21 @@ public class ClusterTool
 
     public static void errors(final PrintStream out, final File clusterDir)
     {
-        try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            printTypeAndActivityTimestamp(out, markFile);
-            printErrors(out, markFile);
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            {
+                printTypeAndActivityTimestamp(out, markFile);
+                printErrors(out, markFile);
+            }
+        }
+        else
+        {
+            out.println(ClusterMarkFile.FILENAME + " does not exist.");
         }
 
-        final ClusterMarkFile[] serviceMarkFile = openServiceMarkFiles(clusterDir, out::println);
-        errors(out, serviceMarkFile);
+        final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println);
+        errors(out, serviceMarkFiles);
     }
 
     public static void describe(final PrintStream out, final ClusterMarkFile[] serviceMarkFiles)
@@ -159,6 +179,13 @@ public class ClusterTool
             printErrors(out, serviceMarkFile);
             serviceMarkFile.close();
         }
+    }
+
+    public static boolean markFileExists(final File clusterDir)
+    {
+        final File markFile = new File(clusterDir, ClusterMarkFile.FILENAME);
+
+        return markFile.exists();
     }
 
     private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)

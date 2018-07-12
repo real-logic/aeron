@@ -60,6 +60,8 @@ public class ServiceHeartbeat
      */
     public static Counter allocate(final Aeron aeron, final MutableDirectBuffer tempBuffer, final int serviceId)
     {
+        tempBuffer.putInt(0, serviceId);
+
         int labelOffset = 0;
         labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, NAME);
         labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, serviceId);

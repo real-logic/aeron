@@ -172,7 +172,7 @@ public class Archive implements AutoCloseable
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
 
         public static final String THREADING_MODE_PROP_NAME = "aeron.archive.threading.mode";
-        public static final String ARCHIVER_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
+        public static final String ARCHIVE_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
         public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";
@@ -248,7 +248,7 @@ public class Archive implements AutoCloseable
         {
             return () ->
             {
-                final String name = System.getProperty(ARCHIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
+                final String name = System.getProperty(ARCHIVE_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
                 return io.aeron.driver.Configuration.agentIdleStrategy(name, controllableStatus);
             };
         }

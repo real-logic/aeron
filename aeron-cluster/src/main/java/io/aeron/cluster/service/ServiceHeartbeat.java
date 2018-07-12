@@ -43,12 +43,14 @@ public class ServiceHeartbeat
      */
     public static final int SERVICE_HEARTBEAT_TYPE_ID = 206;
 
+    public static final int SERVICE_ID_OFFSET = 0;
+
     /**
      * Human readable name for the counter.
      */
     public static final String NAME = "service-heartbeat: serviceId=";
 
-    public static final int KEY_LENGTH = SIZE_OF_INT;
+    public static final int KEY_LENGTH = SERVICE_ID_OFFSET + SIZE_OF_INT;
 
     /**
      * Allocate a counter to represent the heartbeat of a clustered service.
@@ -60,6 +62,8 @@ public class ServiceHeartbeat
      */
     public static Counter allocate(final Aeron aeron, final MutableDirectBuffer tempBuffer, final int serviceId)
     {
+        tempBuffer.putInt(SERVICE_ID_OFFSET, serviceId);
+
         int labelOffset = 0;
         labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, NAME);
         labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, serviceId);
@@ -86,7 +90,7 @@ public class ServiceHeartbeat
                 final int recordOffset = CountersReader.metaDataOffset(i);
 
                 if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SERVICE_HEARTBEAT_TYPE_ID &&
-                    buffer.getInt(recordOffset + KEY_OFFSET) == serviceId)
+                    buffer.getInt(recordOffset + KEY_OFFSET + SERVICE_ID_OFFSET) == serviceId)
                 {
                     return i;
                 }

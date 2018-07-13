@@ -489,8 +489,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 .sessionId(ConsensusModule.Configuration.LOG_PUBLICATION_SESSION_ID_TAG)
                 .build();
 
-            clusterMembers[followerMemberId].catchupReplaySessionId(
-                archive.startReplay(logRecordingId(), logPosition, Long.MAX_VALUE, replayChannel, ctx.logStreamId()));
+            final ClusterMember member = clusterMembers[followerMemberId];
+
+            if (member.catchupReplaySessionId() == Aeron.NULL_VALUE)
+            {
+                member.catchupReplaySessionId(archive.startReplay(
+                    logRecordingId(), logPosition, Long.MAX_VALUE, replayChannel, ctx.logStreamId()));
+            }
         }
     }
 

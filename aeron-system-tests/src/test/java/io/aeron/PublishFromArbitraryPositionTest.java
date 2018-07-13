@@ -92,8 +92,8 @@ public class PublishFromArbitraryPositionTest
 
         final int expectedNumberOfFragments = 10 + rnd.nextInt(10000);
 
-        try (ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
+            ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
         {
             while (!publication.isConnected())
             {

@@ -129,11 +129,11 @@ public class MultiDestinationCastTest
     {
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
         subscriptionC = clientA.addSubscription(SUB3_MDC_MANUAL_URI, STREAM_ID);
 
+        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         publication.addDestination(SUB1_MDC_MANUAL_URI);
         publication.addDestination(SUB2_MDC_MANUAL_URI);
 
@@ -151,10 +151,10 @@ public class MultiDestinationCastTest
 
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
+        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
 
         while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
         {
@@ -192,10 +192,10 @@ public class MultiDestinationCastTest
 
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionB = clientA.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
         subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
+        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !subscriptionC.isConnected())
         {
@@ -233,10 +233,10 @@ public class MultiDestinationCastTest
 
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
         subscriptionB = clientA.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
 
+        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         publication.addDestination(SUB1_MDC_MANUAL_URI);
         publication.addDestination(SUB2_MDC_MANUAL_URI);
 
@@ -277,11 +277,11 @@ public class MultiDestinationCastTest
 
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(
             SUB2_MDC_MANUAL_URI, STREAM_ID, null, (image) -> unavailableImage.countDown());
 
+        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         publication.addDestination(SUB1_MDC_MANUAL_URI);
         publication.addDestination(SUB2_MDC_MANUAL_URI);
 
@@ -336,11 +336,11 @@ public class MultiDestinationCastTest
 
         launch();
 
-        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(
             SUB2_MDC_MANUAL_URI, STREAM_ID, (image) -> availableImage.countDown(), null);
 
+        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         publication.addDestination(SUB1_MDC_MANUAL_URI);
 
         while (!subscriptionA.isConnected())

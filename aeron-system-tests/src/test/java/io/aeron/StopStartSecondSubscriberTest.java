@@ -77,10 +77,10 @@ public class StopStartSecondSubscriberTest
         publisherTwo = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverOne.aeronDirectoryName()));
         subscriberTwo = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverTwo.aeronDirectoryName()));
 
-        publicationOne = publisherOne.addPublication(channelOne, streamOne);
         subscriptionOne = subscriberOne.addSubscription(channelOne, streamOne);
-        publicationTwo = publisherTwo.addPublication(channelTwo, streamTwo);
         subscriptionTwo = subscriberTwo.addSubscription(channelTwo, streamTwo);
+        publicationOne = publisherOne.addPublication(channelOne, streamOne);
+        publicationTwo = publisherTwo.addPublication(channelTwo, streamTwo);
     }
 
     @After

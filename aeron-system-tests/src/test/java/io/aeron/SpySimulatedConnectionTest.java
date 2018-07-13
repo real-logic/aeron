@@ -98,8 +98,8 @@ public class SpySimulatedConnectionTest
     {
         launch();
 
-        publication = client.addPublication(channel, STREAM_ID);
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
+        publication = client.addPublication(channel, STREAM_ID);
 
         while (!spy.isConnected())
         {
@@ -123,8 +123,8 @@ public class SpySimulatedConnectionTest
 
         launch();
 
-        publication = client.addPublication(channel, STREAM_ID);
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
+        publication = client.addPublication(channel, STREAM_ID);
 
         while (!spy.isConnected() || !publication.isConnected())
         {
@@ -175,9 +175,9 @@ public class SpySimulatedConnectionTest
 
         launch();
 
-        publication = client.addPublication(channel, STREAM_ID);
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
         subscription = client.addSubscription(channel, STREAM_ID);
+        publication = client.addPublication(channel, STREAM_ID);
 
         waitUntilFullConnectivity();
 
@@ -224,9 +224,9 @@ public class SpySimulatedConnectionTest
 
         launch();
 
-        publication = client.addPublication(channel, STREAM_ID);
         spy = client.addSubscription(spyForChannel(channel), STREAM_ID);
         subscription = client.addSubscription(channel, STREAM_ID);
+        publication = client.addPublication(channel, STREAM_ID);
 
         waitUntilFullConnectivity();
 

@@ -108,9 +108,9 @@ public class MultiDriverTest
     {
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
         while (!subscriptionA.isConnected() && !subscriptionB.isConnected())
         {
@@ -127,8 +127,8 @@ public class MultiDriverTest
 
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
         for (int i = 0; i < numMessagesToSendPreJoin; i++)
         {
@@ -198,8 +198,8 @@ public class MultiDriverTest
 
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
         while (!publication.isConnected() && !subscriptionA.isConnected())
         {

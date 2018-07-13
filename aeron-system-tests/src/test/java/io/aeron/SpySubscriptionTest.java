@@ -69,9 +69,9 @@ public class SpySubscriptionTest
     @Test(timeout = 10_000)
     public void shouldReceivePublishedMessage(final String channel)
     {
-        try (Publication publication = aeron.addPublication(channel, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-            Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID);
+            Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
             final int expectedMessageCount = 4;
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * expectedMessageCount]);

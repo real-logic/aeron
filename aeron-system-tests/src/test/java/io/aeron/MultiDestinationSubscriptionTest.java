@@ -105,10 +105,10 @@ public class MultiDestinationSubscriptionTest
     {
         launch();
 
-        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
-
         subscription.addDestination(PUB_UNICAST_URI);
+
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
 
         while (subscription.hasNoImages())
         {
@@ -122,10 +122,10 @@ public class MultiDestinationSubscriptionTest
     {
         launch();
 
-        publicationA = clientA.addPublication(PUB_MULTICAST_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
-
         subscription.addDestination(PUB_MULTICAST_URI);
+
+        publicationA = clientA.addPublication(PUB_MULTICAST_URI, STREAM_ID);
 
         while (subscription.hasNoImages())
         {
@@ -139,10 +139,10 @@ public class MultiDestinationSubscriptionTest
     {
         launch();
 
-        publicationA = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
-
         subscription.addDestination(SUB_MDC_DESTINATION_URI);
+
+        publicationA = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
 
         while (subscription.hasNoImages())
         {
@@ -158,10 +158,10 @@ public class MultiDestinationSubscriptionTest
 
         launch();
 
-        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
-
         subscription.addDestination(PUB_UNICAST_URI);
+
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
 
         while (subscription.hasNoImages())
         {
@@ -191,10 +191,10 @@ public class MultiDestinationSubscriptionTest
 
         launch();
 
-        publicationA = clientA.addPublication(PUB_MULTICAST_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
-
         subscription.addDestination(PUB_MULTICAST_URI);
+
+        publicationA = clientA.addPublication(PUB_MULTICAST_URI, STREAM_ID);
 
         while (subscription.hasNoImages())
         {
@@ -224,10 +224,10 @@ public class MultiDestinationSubscriptionTest
 
         launch();
 
-        publicationA = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
-
         subscription.addDestination(SUB_MDC_DESTINATION_URI);
+
+        publicationA = clientA.addPublication(PUB_MDC_URI, STREAM_ID);
 
         while (subscription.hasNoImages())
         {
@@ -271,10 +271,10 @@ public class MultiDestinationSubscriptionTest
 
         final String publicationChannelA = builder.build();
 
-        publicationA = clientA.addPublication(publicationChannelA, STREAM_ID);
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
-
         subscription.addDestination(publicationChannelA);
+
+        publicationA = clientA.addPublication(publicationChannelA, STREAM_ID);
 
         while (subscription.hasNoImages())
         {

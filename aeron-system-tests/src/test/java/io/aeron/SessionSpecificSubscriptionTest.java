@@ -71,11 +71,11 @@ public class SessionSpecificSubscriptionTest
     @Test(timeout = 10_000)
     public void shouldSubscribeToSpecificSessionIdsAndWildcard()
     {
-        try (ExclusivePublication publication1 = aeron.addExclusivePublication(channelUriWithSessionId1, STREAM_ID);
-            ExclusivePublication publication2 = aeron.addExclusivePublication(channelUriWithSessionId2, STREAM_ID);
-            Subscription subscription1 = aeron.addSubscription(channelUriWithSessionId1, STREAM_ID);
+        try (Subscription subscription1 = aeron.addSubscription(channelUriWithSessionId1, STREAM_ID);
             Subscription subscription2 = aeron.addSubscription(channelUriWithSessionId2, STREAM_ID);
-            Subscription subscriptionWildcard = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID))
+            Subscription subscriptionWildcard = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
+            ExclusivePublication publication1 = aeron.addExclusivePublication(channelUriWithSessionId1, STREAM_ID);
+            ExclusivePublication publication2 = aeron.addExclusivePublication(channelUriWithSessionId2, STREAM_ID))
         {
             while (!publication1.isConnected() || !publication2.isConnected())
             {

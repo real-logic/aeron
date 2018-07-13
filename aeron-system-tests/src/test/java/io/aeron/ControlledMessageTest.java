@@ -52,8 +52,8 @@ public class ControlledMessageTest
     @Test(timeout = 10_000)
     public void shouldReceivePublishedMessage()
     {
-        try (Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
 

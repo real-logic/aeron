@@ -63,8 +63,8 @@ public class MaxPositionPublicationTest
             .validate()
             .build();
 
-        try (ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
+            ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
         {
             long resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
             while (resultingPosition < 0)

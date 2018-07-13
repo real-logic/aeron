@@ -69,9 +69,9 @@ public class PublicationUnblockTest
         final MutableInteger fragmentCount = new MutableInteger();
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;
 
-        try (Publication publicationA = aeron.addPublication(channel, STREAM_ID);
-            Publication publicationB = aeron.addPublication(channel, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            Publication publicationA = aeron.addPublication(channel, STREAM_ID);
+            Publication publicationB = aeron.addPublication(channel, STREAM_ID))
         {
             final BufferClaim bufferClaim = new BufferClaim();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[driver.context().mtuLength()]);

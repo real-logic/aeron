@@ -72,8 +72,8 @@ public class BufferClaimMessageTest
         final BufferClaim bufferClaim = new BufferClaim();
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
 
-        try (Publication publication = aeron.addPublication(channel, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
             publishMessage(srcBuffer, publication);
 
@@ -112,8 +112,8 @@ public class BufferClaimMessageTest
     {
         final BufferClaim bufferClaim = new BufferClaim();
 
-        try (Publication publication = aeron.addPublication(channel, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+            Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
             while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
             {

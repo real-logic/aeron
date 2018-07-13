@@ -74,8 +74,8 @@ public class GapFillLossTest
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
             Aeron aeron = Aeron.connect();
-            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID))
+            Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID);
+            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
             final Subscriber subscriber = new Subscriber(subscription);
             final Thread subscriberThread = new Thread(subscriber);

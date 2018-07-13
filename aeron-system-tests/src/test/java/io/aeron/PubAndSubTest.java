@@ -90,17 +90,17 @@ public class PubAndSubTest
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 
         driver = MediaDriver.launch(context);
-        publishingClient = Aeron.connect();
         subscribingClient = Aeron.connect();
-        publication = publishingClient.addPublication(channel, STREAM_ID);
+        publishingClient = Aeron.connect();
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
+        publication = publishingClient.addPublication(channel, STREAM_ID);
     }
 
     @After
     public void after()
     {
-        CloseHelper.quietClose(subscribingClient);
         CloseHelper.quietClose(publishingClient);
+        CloseHelper.quietClose(subscribingClient);
         CloseHelper.quietClose(driver);
 
         if (null != context.aeronDirectory())

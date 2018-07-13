@@ -68,11 +68,11 @@ public class PongTest
         pingClient = Aeron.connect();
         pongClient = Aeron.connect();
 
-        pingPublication = pingClient.addPublication(PING_URI, PING_STREAM_ID);
         pingSubscription = pongClient.addSubscription(PING_URI, PING_STREAM_ID);
+        pingPublication = pingClient.addPublication(PING_URI, PING_STREAM_ID);
 
-        pongPublication = pongClient.addPublication(PONG_URI, PONG_STREAM_ID);
         pongSubscription = pingClient.addSubscription(PONG_URI, PONG_STREAM_ID);
+        pongPublication = pongClient.addPublication(PONG_URI, PONG_STREAM_ID);
     }
 
     @After
@@ -175,8 +175,8 @@ public class PongTest
         }
 
         // restart Pong side
-        pongPublication = pongClient.addPublication(PONG_URI, PONG_STREAM_ID);
         pingSubscription = pingClient.addSubscription(PING_URI, PING_STREAM_ID);
+        pongPublication = pongClient.addPublication(PONG_URI, PONG_STREAM_ID);
 
         fragmentsRead.set(0);
 

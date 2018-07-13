@@ -138,8 +138,8 @@ public class BasicArchiveTest
         final long subscriptionId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
         final long recordingIdFromCounter;
 
-        try (Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-            Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+            Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
             final int counterId = getRecordingCounterId(publication.sessionId(), counters);
@@ -187,8 +187,8 @@ public class BasicArchiveTest
         final int messageCount = 10;
         final long recordingId;
 
-        try (Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-            Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+            Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
             final int counterId = getRecordingCounterId(publication.sessionId(), counters);

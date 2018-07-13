@@ -63,8 +63,8 @@ public class MemoryOrderingTest
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
 
-        try (Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
             final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
@@ -114,8 +114,8 @@ public class MemoryOrderingTest
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
 
-        try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+            ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
             final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
 

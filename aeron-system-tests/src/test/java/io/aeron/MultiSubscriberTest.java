@@ -60,9 +60,9 @@ public class MultiSubscriberTest
         final FragmentAssembler adapterOne = new FragmentAssembler(mockFragmentHandlerOne);
         final FragmentAssembler adapterTwo = new FragmentAssembler(mockFragmentHandlerTwo);
 
-        try (Publication publication = aeron.addPublication(CHANNEL_1, STREAM_ID);
-            Subscription subscriptionOne = aeron.addSubscription(CHANNEL_1, STREAM_ID);
-            Subscription subscriptionTwo = aeron.addSubscription(CHANNEL_2, STREAM_ID))
+        try (Subscription subscriptionOne = aeron.addSubscription(CHANNEL_1, STREAM_ID);
+            Subscription subscriptionTwo = aeron.addSubscription(CHANNEL_2, STREAM_ID);
+            Publication publication = aeron.addPublication(CHANNEL_1, STREAM_ID))
         {
             final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);

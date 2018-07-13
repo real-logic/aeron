@@ -971,10 +971,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         awaitServiceAcks(logPosition);
     }
 
-    ReplayFromLog replayFromLog(final long electionCommitPosition)
+    LogReplay newLogReplay(final long electionCommitPosition)
     {
         final RecordingLog.RecoveryPlan plan = recoveryPlan;
-        ReplayFromLog replayFromLog = null;
+        LogReplay logReplay = null;
 
         if (!plan.logs.isEmpty())
         {
@@ -990,7 +990,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (plan.hasReplay())
             {
-                replayFromLog = new ReplayFromLog(
+                logReplay = new LogReplay(
                     archive,
                     log.recordingId,
                     startPosition,
@@ -1002,7 +1002,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
         }
 
-        return replayFromLog;
+        return logReplay;
     }
 
     void awaitServicesReadyForReplay(

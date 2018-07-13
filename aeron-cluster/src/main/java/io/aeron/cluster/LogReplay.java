@@ -21,7 +21,7 @@ import io.aeron.cluster.service.CommitPos;
 import org.agrona.CloseHelper;
 import org.agrona.MutableDirectBuffer;
 
-public class ReplayFromLog implements AutoCloseable
+public class LogReplay implements AutoCloseable
 {
     enum State
     {
@@ -46,7 +46,7 @@ public class ReplayFromLog implements AutoCloseable
     private Subscription logSubscription;
     private LogAdapter logAdapter;
 
-    ReplayFromLog(
+    LogReplay(
         final AeronArchive archive,
         final long recordingId,
         final long startPosition,

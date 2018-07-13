@@ -132,7 +132,7 @@ class Election implements AutoCloseable
     private Subscription logSubscription;
     private String replayDestination;
     private String liveLogDestination;
-    private ReplayFromLog replayFromLog = null;
+    private LogReplay logReplay = null;
 
     Election(
         final boolean isStartup,
@@ -572,14 +572,14 @@ class Election implements AutoCloseable
     {
         int workCount = 0;
 
-        if (null == replayFromLog)
+        if (null == logReplay)
         {
             logSessionId = consensusModuleAgent.createLogPublicationSessionId();
 
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
             clusterMembers[thisMember.id()].logPosition(logPosition).leadershipTermId(candidateTermId);
 
-            if (!shouldReplay || (replayFromLog = consensusModuleAgent.replayFromLog(logPosition)) == null)
+            if (!shouldReplay || (logReplay = consensusModuleAgent.newLogReplay(logPosition)) == null)
             {
                 shouldReplay = false;
                 state(State.LEADER_TRANSITION, nowMs);
@@ -588,11 +588,11 @@ class Election implements AutoCloseable
         }
         else
         {
-            workCount += replayFromLog.doWork(nowMs);
-            if (replayFromLog.isDone())
+            workCount += logReplay.doWork(nowMs);
+            if (logReplay.isDone())
             {
-                replayFromLog.close();
-                replayFromLog = null;
+                logReplay.close();
+                logReplay = null;
                 shouldReplay = false;
                 state(State.LEADER_TRANSITION, nowMs);
             }
@@ -669,9 +669,9 @@ class Election implements AutoCloseable
     {
         int workCount = 0;
 
-        if (null == replayFromLog)
+        if (null == logReplay)
         {
-            if (!shouldReplay || (replayFromLog = consensusModuleAgent.replayFromLog(logPosition)) == null)
+            if (!shouldReplay || (logReplay = consensusModuleAgent.newLogReplay(logPosition)) == null)
             {
                 shouldReplay = false;
                 state(
@@ -684,11 +684,11 @@ class Election implements AutoCloseable
         }
         else
         {
-            workCount += replayFromLog.doWork(nowMs);
-            if (replayFromLog.isDone())
+            workCount += logReplay.doWork(nowMs);
+            if (logReplay.isDone())
             {
-                replayFromLog.close();
-                replayFromLog = null;
+                logReplay.close();
+                logReplay = null;
                 shouldReplay = false;
                 state(
                     NULL_POSITION != catchupLogPosition ?

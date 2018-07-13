@@ -33,8 +33,8 @@ import static io.aeron.cluster.ClusterMember.compareLog;
 class Election implements AutoCloseable
 {
     /**
-     * The multiplier applied to the {@link ConsensusModule.Configuration#ELECTION_STATUS_INTERVAL_PROP_NAME} for the nomination
-     * timeout.
+     * The multiplier applied to the {@link ConsensusModule.Configuration#ELECTION_STATUS_INTERVAL_PROP_NAME}
+     * for the nomination timeout.
      */
     static final int NOMINATION_TIMEOUT_MULTIPLIER = 7;
 

@@ -243,7 +243,7 @@ class Election implements AutoCloseable
         {
             if (this.logLeadershipTermId == logLeadershipTermId)
             {
-                publishNewLeadershipTerm(clusterMembers[followerMemberId].publication());
+                publishNewLeadershipTerm(clusterMembers[followerMemberId].publication(), leadershipTermId);
             }
             else
             {
@@ -352,7 +352,6 @@ class Election implements AutoCloseable
                 this.candidateTermId = NULL_VALUE;
                 leaderMember = clusterMembers[leaderMemberId];
                 this.logSessionId = logSessionId;
-
                 catchupLogPosition = logPosition;
 
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
@@ -605,13 +604,7 @@ class Election implements AutoCloseable
                 {
                     if (member != thisMember)
                     {
-                        memberStatusPublisher.newLeadershipTerm(
-                            member.publication(),
-                            logLeadershipTermId,
-                            logPosition,
-                            candidateTermId,
-                            thisMember.id(),
-                            logSessionId);
+                        publishNewLeadershipTerm(member.publication(), candidateTermId);
                     }
                 }
 
@@ -662,7 +655,7 @@ class Election implements AutoCloseable
             {
                 if (member != thisMember)
                 {
-                    publishNewLeadershipTerm(member.publication());
+                    publishNewLeadershipTerm(member.publication(), leadershipTermId);
                 }
             }
 
@@ -830,7 +823,7 @@ class Election implements AutoCloseable
             vote);
     }
 
-    private void publishNewLeadershipTerm(final Publication publication)
+    private void publishNewLeadershipTerm(final Publication publication, final long leadershipTermId)
     {
         memberStatusPublisher.newLeadershipTerm(
             publication,

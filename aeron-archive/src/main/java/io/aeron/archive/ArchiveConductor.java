@@ -411,6 +411,12 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final ExclusivePublication replayPublication = newReplayPublication(
             correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
 
+        if (replaySessionByIdMap.containsKey(replayPublication.sessionId()))
+        {
+            replayPublication.close();
+            throw new IllegalStateException("replay already active for session-id=" + replayPublication.sessionId());
+        }
+
         final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
         final ReplaySession replaySession = new ReplaySession(
             replayPosition,

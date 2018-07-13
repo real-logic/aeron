@@ -574,7 +574,8 @@ class Election implements AutoCloseable
 
         if (null == logReplay)
         {
-            logSessionId = consensusModuleAgent.createLogPublicationSessionId();
+            consensusModuleAgent.updateMemberDetails(this);
+            logSessionId = consensusModuleAgent.addNewLogPublication().sessionId();
 
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
             clusterMembers[thisMember.id()].logPosition(logPosition).leadershipTermId(candidateTermId);
@@ -763,7 +764,7 @@ class Election implements AutoCloseable
             consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
         }
 
-        consensusModuleAgent.updateMemberDetails();
+        consensusModuleAgent.updateMemberDetails(this);
 
         if (null == liveLogDestination)
         {

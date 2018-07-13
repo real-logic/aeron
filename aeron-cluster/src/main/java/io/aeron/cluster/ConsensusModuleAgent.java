@@ -846,17 +846,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.nextSessionId = nextSessionId;
     }
 
-    int createLogPublicationSessionId()
+    Publication addNewLogPublication()
     {
         closeExistingLog();
-        updateMemberDetails();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         final Publication publication = createLogPublication(channelUri, recoveryPlan, election.logPosition());
 
         logPublisher.connect(publication);
 
-        return publication.sessionId();
+        return publication;
     }
 
     void becomeLeader(final long leadershipTermId, final int logSessionId)
@@ -898,7 +897,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    void updateMemberDetails()
+    void updateMemberDetails(final Election election)
     {
         leaderMember = election.leader();
         followerCommitPosition = election.logPosition();

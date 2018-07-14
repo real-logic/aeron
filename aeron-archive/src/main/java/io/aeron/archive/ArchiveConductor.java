@@ -92,6 +92,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final RecordingEventsProxy recordingEventsProxy;
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
+    private int replayId = 1;
 
     protected final Archive.Context ctx;
     protected SessionWorker<ReplaySession> replayer;
@@ -411,16 +412,12 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final ExclusivePublication replayPublication = newReplayPublication(
             correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
 
-        if (replaySessionByIdMap.containsKey(replayPublication.sessionId()))
-        {
-            replayPublication.close();
-            throw new IllegalStateException("replay already active for session-id=" + replayPublication.sessionId());
-        }
-
+        final long replaySessionId = ((long)replayId++ << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
         final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
         final ReplaySession replaySession = new ReplaySession(
             replayPosition,
             length,
+            replaySessionId,
             catalog,
             controlSession,
             archiveDir,
@@ -431,7 +428,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             recordingSummary,
             null == recordingSession ? null : recordingSession.recordingPosition());
 
-        replaySessionByIdMap.put(replaySession.sessionId(), replaySession);
+        replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);
     }
 

@@ -49,6 +49,7 @@ public class ReplaySessionTest
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
+    private static final long REPLAY_ID = 1;
     private static final long START_POSITION = INITIAL_TERM_OFFSET;
     private static final long JOIN_POSITION = START_POSITION;
     private static final long RECORDING_POSITION = INITIAL_TERM_OFFSET;
@@ -254,6 +255,7 @@ public class ReplaySessionTest
         new ReplaySession(
             RECORDING_POSITION + 1,
             FRAME_LENGTH,
+            REPLAY_ID,
             mockCatalog,
             mockControlSession,
             archiveDir,
@@ -473,6 +475,7 @@ public class ReplaySessionTest
         return new ReplaySession(
             recordingPosition,
             length,
+            REPLAY_ID,
             mockCatalog,
             control,
             archiveDir,

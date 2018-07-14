@@ -58,6 +58,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
 
     private long connectDeadlineMs;
     private final long correlationId;
+    private final long sessionId;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final ExclusivePublication replayPublication;
     private final RecordingFragmentReader cursor;
@@ -71,6 +72,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
     ReplaySession(
         final long replayPosition,
         final long replayLength,
+        final long replaySessionId,
         final Catalog catalog,
         final ControlSession controlSession,
         final File archiveDir,
@@ -82,6 +84,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
         final Counter recordingPosition)
     {
         this.controlSession = controlSession;
+        this.sessionId = replaySessionId;
         this.correlationId = correlationId;
         this.epochClock = epochClock;
         this.replayPublication = replayPublication;
@@ -107,7 +110,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
 
         this.cursor = cursor;
 
-        controlSession.sendOkResponse(correlationId, replayPublication.sessionId(), controlResponseProxy);
+        controlSession.sendOkResponse(correlationId, replaySessionId, controlResponseProxy);
         connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
     }
 
@@ -123,7 +126,7 @@ class ReplaySession implements Session, SimpleFragmentHandler
 
     public long sessionId()
     {
-        return replayPublication.sessionId();
+        return sessionId;
     }
 
     public int doWork()

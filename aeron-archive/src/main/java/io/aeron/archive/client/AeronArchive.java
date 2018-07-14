@@ -552,6 +552,10 @@ public class AeronArchive implements AutoCloseable
     /**
      * Start a replay for a length in bytes of a recording from a position. If the position is {@link #NULL_POSITION}
      * then the stream will be replayed from the start.
+     * <p>
+     * The lower 32-bits of the returned value contain the {@link Image#sessionId()} of the received replay. All
+     * 64-bits are required to uniquely identify the replay when calling {@link #stopReplay(long)}. The lower 32-bits
+     * can be obtained by casting the {@code long} value to an {@code int}.
      *
      * @param recordingId    to be replayed.
      * @param position       from which the replay should begin or {@link #NULL_POSITION} if from the start.
@@ -560,7 +564,7 @@ public class AeronArchive implements AutoCloseable
      * @param replayChannel  to which the replay should be sent.
      * @param replayStreamId to which the replay should be sent.
      * @return the id of the replay session which will be the same as the {@link Image#sessionId()} of the received
-     * replay for correlation with the matching channel and stream id.
+     * replay for correlation with the matching channel and stream id in the lower 32 bits.
      */
     public long startReplay(
         final long recordingId,

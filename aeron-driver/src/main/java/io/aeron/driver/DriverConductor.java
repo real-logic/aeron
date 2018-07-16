@@ -32,13 +32,13 @@ import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.IntHashSet;
+import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.*;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import static io.aeron.ErrorCode.*;
@@ -74,8 +74,10 @@ public class DriverConductor implements Agent
     private final RingBuffer toDriverCommands;
     private final ClientCommandAdapter clientCommandAdapter;
     private final ManyToOneConcurrentArrayQueue<Runnable> driverCmdQueue;
-    private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
-    private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
+    private final Object2ObjectHashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap =
+        new Object2ObjectHashMap<>();
+    private final Object2ObjectHashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap =
+        new Object2ObjectHashMap<>();
     private final ArrayList<NetworkPublication> networkPublications = new ArrayList<>();
     private final ArrayList<IpcPublication> ipcPublications = new ArrayList<>();
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();

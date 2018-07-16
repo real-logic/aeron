@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.AsciiEncoding;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.collections.Object2ObjectHashMap;
 
 import java.util.*;
 
@@ -318,7 +319,7 @@ public class ChannelUri
         }
 
         final StringBuilder builder = new StringBuilder();
-        final Map<String, String> params = new HashMap<>();
+        final Map<String, String> params = new Object2ObjectHashMap<>();
         String media = null;
         String key = null;
 

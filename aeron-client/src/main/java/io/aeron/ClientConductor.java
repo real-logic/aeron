@@ -775,7 +775,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
         while (nanoClock.nanoTime() < deadlineNs);
 
-        throw new DriverTimeoutException("No response from MediaDriver within (ns):" + driverTimeoutNs);
+        throw new DriverTimeoutException("No response from MediaDriver within (ns): " + driverTimeoutNs);
     }
 
     private int onCheckTimeouts()

@@ -366,6 +366,8 @@ public final class MediaDriver implements AutoCloseable
                     if ('/' == c || '\\' == c)
                     {
                         builder.setLength(lastCharIndex);
+                    } else {
+                        break;
                     }
                 }
 

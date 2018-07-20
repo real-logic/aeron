@@ -100,9 +100,7 @@ public class ClusterNodeRestartTest
             Thread.yield();
         }
 
-        container.close();
-        clusteredMediaDriver.close();
-        aeronCluster.close();
+        forceCloseForRestart();
 
         launchClusteredMediaDriver(false);
         launchService(restartServiceMsgCounter);
@@ -132,9 +130,7 @@ public class ClusterNodeRestartTest
             Thread.yield();
         }
 
-        container.close();
-        clusteredMediaDriver.close();
-        aeronCluster.close();
+        forceCloseForRestart();
 
         launchClusteredMediaDriver(false);
         launchService(restartServiceMsgCounter);
@@ -168,9 +164,8 @@ public class ClusterNodeRestartTest
             Thread.sleep(1);
         }
 
-        container.close();
-        clusteredMediaDriver.close();
-        aeronCluster.close();
+        forceCloseForRestart();
+
 
         serviceState.set(null);
         launchClusteredMediaDriver(false);
@@ -214,9 +209,7 @@ public class ClusterNodeRestartTest
             Thread.sleep(1);
         }
 
-        container.close();
-        clusteredMediaDriver.close();
-        aeronCluster.close();
+        forceCloseForRestart();
 
         serviceState.set(null);
         launchClusteredMediaDriver(false);
@@ -268,9 +261,7 @@ public class ClusterNodeRestartTest
             Thread.yield();
         }
 
-        container.close();
-        clusteredMediaDriver.close();
-        aeronCluster.close();
+        forceCloseForRestart();
 
         serviceMsgCounter.set(0);
         launchClusteredMediaDriver(false);
@@ -407,6 +398,14 @@ public class ClusterNodeRestartTest
     private AeronCluster connectToCluster()
     {
         return AeronCluster.connect();
+    }
+
+    private void forceCloseForRestart()
+    {
+        clusteredMediaDriver.consensusModule().close();
+        container.close();
+        aeronCluster.close();
+        clusteredMediaDriver.close();
     }
 
     private void connectClient()

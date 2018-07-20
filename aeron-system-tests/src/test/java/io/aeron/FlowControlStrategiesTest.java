@@ -103,9 +103,9 @@ public class FlowControlStrategiesTest
     {
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
@@ -127,13 +127,13 @@ public class FlowControlStrategiesTest
 
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(
             MULTICAST_URI,
             STREAM_ID,
             (image) -> availableCountDownLatch.countDown(),
             (image) -> unavailableCountDownLatch.countDown());
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
@@ -145,6 +145,7 @@ public class FlowControlStrategiesTest
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
+                SystemTest.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -207,12 +208,13 @@ public class FlowControlStrategiesTest
 
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -267,9 +269,9 @@ public class FlowControlStrategiesTest
 
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
@@ -324,9 +326,9 @@ public class FlowControlStrategiesTest
 
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
@@ -384,9 +386,9 @@ public class FlowControlStrategiesTest
 
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
@@ -445,9 +447,9 @@ public class FlowControlStrategiesTest
 
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {

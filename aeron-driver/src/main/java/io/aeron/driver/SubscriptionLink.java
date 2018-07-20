@@ -31,6 +31,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
     protected final int streamId;
     protected final int sessionId;
     protected final boolean hasSessionId;
+    protected final boolean isSparse;
     protected final String channel;
     protected final AeronClient aeronClient;
     protected final Map<Subscribable, ReadablePosition> positionBySubscribableMap = new IdentityHashMap<>();
@@ -50,6 +51,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
         this.aeronClient = aeronClient;
         this.hasSessionId = params.hasSessionId;
         this.sessionId = params.sessionId;
+        this.isSparse = params.isSparse;
     }
 
     public long registrationId()
@@ -80,6 +82,11 @@ public abstract class SubscriptionLink implements DriverManagedResource
     public boolean isReliable()
     {
         return true;
+    }
+
+    public boolean isSparse()
+    {
+        return isSparse;
     }
 
     public boolean hasSessionId()

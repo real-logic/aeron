@@ -34,7 +34,6 @@ import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 public class RawLogFactory
 {
     private final int filePageSize;
-    private final boolean useSparseFiles;
     private final boolean checkStorage;
     private final DistinctErrorLog errorLog;
     private final File publicationsDir;
@@ -44,11 +43,9 @@ public class RawLogFactory
     public RawLogFactory(
         final String dataDirectoryName,
         final int filePageSize,
-        final boolean useSparseFiles,
         final boolean checkStorage,
         final DistinctErrorLog errorLog)
     {
-        this.useSparseFiles = useSparseFiles;
         this.filePageSize = filePageSize;
         this.checkStorage = checkStorage;
         this.errorLog = errorLog;
@@ -84,6 +81,7 @@ public class RawLogFactory
      * @param streamId         within the channel address to separate message flows.
      * @param correlationId    to use to distinguish this publication
      * @param termBufferLength length of each term
+     * @param useSparseFiles   for the log buffer.
      * @return the newly allocated {@link RawLog}
      */
     public RawLog newNetworkPublication(
@@ -91,9 +89,11 @@ public class RawLogFactory
         final int sessionId,
         final int streamId,
         final long correlationId,
-        final int termBufferLength)
+        final int termBufferLength,
+        final boolean useSparseFiles)
     {
-        return newInstance(publicationsDir, channel, sessionId, streamId, correlationId, termBufferLength);
+        return newInstance(
+            publicationsDir, channel, sessionId, streamId, correlationId, termBufferLength, useSparseFiles);
     }
 
     /**
@@ -104,6 +104,7 @@ public class RawLogFactory
      * @param streamId         within the channel address to separate message flows.
      * @param correlationId    to use to distinguish this connection
      * @param termBufferLength to use for the log buffer
+     * @param useSparseFiles   for the log buffer.
      * @return the newly allocated {@link RawLog}
      */
     public RawLog newNetworkedImage(
@@ -111,9 +112,10 @@ public class RawLogFactory
         final int sessionId,
         final int streamId,
         final long correlationId,
-        final int termBufferLength)
+        final int termBufferLength,
+        final boolean useSparseFiles)
     {
-        return newInstance(imagesDir, channel, sessionId, streamId, correlationId, termBufferLength);
+        return newInstance(imagesDir, channel, sessionId, streamId, correlationId, termBufferLength, useSparseFiles);
     }
 
     /**
@@ -123,12 +125,18 @@ public class RawLogFactory
      * @param streamId         within the IPC channel
      * @param correlationId    to use to distinguish this shared log
      * @param termBufferLength length of the each term
+     * @param useSparseFiles   for the log buffer.
      * @return the newly allocated {@link RawLog}
      */
     public RawLog newIpcPublication(
-        final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
+        final int sessionId,
+        final int streamId,
+        final long correlationId,
+        final int termBufferLength,
+        final boolean useSparseFiles)
     {
-        return newInstance(publicationsDir, "ipc", sessionId, streamId, correlationId, termBufferLength);
+        return newInstance(
+            publicationsDir, "ipc", sessionId, streamId, correlationId, termBufferLength, useSparseFiles);
     }
 
     private RawLog newInstance(
@@ -137,7 +145,8 @@ public class RawLogFactory
         final int sessionId,
         final int streamId,
         final long correlationId,
-        final int termBufferLength)
+        final int termBufferLength,
+        final boolean useSparseFiles)
     {
         validateTermBufferLength(termBufferLength);
 

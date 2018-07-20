@@ -30,9 +30,10 @@ class SubscriptionParams
     boolean hasJoinPosition = false;
     boolean hasSessionId = false;
     boolean isReliable = true;
+    boolean isSparse = true;
 
     @SuppressWarnings("ConstantConditions")
-    static SubscriptionParams getSubscriptionParams(final ChannelUri channelUri)
+    static SubscriptionParams getSubscriptionParams(final ChannelUri channelUri, final MediaDriver.Context context)
     {
         final SubscriptionParams params = new SubscriptionParams();
 
@@ -83,6 +84,16 @@ class SubscriptionParams
             }
 
             params.hasJoinPosition = true;
+        }
+
+        final String sparseStr = channelUri.get(SPARSE_PARAM_NAME);
+        if (null != sparseStr)
+        {
+            params.isSparse = "true".equals(sparseStr);
+        }
+        else
+        {
+            params.isSparse = context.termBufferSparseFile();
         }
 
         return params;

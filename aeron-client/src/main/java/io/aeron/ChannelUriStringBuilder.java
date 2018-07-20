@@ -43,6 +43,7 @@ public class ChannelUriStringBuilder
     private String controlMode;
     private String tags;
     private Boolean reliable;
+    private Boolean sparse;
     private Integer ttl;
     private Integer mtu;
     private Integer termLength;
@@ -304,6 +305,31 @@ public class ChannelUriStringBuilder
     public Boolean reliable()
     {
         return reliable;
+    }
+
+    /**
+     * Set to indicate if a term log buffer should be sparse on disk or not. Sparse saves space at the potential
+     * expense of latency.
+     *
+     * @param isSparse true if the term buffer log is sparse on disk.
+     * @return this for a fluent API.
+     * @see CommonContext#SPARSE_PARAM_NAME
+     */
+    public ChannelUriStringBuilder sparse(final Boolean isSparse)
+    {
+        this.sparse = isSparse;
+        return this;
+    }
+
+    /**
+     * Get if a term log buffer should be sparse on disk or not. Sparse saves space at the potential expense of latency.
+     *
+     * @return true if the term buffer log is sparse on disk.
+     * @see CommonContext#SPARSE_PARAM_NAME
+     */
+    public Boolean sparse()
+    {
+        return sparse;
     }
 
     /**
@@ -656,6 +682,11 @@ public class ChannelUriStringBuilder
         if (null != reliable)
         {
             sb.append(RELIABLE_STREAM_PARAM_NAME).append('=').append(reliable).append('|');
+        }
+
+        if (null != sparse)
+        {
+            sb.append(SPARSE_PARAM_NAME).append('=').append(sparse).append('|');
         }
 
         if (null != ttl)

@@ -185,6 +185,11 @@ public class CommonContext implements AutoCloseable, Cloneable
      */
     public static final String TAGS_PARAM_NAME = "tags";
 
+    /**
+     * Parameter name for channel URI param to indicate if term buffers should be sparse. Value is boolean.
+     */
+    public static final String SPARSE_PARAM_NAME = "sparse";
+
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName = getAeronDirectoryName();
     private File aeronDirectory;

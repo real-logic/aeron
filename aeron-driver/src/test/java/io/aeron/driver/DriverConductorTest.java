@@ -124,11 +124,15 @@ public class DriverConductorTest
         // System GC required in order to ensure that the direct byte buffers get cleaned and avoid OOM.
         System.gc();
 
-        when(mockRawLogFactory.newNetworkPublication(anyString(), anyInt(), anyInt(), anyLong(), anyInt()))
+        when(mockRawLogFactory.newNetworkPublication(
+            anyString(), anyInt(), anyInt(), anyLong(), anyInt(), anyBoolean()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
-        when(mockRawLogFactory.newNetworkedImage(anyString(), anyInt(), anyInt(), anyLong(), eq(TERM_BUFFER_LENGTH)))
+
+        when(mockRawLogFactory.newNetworkedImage(
+            anyString(), anyInt(), anyInt(), anyLong(), eq(TERM_BUFFER_LENGTH), anyBoolean()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
-        when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), anyInt()))
+
+        when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), anyInt(), anyBoolean()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
 
         currentTimeNs = 0;
@@ -217,7 +221,8 @@ public class DriverConductorTest
             "|term-id=" + termId +
             "|term-offset=" + termOffset;
 
-        when(mockRawLogFactory.newNetworkPublication(anyString(), anyInt(), anyInt(), anyLong(), eq(termLength)))
+        when(mockRawLogFactory.newNetworkPublication(
+            anyString(), anyInt(), anyInt(), anyLong(), eq(termLength), anyBoolean()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));
 
         driverProxy.addExclusivePublication(CHANNEL_4000 + params, STREAM_ID_1);
@@ -253,7 +258,7 @@ public class DriverConductorTest
             "|term-id=" + termId +
             "|term-offset=" + termOffset;
 
-        when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), eq(termLength)))
+        when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), eq(termLength), anyBoolean()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));
 
         driverProxy.addExclusivePublication(CHANNEL_IPC + params, STREAM_ID_1);
@@ -1655,8 +1660,6 @@ public class DriverConductorTest
     @Test
     public void shouldUseExistingChannelEndpointOnAddSubscriptionWithSameTagId()
     {
-        final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_4000_TAG_ID_1);
-
         final long id1 = driverProxy.addSubscription(CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
         final long id2 = driverProxy.addSubscription(CHANNEL_TAG_ID_1, STREAM_ID_1);
 
@@ -1676,8 +1679,6 @@ public class DriverConductorTest
     @Test
     public void shouldUseUniqueChannelEndpointOnAddSubscriptionWithNoDistinguishingCharacteristics()
     {
-        final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_SUB_CONTROL_MODE_MANUAL);
-
         final long id1 = driverProxy.addSubscription(CHANNEL_SUB_CONTROL_MODE_MANUAL, STREAM_ID_1);
         final long id2 = driverProxy.addSubscription(CHANNEL_SUB_CONTROL_MODE_MANUAL, STREAM_ID_1);
 

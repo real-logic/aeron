@@ -37,12 +37,14 @@ final class PublicationParams
     boolean isReplay = false;
     boolean hasSessionId = false;
     boolean isSessionIdTagged = false;
+    boolean isSparse = false;
 
     private PublicationParams(final MediaDriver.Context context, final boolean isIpc)
     {
         termLength = isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength();
         mtuLength = isIpc ? context.ipcMtuLength() : context.mtuLength();
         lingerTimeoutNs = context.publicationLingerTimeoutNs();
+        isSparse = context.termBufferSparseFile();
     }
 
     private void getTag(final ChannelUri channelUri, final DriverConductor driverConductor)
@@ -117,6 +119,15 @@ final class PublicationParams
             }
 
             hasSessionId = true;
+        }
+    }
+
+    private void getSparse(final ChannelUri channelUri)
+    {
+        final String sparseStr = channelUri.get(SPARSE_PARAM_NAME);
+        if (null != sparseStr)
+        {
+            isSparse = "true".equals(sparseStr);
         }
     }
 
@@ -204,6 +215,7 @@ final class PublicationParams
         params.getTermBufferLength(channelUri);
         params.getMtuLength(channelUri);
         params.getLingerTimeoutNs(channelUri);
+        params.getSparse(channelUri);
 
         if (isExclusive)
         {

@@ -215,7 +215,14 @@ public class DriverConductor implements Agent
             final String channel = udpChannel.originalUriString();
             final long registrationId = toDriverCommands.nextCorrelationId();
             final RawLog rawLog = newPublicationImageLog(
-                sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, registrationId);
+                sessionId,
+                streamId,
+                initialTermId,
+                termBufferLength,
+                subscriberPositions.get(0).subscription().isSparse(),
+                senderMtuLength,
+                udpChannel,
+                registrationId);
 
             final CongestionControl congestionControl = context.congestionControlSupplier().newInstance(
                 registrationId,
@@ -618,7 +625,7 @@ public class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri());
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), context);
 
         checkForClashingSubscription(params, udpChannel, streamId);
 
@@ -652,7 +659,7 @@ public class DriverConductor implements Agent
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel));
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel), context);
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
             registrationId, streamId, channel, getOrAddClient(clientId), params);
 
@@ -690,7 +697,7 @@ public class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri());
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), context);
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
             registrationId, udpChannel, streamId, client, params);
@@ -1050,7 +1057,7 @@ public class DriverConductor implements Agent
         final PublicationParams params)
     {
         final RawLog rawLog = rawLogFactory.newNetworkPublication(
-            udpChannel.canonicalForm(), sessionId, streamId, registrationId, params.termLength);
+            udpChannel.canonicalForm(), sessionId, streamId, registrationId, params.termLength, params.isSparse);
 
         initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
 
@@ -1064,7 +1071,8 @@ public class DriverConductor implements Agent
         final long registrationId,
         final PublicationParams params)
     {
-        final RawLog rawLog = rawLogFactory.newIpcPublication(sessionId, streamId, registrationId, params.termLength);
+        final RawLog rawLog = rawLogFactory.newIpcPublication(
+            sessionId, streamId, registrationId, params.termLength, params.isSparse);
 
         initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
 
@@ -1126,12 +1134,13 @@ public class DriverConductor implements Agent
         final int streamId,
         final int initialTermId,
         final int termBufferLength,
+        final boolean isSparse,
         final int senderMtuLength,
         final UdpChannel udpChannel,
         final long correlationId)
     {
         final RawLog rawLog = rawLogFactory.newNetworkedImage(
-            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
+            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength, isSparse);
 
         final UnsafeBuffer logMetaData = rawLog.metaData();
         storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));

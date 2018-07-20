@@ -50,11 +50,7 @@ public class RawLogFactoryTest
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
         rawLogFactory = new RawLogFactory(
-            DATA_DIR.getAbsolutePath(),
-            PAGE_SIZE,
-            PRE_ZERO_LOG,
-            PERFORM_STORAGE_CHECKS,
-            mock(DistinctErrorLog.class));
+            DATA_DIR.getAbsolutePath(), PAGE_SIZE, PERFORM_STORAGE_CHECKS, mock(DistinctErrorLog.class));
     }
 
     @After
@@ -68,7 +64,7 @@ public class RawLogFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final RawLog rawLog = rawLogFactory.newNetworkPublication(
-            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, TERM_BUFFER_LENGTH);
+            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
 
         assertThat(rawLog.termLength(), is(TERM_BUFFER_LENGTH));
 
@@ -97,7 +93,7 @@ public class RawLogFactoryTest
         final String canonicalForm = udpChannel.canonicalForm();
         final int imageTermBufferMaxLength = TERM_BUFFER_LENGTH / 2;
         final RawLog rawLog = rawLogFactory.newNetworkedImage(
-            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength);
+            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength, PRE_ZERO_LOG);
 
         assertThat(rawLog.termLength(), is(imageTermBufferMaxLength));
 
@@ -125,6 +121,7 @@ public class RawLogFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int imageTermBufferMaxLength = TERM_MAX_LENGTH + 1;
-        rawLogFactory.newNetworkedImage(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength);
+        rawLogFactory.newNetworkedImage(
+            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength, PRE_ZERO_LOG);
     }
 }

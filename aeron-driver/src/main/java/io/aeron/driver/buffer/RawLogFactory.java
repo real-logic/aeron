@@ -16,14 +16,15 @@
 package io.aeron.driver.buffer;
 
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 
+import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.driver.Configuration.LOW_FILE_STORE_WARNING_THRESHOLD;
 import static io.aeron.driver.buffer.FileMappingConvention.streamLocation;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
@@ -35,7 +36,7 @@ public class RawLogFactory
 {
     private final int filePageSize;
     private final boolean checkStorage;
-    private final DistinctErrorLog errorLog;
+    private final ErrorHandler errorHandler;
     private final File publicationsDir;
     private final File imagesDir;
     private final FileStore fileStore;
@@ -44,11 +45,11 @@ public class RawLogFactory
         final String dataDirectoryName,
         final int filePageSize,
         final boolean checkStorage,
-        final DistinctErrorLog errorLog)
+        final ErrorHandler errorHandler)
     {
         this.filePageSize = filePageSize;
         this.checkStorage = checkStorage;
-        this.errorLog = errorLog;
+        this.errorHandler = errorHandler;
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
         publicationsDir = fileMappingConvention.publicationsDir();
@@ -136,7 +137,7 @@ public class RawLogFactory
         final boolean useSparseFiles)
     {
         return newInstance(
-            publicationsDir, "ipc", sessionId, streamId, correlationId, termBufferLength, useSparseFiles);
+            publicationsDir, IPC_MEDIA, sessionId, streamId, correlationId, termBufferLength, useSparseFiles);
     }
 
     private RawLog newInstance(
@@ -157,7 +158,7 @@ public class RawLogFactory
 
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
-        return new MappedRawLog(location, useSparseFiles, termBufferLength, filePageSize, errorLog);
+        return new MappedRawLog(location, useSparseFiles, termBufferLength, filePageSize, errorHandler);
     }
 
     private void checkStorage(final int termBufferLength)

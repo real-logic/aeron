@@ -18,9 +18,9 @@ package io.aeron.driver.buffer;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.junit.*;
 
 import java.io.*;
@@ -50,7 +50,7 @@ public class RawLogFactoryTest
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
         rawLogFactory = new RawLogFactory(
-            DATA_DIR.getAbsolutePath(), PAGE_SIZE, PERFORM_STORAGE_CHECKS, mock(DistinctErrorLog.class));
+            DATA_DIR.getAbsolutePath(), PAGE_SIZE, PERFORM_STORAGE_CHECKS, mock(ErrorHandler.class));
     }
 
     @After

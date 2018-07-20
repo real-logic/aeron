@@ -15,9 +15,9 @@
  */
 package io.aeron.driver.buffer;
 
+import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,17 +48,17 @@ class MappedRawLog implements RawLog
     private final File logFile;
     private final MappedByteBuffer[] mappedBuffers;
     private final UnsafeBuffer logMetaDataBuffer;
-    private final DistinctErrorLog errorLog;
+    private final ErrorHandler errorHandler;
 
     MappedRawLog(
         final File location,
         final boolean useSparseFiles,
         final int termLength,
         final int filePageSize,
-        final DistinctErrorLog errorLog)
+        final ErrorHandler errorHandler)
     {
         this.termLength = termLength;
-        this.errorLog = errorLog;
+        this.errorHandler = errorHandler;
         this.logFile = location;
 
         final EnumSet<StandardOpenOption> options = useSparseFiles ? SPARSE_FILE_OPTIONS : FILE_OPTIONS;
@@ -134,7 +134,7 @@ class MappedRawLog implements RawLog
 
         if (!logFile.delete())
         {
-            errorLog.record(new IllegalStateException("Unable to delete " + logFile));
+            errorHandler.onError(new IllegalStateException("Unable to delete " + logFile));
         }
     }
 

@@ -2044,7 +2044,8 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == rawLogFactory)
             {
-                rawLogFactory = new RawLogFactory(aeronDirectoryName(), filePageSize, performStorageChecks, errorLog);
+                rawLogFactory = new RawLogFactory(
+                    aeronDirectoryName(), filePageSize, performStorageChecks, errorHandler);
             }
 
             if (null == lossReport)

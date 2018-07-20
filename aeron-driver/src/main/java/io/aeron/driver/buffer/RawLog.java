@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
  * Represents the collection of term and associated state buffers for the image between a publisher and subscriber
  * image for the replicated log.
  */
-public interface RawLog extends AutoCloseable
+public interface RawLog
 {
     /**
      * The length of each term in bytes.
@@ -60,5 +60,15 @@ public interface RawLog extends AutoCloseable
      */
     String fileName();
 
+    /**
+     * Free the mapped buffers and delete the file.
+     *
+     * @return true if successful or false if it should be reattempted.
+     */
+    boolean free();
+
+    /**
+     * Close the resource regardless of if {@link #free()} has succeeded or not.
+     */
     void close();
 }

@@ -218,6 +218,11 @@ public class NetworkPublication
         timeOfLastActivityNs = nowNs;
     }
 
+    public boolean free()
+    {
+        return rawLog.free();
+    }
+
     public void close()
     {
         publisherPos.close();

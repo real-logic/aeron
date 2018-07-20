@@ -156,6 +156,11 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         return LogBufferDescriptor.mtuLength(metaDataBuffer);
     }
 
+    public boolean free()
+    {
+        return rawLog.free();
+    }
+
     public void close()
     {
         publisherPos.close();

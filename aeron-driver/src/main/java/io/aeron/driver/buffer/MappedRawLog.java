@@ -45,10 +45,10 @@ class MappedRawLog implements RawLog
 
     private final int termLength;
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
-    private final File logFile;
-    private final MappedByteBuffer[] mappedBuffers;
     private final UnsafeBuffer logMetaDataBuffer;
     private final ErrorHandler errorHandler;
+    private File logFile;
+    private MappedByteBuffer[] mappedBuffers;
 
     MappedRawLog(
         final File location,
@@ -125,14 +125,34 @@ class MappedRawLog implements RawLog
         return termLength;
     }
 
-    public void close()
+    public boolean free()
     {
-        for (final MappedByteBuffer buffer : mappedBuffers)
+        if (null != mappedBuffers)
         {
-            IoUtil.unmap(buffer);
+            for (final MappedByteBuffer buffer : mappedBuffers)
+            {
+                IoUtil.unmap(buffer);
+            }
+
+            mappedBuffers = null;
         }
 
-        if (!logFile.delete())
+        if (null != logFile)
+        {
+            if (!logFile.delete())
+            {
+                return false;
+            }
+
+            logFile = null;
+        }
+
+        return true;
+    }
+
+    public void close()
+    {
+        if (!free())
         {
             errorHandler.onError(new IllegalStateException("Unable to delete " + logFile));
         }

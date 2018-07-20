@@ -210,6 +210,11 @@ public class PublicationImage
         rebuildPosition.setOrdered(initialPosition);
     }
 
+    public boolean free()
+    {
+        return rawLog.free();
+    }
+
     /**
      * {@inheritDoc}
      */

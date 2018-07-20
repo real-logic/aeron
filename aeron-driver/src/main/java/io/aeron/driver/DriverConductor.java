@@ -1515,7 +1515,7 @@ public class DriverConductor implements Agent
 
             resource.onTimeEvent(nowNs, nowMs, this);
 
-            if (resource.hasReachedEndOfLife())
+            if (resource.hasReachedEndOfLife() && resource.free())
             {
                 fastUnorderedRemove(list, i, lastIndex--);
                 resource.close();

@@ -206,7 +206,7 @@ public class DriverConductor implements Agent
         final long joinPosition = computePosition(
             activeTermId, initialTermOffset, LogBufferDescriptor.positionBitsToShift(termBufferLength), initialTermId);
 
-        final List<SubscriberPosition> subscriberPositions = createSubscriberPositions(
+        final ArrayList<SubscriberPosition> subscriberPositions = createSubscriberPositions(
             sessionId, streamId, channelEndpoint, joinPosition);
 
         if (subscriberPositions.size() > 0)
@@ -219,7 +219,7 @@ public class DriverConductor implements Agent
                 streamId,
                 initialTermId,
                 termBufferLength,
-                subscriberPositions.get(0).subscription().isSparse(),
+                isOldestSparse(subscriberPositions),
                 senderMtuLength,
                 udpChannel,
                 registrationId);
@@ -933,7 +933,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    private List<SubscriberPosition> createSubscriberPositions(
+    private ArrayList<SubscriberPosition> createSubscriberPositions(
         final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint, final long joinPosition)
     {
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
@@ -1572,5 +1572,27 @@ public class DriverConductor implements Agent
     private static String generateSourceIdentity(final InetSocketAddress address)
     {
         return address.getHostString() + ':' + address.getPort();
+    }
+
+    private static boolean isOldestSparse(final ArrayList<SubscriberPosition> subscriberPositions)
+    {
+        final SubscriberPosition subscriberPosition = subscriberPositions.get(0);
+        long regId = subscriberPosition.subscription().registrationId();
+        boolean isSparse = subscriberPosition.subscription().isSparse();
+
+        if (subscriberPositions.size() > 1)
+        {
+            for (int i = 1, size = subscriberPositions.size(); i < size; i++)
+            {
+                final SubscriptionLink subscription = subscriberPositions.get(i).subscription();
+                if (subscription.registrationId() < regId)
+                {
+                    isSparse = subscription.isSparse();
+                    regId = subscription.registrationId();
+                }
+            }
+        }
+
+        return isSparse;
     }
 }

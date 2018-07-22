@@ -1580,16 +1580,13 @@ public class DriverConductor implements Agent
         long regId = subscriberPosition.subscription().registrationId();
         boolean isSparse = subscriberPosition.subscription().isSparse();
 
-        if (subscriberPositions.size() > 1)
+        for (int i = 1, size = subscriberPositions.size(); i < size; i++)
         {
-            for (int i = 1, size = subscriberPositions.size(); i < size; i++)
+            final SubscriptionLink subscription = subscriberPositions.get(i).subscription();
+            if (subscription.registrationId() < regId)
             {
-                final SubscriptionLink subscription = subscriberPositions.get(i).subscription();
-                if (subscription.registrationId() < regId)
-                {
-                    isSparse = subscription.isSparse();
-                    regId = subscription.registrationId();
-                }
+                isSparse = subscription.isSparse();
+                regId = subscription.registrationId();
             }
         }
 

@@ -16,7 +16,6 @@
 package io.aeron.archive;
 
 import io.aeron.*;
-import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
@@ -61,8 +60,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
-    private static final int CONTROL_TERM_LENGTH = AeronArchive.Configuration.controlTermBufferLength();
-    private static final int CONTROL_MTU = AeronArchive.Configuration.controlMtuLength();
+    private final int controlTermBufferLength;
+    private final int controlMtuLength;
 
     private final ArrayDeque<Runnable> taskQueue = new ArrayDeque<>();
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
@@ -114,6 +113,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         archiveDirChannel = ctx.archiveDirChannel();
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
+        controlMtuLength = ctx.controlMtuLength();
+        controlTermBufferLength = ctx.controlTermBufferLength();
 
         controlSubscription = aeron.addSubscription(
             ctx.controlChannel(), ctx.controlStreamId(), this, null);
@@ -614,8 +615,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         if (!channel.contains(CommonContext.TERM_LENGTH_PARAM_NAME))
         {
             controlChannel = strippedChannelBuilder(ChannelUri.parse(channel))
-                .termLength(CONTROL_TERM_LENGTH)
-                .mtu(CONTROL_MTU)
+                .termLength(controlTermBufferLength)
+                .mtu(controlMtuLength)
                 .build();
         }
         else

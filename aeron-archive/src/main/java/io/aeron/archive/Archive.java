@@ -313,7 +313,8 @@ public class Archive implements AutoCloseable
         private int controlStreamId = AeronArchive.Configuration.controlStreamId();
         private String localControlChannel = AeronArchive.Configuration.localControlChannel();
         private int localControlStreamId = AeronArchive.Configuration.localControlStreamId();
-
+        private int controlTermBufferLength = AeronArchive.Configuration.controlTermBufferLength();
+        private int controlMtuLength = AeronArchive.Configuration.controlMtuLength();
         private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
         private int recordingEventsStreamId = AeronArchive.Configuration.recordingEventsStreamId();
 
@@ -607,6 +608,54 @@ public class Archive implements AutoCloseable
         public int localControlStreamId()
         {
             return localControlStreamId;
+        }
+
+        /**
+         * Set the term buffer length for the control stream.
+         *
+         * @param controlTermBufferLength for the control stream.
+         * @return this for a fluent API.
+         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
+         */
+        public Context controlTermBufferLength(final int controlTermBufferLength)
+        {
+            this.controlTermBufferLength = controlTermBufferLength;
+            return this;
+        }
+
+        /**
+         * Get the term buffer length for the control steam.
+         *
+         * @return the term buffer length for the control steam.
+         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
+         */
+        public int controlTermBufferLength()
+        {
+            return controlTermBufferLength;
+        }
+
+        /**
+         * Set the MTU length for the control stream.
+         *
+         * @param controlMtuLength for the control stream.
+         * @return this for a fluent API.
+         * @see AeronArchive.Configuration#CONTROL_MTU_LENGTH_PARAM_NAME
+         */
+        public Context controlMtuLength(final int controlMtuLength)
+        {
+            this.controlMtuLength = controlMtuLength;
+            return this;
+        }
+
+        /**
+         * Get the MTU length for the control steam.
+         *
+         * @return the MTU length for the control steam.
+         * @see AeronArchive.Configuration#CONTROL_MTU_LENGTH_PARAM_NAME
+         */
+        public int controlMtuLength()
+        {
+            return controlMtuLength;
         }
 
         /**

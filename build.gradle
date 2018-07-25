@@ -126,7 +126,7 @@ subprojects {
         checkstyle 'com.puppycrawl.tools:checkstyle:8.11'
 
         testCompile 'junit:junit:4.12'
-        testCompile 'org.mockito:mockito-core:2.19.1'
+        testCompile 'org.mockito:mockito-core:2.20.0'
         testCompile 'org.hamcrest:hamcrest-library:1.3'
     }
 

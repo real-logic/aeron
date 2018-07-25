@@ -1801,7 +1801,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else
         {
-
             archive.extendRecording(lastRecordingId, channel, ctx.logStreamId(), sourceLocation);
         }
 

@@ -25,6 +25,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class TimerService implements DeadlineTimerWheel.TimerHandler
 {
+    private static final int MAX_ITERATIONS_PER_POLL = 10_000_000;
+
     private final ConsensusModuleAgent consensusModuleAgent;
     private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(MILLISECONDS, 0, 1, 128);
     private Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
@@ -37,7 +39,16 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
 
     int poll(final long nowMs)
     {
-        return timerWheel.poll(nowMs, this, TIMER_POLL_LIMIT);
+        int expired = 0;
+        int iterations = 0;
+
+        do
+        {
+            expired += timerWheel.poll(nowMs, this, TIMER_POLL_LIMIT);
+        }
+        while (expired < TIMER_POLL_LIMIT && currentTickTimeMs() < nowMs && ++iterations < MAX_ITERATIONS_PER_POLL);
+
+        return expired;
     }
 
     long timerCount()

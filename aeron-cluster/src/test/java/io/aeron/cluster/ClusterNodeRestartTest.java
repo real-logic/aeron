@@ -34,11 +34,13 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.*;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -49,6 +51,11 @@ import static org.mockito.Mockito.when;
 public class ClusterNodeRestartTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;
+    private static final int MESSAGE_LENGTH = SIZE_OF_INT;
+    private static final int TIMER_MESSAGE_LENGTH = SIZE_OF_INT + SIZE_OF_LONG + SIZE_OF_LONG;
+    private static final int MESSAGE_VALUE_OFFSET = 0;
+    private static final int TIMER_MESSAGE_ID_OFFSET = MESSAGE_VALUE_OFFSET + SIZE_OF_INT;
+    private static final int TIMER_MESSAGE_DELAY_OFFSET = TIMER_MESSAGE_ID_OFFSET + SIZE_OF_LONG;
 
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
@@ -303,14 +310,84 @@ public class ClusterNodeRestartTest
         assertThat(snapshotCount.get(), is(3L));
     }
 
+    @Ignore
+    @Test(timeout = 10_000)
+    public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog() throws Exception
+    {
+        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+        launchService(serviceMsgCounter);
+        connectClient();
+
+        sendCountedMessageIntoCluster(0);
+        sendCountedMessageIntoCluster(1);
+        sendCountedMessageIntoCluster(2);
+        sendTimerMessageIntoCluster(3, 1, TimeUnit.HOURS.toMillis(10));
+
+        while (serviceMsgCounter.get() != 4)
+        {
+            Thread.yield();
+        }
+
+        final CountersReader counters = aeronCluster.context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+        assertNotNull(controlToggle);
+        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+        while (snapshotCount.get() == 0)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1);
+        }
+
+        sendCountedMessageIntoCluster(4);
+
+        while (serviceMsgCounter.get() != 5)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        forceCloseForRestart();
+
+        serviceMsgCounter.set(0);
+        launchClusteredMediaDriver(false);
+        launchService(serviceMsgCounter);
+        connectClient();
+
+        while (serviceMsgCounter.get() != 1)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        assertThat(serviceState.get(), is("5"));
+    }
+
     private void sendCountedMessageIntoCluster(final int value)
     {
+        msgBuffer.putInt(MESSAGE_VALUE_OFFSET, value);
+
+        sendBufferIntoCluster(aeronCluster, msgBuffer, MESSAGE_LENGTH);
+    }
+
+    private void sendTimerMessageIntoCluster(final int value, final long timerCorrelationId, final long delayMs)
+    {
+        msgBuffer.putInt(MESSAGE_VALUE_OFFSET, value);
+        msgBuffer.putLong(TIMER_MESSAGE_ID_OFFSET, timerCorrelationId);
+        msgBuffer.putLong(TIMER_MESSAGE_DELAY_OFFSET, delayMs);
+
+        sendBufferIntoCluster(aeronCluster, msgBuffer, TIMER_MESSAGE_LENGTH);
+    }
+
+    private static void sendBufferIntoCluster(
+        final AeronCluster aeronCluster, final DirectBuffer buffer, final int length)
+    {
         final long msgCorrelationId = aeronCluster.nextCorrelationId();
-        msgBuffer.putInt(0, value);
 
         while (true)
         {
-            final long result = aeronCluster.offer(msgCorrelationId, msgBuffer, 0, SIZE_OF_INT);
+            final long result = aeronCluster.offer(msgCorrelationId, buffer, 0, length);
             if (result > 0)
             {
                 break;
@@ -339,12 +416,25 @@ public class ClusterNodeRestartTest
                     final int length,
                     final Header header)
                 {
-                    final int sentValue = buffer.getInt(offset);
+                    final int sentValue = buffer.getInt(offset + MESSAGE_VALUE_OFFSET);
                     assertThat(sentValue, is(counterValue));
 
                     counterValue++;
                     serviceState.set(Integer.toString(counterValue));
                     msgCounter.getAndIncrement();
+
+                    if (TIMER_MESSAGE_LENGTH == length)
+                    {
+                        final long timerCorrelationId = buffer.getLong(offset + TIMER_MESSAGE_ID_OFFSET);
+                        final long timerDeadlineMs =
+                            timestampMs + buffer.getLong(offset + TIMER_MESSAGE_DELAY_OFFSET);
+
+                        assertTrue(cluster.scheduleTimer(timerCorrelationId, timerDeadlineMs));
+                    }
+                }
+
+                public void onTimerEvent(final long correlationId, final long timestampMs)
+                {
                 }
 
                 public void onTakeSnapshot(final Publication snapshotPublication)

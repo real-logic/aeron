@@ -313,6 +313,7 @@ public class Archive implements AutoCloseable
         private int controlStreamId = AeronArchive.Configuration.controlStreamId();
         private String localControlChannel = AeronArchive.Configuration.localControlChannel();
         private int localControlStreamId = AeronArchive.Configuration.localControlStreamId();
+        private boolean controlTermBufferSparse = AeronArchive.Configuration.controlTermBufferSparse();
         private int controlTermBufferLength = AeronArchive.Configuration.controlTermBufferLength();
         private int controlMtuLength = AeronArchive.Configuration.controlMtuLength();
         private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
@@ -608,6 +609,30 @@ public class Archive implements AutoCloseable
         public int localControlStreamId()
         {
             return localControlStreamId;
+        }
+
+        /**
+         * Should the control stream use sparse file term buffers.
+         *
+         * @param controlTermBufferSparse for the control stream.
+         * @return this for a fluent API.
+         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME
+         */
+        public Context controlTermBufferSparse(final boolean controlTermBufferSparse)
+        {
+            this.controlTermBufferSparse = controlTermBufferSparse;
+            return this;
+        }
+
+        /**
+         * Should the control stream use sparse file term buffers.
+         *
+         * @return true if the control stream should use sparse file term buffers.
+         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME
+         */
+        public boolean controlTermBufferSparse()
+        {
+            return controlTermBufferSparse;
         }
 
         /**

@@ -1138,6 +1138,17 @@ public class AeronArchive implements AutoCloseable
         public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 30;
 
         /**
+         * Sparse term buffer indicator for control streams.
+         */
+        private static final String CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME = "aeron.archive.control.term.buffer.sparse";
+
+        /**
+         * Overrides {@link io.aeron.driver.Configuration#TERM_BUFFER_SPARSE_FILE_PROP_NAME} for if term buffer files
+         * are sparse on the control channel.
+         */
+        private static final boolean CONTROL_TERM_BUFFER_SPARSE_DEFAULT = true;
+
+        /**
          * Term length for control streams.
          */
         private static final String CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME = "aeron.archive.control.term.buffer.length";
@@ -1166,6 +1177,18 @@ public class AeronArchive implements AutoCloseable
         public static long messageTimeoutNs()
         {
             return getDurationInNanos(MESSAGE_TIMEOUT_PROP_NAME, MESSAGE_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Should term buffer files be sparse for control request and response streams.
+         *
+         * @return true if term buffer files should be sparse for control request and response streams.
+         * @see #CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME
+         */
+        public static boolean controlTermBufferSparse()
+        {
+            final String propValue = System.getProperty(CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME);
+            return null != propValue ? "true".equals(propValue) : CONTROL_TERM_BUFFER_SPARSE_DEFAULT;
         }
 
         /**

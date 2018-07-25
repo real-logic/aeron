@@ -607,6 +607,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final ControlSessionDemuxer demuxer)
     {
         final String controlChannel = strippedChannelBuilder(ChannelUri.parse(channel))
+            .sparse(ctx.controlTermBufferSparse())
             .termLength(ctx.controlTermBufferLength())
             .mtu(ctx.controlMtuLength())
             .build();

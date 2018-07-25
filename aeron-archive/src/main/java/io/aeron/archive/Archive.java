@@ -612,7 +612,7 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Should the control stream use sparse file term buffers.
+         * Should the control streams use sparse file term buffers.
          *
          * @param controlTermBufferSparse for the control stream.
          * @return this for a fluent API.
@@ -625,7 +625,7 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Should the control stream use sparse file term buffers.
+         * Should the control streams use sparse file term buffers.
          *
          * @return true if the control stream should use sparse file term buffers.
          * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME
@@ -636,9 +636,9 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Set the term buffer length for the control stream.
+         * Set the term buffer length for the control streams.
          *
-         * @param controlTermBufferLength for the control stream.
+         * @param controlTermBufferLength for the control streams.
          * @return this for a fluent API.
          * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
          */
@@ -649,9 +649,9 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Get the term buffer length for the control steam.
+         * Get the term buffer length for the control streams.
          *
-         * @return the term buffer length for the control steam.
+         * @return the term buffer length for the control streams.
          * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
          */
         public int controlTermBufferLength()
@@ -660,9 +660,9 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Set the MTU length for the control stream.
+         * Set the MTU length for the control streams.
          *
-         * @param controlMtuLength for the control stream.
+         * @param controlMtuLength for the control streams.
          * @return this for a fluent API.
          * @see AeronArchive.Configuration#CONTROL_MTU_LENGTH_PARAM_NAME
          */
@@ -673,9 +673,9 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Get the MTU length for the control steam.
+         * Get the MTU length for the control streams.
          *
-         * @return the MTU length for the control steam.
+         * @return the MTU length for the control streams.
          * @see AeronArchive.Configuration#CONTROL_MTU_LENGTH_PARAM_NAME
          */
         public int controlMtuLength()

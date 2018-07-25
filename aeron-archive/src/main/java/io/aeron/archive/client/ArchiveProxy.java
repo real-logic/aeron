@@ -38,7 +38,7 @@ public class ArchiveProxy
     private final IdleStrategy retryIdleStrategy;
     private final NanoClock nanoClock;
 
-    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(124);
+    private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(256);
     private final Publication publication;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();

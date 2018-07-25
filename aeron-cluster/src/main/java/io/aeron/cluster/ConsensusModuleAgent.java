@@ -212,6 +212,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
             }
+            else
+            {
+                timerService.resetStartTime(epochClock.time());
+            }
 
             awaitServiceAcks(expectedAckPosition);
         }
@@ -1461,6 +1465,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final int streamId = ctx.replayStreamId();
         final int sessionId = (int)archive.startReplay(snapshot.recordingId, 0, NULL_LENGTH, channel, streamId);
         final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, sessionId);
+
+        timerService.resetStartTime(clusterTimeMs);
 
         try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
         {

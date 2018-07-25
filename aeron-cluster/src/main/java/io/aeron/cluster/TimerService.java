@@ -61,6 +61,11 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         return timerWheel.currentTickTime();
     }
 
+    void resetStartTime(final long startTime)
+    {
+        timerWheel.resetStartTime(startTime);
+    }
+
     public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId)
     {
         final long correlationId = correlationIdByTimerIdMap.remove(timerId);

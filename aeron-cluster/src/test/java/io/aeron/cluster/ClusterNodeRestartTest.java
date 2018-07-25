@@ -32,7 +32,9 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,9 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -310,7 +310,6 @@ public class ClusterNodeRestartTest
         assertThat(snapshotCount.get(), is(3L));
     }
 
-    @Ignore
     @Test(timeout = 10_000)
     public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog() throws Exception
     {

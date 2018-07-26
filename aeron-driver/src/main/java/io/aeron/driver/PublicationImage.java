@@ -420,6 +420,11 @@ public class PublicationImage
      */
     final void trackRebuild(final long nowNs, final long statusMessageTimeoutNs)
     {
+        if (rawLog.isInactive())
+        {
+            return;
+        }
+
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
 

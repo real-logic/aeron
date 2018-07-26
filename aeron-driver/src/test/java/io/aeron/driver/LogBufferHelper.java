@@ -69,6 +69,11 @@ public class LogBufferHelper
                 return "stream.log";
             }
 
+            public boolean isInactive()
+            {
+                return false;
+            }
+
             public boolean free()
             {
                 return true;

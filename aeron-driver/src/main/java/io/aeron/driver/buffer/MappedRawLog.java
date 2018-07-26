@@ -125,6 +125,11 @@ class MappedRawLog implements RawLog
         return termLength;
     }
 
+    public boolean isInactive()
+    {
+        return null == mappedBuffers;
+    }
+
     public boolean free()
     {
         if (null != mappedBuffers)

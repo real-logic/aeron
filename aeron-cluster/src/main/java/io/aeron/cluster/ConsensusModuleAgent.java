@@ -75,7 +75,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long followerCommitPosition = 0;
     private long timeOfLastLogUpdateMs = 0;
     private long cachedTimeMs;
-    private long clusterTimeMs;
+    private long clusterTimeMs = NULL_VALUE;
     private long lastRecordingId = RecordingPos.NULL_RECORDING_ID;
     private int logPublicationInitialTermId = NULL_VALUE;
     private int logPublicationTermBufferLength = NULL_VALUE;
@@ -212,10 +212,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
             }
-            else
-            {
-                timerService.resetStartTime(epochClock.time());
-            }
 
             awaitServiceAcks(expectedAckPosition);
         }
@@ -251,7 +247,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             cachedTimeMs = nowMs;
             if (Cluster.Role.LEADER == role)
             {
-                clusterTimeMs = nowMs;
+                clusterTimeMs(nowMs);
             }
 
             isSlowTickCycle = true;
@@ -736,13 +732,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final int length,
         final Header header)
     {
-        clusterTimeMs = timestamp;
+        clusterTimeMs(timestamp);
         sessionByIdMap.get(clusterSessionId).lastActivity(timestamp, correlationId);
     }
 
     void onReplayTimerEvent(final long correlationId, final long timestamp)
     {
-        clusterTimeMs = timestamp;
+        clusterTimeMs(timestamp);
 
         if (!timerService.cancelTimer(correlationId))
         {
@@ -758,7 +754,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final int responseStreamId,
         final String responseChannel)
     {
-        clusterTimeMs = timestamp;
+        clusterTimeMs(timestamp);
 
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
         session.open(logPosition);
@@ -793,7 +789,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     void onReplaySessionClose(
         final long correlationId, final long clusterSessionId, final long timestamp, final CloseReason closeReason)
     {
-        clusterTimeMs = timestamp;
+        clusterTimeMs(timestamp);
         sessionByIdMap.remove(clusterSessionId).close();
     }
 
@@ -801,7 +797,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     void onReplayClusterAction(
         final long leadershipTermId, final long logPosition, final long timestamp, final ClusterAction action)
     {
-        clusterTimeMs = timestamp;
+        clusterTimeMs(timestamp);
 
         switch (action)
         {
@@ -835,7 +831,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final int leaderMemberId,
         final int logSessionId)
     {
-        clusterTimeMs = timestamp;
+        clusterTimeMs(timestamp);
         this.leadershipTermId = leadershipTermId;
 
         if (null != election && null != appendedPosition)
@@ -1457,7 +1453,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void recoverFromSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
     {
-        clusterTimeMs = snapshot.timestamp;
+        clusterTimeMs(snapshot.timestamp);
         expectedAckPosition = snapshot.logPosition;
         leadershipTermId = snapshot.leadershipTermId;
 
@@ -1465,8 +1461,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final int streamId = ctx.replayStreamId();
         final int sessionId = (int)archive.startReplay(snapshot.recordingId, 0, NULL_LENGTH, channel, streamId);
         final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, sessionId);
-
-        timerService.resetStartTime(clusterTimeMs);
 
         try (Subscription subscription = aeron.addSubscription(replaySubscriptionChannel, streamId))
         {
@@ -1839,5 +1833,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private void onUnavailableIngressImage(final Image image)
     {
         ingressAdapter.freeSessionBuffer(image.sessionId());
+    }
+
+    private void clusterTimeMs(final long nowMs)
+    {
+        if (NULL_VALUE == clusterTimeMs)
+        {
+            timerService.resetStartTime(nowMs);
+        }
+
+        clusterTimeMs = nowMs;
     }
 }

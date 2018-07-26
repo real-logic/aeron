@@ -144,24 +144,20 @@ public:
         Image *images = imageList->m_images;
         int fragmentsRead = 0;
 
-        for (std::size_t i = m_roundRobinIndex; i < length; i++)
+        std::size_t startingIndex = m_roundRobinIndex++;
+        if (startingIndex >= length)
         {
-            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
-            if (fragmentsRead == fragmentLimit)
-            {
-                m_roundRobinIndex = i + 1;
-                return fragmentsRead;
-            }
+            m_roundRobinIndex = startingIndex = 0;
         }
 
-        for (std::size_t i = 0; i < m_roundRobinIndex; i++)
+        for (std::size_t i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
         {
             fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
-            if (fragmentsRead == fragmentLimit)
-            {
-                m_roundRobinIndex = i + 1;
-                return fragmentsRead;
-            }
+        }
+
+        for (std::size_t i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
@@ -190,24 +186,20 @@ public:
         Image *images = imageList->m_images;
         int fragmentsRead = 0;
 
-        for (std::size_t i = m_roundRobinIndex; i < length; i++)
+        std::size_t startingIndex = m_roundRobinIndex++;
+        if (startingIndex >= length)
         {
-            fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
-            if (fragmentsRead == fragmentLimit)
-            {
-                m_roundRobinIndex = i + 1;
-                return fragmentsRead;
-            }
+            m_roundRobinIndex = startingIndex = 0;
         }
 
-        for (std::size_t i = 0; i < m_roundRobinIndex; i++)
+        for (std::size_t i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
         {
             fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
-            if (fragmentsRead == fragmentLimit)
-            {
-                m_roundRobinIndex = i + 1;
-                return fragmentsRead;
-            }
+        }
+
+        for (std::size_t i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;

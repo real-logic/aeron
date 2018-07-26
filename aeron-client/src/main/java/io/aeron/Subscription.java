@@ -196,24 +196,20 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         final int length = images.length;
         int fragmentsRead = 0;
 
-        for (int i = roundRobinIndex; i < length; i++)
+        int startingIndex = roundRobinIndex++;
+        if (startingIndex >= length)
         {
-            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
-            if (fragmentsRead == fragmentLimit)
-            {
-                roundRobinIndex = i + 1;
-                return fragmentsRead;
-            }
+            roundRobinIndex = startingIndex = 0;
         }
 
-        for (int i = 0; i < roundRobinIndex; i++)
+        for (int i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
         {
             fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
-            if (fragmentsRead == fragmentLimit)
-            {
-                roundRobinIndex = i + 1;
-                return fragmentsRead;
-            }
+        }
+
+        for (int i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
@@ -240,24 +236,20 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         final int length = images.length;
         int fragmentsRead = 0;
 
-        for (int i = roundRobinIndex; i < length; i++)
+        int startingIndex = roundRobinIndex++;
+        if (startingIndex >= length)
         {
-            fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
-            if (fragmentsRead == fragmentLimit)
-            {
-                roundRobinIndex = i + 1;
-                return fragmentsRead;
-            }
+            roundRobinIndex = startingIndex = 0;
         }
 
-        for (int i = 0; i < roundRobinIndex; i++)
+        for (int i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
         {
             fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
-            if (fragmentsRead == fragmentLimit)
-            {
-                roundRobinIndex = i + 1;
-                return fragmentsRead;
-            }
+        }
+
+        for (int i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;

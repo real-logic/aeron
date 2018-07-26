@@ -692,20 +692,24 @@ public class NetworkPublication
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        updateConnectedStatus();
-        final long producerPosition = producerPosition();
-        publisherPos.setOrdered(producerPosition);
-
         switch (state)
         {
             case ACTIVE:
+            {
+                updateConnectedStatus();
+                final long producerPosition = producerPosition();
+                publisherPos.setOrdered(producerPosition);
                 if (!isExclusive)
                 {
                     checkForBlockedPublisher(producerPosition, senderPosition.getVolatile(), timeNs);
                 }
                 break;
+            }
 
             case DRAINING:
+            {
+                final long producerPosition = producerPosition();
+                publisherPos.setOrdered(producerPosition);
                 final long senderPosition = this.senderPosition.getVolatile();
                 if (producerPosition > senderPosition)
                 {
@@ -731,6 +735,7 @@ public class NetworkPublication
                     state = State.LINGER;
                 }
                 break;
+            }
 
             case LINGER:
                 if (timeNs > (timeOfLastActivityNs + lingerTimeoutNs))

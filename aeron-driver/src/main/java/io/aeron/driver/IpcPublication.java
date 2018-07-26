@@ -193,19 +193,23 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        final long producerPosition = producerPosition();
-        publisherPos.setOrdered(producerPosition);
-
         switch (state)
         {
             case ACTIVE:
+            {
+                final long producerPosition = producerPosition();
+                publisherPos.setOrdered(producerPosition);
                 if (!isExclusive)
                 {
                     checkForBlockedPublisher(producerPosition, timeNs);
                 }
                 break;
+            }
 
             case INACTIVE:
+            {
+                final long producerPosition = producerPosition();
+                publisherPos.setOrdered(producerPosition);
                 if (isDrained(producerPosition))
                 {
                     state = State.LINGER;
@@ -217,6 +221,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                     unblockedPublications.incrementOrdered();
                 }
                 break;
+            }
 
             case LINGER:
                 if (timeNs > (timeOfLastStateChangeNs + lingerTimeoutNs))

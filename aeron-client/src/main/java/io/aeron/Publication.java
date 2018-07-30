@@ -67,7 +67,7 @@ public abstract class Publication implements AutoCloseable
      * The offer failed due to reaching the maximum position of the stream given term buffer length times the total
      * possible number of terms.
      * <p>
-     * If this happen then the publication should be closed and a new one added. To make it less likely to happen then
+     * If this happens then the publication should be closed and a new one added. To make it less likely to happen then
      * increase the term buffer length.
      */
     public static final long MAX_POSITION_EXCEEDED = -5;

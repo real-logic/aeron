@@ -22,8 +22,10 @@
 #include <thread>
 #include <atomic>
 #include <concurrent/logbuffer/TermReader.h>
-#include <pthread.h>
 
+#if !defined(AERON_COMPILER_MSVC)
+#include <pthread.h>
+#endif
 
 namespace aeron {
 
@@ -71,7 +73,8 @@ public:
     {
         m_thread = std::thread([&]()
         {
-#if defined(Darwin)
+#if defined(AERON_COMPILER_MSVC)
+#elif defined(Darwin)
             pthread_setname_np(m_name.c_str());
 #else
             pthread_setname_np(pthread_self(), m_name.c_str());

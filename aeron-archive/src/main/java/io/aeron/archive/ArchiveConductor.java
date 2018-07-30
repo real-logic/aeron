@@ -111,8 +111,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
 
-        controlSubscription = aeron.addSubscription(
-            ctx.controlChannel(), ctx.controlStreamId(), this, null);
+        final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
+        controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
+        controlSubscription = aeron.addSubscription(controlChannelUri.toString(), ctx.controlStreamId(), this, null);
 
         localControlSubscription = aeron.addSubscription(
             ctx.localControlChannel(), ctx.localControlStreamId(), this, null);

@@ -583,12 +583,16 @@ public class CommonContext implements AutoCloseable, Cloneable
                 "Aeron CnC version does not match: required=" + CNC_VERSION + " version=" + cncVersion);
         }
 
+        int distinctErrorCount = 0;
         final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-        final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->
-            formatError(out, dateFormat, count, firstTimestamp, lastTimestamp, ex);
+        if (ErrorLogReader.hasErrors(buffer))
+        {
+            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+            final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->
+                formatError(out, dateFormat, count, firstTimestamp, lastTimestamp, ex);
 
-        final int distinctErrorCount = ErrorLogReader.read(buffer, errorConsumer);
+            distinctErrorCount = ErrorLogReader.read(buffer, errorConsumer);
+        }
 
         out.println();
         out.println(distinctErrorCount + " distinct errors observed.");

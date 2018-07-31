@@ -22,6 +22,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
@@ -70,6 +71,7 @@ class MappedRawLog implements RawLog
             if (logLength <= Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
+                mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
                 if (!useSparseFiles)
                 {
                     allocatePages(mappedBuffer, (int)logLength, filePageSize);
@@ -91,14 +93,15 @@ class MappedRawLog implements RawLog
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
-                    mappedBuffers[i] = logChannel.map(
-                        READ_WRITE, termLength * (long)i, termLength);
+                    final MappedByteBuffer buffer = logChannel.map(READ_WRITE, termLength * (long)i, termLength);
+                    buffer.order(ByteOrder.LITTLE_ENDIAN);
+                    mappedBuffers[i] = buffer;
                     if (!useSparseFiles)
                     {
-                        allocatePages(mappedBuffers[i], termLength, filePageSize);
+                        allocatePages(buffer, termLength, filePageSize);
                     }
 
-                    termBuffers[i] = new UnsafeBuffer(mappedBuffers[i], 0, termLength);
+                    termBuffers[i] = new UnsafeBuffer(buffer, 0, termLength);
                 }
 
                 final int metaDataMappingLength = align(LOG_META_DATA_LENGTH, filePageSize);
@@ -106,6 +109,7 @@ class MappedRawLog implements RawLog
 
                 final MappedByteBuffer metaDataMappedBuffer = logChannel.map(
                     READ_WRITE, metaDataSectionOffset, metaDataMappingLength);
+                metaDataMappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
                 mappedBuffers[LOG_META_DATA_SECTION_INDEX] = metaDataMappedBuffer;
                 logMetaDataBuffer = new UnsafeBuffer(

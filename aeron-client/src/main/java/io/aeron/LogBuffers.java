@@ -70,6 +70,7 @@ public class LogBuffers implements AutoCloseable, ManagedResource
             if (logLength < Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = fileChannel.map(READ_WRITE, 0, logLength);
+                mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
                 mappedByteBuffers = new MappedByteBuffer[]{ mappedBuffer };
 
                 logMetaDataBuffer = new UnsafeBuffer(
@@ -101,8 +102,9 @@ public class LogBuffers implements AutoCloseable, ManagedResource
 
                 final MappedByteBuffer metaDataMappedBuffer = fileChannel.map(
                     READ_WRITE, metaDataSectionOffset, metaDataMappingLength);
+                metaDataMappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
-                mappedByteBuffers[mappedByteBuffers.length - 1] = metaDataMappedBuffer;
+                mappedByteBuffers[LOG_META_DATA_SECTION_INDEX] = metaDataMappedBuffer;
 
                 logMetaDataBuffer = new UnsafeBuffer(
                     metaDataMappedBuffer,
@@ -125,8 +127,10 @@ public class LogBuffers implements AutoCloseable, ManagedResource
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
                     final long position = assumedTermLength * (long)i;
-                    mappedByteBuffers[i] = fileChannel.map(READ_WRITE, position, assumedTermLength);
-                    termBuffers[i] = mappedByteBuffers[i];
+                    final MappedByteBuffer mappedBuffer = fileChannel.map(READ_WRITE, position, assumedTermLength);
+                    mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
+                    mappedByteBuffers[i] = mappedBuffer;
+                    termBuffers[i] = mappedBuffer;
                 }
             }
         }

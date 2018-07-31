@@ -20,6 +20,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 /**
@@ -75,7 +76,9 @@ public class BufferBuilder
         this.isDirect = isDirect;
         if (isDirect)
         {
-            buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(initialCapacity));
+            final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(initialCapacity);
+            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            this.buffer = new UnsafeBuffer(byteBuffer);
         }
         else
         {

@@ -195,6 +195,7 @@ public class BufferBuilder
         if (isDirect)
         {
             final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(newCapacity);
+            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
             buffer.getBytes(0, byteBuffer, 0, limit);
             buffer.wrap(byteBuffer);
         }

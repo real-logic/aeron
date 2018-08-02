@@ -24,8 +24,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A very simple Aeron publisher application
- * Publishes a fixed size message on a fixed channel and stream.
+ * A very simple Aeron publisher application which publishes a fixed size message on a fixed channel and stream.
  */
 public class SimplePublisher
 {

@@ -34,7 +34,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
 /**
- * Publisher that sends as fast as possible a given number of messages at a given length.
+ * Publisher that sends a given number of messages at a given length as fast as possible.
  */
 public class StreamingPublisher
 {

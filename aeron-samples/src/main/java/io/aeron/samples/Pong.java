@@ -31,7 +31,8 @@ import org.agrona.concurrent.SigInt;
 /**
  * Pong component of Ping-Pong.
  * <p>
- * Echoes back messages
+ * Echoes back messages from {@link Ping}.
+ * @see Ping
  */
 public class Pong
 {

@@ -27,6 +27,9 @@ import org.agrona.concurrent.SigInt;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * A basic subscriber application which requests a replay from the archive and consumes it.
+ */
 public class ReplayedBasicSubscriber
 {
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
@@ -58,7 +61,6 @@ public class ReplayedBasicSubscriber
             try (Subscription subscription = archive.context().aeron().addSubscription(channel, REPLAY_STREAM_ID))
             {
                 SamplesUtil.subscriberLoop(fragmentHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription);
-
                 System.out.println("Shutting down...");
             }
         }
@@ -93,7 +95,7 @@ public class ReplayedBasicSubscriber
 
         if (foundCount == 0)
         {
-            throw new IllegalStateException("No recordings found");
+            throw new IllegalStateException("no recordings found");
         }
 
         return lastRecordingId.get();

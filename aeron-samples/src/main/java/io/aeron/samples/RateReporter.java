@@ -18,9 +18,7 @@ package io.aeron.samples;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * Tracker and reporter of rates.
- * <p>
- * Uses volatile semantics for counters.
+ * Tracker and reporter of throughput rates.
  */
 public class RateReporter implements Runnable
 {
@@ -101,7 +99,7 @@ public class RateReporter implements Runnable
     }
 
     /**
-     * Tell rate reporter of number of messages and bytes received, sent, etc.
+     * Notify rate reporter of number of messages and bytes received, sent, etc.
      *
      * @param messages received, sent, etc.
      * @param bytes    received, sent, etc.

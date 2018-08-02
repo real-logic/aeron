@@ -40,6 +40,9 @@ import static io.aeron.samples.archive.TestUtil.MEGABYTE;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
+/**
+ * Tests the throughput when recording a stream of messages.
+ */
 public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEventsListener
 {
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;

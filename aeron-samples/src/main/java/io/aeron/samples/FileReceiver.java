@@ -233,11 +233,7 @@ public class FileReceiver
         final int offset)
     {
         final UnsafeBuffer fileBuffer = fileSessionByIdMap.get(correlationId);
-        buffer.getBytes(
-            offset + CHUNK_PAYLOAD_OFFSET,
-            fileBuffer,
-            (int)chunkOffset,
-            (int)chunkLength);
+        buffer.getBytes(offset + CHUNK_PAYLOAD_OFFSET, fileBuffer, (int)chunkOffset, (int)chunkLength);
 
         if ((chunkOffset + chunkLength) >= fileBuffer.capacity())
         {

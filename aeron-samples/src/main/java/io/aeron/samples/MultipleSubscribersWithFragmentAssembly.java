@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Creates two subscriptions on a given channel subscribed to two different stream IDs.
  * The default STREAM_ID and CHANNEL are configured in {@link SampleConfiguration}. The default
  * channel and stream IDs can be changed by setting Java system properties at the command line, e.g.:
- * -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20
+ * {@code -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20}
  */
 public class MultipleSubscribersWithFragmentAssembly
 {
@@ -139,7 +139,7 @@ public class MultipleSubscribersWithFragmentAssembly
     }
 
     /**
-     * Return a reusable, parameterized {@link FragmentHandler} that prints to stdout for the second stream (STREAM + 1)
+     * Return a reusable, parameterised {@link FragmentHandler} that prints to stdout for the second stream (STREAM + 1)
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents

@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The default values for number of messages, channel, and stream ID are
  * defined in {@link SampleConfiguration} and can be overridden by
  * setting their corresponding properties via the command-line; e.g.:
- * -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20
+ * {@code -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20}
  */
 public class RecordedBasicPublisher
 {
@@ -99,7 +99,7 @@ public class RecordedBasicPublisher
                 {
                     if (!RecordingPos.isActive(counters, counterId, recordingId))
                     {
-                        throw new IllegalStateException("Recording has stopped unexpectedly: " + recordingId);
+                        throw new IllegalStateException("recording has stopped unexpectedly: " + recordingId);
                     }
 
                     Thread.yield();

@@ -70,7 +70,6 @@ public class ErrorStat
             observationCount,
             DATE_FORMAT.format(new Date(firstObservationTimestamp)),
             DATE_FORMAT.format(new Date(lastObservationTimestamp)),
-            encodedException
-        );
+            encodedException);
     }
 }

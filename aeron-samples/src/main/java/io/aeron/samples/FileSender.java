@@ -140,9 +140,7 @@ public class FileSender
         while (chunkOffset < fileLength)
         {
             final int chunkLength = Math.min(maxChunkLength, fileLength - chunkOffset);
-
             sendChunk(publication, bufferClaim, correlationId, buffer, chunkOffset, chunkLength);
-
             chunkOffset += chunkLength;
         }
     }

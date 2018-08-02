@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
- * Utility functions for samples
+ * Utility functions for the samples.
  */
 public class SamplesUtil
 {
@@ -134,6 +134,7 @@ public class SamplesUtil
      * @param message   indicating what the error was
      * @param cause     of the error
      */
+    @SuppressWarnings("unused")
     public static void printError(
         final String channel,
         final int streamId,

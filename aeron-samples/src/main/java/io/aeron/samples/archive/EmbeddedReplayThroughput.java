@@ -41,6 +41,9 @@ import static io.aeron.samples.archive.TestUtil.NOOP_FRAGMENT_HANDLER;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
+/**
+ * Tests the throughput when replaying a recorded stream of messages.
+ */
 public class EmbeddedReplayThroughput implements AutoCloseable
 {
     private static final int REPLAY_STREAM_ID = 101;
@@ -131,7 +134,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         final int count = buffer.getInt(offset);
         if (count != messageCount)
         {
-            throw new IllegalStateException("Invalid message count=" + count + " @ " + messageCount);
+            throw new IllegalStateException("invalid message count=" + count + " @ " + messageCount);
         }
 
         messageCount++;
@@ -250,7 +253,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
         if (1 != recordingsFound)
         {
-            throw new IllegalStateException("Should have been one recording");
+            throw new IllegalStateException("should have been one recording");
         }
 
         return foundRecordingId.get();

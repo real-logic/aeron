@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.aeron.samples.SamplesUtil.rateReporterHandler;
 
 /**
- * Example that displays current rate while receiving data
+ * Example that displays current throughput rate while receiving data.
  */
 public class RateSubscriber
 {

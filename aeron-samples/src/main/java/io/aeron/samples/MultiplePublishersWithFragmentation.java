@@ -22,11 +22,11 @@ import org.agrona.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * A publisher application with multiple publications which send
- * fragmented messages to a channel and two different stream IDs. The default STREAM_ID and CHANNEL are
- * configured in {@link SampleConfiguration}. The default
- * channel and stream IDs can be changed by setting Java system properties at the command line, e.g.:
- * -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20
+ * A publisher application with multiple publications which send fragmented messages to a channel and two different
+ * stream IDs. The default STREAM_ID and CHANNEL are configured in {@link SampleConfiguration}.
+ * <p>
+ * The default channel and stream IDs can be changed by setting Java system properties at the command line, e.g.:
+ * {@code -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20}
  */
 public class MultiplePublishersWithFragmentation
 {

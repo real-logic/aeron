@@ -16,7 +16,7 @@
 package io.aeron.samples;
 
 /**
- * Configuration used for samples all in one place.
+ * Configuration used for samples with defaults which can be overridden by system properties.
  */
 public class SampleConfiguration
 {
@@ -55,7 +55,6 @@ public class SampleConfiguration
     public static final long WARMUP_NUMBER_OF_MESSAGES;
     public static final long NUMBER_OF_MESSAGES;
     public static final long LINGER_TIMEOUT_MS;
-
 
     static
     {

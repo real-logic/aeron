@@ -22,7 +22,8 @@ import org.agrona.concurrent.status.StatusIndicator;
 
 /**
  * Allows a {@link org.agrona.concurrent.ControllableIdleStrategy} to be set via the command line.
- * The first command line arg is an integer value.
+ * The first command line arg should be an integer value representing one of constants in
+ * {@link org.agrona.concurrent.ControllableIdleStrategy}.
  */
 public class SetControllableIdleStrategy
 {
@@ -42,9 +43,7 @@ public class SetControllableIdleStrategy
             if (null != statusIndicator)
             {
                 final int status = Integer.parseInt(args[0]);
-
                 statusIndicator.setOrdered(status);
-
                 System.out.println("Set ControllableIdleStrategy status to " + status);
             }
             else

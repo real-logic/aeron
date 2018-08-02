@@ -29,12 +29,12 @@ import static io.aeron.CncFileDescriptor.*;
 
 /**
  * Tool for printing out Aeron Media Driver Information. A command-and-control (CnC) file is maintained by media driver
- * in shared memory. This application reads the the cnc file and prints the information. Layout of the cnc file is
+ * in shared memory. This application reads the CnC file and prints its status. Layout of the Cnc file is
  * described in {@link CncFileDescriptor}.
  */
 public class DriverTool
 {
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         boolean printPidOnly = false;
 
@@ -64,11 +64,10 @@ public class DriverTool
         if (printPidOnly)
         {
             System.out.println(pid(cncMetaData));
-
         }
         else
         {
-            System.out.println("Command `n Control file %s" + cncFile);
+            System.out.println("Command `n Control file: " + cncFile);
             System.out.format("Version: %d, PID: %d%n", cncVersion, pid(cncMetaData));
             printDateActivityAndStartTimestamps(startTimestamp(cncMetaData), toDriver.consumerHeartbeatTime());
         }

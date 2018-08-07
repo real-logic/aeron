@@ -37,12 +37,12 @@ public:
         return m_impl.id();
     }
 
-    inline std::int64_t get()
+    inline std::int64_t get() const
     {
         return m_impl.get();
     }
 
-    inline std::int64_t getVolatile()
+    inline std::int64_t getVolatile() const
     {
         return m_impl.getVolatile();
     }

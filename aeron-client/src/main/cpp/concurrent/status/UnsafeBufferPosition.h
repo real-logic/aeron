@@ -58,12 +58,12 @@ public:
         return m_id;
     }
 
-    inline std::int64_t get()
+    inline std::int64_t get() const
     {
         return m_buffer.getInt64(m_offset);
     }
 
-    inline std::int64_t getVolatile()
+    inline std::int64_t getVolatile() const
     {
         return m_buffer.getInt64Volatile(m_offset);
     }

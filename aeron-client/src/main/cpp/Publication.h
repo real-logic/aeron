@@ -201,7 +201,7 @@ public:
      *
      * @return the current position to which the publication has advanced for this stream or {@link CLOSED}.
      */
-    inline std::int64_t position()
+    inline std::int64_t position() const
     {
         std::int64_t result = PUBLICATION_CLOSED;
 
@@ -224,7 +224,7 @@ public:
      *
      * @return the position limit beyond which this {@link Publication} will be back pressured.
      */
-    inline std::int64_t publicationLimit()
+    inline std::int64_t publicationLimit() const
     {
         if (isClosed())
         {

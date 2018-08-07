@@ -229,8 +229,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     public void close()
     {
         CloseHelper.close(clusteredServiceContainer);
-        CloseHelper.close(clusteredMediaDriver);
         CloseHelper.close(aeron);
+        CloseHelper.close(clusteredMediaDriver);
 
         if (cleanOnClose)
         {
@@ -242,9 +242,9 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     {
         if (null != clusteredMediaDriver)
         {
-            clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
-            clusteredMediaDriver.archive().context().deleteArchiveDirectory();
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
+            clusteredMediaDriver.archive().context().deleteArchiveDirectory();
+            clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
         }
 
         IoUtil.delete(harnessDir, true);

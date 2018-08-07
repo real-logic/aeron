@@ -49,7 +49,7 @@ static void aeron_idle_strategy_yielding_idle(void *state, int work_count)
     sched_yield();
 }
 
-static void aeron_idle_strategy_noop_idle(void *state, int work_count)
+static void aeron_idle_strategy_busy_spinning_idle(void *state, int work_count)
 {
     if (work_count > 0)
     {
@@ -57,6 +57,10 @@ static void aeron_idle_strategy_noop_idle(void *state, int work_count)
     }
 
     __asm__ volatile("pause\n": : :"memory");
+}
+
+static void aeron_idle_strategy_noop_idle(void *state, int work_count)
+{
 }
 
 static int aeron_idle_strategy_init_null(void **state)
@@ -74,6 +78,12 @@ aeron_idle_strategy_t aeron_idle_strategy_sleeping =
 aeron_idle_strategy_t aeron_idle_strategy_yielding =
     {
         aeron_idle_strategy_yielding_idle,
+        aeron_idle_strategy_init_null
+    };
+
+aeron_idle_strategy_t aeron_idle_strategy_busy_spinning =
+    {
+        aeron_idle_strategy_busy_spinning_idle,
         aeron_idle_strategy_init_null
     };
 
@@ -107,6 +117,10 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
     else if (strncmp(idle_strategy_name, "yielding", sizeof("yielding")) == 0)
     {
         idle_func = aeron_idle_strategy_yielding_idle;
+    }
+    else if (strncmp(idle_strategy_name, "spinning", sizeof("spinning")) == 0)
+    {
+        idle_func = aeron_idle_strategy_busy_spinning_idle;
     }
     else if (strncmp(idle_strategy_name, "noop", sizeof("noop")) == 0)
     {

@@ -33,15 +33,6 @@ import java.util.Arrays;
  */
 public class BufferBuilder
 {
-    /**
-     * Maximum capacity to which the buffer can grow.
-     */
-    public static final int MAX_CAPACITY = Integer.MAX_VALUE - 8;
-
-    /**
-     * Initial minimum capacity for the internal buffer when used, zero if not used.
-     */
-    public static final int MIN_ALLOCATED_CAPACITY = 4096;
 
     private final boolean isDirect;
     private int limit = 0;
@@ -150,7 +141,7 @@ public class BufferBuilder
      */
     public BufferBuilder compact()
     {
-        resize(Math.max(MIN_ALLOCATED_CAPACITY, limit));
+        resize(Math.max(BufferBuilderUtil.MIN_ALLOCATED_CAPACITY, limit));
 
         return this;
     }
@@ -177,7 +168,7 @@ public class BufferBuilder
     {
         final long requiredCapacity = (long)limit + additionalCapacity;
 
-        if (requiredCapacity > MAX_CAPACITY)
+        if (requiredCapacity > BufferBuilderUtil.MAX_CAPACITY)
         {
             throw new IllegalStateException(
                 "Max capacity exceeded: limit=" + limit + " required=" + requiredCapacity);
@@ -186,7 +177,7 @@ public class BufferBuilder
         final int capacity = buffer.capacity();
         if (requiredCapacity > capacity)
         {
-            resize(findSuitableCapacity(capacity, (int)requiredCapacity));
+            resize(BufferBuilderUtil.findSuitableCapacity(capacity, (int)requiredCapacity));
         }
     }
 
@@ -205,30 +196,4 @@ public class BufferBuilder
         }
     }
 
-    private static int findSuitableCapacity(final int currentCapacity, final int requiredCapacity)
-    {
-        int capacity = currentCapacity;
-
-        do
-        {
-            final int newCapacity = Math.max(capacity + (capacity >> 1), MIN_ALLOCATED_CAPACITY);
-
-            if (newCapacity < 0 || newCapacity > MAX_CAPACITY)
-            {
-                if (capacity == MAX_CAPACITY)
-                {
-                    throw new IllegalStateException("Max capacity reached: " + MAX_CAPACITY);
-                }
-
-                capacity = MAX_CAPACITY;
-            }
-            else
-            {
-                capacity = newCapacity;
-            }
-        }
-        while (capacity < requiredCapacity);
-
-        return capacity;
-    }
 }

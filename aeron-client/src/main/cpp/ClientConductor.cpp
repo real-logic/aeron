@@ -518,8 +518,7 @@ void ClientConductor::onAvailableCounter(
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_counterId = counterId;
         state.m_counterCache =
-            std::make_shared<Counter>(
-                this, m_counterValuesBuffer, state.m_registrationId, counterId);
+            std::make_shared<Counter>(this, m_counterValuesBuffer, state.m_registrationId, counterId);
         state.m_counter = std::weak_ptr<Counter>(state.m_counterCache);
     }
 

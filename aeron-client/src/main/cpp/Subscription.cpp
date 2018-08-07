@@ -41,7 +41,7 @@ Subscription::~Subscription()
     m_conductor.releaseSubscription(m_registrationId, std::atomic_load_explicit(&m_imageList, std::memory_order_acquire));
 }
 
-std::int64_t Subscription::channelStatus()
+std::int64_t Subscription::channelStatus() const
 {
     if (isClosed())
     {

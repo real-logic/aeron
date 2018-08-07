@@ -273,7 +273,7 @@ public:
      *
      * @return the position this Image has been consumed to by the subscriber or CLOSED if closed
      */
-    inline std::int64_t position()
+    inline std::int64_t position() const
     {
         if (isClosed())
         {
@@ -314,7 +314,7 @@ public:
      *
      * @return true if at the end of the stream or false if not.
      */
-    inline bool isEndOfStream()
+    inline bool isEndOfStream() const
     {
         if (isClosed())
         {

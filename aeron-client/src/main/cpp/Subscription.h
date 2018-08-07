@@ -105,7 +105,7 @@ public:
      * @return number of Image s that have reached End of Stream.
      */
     template <typename F>
-    inline int pollEndOfStreams(F&& endOfStreamHandler)
+    inline int pollEndOfStreams(F&& endOfStreamHandler) const
     {
         const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
         const std::size_t length = imageList->m_length;
@@ -302,7 +302,7 @@ public:
      *
      * @return a std::vector of active {@link Image}s that match this subscription.
      */
-    inline std::shared_ptr<std::vector<Image>> images()
+    inline std::shared_ptr<std::vector<Image>> images() const
     {
         std::shared_ptr<std::vector<Image>> result(new std::vector<Image>());
 
@@ -321,7 +321,7 @@ public:
      * @return length of Image list
      */
     template <typename F>
-    inline int forEachImage(F&& func)
+    inline int forEachImage(F&& func) const
     {
         const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
         const std::size_t length = imageList->m_length;
@@ -449,7 +449,7 @@ public:
      *
      * @return status code for this channel
      */
-    std::int64_t channelStatus();
+    std::int64_t channelStatus() const;
 
 private:
     ClientConductor& m_conductor;

@@ -275,7 +275,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final ClientSession session = new ClientSession(
             clusterSessionId, correlationId, responseStreamId, responseChannel, encodedPrincipal, this);
 
-        if (Role.LEADER == role)
+        if (Role.LEADER == role && ctx.isRespondingService())
         {
             session.connect(aeron);
         }
@@ -444,7 +444,11 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             if (Role.LEADER == role)
             {
-                session.connect(aeron);
+                if (ctx.isRespondingService())
+                {
+                    session.connect(aeron);
+                }
+
                 session.resetClosing();
             }
             else

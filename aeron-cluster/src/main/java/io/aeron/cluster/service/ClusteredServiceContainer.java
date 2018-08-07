@@ -241,6 +241,16 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
         /**
+         * Is this a responding service to client requests property.
+         */
+        public static final String RESPONDER_SERVICE_PROP_NAME = "aeron.cluster.service.responder";
+
+        /**
+         * Default to true that this a responding service to client requests.
+         */
+        public static final boolean RESPONDER_SERVICE_DEFAULT = true;
+
+        /**
          * The value {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
          *
          * @return {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
@@ -377,6 +387,22 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             return getSizeAsInt(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
         }
+
+        /**
+         * The value {@link #RESPONDER_SERVICE_DEFAULT} or system property {@link #RESPONDER_SERVICE_PROP_NAME} if set.
+         *
+         * @return {@link #RESPONDER_SERVICE_DEFAULT} or system property {@link #RESPONDER_SERVICE_PROP_NAME} if set.
+         */
+        public static boolean isRespondingService()
+        {
+            final String property = System.getProperty(RESPONDER_SERVICE_PROP_NAME);
+            if (null == property)
+            {
+                return RESPONDER_SERVICE_DEFAULT;
+            }
+
+            return "true".equals(property);
+        }
     }
 
     public static class Context implements AutoCloseable, Cloneable
@@ -391,6 +417,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private String snapshotChannel = Configuration.snapshotChannel();
         private int snapshotStreamId = Configuration.snapshotStreamId();
         private int errorBufferLength = Configuration.errorBufferLength();
+        private boolean isRespondingService = Configuration.isRespondingService();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -766,6 +793,30 @@ public final class ClusteredServiceContainer implements AutoCloseable
         public int snapshotStreamId()
         {
             return snapshotStreamId;
+        }
+
+        /**
+         * Set if this a service that responds to client requests.
+         *
+         * @param isRespondingService true if this service responds to client requests, otherwise false.
+         * @return this for a fluent API.
+         * @see Configuration#RESPONDER_SERVICE_PROP_NAME
+         */
+        public Context isRespondingService(final boolean isRespondingService)
+        {
+            this.isRespondingService = isRespondingService;
+            return this;
+        }
+
+        /**
+         * Is this a service that responds to client requests?
+         *
+         * @return true if this service responds to client requests, otherwise false.
+         * @see Configuration#RESPONDER_SERVICE_PROP_NAME
+         */
+        public boolean isRespondingService()
+        {
+            return isRespondingService;
         }
 
         /**

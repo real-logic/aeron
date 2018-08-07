@@ -114,7 +114,6 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 final int lingeringResourcesSize = lingeringResources.size();
                 forceCloseResources();
-                driverProxy.clientClose();
 
                 if (lingeringResources.size() > lingeringResourcesSize)
                 {
@@ -125,6 +124,8 @@ class ClientConductor implements Agent, DriverEventsListener
                 {
                     lingeringResources.get(i).delete();
                 }
+
+                driverProxy.clientClose();
             }
         }
         finally

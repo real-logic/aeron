@@ -262,7 +262,7 @@ public:
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
     inline std::int64_t offer(
-        concurrent::AtomicBuffer& buffer,
+        const concurrent::AtomicBuffer& buffer,
         util::index_t offset,
         util::index_t length,
         const on_reserved_value_supplier_t& reservedValueSupplier)
@@ -323,7 +323,7 @@ public:
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
-    inline std::int64_t offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    inline std::int64_t offer(const concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
         return offer(buffer, offset, length, DEFAULT_RESERVED_VALUE_SUPPLIER);
     }
@@ -334,7 +334,7 @@ public:
      * @param buffer containing message.
      * @return The new stream position on success, otherwise {@link BACK_PRESSURED} or {@link NOT_CONNECTED}.
      */
-    inline std::int64_t offer(concurrent::AtomicBuffer& buffer)
+    inline std::int64_t offer(const concurrent::AtomicBuffer& buffer)
     {
         return offer(buffer, 0, buffer.capacity());
     }

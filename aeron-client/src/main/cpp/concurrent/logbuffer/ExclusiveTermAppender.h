@@ -85,7 +85,7 @@ public:
         std::int32_t termId,
         std::int32_t termOffset,
         const HeaderWriter& header,
-        AtomicBuffer& srcBuffer,
+        const AtomicBuffer& srcBuffer,
         util::index_t srcOffset,
         util::index_t length,
         const on_reserved_value_supplier_t& reservedValueSupplier)
@@ -162,7 +162,7 @@ public:
         std::int32_t termId,
         std::int32_t termOffset,
         const HeaderWriter& header,
-        AtomicBuffer& srcBuffer,
+        const AtomicBuffer& srcBuffer,
         util::index_t srcOffset,
         util::index_t length,
         util::index_t maxPayloadLength,

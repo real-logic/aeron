@@ -65,6 +65,7 @@ SET(HEADERS
     concurrent/BusySpinIdleStrategy.h
     concurrent/CountersManager.h
     concurrent/CountersReader.h
+    concurrent/NoOpIdleStrategy.h
     concurrent/SleepingIdleStrategy.h
     concurrent/YieldingIdleStrategy.h
     concurrent/atomic/Atomic64_gcc_cpp11.h

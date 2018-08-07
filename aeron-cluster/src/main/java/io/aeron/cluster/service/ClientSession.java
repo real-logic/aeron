@@ -213,7 +213,7 @@ public class ClientSession
     {
         if (null == responsePublication)
         {
-            responsePublication = aeron.addPublication(responseChannel, responseStreamId);
+            responsePublication = aeron.addExclusivePublication(responseChannel, responseStreamId);
         }
     }
 

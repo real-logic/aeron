@@ -46,13 +46,13 @@ import static org.mockito.Mockito.*;
 
 public class ConsensusModuleAgentTest
 {
-    private static final String RESPONSE_CHANNEL_ONE = "responseChannelOne";
-    private static final String RESPONSE_CHANNEL_TWO = "responseChannelTwo";
+    private static final String RESPONSE_CHANNEL_ONE = "aeron:udp?endpoint=localhost:11111";
+    private static final String RESPONSE_CHANNEL_TWO = "aeron:udp?endpoint=localhost:22222";
 
     private final EgressPublisher mockEgressPublisher = mock(EgressPublisher.class);
     private final LogPublisher mockLogPublisher = mock(LogPublisher.class);
     private final Aeron mockAeron = mock(Aeron.class);
-    private final ConcurrentPublication mockResponsePublication = mock(ConcurrentPublication.class);
+    private final ExclusivePublication mockResponsePublication = mock(ExclusivePublication.class);
     private final Counter mockTimedOutClientCounter = mock(Counter.class);
 
     private final ConsensusModule.Context ctx = new ConsensusModule.Context()
@@ -82,7 +82,7 @@ public class ConsensusModuleAgentTest
         when(mockLogPublisher.appendSessionOpen(any(), anyLong())).thenReturn(128L);
         when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), anyLong(), any(ClusterAction.class)))
             .thenReturn(TRUE);
-        when(mockAeron.addPublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
+        when(mockAeron.addExclusivePublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
         when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mock(Subscription.class));
         when(mockAeron.addSubscription(anyString(), anyInt(), eq(null), any(UnavailableImageHandler.class)))
             .thenReturn(mock(Subscription.class));

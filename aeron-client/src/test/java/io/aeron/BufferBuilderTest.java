@@ -21,13 +21,13 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import static io.aeron.BufferBuilderUtil.MIN_ALLOCATED_CAPACITY;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
-import static io.aeron.BufferBuilder.MIN_ALLOCATED_CAPACITY;
 
 public class BufferBuilderTest
 {

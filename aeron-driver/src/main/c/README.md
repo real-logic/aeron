@@ -34,7 +34,7 @@ The driver can be stopped gracefully via `Control-C` or `SIGINT` just like the J
 
 ## Embedding the Driver
 
-The C media driver may be embeeded quite easily. An example is the driver main itself, 
+The C media driver may be embedded quite easily. An example is the driver main itself, 
 [aeronmd.c](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/aeronmd.c), and the API is documented in 
 [aeronmd.h](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/aeronmd.h).
 

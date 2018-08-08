@@ -589,9 +589,9 @@ public class LogBufferDescriptor
     /**
      * Compute the total length of a log file given the term length.
      *
-     * Assumes TERM_MAX_LENGTH is 1GB and that filePageSize is 1GB or less and a power of 2.
+     * Assumes {@link #TERM_MAX_LENGTH} is 1GB and that filePageSize is 1GB or less and a power of 2.
      *
-     * @param termLength on which to base the calculation.
+     * @param termLength   on which to base the calculation.
      * @param filePageSize to use for log.
      * @return the total length of the log file.
      */

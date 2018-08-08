@@ -602,7 +602,7 @@ public class LogBufferDescriptor
             return align((termLength * PARTITION_COUNT) + LOG_META_DATA_LENGTH, filePageSize);
         }
 
-        return (PARTITION_COUNT * termLength) + align(LOG_META_DATA_LENGTH, filePageSize);
+        return (PARTITION_COUNT * (long)termLength) + align(LOG_META_DATA_LENGTH, filePageSize);
     }
 
     /**

@@ -861,6 +861,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     void becomeLeader(final long leadershipTermId, final int logSessionId)
     {
         this.leadershipTermId = leadershipTermId;
+        updateMemberDetails(election);
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));

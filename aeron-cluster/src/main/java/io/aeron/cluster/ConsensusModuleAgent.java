@@ -332,20 +332,27 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    public ControlledFragmentAssembler.Action onSessionMessage(
+    public ControlledFragmentAssembler.Action onIngressMessage(
+        final long correlationId,
+        final long clusterSessionId,
+        final long leadershipTermId,
         final DirectBuffer buffer,
         final int offset,
-        final int length,
-        final long clusterSessionId,
-        final long correlationId)
+        final int length)
     {
+        if (leadershipTermId != this.leadershipTermId)
+        {
+            return ControlledFragmentHandler.Action.CONTINUE;
+        }
+
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null == session || session.state() == CLOSED)
         {
             return ControlledFragmentHandler.Action.CONTINUE;
         }
 
-        if (session.state() == OPEN && logPublisher.appendMessage(buffer, offset, length, clusterTimeMs))
+        if (session.state() == OPEN &&
+            logPublisher.appendMessage(correlationId, clusterSessionId, clusterTimeMs, buffer, offset, length))
         {
             session.lastActivity(clusterTimeMs, correlationId);
             return ControlledFragmentHandler.Action.CONTINUE;
@@ -905,7 +912,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     void updateMemberDetails(final Election election)
     {
         leaderMember = election.leader();
-        sessionProxy.leaderMemberId(leaderMember.id());
+        sessionProxy.leaderMemberId(leaderMember.id()).leadershipTermId(leadershipTermId);
 
         for (final ClusterMember clusterMember : clusterMembers)
         {
@@ -1359,7 +1366,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 eventCode = EventCode.AUTHENTICATION_REJECTED;
             }
 
-            if (egressPublisher.sendEvent(session, leaderMember.id(), eventCode, detail) ||
+            if (egressPublisher.sendEvent(session, leadershipTermId, leaderMember.id(), eventCode, detail) ||
                 nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
                 ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex--);
@@ -1386,7 +1393,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     case OPEN:
                         if (session.isResponsePublicationConnected())
                         {
-                            egressPublisher.sendEvent(session, leaderMember.id(), EventCode.ERROR, SESSION_TIMEOUT_MSG);
+                            egressPublisher.sendEvent(
+                                session, leadershipTermId, leaderMember.id(), EventCode.ERROR, SESSION_TIMEOUT_MSG);
                         }
 
                         session.close(CloseReason.TIMEOUT);
@@ -1432,7 +1440,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void sendNewLeaderEvent(final ClusterSession session)
     {
-        if (egressPublisher.newLeader(session, leaderMember.id(), clientFacingEndpoints))
+        if (egressPublisher.newLeader(session, leadershipTermId, leaderMember.id(), clientFacingEndpoints))
         {
             session.hasNewLeaderEventPending(false);
         }

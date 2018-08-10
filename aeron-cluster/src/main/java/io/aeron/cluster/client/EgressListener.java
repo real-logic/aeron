@@ -20,9 +20,15 @@ import io.aeron.cluster.codecs.EventCode;
 /**
  * Interface for consuming messages coming from the cluster that also include administrative events.
  */
-public interface EgressListener extends SessionMessageListener
+public interface EgressListener extends EgressMessageListener
 {
-    void sessionEvent(long correlationId, long clusterSessionId, int leaderMemberId, EventCode code, String detail);
+    void sessionEvent(
+        long correlationId,
+        long clusterSessionId,
+        long leadershipTermId,
+        int leaderMemberId,
+        EventCode code,
+        String detail);
 
-    void newLeader(long clusterSessionId, int leaderMemberId, String memberEndpoints);
+    void newLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String memberEndpoints);
 }

@@ -28,15 +28,16 @@ public class EgressPoller implements ControlledFragmentHandler
     private final int fragmentLimit;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
-    private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
-    private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
     private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
+    private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
+    private final EgressMessageHeaderDecoder egressMessageHeaderDecoder = new EgressMessageHeaderDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
     private long clusterSessionId = Aeron.NULL_VALUE;
     private long correlationId = Aeron.NULL_VALUE;
-    private int templateId = Aeron.NULL_VALUE;
+    private long leadershipTermId = Aeron.NULL_VALUE;
     private int leaderMemberId = Aeron.NULL_VALUE;
+    private int templateId = Aeron.NULL_VALUE;
     private boolean pollComplete = false;
     private EventCode eventCode;
     private String detail = "";
@@ -71,7 +72,7 @@ public class EgressPoller implements ControlledFragmentHandler
     /**
      * Cluster session id of the last polled event or {@link Aeron#NULL_VALUE} if poll returned nothing.
      *
-     * @return cluster session id of the last polled event or {@link Aeron#NULL_VALUE} if unrecognised template.
+     * @return cluster session id of the last polled event or {@link Aeron#NULL_VALUE} if not returned.
      */
     public long clusterSessionId()
     {
@@ -81,11 +82,21 @@ public class EgressPoller implements ControlledFragmentHandler
     /**
      * Correlation id of the last polled event or {@link Aeron#NULL_VALUE} if poll returned nothing.
      *
-     * @return correlation id of the last polled event or {@link Aeron#NULL_VALUE} if unrecognised template.
+     * @return correlation id of the last polled event or {@link Aeron#NULL_VALUE} if not returned.
      */
     public long correlationId()
     {
         return correlationId;
+    }
+
+    /**
+     * Leadership term id of the last polled event or {@link Aeron#NULL_VALUE} if poll returned nothing.
+     *
+     * @return leadership term id of the last polled event or {@link Aeron#NULL_VALUE} if not returned.
+     */
+    public long leadershipTermId()
+    {
+        return leadershipTermId;
     }
 
     /**
@@ -152,6 +163,7 @@ public class EgressPoller implements ControlledFragmentHandler
     {
         clusterSessionId = Aeron.NULL_VALUE;
         correlationId = Aeron.NULL_VALUE;
+        leadershipTermId = Aeron.NULL_VALUE;
         leaderMemberId = Aeron.NULL_VALUE;
         templateId = Aeron.NULL_VALUE;
         eventCode = null;
@@ -179,6 +191,7 @@ public class EgressPoller implements ControlledFragmentHandler
 
                 clusterSessionId = sessionEventDecoder.clusterSessionId();
                 correlationId = sessionEventDecoder.correlationId();
+                leadershipTermId = sessionEventDecoder.leadershipTermId();
                 leaderMemberId = sessionEventDecoder.leaderMemberId();
                 eventCode = sessionEventDecoder.code();
                 detail = sessionEventDecoder.detail();
@@ -192,17 +205,20 @@ public class EgressPoller implements ControlledFragmentHandler
                     messageHeaderDecoder.version());
 
                 clusterSessionId = newLeaderEventDecoder.clusterSessionId();
+                leadershipTermId = newLeaderEventDecoder.leadershipTermId();
+                leaderMemberId = newLeaderEventDecoder.leaderMemberId();
+                detail = newLeaderEventDecoder.memberEndpoints();
                 break;
 
-            case SessionHeaderDecoder.TEMPLATE_ID:
-                sessionHeaderDecoder.wrap(
+            case EgressMessageHeaderDecoder.TEMPLATE_ID:
+                egressMessageHeaderDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                clusterSessionId = sessionHeaderDecoder.clusterSessionId();
-                correlationId = sessionHeaderDecoder.correlationId();
+                clusterSessionId = egressMessageHeaderDecoder.clusterSessionId();
+                correlationId = egressMessageHeaderDecoder.correlationId();
                 break;
 
             case ChallengeDecoder.TEMPLATE_ID:

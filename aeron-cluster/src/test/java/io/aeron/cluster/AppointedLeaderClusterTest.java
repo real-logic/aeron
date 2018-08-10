@@ -20,7 +20,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.SessionMessageListener;
+import io.aeron.cluster.client.EgressMessageListener;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
@@ -63,7 +63,7 @@ public class AppointedLeaderClusterTest
     private AeronCluster client;
 
     private final MutableInteger responseCount = new MutableInteger();
-    private final SessionMessageListener sessionMessageListener =
+    private final EgressMessageListener egressMessageListener =
         (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) -> responseCount.value++;
 
     @Before
@@ -130,7 +130,7 @@ public class AppointedLeaderClusterTest
 
         client = AeronCluster.connect(
             new AeronCluster.Context()
-                .sessionMessageListener(sessionMessageListener)
+                .egressMessageListener(egressMessageListener)
                 .aeronDirectoryName(aeronDirName)
                 .ingressChannel("aeron:udp")
                 .clusterMemberEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));

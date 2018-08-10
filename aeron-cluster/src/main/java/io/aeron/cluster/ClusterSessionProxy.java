@@ -29,6 +29,7 @@ class ClusterSessionProxy implements SessionProxy
     private static final String EMPTY_DETAIL = "";
     private final EgressPublisher egressPublisher;
     private ClusterSession clusterSession;
+    private long leadershipTermId;
     private int leaderMemberId;
 
     ClusterSessionProxy(final EgressPublisher egressPublisher)
@@ -45,6 +46,12 @@ class ClusterSessionProxy implements SessionProxy
     final ClusterSessionProxy leaderMemberId(final int leaderMemberId)
     {
         this.leaderMemberId = leaderMemberId;
+        return this;
+    }
+
+    final ClusterSessionProxy leadershipTermId(final long leadershipTermId)
+    {
+        this.leadershipTermId = leadershipTermId;
         return this;
     }
 
@@ -68,7 +75,7 @@ class ClusterSessionProxy implements SessionProxy
     {
         ClusterSession.checkEncodedPrincipalLength(encodedPrincipal);
 
-        if (egressPublisher.sendEvent(clusterSession, leaderMemberId, EventCode.OK, EMPTY_DETAIL))
+        if (egressPublisher.sendEvent(clusterSession, leadershipTermId, leaderMemberId, EventCode.OK, EMPTY_DETAIL))
         {
             clusterSession.authenticate(encodedPrincipal);
             return true;

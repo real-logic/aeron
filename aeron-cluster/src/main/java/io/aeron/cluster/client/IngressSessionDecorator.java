@@ -18,57 +18,58 @@ package io.aeron.cluster.client;
 import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
+import io.aeron.cluster.codecs.IngressMessageHeaderEncoder;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
-import io.aeron.cluster.codecs.SessionHeaderEncoder;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Encapsulate applying the cluster session header.
+ * Encapsulate applying a client message header for ingress to the cluster.
  * <p>
- * The session header is applied by a vectored offer to the {@link Publication}.
+ * The client message header is applied by a vectored offer to the {@link Publication}.
  * <p>
  * <b>Note:</b> This class is NOT threadsafe. Each publisher thread requires its own instance.
  */
-public class SessionDecorator
+public class IngressSessionDecorator
 {
     /**
      * Length of the session header that will be prepended to the message.
      */
-    public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
+    public static final int INGRESS_MESSAGE_HEADER_LENGTH =
+        MessageHeaderEncoder.ENCODED_LENGTH + IngressMessageHeaderEncoder.BLOCK_LENGTH;
 
     private long lastCorrelationId;
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
-    private final DirectBufferVector messageBuffer = new DirectBufferVector();
-    private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
+    private final DirectBufferVector messageVector = new DirectBufferVector();
+    private final IngressMessageHeaderEncoder ingressMessageHeaderEncoder = new IngressMessageHeaderEncoder();
 
     /**
-     * Construct a new session header wrapper.
-     *
-     * @param clusterSessionId that has been allocated by the cluster.
+     * Construct a new ingress session header wrapper that defaults all fields to the {@link Aeron#NULL_VALUE}.
      */
-    public SessionDecorator(final long clusterSessionId)
+    public IngressSessionDecorator()
     {
-        this(clusterSessionId, Aeron.NULL_VALUE);
+        this(Aeron.NULL_VALUE, Aeron.NULL_VALUE, Aeron.NULL_VALUE);
     }
 
     /**
      * Construct a new session header wrapper.
      *
-     * @param clusterSessionId that has been allocated by the cluster.
      * @param lastCorrelationId the last correlation id that was sent to the cluster with this session.
+     * @param clusterSessionId  that has been allocated by the cluster.
+     * @param leadershipTermId  of the current leader.
      */
-    public SessionDecorator(final long clusterSessionId, final long lastCorrelationId)
+    public IngressSessionDecorator(
+        final long lastCorrelationId, final long clusterSessionId, final long leadershipTermId)
     {
-        final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
-        sessionHeaderEncoder
+        final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[INGRESS_MESSAGE_HEADER_LENGTH]);
+        ingressMessageHeaderEncoder
             .wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder())
+            .correlationId(lastCorrelationId)
             .clusterSessionId(clusterSessionId)
-            .timestamp(Aeron.NULL_VALUE);
+            .leadershipTermId(leadershipTermId);
 
-        vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
-        vectors[1] = messageBuffer;
+        vectors[0] = new DirectBufferVector(headerBuffer, 0, INGRESS_MESSAGE_HEADER_LENGTH);
+        vectors[1] = messageVector;
 
         this.lastCorrelationId = lastCorrelationId;
     }
@@ -77,10 +78,24 @@ public class SessionDecorator
      * Reset the cluster session id in the header.
      *
      * @param clusterSessionId to be set in the header.
+     * @return this for a fluent API.
      */
-    public void clusterSessionId(final long clusterSessionId)
+    public IngressSessionDecorator clusterSessionId(final long clusterSessionId)
     {
-        sessionHeaderEncoder.clusterSessionId(clusterSessionId);
+        ingressMessageHeaderEncoder.clusterSessionId(clusterSessionId);
+        return this;
+    }
+
+    /**
+     * Reset the leadership term id in the header.
+     *
+     * @param leadershipTermId to be set in the header.
+     * @return this for a fluent API.
+     */
+    public IngressSessionDecorator leadershipTermId(final long leadershipTermId)
+    {
+        ingressMessageHeaderEncoder.leadershipTermId(leadershipTermId);
+        return this;
     }
 
     /**
@@ -98,7 +113,7 @@ public class SessionDecorator
      * Generate a new correlation id to be used for this session. This is not threadsafe. If you require a threadsafe
      * correlation id generation then use {@link Aeron#nextCorrelationId()}.
      *
-     * @return  a new correlation id to be used for this session.
+     * @return a new correlation id to be used for this session.
      * @see #lastCorrelationId()
      */
     public long nextCorrelationId()
@@ -125,8 +140,8 @@ public class SessionDecorator
         final int offset,
         final int length)
     {
-        sessionHeaderEncoder.correlationId(correlationId);
-        messageBuffer.reset(buffer, offset, length);
+        ingressMessageHeaderEncoder.correlationId(correlationId);
+        messageVector.reset(buffer, offset, length);
 
         return publication.offer(vectors, null);
     }

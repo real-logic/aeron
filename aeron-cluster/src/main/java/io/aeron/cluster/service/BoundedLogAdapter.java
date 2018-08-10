@@ -32,6 +32,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 {
     private static final int FRAGMENT_LIMIT = 10;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
+    private static final int SESSION_HEADER_LENGTH =
+        MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
 
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(
         this, INITIAL_BUFFER_LENGTH, true);
@@ -98,8 +100,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                 sessionHeaderDecoder.correlationId(),
                 sessionHeaderDecoder.timestamp(),
                 buffer,
-                offset + ClientSession.SESSION_HEADER_LENGTH,
-                length - ClientSession.SESSION_HEADER_LENGTH,
+                offset + SESSION_HEADER_LENGTH,
+                length - SESSION_HEADER_LENGTH,
                 header);
 
             return Action.CONTINUE;

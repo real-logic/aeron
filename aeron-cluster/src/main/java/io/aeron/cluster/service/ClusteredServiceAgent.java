@@ -38,6 +38,9 @@ import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 class ClusteredServiceAgent implements Agent, Cluster
 {
+    public static final int SESSION_HEADER_LENGTH =
+        MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
+
     private final int serviceId;
     private boolean isRecovering;
     private final AeronArchive.Context archiveCtx;
@@ -51,6 +54,9 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final IdleStrategy idleStrategy;
     private final EpochClock epochClock;
     private final ClusterMarkFile markFile;
+    private final DirectBufferVector[] vectors = new DirectBufferVector[2];
+    private final DirectBufferVector messageVector = new DirectBufferVector();
+    private final EgressMessageHeaderEncoder egressMessageHeaderEncoder = new EgressMessageHeaderEncoder();
 
     private long ackId = 0;
     private long clusterTimeMs;
@@ -76,6 +82,12 @@ class ClusteredServiceAgent implements Agent, Cluster
         final String channel = ctx.serviceControlChannel();
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
         serviceAdapter = new ServiceAdapter(aeron.addSubscription(channel, ctx.serviceStreamId()), this);
+
+        final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
+        egressMessageHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());
+
+        vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
+        vectors[1] = messageVector;
     }
 
     public void onStart()
@@ -214,6 +226,29 @@ class ClusteredServiceAgent implements Agent, Cluster
             checkInterruptedStatus();
             idleStrategy.idle();
         }
+    }
+
+    public long offer(
+        final long correlationId,
+        final long clusterSessionId,
+        final Publication publication,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
+    {
+        if (role != Cluster.Role.LEADER)
+        {
+            return ClientSession.MOCKED_OFFER;
+        }
+
+        egressMessageHeaderEncoder
+            .correlationId(correlationId)
+            .clusterSessionId(clusterSessionId)
+            .timestamp(clusterTimeMs);
+
+        messageVector.reset(buffer, offset, length);
+
+        return publication.offer(vectors, null);
     }
 
     public void onJoinLog(

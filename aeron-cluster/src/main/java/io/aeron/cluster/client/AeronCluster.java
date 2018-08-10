@@ -34,7 +34,7 @@ import org.agrona.concurrent.*;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.cluster.client.SessionDecorator.SESSION_HEADER_LENGTH;
+import static io.aeron.cluster.client.IngressSessionDecorator.INGRESS_MESSAGE_HEADER_LENGTH;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -53,6 +53,7 @@ public final class AeronCluster implements AutoCloseable
     private static final int SESSION_FRAGMENT_LIMIT = 10;
 
     private long lastCorrelationId = Aeron.NULL_VALUE;
+    private long leadershipTermId = Aeron.NULL_VALUE;
     private final long clusterSessionId;
     private int leaderMemberId = Aeron.NULL_VALUE;
     private final boolean isUnicast;
@@ -66,15 +67,15 @@ public final class AeronCluster implements AutoCloseable
     private final Int2ObjectHashMap<String> endpointByMemberIdMap = new Int2ObjectHashMap<>();
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final SessionKeepAliveRequestEncoder keepAliveRequestEncoder = new SessionKeepAliveRequestEncoder();
-    private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
+    private final SessionKeepAliveEncoder sessionKeepAliveEncoder = new SessionKeepAliveEncoder();
+    private final IngressMessageHeaderEncoder ingressMessageHeaderEncoder = new IngressMessageHeaderEncoder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
+    private final EgressMessageHeaderDecoder egressMessageHeaderDecoder = new EgressMessageHeaderDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
-    private final DirectBufferVector messageBuffer = new DirectBufferVector();
+    private final DirectBufferVector messageVector = new DirectBufferVector();
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment, 0, true);
-    private final SessionMessageListener sessionMessageListener;
+    private final EgressMessageListener egressMessageListener;
 
     /**
      * Connect to the cluster using default configuration.
@@ -111,23 +112,23 @@ public final class AeronCluster implements AutoCloseable
             this.idleStrategy = ctx.idleStrategy();
             this.nanoClock = aeron.context().nanoClock();
             this.isUnicast = ctx.clusterMemberEndpoints() != null;
-            this.sessionMessageListener = ctx.sessionMessageListener();
+            this.egressMessageListener = ctx.egressMessageListener();
             updateMemberEndpoints(ctx.clusterMemberEndpoints());
 
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
             this.subscription = subscription;
 
             publication = connectToCluster();
-            this.clusterSessionId = openSession();
+            clusterSessionId = openSession();
 
-            final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
-            sessionHeaderEncoder
+            final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[INGRESS_MESSAGE_HEADER_LENGTH]);
+            ingressMessageHeaderEncoder
                 .wrapAndApplyHeader(headerBuffer, 0, messageHeaderEncoder)
                 .clusterSessionId(clusterSessionId)
-                .timestamp(Aeron.NULL_VALUE);
+                .leadershipTermId(leadershipTermId);
 
-            vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
-            vectors[1] = messageBuffer;
+            vectors[0] = new DirectBufferVector(headerBuffer, 0, INGRESS_MESSAGE_HEADER_LENGTH);
+            vectors[1] = messageVector;
         }
         catch (final Exception ex)
         {
@@ -182,6 +183,16 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
+     * Leadership term identity for the cluster. Advances with changing leadership.
+     *
+     * @return leadership term identity for the cluster.
+     */
+    public long leadershipTermId()
+    {
+        return leadershipTermId;
+    }
+
+    /**
      * Get the current leader member id for the cluster.
      *
      * @return the current leader member id for the cluster.
@@ -217,7 +228,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Get the raw {@link Publication} for sending to the cluster.
      * <p>
-     * This can be wrapped with a {@link SessionDecorator} for pre-pending the cluster session header to messages.
+     * This can be wrapped with a {@link IngressSessionDecorator} for pre-pending the cluster session header to messages.
      * {@link io.aeron.cluster.codecs.SessionHeaderEncoder} or equivalent should be used to raw access.
      *
      * @return the raw {@link Publication} for connecting to the cluster.
@@ -252,8 +263,8 @@ public final class AeronCluster implements AutoCloseable
      */
     public long offer(final long correlationId, final DirectBuffer buffer, final int offset, final int length)
     {
-        sessionHeaderEncoder.correlationId(correlationId);
-        messageBuffer.reset(buffer, offset, length);
+        ingressMessageHeaderEncoder.correlationId(correlationId);
+        messageVector.reset(buffer, offset, length);
 
         return publication.offer(vectors, null);
     }
@@ -266,7 +277,7 @@ public final class AeronCluster implements AutoCloseable
     public boolean sendKeepAlive()
     {
         idleStrategy.reset();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveRequestEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveEncoder.BLOCK_LENGTH;
         int attempts = SEND_ATTEMPTS;
 
         while (true)
@@ -274,9 +285,8 @@ public final class AeronCluster implements AutoCloseable
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                keepAliveRequestEncoder
+                sessionKeepAliveEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(Aeron.NULL_VALUE)
                     .clusterSessionId(clusterSessionId);
 
                 bufferClaim.commit();
@@ -299,9 +309,9 @@ public final class AeronCluster implements AutoCloseable
 
     /**
      * Poll the {@link #egressSubscription()} for session messages which are dispatched to
-     * {@link Context#sessionMessageListener()}.
+     * {@link Context#egressMessageListener()}.
      * <p>
-     * <b>Note:</b> if {@link Context#sessionMessageListener()} is not set then a {@link ConfigurationException} could
+     * <b>Note:</b> if {@link Context#egressMessageListener()} is not set then a {@link ConfigurationException} could
      * result.
      *
      * @return the number of fragments processed.
@@ -316,10 +326,15 @@ public final class AeronCluster implements AutoCloseable
      * {@link EgressAdapter} or {@link EgressPoller} rather than {@link #pollEgress()} method.
      *
      * @param clusterSessionId which must match {@link #clusterSessionId()}.
+     * @param leadershipTermId that identifies the term for which the new leader has been elected.
      * @param leaderMemberId   which has become the new leader.
      * @param memberEndpoints  comma separated list of cluster members endpoints to connect to with the leader first.
      */
-    public void onNewLeader(final long clusterSessionId, final int leaderMemberId, final String memberEndpoints)
+    public void onNewLeader(
+        final long clusterSessionId,
+        final long leadershipTermId,
+        final int leaderMemberId,
+        final String memberEndpoints)
     {
         if (clusterSessionId != this.clusterSessionId)
         {
@@ -327,7 +342,9 @@ public final class AeronCluster implements AutoCloseable
                 "invalid clusterSessionId=" + clusterSessionId + " expected " + this.clusterSessionId);
         }
 
+        this.leadershipTermId = leadershipTermId;
         this.leaderMemberId = leaderMemberId;
+        ingressMessageHeaderEncoder.leadershipTermId(leadershipTermId);
 
         if (isUnicast)
         {
@@ -367,24 +384,24 @@ public final class AeronCluster implements AutoCloseable
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int templateId = messageHeaderDecoder.templateId();
-        if (SessionHeaderDecoder.TEMPLATE_ID == templateId)
+        if (EgressMessageHeaderDecoder.TEMPLATE_ID == templateId)
         {
-            sessionHeaderDecoder.wrap(
+            egressMessageHeaderDecoder.wrap(
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
                 messageHeaderDecoder.blockLength(),
                 messageHeaderDecoder.version());
 
-            final long sessionId = sessionHeaderDecoder.clusterSessionId();
+            final long sessionId = egressMessageHeaderDecoder.clusterSessionId();
             if (sessionId == clusterSessionId)
             {
-                sessionMessageListener.onMessage(
-                    sessionHeaderDecoder.correlationId(),
+                egressMessageListener.onMessage(
+                    egressMessageHeaderDecoder.correlationId(),
                     sessionId,
-                    sessionHeaderDecoder.timestamp(),
+                    egressMessageHeaderDecoder.timestamp(),
                     buffer,
-                    offset + SESSION_HEADER_LENGTH,
-                    length - SESSION_HEADER_LENGTH,
+                    offset + INGRESS_MESSAGE_HEADER_LENGTH,
+                    length - INGRESS_MESSAGE_HEADER_LENGTH,
                     header);
             }
         }
@@ -399,7 +416,11 @@ public final class AeronCluster implements AutoCloseable
             final long sessionId = newLeaderEventDecoder.clusterSessionId();
             if (sessionId == clusterSessionId)
             {
-                onNewLeader(sessionId, newLeaderEventDecoder.leaderMemberId(), newLeaderEventDecoder.memberEndpoints());
+                onNewLeader(
+                    sessionId,
+                    newLeaderEventDecoder.leadershipTermId(),
+                    newLeaderEventDecoder.leaderMemberId(),
+                    newLeaderEventDecoder.memberEndpoints());
             }
         }
     }
@@ -551,6 +572,7 @@ public final class AeronCluster implements AutoCloseable
                 switch (poller.eventCode())
                 {
                     case OK:
+                        this.leadershipTermId = poller.leadershipTermId();
                         this.leaderMemberId = poller.leaderMemberId();
                         return poller.clusterSessionId();
 
@@ -840,7 +862,7 @@ public final class AeronCluster implements AutoCloseable
         private boolean ownsAeronClient = false;
         private boolean isIngressExclusive = true;
         private ErrorHandler errorHandler = Aeron.DEFAULT_ERROR_HANDLER;
-        private SessionMessageListener sessionMessageListener;
+        private EgressMessageListener egressMessageListener;
 
         /**
          * Perform a shallow copy of the object.
@@ -881,13 +903,13 @@ public final class AeronCluster implements AutoCloseable
                 credentialsSupplier = new NullCredentialsSupplier();
             }
 
-            if (null == sessionMessageListener)
+            if (null == egressMessageListener)
             {
-                sessionMessageListener =
+                egressMessageListener =
                     (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
                     {
                         throw new ConfigurationException(
-                            "sessionMessageListener must be specified on AeronCluster.Context");
+                            "egressMessageListener must be specified on AeronCluster.Context");
                     };
             }
         }
@@ -1210,27 +1232,27 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Get the {@link SessionMessageListener} function that will be called when polling for egress via
+         * Get the {@link EgressMessageListener} function that will be called when polling for egress via
          * {@link AeronCluster#pollEgress()}.
          *
-         * @return the {@link SessionMessageListener} function that will be called when polling for egress via
+         * @return the {@link EgressMessageListener} function that will be called when polling for egress via
          * {@link AeronCluster#pollEgress()}.
          */
-        public SessionMessageListener sessionMessageListener()
+        public EgressMessageListener egressMessageListener()
         {
-            return sessionMessageListener;
+            return egressMessageListener;
         }
 
         /**
-         * Get the {@link SessionMessageListener} function that will be called when polling for egress via
+         * Get the {@link EgressMessageListener} function that will be called when polling for egress via
          * {@link AeronCluster#pollEgress()}.
          *
          * @param listener function that will be called when polling for egress via {@link AeronCluster#pollEgress()}.
          * @return this for a fluent API.
          */
-        public Context sessionMessageListener(final SessionMessageListener listener)
+        public Context egressMessageListener(final EgressMessageListener listener)
         {
-            this.sessionMessageListener = listener;
+            this.egressMessageListener = listener;
             return this;
         }
 

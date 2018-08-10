@@ -26,13 +26,15 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
+    private static final int INGRESS_HEADER =
+        MessageHeaderDecoder.ENCODED_LENGTH + IngressMessageHeaderDecoder.BLOCK_LENGTH;
     private static final int FRAGMENT_POLL_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionConnectRequestDecoder connectRequestDecoder = new SessionConnectRequestDecoder();
     private final SessionCloseRequestDecoder closeRequestDecoder = new SessionCloseRequestDecoder();
-    private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
-    private final SessionKeepAliveRequestDecoder keepAliveRequestDecoder = new SessionKeepAliveRequestDecoder();
+    private final IngressMessageHeaderDecoder ingressMessageHeaderDecoder = new IngressMessageHeaderDecoder();
+    private final SessionKeepAliveDecoder sessionKeepAliveDecoder = new SessionKeepAliveDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
 
     private Subscription subscription;
@@ -58,20 +60,21 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         messageHeaderDecoder.wrap(buffer, offset);
         final int templateId = messageHeaderDecoder.templateId();
 
-        if (templateId == SessionHeaderDecoder.TEMPLATE_ID)
+        if (templateId == IngressMessageHeaderDecoder.TEMPLATE_ID)
         {
-            sessionHeaderDecoder.wrap(
+            ingressMessageHeaderDecoder.wrap(
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
                 messageHeaderDecoder.blockLength(),
                 messageHeaderDecoder.version());
 
-            return consensusModuleAgent.onSessionMessage(
+            return consensusModuleAgent.onIngressMessage(
+                ingressMessageHeaderDecoder.correlationId(),
+                ingressMessageHeaderDecoder.clusterSessionId(),
+                ingressMessageHeaderDecoder.leadershipTermId(),
                 buffer,
-                offset,
-                length,
-                sessionHeaderDecoder.clusterSessionId(),
-                sessionHeaderDecoder.correlationId());
+                offset + INGRESS_HEADER,
+                length - INGRESS_HEADER);
         }
 
         switch (templateId)
@@ -109,15 +112,15 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                 break;
             }
 
-            case SessionKeepAliveRequestDecoder.TEMPLATE_ID:
+            case SessionKeepAliveDecoder.TEMPLATE_ID:
             {
-                keepAliveRequestDecoder.wrap(
+                sessionKeepAliveDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onSessionKeepAlive(keepAliveRequestDecoder.clusterSessionId());
+                consensusModuleAgent.onSessionKeepAlive(sessionKeepAliveDecoder.clusterSessionId());
                 break;
             }
 

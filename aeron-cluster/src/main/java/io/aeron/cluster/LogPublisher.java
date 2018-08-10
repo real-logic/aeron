@@ -15,19 +15,23 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 class LogPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
+    public static final int SESSION_HEADER_LENGTH =
+        MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
     private final SessionOpenEventEncoder sessionOpenEventEncoder = new SessionOpenEventEncoder();
     private final SessionCloseEventEncoder sessionCloseEventEncoder = new SessionCloseEventEncoder();
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
@@ -35,7 +39,18 @@ class LogPublisher
     private final NewLeadershipTermEventEncoder newLeadershipTermEventEncoder = new NewLeadershipTermEventEncoder();
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
+    private final DirectBufferVector[] vectors = new DirectBufferVector[2];
+    private final DirectBufferVector messageVector = new DirectBufferVector();
     private Publication publication;
+
+    LogPublisher()
+    {
+        final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
+        sessionHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());
+
+        vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
+        vectors[1] = messageVector;
+    }
 
     void connect(final Publication publication)
     {
@@ -66,17 +81,25 @@ class LogPublisher
         return publication.sessionId();
     }
 
-    boolean appendMessage(final DirectBuffer buffer, final int offset, final int length, final long nowMs)
+    boolean appendMessage(
+        final long correlationId,
+        final long clusterSessionId,
+        final long timestampMs,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
     {
-        final int timestampOffset =
-            offset + MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.timestampEncodingOffset();
+        sessionHeaderEncoder
+            .correlationId(correlationId)
+            .clusterSessionId(clusterSessionId)
+            .timestamp(timestampMs);
 
-        ((MutableDirectBuffer)buffer).putLong(timestampOffset, nowMs, SessionHeaderEncoder.BYTE_ORDER);
+        messageVector.reset(buffer, offset, length);
 
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.offer(buffer, offset, length);
+            final long result = publication.offer(vectors, null);
             if (result > 0)
             {
                 return true;

@@ -77,7 +77,7 @@ public class ConsensusModuleAgentTest
     public void before()
     {
         when(mockAeron.conductorAgentInvoker()).thenReturn(mock(AgentInvoker.class));
-        when(mockEgressPublisher.sendEvent(any(), anyInt(), any(), any())).thenReturn(TRUE);
+        when(mockEgressPublisher.sendEvent(any(), anyLong(), anyInt(), any(), any())).thenReturn(TRUE);
         when(mockLogPublisher.appendSessionClose(any(), anyLong())).thenReturn(TRUE);
         when(mockLogPublisher.appendSessionOpen(any(), anyLong())).thenReturn(128L);
         when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), anyLong(), any(ClusterAction.class)))
@@ -116,7 +116,7 @@ public class ConsensusModuleAgentTest
         agent.doWork();
 
         verify(mockEgressPublisher).sendEvent(
-            any(ClusterSession.class), anyInt(), eq(EventCode.ERROR), eq(SESSION_LIMIT_MSG));
+            any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.ERROR), eq(SESSION_LIMIT_MSG));
     }
 
     @Test
@@ -152,7 +152,7 @@ public class ConsensusModuleAgentTest
         verify(mockTimedOutClientCounter).incrementOrdered();
         verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(
-            any(ClusterSession.class), anyInt(), eq(EventCode.ERROR), eq(SESSION_TIMEOUT_MSG));
+            any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.ERROR), eq(SESSION_TIMEOUT_MSG));
     }
 
     @Test

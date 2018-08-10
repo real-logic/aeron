@@ -16,26 +16,15 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
-import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
-import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.MessageHeaderEncoder;
-import io.aeron.cluster.codecs.SessionHeaderEncoder;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Session representing a connected client to the cluster.
  */
 public class ClientSession
 {
-    /**
-     * Length of the session header that will be prepended to the message.
-     */
-    public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
-
     /**
      * Return value to indicate egress to a session is mocked out by the cluster when in follower mode.
      */
@@ -46,9 +35,7 @@ public class ClientSession
     private final int responseStreamId;
     private final String responseChannel;
     private final byte[] encodedPrincipal;
-    private final DirectBufferVector[] vectors = new DirectBufferVector[2];
-    private final DirectBufferVector messageBuffer = new DirectBufferVector();
-    private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
+
     private final ClusteredServiceAgent cluster;
     private Publication responsePublication;
     private boolean isClosing;
@@ -67,14 +54,6 @@ public class ClientSession
         this.responseChannel = responseChannel;
         this.encodedPrincipal = encodedPrincipal;
         this.cluster = cluster;
-
-        final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
-        sessionHeaderEncoder
-            .wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder())
-            .clusterSessionId(sessionId);
-
-        vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
-        vectors[1] = messageBuffer;
     }
 
     /**
@@ -147,66 +126,9 @@ public class ClientSession
      * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.Role#LEADER}
      * otherwise {@link #MOCKED_OFFER}.
      */
-    public long offer(
-        final long correlationId,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length)
+    public long offer(final long correlationId, final DirectBuffer buffer, final int offset, final int length)
     {
-        if (cluster.role() != Cluster.Role.LEADER)
-        {
-            return MOCKED_OFFER;
-        }
-
-        if (null == responsePublication)
-        {
-            throw new ClusterException("session not connected id=" + id);
-        }
-
-        sessionHeaderEncoder
-            .correlationId(correlationId)
-            .timestamp(cluster.timeMs());
-
-        messageBuffer.reset(buffer, offset, length);
-
-        return responsePublication.offer(vectors, null);
-    }
-
-    /**
-     * Non-blocking publish of a partial buffer containing a message to a cluster.
-     *
-     * @param correlationId to be used to identify the message to the cluster.
-     * @param timestampMs   to be used for when the response was generated.
-     * @param buffer        containing message.
-     * @param offset        offset in the buffer at which the encoded message begins.
-     * @param length        in bytes of the encoded message.
-     * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.Role#LEADER}
-     * otherwise {@link #MOCKED_OFFER}.
-     */
-    public long offer(
-        final long correlationId,
-        final long timestampMs,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length)
-    {
-        if (cluster.role() != Cluster.Role.LEADER)
-        {
-            return MOCKED_OFFER;
-        }
-
-        if (null == responsePublication)
-        {
-            throw new ClusterException("session not connected id=" + id);
-        }
-
-        sessionHeaderEncoder
-            .correlationId(correlationId)
-            .timestamp(timestampMs);
-
-        messageBuffer.reset(buffer, offset, length);
-
-        return responsePublication.offer(vectors, null);
+        return cluster.offer(correlationId, id, responsePublication, buffer, offset, length);
     }
 
     void connect(final Aeron aeron)

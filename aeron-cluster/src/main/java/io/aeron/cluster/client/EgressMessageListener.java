@@ -22,10 +22,10 @@ import org.agrona.DirectBuffer;
  * Interface for consuming messages on a given session from the cluster.
  */
 @FunctionalInterface
-public interface SessionMessageListener
+public interface EgressMessageListener
 {
     /**
-     * Message event returned from the cluster.
+     * Message event returned from the clustered service.
      *
      * @param correlationId    to associate with the ingress message to which it is correlated.
      * @param clusterSessionId to which the message belongs.

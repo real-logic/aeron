@@ -35,7 +35,7 @@ public class EgressAdapter implements FragmentHandler
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
-    private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
+    private final EgressMessageHeaderDecoder egressMessageHeaderDecoder = new EgressMessageHeaderDecoder();
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final EgressListener listener;
     private final Subscription subscription;
@@ -64,21 +64,21 @@ public class EgressAdapter implements FragmentHandler
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
-            case SessionHeaderDecoder.TEMPLATE_ID:
+            case EgressMessageHeaderDecoder.TEMPLATE_ID:
             {
-                sessionHeaderDecoder.wrap(
+                egressMessageHeaderDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                final long sessionId = sessionHeaderDecoder.clusterSessionId();
+                final long sessionId = egressMessageHeaderDecoder.clusterSessionId();
                 if (sessionId == clusterSessionId)
                 {
                     listener.onMessage(
-                        sessionHeaderDecoder.correlationId(),
+                        egressMessageHeaderDecoder.correlationId(),
                         sessionId,
-                        sessionHeaderDecoder.timestamp(),
+                        egressMessageHeaderDecoder.timestamp(),
                         buffer,
                         offset + SESSION_HEADER_LENGTH,
                         length - SESSION_HEADER_LENGTH,
@@ -101,6 +101,7 @@ public class EgressAdapter implements FragmentHandler
                     listener.sessionEvent(
                         sessionEventDecoder.correlationId(),
                         sessionId,
+                        sessionEventDecoder.leadershipTermId(),
                         sessionEventDecoder.leaderMemberId(),
                         sessionEventDecoder.code(),
                         sessionEventDecoder.detail());
@@ -121,6 +122,7 @@ public class EgressAdapter implements FragmentHandler
                 {
                     listener.newLeader(
                         sessionId,
+                        newLeaderEventDecoder.leadershipTermId(),
                         newLeaderEventDecoder.leaderMemberId(),
                         newLeaderEventDecoder.memberEndpoints());
                 }

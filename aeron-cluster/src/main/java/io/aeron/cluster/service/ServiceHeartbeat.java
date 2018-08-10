@@ -60,9 +60,10 @@ public class ServiceHeartbeat
     /**
      * Allocate a counter to represent the heartbeat of a clustered service.
      *
-     * @param aeron      to allocate the counter.
-     * @param tempBuffer to use for building the key and label without allocation.
-     * @param serviceId  of the service heartbeat.
+     * @param aeron           to allocate the counter.
+     * @param tempBuffer      to use for building the key and label without allocation.
+     * @param serviceId       of the service heartbeat.
+     * @param clusterMemberId the service will be associated with.
      * @return the {@link Counter} for the commit position.
      */
     public static Counter allocate(

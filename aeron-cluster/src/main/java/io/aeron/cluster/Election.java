@@ -574,7 +574,7 @@ class Election implements AutoCloseable
 
         if (null == logReplay)
         {
-            consensusModuleAgent.updateMemberDetails(this);
+            consensusModuleAgent.followerCommitPosition(logPosition);
             logSessionId = consensusModuleAgent.addNewLogPublication().sessionId();
 
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
@@ -643,6 +643,7 @@ class Election implements AutoCloseable
         {
             if (consensusModuleAgent.electionComplete(nowMs))
             {
+                consensusModuleAgent.updateMemberDetails(this);
                 close();
             }
 
@@ -670,16 +671,15 @@ class Election implements AutoCloseable
     {
         int workCount = 0;
 
+        final State nextState = NULL_POSITION != catchupLogPosition ?
+            State.FOLLOWER_CATCHUP_TRANSITION : State.FOLLOWER_TRANSITION;
+
         if (null == logReplay)
         {
             if (!shouldReplay || (logReplay = consensusModuleAgent.newLogReplay(logPosition)) == null)
             {
                 shouldReplay = false;
-                state(
-                    NULL_POSITION != catchupLogPosition ?
-                    State.FOLLOWER_CATCHUP_TRANSITION :
-                    State.FOLLOWER_TRANSITION,
-                    nowMs);
+                state(nextState, nowMs);
                 workCount = 1;
             }
         }
@@ -691,11 +691,7 @@ class Election implements AutoCloseable
                 logReplay.close();
                 logReplay = null;
                 shouldReplay = false;
-                state(
-                    NULL_POSITION != catchupLogPosition ?
-                    State.FOLLOWER_CATCHUP_TRANSITION :
-                    State.FOLLOWER_TRANSITION,
-                    nowMs);
+                state(nextState, nowMs);
             }
         }
 
@@ -764,8 +760,6 @@ class Election implements AutoCloseable
             consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
         }
 
-        consensusModuleAgent.updateMemberDetails(this);
-
         if (null == liveLogDestination)
         {
             addLiveLogDestination();
@@ -794,6 +788,7 @@ class Election implements AutoCloseable
                     replayDestination = null;
                 }
 
+                consensusModuleAgent.updateMemberDetails(this);
                 close();
             }
         }
@@ -871,7 +866,7 @@ class Election implements AutoCloseable
 
     private void state(final State newState, final long nowMs)
     {
-//        System.out.println("memberId=" + thisMember.id() + " nowMs=" + nowMs + " " + this.state + " -> " + newState);
+        // System.out.println("memberId=" + thisMember.id() + " nowMs=" + nowMs + " " + this.state + " -> " + newState);
 
         if (State.CANVASS == newState)
         {

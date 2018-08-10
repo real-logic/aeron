@@ -861,7 +861,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     void becomeLeader(final long leadershipTermId, final int logSessionId)
     {
         this.leadershipTermId = leadershipTermId;
-        updateMemberDetails(election);
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
@@ -898,10 +897,14 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
+    void followerCommitPosition(final long position)
+    {
+        followerCommitPosition = position;
+    }
+
     void updateMemberDetails(final Election election)
     {
         leaderMember = election.leader();
-        followerCommitPosition = election.logPosition();
         sessionProxy.leaderMemberId(leaderMember.id());
 
         for (final ClusterMember clusterMember : clusterMembers)

@@ -95,6 +95,13 @@ public interface Cluster
     }
 
     /**
+     * The unique id for the hosting member of the cluster. Useful only for debugging purposes.
+     *
+     * @return unique id for the hosting member of the cluster.
+     */
+    int memberId();
+
+    /**
      * The role the cluster node is playing.
      *
      * @return the role the cluster node is playing.

@@ -945,7 +945,7 @@ public class ConsensusModule implements AutoCloseable
                 serviceHeartbeatCounters = new Counter[serviceCount];
                 for (int i = 0; i < serviceCount; i++)
                 {
-                    serviceHeartbeatCounters[i] = ServiceHeartbeat.allocate(aeron, tempBuffer, i);
+                    serviceHeartbeatCounters[i] = ServiceHeartbeat.allocate(aeron, tempBuffer, i, clusterMemberId);
                 }
             }
 

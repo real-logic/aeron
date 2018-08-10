@@ -61,6 +61,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private long ackId = 0;
     private long clusterTimeMs;
     private long cachedTimeMs;
+    private int memberId;
     private BoundedLogAdapter logAdapter;
     private ActiveLogEvent activeLogEvent;
     private AtomicCounter heartbeatCounter;
@@ -165,6 +166,11 @@ class ClusteredServiceAgent implements Agent, Cluster
     public Cluster.Role role()
     {
         return role;
+    }
+
+    public int memberId()
+    {
+        return memberId;
     }
 
     public Aeron aeron()
@@ -530,6 +536,8 @@ class ClusteredServiceAgent implements Agent, Cluster
             idleStrategy.idle();
             counterId = ServiceHeartbeat.findCounterId(counters, ctx.serviceId());
         }
+
+        memberId = ServiceHeartbeat.getClusterMemberId(counters, counterId);
 
         return new AtomicCounter(counters.valuesBuffer(), counterId);
     }

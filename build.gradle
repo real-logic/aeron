@@ -126,7 +126,7 @@ subprojects {
         checkstyle 'com.puppycrawl.tools:checkstyle:8.11'
 
         testCompile 'junit:junit:4.12'
-        testCompile 'org.mockito:mockito-core:2.20.1'
+        testCompile 'org.mockito:mockito-core:2.21.0'
         testCompile 'org.hamcrest:hamcrest-library:1.3'
     }
 
@@ -305,7 +305,7 @@ project(':aeron-agent') {
     dependencies {
         compile project(':aeron-client')
         compile project(':aeron-driver')
-        compile "net.bytebuddy:byte-buddy:1.8.13"
+        compile "net.bytebuddy:byte-buddy:1.8.15"
     }
 
     jar {
@@ -424,15 +424,15 @@ project(':aeron-archive') {
 
     test {
         systemProperties(
-            'aeron.shared.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.conductor.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.sender.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.receiver.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.use.windows.high.res.timer' : 'true',
+            'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.use.windows.high.res.timer': 'true',
             'aeron.dir.warn.if.exists': 'false',
-            'aeron.dir.delete.on.start' : 'true',
+            'aeron.dir.delete.on.start': 'true',
             'aeron.term.buffer.sparse.file': 'true',
-            'aeron.perform.storage.checks' : 'false')
+            'aeron.perform.storage.checks': 'false')
     }
 
     javadoc {
@@ -525,15 +525,15 @@ project(':aeron-cluster') {
 
     test {
         systemProperties(
-            'aeron.shared.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.conductor.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.sender.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.receiver.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.use.windows.high.res.timer' : 'true',
+            'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.use.windows.high.res.timer': 'true',
             'aeron.dir.warn.if.exists': 'false',
-            'aeron.dir.delete.on.start' : 'true',
+            'aeron.dir.delete.on.start': 'true',
             'aeron.term.buffer.sparse.file': 'true',
-            'aeron.perform.storage.checks' : 'false')
+            'aeron.perform.storage.checks': 'false')
     }
 
     javadoc {
@@ -659,12 +659,12 @@ project(':aeron-system-tests') {
         'aeron.shared.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
         'aeron.conductor.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
         'aeron.sender.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-        'aeron.receiver.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-        'aeron.use.windows.high.res.timer' : 'true',
-        'aeron.dir.delete.on.start' : 'true',
+        'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+        'aeron.use.windows.high.res.timer': 'true',
+        'aeron.dir.delete.on.start': 'true',
         'aeron.dir.warn.if.exists': 'false',
         'aeron.term.buffer.sparse.file': 'true',
-        'aeron.perform.storage.checks' : 'false')
+        'aeron.perform.storage.checks': 'false')
     }
 
     uploadArchives {

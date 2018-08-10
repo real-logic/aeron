@@ -179,9 +179,9 @@ subprojects {
 
     jar {
         manifest.attributes(
-            'Implementation-Title' : 'Aeron',
-            'Implementation-Version' : "${aeronVersion}",
-            'Implementation-Vendor' : 'Real Logic Limited')
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited')
     }
 
     signing {

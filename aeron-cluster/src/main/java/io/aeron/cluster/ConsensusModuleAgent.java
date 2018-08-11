@@ -361,10 +361,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return ControlledFragmentHandler.Action.ABORT;
     }
 
-    public void onSessionKeepAlive(final long clusterSessionId)
+    public void onSessionKeepAlive(final long clusterSessionId, final long leadershipTermId)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session && session.state() == OPEN)
+        if (null != session && session.state() == OPEN && leadershipTermId == this.leadershipTermId)
         {
             session.timeOfLastActivityMs(clusterTimeMs);
         }

@@ -261,7 +261,10 @@ public abstract class Publication implements AutoCloseable
      */
     public void close()
     {
-        conductor.releasePublication(this);
+        if (!isClosed)
+        {
+            conductor.releasePublication(this);
+        }
     }
 
     /**

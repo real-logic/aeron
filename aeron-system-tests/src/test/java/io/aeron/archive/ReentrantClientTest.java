@@ -25,6 +25,8 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 public class ReentrantClientTest
 {
@@ -46,13 +48,17 @@ public class ReentrantClientTest
         try (Aeron aeron = Aeron.connect(new Aeron.Context().errorHandler(errorHandler)))
         {
             final String channel = CommonContext.IPC_CHANNEL;
-            final AvailableImageHandler handler = (image) -> aeron.addSubscription(channel, 3);
+            final AvailableImageHandler mockHandler = mock(AvailableImageHandler.class);
+            doAnswer((invocation) -> aeron.addSubscription(channel, 3))
+                .when(mockHandler).onAvailableImage(any(Image.class));
 
-            final Subscription sub = aeron.addSubscription(channel, 1, handler, null);
+            final Subscription sub = aeron.addSubscription(channel, 1, mockHandler, null);
             final Publication pub = aeron.addPublication(channel, 1);
 
-            sub.close();
+            verify(mockHandler, timeout(5000)).onAvailableImage(any(Image.class));
+
             pub.close();
+            sub.close();
 
             assertThat(expectedException.get(), instanceOf(AeronException.class));
         }

@@ -425,11 +425,10 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (!publication.isClosed())
             {
-                publication.internalClose();
-
                 ensureOpen();
                 ensureNotReentrant();
 
+                publication.internalClose();
                 if (publication == resourceByRegIdMap.remove(publication.registrationId()))
                 {
                     releaseLogBuffers(publication.logBuffers(), publication.originalRegistrationId());
@@ -488,14 +487,13 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (!subscription.isClosed())
             {
-                subscription.internalClose();
-
                 ensureOpen();
                 ensureNotReentrant();
 
+                subscription.internalClose();
                 final long registrationId = subscription.registrationId();
-                awaitResponse(driverProxy.removeSubscription(registrationId));
                 resourceByRegIdMap.remove(registrationId);
+                awaitResponse(driverProxy.removeSubscription(registrationId));
             }
         }
         finally
@@ -620,7 +618,6 @@ class ClientConductor implements Agent, DriverEventsListener
             }
 
             final long registrationId = driverProxy.addCounter(typeId, label);
-
             awaitResponse(registrationId);
 
             return (Counter)resourceByRegIdMap.get(registrationId);

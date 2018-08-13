@@ -82,13 +82,16 @@ public class Counter extends AtomicCounter
      */
     public void close()
     {
-        if (null != clientConductor)
+        if (!isClosed)
         {
-            clientConductor.releaseCounter(this);
-        }
-        else
-        {
-            isClosed = true;
+            if (null != clientConductor)
+            {
+                clientConductor.releaseCounter(this);
+            }
+            else
+            {
+                isClosed = true;
+            }
         }
     }
 

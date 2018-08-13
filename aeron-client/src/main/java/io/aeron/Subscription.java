@@ -38,7 +38,6 @@ class SubscriptionFields extends SubscriptionLhsPadding
     protected int roundRobinIndex = 0;
     protected final int streamId;
     protected volatile boolean isClosed = false;
-
     protected volatile Image[] images = EMPTY_ARRAY;
     protected final LongHashSet imageIdSet = new LongHashSet();
     protected final ClientConductor conductor;
@@ -389,7 +388,10 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      */
     public void close()
     {
-        conductor.releaseSubscription(this);
+        if (!isClosed)
+        {
+            conductor.releaseSubscription(this);
+        }
     }
 
     /**
@@ -475,17 +477,9 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
     void addImage(final Image image)
     {
-        if (isClosed)
+        if (imageIdSet.add(image.correlationId()))
         {
-            image.close();
-            conductor.releaseImage(image);
-        }
-        else
-        {
-            if (imageIdSet.add(image.correlationId()))
-            {
-                images = ArrayUtil.add(images, image);
-            }
+            images = ArrayUtil.add(images, image);
         }
     }
 

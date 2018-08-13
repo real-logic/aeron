@@ -811,7 +811,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
             onClose();
 
-            throw new ConductorServiceTimeoutException("Exceeded (ns): " + interServiceTimeoutNs);
+            throw new ConductorServiceTimeoutException("Service interval exceeded (ns): " + interServiceTimeoutNs);
         }
     }
 

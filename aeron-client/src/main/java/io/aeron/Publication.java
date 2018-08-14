@@ -462,7 +462,7 @@ public abstract class Publication implements AutoCloseable
             throw new AeronException("Publication is closed");
         }
 
-        conductor.addDestination(registrationId, endpointChannel);
+        conductor.addDestination(originalRegistrationId, endpointChannel);
     }
 
     /**
@@ -477,7 +477,7 @@ public abstract class Publication implements AutoCloseable
             throw new AeronException("Publication is closed");
         }
 
-        conductor.removeDestination(registrationId, endpointChannel);
+        conductor.removeDestination(originalRegistrationId, endpointChannel);
     }
 
     void internalClose()

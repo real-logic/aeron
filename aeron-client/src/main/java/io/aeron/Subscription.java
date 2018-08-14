@@ -491,6 +491,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         {
             if (image.correlationId() == correlationId)
             {
+                image.close();
                 removedImage = image;
                 break;
             }
@@ -500,7 +501,6 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
         if (null != removedImage)
         {
-            removedImage.close();
             images = ArrayUtil.remove(oldArray, i);
             conductor.releaseLogBuffers(removedImage.logBuffers(), removedImage.correlationId());
         }

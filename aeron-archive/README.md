@@ -8,7 +8,8 @@ The aeron-archive is an service which enables Aeron data stream recording and re
 Currently implemented functionality:
 - **Record:** service can record a particular subscription, described by `<channel, streamId>`. Each resulting image
 for the subscription will be recorded under a new `recordingId`. Local network publications are recorded using the spy
-feature for efficiency.
+feature for efficiency. If no subscribers are active then the recording can advance the stream by setting the
+`aeron.spies.simulate.connection` system property to true.
 
 - **Extend:** service can extend an existing recording by appending.
 
@@ -66,7 +67,7 @@ The Archiver is backed by 2 file types, all of which are expected to reside in t
  The Archiver copies data as is from the recorded Image. As such the files follow the same convention
  as Aeron data streams. Data starts at `startPosition`, which translates into the offset
  `startPosition % termBufferLength` in the first segment file. From there one can read fragments
- as described by the DataFragmentHeader up to the `stopPosition`. 
+ as described by the DataFragmentHeader up to the `stopPosition`. Segment length is a multiple of `termBufferLength`.
  
  
  

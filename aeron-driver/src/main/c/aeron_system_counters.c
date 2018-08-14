@@ -39,6 +39,7 @@ static aeron_system_counter_t system_counters[] =
         { "Invalid packets", AERON_SYSTEM_COUNTER_INVALID_PACKETS },
         { "Errors", AERON_SYSTEM_COUNTER_ERRORS },
         { "Short sends", AERON_SYSTEM_COUNTER_SHORT_SENDS },
+        { "RESERVED", AERON_SYSTEM_COUNTER_RESERVED_17 },
         { "Sender flow control limits applied", AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS },
         { "Unblocked Publications", AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS },
         { "Unblocked Control Commands", AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS },
@@ -68,16 +69,19 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
 
     for (int32_t i = 0; i < (int32_t)num_system_counters; i++)
     {
-        if ((counters->counter_ids[i] =
-            aeron_counters_manager_allocate(
-                manager,
-                AERON_SYSTEM_COUNTER_TYPE_ID,
-                (const uint8_t *)&(system_counters[i].id),
-                sizeof(system_counters[i].id),
-                system_counters[i].label,
-                strlen(system_counters[i].label))) < 0)
+        if (strncmp(system_counters[i].label, "RESERVED", sizeof("RESERVED")) != 0)
         {
-            return -1;
+            if ((counters->counter_ids[i] =
+                aeron_counters_manager_allocate(
+                    manager,
+                    AERON_SYSTEM_COUNTER_TYPE_ID,
+                    (const uint8_t *) &(system_counters[i].id),
+                    sizeof(system_counters[i].id),
+                    system_counters[i].label,
+                    strlen(system_counters[i].label))) < 0)
+            {
+                return -1;
+            }
         }
     }
 

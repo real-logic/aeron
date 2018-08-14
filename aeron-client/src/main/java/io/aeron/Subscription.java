@@ -470,17 +470,14 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         closeImages();
     }
 
-    boolean containsImage(final long correlationId)
-    {
-        return imageIdSet.contains(correlationId);
-    }
-
     void addImage(final Image image)
     {
-        if (imageIdSet.add(image.correlationId()))
+        if (!imageIdSet.add(image.correlationId()))
         {
-            images = ArrayUtil.add(images, image);
+            throw new IllegalStateException("Image already added: " + image.correlationId());
         }
+
+        images = ArrayUtil.add(images, image);
     }
 
     Image removeImage(final long correlationId)

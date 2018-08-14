@@ -73,7 +73,7 @@ void Publication::addDestination(const std::string& endpointChannel)
         throw util::IllegalStateException(std::string("Publication is closed"), SOURCEINFO);
     }
 
-    m_conductor.addDestination(m_registrationId, endpointChannel);
+    m_conductor.addDestination(m_originalRegistrationId, endpointChannel);
 }
 
 void Publication::removeDestination(const std::string& endpointChannel)
@@ -83,7 +83,7 @@ void Publication::removeDestination(const std::string& endpointChannel)
         throw util::IllegalStateException(std::string("Publication is closed"), SOURCEINFO);
     }
 
-    m_conductor.removeDestination(m_registrationId, endpointChannel);
+    m_conductor.removeDestination(m_originalRegistrationId, endpointChannel);
 }
 
 std::int64_t Publication::channelStatus()

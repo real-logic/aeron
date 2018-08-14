@@ -492,8 +492,8 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
         if (null != removedImage)
         {
-            images = ArrayUtil.remove(oldArray, i);
             removedImage.close();
+            images = ArrayUtil.remove(oldArray, i);
             conductor.releaseLogBuffers(removedImage.logBuffers(), removedImage.correlationId());
         }
 

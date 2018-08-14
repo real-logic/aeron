@@ -3,13 +3,14 @@ Aeron Archive
 
 [![Javadocs](http://www.javadoc.io/badge/io.aeron/aeron-all.svg)](http://www.javadoc.io/doc/io.aeron/aeron-all)
 
-The aeron-archive is an service which enables Aeron data stream recording
-and replay support from an archive. 
+The aeron-archive is an service which enables Aeron data stream recording and replay support from an archive. 
 
 Currently implemented functionality:
 - **Record:** service can record a particular subscription, described by `<channel, streamId>`. Each resulting image
 for the subscription will be recorded under a new `recordingId`. Local network publications are recorded using the spy
 feature for efficiency.
+
+- **Extend:** service can extend an existing recording by appending.
 
 - **Replay:** service can replay a recorded `recordingId` from a particular `position`, and for a particular length.
 

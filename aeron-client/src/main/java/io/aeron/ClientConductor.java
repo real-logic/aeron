@@ -651,11 +651,6 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    void releaseImage(final Image image)
-    {
-        releaseLogBuffers(image.logBuffers(), image.correlationId());
-    }
-
     void releaseLogBuffers(final LogBuffers logBuffers, final long registrationId)
     {
         if (logBuffers.decRef() == 0)

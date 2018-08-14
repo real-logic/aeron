@@ -504,7 +504,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
             images = ArrayUtil.remove(oldArray, i);
             removedImage.close();
-            conductor.releaseImage(removedImage);
+            conductor.releaseLogBuffers(removedImage.logBuffers(), removedImage.correlationId());
         }
 
         return removedImage;
@@ -524,7 +524,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
         for (final Image image : images)
         {
-            conductor.releaseImage(image);
+            conductor.releaseLogBuffers(image.logBuffers(), image.correlationId());
 
             try
             {

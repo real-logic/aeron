@@ -293,19 +293,27 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Is this subscription connected by having at least one publication {@link Image}.
+     * Is this subscription connected by having at least one open publication {@link Image}.
      *
-     * @return true if this subscription connected by having at least one publication {@link Image}.
+     * @return true if this subscription connected by having at least one open publication {@link Image}.
      */
     public boolean isConnected()
     {
-        return images.length > 0;
+        for (final Image image : images)
+        {
+            if (!image.isClosed())
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
-     * Has the subscription currently no images connected to it?
+     * Has this subscription currently no {@link Image}s?
      *
-     * @return he subscription currently no images connected to it?
+     * @return has subscription currently no {@link Image}s?
      */
     public boolean hasNoImages()
     {
@@ -313,9 +321,9 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Count of images connected to this subscription.
+     * Count of {@link Image}s associated to this subscription.
      *
-     * @return count of images connected to this subscription.
+     * @return count of {@link Image}s associated to this subscription.
      */
     public int imageCount()
     {
@@ -325,7 +333,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     /**
      * Return the {@link Image} associated with the given sessionId.
      *
-     * @param sessionId associated with the Image.
+     * @param sessionId associated with the {@link Image}s.
      * @return Image associated with the given sessionId or null if no Image exist.
      */
     public Image imageBySessionId(final int sessionId)
@@ -345,7 +353,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Get the image at the given index from the images array.
+     * Get the {@link Image} at the given index from the images array.
      *
      * @param index in the array
      * @return image at given index

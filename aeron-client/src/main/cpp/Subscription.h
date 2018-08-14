@@ -229,19 +229,31 @@ public:
     }
 
     /**
-     * Is the subscription connected by having at least one image available.
+     * Is the subscription connected by having at least one open image available.
      *
-     * @return true if the subscription has more than one image available.
+     * @return true if the subscription has more than one open image available.
      */
     inline bool isConnected() const
     {
-        return std::atomic_load_explicit(&m_imageList, std::memory_order_acquire)->m_length > 0;
+        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
+        const std::size_t length = imageList->m_length;
+        Image *images = imageList->m_images;
+
+        for (std::size_t i = 0; i < length; i++)
+        {
+            if (!images[i].isClosed())
+            {
+                return true;
+            }
+        }
+
+        return true;
     }
 
     /**
-     * Count of images connected to this subscription.
+     * Count of images associated with this subscription.
      *
-     * @return count of images connected to this subscription.
+     * @return count of images associated with this subscription.
      */
     inline int imageCount() const
     {
@@ -397,6 +409,7 @@ public:
         {
             if (oldArray[i].correlationId() == correlationId)
             {
+                oldArray[i].close();
                 index = i;
                 break;
             }

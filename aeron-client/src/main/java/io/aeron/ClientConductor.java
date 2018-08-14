@@ -635,11 +635,10 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (!counter.isClosed())
             {
-                counter.internalClose();
-
                 ensureOpen();
                 ensureNotReentrant();
 
+                counter.internalClose();
                 final long registrationId = counter.registrationId();
                 awaitResponse(driverProxy.removeCounter(registrationId));
                 resourceByRegIdMap.remove(registrationId);

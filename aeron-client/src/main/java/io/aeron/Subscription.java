@@ -19,7 +19,6 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.*;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.collections.LongHashSet;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -39,7 +38,6 @@ class SubscriptionFields extends SubscriptionLhsPadding
     protected final int streamId;
     protected volatile boolean isClosed = false;
     protected volatile Image[] images = EMPTY_ARRAY;
-    protected final LongHashSet imageIdSet = new LongHashSet();
     protected final ClientConductor conductor;
     protected final String channel;
     protected final AvailableImageHandler availableImageHandler;
@@ -472,11 +470,6 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
 
     void addImage(final Image image)
     {
-        if (!imageIdSet.add(image.correlationId()))
-        {
-            throw new IllegalStateException("Image already added: " + image.correlationId());
-        }
-
         images = ArrayUtil.add(images, image);
     }
 
@@ -485,20 +478,20 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         final Image[] oldArray = images;
         Image removedImage = null;
 
-        if (imageIdSet.remove(correlationId))
+        int i = 0;
+        for (final Image image : oldArray)
         {
-            int i = 0;
-            for (final Image image : oldArray)
+            if (image.correlationId() == correlationId)
             {
-                if (image.correlationId() == correlationId)
-                {
-                    removedImage = image;
-                    break;
-                }
-
-                i++;
+                removedImage = image;
+                break;
             }
 
+            i++;
+        }
+
+        if (null != removedImage)
+        {
             images = ArrayUtil.remove(oldArray, i);
             removedImage.close();
             conductor.releaseLogBuffers(removedImage.logBuffers(), removedImage.correlationId());
@@ -516,8 +509,6 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         {
             image.close();
         }
-
-        imageIdSet.clear();
 
         for (final Image image : images)
         {

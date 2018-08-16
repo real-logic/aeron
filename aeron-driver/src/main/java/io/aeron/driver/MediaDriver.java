@@ -332,7 +332,7 @@ public final class MediaDriver implements AutoCloseable
                 {
                     if (CommonContext.isDriverActive(ctx.driverTimeoutMs(), logger, cncByteBuffer))
                     {
-                        throw new ActiveDriverException("Active driver detected");
+                        throw new ActiveDriverException("active driver detected");
                     }
 
                     reportExistingErrors(ctx, cncByteBuffer);
@@ -2155,7 +2155,7 @@ public final class MediaDriver implements AutoCloseable
 
             if (Math.abs((long)high - low) > Integer.MAX_VALUE)
             {
-                throw new IllegalArgumentException("Reserved range to too large");
+                throw new IllegalArgumentException("reserved range to too large");
             }
         }
     }

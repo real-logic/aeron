@@ -82,7 +82,7 @@ public class Aeron implements AutoCloseable
             if (throwable instanceof DriverTimeoutException)
             {
                 System.err.printf(
-                    "%n***%n*** Timeout from the MediaDriver - is it currently running? Exiting.%n***%n");
+                    "%n***%n*** timeout from the MediaDriver - is it currently running? Exiting%n***%n");
                 System.exit(-1);
             }
         };
@@ -243,10 +243,18 @@ public class Aeron implements AutoCloseable
             if (null != conductorRunner)
             {
                 conductorRunner.close();
+                if (!conductorRunner.isClosed())
+                {
+                    throw new AeronException("failed to close Aeron client");
+                }
             }
             else
             {
                 conductorInvoker.close();
+                if (!conductorInvoker.isClosed())
+                {
+                    throw new AeronException("failed to close Aeron client");
+                }
             }
 
             ctx.close();
@@ -332,7 +340,7 @@ public class Aeron implements AutoCloseable
     {
         if (1 == isClosed)
         {
-            throw new AeronException("Client is closed");
+            throw new AeronException("client is closed");
         }
 
         return commandBuffer.nextCorrelationId();
@@ -347,7 +355,7 @@ public class Aeron implements AutoCloseable
     {
         if (1 == isClosed)
         {
-            throw new AeronException("Client is closed");
+            throw new AeronException("client is closed");
         }
 
         return conductor.countersReader();
@@ -849,7 +857,7 @@ public class Aeron implements AutoCloseable
          */
         public AvailableCounterHandler availableCounterHandler()
         {
-            return this.availableCounterHandler;
+            return availableCounterHandler;
         }
 
         /**
@@ -871,7 +879,7 @@ public class Aeron implements AutoCloseable
          */
         public UnavailableCounterHandler unavailableCounterHandler()
         {
-            return this.unavailableCounterHandler;
+            return unavailableCounterHandler;
         }
 
         /**
@@ -1006,7 +1014,7 @@ public class Aeron implements AutoCloseable
                 {
                     if (epochClock.time() > deadlineMs)
                     {
-                        throw new DriverTimeoutException("CnC file is created but not initialised.");
+                        throw new DriverTimeoutException("CnC file is created but not initialised");
                     }
 
                     sleep(1);
@@ -1024,7 +1032,7 @@ public class Aeron implements AutoCloseable
                 {
                     if (epochClock.time() > deadlineMs)
                     {
-                        throw new DriverTimeoutException("No driver heartbeat detected.");
+                        throw new DriverTimeoutException("no driver heartbeat detected");
                     }
 
                     sleep(1);
@@ -1035,7 +1043,7 @@ public class Aeron implements AutoCloseable
                 {
                     if (timeMs > deadlineMs)
                     {
-                        throw new DriverTimeoutException("No driver heartbeat detected.");
+                        throw new DriverTimeoutException("no driver heartbeat detected");
                     }
 
                     IoUtil.unmap(cncByteBuffer);

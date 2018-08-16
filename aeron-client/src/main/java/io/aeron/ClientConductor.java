@@ -692,7 +692,7 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         if (isInCallback)
         {
-            throw new AeronException("Reentrant calls not permitted during callbacks");
+            throw new AeronException("reentrant calls not permitted during callbacks");
         }
     }
 
@@ -767,7 +767,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
         while (nanoClock.nanoTime() < deadlineNs);
 
-        throw new DriverTimeoutException("No response from MediaDriver within (ns): " + driverTimeoutNs);
+        throw new DriverTimeoutException("no response from MediaDriver within (ns): " + driverTimeoutNs);
     }
 
     private int onCheckTimeouts()
@@ -797,12 +797,12 @@ class ClientConductor implements Agent, DriverEventsListener
 
             if (lingeringResources.size() > lingeringResourcesSize)
             {
-                sleep(1000);
+                sleep(3000);
             }
 
             onClose();
 
-            throw new ConductorServiceTimeoutException("Service interval exceeded (ns): " + interServiceTimeoutNs);
+            throw new ConductorServiceTimeoutException("service interval exceeded (ns): " + interServiceTimeoutNs);
         }
     }
 

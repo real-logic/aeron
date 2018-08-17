@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
-import static io.aeron.Aeron.IDLE_SLEEP_NS;
+import static io.aeron.Aeron.Configuration.IDLE_SLEEP_NS;
 import static io.aeron.Aeron.sleep;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -42,15 +42,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 class ClientConductor implements Agent, DriverEventsListener
 {
     private static final long NO_CORRELATION_ID = Aeron.NULL_VALUE;
-    private static final long RESOURCE_CHECK_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
-    private static final long RESOURCE_LINGER_NS = TimeUnit.SECONDS.toNanos(3);
 
     private final long keepAliveIntervalNs;
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
     private final long interServiceTimeoutNs;
     private long timeOfLastKeepAliveNs;
-    private long timeOfLastResourcesCheckNs;
     private long timeOfLastServiceNs;
     private boolean isClosed;
     private boolean isInCallback;
@@ -99,7 +96,6 @@ class ClientConductor implements Agent, DriverEventsListener
 
         final long nowNs = nanoClock.nanoTime();
         timeOfLastKeepAliveNs = nowNs;
-        timeOfLastResourcesCheckNs = nowNs;
         timeOfLastServiceNs = nowNs;
     }
 
@@ -797,7 +793,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
             if (lingeringResources.size() > lingeringResourcesSize)
             {
-                sleep(3000);
+                sleep(TimeUnit.NANOSECONDS.toMillis(ctx.resourceLingerDurationNs()));
             }
 
             onClose();
@@ -828,25 +824,21 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private int checkLingeringResources(final long nowNs)
     {
-        if (nowNs > (timeOfLastResourcesCheckNs + RESOURCE_CHECK_INTERVAL_NS))
+        int workCount = 0;
+
+        final ArrayList<ManagedResource> lingeringResources = this.lingeringResources;
+        for (int lastIndex = lingeringResources.size() - 1, i = lastIndex; i >= 0; i--)
         {
-            final ArrayList<ManagedResource> lingeringResources = this.lingeringResources;
-            for (int lastIndex = lingeringResources.size() - 1, i = lastIndex; i >= 0; i--)
+            final ManagedResource resource = lingeringResources.get(i);
+            if (nowNs > (resource.timeOfLastStateChange() + ctx.resourceLingerDurationNs()))
             {
-                final ManagedResource resource = lingeringResources.get(i);
-                if (nowNs > (resource.timeOfLastStateChange() + RESOURCE_LINGER_NS))
-                {
-                    ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex--);
-                    resource.delete();
-                }
+                ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex--);
+                resource.delete();
+                workCount += 1;
             }
-
-            timeOfLastResourcesCheckNs = nowNs;
-
-            return 1;
         }
 
-        return 0;
+        return workCount;
     }
 
     private void forceCloseResources()

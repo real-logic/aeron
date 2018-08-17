@@ -44,6 +44,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
  * Aeron entry point for communicating to the Media Driver for creating {@link Publication}s and {@link Subscription}s.
@@ -52,7 +53,8 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  * A client application requires only one Aeron object per Media Driver.
  * <p>
  * <b>Note:</b> If {@link Aeron.Context#errorHandler(ErrorHandler)} is not set and a {@link DriverTimeoutException}
- * occurs then the process will face the wrath of {@link System#exit(int)}. See {@link #DEFAULT_ERROR_HANDLER}.
+ * occurs then the process will face the wrath of {@link System#exit(int)}.
+ * See {@link Aeron.Configuration#DEFAULT_ERROR_HANDLER}.
  */
 public class Aeron implements AutoCloseable
 {
@@ -62,45 +64,9 @@ public class Aeron implements AutoCloseable
     public static final int NULL_VALUE = -1;
 
     /**
-     * Using an integer because there is no support for boolean. 1 is closed and 0 is not closed.
+     * Using an integer because there is no support for boolean. 1 is closed, 0 is not closed.
      */
     private static final AtomicIntegerFieldUpdater<Aeron> IS_CLOSED_UPDATER = newUpdater(Aeron.class, "isClosed");
-
-    /**
-     * The Default handler for Aeron runtime exceptions.
-     * When a {@link io.aeron.exceptions.DriverTimeoutException} is encountered, this handler will
-     * exit the program.
-     * <p>
-     * The error handler can be overridden by supplying an {@link Aeron.Context} with a custom handler.
-     *
-     * @see Aeron.Context#errorHandler(ErrorHandler)
-     */
-    public static final ErrorHandler DEFAULT_ERROR_HANDLER =
-        (throwable) ->
-        {
-            throwable.printStackTrace();
-            if (throwable instanceof DriverTimeoutException)
-            {
-                System.err.printf(
-                    "%n***%n*** timeout from the MediaDriver - is it currently running? Exiting%n***%n");
-                System.exit(-1);
-            }
-        };
-
-    /**
-     * Duration in milliseconds for which the client conductor will sleep between duty cycles.
-     */
-    public static final long IDLE_SLEEP_MS = 16;
-
-    /**
-     * Duration in nanoseconds for which the client conductor will sleep between duty cycles.
-     */
-    public static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(IDLE_SLEEP_MS);
-
-    /**
-     * Default interval between sending keepalive control messages to the driver.
-     */
-    public static final long KEEPALIVE_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(500);
 
     @SuppressWarnings("unused") private volatile int isClosed;
     private final long clientId;
@@ -406,6 +372,71 @@ public class Aeron implements AutoCloseable
     }
 
     /**
+     * Configuration options for the {@link Aeron} client.
+     */
+    public static class Configuration
+    {
+        /**
+         * Duration in milliseconds for which the client conductor will sleep between duty cycles.
+         */
+        static final long IDLE_SLEEP_MS = 16;
+
+        /**
+         * Duration in nanoseconds for which the client conductor will sleep between duty cycles.
+         */
+        static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(IDLE_SLEEP_MS);
+
+        /**
+         * Default interval between sending keepalive control messages to the driver.
+         */
+        static final long KEEPALIVE_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(500);
+
+        /**
+         * Duration to wait while lingering a entity such as an {@link Image} before deleting underlying resources
+         * such as memory mapped files.
+         */
+        public static final String RESOURCE_LINGER_DURATION_PROP_NAME = "aeron.client.resource.linger.duration";
+
+        /**
+         * Default duration a resource should linger before deletion.
+         */
+        public static final long RESOURCE_LINGER_DURATION_DEFAULT = TimeUnit.SECONDS.toNanos(3);
+
+        /**
+         * The Default handler for Aeron runtime exceptions.
+         * When a {@link DriverTimeoutException} is encountered, this handler will
+         * exit the program.
+         * <p>
+         * The error handler can be overridden by supplying an {@link Context} with a custom handler.
+         *
+         * @see Context#errorHandler(ErrorHandler)
+         */
+        public static final ErrorHandler DEFAULT_ERROR_HANDLER =
+            (throwable) ->
+            {
+                throwable.printStackTrace();
+                if (throwable instanceof DriverTimeoutException)
+                {
+                    System.err.printf(
+                        "%n***%n*** timeout from the MediaDriver - is it currently running? Exiting%n***%n");
+                    System.exit(-1);
+                }
+            };
+
+        /**
+         * Duration to wait while lingering a entity such as an {@link Image} before deleting underlying resources
+         * such as memory mapped files.
+         *
+         * @return duration in nanoseconds to wait before deleting a expired resource.
+         * @see #RESOURCE_LINGER_DURATION_PROP_NAME
+         */
+        public static long resourceLingerDurationNs()
+        {
+            return getDurationInNanos(RESOURCE_LINGER_DURATION_PROP_NAME, RESOURCE_LINGER_DURATION_DEFAULT);
+        }
+    }
+
+    /**
      * This class provides configuration for the {@link Aeron} class via the {@link Aeron#connect(Aeron.Context)}
      * method and its overloads. It gives applications some control over the interactions with the Aeron Media Driver.
      * It can also set up error handling as well as application callbacks for image information from the
@@ -435,8 +466,10 @@ public class Aeron implements AutoCloseable
         private UnavailableImageHandler unavailableImageHandler;
         private AvailableCounterHandler availableCounterHandler;
         private UnavailableCounterHandler unavailableCounterHandler;
-        private long keepAliveInterval = KEEPALIVE_INTERVAL_NS;
+        private long keepAliveInterval = Configuration.KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeout = 0;
+        private long resourceLingerDurationNs = Configuration.resourceLingerDurationNs();
+
         private ThreadFactory threadFactory = Thread::new;
 
         /**
@@ -477,7 +510,7 @@ public class Aeron implements AutoCloseable
 
             if (null == idleStrategy)
             {
-                idleStrategy = new SleepingMillisIdleStrategy(IDLE_SLEEP_MS);
+                idleStrategy = new SleepingMillisIdleStrategy(Configuration.IDLE_SLEEP_MS);
             }
 
             if (cncFile() != null)
@@ -517,7 +550,7 @@ public class Aeron implements AutoCloseable
 
             if (null == errorHandler)
             {
-                errorHandler = DEFAULT_ERROR_HANDLER;
+                errorHandler = Configuration.DEFAULT_ERROR_HANDLER;
             }
 
             if (null == driverProxy)
@@ -768,7 +801,7 @@ public class Aeron implements AutoCloseable
 
         /**
          * Handle Aeron exceptions in a callback method. The default behavior is defined by
-         * {@link Aeron#DEFAULT_ERROR_HANDLER}. This is the error handler which will be used if an error occurs
+         * {@link Configuration#DEFAULT_ERROR_HANDLER}. This is the error handler which will be used if an error occurs
          * during the callback for poll operations such as {@link Subscription#poll(FragmentHandler, int)}.
          * <p>
          * The error handler can be reset after {@link Aeron#connect()} and the latest version will always be used
@@ -922,7 +955,7 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Set the timeout between service calls the to {@link ClientConductor} duty cycles.
+         * Set the timeout between service calls the to {@link ClientConductor} duty cycles in nanoseconds.
          *
          * @param interServiceTimeout the timeout (ns) between service calls the to {@link ClientConductor} duty cycle.
          * @return this Aeron.Context for method chaining.
@@ -947,6 +980,32 @@ public class Aeron implements AutoCloseable
         public long interServiceTimeout()
         {
             return interServiceTimeout;
+        }
+
+        /**
+         * Duration to wait while lingering a entity such as an {@link Image} before deleting underlying resources
+         * such as memory mapped files.
+         *
+         * @param resourceLingerDurationNs to wait before deleting a expired resource.
+         * @return this for a fluent API.
+         * @see Configuration#RESOURCE_LINGER_DURATION_PROP_NAME
+         */
+        public Context resourceLingerDurationNs(final long resourceLingerDurationNs)
+        {
+            this.resourceLingerDurationNs = resourceLingerDurationNs;
+            return this;
+        }
+
+        /**
+         * Duration to wait while lingering a entity such as an {@link Image} before deleting underlying resources
+         * such as memory mapped files.
+         *
+         * @return duration in nanoseconds to wait before deleting a expired resource.
+         * @see Configuration#RESOURCE_LINGER_DURATION_PROP_NAME
+         */
+        public long resourceLingerDurationNs()
+        {
+            return resourceLingerDurationNs;
         }
 
         /**
@@ -1005,7 +1064,7 @@ public class Aeron implements AutoCloseable
                         throw new DriverTimeoutException("CnC file not created: " + cncFile.getAbsolutePath());
                     }
 
-                    sleep(IDLE_SLEEP_MS);
+                    sleep(Configuration.IDLE_SLEEP_MS);
                 }
 
                 cncByteBuffer = waitForFileMapping(cncFile, deadlineMs, epochClock);
@@ -1073,7 +1132,7 @@ public class Aeron implements AutoCloseable
                     throw new AeronException("CnC file is created but not populated");
                 }
 
-                sleep(IDLE_SLEEP_MS);
+                sleep(Configuration.IDLE_SLEEP_MS);
             }
 
             return fileChannel.map(READ_WRITE, 0, fileChannel.size());

@@ -340,7 +340,7 @@ public class ChannelUri
                             break;
 
                         case ':':
-                            throw new IllegalArgumentException("Encountered ':' within media definition");
+                            throw new IllegalArgumentException("encountered ':' within media definition");
 
                         default:
                             builder.append(c);
@@ -376,7 +376,7 @@ public class ChannelUri
                     break;
 
                 default:
-                    throw new IllegalStateException("Que? state=" + state);
+                    throw new IllegalStateException("unexpected state=" + state);
             }
         }
 
@@ -391,7 +391,7 @@ public class ChannelUri
                 break;
 
             default:
-                throw new IllegalArgumentException("No more input found, but was in state: " + state);
+                throw new IllegalArgumentException("no more input found, state=" + state);
         }
 
         return new ChannelUri(prefix, media, params);

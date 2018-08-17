@@ -510,7 +510,7 @@ public abstract class Publication implements AutoCloseable
         if (length > maxPayloadLength)
         {
             throw new IllegalArgumentException(
-                "Claim exceeds maxPayloadLength of " + maxPayloadLength + ", length=" + length);
+                "claim exceeds maxPayloadLength of " + maxPayloadLength + ", length=" + length);
         }
     }
 
@@ -519,7 +519,7 @@ public abstract class Publication implements AutoCloseable
         if (length > maxMessageLength)
         {
             throw new IllegalArgumentException(
-                "Message exceeds maxMessageLength of " + maxMessageLength + ", length=" + length);
+                "message exceeds maxMessageLength of " + maxMessageLength + ", length=" + length);
         }
     }
 }

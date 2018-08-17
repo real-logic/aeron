@@ -28,7 +28,7 @@ final class BufferBuilderUtil
             {
                 if (capacity == MAX_CAPACITY)
                 {
-                    throw new IllegalStateException("Max capacity reached: " + MAX_CAPACITY);
+                    throw new IllegalStateException("max capacity reached: " + MAX_CAPACITY);
                 }
 
                 capacity = MAX_CAPACITY;

@@ -96,7 +96,7 @@ public class ChannelUriStringBuilder
 
         if (CommonContext.UDP_MEDIA.equals(media) && (null == endpoint && null == controlEndpoint))
         {
-            throw new IllegalStateException("Either 'endpoint' or 'control' must be specified for UDP.");
+            throw new IllegalStateException("either 'endpoint' or 'control' must be specified for UDP.");
         }
 
         int count = 0;
@@ -107,7 +107,7 @@ public class ChannelUriStringBuilder
         if (count > 0 && count < 3)
         {
             throw new IllegalStateException(
-                "If any of then a complete set of 'initialTermId', 'termId', and 'termOffset' must be provided");
+                "if any of then a complete set of 'initialTermId', 'termId', and 'termOffset' must be provided");
         }
 
         return this;
@@ -124,7 +124,7 @@ public class ChannelUriStringBuilder
     {
         if (null != prefix && !prefix.equals("") && !prefix.equals(SPY_QUALIFIER))
         {
-            throw new IllegalArgumentException("Invalid prefix: " + prefix);
+            throw new IllegalArgumentException("invalid prefix: " + prefix);
         }
 
         this.prefix = prefix;
@@ -156,7 +156,7 @@ public class ChannelUriStringBuilder
                 break;
 
             default:
-                throw new IllegalArgumentException("Invalid media: " + media);
+                throw new IllegalArgumentException("invalid media: " + media);
         }
 
         this.media = media;
@@ -263,7 +263,7 @@ public class ChannelUriStringBuilder
             !controlMode.equals(CommonContext.MDC_CONTROL_MODE_MANUAL) &&
             !controlMode.equals(CommonContext.MDC_CONTROL_MODE_DYNAMIC))
         {
-            throw new IllegalArgumentException("Invalid control mode: " + controlMode);
+            throw new IllegalArgumentException("invalid control mode: " + controlMode);
         }
 
         this.controlMode = controlMode;
@@ -493,12 +493,12 @@ public class ChannelUriStringBuilder
         {
             if ((termOffset < 0 || termOffset > LogBufferDescriptor.TERM_MAX_LENGTH))
             {
-                throw new IllegalArgumentException("Term offset not in range 0-1g: " + termOffset);
+                throw new IllegalArgumentException("term offset not in range 0-1g: " + termOffset);
             }
 
             if (0 != (termOffset & (FrameDescriptor.FRAME_ALIGNMENT - 1)))
             {
-                throw new IllegalArgumentException("Term offset not multiple of FRAME_ALIGNMENT: " + termOffset);
+                throw new IllegalArgumentException("term offset not multiple of FRAME_ALIGNMENT: " + termOffset);
             }
         }
 
@@ -553,7 +553,7 @@ public class ChannelUriStringBuilder
     {
         if (null != lingerNs && lingerNs < 0)
         {
-            throw new IllegalArgumentException("Linger value cannot be negative: " + lingerNs);
+            throw new IllegalArgumentException("linger value cannot be negative: " + lingerNs);
         }
 
         this.linger = lingerNs;

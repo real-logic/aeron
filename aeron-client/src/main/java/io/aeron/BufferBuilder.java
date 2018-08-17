@@ -107,7 +107,7 @@ public class BufferBuilder
         if (limit < 0 || limit >= buffer.capacity())
         {
             throw new IllegalArgumentException(
-                "Limit outside range: capacity=" + buffer.capacity() + " limit=" + limit);
+                "limit outside range: capacity=" + buffer.capacity() + " limit=" + limit);
         }
 
         this.limit = limit;
@@ -171,7 +171,7 @@ public class BufferBuilder
         if (requiredCapacity > BufferBuilderUtil.MAX_CAPACITY)
         {
             throw new IllegalStateException(
-                "Max capacity exceeded: limit=" + limit + " required=" + requiredCapacity);
+                "max capacity exceeded: limit=" + limit + " required=" + requiredCapacity);
         }
 
         final int capacity = buffer.capacity();

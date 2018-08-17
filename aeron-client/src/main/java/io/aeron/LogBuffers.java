@@ -118,7 +118,7 @@ public class LogBuffers implements AutoCloseable, ManagedResource
                 if (metaDataTermLength != assumedTermLength)
                 {
                     throw new IllegalStateException(
-                        "Assumed term length " + assumedTermLength +
+                        "assumed term length " + assumedTermLength +
                         " does not match metadata: termLength=" + metaDataTermLength);
                 }
 

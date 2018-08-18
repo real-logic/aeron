@@ -37,9 +37,8 @@ import static org.agrona.SystemUtil.getDurationInNanos;
 /**
  * Client for interacting with an Aeron Cluster.
  * <p>
- * A client will connect to open a session and then offer ingress messages which are replicated to clustered service
- * for reliability. If the clustered service responds then these response messages and events come back via the egress
- * stream.
+ * A client will attempt to open a session and then offer ingress messages which are replicated to clustered services
+ * for reliability. If the clustered service responds then response messages and events come back via the egress stream.
  * <p>
  * <b>Note:</b> Instances of this class are not threadsafe.
  */
@@ -775,8 +774,7 @@ public final class AeronCluster implements AutoCloseable
          */
         public static String clusterMemberEndpoints()
         {
-            return System.getProperty(
-                CLUSTER_MEMBER_ENDPOINTS_PROP_NAME, CLUSTER_MEMBER_ENDPOINTS_DEFAULT);
+            return System.getProperty(CLUSTER_MEMBER_ENDPOINTS_PROP_NAME, CLUSTER_MEMBER_ENDPOINTS_DEFAULT);
         }
 
         /**

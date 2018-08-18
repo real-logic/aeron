@@ -62,7 +62,7 @@ public class ClientProxy
             .errorCode(errorCode)
             .errorMessage(msg);
 
-        transmit(ON_ERROR, buffer, errorResponse.length());
+        transmit(ON_ERROR, buffer, 0, errorResponse.length());
     }
 
     public void onAvailableImage(
@@ -83,7 +83,7 @@ public class ClientProxy
             .logFileName(logFileName)
             .sourceIdentity(sourceIdentity);
 
-        transmit(ON_AVAILABLE_IMAGE, buffer, imageReady.length());
+        transmit(ON_AVAILABLE_IMAGE, buffer, 0, imageReady.length());
     }
 
     public void onPublicationReady(
@@ -106,7 +106,7 @@ public class ClientProxy
             .logFileName(logFileName);
 
         final int msgTypeId = isExclusive ? ON_EXCLUSIVE_PUBLICATION_READY : ON_PUBLICATION_READY;
-        transmit(msgTypeId, buffer, publicationReady.length());
+        transmit(msgTypeId, buffer, 0, publicationReady.length());
     }
 
     public void onSubscriptionReady(
@@ -116,14 +116,14 @@ public class ClientProxy
             .correlationId(correlationId)
             .channelStatusCounterId(channelStatusCounterId);
 
-        transmit(ON_SUBSCRIPTION_READY, buffer, SubscriptionReadyFlyweight.LENGTH);
+        transmit(ON_SUBSCRIPTION_READY, buffer, 0, SubscriptionReadyFlyweight.LENGTH);
     }
 
     public void operationSucceeded(final long correlationId)
     {
         operationSucceeded.correlationId(correlationId);
 
-        transmit(ON_OPERATION_SUCCESS, buffer, OperationSucceededFlyweight.LENGTH);
+        transmit(ON_OPERATION_SUCCESS, buffer, 0, OperationSucceededFlyweight.LENGTH);
     }
 
     public void onUnavailableImage(
@@ -135,7 +135,7 @@ public class ClientProxy
             .streamId(streamId)
             .channel(channel);
 
-        transmit(ON_UNAVAILABLE_IMAGE, buffer, imageMessage.length());
+        transmit(ON_UNAVAILABLE_IMAGE, buffer, 0, imageMessage.length());
     }
 
     public void onCounterReady(final long correlationId, final int counterId)
@@ -144,7 +144,7 @@ public class ClientProxy
             .correlationId(correlationId)
             .counterId(counterId);
 
-        transmit(ON_COUNTER_READY, buffer, CounterUpdateFlyweight.LENGTH);
+        transmit(ON_COUNTER_READY, buffer, 0, CounterUpdateFlyweight.LENGTH);
     }
 
     public void onUnavailableCounter(final long registrationId, final int counterId)
@@ -153,11 +153,11 @@ public class ClientProxy
             .correlationId(registrationId)
             .counterId(counterId);
 
-        transmit(ON_UNAVAILABLE_COUNTER, buffer, CounterUpdateFlyweight.LENGTH);
+        transmit(ON_UNAVAILABLE_COUNTER, buffer, 0, CounterUpdateFlyweight.LENGTH);
     }
 
-    private void transmit(final int msgTypeId, final DirectBuffer buffer, final int length)
+    private void transmit(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
     {
-        transmitter.transmit(msgTypeId, buffer, 0, length);
+        transmitter.transmit(msgTypeId, buffer, index, length);
     }
 }

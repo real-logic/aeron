@@ -33,7 +33,6 @@ import java.util.Arrays;
  */
 public class BufferBuilder
 {
-
     private final boolean isDirect;
     private int limit = 0;
     private final UnsafeBuffer buffer;

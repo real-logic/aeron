@@ -457,13 +457,11 @@ public final class AeronCluster implements AutoCloseable
     private Publication connectToCluster()
     {
         Publication publication = null;
-        final String ingressChannel = ctx.ingressChannel();
-        final int ingressStreamId = ctx.ingressStreamId();
         final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
 
         if (isUnicast)
         {
-            final ChannelUri channelUri = ChannelUri.parse(ingressChannel);
+            final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
             final int memberCount = endpointByMemberIdMap.size();
             final Publication[] publications = new Publication[memberCount];
 
@@ -471,7 +469,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, entry.getValue());
                 final String channel = channelUri.toString();
-                publications[entry.getKey()] = addIngressPublication(channel, ingressStreamId);
+                publications[entry.getKey()] = addIngressPublication(channel, ctx.ingressStreamId());
             }
 
             int connectedIndex = -1;
@@ -518,7 +516,7 @@ public final class AeronCluster implements AutoCloseable
         }
         else
         {
-            publication = addIngressPublication(ingressChannel, ingressStreamId);
+            publication = addIngressPublication(ctx.ingressChannel(), ctx.ingressStreamId());
 
             idleStrategy.reset();
             while (!publication.isConnected())

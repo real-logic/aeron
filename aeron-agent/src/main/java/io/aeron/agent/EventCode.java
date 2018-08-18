@@ -70,7 +70,7 @@ public enum EventCode
     @FunctionalInterface
     private interface DissectFunction
     {
-        String dissect(EventCode code, MutableDirectBuffer buffer, int offset);
+        void dissect(EventCode code, MutableDirectBuffer buffer, int offset, StringBuilder builder);
     }
 
     private final long tagBit;
@@ -136,8 +136,8 @@ public enum EventCode
         return ((mask & code.tagBit()) == code.tagBit());
     }
 
-    public String decode(final MutableDirectBuffer buffer, final int offset)
+    public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        return dissector.dissect(this, buffer, offset);
+        dissector.dissect(this, buffer, offset, builder);
     }
 }

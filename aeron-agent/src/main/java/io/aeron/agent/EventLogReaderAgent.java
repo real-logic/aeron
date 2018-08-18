@@ -27,6 +27,8 @@ import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
  */
 public class EventLogReaderAgent implements Agent, MessageHandler
 {
+    private final StringBuilder builder = new StringBuilder();
+
     public String roleName()
     {
         return "event-log-reader";
@@ -39,6 +41,8 @@ public class EventLogReaderAgent implements Agent, MessageHandler
 
     public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
-        System.out.println(EventCode.get(msgTypeId).decode(buffer, index));
+        builder.setLength(0);
+        EventCode.get(msgTypeId).decode(buffer, index, builder);
+        System.out.println(builder);
     }
 }

@@ -50,9 +50,9 @@ public class EventDissector
     private static final OperationSucceededFlyweight OPERATION_SUCCEEDED = new OperationSucceededFlyweight();
     private static final SubscriptionReadyFlyweight SUBSCRIPTION_READY = new SubscriptionReadyFlyweight();
 
-    public static String dissectAsFrame(final EventCode code, final MutableDirectBuffer buffer, final int offset)
+    public static void dissectAsFrame(
+        final EventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        final StringBuilder builder = new StringBuilder();
         int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
 
         builder.append(": ");
@@ -68,45 +68,43 @@ public class EventDissector
             case HeaderFlyweight.HDR_TYPE_DATA:
                 final DataHeaderFlyweight dataFrame = DATA_HEADER;
                 dataFrame.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
-                builder.append(dissect(dataFrame));
+                dissect(dataFrame, builder);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SM:
                 final StatusMessageFlyweight smFrame = SM_HEADER;
                 smFrame.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
-                builder.append(dissect(smFrame));
+                dissect(smFrame, builder);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_NAK:
                 final NakFlyweight nakFrame = NAK_HEADER;
                 nakFrame.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
-                builder.append(dissect(nakFrame));
+                dissect(nakFrame, builder);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SETUP:
                 final SetupFlyweight setupFrame = SETUP_HEADER;
                 setupFrame.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
-                builder.append(dissect(setupFrame));
+                dissect(setupFrame, builder);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_RTTM:
                 final RttMeasurementFlyweight rttMeasurementFlyweight = RTT_MEASUREMENT;
                 rttMeasurementFlyweight.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
-                builder.append(dissect(rttMeasurementFlyweight));
+                dissect(rttMeasurementFlyweight, builder);
                 break;
 
             default:
                 builder.append("FRAME_UNKNOWN");
                 break;
         }
-
-        return builder.toString();
     }
 
     @SuppressWarnings("MethodLength")
-    public static String dissectAsCommand(final EventCode code, final MutableDirectBuffer buffer, final int offset)
+    public static void dissectAsCommand(
+        final EventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        final StringBuilder builder = new StringBuilder();
         final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
 
         builder.append(": ");
@@ -117,13 +115,13 @@ public class EventDissector
             case CMD_IN_ADD_EXCLUSIVE_PUBLICATION:
                 final PublicationMessageFlyweight pubCommand = PUB_MSG;
                 pubCommand.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(pubCommand));
+                dissect(pubCommand, builder);
                 break;
 
             case CMD_IN_ADD_SUBSCRIPTION:
                 final SubscriptionMessageFlyweight subCommand = SUB_MSG;
                 subCommand.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(subCommand));
+                dissect(subCommand, builder);
                 break;
 
             case CMD_IN_REMOVE_PUBLICATION:
@@ -131,39 +129,39 @@ public class EventDissector
             case CMD_IN_REMOVE_COUNTER:
                 final RemoveMessageFlyweight removeCmd = REMOVE_MSG;
                 removeCmd.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(removeCmd));
+                dissect(removeCmd, builder);
                 break;
 
             case CMD_OUT_PUBLICATION_READY:
             case CMD_OUT_EXCLUSIVE_PUBLICATION_READY:
                 final PublicationBuffersReadyFlyweight publicationReadyEvent = PUB_READY;
                 publicationReadyEvent.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(publicationReadyEvent));
+                dissect(publicationReadyEvent, builder);
                 break;
 
             case CMD_OUT_AVAILABLE_IMAGE:
                 final ImageBuffersReadyFlyweight imageAvailableEvent = IMAGE_READY;
                 imageAvailableEvent.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(imageAvailableEvent));
+                dissect(imageAvailableEvent, builder);
                 break;
 
             case CMD_OUT_ON_OPERATION_SUCCESS:
                 final OperationSucceededFlyweight operationSucceeded = OPERATION_SUCCEEDED;
                 operationSucceeded.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(operationSucceeded));
+                dissect(operationSucceeded, builder);
                 break;
 
             case CMD_IN_KEEPALIVE_CLIENT:
             case CMD_IN_CLIENT_CLOSE:
                 final CorrelatedMessageFlyweight correlatedEvent = CORRELATED_MSG;
                 correlatedEvent.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(correlatedEvent));
+                dissect(correlatedEvent, builder);
                 break;
 
             case CMD_OUT_ON_UNAVAILABLE_IMAGE:
                 final ImageMessageFlyweight imageUnavailableEvent = IMAGE_MSG;
                 imageUnavailableEvent.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(imageUnavailableEvent));
+                dissect(imageUnavailableEvent, builder);
                 break;
 
             case CMD_IN_ADD_DESTINATION:
@@ -172,62 +170,55 @@ public class EventDissector
             case CMD_IN_REMOVE_RCV_DESTINATION:
                 final DestinationMessageFlyweight destinationMessageFlyweight = DESTINATION_MSG;
                 destinationMessageFlyweight.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(destinationMessageFlyweight));
+                dissect(destinationMessageFlyweight, builder);
                 break;
 
             case CMD_OUT_ERROR:
                 final ErrorResponseFlyweight errorResponseFlyweight = ERROR_MSG;
                 errorResponseFlyweight.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(errorResponseFlyweight));
+                dissect(errorResponseFlyweight, builder);
                 break;
 
             case CMD_IN_ADD_COUNTER:
                 final CounterMessageFlyweight counterMessage = COUNTER_MSG;
                 counterMessage.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(counterMessage));
+                dissect(counterMessage, builder);
                 break;
 
             case CMD_OUT_SUBSCRIPTION_READY:
                 final SubscriptionReadyFlyweight subscriptionReady = SUBSCRIPTION_READY;
                 subscriptionReady.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(subscriptionReady));
+                dissect(subscriptionReady, builder);
                 break;
 
             case CMD_OUT_COUNTER_READY:
             case CMD_OUT_ON_UNAVAILABLE_COUNTER:
                 final CounterUpdateFlyweight counterUpdate = COUNTER_UPDATE;
                 counterUpdate.wrap(buffer, offset + relativeOffset);
-                builder.append(dissect(counterUpdate));
+                dissect(counterUpdate, builder);
                 break;
 
             default:
                 builder.append("COMMAND_UNKNOWN");
                 break;
         }
-
-        return builder.toString();
     }
 
-    public static String dissectAsInvocation(
-        final EventCode code, final MutableDirectBuffer buffer, final int initialOffset)
+    public static void dissectAsInvocation(
+        final EventCode code, final MutableDirectBuffer buffer, final int initialOffset, final StringBuilder builder)
     {
-        final StringBuilder builder = new StringBuilder();
         final int relativeOffset = dissectLogHeader(code, buffer, initialOffset, builder);
         builder.append(": ");
 
         readStackTraceElement(buffer, initialOffset + relativeOffset, builder);
-
-        return builder.toString();
     }
 
-    public static String dissectAsString(final EventCode code, final MutableDirectBuffer buffer, final int offset)
+    public static void dissectAsString(
+        final EventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        final StringBuilder builder = new StringBuilder();
         final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
         builder.append(": ");
         builder.append(buffer.getStringUtf8(offset + relativeOffset, LITTLE_ENDIAN));
-
-        return builder.toString();
     }
 
     private static void readStackTraceElement(
@@ -249,7 +240,14 @@ public class EventDissector
         length = buffer.getInt(i);
         final String fileName = buffer.getStringUtf8(i, length);
 
-        builder.append(String.format("%s.%s %s:%d", className, methodName, fileName, lineNumber));
+        builder
+            .append(className)
+            .append('.')
+            .append(methodName)
+            .append(' ')
+            .append(fileName)
+            .append(':')
+            .append(lineNumber);
     }
 
     private static int dissectLogHeader(
@@ -266,9 +264,16 @@ public class EventDissector
         final long timestamp = buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_LONG;
 
-        builder.append(String.format(
-            "[%1$f] %2$s [%3$d/%4$d]",
-            ((double)timestamp) / 1_000_000_000.0, code.name(), captureLength, bufferLength));
+        builder
+            .append('[')
+            .append(((double)timestamp) / 1_000_000_000.0)
+            .append("] ")
+            .append(code.name())
+            .append(" [")
+            .append(captureLength)
+            .append('/')
+            .append(bufferLength)
+            .append(']');
 
         return relativeOffset;
     }
@@ -289,7 +294,10 @@ public class EventDissector
 
         try
         {
-            builder.append(String.format("%s.%d", InetAddress.getByAddress(addressBuffer).getHostAddress(), port));
+            builder
+                .append(InetAddress.getByAddress(addressBuffer).getHostAddress())
+                .append('.')
+                .append(port);
         }
         catch (final Exception ex)
         {
@@ -299,200 +307,263 @@ public class EventDissector
         return relativeOffset;
     }
 
-    private static String dissect(final DataHeaderFlyweight msg)
+    private static void dissect(final DataHeaderFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%s 0x%x len %d %d:%d:%d @%x",
-            msg.headerType() == HeaderFlyweight.HDR_TYPE_PAD ? "PAD" : "DATA",
-            msg.flags(),
-            msg.frameLength(),
-            msg.sessionId(),
-            msg.streamId(),
-            msg.termId(),
-            msg.termOffset());
+        builder
+            .append(msg.headerType() == HeaderFlyweight.HDR_TYPE_PAD ? "PAD" : "DATA")
+            .append(' ')
+            .append(msg.flags())
+            .append(" len ")
+            .append(msg.frameLength())
+            .append(' ')
+            .append(msg.sessionId())
+            .append(':')
+            .append(msg.streamId())
+            .append(':')
+            .append(msg.termId())
+            .append(" @")
+            .append(msg.termOffset());
     }
 
-    private static String dissect(final StatusMessageFlyweight msg)
+    private static void dissect(final StatusMessageFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "SM 0x%x len %d %d:%d:%d @%x %d %d",
-            msg.flags(),
-            msg.frameLength(),
-            msg.sessionId(),
-            msg.streamId(),
-            msg.consumptionTermId(),
-            msg.consumptionTermOffset(),
-            msg.receiverWindowLength(),
-            msg.receiverId());
+        builder
+            .append("SM ")
+            .append(msg.flags())
+            .append(" len ")
+            .append(msg.frameLength())
+            .append(' ')
+            .append(msg.sessionId())
+            .append(':')
+            .append(msg.streamId())
+            .append(':')
+            .append(msg.consumptionTermId())
+            .append(" @")
+            .append(msg.consumptionTermOffset())
+            .append(' ')
+            .append(msg.receiverWindowLength())
+            .append(' ')
+            .append(msg.receiverId());
     }
 
-    private static String dissect(final NakFlyweight msg)
+    private static void dissect(final NakFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "NAK 0x%x len %d %d:%d:%d @%x %d",
-            msg.flags(),
-            msg.frameLength(),
-            msg.sessionId(),
-            msg.streamId(),
-            msg.termId(),
-            msg.termOffset(),
-            msg.length());
+        builder
+            .append("NAK ")
+            .append(msg.flags())
+            .append(" len ")
+            .append(msg.frameLength())
+            .append(' ')
+            .append(msg.sessionId())
+            .append(':')
+            .append(msg.streamId())
+            .append(':')
+            .append(msg.termId())
+            .append(" @")
+            .append(msg.termOffset())
+            .append(' ')
+            .append(msg.length());
     }
 
-    private static String dissect(final SetupFlyweight msg)
+    private static void dissect(final SetupFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "SETUP 0x%x len %d %d:%d:%d %d @%x %d MTU %d TTL %d",
-            msg.flags(),
-            msg.frameLength(),
-            msg.sessionId(),
-            msg.streamId(),
-            msg.activeTermId(),
-            msg.initialTermId(),
-            msg.termOffset(),
-            msg.termLength(),
-            msg.mtuLength(),
-            msg.ttl());
+        builder
+            .append("SETUP ")
+            .append(msg.flags())
+            .append(" len ")
+            .append(msg.frameLength())
+            .append(' ')
+            .append(msg.sessionId())
+            .append(':')
+            .append(msg.streamId())
+            .append(':')
+            .append(msg.activeTermId())
+            .append(' ')
+            .append(msg.initialTermId())
+            .append(" @")
+            .append(msg.termOffset())
+            .append(' ')
+            .append(msg.termLength())
+            .append(" MTU ")
+            .append(msg.mtuLength())
+            .append(" TTL ")
+            .append(msg.ttl());
     }
 
-    private static String dissect(final RttMeasurementFlyweight msg)
+    private static void dissect(final RttMeasurementFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "RTT 0x%x len %d %d:%d %d %d %d",
-            msg.flags(),
-            msg.frameLength(),
-            msg.sessionId(),
-            msg.streamId(),
-            msg.echoTimestampNs(),
-            msg.receptionDelta(),
-            msg.receiverId());
+        builder
+            .append("RTT ")
+            .append(msg.flags())
+            .append(" len ")
+            .append(msg.frameLength())
+            .append(' ')
+            .append(msg.sessionId())
+            .append(':')
+            .append(msg.streamId())
+            .append(' ')
+            .append(msg.echoTimestampNs())
+            .append(' ')
+            .append(msg.receptionDelta())
+            .append(' ')
+            .append(msg.receiverId());
     }
 
-    private static String dissect(final PublicationMessageFlyweight msg)
+    private static void dissect(final PublicationMessageFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%2$s %1$d [%4$d:%3$d]",
-            msg.streamId(),
-            msg.channel(),
-            msg.correlationId(),
-            msg.clientId());
+        builder
+            .append(msg.channel())
+            .append(' ')
+            .append(msg.streamId())
+            .append(" [")
+            .append(msg.clientId())
+            .append(':')
+            .append(msg.correlationId())
+            .append(']');
     }
 
-    private static String dissect(final SubscriptionMessageFlyweight msg)
+    private static void dissect(final SubscriptionMessageFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%s %d [%d][%d:%d]",
-            msg.channel(),
-            msg.streamId(),
-            msg.registrationCorrelationId(),
-            msg.clientId(),
-            msg.correlationId());
+        builder
+            .append(msg.channel())
+            .append(' ')
+            .append(msg.streamId())
+            .append(" [")
+            .append(msg.registrationCorrelationId())
+            .append("][")
+            .append(msg.clientId())
+            .append(':')
+            .append(msg.correlationId())
+            .append(']');
     }
 
-    private static String dissect(final PublicationBuffersReadyFlyweight msg)
+    private static void dissect(final PublicationBuffersReadyFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%d:%d %d %d [%d %d]%n    %s",
-            msg.sessionId(),
-            msg.streamId(),
-            msg.publicationLimitCounterId(),
-            msg.channelStatusCounterId(),
-            msg.correlationId(),
-            msg.registrationId(),
-            msg.logFileName());
+        builder
+            .append(msg.sessionId())
+            .append(':')
+            .append(msg.streamId())
+            .append(' ')
+            .append(msg.publicationLimitCounterId())
+            .append(' ')
+            .append(msg.channelStatusCounterId())
+            .append(" [")
+            .append(msg.correlationId())
+            .append(' ')
+            .append(msg.registrationId())
+            .append("] ")
+            .append(msg.logFileName());
     }
 
-    private static String dissect(final ImageBuffersReadyFlyweight msg)
+    private static void dissect(final ImageBuffersReadyFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%d:%d [%d:%d] \"%s\" [%d]%n    %s",
-            msg.sessionId(),
-            msg.streamId(),
-            msg.subscriberPositionId(),
-            msg.subscriptionRegistrationId(),
-            msg.sourceIdentity(),
-            msg.correlationId(),
-            msg.logFileName());
+        builder
+            .append(msg.sessionId())
+            .append(':')
+            .append(msg.streamId())
+            .append(" [")
+            .append(msg.subscriberPositionId())
+            .append(':')
+            .append(msg.subscriptionRegistrationId())
+            .append("] \"")
+            .append(msg.sourceIdentity())
+            .append("\" [")
+            .append(msg.correlationId())
+            .append("] ")
+            .append(msg.logFileName());
     }
 
-    private static String dissect(final CorrelatedMessageFlyweight msg)
+    private static void dissect(final CorrelatedMessageFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "[%d:%d]",
-            msg.clientId(),
-            msg.correlationId());
+        builder
+            .append('[')
+            .append(msg.clientId())
+            .append(':')
+            .append(msg.correlationId())
+            .append(']');
     }
 
-    private static String dissect(final ImageMessageFlyweight msg)
+    private static void dissect(final ImageMessageFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%s %d [%d %d]",
-            msg.channel(),
-            msg.streamId(),
-            msg.correlationId(),
-            msg.subscriptionRegistrationId());
+        builder
+            .append(msg.channel())
+            .append(' ')
+            .append(msg.streamId())
+            .append(" [")
+            .append(msg.correlationId())
+            .append(' ')
+            .append(msg.subscriptionRegistrationId())
+            .append(']');
     }
 
-    private static String dissect(final RemoveMessageFlyweight msg)
+    private static void dissect(final RemoveMessageFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%d [%d:%d]",
-            msg.registrationId(),
-            msg.clientId(),
-            msg.correlationId());
+        builder
+            .append(msg.registrationId())
+            .append(" [")
+            .append(msg.clientId())
+            .append(':')
+            .append(msg.correlationId())
+            .append(']');
     }
 
-    private static String dissect(final DestinationMessageFlyweight msg)
+    private static void dissect(final DestinationMessageFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%s %d [%d:%d]",
-            msg.channel(),
-            msg.registrationCorrelationId(),
-            msg.clientId(),
-            msg.correlationId());
+        builder
+            .append(msg.channel())
+            .append(' ')
+            .append(msg.registrationCorrelationId())
+            .append(" [")
+            .append(msg.clientId())
+            .append(':')
+            .append(msg.correlationId())
+            .append(']');
     }
 
-    private static String dissect(final ErrorResponseFlyweight msg)
+    private static void dissect(final ErrorResponseFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%d %s %s",
-            msg.offendingCommandCorrelationId(),
-            msg.errorCode(),
-            msg.errorMessage());
+        builder
+            .append(msg.offendingCommandCorrelationId())
+            .append(' ')
+            .append(msg.errorCode().toString())
+            .append(' ')
+            .append(msg.errorMessage());
     }
 
-    private static String dissect(final CounterMessageFlyweight msg)
+    private static void dissect(final CounterMessageFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%d [%d %d][%d %d][%d:%d]",
-            msg.typeId(),
-            msg.keyBufferOffset(),
-            msg.keyBufferLength(),
-            msg.labelBufferOffset(),
-            msg.labelBufferLength(),
-            msg.clientId(),
-            msg.correlationId());
+        builder
+            .append(msg.typeId())
+            .append(" [")
+            .append(msg.keyBufferOffset()).append(' ').append(msg.keyBufferLength())
+            .append("][")
+            .append(msg.labelBufferOffset()).append(' ').append(msg.labelBufferLength())
+            .append("][")
+            .append(msg.clientId())
+            .append(':')
+            .append(msg.correlationId())
+            .append(']');
     }
 
-    private static String dissect(final CounterUpdateFlyweight msg)
+    private static void dissect(final CounterUpdateFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%d %d",
-            msg.correlationId(),
-            msg.counterId());
+        builder
+            .append(msg.correlationId())
+            .append(' ')
+            .append(msg.counterId());
     }
 
-    private static String dissect(final OperationSucceededFlyweight msg)
+    private static void dissect(final OperationSucceededFlyweight msg, final StringBuilder builder)
     {
-        return String.format("%d", msg.correlationId());
+        builder.append(msg.correlationId());
     }
 
-    private static String dissect(final SubscriptionReadyFlyweight msg)
+    private static void dissect(final SubscriptionReadyFlyweight msg, final StringBuilder builder)
     {
-        return String.format(
-            "%d %d",
-            msg.correlationId(),
-            msg.channelStatusCounterId());
+        builder
+            .append(msg.correlationId())
+            .append(' ')
+            .append(msg.channelStatusCounterId());
     }
 
     public static int frameType(final MutableDirectBuffer buffer, final int termOffset)

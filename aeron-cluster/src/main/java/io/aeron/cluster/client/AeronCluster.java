@@ -24,10 +24,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthenticationException;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.NullCredentialsSupplier;
-import org.agrona.AsciiEncoding;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.ErrorHandler;
+import org.agrona.*;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
 
@@ -607,29 +604,22 @@ public final class AeronCluster implements AutoCloseable
         lastCorrelationId = aeron.nextCorrelationId();
 
         final SessionConnectRequestEncoder sessionConnectRequestEncoder = new SessionConnectRequestEncoder();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
-            SessionConnectRequestEncoder.BLOCK_LENGTH +
-            SessionConnectRequestEncoder.responseChannelHeaderLength() +
-            ctx.egressChannel().length() +
-            SessionConnectRequestEncoder.encodedCredentialsHeaderLength() +
-            encodedCredentials.length;
+        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+
+        sessionConnectRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(lastCorrelationId)
+            .responseStreamId(ctx.egressStreamId())
+            .responseChannel(ctx.egressChannel())
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
         idleStrategy.reset();
 
         while (true)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = publication.offer(buffer);
             if (result > 0)
             {
-                sessionConnectRequestEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(lastCorrelationId)
-                    .responseStreamId(ctx.egressStreamId())
-                    .responseChannel(ctx.egressChannel())
-                    .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
-
-                bufferClaim.commit();
-
                 break;
             }
 
@@ -654,26 +644,21 @@ public final class AeronCluster implements AutoCloseable
         lastCorrelationId = aeron.nextCorrelationId();
 
         final ChallengeResponseEncoder challengeResponseEncoder = new ChallengeResponseEncoder();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH +
-            ChallengeResponseEncoder.BLOCK_LENGTH +
-            ChallengeResponseEncoder.encodedCredentialsHeaderLength() +
-            encodedCredentials.length;
+        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+
+        challengeResponseEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(lastCorrelationId)
+            .clusterSessionId(sessionId)
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
         idleStrategy.reset();
 
         while (true)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = publication.offer(buffer);
             if (result > 0)
             {
-                challengeResponseEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(lastCorrelationId)
-                    .clusterSessionId(sessionId)
-                    .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
-
-                bufferClaim.commit();
-
                 break;
             }
 

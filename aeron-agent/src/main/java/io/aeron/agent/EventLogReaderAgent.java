@@ -27,7 +27,8 @@ import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 
 /**
- * Simple reader of an event log which decodes the event log and appends to  {@link System#out}.
+ * Simple reader of an event log which decodes the event log and appends to {@link System#out} by default or to file
+ * if {@link #LOG_FILENAME_PROP_NAME} System property is set.
  */
 public class EventLogReaderAgent implements Agent, MessageHandler
 {

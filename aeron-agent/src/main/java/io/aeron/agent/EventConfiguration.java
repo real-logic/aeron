@@ -91,11 +91,6 @@ public class EventConfiguration
     public static final int EVENT_READER_FRAME_LIMIT = 8;
 
     /**
-     * The enabled event codes mask
-     */
-    public static final long ENABLED_EVENT_CODES;
-
-    /**
      * Ring Buffer to use for logging
      */
     public static final ManyToOneRingBuffer EVENT_RING_BUFFER;
@@ -104,8 +99,6 @@ public class EventConfiguration
 
     static
     {
-        ENABLED_EVENT_CODES = makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
-
         final int bufferLength = SystemUtil.getSizeAsInt(
             EventConfiguration.BUFFER_LENGTH_PROP_NAME, EventConfiguration.BUFFER_LENGTH_DEFAULT) +
             RingBufferDescriptor.TRAILER_LENGTH;
@@ -115,7 +108,7 @@ public class EventConfiguration
 
     public static long getEnabledEventCodes()
     {
-        return ENABLED_EVENT_CODES;
+        return makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
     }
 
     static long makeTagBitSet(final Set<EventCode> eventCodes)
@@ -186,7 +179,7 @@ public class EventConfiguration
                     }
                     else
                     {
-                        System.err.println("Unknown event code: " + codeId);
+                        System.err.println("unknown event code: " + codeId);
                     }
                 }
             }

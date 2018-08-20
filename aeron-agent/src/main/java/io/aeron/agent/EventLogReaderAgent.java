@@ -19,15 +19,45 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 
 /**
- * Simpler reader of an event log which decodes the event log and sends to {@link System#out}.
+ * Simple reader of an event log which decodes the event log and appends to  {@link System#out}.
  */
 public class EventLogReaderAgent implements Agent, MessageHandler
 {
+    /**
+     * Event Buffer length system property name. If not set then will default to STDOUT.
+     */
+    public static final String LOG_FILENAME_PROP_NAME = "aeron.event.log.filename";
+
+    private final PrintStream out;
     private final StringBuilder builder = new StringBuilder();
+
+    public EventLogReaderAgent()
+    {
+        final String filename = System.getProperty(LOG_FILENAME_PROP_NAME);
+        if (null == filename)
+        {
+            out = System.out;
+        }
+        else
+        {
+            try
+            {
+                out = new PrintStream(new FileOutputStream(filename, true));
+            }
+            catch (final FileNotFoundException ex)
+            {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
 
     public String roleName()
     {
@@ -43,6 +73,6 @@ public class EventLogReaderAgent implements Agent, MessageHandler
     {
         builder.setLength(0);
         EventCode.get(msgTypeId).decode(buffer, index, builder);
-        System.out.println(builder);
+        out.println(builder);
     }
 }

@@ -60,10 +60,7 @@ public class EventLogger
     }
 
     public void logFrameIn(
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        final InetSocketAddress dstAddress)
+        final DirectBuffer buffer, final int offset, final int length, final InetSocketAddress dstAddress)
     {
         if (IS_FRAME_IN_ENABLED)
         {
@@ -90,7 +87,8 @@ public class EventLogger
     {
         if (EventCode.isEnabled(EventCode.REMOVE_PUBLICATION_CLEANUP, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.REMOVE_PUBLICATION_CLEANUP, String.format("%s %d:%d", uri, sessionId, streamId));
+            final String msg = uri + " " + sessionId + ":" + streamId;
+            logString(EventCode.REMOVE_PUBLICATION_CLEANUP, msg);
         }
     }
 
@@ -98,7 +96,8 @@ public class EventLogger
     {
         if (EventCode.isEnabled(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, String.format("%s %d [%d]", uri, streamId, id));
+            final String msg = uri + " " + streamId + " [" + id + "]";
+            logString(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, msg);
         }
     }
 
@@ -106,7 +105,8 @@ public class EventLogger
     {
         if (EventCode.isEnabled(EventCode.REMOVE_IMAGE_CLEANUP, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.REMOVE_IMAGE_CLEANUP, String.format("%s %d:%d [%d]", uri, sessionId, streamId, id));
+            final String msg = uri + " " + sessionId + ":" + streamId + " [" + id + "]";
+            logString(EventCode.REMOVE_IMAGE_CLEANUP, msg);
         }
     }
 

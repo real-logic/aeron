@@ -47,7 +47,7 @@ public class EventConfigurationTest
         {
             final Set<EventCode> enabledEventCodes = getEnabledEventCodes("list of invalid options");
             assertThat(enabledEventCodes.size(), is(0));
-            assertThat(stderr.toString(), startsWith("Unknown event code: list of invalid options"));
+            assertThat(stderr.toString(), startsWith("unknown event code: list of invalid options"));
         }
         finally
         {

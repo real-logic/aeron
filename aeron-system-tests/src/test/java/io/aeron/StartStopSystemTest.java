@@ -20,7 +20,7 @@ import org.junit.Test;
 
 public class StartStopSystemTest
 {
-    @Test(timeout = 10_000)
+    @Test
     public void shouldStartAndStopInstantly()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()

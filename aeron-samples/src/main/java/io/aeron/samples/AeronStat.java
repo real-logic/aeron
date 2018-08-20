@@ -213,7 +213,7 @@ public class AeronStat
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
-        final String header = String.format(" - Aeron Stat (CnC v%d), pid %d", CNC_VERSION, SystemUtil.getPid());
+        final String header = " - Aeron Stat (CnC v" + CNC_VERSION + "), pid " + SystemUtil.getPid();
         final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
         while (running.get())

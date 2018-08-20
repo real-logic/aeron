@@ -56,7 +56,7 @@ public class StreamingPublisher
     {
         if (MESSAGE_LENGTH < SIZE_OF_LONG)
         {
-            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", SIZE_OF_LONG));
+            throw new IllegalArgumentException("Message length must be at least " + SIZE_OF_LONG + " bytes");
         }
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;

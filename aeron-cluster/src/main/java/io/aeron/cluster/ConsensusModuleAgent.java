@@ -591,7 +591,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
     }
 
-    public void onJoinCluster(final long leaderhsipTermId, final int memberId)
+    public void onJoinCluster(final long leadershipTermId, final int memberId)
     {
         // TODO: add member officially from passive.
         // TODO: send ClusterChange event to log

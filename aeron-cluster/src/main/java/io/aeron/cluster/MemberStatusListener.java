@@ -68,7 +68,7 @@ interface MemberStatusListener
 
     void onSnapshotRecordings(SnapshotRecordingsDecoder snapshotRecordingsDecoder);
 
-    void onJoinCluster(long leaderhsipTermId, int memberId);
+    void onJoinCluster(long leadershipTermId, int memberId);
 
     void onLeaveCluster(long leadershipTermId, int memberId);
 }

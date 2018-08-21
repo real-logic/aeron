@@ -752,10 +752,10 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 nextListener.onSnapshotRecordings(snapshotRecordingsDecoder);
             }
 
-            public void onJoinCluster(final long leaderhsipTermId, final int memberId)
+            public void onJoinCluster(final long leadershipTermId, final int memberId)
             {
-                stream.format("onJoinCluster[%d] %d %d%n", index, leaderhsipTermId, memberId);
-                nextListener.onJoinCluster(leaderhsipTermId, memberId);
+                stream.format("onJoinCluster[%d] %d %d%n", index, leadershipTermId, memberId);
+                nextListener.onJoinCluster(leadershipTermId, memberId);
             }
 
             public void onLeaveCluster(final long leadershipTermId, final int memberId)

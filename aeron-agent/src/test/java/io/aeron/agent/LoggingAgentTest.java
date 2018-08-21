@@ -31,6 +31,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static junit.framework.TestCase.assertSame;
@@ -42,6 +44,7 @@ public class LoggingAgentTest
     private static final int STREAM_ID = 777;
 
     static final IntHashSet MSG_ID_SET = new IntHashSet();
+    static final CountDownLatch LATCH = new CountDownLatch(1);
 
     @BeforeClass
     public static void installAgent()
@@ -58,8 +61,8 @@ public class LoggingAgentTest
         System.clearProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME);
     }
 
-    @Test
-    public void shouldLogMessages()
+    @Test(timeout = 10_000L)
+    public void shouldLogMessages() throws Exception
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .errorHandler(Throwable::printStackTrace);
@@ -89,6 +92,8 @@ public class LoggingAgentTest
 
                 assertSame(counter.get(), 1);
             }
+
+            LATCH.await();
         }
         finally
         {
@@ -119,5 +124,10 @@ class StubEventLogReaderAgent implements Agent, MessageHandler
     public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
         LoggingAgentTest.MSG_ID_SET.add(msgTypeId);
+
+        if (EventCode.CMD_IN_CLIENT_CLOSE.id() == msgTypeId)
+        {
+            LoggingAgentTest.LATCH.countDown();
+        }
     }
 }

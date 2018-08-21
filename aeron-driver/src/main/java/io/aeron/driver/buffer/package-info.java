@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 /**
- * Encapsulates the creation and management of buffer used to contain the log buffers.
+ * Encapsulates the creation and management of buffers used to contain the log buffers.
  */
 package io.aeron.driver.buffer;

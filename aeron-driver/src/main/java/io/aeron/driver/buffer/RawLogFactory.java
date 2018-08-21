@@ -26,7 +26,6 @@ import java.nio.file.*;
 
 import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.driver.Configuration.LOW_FILE_STORE_WARNING_THRESHOLD;
-import static io.aeron.driver.buffer.FileMappingConvention.streamLocation;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 
 /**
@@ -34,6 +33,9 @@ import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
  */
 public class RawLogFactory
 {
+    private static final String PUBLICATIONS = "publications";
+    private static final String IMAGES = "images";
+
     private final int filePageSize;
     private final boolean checkStorage;
     private final ErrorHandler errorHandler;
@@ -51,19 +53,20 @@ public class RawLogFactory
         this.checkStorage = checkStorage;
         this.errorHandler = errorHandler;
 
-        final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
-        publicationsDir = fileMappingConvention.publicationsDir();
-        imagesDir = fileMappingConvention.imagesDir();
+        final File dataDir = new File(dataDirectoryName);
 
-        IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
-        IoUtil.ensureDirectoryExists(imagesDir, FileMappingConvention.IMAGES);
+        publicationsDir = new File(dataDir, PUBLICATIONS);
+        imagesDir = new File(dataDir, IMAGES);
+
+        IoUtil.ensureDirectoryExists(publicationsDir, PUBLICATIONS);
+        IoUtil.ensureDirectoryExists(imagesDir, IMAGES);
 
         FileStore fs = null;
         try
         {
             if (checkStorage)
             {
-                fs = Files.getFileStore(Paths.get(dataDirectoryName));
+                fs = Files.getFileStore(dataDir.toPath());
             }
         }
         catch (final IOException ex)
@@ -202,5 +205,20 @@ public class RawLogFactory
             throw new IllegalArgumentException(
                 "invalid buffer length: " + termBufferLength + " max is " + TERM_MAX_LENGTH);
         }
+    }
+
+    private static File streamLocation(
+        final File rootDir,
+        final String channel,
+        final int sessionId,
+        final int streamId,
+        final long correlationId)
+    {
+        final String fileName = channel + '-' +
+            Integer.toHexString(sessionId) + '-' +
+            Integer.toHexString(streamId) + '-' +
+            Long.toHexString(correlationId) + ".logbuffer";
+
+        return new File(rootDir, fileName);
     }
 }

@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import org.agrona.CloseHelper;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
@@ -33,10 +34,11 @@ import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 public class EventLogReaderAgent implements Agent, MessageHandler
 {
     /**
-     * Event Buffer length system property name. If not set then will default to STDOUT.
+     * Event Buffer length system property name. If not set then output will default to {@link System#out}.
      */
     public static final String LOG_FILENAME_PROP_NAME = "aeron.event.log.filename";
 
+    private final FileOutputStream fileOutputStream;
     private final PrintStream out;
     private final StringBuilder builder = new StringBuilder();
 
@@ -45,19 +47,27 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         final String filename = System.getProperty(LOG_FILENAME_PROP_NAME);
         if (null == filename)
         {
+            fileOutputStream = null;
             out = System.out;
         }
         else
         {
             try
             {
-                out = new PrintStream(new FileOutputStream(filename, true));
+                fileOutputStream = new FileOutputStream(filename, true);
+                out = new PrintStream(fileOutputStream);
             }
             catch (final FileNotFoundException ex)
             {
                 throw new RuntimeException(ex);
             }
         }
+    }
+
+    public void onClose()
+    {
+        out.flush();
+        CloseHelper.close(fileOutputStream);
     }
 
     public String roleName()

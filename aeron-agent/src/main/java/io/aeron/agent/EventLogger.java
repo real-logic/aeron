@@ -24,7 +24,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Event logger interface for applications/libraries
+ * Event logger interface used by interceptors for recording into a {@link RingBuffer}.
  */
 public class EventLogger
 {

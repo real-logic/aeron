@@ -22,7 +22,6 @@ import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.regex.Pattern;
 
 import static io.aeron.agent.EventCode.*;
 
@@ -39,7 +38,7 @@ public class EventConfiguration
     /**
      * Event tags system property name. This is either:
      * <ul>
-     * <li>A comma separated list of EventCodes to enable</li>
+     * <li>A comma separated list of {@link EventCode}s to enable</li>
      * <li>"all" which enables all the codes</li>
      * <li>"admin" which enables the codes specified by {@link #ADMIN_ONLY_EVENT_CODES} which is the admin commands</li>
      * </ul>
@@ -91,11 +90,9 @@ public class EventConfiguration
     public static final int EVENT_READER_FRAME_LIMIT = 8;
 
     /**
-     * Ring Buffer to use for logging
+     * Ring Buffer to use for logging that will be read by {@link EventLogAgent#READER_CLASSNAME_PROP_NAME}.
      */
     public static final ManyToOneRingBuffer EVENT_RING_BUFFER;
-
-    private static final Pattern COMMA_PATTERN = Pattern.compile(",");
 
     static
     {
@@ -137,7 +134,7 @@ public class EventConfiguration
         }
 
         final Set<EventCode> eventCodeSet = new HashSet<>();
-        final String[] codeIds = COMMA_PATTERN.split(enabledLoggerEventCodes);
+        final String[] codeIds = enabledLoggerEventCodes.split(",");
 
         for (final String codeId : codeIds)
         {

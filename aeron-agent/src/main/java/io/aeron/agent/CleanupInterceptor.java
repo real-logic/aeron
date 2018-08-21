@@ -25,9 +25,9 @@ import static io.aeron.agent.EventLogger.LOGGER;
 /**
  * Intercepts calls in the driver to log the clean up of major resources.
  */
-public class CleanupInterceptor
+class CleanupInterceptor
 {
-    public static class CleanupImage
+    static class CleanupImage
     {
         @Advice.OnMethodEnter
         public static void cleanupImageInterceptor(final PublicationImage image)
@@ -36,7 +36,7 @@ public class CleanupInterceptor
         }
     }
 
-    public static class CleanupPublication
+    static class CleanupPublication
     {
         @Advice.OnMethodEnter
         public static void cleanupPublication(final NetworkPublication publication)
@@ -45,7 +45,7 @@ public class CleanupInterceptor
         }
     }
 
-    public static class CleanupSubscriptionLink
+    static class CleanupSubscriptionLink
     {
         @Advice.OnMethodEnter
         public static void cleanupSubscriptionLink(final SubscriptionLink link)

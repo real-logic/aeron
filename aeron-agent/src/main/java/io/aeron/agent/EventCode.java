@@ -18,7 +18,7 @@ package io.aeron.agent;
 import org.agrona.MutableDirectBuffer;
 
 /**
- * Event types and association for encoding/decoding.
+ * Events and codecs for encoding/decoding events recorded to the {@link EventConfiguration#EVENT_RING_BUFFER}.
  */
 public enum EventCode
 {

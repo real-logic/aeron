@@ -34,6 +34,12 @@ import static net.bytebuddy.asm.Advice.to;
 import static net.bytebuddy.matcher.ElementMatchers.nameEndsWith;
 import static net.bytebuddy.matcher.ElementMatchers.named;
 
+/**
+ * A Java agent which when attached to a JVM will weave byte code to intercept events as defined by {@link EventCode}.
+ * These events are recorded to an in-memory {@link org.agrona.concurrent.ringbuffer.RingBuffer} which is consumed
+ * and appended asynchronous to a log as defined by the class {@link #READER_CLASSNAME_PROP_NAME} which defaults to
+ * {@link EventLogReaderAgent}.
+ */
 @SuppressWarnings("unused")
 public class EventLogAgent
 {
@@ -152,7 +158,7 @@ public class EventLogAgent
             .installOn(instrumentation);
 
         final Thread thread = new Thread(readerAgentRunner);
-        thread.setName("event log reader");
+        thread.setName("event-log-reader");
         thread.setDaemon(true);
         thread.start();
     }

@@ -27,7 +27,9 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Dissect encoded log events. The event consumer of the log should be single threaded.
+ * Dissect encoded log events and append them to a provided {@link StringBuilder}.
+ * <p>
+ * <b>Note:</b>The event consumer of the log should be single threaded.
  */
 public class EventDissector
 {

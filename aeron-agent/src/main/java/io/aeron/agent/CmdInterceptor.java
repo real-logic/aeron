@@ -25,7 +25,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 /**
  * Intercepts calls for the command protocol from clients to the driver for logging.
  */
-public class CmdInterceptor
+class CmdInterceptor
 {
     @Advice.OnMethodEnter
     public static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)

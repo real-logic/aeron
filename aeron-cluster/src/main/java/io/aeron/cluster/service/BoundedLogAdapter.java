@@ -44,6 +44,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder actionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
+    private final ClusterChangeDecoder clusterChangeDecoder = new ClusterChangeDecoder();
 
     private final Image image;
     private final ReadableCounter upperBound;
@@ -179,6 +180,22 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     newLeadershipTermEventDecoder.timestamp(),
                     newLeadershipTermEventDecoder.leaderMemberId(),
                     newLeadershipTermEventDecoder.logSessionId());
+                break;
+
+            case ClusterChangeDecoder.TEMPLATE_ID:
+                clusterChangeDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                agent.onClusterChange(
+                    clusterChangeDecoder.leaderMemberId(),
+                    clusterChangeDecoder.logPosition(),
+                    clusterChangeDecoder.timestamp(),
+                    clusterChangeDecoder.leaderMemberId(),
+                    clusterChangeDecoder.clusterSize(),
+                    clusterChangeDecoder.clusterMembers());
                 break;
         }
 

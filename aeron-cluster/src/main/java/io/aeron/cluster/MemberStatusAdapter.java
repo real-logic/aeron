@@ -37,10 +37,20 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
     private final CatchupPositionDecoder catchupPositionDecoder = new CatchupPositionDecoder();
     private final StopCatchupDecoder stopCatchupDecoder = new StopCatchupDecoder();
+
     private final RecoveryPlanQueryDecoder recoveryPlanQueryDecoder = new RecoveryPlanQueryDecoder();
     private final RecoveryPlanDecoder recoveryPlanDecoder = new RecoveryPlanDecoder();
     private final RecordingLogQueryDecoder recordingLogQueryDecoder = new RecordingLogQueryDecoder();
     private final RecordingLogDecoder recordingLogDecoder = new RecordingLogDecoder();
+
+    private final AddClusterMemberDecoder addClusterMemberDecoder = new AddClusterMemberDecoder();
+    private final RemoveClusterMemberDecoder removeClusterMemberDecoder = new RemoveClusterMemberDecoder();
+    private final ClusterMembersChangeDecoder clusterMembersChangeDecoder = new ClusterMembersChangeDecoder();
+    private final SnapshotRecordingQueryDecoder snapshotRecordingQueryDecoder = new SnapshotRecordingQueryDecoder();
+    private final SnapshotRecordingsDecoder snapshotRecordingsDecoder = new SnapshotRecordingsDecoder();
+    private final JoinClusterDecoder joinClusterDecoder = new JoinClusterDecoder();
+    private final LeaveClusterDecoder leaveClusterDecoder = new LeaveClusterDecoder();
+
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
     private final MemberStatusListener memberStatusListener;
@@ -225,6 +235,78 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onRecordingLog(recordingLogDecoder);
+                break;
+
+            case AddClusterMemberDecoder.TEMPLATE_ID:
+                addClusterMemberDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onAddClusterMember(addClusterMemberDecoder.memberEndpoints());
+                break;
+
+            case RemoveClusterMemberDecoder.TEMPLATE_ID:
+                removeClusterMemberDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onRemoveClusterMember(removeClusterMemberDecoder.memberId());
+                break;
+
+            case ClusterMembersChangeDecoder.TEMPLATE_ID:
+                clusterMembersChangeDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onClusterMembersChange(clusterMembersChangeDecoder.clusterMembers());
+                break;
+
+            case SnapshotRecordingQueryDecoder.TEMPLATE_ID:
+                snapshotRecordingQueryDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onSnapshotRecordingQuery(snapshotRecordingQueryDecoder.requestMemberId());
+                break;
+
+            case SnapshotRecordingsDecoder.TEMPLATE_ID:
+                snapshotRecordingsDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onSnapshotRecordings(snapshotRecordingsDecoder);
+                break;
+
+            case JoinClusterDecoder.TEMPLATE_ID:
+                joinClusterDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onJoinCluster(
+                    joinClusterDecoder.leadershipTermId(), joinClusterDecoder.memberId());
+                break;
+
+            case LeaveClusterDecoder.TEMPLATE_ID:
+                leaveClusterDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onLeaveCluster(
+                    leaveClusterDecoder.leadershipTermId(), leaveClusterDecoder.memberId());
                 break;
 
             default:

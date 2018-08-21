@@ -353,6 +353,20 @@ class ClusteredServiceAgent implements Agent, Cluster
         this.clusterTimeMs = timestampMs;
     }
 
+    @SuppressWarnings("unused")
+    void onClusterChange(
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestampMs,
+        final int leaderMemberId,
+        final int clusterSize,
+        final String clusterMembers)
+    {
+        this.clusterTimeMs = timestampMs;
+
+        // TODO: should service know of change?
+    }
+
     void addSession(
         final long clusterSessionId,
         final long lastCorrelationId,

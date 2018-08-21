@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.codecs.RecordingLogDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
+import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 
 interface MemberStatusListener
 {
@@ -56,4 +57,18 @@ interface MemberStatusListener
         boolean includeSnapshots);
 
     void onRecordingLog(RecordingLogDecoder recordingLogDecoder);
+
+    void onAddClusterMember(String memberEndpoints);
+
+    void onRemoveClusterMember(int memberId);
+
+    void onClusterMembersChange(String clusterMembers);
+
+    void onSnapshotRecordingQuery(int requestMemberId);
+
+    void onSnapshotRecordings(SnapshotRecordingsDecoder snapshotRecordingsDecoder);
+
+    void onJoinCluster(long leaderhsipTermId, int memberId);
+
+    void onLeaveCluster(long leadershipTermId, int memberId);
 }

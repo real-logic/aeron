@@ -560,6 +560,49 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
     }
 
+    public void onAddClusterMember(final String memberEndpoints)
+    {
+        if (null == election && Cluster.Role.LEADER == role)
+        {
+            // TODO: add cluster member to list (no affect on group size)
+            // TODO: send ClusterMembersChange to new memberId
+        }
+    }
+
+    public void onRemoveClusterMember(final int memberId)
+    {
+        if (null == election && Cluster.Role.LEADER == role)
+        {
+            // TODO: remove cluster member from list (no affect on group size)
+            // TODO: send ClusterMembersChange to all cluster members
+            // TODO: close publication for old cluster member
+        }
+    }
+
+    public void onClusterMembersChange(final String clusterMembers)
+    {
+    }
+
+    public void onSnapshotRecordingQuery(final int requestMemberId)
+    {
+    }
+
+    public void onSnapshotRecordings(final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
+    {
+    }
+
+    public void onJoinCluster(final long leaderhsipTermId, final int memberId)
+    {
+        // TODO: add member officially from passive.
+        // TODO: send ClusterChange event to log
+    }
+
+    public void onLeaveCluster(final long leadershipTermId, final int memberId)
+    {
+        // TODO: change member officially to passive.
+        // TODO: send ClusterChange event to log
+    }
+
     void state(final ConsensusModule.State state)
     {
         this.state = state;
@@ -846,6 +889,20 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
             election.onReplayNewLeadershipTermEvent(recordingId, leadershipTermId, logPosition, cachedTimeMs);
         }
+    }
+
+    @SuppressWarnings("unused")
+    void onReplayClusterChange(
+        final long leadershipTermId,
+        final long logPosition,
+        final long timestamp,
+        final int leaderMemberId,
+        final int clusterSize,
+        final String clusterMembers)
+    {
+        clusterTimeMs(timestamp);
+
+        // TODO: update cluster member size and install new clusterMembers list
     }
 
     void onReloadState(final long nextSessionId)

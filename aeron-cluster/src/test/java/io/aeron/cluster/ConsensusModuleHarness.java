@@ -25,6 +25,7 @@ import io.aeron.cluster.client.IngressSessionDecorator;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.RecordingLogDecoder;
 import io.aeron.cluster.codecs.RecoveryPlanDecoder;
+import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
@@ -719,6 +720,48 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 stream.format("onRecordingLog[%d] %d %d %d%n",
                     index, decoder.correlationId(), decoder.requestMemberId(), decoder.leaderMemberId());
                 nextListener.onRecordingLog(decoder);
+            }
+
+            public void onAddClusterMember(final String memberEndpoints)
+            {
+                stream.format("onAddClusterMember[%d] %s%n", index, memberEndpoints);
+                nextListener.onAddClusterMember(memberEndpoints);
+            }
+
+            public void onRemoveClusterMember(final int memberId)
+            {
+                stream.format("onAddClusterMember[%d] %d%n", index, memberId);
+                nextListener.onRemoveClusterMember(memberId);
+            }
+
+            public void onClusterMembersChange(final String clusterMembers)
+            {
+                stream.format("onClusterMembersChange[%d] %s%n", index, clusterMembers);
+                nextListener.onClusterMembersChange(clusterMembers);
+            }
+
+            public void onSnapshotRecordingQuery(final int requestMemberId)
+            {
+                stream.format("onSnapshotRecordingQuery[%d] %d%n", index, requestMemberId);
+                nextListener.onSnapshotRecordingQuery(requestMemberId);
+            }
+
+            public void onSnapshotRecordings(final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
+            {
+                stream.format("onSnapshotRecordings[%d]%n", index);
+                nextListener.onSnapshotRecordings(snapshotRecordingsDecoder);
+            }
+
+            public void onJoinCluster(final long leaderhsipTermId, final int memberId)
+            {
+                stream.format("onJoinCluster[%d] %d %d%n", index, leaderhsipTermId, memberId);
+                nextListener.onJoinCluster(leaderhsipTermId, memberId);
+            }
+
+            public void onLeaveCluster(final long leadershipTermId, final int memberId)
+            {
+                stream.format("onLeaveCluster[%d] %d %d%n", index, leadershipTermId, memberId);
+                nextListener.onLeaveCluster(leadershipTermId, memberId);
             }
         };
     }

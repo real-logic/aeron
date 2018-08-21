@@ -42,6 +42,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder clusterActionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
+    private final ClusterChangeDecoder clusterChangeDecoder = new ClusterChangeDecoder();
 
     LogAdapter(final Image image, final ConsensusModuleAgent consensusModuleAgent)
     {
@@ -82,6 +83,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
         }
     }
 
+    @SuppressWarnings("MethodLength")
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -164,6 +166,22 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     newLeadershipTermEventDecoder.timestamp(),
                     newLeadershipTermEventDecoder.leaderMemberId(),
                     newLeadershipTermEventDecoder.logSessionId());
+                break;
+
+            case ClusterChangeDecoder.TEMPLATE_ID:
+                clusterChangeDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                consensusModuleAgent.onReplayClusterChange(
+                    clusterChangeDecoder.leaderMemberId(),
+                    clusterChangeDecoder.logPosition(),
+                    clusterChangeDecoder.timestamp(),
+                    clusterChangeDecoder.leaderMemberId(),
+                    clusterChangeDecoder.clusterSize(),
+                    clusterChangeDecoder.clusterMembers());
                 break;
 
             case ClusterActionRequestDecoder.TEMPLATE_ID:

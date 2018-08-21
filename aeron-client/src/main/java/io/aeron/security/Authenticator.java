@@ -16,7 +16,7 @@
 package io.aeron.security;
 
 /**
- * Interface for Authenticator to handle authentication of clients to a system.
+ * Interface for a Authenticator to handle authentication of clients to a system.
  * <p>
  * The session-id refers to the authentication session and not the Aeron transport session assigned to a publication.
  */

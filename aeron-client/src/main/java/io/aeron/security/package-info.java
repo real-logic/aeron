@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 /**
- * Basic security infrastructure for authenticating sessions by delegating to a {@link io.aeron.security.Authenticator}.
+ * Basic security infrastructure for authenticating sessions by delegating to an {@link io.aeron.security.Authenticator}.
  */
 package io.aeron.security;

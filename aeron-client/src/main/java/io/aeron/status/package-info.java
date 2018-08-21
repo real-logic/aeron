@@ -1,5 +1,5 @@
 /*
- * Copyright 204-2018 Real Logic Ltd.
+ * Copyright 2014-2018 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 /**
- * Media, such as UDP, specific implementations used by the driver.
+ * Counters for tracking status relevant to client activity.
  */
-package io.aeron.driver.media;
+package io.aeron.status;

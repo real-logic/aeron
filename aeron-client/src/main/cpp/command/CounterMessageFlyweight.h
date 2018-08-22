@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <string>
 #include <stddef.h>
+#include <util/BitUtil.h>
 #include "CorrelatedMessageFlyweight.h"
 
 namespace aeron { namespace command {
@@ -134,7 +135,10 @@ private:
 
     inline util::index_t labelLengthOffset() const
     {
-        return keyLengthOffset() + sizeof(std::int32_t) + keyLength();
+        util::index_t offset = keyLengthOffset() + sizeof(std::int32_t) + keyLength();
+        util::index_t alignment = static_cast<util::index_t>(sizeof(std::int32_t));
+
+        return aeron::util::BitUtil::align(offset, alignment);
     }
 };
 

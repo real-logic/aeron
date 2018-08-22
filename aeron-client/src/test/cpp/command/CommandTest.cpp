@@ -18,6 +18,7 @@
 #include <gtest/gtest.h>
 #include <util/Exceptions.h>
 #include <util/Index.h>
+#include <util/BitUtil.h>
 #include <concurrent/AtomicBuffer.h>
 #include <command/ImageMessageFlyweight.h>
 #include <command/ImageBuffersReadyFlyweight.h>
@@ -164,8 +165,9 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
         ASSERT_EQ(ab.getString(startOfLogFileName), logFileNameData);
 
         const index_t startOfSourceIdentity = startOfLogFileName + 4 + (index_t)logFileNameData.length();
-        ASSERT_EQ(ab.getStringLength(startOfSourceIdentity), static_cast<int>(sourceInfoData.length()));
-        ASSERT_EQ(ab.getString(startOfSourceIdentity), sourceInfoData);
+        const index_t startOfSourceIdentityAligned = BitUtil::align(startOfSourceIdentity, 4);
+        ASSERT_EQ(ab.getStringLength(startOfSourceIdentityAligned), static_cast<int>(sourceInfoData.length()));
+        ASSERT_EQ(ab.getString(startOfSourceIdentityAligned), sourceInfoData);
 
         ASSERT_EQ(cmd.correlationId(), -1);
         ASSERT_EQ(cmd.sessionId(), 0x02020202);
@@ -175,10 +177,9 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
         ASSERT_EQ(cmd.logFileName(), logFileNameData);
         ASSERT_EQ(cmd.sourceIdentity(), sourceInfoData);
 
-        ASSERT_EQ(
-            cmd.length(),
-            static_cast<int>(sizeof(ImageBuffersReadyDefn) +
-                sizeof(std::int32_t) + logFileNameData.length() +
-                sizeof(std::int32_t) + sourceInfoData.length()));
+        int expectedLength = static_cast<int>(
+            startOfSourceIdentityAligned + sizeof(std::int32_t) + sourceInfoData.length());
+
+        ASSERT_EQ(cmd.length(), expectedLength);
     });
 }

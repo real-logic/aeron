@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <stddef.h>
+#include <util/BitUtil.h>
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>
 #include "Flyweight.h"
@@ -173,8 +174,11 @@ private:
 
     inline util::index_t sourceIdentityOffset() const
     {
-        const util::index_t startOfLogFileName = logFileNameOffset();
-        return startOfLogFileName + stringGetLength(startOfLogFileName) + (util::index_t)sizeof(std::int32_t);
+        util::index_t startOfLogFileName = logFileNameOffset();
+        util::index_t logFileNameLength = static_cast<util::index_t>(stringGetLength(startOfLogFileName));
+        util::index_t alignment = static_cast<util::index_t>(sizeof(std::int32_t));
+
+        return aeron::util::BitUtil::align(startOfLogFileName + alignment + logFileNameLength, alignment);
     }
 };
 

@@ -55,8 +55,6 @@ import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
-import static io.aeron.cluster.ServiceAck.hasReachedPosition;
-import static io.aeron.cluster.ServiceAck.newArray;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.lang.Long.MAX_VALUE;
 
@@ -146,7 +144,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.recordingLog = ctx.recordingLog();
         this.tempBuffer = ctx.tempBuffer();
         this.serviceHeartbeats = ctx.serviceHeartbeatCounters();
-        this.serviceAcks = newArray(ctx.serviceCount());
+        this.serviceAcks = ServiceAck.newArray(ctx.serviceCount());
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -755,7 +753,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         validateServiceAck(logPosition, ackId, serviceId);
         serviceAcks[serviceId].logPosition(logPosition).ackId(ackId).relevantId(relevantId);
 
-        if (hasReachedPosition(logPosition, serviceAckId, serviceAcks))
+        if (ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAcks))
         {
             switch (state)
             {
@@ -1613,7 +1611,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void awaitServiceAcks(final long logPosition)
     {
-        while (!hasReachedPosition(logPosition, serviceAckId, serviceAcks))
+        while (!ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAcks))
         {
             idle(consensusModuleAdapter.poll());
         }

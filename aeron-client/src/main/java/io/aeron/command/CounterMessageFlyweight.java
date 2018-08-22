@@ -15,6 +15,7 @@
  */
 package io.aeron.command;
 
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -22,6 +23,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Message to denote a new counter.
+ * <p>
+ * <b>Note:</b> Layout should be SBE 2.0 compliant so that the label length is aligned.
  *
  * @see ControlProtocolEvents
  * <pre>
@@ -96,9 +99,9 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     /**
      * Fill the key buffer.
      *
-     * @param keyBuffer   containing the optional key for the counter.
-     * @param keyOffset   within the keyBuffer at which the key begins.
-     * @param keyLength   of the key in the keyBuffer.
+     * @param keyBuffer containing the optional key for the counter.
+     * @param keyOffset within the keyBuffer at which the key begins.
+     * @param keyLength of the key in the keyBuffer.
      * @return flyweight
      */
     public CounterMessageFlyweight keyBuffer(final DirectBuffer keyBuffer, final int keyOffset, final int keyLength)
@@ -177,6 +180,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
 
     private int labelOffset()
     {
-        return KEY_LENGTH_OFFSET + buffer.getInt(offset + KEY_LENGTH_OFFSET) + SIZE_OF_INT;
+        return BitUtil.align(
+            KEY_LENGTH_OFFSET + buffer.getInt(offset + KEY_LENGTH_OFFSET), SIZE_OF_INT) + SIZE_OF_INT;
     }
 }

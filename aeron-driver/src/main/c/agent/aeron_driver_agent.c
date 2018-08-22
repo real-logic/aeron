@@ -589,7 +589,7 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
                 command->type_id,
                 (int)(sizeof(aeron_counter_command_t) + sizeof(int32_t)),
                 key_length,
-                (int)(sizeof(aeron_counter_command_t) + (2 * sizeof(int32_t)) + key_length),
+                (int)(sizeof(aeron_counter_command_t) + (2 * sizeof(int32_t)) + AERON_ALIGN(key_length, sizeof(int32_t))),
                 label_length,
                 command->correlated.client_id,
                 command->correlated.correlation_id);
@@ -700,7 +700,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             const char *log_file_name = log_file_name_ptr + sizeof(int32_t);
 
             char *source_identity_ptr =
-                log_file_name_ptr + *log_file_name_length + sizeof(int32_t);
+                log_file_name_ptr + AERON_ALIGN(*log_file_name_length, sizeof(int32_t)) + sizeof(int32_t);
             int32_t *source_identity_length = (int32_t *)source_identity_ptr;
             const char *source_identity = source_identity_ptr + sizeof(int32_t);
             len += snprintf(ptr + len, sizeof(buffer) - 1 - len, " \"%*s\" [%" PRId64 "]\n",

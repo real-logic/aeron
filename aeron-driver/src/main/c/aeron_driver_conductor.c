@@ -1145,7 +1145,7 @@ void aeron_driver_conductor_on_available_image(
     aeron_image_buffers_ready_t *response;
     size_t response_length =
         sizeof(aeron_image_buffers_ready_t) +
-        log_file_name_length +
+        AERON_ALIGN(log_file_name_length, sizeof(int32_t)) +
         source_identity_length +
         (2 * sizeof(int32_t));
 
@@ -1160,11 +1160,11 @@ void aeron_driver_conductor_on_available_image(
 
     int32_t length_field;
 
-    length_field= (int32_t)log_file_name_length;
+    length_field = (int32_t)log_file_name_length;
     memcpy(ptr, &length_field, sizeof(length_field));
     ptr += sizeof(int32_t);
     memcpy(ptr, log_file_name, log_file_name_length);
-    ptr += log_file_name_length;
+    ptr += AERON_ALIGN(log_file_name_length, sizeof(int32_t));
 
     length_field = (int32_t)source_identity_length;
     memcpy(ptr, &length_field, sizeof(length_field));
@@ -2360,7 +2360,7 @@ int aeron_driver_conductor_on_add_counter(
     memcpy(&key_length, cursor, sizeof(key_length));
     const uint8_t *key = cursor + sizeof(int32_t);
 
-    cursor = key + key_length;
+    cursor = key + AERON_ALIGN(key_length, sizeof(int32_t));
     int32_t label_length;
 
     memcpy(&label_length, cursor, sizeof(label_length));

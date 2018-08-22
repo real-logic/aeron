@@ -618,7 +618,7 @@ class Election implements AutoCloseable
 
     private int leaderTransition(final long nowMs)
     {
-        consensusModuleAgent.becomeLeader(candidateTermId, logSessionId);
+        consensusModuleAgent.becomeLeader(candidateTermId, logPosition, logSessionId);
 
         for (long termId = leadershipTermId + 1; termId < candidateTermId; termId++)
         {

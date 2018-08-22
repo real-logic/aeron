@@ -56,7 +56,6 @@ import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static java.lang.Long.MAX_VALUE;
 
 class ConsensusModuleAgent implements Agent, MemberStatusListener
 {
@@ -934,7 +933,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return publication;
     }
 
-    void becomeLeader(final long leadershipTermId, final int logSessionId)
+    void becomeLeader(final long leadershipTermId, final long logPosition, final int logSessionId)
     {
         this.leadershipTermId = leadershipTermId;
 
@@ -942,8 +941,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, election.logPosition(), MAX_VALUE);
-        awaitServicesReady(channelUri, logSessionId, election.logPosition());
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, Long.MAX_VALUE);
+        awaitServicesReady(channelUri, logSessionId, logPosition);
 
         for (final ClusterSession session : sessionByIdMap.values())
         {
@@ -992,7 +991,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         closeExistingLog();
         final Subscription subscription = aeron.addSubscription(logChannel, ctx.logStreamId());
         startLogRecording(logChannel, SourceLocation.REMOTE);
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, MAX_VALUE);
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, Long.MAX_VALUE);
 
         return subscription;
     }

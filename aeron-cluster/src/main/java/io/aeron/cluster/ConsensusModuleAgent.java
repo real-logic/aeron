@@ -1187,9 +1187,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return result;
     }
 
-    void catchupLogPoll(final Subscription logSubscription, final int logSessionId, final long stopPosition)
+    void catchupLogPoll(final Subscription subscription, final int logSessionId, final long stopPosition)
     {
-        if (pollImageAndLogAdapter(logSubscription, logSessionId))
+        if (pollImageAndLogAdapter(subscription, logSessionId))
         {
             expectedAckPosition = stopPosition;
 
@@ -1228,17 +1228,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    boolean hasAppendReachedPosition(final Subscription logSubscription, final int logSessionId, final long position)
+    boolean hasAppendReachedPosition(final Subscription subscription, final int logSessionId, final long position)
     {
-        return pollImageAndLogAdapter(logSubscription, logSessionId) && (appendedPosition.get() >= position);
+        return pollImageAndLogAdapter(subscription, logSessionId) && (appendedPosition.get() >= position);
     }
 
-    boolean hasAppendReachedLivePosition(
-        final Subscription logSubscription, final int logSessionId, final long position)
+    boolean hasAppendReachedLivePosition(final Subscription subscription, final int logSessionId, final long position)
     {
         boolean result = false;
 
-        if (pollImageAndLogAdapter(logSubscription, logSessionId))
+        if (pollImageAndLogAdapter(subscription, logSessionId))
         {
             final long appendPosition = appendedPosition.get();
             final int termBufferLength = logAdapter.image().termBufferLength();

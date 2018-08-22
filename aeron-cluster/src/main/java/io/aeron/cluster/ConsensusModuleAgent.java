@@ -27,6 +27,7 @@ import io.aeron.cluster.service.CommitPos;
 import io.aeron.cluster.service.RecoveryState;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.Authenticator;
@@ -55,7 +56,6 @@ import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 class ConsensusModuleAgent implements Agent, MemberStatusListener
 {
@@ -1359,11 +1359,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private boolean appendAction(final ClusterAction action, final long nowMs)
     {
-        final int headersLength = DataHeaderFlyweight.HEADER_LENGTH +
-            MessageHeaderEncoder.ENCODED_LENGTH +
-            ClusterActionRequestEncoder.BLOCK_LENGTH;
+        final int length = DataHeaderFlyweight.HEADER_LENGTH +
+            MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionRequestEncoder.BLOCK_LENGTH;
 
-        final long position = logPublisher.position() + BitUtil.align(headersLength, FRAME_ALIGNMENT);
+        final long position = logPublisher.position() + BitUtil.align(length, FrameDescriptor.FRAME_ALIGNMENT);
 
         return logPublisher.appendClusterAction(leadershipTermId, position, nowMs, action);
     }

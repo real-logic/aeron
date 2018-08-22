@@ -240,7 +240,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         int workCount = 0;
 
-        boolean isSlowTickCycle = false;
         final long nowMs = epochClock.time();
         if (cachedTimeMs != nowMs)
         {
@@ -249,8 +248,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 clusterTimeMs(nowMs);
             }
-
-            isSlowTickCycle = true;
+            workCount += slowTickCycle(nowMs);
         }
 
         if (null != election)
@@ -290,11 +288,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             workCount += memberStatusAdapter.poll();
             workCount += updateMemberPosition(nowMs);
             workCount += consensusModuleAdapter.poll();
-        }
-
-        if (isSlowTickCycle)
-        {
-            workCount += slowTickCycle(nowMs);
         }
 
         return workCount;

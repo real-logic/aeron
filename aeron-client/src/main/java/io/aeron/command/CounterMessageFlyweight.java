@@ -101,10 +101,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @param keyLength   of the key in the keyBuffer.
      * @return flyweight
      */
-    public CounterMessageFlyweight keyBuffer(
-        final DirectBuffer keyBuffer,
-        final int keyOffset,
-        final int keyLength)
+    public CounterMessageFlyweight keyBuffer(final DirectBuffer keyBuffer, final int keyOffset, final int keyLength)
     {
         buffer.putInt(KEY_LENGTH_OFFSET, keyLength);
         if (null != keyBuffer && keyLength > 0)
@@ -144,9 +141,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      * @return flyweight
      */
     public CounterMessageFlyweight labelBuffer(
-        final DirectBuffer labelBuffer,
-        final int labelOffset,
-        final int labelLength)
+        final DirectBuffer labelBuffer, final int labelOffset, final int labelLength)
     {
         buffer.putInt(labelOffset(), labelLength);
         buffer.putBytes(labelBufferOffset(), labelBuffer, labelOffset, labelLength);

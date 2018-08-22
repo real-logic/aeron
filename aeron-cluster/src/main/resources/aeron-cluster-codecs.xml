@@ -190,7 +190,7 @@
         <data  name="encodedCredentials"   id="3" type="varDataEncoding"/>
     </sbe:message>
 
-    <!-- Events from the leader consensus module to the followers and services which get appended to the log  -->
+    <!-- Codecs for messages that get encoded into the log by the Consensus Module -->
 
     <sbe:message name="SessionHeader"
                  id="20"

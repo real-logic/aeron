@@ -33,7 +33,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@Ignore
 public class MultiNodeTest
 {
     private static final String THREE_NODE_MEMBERS =
@@ -303,8 +302,8 @@ public class MultiNodeTest
         IoUtil.delete(new File(leaderHarnessDir, ConsensusModuleHarness.DRIVER_DIRECTORY), true);
         ConsensusModuleHarness.copyDirectory(leaderHarnessDir, followerHarnessDir);
 
-        // 96 for NewLeadershipTermEvent at start of the log
-        final long truncatePosition = positionMap.get(5) + 96;
+        // 64 for NewLeadershipTermEvent at start of the log
+        final long truncatePosition = positionMap.get(5) + 64;
 
         ConsensusModuleHarness.truncateRecordingLog(followerHarnessDir, 0, truncatePosition);
 

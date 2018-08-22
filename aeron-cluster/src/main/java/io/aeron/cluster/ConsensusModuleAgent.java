@@ -933,15 +933,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, election.logPosition(), MAX_VALUE);
         awaitServicesReady(channelUri, logSessionId, election.logPosition());
 
-        final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
-        if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
-        {
-            ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.clientFacingEndpoint());
-        }
-
-        ingressAdapter.subscription(aeron.addSubscription(
-            ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
-
         for (final ClusterSession session : sessionByIdMap.values())
         {
             if (session.state() != CLOSED)
@@ -1159,6 +1150,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 election = null;
                 result = true;
             }
+
+            final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
+            if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
+            {
+                ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.clientFacingEndpoint());
+            }
+
+            ingressAdapter.subscription(aeron.addSubscription(
+                ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
         else
         {

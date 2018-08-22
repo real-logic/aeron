@@ -257,6 +257,6 @@ public class ImageBuffersReadyFlyweight
     private int sourceIdentityOffset()
     {
         return BitUtil.align(
-            LOG_FILE_NAME_OFFSET + buffer.getInt(offset + LOG_FILE_NAME_OFFSET), SIZE_OF_INT) + SIZE_OF_INT;
+            LOG_FILE_NAME_OFFSET + SIZE_OF_INT + buffer.getInt(offset + LOG_FILE_NAME_OFFSET), SIZE_OF_INT);
     }
 }

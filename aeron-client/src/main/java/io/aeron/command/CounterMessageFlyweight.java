@@ -181,6 +181,6 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     private int labelOffset()
     {
         return BitUtil.align(
-            KEY_LENGTH_OFFSET + buffer.getInt(offset + KEY_LENGTH_OFFSET), SIZE_OF_INT) + SIZE_OF_INT;
+            KEY_LENGTH_OFFSET + SIZE_OF_INT + buffer.getInt(offset + KEY_LENGTH_OFFSET), SIZE_OF_INT);
     }
 }

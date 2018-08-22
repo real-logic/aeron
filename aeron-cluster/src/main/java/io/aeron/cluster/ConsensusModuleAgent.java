@@ -259,23 +259,32 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else
         {
-            if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
+            if (Cluster.Role.LEADER == role)
             {
-                workCount += ingressAdapter.poll();
-                workCount += timerService.poll(nowMs);
-            }
-            else if (Cluster.Role.FOLLOWER == role &&
-                (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state))
-            {
-                final int count = logAdapter.poll(followerCommitPosition);
-                if (0 == count && logAdapter.isImageClosed())
+                if (ConsensusModule.State.ACTIVE == state)
                 {
-                    enterElection(nowMs);
-
-                    return 1;
+                    workCount += ingressAdapter.poll();
+                    workCount += timerService.poll(nowMs);
+                }
+            }
+            else if (Cluster.Role.FOLLOWER == role)
+            {
+                if (ConsensusModule.State.ACTIVE == state)
+                {
+                    workCount += ingressAdapter.poll();
                 }
 
-                workCount += count;
+                if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
+                {
+                    final int count = logAdapter.poll(followerCommitPosition);
+                    if (0 == count && logAdapter.isImageClosed())
+                    {
+                        enterElection(nowMs);
+                        return 1;
+                    }
+
+                    workCount += count;
+                }
             }
 
             workCount += memberStatusAdapter.poll();

@@ -167,11 +167,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         ingressAdapter = new IngressAdapter(this, ctx.invalidRequestCounter());
 
-        final ChannelUri archiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
-        ClusterMember.checkArchiveEndpoint(thisMember, archiveUri);
-        archiveUri.put(ENDPOINT_PARAM_NAME, thisMember.archiveEndpoint());
-        ctx.archiveContext().controlRequestChannel(archiveUri.toString());
-
         consensusModuleAdapter = new ConsensusModuleAdapter(
             aeron.addSubscription(ctx.serviceControlChannel(), ctx.consensusModuleStreamId()), this);
         serviceProxy = new ServiceProxy(
@@ -203,7 +198,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onStart()
     {
+        final ChannelUri archiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
+        ClusterMember.checkArchiveEndpoint(thisMember, archiveUri);
+        archiveUri.put(ENDPOINT_PARAM_NAME, thisMember.archiveEndpoint());
+        ctx.archiveContext().controlRequestChannel(archiveUri.toString());
         archive = AeronArchive.connect(ctx.archiveContext().clone());
+
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
 
         try (Counter ignore = addRecoveryStateCounter(recoveryPlan))

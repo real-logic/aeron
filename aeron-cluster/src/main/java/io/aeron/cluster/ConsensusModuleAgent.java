@@ -302,6 +302,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final String responseChannel,
         final byte[] encodedCredentials)
     {
+        if (Cluster.Role.LEADER != role)
+        {
+            // TODO: send redirect
+            return;
+        }
+
         final long sessionId = nextSessionId++;
         final ClusterSession session = new ClusterSession(sessionId, responseStreamId, responseChannel);
         session.connect(aeron);
@@ -321,7 +327,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     public void onSessionClose(final long clusterSessionId)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session)
+        if (null != session && Cluster.Role.LEADER != role)
         {
             session.close(CloseReason.CLIENT_ACTION);
 
@@ -340,7 +346,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final int offset,
         final int length)
     {
-        if (leadershipTermId != this.leadershipTermId)
+        if (leadershipTermId != this.leadershipTermId || Cluster.Role.LEADER != role)
         {
             return ControlledFragmentHandler.Action.CONTINUE;
         }
@@ -363,25 +369,31 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onSessionKeepAlive(final long clusterSessionId, final long leadershipTermId)
     {
-        final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session && session.state() == OPEN && leadershipTermId == this.leadershipTermId)
+        if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
-            session.timeOfLastActivityMs(clusterTimeMs);
+            final ClusterSession session = sessionByIdMap.get(clusterSessionId);
+            if (null != session && session.state() == OPEN)
+            {
+                session.timeOfLastActivityMs(clusterTimeMs);
+            }
         }
     }
 
     public void onChallengeResponse(
         final long correlationId, final long clusterSessionId, final byte[] encodedCredentials)
     {
-        for (int lastIndex = pendingSessions.size() - 1, i = lastIndex; i >= 0; i--)
+        if (Cluster.Role.LEADER == role)
         {
-            final ClusterSession session = pendingSessions.get(i);
-
-            if (session.id() == clusterSessionId && session.state() == CHALLENGED)
+            for (int lastIndex = pendingSessions.size() - 1, i = lastIndex; i >= 0; i--)
             {
-                session.lastActivity(clusterTimeMs, correlationId);
-                authenticator.onChallengeResponse(clusterSessionId, encodedCredentials, clusterTimeMs);
-                break;
+                final ClusterSession session = pendingSessions.get(i);
+
+                if (session.id() == clusterSessionId && session.state() == CHALLENGED)
+                {
+                    session.lastActivity(clusterTimeMs, correlationId);
+                    authenticator.onChallengeResponse(clusterSessionId, encodedCredentials, clusterTimeMs);
+                    break;
+                }
             }
         }
     }

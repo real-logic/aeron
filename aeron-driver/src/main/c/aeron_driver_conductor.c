@@ -1136,7 +1136,7 @@ void aeron_driver_conductor_on_available_image(
     const char *log_file_name,
     size_t log_file_name_length,
     int32_t subscriber_position_id,
-    int64_t subscriber_registyration_id,
+    int64_t subscriber_registration_id,
     const char *source_identity,
     size_t source_identity_length)
 {
@@ -1155,7 +1155,7 @@ void aeron_driver_conductor_on_available_image(
     response->stream_id = stream_id;
     response->session_id = session_id;
     response->subscriber_position_id = subscriber_position_id;
-    response->subscriber_registration_id = subscriber_registyration_id;
+    response->subscriber_registration_id = subscriber_registration_id;
     ptr += sizeof(aeron_image_buffers_ready_t);
 
     int32_t length_field;
@@ -1347,7 +1347,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
             correlation_id = command->correlated.correlation_id;
 
-            result = aeron_driver_conductoor_on_add_destination(conductor, command);
+            result = aeron_driver_conductor_on_add_destination(conductor, command);
             break;
         }
 
@@ -1363,7 +1363,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 
             correlation_id = command->correlated.correlation_id;
 
-            result = aeron_driver_conductoor_on_remove_destination(conductor, command);
+            result = aeron_driver_conductor_on_remove_destination(conductor, command);
             break;
         }
 
@@ -2120,7 +2120,6 @@ int aeron_driver_conductor_on_remove_subscription(
     aeron_driver_conductor_t *conductor,
     aeron_remove_command_t *command)
 {
-
     for (size_t i = 0, size = conductor->ipc_subscriptions.length, last_index = size - 1; i < size; i++)
     {
         aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
@@ -2212,7 +2211,7 @@ int aeron_driver_conductor_on_client_keepalive(
     return 0;
 }
 
-int aeron_driver_conductoor_on_add_destination(
+int aeron_driver_conductor_on_add_destination(
     aeron_driver_conductor_t *conductor,
     aeron_destination_command_t *command)
 {
@@ -2278,11 +2277,10 @@ int aeron_driver_conductoor_on_add_destination(
     return -1;
 }
 
-int aeron_driver_conductoor_on_remove_destination(
+int aeron_driver_conductor_on_remove_destination(
     aeron_driver_conductor_t *conductor,
     aeron_destination_command_t *command)
 {
-
     aeron_send_channel_endpoint_t *endpoint = NULL;
     const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
 
@@ -2441,6 +2439,7 @@ int aeron_driver_conductor_on_client_close(
         client->time_of_last_keepalive_ms = 0;
         aeron_counter_set_ordered(client->heartbeat_status.value_addr, client->time_of_last_keepalive_ms);
     }
+
     return 0;
 }
 

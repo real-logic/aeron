@@ -18,6 +18,7 @@ package io.aeron.archive.status;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.Image;
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -83,19 +84,20 @@ public class RecordingPos
         tempBuffer.putStringAscii(SOURCE_IDENTITY_LENGTH_OFFSET, sourceIdentity);
         final int keyLength = SOURCE_IDENTITY_OFFSET + sourceIdentityLength;
 
+        final int labelOffset = BitUtil.align(keyLength, SIZE_OF_INT);
         int labelLength = 0;
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength, NAME + ": ");
-        labelLength += tempBuffer.putLongAscii(keyLength + labelLength, recordingId);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, sessionId);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, streamId);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset, NAME + ": ");
+        labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, recordingId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(labelOffset + labelLength, sessionId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(labelOffset + labelLength, streamId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " ");
         labelLength += tempBuffer.putStringWithoutLengthAscii(
-            keyLength + labelLength, strippedChannel, 0, MAX_LABEL_LENGTH - labelLength);
+            labelOffset + labelLength, strippedChannel, 0, MAX_LABEL_LENGTH - labelLength);
 
         return aeron.addCounter(
-            RECORDING_POSITION_TYPE_ID, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelLength);
+            RECORDING_POSITION_TYPE_ID, tempBuffer, 0, keyLength, tempBuffer, labelOffset, labelLength);
     }
 
     /**

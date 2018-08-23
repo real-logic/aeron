@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
@@ -117,17 +118,18 @@ public class StreamPositionCounter
         tempBuffer.putInt(CHANNEL_OFFSET, channelLength);
         final int keyLength = CHANNEL_OFFSET + SIZE_OF_INT + channelLength;
 
+        final int labelOffset = BitUtil.align(keyLength, SIZE_OF_INT);
         int labelLength = 0;
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, name);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, ": ");
-        labelLength += tempBuffer.putLongAscii(keyLength + labelLength, registrationId);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, sessionId);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, streamId);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, name);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, ": ");
+        labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, registrationId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(labelOffset + labelLength, sessionId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(labelOffset + labelLength, streamId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " ");
         labelLength += tempBuffer.putStringWithoutLengthAscii(
-            keyLength + labelLength, channel, 0, MAX_LABEL_LENGTH - labelLength);
+            labelOffset + labelLength, channel, 0, MAX_LABEL_LENGTH - labelLength);
 
         return countersManager.allocate(
             typeId,
@@ -135,7 +137,7 @@ public class StreamPositionCounter
             0,
             keyLength,
             tempBuffer,
-            keyLength,
+            labelOffset,
             labelLength);
     }
 
@@ -173,17 +175,18 @@ public class StreamPositionCounter
         tempBuffer.putInt(CHANNEL_OFFSET, channelLength);
         final int keyLength = CHANNEL_OFFSET + SIZE_OF_INT + channelLength;
 
+        final int labelOffset = BitUtil.align(keyLength, SIZE_OF_INT);
         int labelLength = 0;
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, name);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, ": ");
-        labelLength += tempBuffer.putLongAscii(keyLength + labelLength, registrationId);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, sessionId);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
-        labelLength += tempBuffer.putIntAscii(keyLength + labelLength, streamId);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " ");
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, name);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, ": ");
+        labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, registrationId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(labelOffset + labelLength, sessionId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " ");
+        labelLength += tempBuffer.putIntAscii(labelOffset + labelLength, streamId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " ");
         labelLength += tempBuffer.putStringWithoutLengthAscii(
-            keyLength + labelLength, channel, 0, MAX_LABEL_LENGTH - labelLength);
+            labelOffset + labelLength, channel, 0, MAX_LABEL_LENGTH - labelLength);
 
         if (labelLength < (MAX_LABEL_LENGTH - 20))
         {
@@ -197,7 +200,7 @@ public class StreamPositionCounter
             0,
             keyLength,
             tempBuffer,
-            keyLength,
+            labelOffset,
             labelLength);
 
         return new UnsafeBufferPosition((UnsafeBuffer)countersManager.valuesBuffer(), counterId, countersManager);

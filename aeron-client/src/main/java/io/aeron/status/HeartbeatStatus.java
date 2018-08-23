@@ -15,10 +15,12 @@
  */
 package io.aeron.status;
 
+import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
@@ -64,10 +66,11 @@ public class HeartbeatStatus
         tempBuffer.putLong(REGISTRATION_ID_OFFSET, registrationId);
         final int keyLength = REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
 
+        final int labelOffset = BitUtil.align(keyLength, SIZE_OF_INT);
         int labelLength = 0;
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, name);
-        labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, ": ");
-        labelLength += tempBuffer.putLongAscii(keyLength + labelLength, registrationId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, name);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, ": ");
+        labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, registrationId);
 
         return countersManager.allocate(
             typeId,
@@ -75,7 +78,7 @@ public class HeartbeatStatus
             0,
             keyLength,
             tempBuffer,
-            keyLength,
+            labelOffset,
             labelLength);
     }
 }

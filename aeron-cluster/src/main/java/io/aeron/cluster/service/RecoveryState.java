@@ -18,6 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.cluster.client.ClusterException;
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -115,14 +116,15 @@ public class RecoveryState
             tempBuffer.putLong(SNAPSHOT_RECORDING_IDS_OFFSET + (i * SIZE_OF_LONG), snapshotRecordingIds[i]);
         }
 
-        int labelOffset = 0;
-        labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, NAME);
-        labelOffset += tempBuffer.putLongAscii(keyLength + labelOffset, leadershipTermId);
-        labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, " logPosition=");
-        labelOffset += tempBuffer.putLongAscii(keyLength + labelOffset, logPosition);
-        labelOffset += tempBuffer.putStringWithoutLengthAscii(keyLength + labelOffset, " hasReplay=" + hasReplay);
+        final int labelOffset = BitUtil.align(keyLength, SIZE_OF_INT);
+        int labelLength = 0;
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, NAME);
+        labelLength += tempBuffer.putLongAscii(keyLength + labelLength, leadershipTermId);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " logPosition=");
+        labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, logPosition);
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " hasReplay=" + hasReplay);
 
-        return aeron.addCounter(RECOVERY_STATE_TYPE_ID, tempBuffer, 0, keyLength, tempBuffer, keyLength, labelOffset);
+        return aeron.addCounter(RECOVERY_STATE_TYPE_ID, tempBuffer, 0, keyLength, tempBuffer, labelOffset, labelLength);
     }
 
     /**

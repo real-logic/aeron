@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
@@ -75,12 +76,13 @@ public class ServiceHeartbeat
         tempBuffer.putInt(SERVICE_ID_OFFSET, serviceId);
         tempBuffer.putInt(MEMBER_ID_OFFSET, clusterMemberId);
 
-        int labelOffset = 0;
-        labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, NAME);
-        labelOffset += tempBuffer.putIntAscii(KEY_LENGTH + labelOffset, serviceId);
+        final int labelOffset = BitUtil.align(KEY_LENGTH, SIZE_OF_INT);
+        int labelLength = 0;
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, NAME);
+        labelLength += tempBuffer.putIntAscii(labelOffset + labelLength, serviceId);
 
         return aeron.addCounter(
-            SERVICE_HEARTBEAT_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, KEY_LENGTH, labelOffset);
+            SERVICE_HEARTBEAT_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, labelOffset, labelLength);
     }
 
     /**

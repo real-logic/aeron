@@ -18,12 +18,14 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.cluster.client.ClusterException;
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.KEY_OFFSET;
 import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
@@ -86,12 +88,13 @@ public class CommitPos
         tempBuffer.putLong(LOG_POSITION_OFFSET, logPosition);
         tempBuffer.putLong(MAX_LOG_POSITION_OFFSET, maxLogPosition);
 
-        int labelOffset = 0;
-        labelOffset += tempBuffer.putStringWithoutLengthAscii(KEY_LENGTH + labelOffset, NAME);
-        labelOffset += tempBuffer.putLongAscii(KEY_LENGTH + labelOffset, leadershipTermId);
+        final int labelOffset = BitUtil.align(KEY_LENGTH, SIZE_OF_INT);
+        int labelLength = 0;
+        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, NAME);
+        labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, leadershipTermId);
 
         return aeron.addCounter(
-            COMMIT_POSITION_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, KEY_LENGTH, labelOffset);
+            COMMIT_POSITION_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, labelOffset, labelLength);
     }
 
     /**

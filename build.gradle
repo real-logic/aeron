@@ -406,8 +406,15 @@ project(':aeron-archive') {
     }
 
     compileJava.dependsOn 'compileGeneratedJava'
-    compileGeneratedJava.dependsOn 'generateCodecs'
-    compileGeneratedJava.classpath += configurations.codecGeneration
+
+    compileGeneratedJava {
+        dependsOn 'generateCodecs'
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+        options.encoding = 'UTF-8'
+        options.deprecation = true
+        classpath += configurations.codecGeneration
+    }
 
     task generateCodecs(type: JavaExec) {
         main = 'uk.co.real_logic.sbe.SbeTool'
@@ -507,8 +514,15 @@ project(':aeron-cluster') {
     }
 
     compileJava.dependsOn 'compileGeneratedJava'
-    compileGeneratedJava.dependsOn 'generateCodecs'
-    compileGeneratedJava.classpath += configurations.codecGeneration
+
+    compileGeneratedJava {
+        dependsOn 'generateCodecs'
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+        options.encoding = 'UTF-8'
+        options.deprecation = true
+        classpath += configurations.codecGeneration
+    }
 
     task generateCodecs(type: JavaExec) {
         main = 'uk.co.real_logic.sbe.SbeTool'

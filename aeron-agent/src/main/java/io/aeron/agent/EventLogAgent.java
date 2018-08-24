@@ -204,8 +204,10 @@ public class EventLogAgent
     {
         try
         {
-            return (Agent)Class.forName(
-                System.getProperty(READER_CLASSNAME_PROP_NAME, READER_CLASSNAME_DEFAULT)).newInstance();
+            final Class<?> aClass = Class.forName(
+                System.getProperty(READER_CLASSNAME_PROP_NAME, READER_CLASSNAME_DEFAULT));
+
+            return (Agent)aClass.getDeclaredConstructor().newInstance();
         }
         catch (final Exception ex)
         {

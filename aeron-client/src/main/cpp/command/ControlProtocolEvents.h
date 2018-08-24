@@ -51,6 +51,10 @@ struct ControlProtocolEvents
     static const std::int32_t REMOVE_COUNTER = 0x0A;
     /** Client Close */
     static const std::int32_t CLIENT_CLOSE = 0x0B;
+    /** Add Destination for existing Subscription */
+    static const std::int32_t ADD_RCV_DESTINATION = 0x0C;
+    /** Remove Destination for existing Subscription */
+    static const std::int32_t REMOVE_RCV_DESTINATION = 0x0D;
 
     // Media Driver to Clients
 

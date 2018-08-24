@@ -180,6 +180,9 @@ public:
     void addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
     void removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
 
+    void addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel);
+    void removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel);
+
     inline CountersReader& countersReader()
     {
         return m_countersReader;

@@ -162,7 +162,9 @@ public:
     {
         const util::index_t startOfSourceIdentity = sourceIdentityOffset();
 
-        return startOfSourceIdentity + stringGetLength(startOfSourceIdentity) + (util::index_t)sizeof(std::int32_t);
+        return startOfSourceIdentity +
+            stringGetLength(startOfSourceIdentity) +
+            static_cast<util::index_t>(sizeof(std::int32_t));
     }
 
 private:
@@ -174,11 +176,11 @@ private:
 
     inline util::index_t sourceIdentityOffset() const
     {
-        util::index_t startOfLogFileName = logFileNameOffset();
-        util::index_t logFileNameLength = static_cast<util::index_t>(stringGetLength(startOfLogFileName));
-        util::index_t alignment = static_cast<util::index_t>(sizeof(std::int32_t));
+        const util::index_t offset = logFileNameOffset();
+        const util::index_t alignment = static_cast<util::index_t>(sizeof(std::int32_t));
+        const util::index_t logFileNameLength = aeron::util::BitUtil::align(stringGetLength(offset), alignment);
 
-        return aeron::util::BitUtil::align(startOfLogFileName + alignment + logFileNameLength, alignment);
+        return offset + sizeof(std::int32_t) + logFileNameLength;
     }
 };
 

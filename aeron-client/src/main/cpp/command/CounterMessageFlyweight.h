@@ -135,10 +135,12 @@ private:
 
     inline util::index_t labelLengthOffset() const
     {
-        util::index_t offset = keyLengthOffset() + sizeof(std::int32_t) + keyLength();
-        util::index_t alignment = static_cast<util::index_t>(sizeof(std::int32_t));
+        const util::index_t offset = keyLengthOffset();
+        const util::index_t unalignedKeyLength = keyLength();
+        const util::index_t alignment = static_cast<util::index_t>(sizeof(std::int32_t));
+        const util::index_t alignedKeyLength = aeron::util::BitUtil::align(unalignedKeyLength, alignment);
 
-        return aeron::util::BitUtil::align(offset, alignment);
+        return offset + sizeof(std::int32_t) + alignedKeyLength;
     }
 };
 

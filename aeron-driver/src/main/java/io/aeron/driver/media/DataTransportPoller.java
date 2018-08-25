@@ -152,17 +152,17 @@ public class DataTransportPoller extends UdpTransportPoller
     private int poll(final ChannelAndTransport channelAndTransport)
     {
         int bytesReceived = 0;
-        final ReceiveChannelEndpoint channelEndpoint = channelAndTransport.channelEndpoint;
         final InetSocketAddress srcAddress = channelAndTransport.transport.receive(byteBuffer);
-        final int transportIndex = channelAndTransport.transportIndex;
 
         if (null != srcAddress)
         {
             final int length = byteBuffer.position();
+            final ReceiveChannelEndpoint channelEndpoint = channelAndTransport.channelEndpoint;
 
             if (channelEndpoint.isValidFrame(unsafeBuffer, length))
             {
                 channelEndpoint.receiveHook(unsafeBuffer, length, srcAddress);
+                final int transportIndex = channelAndTransport.transportIndex;
 
                 final int frameType = frameType(unsafeBuffer, 0);
                 if (HDR_TYPE_DATA == frameType || HDR_TYPE_PAD == frameType)

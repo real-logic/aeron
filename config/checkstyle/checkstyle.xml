@@ -88,6 +88,8 @@
             <property name="allowEmptyLambdas" value="true"/>
         </module>
 
+        <module name="SingleSpaceSeparator"/>
+
         <module name="OperatorWrap">
             <property name="option" value="eol"/>
         </module>

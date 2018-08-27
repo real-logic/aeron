@@ -102,7 +102,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     public EmbeddedReplayThroughput()
     {
         final String archiveDirName = Archive.Configuration.archiveDirName();
-        final File archiveDir =  ARCHIVE_DIR_DEFAULT.equals(archiveDirName) ?
+        final File archiveDir = ARCHIVE_DIR_DEFAULT.equals(archiveDirName) ?
             TestUtil.createTempDir() : new File(archiveDirName);
 
         archivingMediaDriver = ArchivingMediaDriver.launch(

@@ -277,7 +277,7 @@ public class StreamStat
                 return true;
             }
 
-            if (!(o instanceof  StreamPosition))
+            if (!(o instanceof StreamPosition))
             {
                 return false;
             }

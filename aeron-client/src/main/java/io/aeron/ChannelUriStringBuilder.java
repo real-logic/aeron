@@ -69,7 +69,7 @@ public class ChannelUriStringBuilder
         controlMode = null;
         tags = null;
         reliable = null;
-        ttl  = null;
+        ttl = null;
         mtu = null;
         termLength = null;
         initialTermId = null;

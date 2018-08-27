@@ -128,7 +128,7 @@ public class DataPacketDispatcherTest
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, SRC_ADDRESS, 0);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, SRC_ADDRESS, 0);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader,  SRC_ADDRESS, 0);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, SRC_ADDRESS, 0);
 
         verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,

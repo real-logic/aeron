@@ -75,7 +75,7 @@ public class NetworkUtil
         sort(filterResults);
 
         final int size = filterResults.size();
-        final NetworkInterface[] results = new  NetworkInterface[size];
+        final NetworkInterface[] results = new NetworkInterface[size];
         for (int i = 0; i < size; i++)
         {
             results[i] = filterResults.get(i).networkInterface;

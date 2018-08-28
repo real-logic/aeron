@@ -151,7 +151,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         return Action.CONTINUE;
     }
 
-    void subscription(final Subscription subscription)
+    void connect(final Subscription subscription)
     {
         this.subscription = subscription;
     }

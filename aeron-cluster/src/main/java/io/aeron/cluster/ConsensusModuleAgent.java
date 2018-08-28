@@ -104,6 +104,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final Long2ObjectHashMap<ClusterSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
+    private final ArrayList<ClusterSession> redirectSessions = new ArrayList<>();
     private final LongHashSet missedTimersSet = new LongHashSet();
     private final Authenticator authenticator;
     private final ClusterSessionProxy sessionProxy;
@@ -254,32 +255,24 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else
         {
-            if (Cluster.Role.LEADER == role)
+            if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
             {
-                if (ConsensusModule.State.ACTIVE == state)
-                {
-                    workCount += ingressAdapter.poll();
-                    workCount += timerService.poll(nowMs);
-                }
+                workCount += ingressAdapter.poll();
+                workCount += timerService.poll(nowMs);
             }
-            else if (Cluster.Role.FOLLOWER == role)
+            else if (Cluster.Role.FOLLOWER == role &&
+                (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state))
             {
-                if (ConsensusModule.State.ACTIVE == state)
+                workCount += ingressAdapter.poll();
+
+                final int count = logAdapter.poll(followerCommitPosition);
+                if (0 == count && logAdapter.isImageClosed())
                 {
-                    workCount += ingressAdapter.poll();
+                    enterElection(nowMs);
+                    return 1;
                 }
 
-                if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
-                {
-                    final int count = logAdapter.poll(followerCommitPosition);
-                    if (0 == count && logAdapter.isImageClosed())
-                    {
-                        enterElection(nowMs);
-                        return 1;
-                    }
-
-                    workCount += count;
-                }
+                workCount += count;
             }
 
             workCount += memberStatusAdapter.poll();
@@ -303,18 +296,20 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (Cluster.Role.LEADER != role)
         {
-            // TODO: send redirect
+            final ClusterSession session = new ClusterSession(Aeron.NULL_VALUE, responseStreamId, responseChannel);
+            session.lastActivity(clusterTimeMs, correlationId);
+            session.connect(aeron);
+            redirectSessions.add(session);
             return;
         }
 
-        final long sessionId = nextSessionId++;
-        final ClusterSession session = new ClusterSession(sessionId, responseStreamId, responseChannel);
-        session.connect(aeron);
+        final ClusterSession session = new ClusterSession(nextSessionId++, responseStreamId, responseChannel);
         session.lastActivity(clusterTimeMs, correlationId);
+        session.connect(aeron);
 
         if (pendingSessions.size() + sessionByIdMap.size() < ctx.maxConcurrentSessions())
         {
-            authenticator.onConnectRequest(sessionId, encodedCredentials, clusterTimeMs);
+            authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeMs);
             pendingSessions.add(session);
         }
         else
@@ -1161,15 +1156,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 election = null;
                 result = true;
             }
-
-            final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
-            if (!ingressUri.containsKey(ENDPOINT_PARAM_NAME))
-            {
-                ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.clientFacingEndpoint());
-            }
-
-            ingressAdapter.subscription(aeron.addSubscription(
-                ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
         else
         {
@@ -1182,6 +1168,20 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (missedTimersSet.capacity() > LongHashSet.DEFAULT_INITIAL_CAPACITY)
         {
             missedTimersSet.compact();
+        }
+
+        if (!ctx.ingressChannel().contains(ENDPOINT_PARAM_NAME))
+        {
+            final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
+            ingressUri.put(ENDPOINT_PARAM_NAME, thisMember.clientFacingEndpoint());
+
+            ingressAdapter.connect(aeron.addSubscription(
+                ingressUri.toString(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
+        }
+        else if (Cluster.Role.LEADER == role)
+        {
+            ingressAdapter.connect(aeron.addSubscription(
+                ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
 
         return result;
@@ -1267,6 +1267,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         markFile.updateActivityTimestamp(nowMs);
         checkServiceHeartbeats(nowMs);
         workCount += aeronClientInvoker.invoke();
+        workCount += processRedirectSessions(redirectSessions, nowMs);
+        workCount += processRejectedSessions(rejectedSessions, nowMs);
 
         if (Cluster.Role.LEADER == role && null == election)
         {
@@ -1276,7 +1278,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 workCount += processPendingSessions(pendingSessions, nowMs);
                 workCount += checkSessions(sessionByIdMap, nowMs);
-                workCount += processRejectedSessions(rejectedSessions, nowMs);
             }
         }
         else
@@ -1436,6 +1437,28 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
             {
                 ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex--);
+                session.close();
+                workCount++;
+            }
+        }
+
+        return workCount;
+    }
+
+    private int processRedirectSessions(final ArrayList<ClusterSession> redirectSessions, final long nowMs)
+    {
+        int workCount = 0;
+
+        for (int lastIndex = redirectSessions.size() - 1, i = lastIndex; i >= 0; i--)
+        {
+            final ClusterSession session = redirectSessions.get(i);
+            final EventCode eventCode = EventCode.REDIRECT;
+            final int id = leaderMember.id();
+
+            if (egressPublisher.sendEvent(session, leadershipTermId, id, eventCode, clientFacingEndpoints) ||
+                nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))
+            {
+                ArrayListUtil.fastUnorderedRemove(redirectSessions, i, lastIndex--);
                 session.close();
                 workCount++;
             }
@@ -1702,7 +1725,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private void enterElection(final long nowMs)
     {
         ingressAdapter.close();
-
         commitPosition.proposeMaxOrdered(followerCommitPosition);
 
         election = new Election(

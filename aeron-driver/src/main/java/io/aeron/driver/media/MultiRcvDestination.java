@@ -139,7 +139,7 @@ public class MultiRcvDestination implements AutoCloseable
         int bytesSent = 0;
         try
         {
-            if (null != transport && null != transport.sendDatagramChannel)
+            if (null != transport && null != transport.sendDatagramChannel && transport.sendDatagramChannel.isOpen())
             {
                 transport.sendHook(buffer, remoteAddress);
                 bytesSent = transport.sendDatagramChannel.send(buffer, remoteAddress);

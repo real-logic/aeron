@@ -103,11 +103,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     /**
-     * Send contents of {@link java.nio.ByteBuffer} to remote address
+     * Send contents of {@link java.nio.ByteBuffer} to the remote address.
      *
-     * @param buffer        to send
-     * @param remoteAddress to send to
-     * @return number of bytes sent
+     * @param buffer        to send containing the payload.
+     * @param remoteAddress to send to send the payload to.
+     * @return number of bytes sent.
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
@@ -118,7 +118,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             if (null != sendDatagramChannel)
             {
                 sendHook(buffer, remoteAddress);
-                bytesSent = sendDatagramChannel.send(buffer, remoteAddress);
+                if (sendDatagramChannel.isOpen())
+                {
+                    bytesSent = sendDatagramChannel.send(buffer, remoteAddress);
+                }
             }
         }
         catch (final IOException ex)
@@ -541,9 +544,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     protected void send(
-        final ByteBuffer buffer,
-        final int bytesToSend,
-        final DestinationImageControlAddress[] controlAddresses)
+        final ByteBuffer buffer, final int bytesToSend, final DestinationImageControlAddress[] controlAddresses)
     {
         final int bytesSent;
 

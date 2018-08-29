@@ -40,6 +40,7 @@ import org.agrona.concurrent.status.*;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
@@ -56,6 +57,8 @@ import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
  */
 public class DriverConductor implements Agent
 {
+    private static final long CLOCK_UPDATE_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(1);
+
     private final long timerIntervalNs;
     private final long imageLivenessTimeoutNs;
     private final long clientLivenessTimeoutNs;
@@ -1556,7 +1559,7 @@ public class DriverConductor implements Agent
     {
         if (nowNs >= clockUpdateDeadlineNs)
         {
-            clockUpdateDeadlineNs = nowNs + 1_000_000;
+            clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_DURATION_NS;
             cachedNanoClock.update(nowNs);
             cachedEpochClock.update(epochClock.time());
         }

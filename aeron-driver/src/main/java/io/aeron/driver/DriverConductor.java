@@ -45,6 +45,7 @@ import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.PublicationParams.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
+import static io.aeron.driver.status.SystemCounterDescriptor.FREE_FAILS;
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
@@ -1515,10 +1516,17 @@ public class DriverConductor implements Agent
 
             resource.onTimeEvent(nowNs, nowMs, this);
 
-            if (resource.hasReachedEndOfLife() && resource.free())
+            if (resource.hasReachedEndOfLife())
             {
-                fastUnorderedRemove(list, i, lastIndex--);
-                resource.close();
+                if (resource.free())
+                {
+                    fastUnorderedRemove(list, i, lastIndex--);
+                    resource.close();
+                }
+                else
+                {
+                    context.systemCounters().get(FREE_FAILS).incrementOrdered();
+                }
             }
         }
     }

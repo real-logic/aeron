@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.buffer;
 
+import io.aeron.exceptions.AeronException;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -163,7 +164,7 @@ class MappedRawLog implements RawLog
     {
         if (!free())
         {
-            errorHandler.onError(new IllegalStateException("Unable to delete " + logFile));
+            errorHandler.onError(new AeronException("unable to delete " + logFile));
         }
     }
 

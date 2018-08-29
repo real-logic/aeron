@@ -39,7 +39,7 @@ static aeron_system_counter_t system_counters[] =
         { "Invalid packets", AERON_SYSTEM_COUNTER_INVALID_PACKETS },
         { "Errors", AERON_SYSTEM_COUNTER_ERRORS },
         { "Short sends", AERON_SYSTEM_COUNTER_SHORT_SENDS },
-        { "RESERVED", AERON_SYSTEM_COUNTER_RESERVED_17 },
+        { "Failed attempt to free log buffers", AERON_SYSTEM_COUNTER_FREE_FAILS },
         { "Sender flow control limits applied", AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS },
         { "Unblocked Publications", AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS },
         { "Unblocked Control Commands", AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS },
@@ -48,7 +48,7 @@ static aeron_system_counter_t system_counters[] =
         { "Loss gap fills", AERON_SYSTEM_COUNTER_LOSS_GAP_FILLS}
     };
 
-static size_t num_system_counters = sizeof(system_counters)/sizeof(aeron_system_counter_t);
+static size_t num_system_counters = sizeof(system_counters) / sizeof(aeron_system_counter_t);
 
 int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters_manager_t *manager)
 {

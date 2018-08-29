@@ -482,8 +482,7 @@ public final class AeronCluster implements AutoCloseable
             for (final MemberEndpoint member : endpointByMemberIdMap.values())
             {
                 channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
-                final String channel = channelUri.toString();
-                member.publication = addIngressPublication(channel, ctx.ingressStreamId());
+                member.publication = addIngressPublication(channelUri.toString(), ctx.ingressStreamId());
             }
 
             while (true)

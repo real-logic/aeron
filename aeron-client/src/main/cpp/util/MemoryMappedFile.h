@@ -20,11 +20,12 @@
 #include <memory>
 
 #ifdef _WIN32
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif // !NOMINMAX
-
-#include <windows.h>
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif // !NOMINMAX
+    #include <windows.h>
+#else
+    #include <sys/types.h>
 #endif
 
 

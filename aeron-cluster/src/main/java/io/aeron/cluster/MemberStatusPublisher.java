@@ -44,6 +44,8 @@ class MemberStatusPublisher
     private final RecoveryPlanEncoder recoveryPlanEncoder = new RecoveryPlanEncoder();
     private final RecordingLogQueryEncoder recordingLogQueryEncoder = new RecordingLogQueryEncoder();
     private final RecordingLogEncoder recordingLogEncoder = new RecordingLogEncoder();
+    private final AddClusterMemberEncoder addClusterMemberEncoder = new AddClusterMemberEncoder();
+    private final ClusterMembersChangeEncoder clusterMembersChangeEncoder = new ClusterMembersChangeEncoder();
 
     boolean canvassPosition(
         final Publication publication,
@@ -440,6 +442,79 @@ class MemberStatusPublisher
             final long result = publication.offer(buffer, 0, length);
             if (result > 0)
             {
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+
+    boolean addClusterMember(
+        final Publication publication, final long correlctionId, final String memberEndpoints)
+    {
+        final int length =
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            AddClusterMemberEncoder.BLOCK_LENGTH +
+            AddClusterMemberEncoder.memberEndpointsHeaderLength() +
+            memberEndpoints.length();
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                addClusterMemberEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlctionId)
+                    .memberEndpoints(memberEndpoints);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean clusterMemberChange(
+        final Publication publication,
+        final long correlctionId,
+        final int leaderMemberId,
+        final String activeMembers,
+        final String passiveMembers)
+    {
+        final int length =
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            ClusterMembersChangeEncoder.BLOCK_LENGTH +
+            ClusterMembersChangeEncoder.activeMembersHeaderLength() +
+            activeMembers.length() +
+            ClusterMembersChangeEncoder.passiveMembersHeaderLength() +
+            passiveMembers.length();
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                clusterMembersChangeEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlctionId)
+                    .leaderMemberId(leaderMemberId)
+                    .activeMembers(activeMembers)
+                    .passiveMembers(passiveMembers);
+
+                bufferClaim.commit();
+
                 return true;
             }
 

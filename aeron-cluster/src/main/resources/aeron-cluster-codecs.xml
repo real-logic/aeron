@@ -460,31 +460,38 @@
 
     <sbe:message name="AddClusterMember"
                  id="70"
-                 description="Add a member to the cluster list. Adds initially as passive. No effect on group size.">
-        <data  name="memberEndpoints"          id="1" type="varAsciiEncoding"/>
+                 description="Add a member to the passive member list.">
+        <field name="correlationId"            id="1" type="int64"/>
+        <data  name="memberEndpoints"          id="2" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="RemoveClusterMember"
                  id="71"
-                 description="Remove a member from the cluster list. No effect on group size.">
-        <field name="memberId"                 id="1" type="int32"/>
+                 description="Remove a member from the passive member list.">
+        <field name="correlationId"            id="1" type="int64"/>
+        <field name="memberId"                 id="2" type="int32"/>
     </sbe:message>
 
     <sbe:message name="ClusterMembersChange"
                  id="72"
-                 description="Cluster Member list change response. No effect on group size.">
-        <data  name="clusterMembers"           id="1" type="varAsciiEncoding"/>
+                 description="Cluster Member list change, add or remove, response.">
+        <field name="correlationId"            id="1" type="int64"/>
+        <field name="leaderMemberId"           id="2" type="int32"/>
+        <data  name="activeMembers"            id="3" type="varAsciiEncoding"/>
+        <data  name="passiveMembers"           id="4" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="SnapshotRecordingQuery"
                  id="73"
                  description="Query a leader for the info on latest snapshot recordings">
+        <field name="correlationId"            id="1"  type="int64"/>
         <field name="requestMemberId"          id="2"  type="int32"/>
     </sbe:message>
 
     <sbe:message name="SnapshotRecordings"
                  id="74"
                  description="Response to Snapshot recording query">
+        <field name="correlationId"            id="1"  type="int64"/>
         <group name="snapshots"                id="3"  dimensionType="groupSizeEncoding">
             <field name="recordingId"          id="4"  type="int64"/>
             <field name="leadershipTermId"     id="5"  type="int64"/>
@@ -500,14 +507,14 @@
                  id="75"
                  description="Join the cluster officially, increasing the cluster size. Transitioning from passive.">
         <field name="leadershipTermId"         id="1" type="int64"/>
-        <field name="memberId"                 id="1" type="int32"/>
+        <field name="memberId"                 id="2" type="int32"/>
     </sbe:message>
 
     <sbe:message name="LeaveCluster"
                  id="76"
                  description="Leave the cluster officially, decreasing the cluster size. Transitioning to passive.">
         <field name="leadershipTermId"         id="1" type="int64"/>
-        <field name="memberId"                 id="1" type="int32"/>
+        <field name="memberId"                 id="2" type="int32"/>
     </sbe:message>
 
     <!-- Serialisation of major Entities -->

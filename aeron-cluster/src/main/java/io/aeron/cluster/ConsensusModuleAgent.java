@@ -77,11 +77,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private int logPublicationInitialTermId = NULL_VALUE;
     private int logPublicationTermBufferLength = NULL_VALUE;
     private int logPublicationMtuLength = NULL_VALUE;
+    private int highMemberId = NULL_VALUE;
     private ReadableCounter appendedPosition;
     private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
     private Cluster.Role role;
     private ClusterMember[] clusterMembers;
+    private ClusterMember[] passiveMembers = new ClusterMember[0];
     private ClusterMember leaderMember;
     private final ClusterMember thisMember;
     private long[] rankedPositions;
@@ -145,6 +147,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.tempBuffer = ctx.tempBuffer();
         this.serviceHeartbeats = ctx.serviceHeartbeatCounters();
         this.serviceAcks = ServiceAck.newArray(ctx.serviceCount());
+        this.highMemberId = ClusterMember.highMemberId(clusterMembers);
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -566,40 +569,56 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
     }
 
-    public void onAddClusterMember(final String memberEndpoints)
+    public void onAddClusterMember(final long correlationId, final String memberEndpoints)
     {
         if (null == election && Cluster.Role.LEADER == role)
         {
-            // TODO: add cluster member to list (no affect on group size)
-            // TODO: send ClusterMembersChange to new memberId
+            if (ClusterMember.isNotDuplicateMember(passiveMembers, memberEndpoints))
+            {
+                final ClusterMember newMember = ClusterMember.parseEndpoints(++highMemberId, memberEndpoints);
+
+                newMember.changeCorrelationId(correlationId);
+                passiveMembers = ClusterMember.addMember(passiveMembers, newMember);
+
+                final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+
+                ClusterMember.addMemberStatusPublication(
+                    newMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+            }
+        }
+        else if (null == election && Cluster.Role.FOLLOWER == role)
+        {
+            // redirect add to leader. Leader will respond
+            memberStatusPublisher.addClusterMember(leaderMember.publication(), correlationId, memberEndpoints);
         }
     }
 
-    public void onRemoveClusterMember(final int memberId)
+    public void onRemoveClusterMember(final long correlationId, final int memberId)
     {
         if (null == election && Cluster.Role.LEADER == role)
         {
-            // TODO: remove cluster member from list (no affect on group size)
-            // TODO: send ClusterMembersChange to all cluster members
-            // TODO: close publication for old cluster member
+            // TODO: remove cluster member from passive list
         }
     }
 
-    public void onClusterMembersChange(final String clusterMembers)
+    public void onClusterMembersChange(
+        final long correlationId, final int leaderMemberId, final String activeMembers, final String passiveMembers)
+    {
+        // TODO: send snapshotRecordingQuery if was added to passiveMembers
+    }
+
+    public void onSnapshotRecordingQuery(final long correlationId, final int requestMemberId)
     {
     }
 
-    public void onSnapshotRecordingQuery(final int requestMemberId)
-    {
-    }
-
-    public void onSnapshotRecordings(final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
+    public void onSnapshotRecordings(
+        final long correlationId, final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
     {
     }
 
     public void onJoinCluster(final long leadershipTermId, final int memberId)
     {
-        // TODO: add member officially from passive.
+        // TODO: add member officially from passive. Keep existing publication.
         // TODO: send ClusterChange event to log
     }
 
@@ -1278,6 +1297,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 workCount += processPendingSessions(pendingSessions, nowMs);
                 workCount += checkSessions(sessionByIdMap, nowMs);
+                workCount += processPassiveMembers(passiveMembers);
             }
         }
         else
@@ -1461,6 +1481,33 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 ArrayListUtil.fastUnorderedRemove(redirectSessions, i, lastIndex--);
                 session.close();
                 workCount++;
+            }
+        }
+
+        return workCount;
+    }
+
+    private int processPassiveMembers(final ClusterMember[] passiveMembers)
+    {
+        int workCount = 0;
+
+        for (int i = 0, length = passiveMembers.length; i < length; i++)
+        {
+            final ClusterMember member = passiveMembers[i];
+
+            if (member.changeCorrelationId() != Aeron.NULL_VALUE)
+            {
+                // TODO: differentiate leave and add as leave needs to remove close publication and member on success.
+                if (memberStatusPublisher.clusterMemberChange(
+                    member.publication(),
+                    member.changeCorrelationId(),
+                    leaderMember.id(),
+                    ClusterMember.membersString(clusterMembers),
+                    ClusterMember.membersString(passiveMembers)))
+                {
+                    member.changeCorrelationId(Aeron.NULL_VALUE);
+                    workCount++;
+                }
             }
         }
 

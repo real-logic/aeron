@@ -73,9 +73,9 @@ int aeron_driver_sender_init(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SENDER_PROXY_FAILS);
     sender->sender_proxy.threading_mode = context->threading_mode;
 
-    sender->network_publicaitons.array = NULL;
-    sender->network_publicaitons.length = 0;
-    sender->network_publicaitons.capacity = 0;
+    sender->network_publications.array = NULL;
+    sender->network_publications.length = 0;
+    sender->network_publications.capacity = 0;
 
     sender->round_robin_index = 0;
     sender->duty_cycle_counter = 0;
@@ -168,7 +168,7 @@ void aeron_driver_sender_on_close(void *clientd)
     }
 
     aeron_udp_transport_poller_close(&sender->poller);
-    aeron_free(sender->network_publicaitons.array);
+    aeron_free(sender->network_publications.array);
 }
 
 void aeron_driver_sender_on_add_endpoint(void *clientd, void *command)
@@ -205,7 +205,7 @@ void aeron_driver_sender_on_add_publication(void *clientd, void *command)
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(
-        ensure_capacity_result, sender->network_publicaitons, aeron_driver_sender_network_publication_entry_t);
+        ensure_capacity_result, sender->network_publications, aeron_driver_sender_network_publication_entry_t);
 
     if (ensure_capacity_result < 0)
     {
@@ -213,7 +213,7 @@ void aeron_driver_sender_on_add_publication(void *clientd, void *command)
         return;
     }
 
-    sender->network_publicaitons.array[sender->network_publicaitons.length++].publication = publication;
+    sender->network_publications.array[sender->network_publications.length++].publication = publication;
     if (aeron_send_channel_endpoint_add_publication(publication->endpoint, publication) < 0)
     {
         AERON_DRIVER_SENDER_ERROR(sender, "sender on_add_publication add_publication: %s", aeron_errmsg());
@@ -226,16 +226,16 @@ void aeron_driver_sender_on_remove_publication(void *clientd, void *command)
     aeron_command_base_t *cmd = (aeron_command_base_t *)command;
     aeron_network_publication_t *publication = (aeron_network_publication_t *)cmd->item;
 
-    for (size_t i = 0, size = sender->network_publicaitons.length, last_index = size - 1; i < size; i++)
+    for (size_t i = 0, size = sender->network_publications.length, last_index = size - 1; i < size; i++)
     {
-        if (publication == sender->network_publicaitons.array[i].publication)
+        if (publication == sender->network_publications.array[i].publication)
         {
             aeron_array_fast_unordered_remove(
-                (uint8_t *)sender->network_publicaitons.array,
+                (uint8_t *)sender->network_publications.array,
                 sizeof(aeron_driver_sender_network_publication_entry_t),
                 i,
                 last_index);
-            sender->network_publicaitons.length--;
+            sender->network_publications.length--;
             break;
         }
     }
@@ -273,8 +273,8 @@ void aeron_driver_sender_on_remove_destination(void *clientd, void *command)
 int aeron_driver_sender_do_send(aeron_driver_sender_t *sender, int64_t now_ns)
 {
     int bytes_sent = 0;
-    aeron_driver_sender_network_publication_entry_t *publications = sender->network_publicaitons.array;
-    size_t length = sender->network_publicaitons.length;
+    aeron_driver_sender_network_publication_entry_t *publications = sender->network_publications.array;
+    size_t length = sender->network_publications.length;
     size_t starting_index = sender->round_robin_index++;
 
     if (starting_index >= length)

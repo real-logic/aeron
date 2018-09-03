@@ -43,7 +43,7 @@ typedef struct aeron_driver_sender_stct
         size_t length;
         size_t capacity;
     }
-    network_publicaitons;
+    network_publications;
 
     struct aeron_driver_sender_buffers_stct
     {

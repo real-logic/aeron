@@ -179,7 +179,7 @@ public class DataPacketDispatcherTest
     }
 
     @Test
-    public void shouldNotIgnoreDataAndSetupAfterImageRemovedAndCooldownRemoved()
+    public void shouldNotIgnoreDataAndSetupAfterImageRemovedAndCoolDownRemoved()
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addPublicationImage(mockImage);

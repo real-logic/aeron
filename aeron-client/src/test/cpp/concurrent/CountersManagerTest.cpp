@@ -40,7 +40,7 @@ public:
         m_countersManager(
             AtomicBuffer(&m_metadataBuffer[0], m_metadataBuffer.size()),
             AtomicBuffer(&m_valuesBuffer[0], m_valuesBuffer.size())),
-        m_countersManagerWithCooldown(
+        m_countersManagerWithCoolDown(
             AtomicBuffer(&m_metadataBuffer[0], m_metadataBuffer.size()),
             AtomicBuffer(&m_valuesBuffer[0], m_valuesBuffer.size()),
             [&]() { return m_currentTimestamp; },
@@ -60,7 +60,7 @@ public:
     std::array<std::uint8_t, NUM_COUNTERS * CountersReader::METADATA_LENGTH> m_metadataBuffer;
     std::array<std::uint8_t, NUM_COUNTERS * CountersReader::COUNTER_LENGTH> m_valuesBuffer;
     CountersManager m_countersManager;
-    CountersManager m_countersManagerWithCooldown;
+    CountersManager m_countersManagerWithCoolDown;
 };
 
 TEST_F(CountersManagerTest, checkEmpty)
@@ -139,28 +139,28 @@ TEST_F(CountersManagerTest, shouldFreeAndReuseCounters)
     ASSERT_EQ(m_countersManager.allocate("the next label"), def);
 }
 
-TEST_F(CountersManagerTest, shouldFreeAndNotReuseCountersThatHaveCooldown)
+TEST_F(CountersManagerTest, shouldFreeAndNotReuseCountersThatHaveCoolDown)
 {
-    m_countersManagerWithCooldown.allocate("abc");
-    std::int32_t def = m_countersManagerWithCooldown.allocate("def");
-    std::int32_t ghi = m_countersManagerWithCooldown.allocate("ghi");
+    m_countersManagerWithCoolDown.allocate("abc");
+    std::int32_t def = m_countersManagerWithCoolDown.allocate("def");
+    std::int32_t ghi = m_countersManagerWithCoolDown.allocate("ghi");
 
-    m_countersManagerWithCooldown.free(def);
+    m_countersManagerWithCoolDown.free(def);
 
     m_currentTimestamp += FREE_TO_REUSE_TIMEOUT - 1;
-    ASSERT_GT(m_countersManagerWithCooldown.allocate("the next label"), ghi);
+    ASSERT_GT(m_countersManagerWithCoolDown.allocate("the next label"), ghi);
 }
 
-TEST_F(CountersManagerTest, shouldFreeAndReuseCountersAfterCooldown)
+TEST_F(CountersManagerTest, shouldFreeAndReuseCountersAfterCoolDown)
 {
-    m_countersManagerWithCooldown.allocate("abc");
-    std::int32_t def = m_countersManagerWithCooldown.allocate("def");
-    m_countersManagerWithCooldown.allocate("ghi");
+    m_countersManagerWithCoolDown.allocate("abc");
+    std::int32_t def = m_countersManagerWithCoolDown.allocate("def");
+    m_countersManagerWithCoolDown.allocate("ghi");
 
-    m_countersManagerWithCooldown.free(def);
+    m_countersManagerWithCoolDown.free(def);
 
     m_currentTimestamp += FREE_TO_REUSE_TIMEOUT;
-    ASSERT_EQ(m_countersManagerWithCooldown.allocate("the next label"), def);
+    ASSERT_EQ(m_countersManagerWithCoolDown.allocate("the next label"), def);
 }
 
 TEST_F(CountersManagerTest, shouldMapPosition)

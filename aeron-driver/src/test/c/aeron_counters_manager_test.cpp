@@ -69,7 +69,7 @@ public:
             0);
     }
 
-    int counters_maanager_with_cooldown_init()
+    int counters_manager_with_cool_down_init()
     {
         return aeron_counters_manager_init(
             &m_manager,
@@ -167,9 +167,9 @@ TEST_F(CountersManagerTest, shouldFreeAndReuseCounters)
     EXPECT_EQ(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "the next label", 14), def);
 }
 
-TEST_F(CountersManagerTest, shouldFreeAndNotReuseCountersThatHaveCooldown)
+TEST_F(CountersManagerTest, shouldFreeAndNotReuseCountersThatHaveCoolDown)
 {
-    ASSERT_EQ(counters_maanager_with_cooldown_init(), 0);
+    ASSERT_EQ(counters_manager_with_cool_down_init(), 0);
 
     aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "abc", 3);
     int32_t def = aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "def", 3);
@@ -181,9 +181,9 @@ TEST_F(CountersManagerTest, shouldFreeAndNotReuseCountersThatHaveCooldown)
     EXPECT_GT(aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "the next label", 14), ghi);
 }
 
-TEST_F(CountersManagerTest, shouldFreeAndReuseCountersAfterCooldown)
+TEST_F(CountersManagerTest, shouldFreeAndReuseCountersAfterCoolDown)
 {
-    ASSERT_EQ(counters_maanager_with_cooldown_init(), 0);
+    ASSERT_EQ(counters_manager_with_cool_down_init(), 0);
 
     aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "abc", 3);
     int32_t def = aeron_counters_manager_allocate(&m_manager, 0, NULL, 0, "def", 3);

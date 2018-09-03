@@ -87,6 +87,7 @@ int aeron_driver_receiver_init(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
     receiver->total_bytes_received_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
+
     return 0;
 }
 

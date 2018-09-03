@@ -126,6 +126,7 @@ int aeron_uri_publication_params(
     aeron_uri_publication_params_t *params,
     aeron_driver_context_t *context,
     bool is_exclusive);
+
 int aeron_udp_channel_subscription_params(
     aeron_uri_t *uri,
     aeron_udp_channel_subscription_params_t *params,

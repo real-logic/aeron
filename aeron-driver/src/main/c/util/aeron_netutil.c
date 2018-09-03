@@ -287,7 +287,12 @@ int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)
 }
 
 int aeron_host_port_prefixlen_resolver(
-    const char *host_str, const char *port_str, const char *prefixlen_str, struct sockaddr_storage *sockaddr, size_t *prefixlen, int family_hint)
+    const char *host_str,
+    const char *port_str,
+    const char *prefixlen_str,
+    struct sockaddr_storage *sockaddr,
+    size_t *prefixlen,
+    int family_hint)
 {
     int host_result = -1, prefixlen_result = -1, port_result = aeron_udp_port_resolver(port_str, true);
 

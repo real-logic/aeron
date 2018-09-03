@@ -53,6 +53,7 @@ int aeron_publication_image_create(
             session_id,
             stream_id,
             correlation_id);
+
     aeron_publication_image_t *_image = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length((uint64_t)term_buffer_length, context->file_page_size);
@@ -194,6 +195,7 @@ int aeron_publication_image_create(
     aeron_counter_set_ordered(_image->rcv_pos_position.value_addr, initial_position);
 
     *image = _image;
+
     return 0;
 }
 
@@ -219,6 +221,7 @@ int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, ae
     }
 
     aeron_free(image);
+
     return 0;
 }
 

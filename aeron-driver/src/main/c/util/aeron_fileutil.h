@@ -94,6 +94,7 @@ int aeron_map_raw_log(
     bool use_sparse_files,
     uint64_t term_length,
     uint64_t page_size);
+
 int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log);
 
 #endif //AERON_AERON_FILEUTIL_H

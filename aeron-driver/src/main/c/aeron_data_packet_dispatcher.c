@@ -57,7 +57,8 @@ void aeron_data_packet_dispatcher_delete_session_maps(void *clientd, int64_t key
 
 int aeron_data_packet_dispatcher_close(aeron_data_packet_dispatcher_t *dispatcher)
 {
-    aeron_int64_to_ptr_hash_map_for_each(&dispatcher->session_by_stream_id_map, aeron_data_packet_dispatcher_delete_session_maps, dispatcher);
+    aeron_int64_to_ptr_hash_map_for_each(
+        &dispatcher->session_by_stream_id_map, aeron_data_packet_dispatcher_delete_session_maps, dispatcher);
     aeron_int64_to_ptr_hash_map_delete(&dispatcher->ignored_sessions_map);
     aeron_int64_to_ptr_hash_map_delete(&dispatcher->session_by_stream_id_map);
 

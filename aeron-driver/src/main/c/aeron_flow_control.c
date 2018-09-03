@@ -141,6 +141,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
     state->should_linger = true;
 
     *strategy = _strategy;
+
     return 0;
 }
 

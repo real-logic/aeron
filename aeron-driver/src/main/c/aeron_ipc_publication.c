@@ -142,6 +142,7 @@ int aeron_ipc_publication_create(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS);
 
     *publication = _pub;
+
     return 0;
 }
 

@@ -68,6 +68,7 @@ int aeron_network_publication_create(
             session_id,
             stream_id,
             registration_id);
+
     aeron_network_publication_t *_pub = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length(term_buffer_length, context->file_page_size);
@@ -199,6 +200,7 @@ int aeron_network_publication_create(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS);
 
     *publication = _pub;
+
     return 0;
 }
 

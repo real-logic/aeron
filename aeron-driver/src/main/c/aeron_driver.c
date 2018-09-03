@@ -801,7 +801,6 @@ int aeron_driver_close(aeron_driver_t *driver)
         {
             return -1;
         }
-
     }
 
     for (int i = 0; i < AERON_AGENT_RUNNER_MAX; i++)

@@ -594,6 +594,7 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_free(context->conductor_idle_strategy_state);
     aeron_free(context->shared_idle_strategy_state);
     aeron_free(context);
+
     return 0;
 }
 

@@ -56,6 +56,7 @@ void aeron_format_to_hex(char *str, size_t str_length, uint8_t *data, size_t dat
         str[j++] = c_high;
         str[j++] = c_low;
     }
+
     str[j] = '\0';
 }
 

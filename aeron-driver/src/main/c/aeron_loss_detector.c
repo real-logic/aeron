@@ -72,6 +72,7 @@ int32_t aeron_loss_detector_scan(
                 limit_offset,
                 aeron_loss_detector_on_gap,
                 detector);
+
         if (rebuild_offset < limit_offset)
         {
             if (!aeron_loss_detector_gaps_match(detector))

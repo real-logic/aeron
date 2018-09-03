@@ -15,22 +15,14 @@
  */
 package io.aeron.samples.raw;
 
-import io.aeron.driver.Configuration;
 import org.agrona.nio.NioSelectedKeySet;
-import org.agrona.IoUtil;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
-import java.nio.channels.FileChannel;
 import java.nio.channels.Selector;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 
 public class Common
 {
@@ -102,16 +94,5 @@ public class Common
         }
 
         return tmpSet;
-    }
-
-    public static FileChannel createTmpFileChannel() throws IOException
-    {
-        final File file = File.createTempFile("buffer-", ".dat");
-        file.deleteOnExit();
-
-        final FileChannel fileChannel = FileChannel.open(file.toPath(), CREATE, READ, WRITE);
-        IoUtil.fill(fileChannel, 0, Configuration.MTU_LENGTH_DEFAULT, (byte)0);
-
-        return fileChannel;
     }
 }

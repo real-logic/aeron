@@ -77,7 +77,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private int logPublicationInitialTermId = NULL_VALUE;
     private int logPublicationTermBufferLength = NULL_VALUE;
     private int logPublicationMtuLength = NULL_VALUE;
-    private int highMemberId = NULL_VALUE;
+    private int highMemberId;
     private ReadableCounter appendedPosition;
     private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;

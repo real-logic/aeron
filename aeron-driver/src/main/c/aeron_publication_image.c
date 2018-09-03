@@ -186,7 +186,7 @@ int aeron_publication_image_create(
     _image->next_sm_receiver_window_length =
         _image->congestion_control->initial_window_length(_image->congestion_control->state);
     _image->last_packet_timestamp_ns = now_ns;
-    _image->last_status_mesage_timestamp = 0;
+    _image->last_status_message_timestamp = 0;
     _image->conductor_fields.clean_position = initial_position;
     _image->conductor_fields.time_of_last_status_change_ns = now_ns;
 
@@ -337,7 +337,7 @@ void aeron_publication_image_track_rebuild(
     const int32_t threshold = window_length / 4;
 
     if (should_force_send_sm ||
-        (now_ns > (image->last_status_mesage_timestamp + status_message_timeout)) ||
+        (now_ns > (image->last_status_message_timestamp + status_message_timeout)) ||
         (min_sub_pos > (image->next_sm_position + threshold)))
     {
         aeron_publication_image_schedule_status_message(image, now_ns, min_sub_pos, window_length);

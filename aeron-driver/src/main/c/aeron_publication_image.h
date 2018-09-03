@@ -80,7 +80,7 @@ typedef struct aeron_publication_image_stct
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
 
     int64_t last_packet_timestamp_ns;
-    int64_t last_status_mesage_timestamp;
+    int64_t last_status_message_timestamp;
 
     int64_t last_sm_change_number;
     int64_t last_loss_change_number;
@@ -197,7 +197,7 @@ inline void aeron_publication_image_schedule_status_message(
 
     image->next_sm_position = sm_position;
     image->next_sm_receiver_window_length = window_length;
-    image->last_status_mesage_timestamp = now_ns;
+    image->last_status_message_timestamp = now_ns;
 
     AERON_PUT_ORDERED(image->end_sm_change, change_number);
 }

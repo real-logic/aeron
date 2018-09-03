@@ -113,7 +113,7 @@ void aeron_driver_receiver_on_remove_subscription(void *clientd, void *item);
 void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item);
 void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item);
 
-void aeron_driver_receiver_on_remove_cooldown(void *clientd, void *item);
+void aeron_driver_receiver_on_remove_cool_down(void *clientd, void *item);
 
 int aeron_driver_receiver_add_pending_setup(
     aeron_driver_receiver_t *receiver,

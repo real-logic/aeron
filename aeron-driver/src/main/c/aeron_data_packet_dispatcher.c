@@ -145,7 +145,7 @@ int aeron_data_packet_dispatcher_remove_publication_image(
     if (aeron_int64_to_ptr_hash_map_put(
         &dispatcher->ignored_sessions_map,
         aeron_int64_to_ptr_hash_map_compound_key(image->session_id, image->stream_id),
-        &dispatcher->tokens.on_cooldown) < 0)
+        &dispatcher->tokens.on_cool_down) < 0)
     {
         int errcode = errno;
 
@@ -204,7 +204,7 @@ int aeron_data_packet_dispatcher_on_setup(
         aeron_publication_image_t *image = aeron_int64_to_ptr_hash_map_get(session_map, header->session_id);
 
         if (NULL == image &&
-            aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cooldown(
+            aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cool_down(
                 dispatcher, header->stream_id, header->session_id))
         {
             if (endpoint->conductor_fields.udp_channel->multicast &&
@@ -310,10 +310,10 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     return aeron_driver_receiver_add_pending_setup(dispatcher->receiver, endpoint, session_id, stream_id, NULL);
 }
 
-extern bool aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cooldown(
+extern bool aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cool_down(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t stream_id, int32_t session_id);
 extern int aeron_data_packet_dispatcher_remove_pending_setup(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
-extern int aeron_data_packet_dispatcher_remove_cooldown(
+extern int aeron_data_packet_dispatcher_remove_cool_down(
     aeron_data_packet_dispatcher_t *dispatcher, int32_t session_id, int32_t stream_id);
 extern bool aeron_data_packet_dispatcher_should_elicit_setup_message(aeron_data_packet_dispatcher_t *dispatcher);

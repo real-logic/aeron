@@ -624,7 +624,7 @@ void aeron_driver_conductor_image_transition_to_linger(
             }
         }
 
-        aeron_driver_receiver_proxy_on_remove_cooldown(
+        aeron_driver_receiver_proxy_on_remove_cool_down(
             conductor->context->receiver_proxy, image->endpoint, image->session_id, image->stream_id);
     }
 }

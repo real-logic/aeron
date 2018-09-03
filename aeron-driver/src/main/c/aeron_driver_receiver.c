@@ -369,15 +369,15 @@ void aeron_driver_receiver_on_remove_publication_image(void *clientd, void *item
     aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);
 }
 
-void aeron_driver_receiver_on_remove_cooldown(void *clientd, void *item)
+void aeron_driver_receiver_on_remove_cool_down(void *clientd, void *item)
 {
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
-    aeron_command_remove_cooldown_t *cmd = (aeron_command_remove_cooldown_t *)item;
+    aeron_command_remove_cool_down_t *cmd = (aeron_command_remove_cool_down_t *)item;
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->endpoint;
 
-    if (aeron_receive_channel_endpoint_on_remove_cooldown(endpoint, cmd->session_id, cmd->stream_id) < 0)
+    if (aeron_receive_channel_endpoint_on_remove_cool_down(endpoint, cmd->session_id, cmd->stream_id) < 0)
     {
-        AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_cooldown: %s", aeron_errmsg());
+        AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_cool_down: %s", aeron_errmsg());
     }
 
     aeron_driver_conductor_proxy_on_delete_cmd(receiver->context->conductor_proxy, item);

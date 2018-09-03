@@ -629,7 +629,7 @@ void aeron_driver_conductor_image_transition_to_linger(
     }
 }
 
-#define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l,t,now_ns,now_ms) \
+#define AERON_DRIVER_CONDUCTOR_CHECK_MANAGED_RESOURCE(c, l, t, now_ns, now_ms) \
 for (int last_index = (int)l.length - 1, i = last_index; i >= 0; i--) \
 { \
     t *elem = &l.array[i]; \

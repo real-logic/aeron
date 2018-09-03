@@ -104,7 +104,7 @@ int64_t aeron_loss_detector_nak_multicast_delay_generator()
         base_x = lambda / (AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF * (exp(lambda) - 1));
         constant_t = AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF / lambda;
         factor_t = (exp(lambda) - 1) * constant_t;
-        srand48(aeron_nanoclock());
+        srand48(aeron_nano_clock());
 
         initialized = true;
     }

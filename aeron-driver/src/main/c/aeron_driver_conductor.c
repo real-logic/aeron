@@ -63,7 +63,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     {
         free_to_reuse_timeout_ms = context->counter_free_to_reuse_ns / (1000 * 1000L);
         free_to_reuse_timeout_ms = (free_to_reuse_timeout_ms <= 0) ? 1 : free_to_reuse_timeout_ms;
-        clock_func = aeron_epochclock;
+        clock_func = aeron_epoch_clock;
     }
 
     if (aeron_counters_manager_init(

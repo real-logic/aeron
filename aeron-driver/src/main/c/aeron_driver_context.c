@@ -518,8 +518,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->counters_metadata_buffer = NULL;
     _context->error_buffer = NULL;
 
-    _context->nano_clock = aeron_nanoclock;
-    _context->epoch_clock = aeron_epochclock;
+    _context->nano_clock = aeron_nano_clock;
+    _context->epoch_clock = aeron_epoch_clock;
 
     _context->conductor_idle_strategy_func =
         aeron_idle_strategy_load(
@@ -643,7 +643,7 @@ bool aeron_is_driver_active_with_cnc(
 
     while (0 == (cnc_version = aeron_cnc_version_volatile(metadata)))
     {
-        if (aeron_epochclock() > (now + timeout))
+        if (aeron_epoch_clock() > (now + timeout))
         {
             snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version was 0 for timeout");
             return false;
@@ -713,7 +713,7 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
         snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s/%s exists", dirname, AERON_CNC_FILE);
         log_func(buffer);
 
-        result = aeron_is_driver_active_with_cnc(&cnc_map, timeout, aeron_epochclock(), log_func);
+        result = aeron_is_driver_active_with_cnc(&cnc_map, timeout, aeron_epoch_clock(), log_func);
 
         aeron_unmap(&cnc_map);
     }

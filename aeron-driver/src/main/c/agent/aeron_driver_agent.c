@@ -46,7 +46,7 @@ static double receive_data_loss_rate = 0.0;
 static unsigned short receive_data_loss_xsubi[3];
 static pthread_t log_reader_thread;
 
-int64_t aeron_agent_epochclock()
+int64_t aeron_agent_epoch_clock()
 {
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) < 0)
@@ -131,7 +131,7 @@ static void initialize_agent_logging()
         }
         else
         {
-            seed_value = aeron_agent_epochclock();
+            seed_value = aeron_agent_epoch_clock();
         }
 
         receive_data_loss_xsubi[2] = (unsigned short)(seed_value & 0xFFFF);
@@ -145,7 +145,7 @@ void aeron_driver_agent_conductor_to_driver_interceptor(
 {
     uint8_t buffer[MAX_CMD_LENGTH + sizeof(aeron_driver_agent_cmd_log_header_t)];
     aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
-    hdr->time_ms = aeron_agent_epochclock();
+    hdr->time_ms = aeron_agent_epoch_clock();
     hdr->cmd_id = msg_type_id;
     memcpy(buffer + sizeof(aeron_driver_agent_cmd_log_header_t), message, length);
 
@@ -157,7 +157,7 @@ void aeron_driver_agent_conductor_to_client_interceptor(
 {
     uint8_t buffer[MAX_CMD_LENGTH + sizeof(aeron_driver_agent_cmd_log_header_t)];
     aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)buffer;
-    hdr->time_ms = aeron_agent_epochclock();
+    hdr->time_ms = aeron_agent_epoch_clock();
     hdr->cmd_id = msg_type_id;
     memcpy(buffer + sizeof(aeron_driver_agent_cmd_log_header_t), message, length);
 
@@ -177,7 +177,7 @@ int aeron_driver_agent_map_raw_log_interceptor(
     aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
     size_t path_len = strlen(path);
 
-    hdr->time_ms = aeron_agent_epochclock();
+    hdr->time_ms = aeron_agent_epoch_clock();
     hdr->map_raw_log.path_len = (int32_t)path_len;
     hdr->map_raw_log.result = result;
     hdr->map_raw_log.addr = (uintptr_t)mapped_raw_log;
@@ -194,7 +194,7 @@ int aeron_driver_agent_map_raw_log_close_interceptor(aeron_mapped_raw_log_t *map
     uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_map_raw_log_op_header_t)];
     aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
 
-    hdr->time_ms = aeron_agent_epochclock();
+    hdr->time_ms = aeron_agent_epoch_clock();
     hdr->map_raw_log_close.addr = (uintptr_t)mapped_raw_log;
     memcpy(&hdr->map_raw_log_close.log, mapped_raw_log, sizeof(hdr->map_raw_log.log));
     hdr->map_raw_log_close.result = aeron_map_raw_log_close(mapped_raw_log);
@@ -262,7 +262,7 @@ void aeron_driver_agent_log_frame(
     aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
     size_t length = sizeof(aeron_driver_agent_frame_log_header_t);
 
-    hdr->time_ms = aeron_agent_epochclock();
+    hdr->time_ms = aeron_agent_epoch_clock();
     hdr->result = (int32_t)result;
     hdr->sockaddr_len = msghdr->msg_namelen;
     hdr->message_len = message_len;

@@ -317,14 +317,14 @@ typedef int64_t (*aeron_clock_func_t)();
  *
  * @return nanoseconds since epoch for machine.
  */
-int64_t aeron_nanoclock();
+int64_t aeron_nano_clock();
 
 /**
  * Return time in milliseconds since epoch. Is wall clock time.
  *
  * @return milliseconds since epoch.
  */
-int64_t aeron_epochclock();
+int64_t aeron_epoch_clock();
 
 /**
  * Function to return logging information.
@@ -336,7 +336,7 @@ typedef void (*aeron_log_func_t)(const char *);
  *
  * @param dirname for aeron directory
  * @param timeout to use to determine activity for aeron directory
- * @param now current time in nanoseconds. @see aeron_nanoclock.
+ * @param now current time in nanoseconds. @see aeron_nano_clock.
  * @param log_func to call during activity check to log diagnostic information.
  * @return true for active driver or false for no active driver.
  */

@@ -722,34 +722,40 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 nextListener.onRecordingLog(decoder);
             }
 
-            public void onAddClusterMember(final String memberEndpoints)
+            public void onAddClusterMember(final long correlationId, final String memberEndpoints)
             {
-                stream.format("onAddClusterMember[%d] %s%n", index, memberEndpoints);
-                nextListener.onAddClusterMember(memberEndpoints);
+                stream.format("onAddClusterMember[%d] %d %s%n", index, correlationId, memberEndpoints);
+                nextListener.onAddClusterMember(correlationId, memberEndpoints);
             }
 
-            public void onRemoveClusterMember(final int memberId)
+            public void onRemoveClusterMember(final long correlationId, final int memberId)
             {
-                stream.format("onAddClusterMember[%d] %d%n", index, memberId);
-                nextListener.onRemoveClusterMember(memberId);
+                stream.format("onAddClusterMember[%d] %d %d%n", index, correlationId, memberId);
+                nextListener.onRemoveClusterMember(correlationId, memberId);
             }
 
-            public void onClusterMembersChange(final String clusterMembers)
+            public void onClusterMembersChange(
+                final long correaltionId,
+                final int leaderMemberId,
+                final String activeMembers,
+                final String passiveMembers)
             {
-                stream.format("onClusterMembersChange[%d] %s%n", index, clusterMembers);
-                nextListener.onClusterMembersChange(clusterMembers);
+                stream.format("onClusterMembersChange[%d] %d %d %s %s%n",
+                    index, correaltionId, leaderMemberId, activeMembers, passiveMembers);
+                nextListener.onClusterMembersChange(correaltionId, leaderMemberId, activeMembers, passiveMembers);
             }
 
-            public void onSnapshotRecordingQuery(final int requestMemberId)
+            public void onSnapshotRecordingQuery(final long correlationId, final int requestMemberId)
             {
-                stream.format("onSnapshotRecordingQuery[%d] %d%n", index, requestMemberId);
-                nextListener.onSnapshotRecordingQuery(requestMemberId);
+                stream.format("onSnapshotRecordingQuery[%d] %d %d%n", index, correlationId, requestMemberId);
+                nextListener.onSnapshotRecordingQuery(correlationId, requestMemberId);
             }
 
-            public void onSnapshotRecordings(final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
+            public void onSnapshotRecordings(
+                final long correlationId, final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
             {
-                stream.format("onSnapshotRecordings[%d]%n", index);
-                nextListener.onSnapshotRecordings(snapshotRecordingsDecoder);
+                stream.format("onSnapshotRecordings[%d] %d%n", index, correlationId);
+                nextListener.onSnapshotRecordings(correlationId, snapshotRecordingsDecoder);
             }
 
             public void onJoinCluster(final long leadershipTermId, final int memberId)

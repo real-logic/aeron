@@ -20,6 +20,7 @@ import io.aeron.ChannelUri;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import org.agrona.CloseHelper;
+import org.agrona.collections.ArrayUtil;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.CommonContext.UDP_MEDIA;
@@ -37,6 +38,7 @@ public final class ClusterMember
     private long logPosition = NULL_POSITION;
     private long candidateTermId = Aeron.NULL_VALUE;
     private long catchupReplaySessionId = Aeron.NULL_VALUE;
+    private long changeCorrelationId = Aeron.NULL_VALUE;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
@@ -243,6 +245,17 @@ public final class ClusterMember
         return catchupReplaySessionId;
     }
 
+    public ClusterMember changeCorrelationId(final long correlationId)
+    {
+        this.changeCorrelationId = correlationId;
+        return this;
+    }
+
+    public long changeCorrelationId()
+    {
+        return changeCorrelationId;
+    }
+
     /**
      * The address:port endpoint for this cluster member that clients will connect to.
      *
@@ -349,6 +362,14 @@ public final class ClusterMember
                 throw new ClusterException("invalid member value: " + endpointsDetail + " within: " + value);
             }
 
+            final String justEndpoints = String.join(
+                ",",
+                memberAttributes[1],
+                memberAttributes[2],
+                memberAttributes[3],
+                memberAttributes[4],
+                memberAttributes[5]);
+
             members[i] = new ClusterMember(
                 Integer.parseInt(memberAttributes[0]),
                 memberAttributes[1],
@@ -356,10 +377,56 @@ public final class ClusterMember
                 memberAttributes[3],
                 memberAttributes[4],
                 memberAttributes[5],
-                endpointsDetail);
+                justEndpoints);
         }
 
         return members;
+    }
+
+    public static ClusterMember parseEndpoints(final int id, final String endpointsDetail)
+    {
+        final String[] memberAttributes = endpointsDetail.split(",");
+        if (memberAttributes.length != 5)
+        {
+            throw new ClusterException("invalid member value: " + endpointsDetail);
+        }
+
+        return new ClusterMember(
+            id,
+            memberAttributes[1],
+            memberAttributes[2],
+            memberAttributes[3],
+            memberAttributes[4],
+            memberAttributes[5],
+            endpointsDetail);
+    }
+
+    /**
+     * Fill a string with member details from a cluster members array.
+     *
+     * @param clusterMembers to fill the details from
+     * @return String representation suitable for use with {@link ClusterMember#parse}
+     */
+    public static String membersString(final ClusterMember[] clusterMembers)
+    {
+        final StringBuilder builder = new StringBuilder();
+
+        for (int i = 0, length = clusterMembers.length; i < length; i++)
+        {
+            final ClusterMember member = clusterMembers[i];
+
+            builder
+                .append(member.id())
+                .append(',')
+                .append(member.endpointsDetail());
+
+            if ((length - 1) != i)
+            {
+                builder.append('|');
+            }
+        }
+
+        return builder.toString();
     }
 
     /**
@@ -400,6 +467,17 @@ public final class ClusterMember
         {
             CloseHelper.close(member.publication);
         }
+    }
+
+    public static void addMemberStatusPublication(
+        final ClusterMember member,
+        final ChannelUri channelUri,
+        final int streamId,
+        final Aeron aeron)
+    {
+        channelUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
+        final String channel = channelUri.toString();
+        member.publication(aeron.addExclusivePublication(channel, streamId));
     }
 
     /**
@@ -710,6 +788,54 @@ public final class ClusterMember
     {
         return compareLog(
             lhsMember.leadershipTermId, lhsMember.logPosition, rhsMember.leadershipTermId, rhsMember.logPosition);
+    }
+
+    public static boolean isNotDuplicateMember(final ClusterMember[] passiveMembers, final String memberEndpoints)
+    {
+        final int length = passiveMembers.length;
+
+        for (int i = 0; i < length; i++)
+        {
+            if (passiveMembers[i].endpointsDetail().equals(memberEndpoints))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static ClusterMember[] addMember(final ClusterMember[] oldMembers, final ClusterMember newMember)
+    {
+        return ArrayUtil.add(oldMembers, newMember);
+    }
+
+    public static ClusterMember[] removeMember(final ClusterMember[] oldMembers, final int memberId)
+    {
+        final int length = oldMembers.length;
+        int index = ArrayUtil.UNKNOWN_INDEX;
+
+        for (int i = 0; i < length; i++)
+        {
+            if (oldMembers[i].id() == memberId)
+            {
+                index = i;
+            }
+        }
+
+        return ArrayUtil.remove(oldMembers, index);
+    }
+
+    public static int highMemberId(final ClusterMember[] clusterMembers)
+    {
+        int highId = Aeron.NULL_VALUE;
+
+        for (int i = 0, length = clusterMembers.length; i < length; i++)
+        {
+            highId = Math.max(highId, clusterMembers[i].id());
+        }
+
+        return highId;
     }
 
     public String toString()

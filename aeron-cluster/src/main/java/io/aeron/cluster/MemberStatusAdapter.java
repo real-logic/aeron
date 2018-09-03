@@ -244,7 +244,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                memberStatusListener.onAddClusterMember(addClusterMemberDecoder.memberEndpoints());
+                memberStatusListener.onAddClusterMember(
+                    addClusterMemberDecoder.correlationId(), addClusterMemberDecoder.memberEndpoints());
                 break;
 
             case RemoveClusterMemberDecoder.TEMPLATE_ID:
@@ -254,7 +255,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                memberStatusListener.onRemoveClusterMember(removeClusterMemberDecoder.memberId());
+                memberStatusListener.onRemoveClusterMember(
+                    removeClusterMemberDecoder.correlationId(), removeClusterMemberDecoder.memberId());
                 break;
 
             case ClusterMembersChangeDecoder.TEMPLATE_ID:
@@ -264,7 +266,11 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                memberStatusListener.onClusterMembersChange(clusterMembersChangeDecoder.clusterMembers());
+                memberStatusListener.onClusterMembersChange(
+                    clusterMembersChangeDecoder.correlationId(),
+                    clusterMembersChangeDecoder.leaderMemberId(),
+                    clusterMembersChangeDecoder.activeMembers(),
+                    clusterMembersChangeDecoder.passiveMembers());
                 break;
 
             case SnapshotRecordingQueryDecoder.TEMPLATE_ID:
@@ -274,7 +280,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                memberStatusListener.onSnapshotRecordingQuery(snapshotRecordingQueryDecoder.requestMemberId());
+                memberStatusListener.onSnapshotRecordingQuery(
+                    snapshotRecordingQueryDecoder.correlationId(), snapshotRecordingQueryDecoder.requestMemberId());
                 break;
 
             case SnapshotRecordingsDecoder.TEMPLATE_ID:
@@ -284,7 +291,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                memberStatusListener.onSnapshotRecordings(snapshotRecordingsDecoder);
+                memberStatusListener.onSnapshotRecordings(
+                    snapshotRecordingsDecoder.correlationId(), snapshotRecordingsDecoder);
                 break;
 
             case JoinClusterDecoder.TEMPLATE_ID:

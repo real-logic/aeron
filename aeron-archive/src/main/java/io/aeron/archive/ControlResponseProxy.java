@@ -28,9 +28,9 @@ import static io.aeron.archive.codecs.RecordingDescriptorEncoder.recordingIdEnco
 
 class ControlResponseProxy
 {
-    private static final int HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
-    private static final int DESCRIPTOR_CONTENT_OFFSET = RecordingDescriptorHeaderDecoder.BLOCK_LENGTH +
-        recordingIdEncodingOffset();
+    private static final int MESSAGE_HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
+    private static final int DESCRIPTOR_CONTENT_OFFSET =
+        RecordingDescriptorHeaderDecoder.BLOCK_LENGTH + recordingIdEncodingOffset();
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(1024);
     private final BufferClaim bufferClaim = new BufferClaim();
@@ -45,28 +45,28 @@ class ControlResponseProxy
         final UnsafeBuffer descriptorBuffer,
         final Publication controlPublication)
     {
-        final int length = Catalog.descriptorLength(descriptorBuffer);
+        final int messageLength = Catalog.descriptorLength(descriptorBuffer) + MESSAGE_HEADER_LENGTH;
+        final int contentLength = messageLength - recordingIdEncodingOffset() - MESSAGE_HEADER_LENGTH;
 
         for (int i = 0; i < 3; i++)
         {
-            final long result = controlPublication.tryClaim(length, bufferClaim);
+            final long result = controlPublication.tryClaim(messageLength, bufferClaim);
             if (result > 0)
             {
                 final MutableDirectBuffer buffer = bufferClaim.buffer();
                 final int bufferOffset = bufferClaim.offset();
-                final int contentOffset = bufferOffset + HEADER_LENGTH + recordingIdEncodingOffset();
-                final int contentLength = length - recordingIdEncodingOffset() - HEADER_LENGTH;
 
                 recordingDescriptorEncoder
                     .wrapAndApplyHeader(buffer, bufferOffset, messageHeaderEncoder)
                     .controlSessionId(controlSessionId)
                     .correlationId(correlationId);
 
+                final int contentOffset = bufferOffset + MESSAGE_HEADER_LENGTH + recordingIdEncodingOffset();
                 buffer.putBytes(contentOffset, descriptorBuffer, DESCRIPTOR_CONTENT_OFFSET, contentLength);
 
                 bufferClaim.commit();
 
-                return length;
+                return messageLength;
             }
 
             checkResult(controlPublication, result);
@@ -91,7 +91,7 @@ class ControlResponseProxy
             .code(code)
             .errorMessage(null == errorMessage ? "" : errorMessage);
 
-        return send(controlPublication, buffer, HEADER_LENGTH + responseEncoder.encodedLength());
+        return send(controlPublication, buffer, MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength());
     }
 
     void attemptErrorResponse(
@@ -109,7 +109,7 @@ class ControlResponseProxy
             .code(ControlResponseCode.ERROR)
             .errorMessage(null == errorMessage ? "" : errorMessage);
 
-        final int length = HEADER_LENGTH + responseEncoder.encodedLength();
+        final int length = MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength();
 
         for (int i = 0; i < 3; i++)
         {

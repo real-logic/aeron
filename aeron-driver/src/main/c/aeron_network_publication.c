@@ -224,7 +224,7 @@ void aeron_network_publication_close(aeron_counters_manager_t *counters_manager,
         publication->conductor_fields.managed_resource.clientd = NULL;
 
         aeron_retransmit_handler_close(&publication->retransmit_handler);
-        publication->map_raw_log_close_func(&publication->mapped_raw_log);
+        publication->map_raw_log_close_func(&publication->mapped_raw_log, publication->log_file_name);
         publication->flow_control->fini(publication->flow_control);
         aeron_free(publication->log_file_name);
     }

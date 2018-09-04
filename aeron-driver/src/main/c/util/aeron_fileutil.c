@@ -315,7 +315,7 @@ int aeron_map_raw_log(
     return result;
 }
 
-int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log)
+int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
 {
     int result = 0;
 
@@ -323,6 +323,14 @@ int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log)
     {
         if ((result = munmap(mapped_raw_log->mapped_file.addr, mapped_raw_log->mapped_file.length)) < 0)
         {
+            return -1;
+        }
+
+        if (NULL != filename && remove(filename) < 0)
+        {
+            int errcode = errno;
+
+            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             return -1;
         }
 

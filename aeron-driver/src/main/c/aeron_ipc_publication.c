@@ -161,7 +161,7 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
 
     if (NULL != publication)
     {
-        publication->map_raw_log_close_func(&publication->mapped_raw_log);
+        publication->map_raw_log_close_func(&publication->mapped_raw_log, publication->log_file_name);
         aeron_free(publication->log_file_name);
     }
 

@@ -215,7 +215,7 @@ int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, ae
 
         aeron_free(subscribable->array);
 
-        image->map_raw_log_close_func(&image->mapped_raw_log);
+        image->map_raw_log_close_func(&image->mapped_raw_log, image->log_file_name);
         image->congestion_control->fini(image->congestion_control);
         aeron_free(image->log_file_name);
     }

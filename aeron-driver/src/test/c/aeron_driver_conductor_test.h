@@ -114,7 +114,7 @@ static int test_malloc_map_raw_log(
     return 0;
 }
 
-static int test_malloc_map_raw_log_close(aeron_mapped_raw_log_t *log)
+static int test_malloc_map_raw_log_close(aeron_mapped_raw_log_t *log, const char *filename)
 {
     free(log->mapped_file.addr);
     return 0;

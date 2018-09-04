@@ -189,7 +189,7 @@ int aeron_driver_agent_map_raw_log_interceptor(
     return result;
 }
 
-int aeron_driver_agent_map_raw_log_close_interceptor(aeron_mapped_raw_log_t *mapped_raw_log)
+int aeron_driver_agent_map_raw_log_close_interceptor(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename)
 {
     uint8_t buffer[AERON_MAX_PATH + sizeof(aeron_driver_agent_map_raw_log_op_header_t)];
     aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)buffer;
@@ -197,7 +197,7 @@ int aeron_driver_agent_map_raw_log_close_interceptor(aeron_mapped_raw_log_t *map
     hdr->time_ms = aeron_agent_epoch_clock();
     hdr->map_raw_log_close.addr = (uintptr_t)mapped_raw_log;
     memcpy(&hdr->map_raw_log_close.log, mapped_raw_log, sizeof(hdr->map_raw_log.log));
-    hdr->map_raw_log_close.result = aeron_map_raw_log_close(mapped_raw_log);
+    hdr->map_raw_log_close.result = aeron_map_raw_log_close(mapped_raw_log, filename);
 
     aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_MAP_RAW_LOG_OP_CLOSE, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t));
     return hdr->map_raw_log_close.result;

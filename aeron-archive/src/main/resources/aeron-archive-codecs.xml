@@ -178,13 +178,13 @@
 
     <sbe:message name="RecordingDescriptorHeader"
                  id="21"
-                 description="For use in the catalog to describe the recording descriptor entry">
+                 description="Used in the catalog to describe the recording descriptor entry which follows">
         <field name="length"               id="1" type="int32"/>
         <field name="valid"                id="2" type="int8"/>
         <field name="reserved"             id="3" type="int8" offset="31"/>
     </sbe:message>
 
-    <!-- Records in the Catalog which describing recordings that can be listed via the Control Protocol -->
+    <!-- Records in the Catalog which describe recordings that can be listed via the Control Protocol -->
 
     <sbe:message name="RecordingDescriptor"
                  id="22"

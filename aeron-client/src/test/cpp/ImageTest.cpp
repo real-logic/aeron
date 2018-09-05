@@ -295,6 +295,144 @@ TEST_F(ImageTest, shouldEnsureImageIsOpenBeforePoll)
     EXPECT_EQ(image.poll(m_handler, INT_MAX), 0);
 }
 
+TEST_F(ImageTest, shouldPollNoFragmentsToBoundedFragmentHandlerWithMaxPositionBeforeInitialPosition)
+{
+    const std::int32_t messageIndex = 0;
+    const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t maxPosition = initialPosition - DataFrameHeader::LENGTH;
+
+    m_subscriberPosition.set(initialPosition);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
+    EXPECT_EQ(image.position(), initialPosition);
+
+    insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(messageIndex));
+    insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(messageIndex + 1));
+
+    EXPECT_CALL(m_fragmentHandler, onFragment(testing::_, testing::_, static_cast<index_t>(DATA.size()), testing::_))
+        .Times(0);
+
+    const int fragments = image.boundedPoll(m_handler, maxPosition, INT_MAX);
+    EXPECT_EQ(fragments, 0);
+    EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
+    EXPECT_EQ(image.position(), initialPosition);
+}
+
+TEST_F(ImageTest, shouldPollFragmentsToBoundedFragmentHandlerWithInitialOffsetNotZero)
+{
+    const std::int32_t messageIndex = 1;
+    const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t maxPosition = initialPosition + ALIGNED_FRAME_LENGTH;
+
+    m_subscriberPosition.set(initialPosition);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
+    EXPECT_EQ(image.position(), initialPosition);
+
+    insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(messageIndex));
+    insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(messageIndex + 1));
+
+    EXPECT_CALL(m_fragmentHandler, onFragment(testing::_, testing::_, static_cast<index_t>(DATA.size()), testing::_))
+        .Times(1);
+
+    const int fragments = image.boundedPoll(m_handler, maxPosition, INT_MAX);
+    EXPECT_EQ(fragments, 1);
+    EXPECT_EQ(m_subscriberPosition.get(), maxPosition);
+    EXPECT_EQ(image.position(), maxPosition);
+}
+
+TEST_F(ImageTest, shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionBeforeNextMessage)
+{
+    const std::int32_t messageIndex = 0;
+    const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t maxPosition = initialPosition + ALIGNED_FRAME_LENGTH;
+
+    m_subscriberPosition.set(initialPosition);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
+    EXPECT_EQ(image.position(), initialPosition);
+
+    insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(messageIndex));
+    insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(messageIndex + 1));
+
+    EXPECT_CALL(m_fragmentHandler, onFragment(testing::_, testing::_, static_cast<index_t>(DATA.size()), testing::_))
+        .Times(1);
+
+    const int fragments = image.boundedPoll(m_handler, maxPosition, INT_MAX);
+    EXPECT_EQ(fragments, 1);
+    EXPECT_EQ(m_subscriberPosition.get(), maxPosition);
+    EXPECT_EQ(image.position(), maxPosition);
+}
+
+TEST_F(ImageTest, shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionAfterEndOfTerm)
+{
+    const std::int32_t initialOffset = TERM_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t maxPosition = initialPosition + TERM_LENGTH;
+
+    m_subscriberPosition.set(initialPosition);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
+    EXPECT_EQ(image.position(), initialPosition);
+
+    insertDataFrame(INITIAL_TERM_ID, initialOffset);
+    insertPaddingFrame(INITIAL_TERM_ID, initialOffset + ALIGNED_FRAME_LENGTH);
+
+    EXPECT_CALL(m_fragmentHandler, onFragment(testing::_, testing::_, static_cast<index_t>(DATA.size()), testing::_))
+        .Times(1);
+
+    const int fragments = image.boundedPoll(m_handler, maxPosition, INT_MAX);
+    EXPECT_EQ(fragments, 1);
+    EXPECT_EQ(m_subscriberPosition.get(), TERM_LENGTH);
+    EXPECT_EQ(image.position(), TERM_LENGTH);
+}
+
+TEST_F(ImageTest, shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionAboveIntMaxValue)
+{
+    const std::int32_t initialOffset = TERM_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t maxPosition = static_cast<std::int64_t>(INT32_MAX) + 1000;
+
+    m_subscriberPosition.set(initialPosition);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
+    EXPECT_EQ(image.position(), initialPosition);
+
+    insertDataFrame(INITIAL_TERM_ID, initialOffset);
+    insertPaddingFrame(INITIAL_TERM_ID, initialOffset + ALIGNED_FRAME_LENGTH);
+
+    EXPECT_CALL(m_fragmentHandler, onFragment(testing::_, testing::_, static_cast<index_t>(DATA.size()), testing::_))
+        .Times(1);
+
+    const int fragments = image.boundedPoll(m_handler, maxPosition, INT_MAX);
+    EXPECT_EQ(fragments, 1);
+    EXPECT_EQ(m_subscriberPosition.get(), TERM_LENGTH);
+    EXPECT_EQ(image.position(), TERM_LENGTH);
+}
+
 TEST_F(ImageTest, shouldPollNoFragmentsToControlledFragmentHandler)
 {
     const std::int32_t messageIndex = 0;

@@ -16,16 +16,25 @@
 package io.aeron.agent;
 
 import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * Simple reader of {@link EventConfiguration#EVENT_RING_BUFFER} that appends to {@link System#out} by default
@@ -38,8 +47,10 @@ public class EventLogReaderAgent implements Agent, MessageHandler
      */
     public static final String LOG_FILENAME_PROP_NAME = "aeron.event.log.filename";
 
-    private final FileOutputStream fileOutputStream;
-    private final PrintStream out;
+    private final FileChannel fileChannel;
+    final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
+    final ByteBuffer buffer = ByteBuffer.allocateDirect(
+        EventConfiguration.MAX_EVENT_LENGTH + System.lineSeparator().length());
     private final StringBuilder builder = new StringBuilder();
 
     public EventLogReaderAgent()
@@ -47,17 +58,15 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         final String filename = System.getProperty(LOG_FILENAME_PROP_NAME);
         if (null == filename)
         {
-            fileOutputStream = null;
-            out = System.out;
+            fileChannel = null;
         }
         else
         {
             try
             {
-                fileOutputStream = new FileOutputStream(filename, true);
-                out = new PrintStream(fileOutputStream);
+                fileChannel = FileChannel.open(Paths.get(filename), CREATE, APPEND, WRITE);
             }
-            catch (final FileNotFoundException ex)
+            catch (final IOException ex)
             {
                 throw new RuntimeException(ex);
             }
@@ -66,8 +75,7 @@ public class EventLogReaderAgent implements Agent, MessageHandler
 
     public void onClose()
     {
-        out.flush();
-        CloseHelper.close(fileOutputStream);
+        CloseHelper.close(fileChannel);
     }
 
     public String roleName()
@@ -84,6 +92,42 @@ public class EventLogReaderAgent implements Agent, MessageHandler
     {
         builder.setLength(0);
         EventCode.get(msgTypeId).decode(buffer, index, builder);
-        out.println(builder);
+        builder.append(System.lineSeparator());
+
+        if (null == fileChannel)
+        {
+            System.out.print(builder);
+        }
+        else
+        {
+            write(fileChannel);
+        }
+    }
+
+    private void write(final FileChannel fileChannel)
+    {
+        try
+        {
+            buffer.clear();
+            encoder.reset();
+            final CoderResult coderResult = encoder.encode(CharBuffer.wrap(builder), buffer, false);
+
+            if (CoderResult.UNDERFLOW != coderResult)
+            {
+                coderResult.throwException();
+            }
+
+            buffer.flip();
+
+            do
+            {
+                fileChannel.write(buffer);
+            }
+            while (buffer.remaining() > 0);
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 }

@@ -49,7 +49,7 @@ public class EventLogReaderAgent implements Agent, MessageHandler
 
     private final FileChannel fileChannel;
     final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
-    final ByteBuffer buffer = ByteBuffer.allocateDirect(
+    final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(
         EventConfiguration.MAX_EVENT_LENGTH + System.lineSeparator().length());
     private final StringBuilder builder = new StringBuilder();
 
@@ -100,11 +100,11 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         }
         else
         {
-            write(fileChannel);
+            write(byteBuffer, fileChannel);
         }
     }
 
-    private void write(final FileChannel fileChannel)
+    private void write(final ByteBuffer buffer, final FileChannel fileChannel)
     {
         try
         {

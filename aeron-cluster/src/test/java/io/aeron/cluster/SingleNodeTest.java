@@ -20,6 +20,8 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -41,10 +43,13 @@ public class SingleNodeTest
         }
     }
 
-    @Test(timeout = 10_000L)
+    @Test(timeout = 15_000L)
     public void shouldBeAbleToLoadUpFromPreviousLog()
     {
-        ConsensusModuleHarness.makeRecordingLog(10, 100, null, null, new ConsensusModule.Context());
+        final int count = 150000;
+        final int length = 100;
+
+        ConsensusModuleHarness.makeRecordingLog(count, length, null, null, new ConsensusModule.Context());
 
         final ClusteredService mockService = mock(ClusteredService.class);
 
@@ -53,10 +58,10 @@ public class SingleNodeTest
         {
             harness.awaitServiceOnStart();
             harness.awaitServiceOnRoleChange(Cluster.Role.LEADER);
-            harness.awaitServiceOnMessageCounter(10);
+            harness.awaitServiceOnMessageCounter(count);
 
-            verify(mockService, times(10))
-                .onSessionMessage(any(ClientSession.class), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
+            verify(mockService, times(count))
+                .onSessionMessage(any(ClientSession.class), anyLong(), anyLong(), any(), anyInt(), eq(length), any());
         }
     }
 }

@@ -30,7 +30,7 @@ import org.agrona.concurrent.status.CountersReader;
  */
 final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseable
 {
-    private static final int FRAGMENT_LIMIT = 10;
+    private static final int FRAGMENT_LIMIT = 100;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
     private static final int SESSION_HEADER_LENGTH =
         MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;

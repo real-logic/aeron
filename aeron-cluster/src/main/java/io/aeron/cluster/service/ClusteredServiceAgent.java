@@ -234,6 +234,15 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
     }
 
+    private void idle(final int workCount)
+    {
+        if (!checkForClockTick())
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle(workCount);
+        }
+    }
+
     public long offer(
         final long correlationId,
         final long clusterSessionId,
@@ -455,8 +464,7 @@ class ClusteredServiceAgent implements Agent, Cluster
                 }
             }
 
-            checkInterruptedStatus();
-            idleStrategy.idle(workCount);
+            idle(workCount);
         }
     }
 

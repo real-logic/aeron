@@ -21,7 +21,7 @@ import io.aeron.cluster.service.CommitPos;
 import org.agrona.CloseHelper;
 import org.agrona.MutableDirectBuffer;
 
-public class LogReplay implements AutoCloseable
+class LogReplay implements AutoCloseable
 {
     enum State
     {
@@ -76,64 +76,60 @@ public class LogReplay implements AutoCloseable
         logSubscription = aeron.addSubscription(channel, replayStreamId);
     }
 
-    @SuppressWarnings("unused")
-    int doWork(final long nowMs)
-    {
-        int workCount = 0;
-
-        switch (state)
-        {
-            case INIT:
-                consensusModuleAgent.awaitServicesReadyForReplay(
-                    channel, replayStreamId, logSessionId, commitPosition.id(), leadershipTermId, startPosition);
-
-                final long length = stopPosition - startPosition;
-                replaySessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, replayStreamId);
-                state = State.REPLAY;
-                workCount = 1;
-                break;
-
-            case REPLAY:
-                if (null == logAdapter)
-                {
-                    final Image image = logSubscription.imageBySessionId(replaySessionId);
-                    if (null != image)
-                    {
-                        logAdapter = new LogAdapter(image, consensusModuleAgent);
-                        workCount = 1;
-                    }
-                }
-                else
-                {
-                    consensusModuleAgent.replayLogPoll(logAdapter, stopPosition, commitPosition);
-                    if (logAdapter.position() == stopPosition)
-                    {
-                        consensusModuleAgent.awaitServicesReplayComplete(stopPosition);
-
-                        commitPosition.close();
-                        commitPosition = null;
-
-                        logSubscription.close();
-                        logSubscription = null;
-
-                        logAdapter.close();
-                        logAdapter = null;
-
-                        state = State.DONE;
-                        workCount = 1;
-                    }
-                }
-                break;
-        }
-
-        return workCount;
-    }
-
     public void close()
     {
         CloseHelper.close(commitPosition);
         CloseHelper.close(logSubscription);
         CloseHelper.close(logAdapter);
+    }
+
+    @SuppressWarnings("unused")
+    int doWork(final long nowMs)
+    {
+        int workCount = 0;
+
+        if (State.INIT == state)
+        {
+            consensusModuleAgent.awaitServicesReadyForReplay(
+                channel, replayStreamId, logSessionId, commitPosition.id(), leadershipTermId, startPosition);
+
+            final long length = stopPosition - startPosition;
+            replaySessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, replayStreamId);
+            state = State.REPLAY;
+            workCount = 1;
+        }
+        else if (State.REPLAY == state)
+        {
+            if (null == logAdapter)
+            {
+                final Image image = logSubscription.imageBySessionId(replaySessionId);
+                if (null != image)
+                {
+                    logAdapter = new LogAdapter(image, consensusModuleAgent);
+                    workCount = 1;
+                }
+            }
+
+            consensusModuleAgent.replayLogPoll(logAdapter, stopPosition, commitPosition);
+            if (logAdapter.position() == stopPosition)
+            {
+                consensusModuleAgent.awaitServicesReplayComplete(stopPosition);
+
+                commitPosition.close();
+                commitPosition = null;
+
+                logSubscription.close();
+                logSubscription = null;
+
+                logAdapter.close();
+                logAdapter = null;
+
+                state = State.DONE;
+                workCount = 1;
+            }
+        }
+
+        return workCount;
     }
 
     boolean isDone()

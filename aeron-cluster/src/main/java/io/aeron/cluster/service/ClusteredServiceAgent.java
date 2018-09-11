@@ -227,18 +227,15 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public void idle()
     {
-        checkForClockTick();
         checkInterruptedStatus();
+        checkForClockTick();
         idleStrategy.idle();
     }
 
     public void idle(final int workCount)
     {
-        if (!checkForClockTick())
-        {
-            checkInterruptedStatus();
-        }
-
+        checkInterruptedStatus();
+        checkForClockTick();
         idleStrategy.idle(workCount);
     }
 

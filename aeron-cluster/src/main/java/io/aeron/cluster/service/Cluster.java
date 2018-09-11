@@ -169,8 +169,16 @@ public interface Cluster
     boolean cancelTimer(long correlationId);
 
     /**
-     * Should be called by the service when it experiences back pressure on egress, closing sessions, or making
+     * Should be called by the service when it experiences back-pressure on egress, closing sessions, or making
      * timer requests.
      */
     void idle();
+
+    /**
+     * Should be called by the service when it experiences back-pressure on egress, closing sessions, or making
+     * timer requests.
+     *
+     * @param workCount a value of 0 will reset the idle strategy is a progressive back-off has been applied.
+     */
+    void idle(int workCount);
 }

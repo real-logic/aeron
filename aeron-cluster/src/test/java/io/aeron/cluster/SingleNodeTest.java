@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -43,6 +44,7 @@ public class SingleNodeTest
         }
     }
 
+    @Ignore
     @Test(timeout = 15_000L)
     public void shouldBeAbleToLoadUpFromPreviousLog()
     {

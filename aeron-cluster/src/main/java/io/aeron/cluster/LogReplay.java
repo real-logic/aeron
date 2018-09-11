@@ -109,23 +109,25 @@ class LogReplay implements AutoCloseable
                     workCount = 1;
                 }
             }
-
-            consensusModuleAgent.replayLogPoll(logAdapter, stopPosition, commitPosition);
-            if (logAdapter.position() == stopPosition)
+            else
             {
-                consensusModuleAgent.awaitServicesReplayComplete(stopPosition);
+                consensusModuleAgent.replayLogPoll(logAdapter, stopPosition, commitPosition);
+                if (logAdapter.position() == stopPosition)
+                {
+                    consensusModuleAgent.awaitServicesReplayComplete(stopPosition);
 
-                commitPosition.close();
-                commitPosition = null;
+                    commitPosition.close();
+                    commitPosition = null;
 
-                logSubscription.close();
-                logSubscription = null;
+                    logSubscription.close();
+                    logSubscription = null;
 
-                logAdapter.close();
-                logAdapter = null;
+                    logAdapter.close();
+                    logAdapter = null;
 
-                state = State.DONE;
-                workCount = 1;
+                    state = State.DONE;
+                    workCount = 1;
+                }
             }
         }
 

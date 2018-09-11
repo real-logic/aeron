@@ -21,8 +21,6 @@ import io.aeron.cluster.service.ClusteredService;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;

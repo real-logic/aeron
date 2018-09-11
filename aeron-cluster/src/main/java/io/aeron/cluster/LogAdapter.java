@@ -30,7 +30,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
 
-    private static final int FRAGMENT_LIMIT = 10;
+    private static final int FRAGMENT_LIMIT = 100;
 
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);
     private final Image image;

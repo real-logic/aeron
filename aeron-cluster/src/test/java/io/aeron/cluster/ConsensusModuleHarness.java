@@ -35,9 +35,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import org.agrona.*;
 import org.agrona.collections.Long2LongHashMap;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.SleepingMillisIdleStrategy;
+import org.agrona.concurrent.*;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -63,15 +61,20 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private static final long MAX_CATALOG_ENTRIES = 1024;
 
     private static final PrintStream NULL_PRINT_STREAM = new PrintStream(new OutputStream()
-    {
-        public void write(final int b)
         {
-        }
-    });
+            public void write(final int b)
+            {
+            }
+        });
+
+    public static final Runnable TERMINATION_HOOK =
+        () ->
+        {
+            throw new AgentTerminationException();
+        };
 
     private final ClusteredMediaDriver clusteredMediaDriver;
     private final ClusteredServiceContainer clusteredServiceContainer;
-    private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final AtomicInteger roleValue = new AtomicInteger(-1);
     private final Aeron aeron;
     private final ClusteredService service;
@@ -171,7 +174,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .aeronDirectoryName(mediaDriverPath)
                 .clusterDir(clusterDir)
                 .archiveContext(aeronArchiveContext.clone())
-                .terminationHook(() -> isTerminated.set(true))
+                .terminationHook(TERMINATION_HOOK)
                 .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(isCleanStart));
 
@@ -181,7 +184,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .clusterDir(serviceDir)
                 .idleStrategySupplier(() -> new SleepingMillisIdleStrategy(1))
                 .clusteredService(this)
-                .terminationHook(() -> {})
+                .terminationHook(TERMINATION_HOOK)
                 .archiveContext(aeronArchiveContext.clone())
                 .errorHandler(Throwable::printStackTrace));
 

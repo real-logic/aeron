@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -42,6 +43,7 @@ public class SingleNodeTest
     }
 
     @Test(timeout = 15_000L)
+    @Ignore
     public void shouldBeAbleToLoadUpFromPreviousLog()
     {
         final int count = 150000;

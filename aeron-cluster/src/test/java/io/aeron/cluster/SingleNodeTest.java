@@ -46,7 +46,7 @@ public class SingleNodeTest
     @Ignore
     public void shouldBeAbleToLoadUpFromPreviousLog()
     {
-        final int count = 150_000;
+        final int count = 110_000;
         final int length = 100;
 
         ConsensusModuleHarness.makeRecordingLog(count, length, null, null, new ConsensusModule.Context());

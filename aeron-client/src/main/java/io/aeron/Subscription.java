@@ -333,7 +333,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     /**
      * Return the {@link Image} associated with the given sessionId.
      *
-     * @param sessionId associated with the {@link Image}s.
+     * @param sessionId associated with the {@link Image}.
      * @return Image associated with the given sessionId or null if no Image exist.
      */
     public Image imageBySessionId(final int sessionId)

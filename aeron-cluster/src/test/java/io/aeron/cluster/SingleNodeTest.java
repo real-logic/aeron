@@ -42,8 +42,8 @@ public class SingleNodeTest
         }
     }
 
-    @Ignore
     @Test(timeout = 15_000L)
+    @Ignore
     public void shouldBeAbleToLoadUpFromPreviousLog()
     {
         final int count = 150000;

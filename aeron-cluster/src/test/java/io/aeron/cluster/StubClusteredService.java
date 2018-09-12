@@ -24,7 +24,7 @@ import io.aeron.cluster.service.ClusteredService;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
-public class StubClusteredService implements ClusteredService
+class StubClusteredService implements ClusteredService
 {
     protected Cluster cluster;
 

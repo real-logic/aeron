@@ -61,6 +61,7 @@ public class ClusterNodeTest
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
                 .errorHandler(Throwable::printStackTrace)
+                .terminationHook(TestUtil.TERMINATION_HOOK)
                 .deleteDirOnStart(true));
     }
 
@@ -239,6 +240,7 @@ public class ClusterNodeTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(timedService)
+                .terminationHook(TestUtil.TERMINATION_HOOK)
                 .errorHandler(Throwable::printStackTrace));
     }
 

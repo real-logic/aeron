@@ -15,10 +15,18 @@
  */
 package io.aeron.cluster;
 
+import org.agrona.concurrent.AgentTerminationException;
+
 import static org.junit.Assert.fail;
 
-public class TestUtil
+class TestUtil
 {
+    public static final Runnable TERMINATION_HOOK =
+        () ->
+        {
+            throw new AgentTerminationException();
+        };
+
     public static void checkInterruptedStatus()
     {
         if (Thread.currentThread().isInterrupted())

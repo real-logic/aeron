@@ -460,6 +460,7 @@ public class AuthenticationTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
+                .terminationHook(TestUtil.TERMINATION_HOOK)
                 .errorHandler(Throwable::printStackTrace));
     }
 
@@ -493,6 +494,7 @@ public class AuthenticationTest
             new ConsensusModule.Context()
                 .errorHandler(Throwable::printStackTrace)
                 .authenticatorSupplier(authenticatorSupplier)
+                .terminationHook(TestUtil.TERMINATION_HOOK)
                 .deleteDirOnStart(true));
     }
 }

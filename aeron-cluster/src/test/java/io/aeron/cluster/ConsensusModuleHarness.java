@@ -67,12 +67,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             }
         });
 
-    public static final Runnable TERMINATION_HOOK =
-        () ->
-        {
-            throw new AgentTerminationException();
-        };
-
     private final ClusteredMediaDriver clusteredMediaDriver;
     private final ClusteredServiceContainer clusteredServiceContainer;
     private final AtomicInteger roleValue = new AtomicInteger(-1);
@@ -174,7 +168,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .aeronDirectoryName(mediaDriverPath)
                 .clusterDir(clusterDir)
                 .archiveContext(aeronArchiveContext.clone())
-                .terminationHook(TERMINATION_HOOK)
+                .terminationHook(TestUtil.TERMINATION_HOOK)
                 .errorHandler(Throwable::printStackTrace)
                 .deleteDirOnStart(isCleanStart));
 
@@ -184,7 +178,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 .clusterDir(serviceDir)
                 .idleStrategySupplier(() -> new SleepingMillisIdleStrategy(1))
                 .clusteredService(this)
-                .terminationHook(TERMINATION_HOOK)
+                .terminationHook(TestUtil.TERMINATION_HOOK)
                 .archiveContext(aeronArchiveContext.clone())
                 .errorHandler(Throwable::printStackTrace));
 

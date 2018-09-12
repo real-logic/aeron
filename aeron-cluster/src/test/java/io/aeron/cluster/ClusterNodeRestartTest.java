@@ -37,7 +37,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -63,7 +62,6 @@ public class ClusterNodeRestartTest
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private AeronCluster aeronCluster;
     private final AtomicReference<String> serviceState = new AtomicReference<>();
-    private final AtomicBoolean isTerminated = new AtomicBoolean();
     private final AtomicLong snapshotCount = new AtomicLong();
     private final Counter mockSnapshotCounter = mock(Counter.class);
 
@@ -480,7 +478,7 @@ public class ClusterNodeRestartTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .terminationHook(() -> {})
+                .terminationHook(TestUtil.TERMINATION_HOOK)
                 .errorHandler(Throwable::printStackTrace));
     }
 
@@ -521,7 +519,7 @@ public class ClusterNodeRestartTest
             new ConsensusModule.Context()
                 .errorHandler(Throwable::printStackTrace)
                 .snapshotCounter(mockSnapshotCounter)
-                .terminationHook(() -> isTerminated.set(true))
+                .terminationHook(TestUtil.TERMINATION_HOOK)
                 .deleteDirOnStart(initialLaunch));
     }
 

@@ -114,6 +114,7 @@ public class ClusterTest
                     .clusterDir(new File(baseDirName, "consensus-module"))
                     .ingressChannel("aeron:udp?term-length=64k")
                     .logChannel(memberSpecificPort(LOG_CHANNEL, i))
+                    .terminationHook(TestUtil.TERMINATION_HOOK)
                     .archiveContext(archiveCtx.clone())
                     .deleteDirOnStart(true));
 
@@ -123,6 +124,7 @@ public class ClusterTest
                     .archiveContext(archiveCtx.clone())
                     .clusterDir(new File(baseDirName, "service"))
                     .clusteredService(echoServices[i])
+                    .terminationHook(TestUtil.TERMINATION_HOOK)
                     .errorHandler(Throwable::printStackTrace));
         }
 

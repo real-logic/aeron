@@ -112,6 +112,7 @@ public class AppointedLeaderClusterTest
                     .ingressChannel("aeron:udp?term-length=64k")
                     .logChannel(memberSpecificPort(LOG_CHANNEL, i))
                     .archiveContext(archiveCtx.clone())
+                    .terminationHook(TestUtil.TERMINATION_HOOK)
                     .deleteDirOnStart(true));
 
             containers[i] = ClusteredServiceContainer.launch(
@@ -120,6 +121,7 @@ public class AppointedLeaderClusterTest
                     .archiveContext(archiveCtx.clone())
                     .clusterDir(new File(baseDirName, "service"))
                     .clusteredService(echoServices[i])
+                    .terminationHook(TestUtil.TERMINATION_HOOK)
                     .errorHandler(Throwable::printStackTrace));
         }
 

@@ -119,7 +119,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
 
         recordingEventsProxy = new RecordingEventsProxy(
-            ctx.idleStrategy(),
             aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
         cachedEpochClock.update(epochClock.time());

@@ -18,23 +18,22 @@ package io.aeron.archive;
 import io.aeron.Publication;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.concurrent.IdleStrategy;
+import io.aeron.logbuffer.BufferClaim;
 
 class RecordingEventsProxy
 {
-    private final IdleStrategy idleStrategy;
-    private final Publication recordingEventsPublication;
-    private final ExpandableArrayBuffer outboundBuffer = new ExpandableArrayBuffer(512);
+    private static final int SEND_ATTEMPTS = 3;
+
+    private final Publication publication;
+    private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final RecordingStartedEncoder recordingStartedEncoder = new RecordingStartedEncoder();
     private final RecordingProgressEncoder recordingProgressEncoder = new RecordingProgressEncoder();
     private final RecordingStoppedEncoder recordingStoppedEncoder = new RecordingStoppedEncoder();
 
-    RecordingEventsProxy(final IdleStrategy idleStrategy, final Publication recordingEventsPublication)
+    RecordingEventsProxy(final Publication publication)
     {
-        this.idleStrategy = idleStrategy;
-        this.recordingEventsPublication = recordingEventsPublication;
+        this.publication = publication;
     }
 
     void started(
@@ -45,64 +44,97 @@ class RecordingEventsProxy
         final String channel,
         final String sourceIdentity)
     {
-        recordingStartedEncoder
-            .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
-            .recordingId(recordingId)
-            .startPosition(startPosition)
-            .sessionId(sessionId)
-            .streamId(streamId)
-            .channel(channel)
-            .sourceIdentity(sourceIdentity);
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecordingStartedEncoder.BLOCK_LENGTH +
+            RecordingStartedEncoder.channelHeaderLength() + channel.length() +
+            RecordingStartedEncoder.sourceIdentityHeaderLength() + sourceIdentity.length();
 
-        send(recordingStartedEncoder.encodedLength());
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                recordingStartedEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .recordingId(recordingId)
+                    .startPosition(startPosition)
+                    .sessionId(sessionId)
+                    .streamId(streamId)
+                    .channel(channel)
+                    .sourceIdentity(sourceIdentity);
+
+                bufferClaim.commit();
+                break;
+            }
+            else if (Publication.NOT_CONNECTED == result)
+            {
+                break;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
     }
 
     void progress(final long recordingId, final long startPosition, final long position)
     {
-        recordingProgressEncoder
-            .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
-            .recordingId(recordingId)
-            .startPosition(startPosition)
-            .position(position);
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecordingProgressEncoder.BLOCK_LENGTH;
+        final long result = publication.tryClaim(length, bufferClaim);
+        if (result > 0)
+        {
+            recordingProgressEncoder
+                .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                .recordingId(recordingId)
+                .startPosition(startPosition)
+                .position(position);
 
-        send(recordingProgressEncoder.encodedLength());
+            bufferClaim.commit();
+        }
+        else
+        {
+            checkResult(result);
+        }
     }
 
     void stopped(final long recordingId, final long startPosition, final long stopPosition)
     {
-        recordingStoppedEncoder
-            .wrapAndApplyHeader(outboundBuffer, 0, messageHeaderEncoder)
-            .recordingId(recordingId)
-            .startPosition(startPosition)
-            .stopPosition(stopPosition);
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecordingStoppedEncoder.BLOCK_LENGTH;
 
-        send(recordingStoppedEncoder.encodedLength());
-    }
-
-    private void send(final int length)
-    {
-        final int fullLength = MessageHeaderEncoder.ENCODED_LENGTH + length;
-        while (true)
+        int attempts = SEND_ATTEMPTS;
+        do
         {
-            // TODO: Under back pressure it should drop sends and then do an update on timeout to avoid tail loss.
-            final long result = recordingEventsPublication.offer(outboundBuffer, 0, fullLength);
-            if (result > 0 || result == Publication.NOT_CONNECTED)
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
             {
-                idleStrategy.reset();
+                recordingStoppedEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .recordingId(recordingId)
+                    .startPosition(startPosition)
+                    .stopPosition(stopPosition);
+
+                bufferClaim.commit();
+                break;
+            }
+            else if (Publication.NOT_CONNECTED == result)
+            {
                 break;
             }
 
-            if (result == Publication.CLOSED)
-            {
-                throw new ArchiveException("recording events publication is closed");
-            }
+            checkResult(result);
+        }
+        while (--attempts > 0);
+    }
 
-            if (result == Publication.MAX_POSITION_EXCEEDED)
-            {
-                throw new ArchiveException("recording events publication at max position");
-            }
+    private static void checkResult(final long result)
+    {
+        if (result == Publication.CLOSED)
+        {
+            throw new ArchiveException("recording events publication is closed");
+        }
 
-            idleStrategy.idle();
+        if (result == Publication.MAX_POSITION_EXCEEDED)
+        {
+            throw new ArchiveException("recording events publication at max position");
         }
     }
 }

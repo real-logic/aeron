@@ -327,8 +327,7 @@ inline static bool casRawTail(
 
 inline static AtomicBuffer defaultFrameHeader(AtomicBuffer& logMetaDataBuffer)
 {
-    std::uint8_t *header =
-        logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADER_OFFSET;
+    std::uint8_t *header = logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADER_OFFSET;
 
     return AtomicBuffer(header, DataFrameHeader::LENGTH);
 }

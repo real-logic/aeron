@@ -48,7 +48,7 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 *  +---------------------------------------------------------------+
 * </pre>
 *
-* The (B)egin and (E)nd flags are used for message fragmentation. R is for reserved bit.
+* The (B)egin and (E)nd flags are used for message fragmentation. (R) is for reserved bit.
 * Both are set for a message that does not span frames.
 */
 

@@ -20,6 +20,7 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.AsciiEncoding;
+import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
@@ -27,7 +28,6 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -119,9 +119,11 @@ class Catalog implements AutoCloseable
     private final int recordLength;
     private final int maxDescriptorStringsCombinedLength;
     private final int maxRecordingId;
+    private final boolean forceWrites;
+    private final boolean forceMetadata;
     private final File archiveDir;
-    private final int fileSyncLevel;
     private final EpochClock epochClock;
+    private final FileChannel catalogChannel;
     private long nextRecordingId = 0;
 
     Catalog(
@@ -132,7 +134,8 @@ class Catalog implements AutoCloseable
         final EpochClock epochClock)
     {
         this.archiveDir = archiveDir;
-        this.fileSyncLevel = fileSyncLevel;
+        this.forceWrites = fileSyncLevel > 0;
+        this.forceMetadata = fileSyncLevel > 1;
         this.epochClock = epochClock;
 
         validateMaxEntries(maxNumEntries);
@@ -142,31 +145,32 @@ class Catalog implements AutoCloseable
             final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
             final boolean catalogPreExists = catalogFile.exists();
             MappedByteBuffer catalogMappedByteBuffer = null;
+            FileChannel catalogFileChannel = null;
             final long catalogLength;
 
-            try (FileChannel channel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE))
+            try
             {
+                catalogFileChannel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE);
                 if (catalogPreExists)
                 {
-                    catalogLength = Math.max(channel.size(), calculateCatalogLength(maxNumEntries));
+                    catalogLength = Math.max(catalogFileChannel.size(), calculateCatalogLength(maxNumEntries));
                 }
                 else
                 {
                     catalogLength = calculateCatalogLength(maxNumEntries);
                 }
 
-                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, catalogLength);
+                catalogMappedByteBuffer = catalogFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, catalogLength);
             }
             catch (final Exception ex)
             {
-                if (null != catalogMappedByteBuffer)
-                {
-                    IoUtil.unmap(catalogMappedByteBuffer);
-                }
+                CloseHelper.close(catalogFileChannel);
+                IoUtil.unmap(catalogMappedByteBuffer);
 
                 throw new RuntimeException(ex);
             }
 
+            catalogChannel = catalogFileChannel;
             catalogByteBuffer = catalogMappedByteBuffer;
             catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
             fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
@@ -191,17 +195,7 @@ class Catalog implements AutoCloseable
             }
             else
             {
-                if (null != archiveDirChannel && fileSyncLevel > 0)
-                {
-                    try
-                    {
-                        archiveDirChannel.force(fileSyncLevel > 1);
-                    }
-                    catch (final IOException ex)
-                    {
-                        LangUtil.rethrowUnchecked(ex);
-                    }
-                }
+                forceWrites(archiveDirChannel, forceWrites, forceMetadata);
 
                 catalogHeaderEncoder.entryLength(DEFAULT_RECORD_LENGTH);
                 catalogHeaderEncoder.version(CatalogHeaderEncoder.SCHEMA_VERSION);
@@ -225,8 +219,10 @@ class Catalog implements AutoCloseable
     Catalog(final File archiveDir, final EpochClock epochClock)
     {
         this.archiveDir = archiveDir;
-        this.fileSyncLevel = 0;
+        this.forceWrites = false;
+        this.forceMetadata = false;
         this.epochClock = epochClock;
+        this.catalogChannel = null;
 
         try
         {
@@ -241,10 +237,7 @@ class Catalog implements AutoCloseable
             }
             catch (final Exception ex)
             {
-                if (null != catalogMappedByteBuffer)
-                {
-                    IoUtil.unmap(catalogMappedByteBuffer);
-                }
+                IoUtil.unmap(catalogMappedByteBuffer);
 
                 throw new RuntimeException(ex);
             }
@@ -280,6 +273,7 @@ class Catalog implements AutoCloseable
 
     public void close()
     {
+        CloseHelper.close(catalogChannel);
         IoUtil.unmap(catalogByteBuffer);
     }
 
@@ -347,10 +341,7 @@ class Catalog implements AutoCloseable
 
         nextRecordingId++;
 
-        if (fileSyncLevel > 0)
-        {
-            catalogByteBuffer.force();
-        }
+        forceWrites(catalogChannel, forceWrites, forceMetadata);
 
         return newRecordingId;
     }
@@ -474,10 +465,7 @@ class Catalog implements AutoCloseable
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), timestamp, BYTE_ORDER);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
 
-        if (fileSyncLevel > 0)
-        {
-            catalogByteBuffer.force();
-        }
+        forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
     void recordingStopped(final long recordingId, final long position)
@@ -486,10 +474,7 @@ class Catalog implements AutoCloseable
         final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
 
-        if (fileSyncLevel > 0)
-        {
-            catalogByteBuffer.force();
-        }
+        forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
     void extendRecording(final long recordingId)
@@ -501,10 +486,7 @@ class Catalog implements AutoCloseable
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), NULL_TIMESTAMP);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
 
-        if (fileSyncLevel > 0)
-        {
-            catalogByteBuffer.force();
-        }
+        forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
     long stopPosition(final long recordingId)
@@ -693,5 +675,20 @@ class Catalog implements AutoCloseable
         }
 
         nextRecordingId = recordingId + 1;
+    }
+
+    private static void forceWrites(final FileChannel channel, final boolean forceWrites, final boolean forceMetadata)
+    {
+        if (null != channel && forceWrites)
+        {
+            try
+            {
+                channel.force(forceMetadata);
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
     }
 }

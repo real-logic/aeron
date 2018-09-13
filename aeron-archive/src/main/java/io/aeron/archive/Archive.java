@@ -171,6 +171,9 @@ public class Archive implements AutoCloseable
         public static final String FILE_SYNC_LEVEL_PROP_NAME = "aeron.archive.file.sync.level";
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
 
+        public static final String CATALOG_FILE_SYNC_LEVEL_PROP_NAME = "aeron.archive.catalog.file.sync.level";
+        public static final int CATALOG_FILE_SYNC_LEVEL_DEFAULT = FILE_SYNC_LEVEL_DEFAULT;
+
         public static final String THREADING_MODE_PROP_NAME = "aeron.archive.threading.mode";
         public static final String ARCHIVE_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
@@ -225,6 +228,21 @@ public class Archive implements AutoCloseable
         public static int fileSyncLevel()
         {
             return Integer.getInteger(FILE_SYNC_LEVEL_PROP_NAME, FILE_SYNC_LEVEL_DEFAULT);
+        }
+
+        /**
+         * The level at which the catalog file should be sync'ed to disk.
+         * <ul>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
+         * </ul>
+         *
+         * @return level at which files should be sync'ed to disk.
+         */
+        public static int catalogFileSyncLevel()
+        {
+            return Integer.getInteger(CATALOG_FILE_SYNC_LEVEL_PROP_NAME, CATALOG_FILE_SYNC_LEVEL_DEFAULT);
         }
 
         /**
@@ -322,6 +340,7 @@ public class Archive implements AutoCloseable
         private long maxCatalogEntries = Configuration.maxCatalogEntries();
         private int segmentFileLength = Configuration.segmentFileLength();
         private int fileSyncLevel = Configuration.fileSyncLevel();
+        private int catalogFileSyncLevel = Configuration.catalogFileSyncLevel();
 
         private ArchiveThreadingMode threadingMode = Configuration.threadingMode();
         private ThreadFactory threadFactory;
@@ -427,7 +446,7 @@ public class Archive implements AutoCloseable
                     "failed to create archive dir: " + archiveDir.getAbsolutePath());
             }
 
-            archiveDirChannel = channelForDirectorySync(archiveDir, fileSyncLevel);
+            archiveDirChannel = channelForDirectorySync(archiveDir, catalogFileSyncLevel);
 
             if (!BitUtil.isPowerOfTwo(segmentFileLength))
             {
@@ -445,7 +464,8 @@ public class Archive implements AutoCloseable
 
             if (null == catalog)
             {
-                catalog = new Catalog(archiveDir, archiveDirChannel, fileSyncLevel, maxCatalogEntries, epochClock);
+                catalog = new Catalog(
+                    archiveDir, archiveDirChannel, catalogFileSyncLevel, maxCatalogEntries, epochClock);
             }
         }
 
@@ -844,6 +864,38 @@ public class Archive implements AutoCloseable
         public Context fileSyncLevel(final int syncLevel)
         {
             this.fileSyncLevel = syncLevel;
+            return this;
+        }
+
+        /**
+         * Get level at which the catalog file should be sync'ed to disk.
+         * <ul>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
+         * </ul>
+         *
+         * @return the level to be applied for file write.
+         */
+        int catalogFileSyncLevel()
+        {
+            return catalogFileSyncLevel;
+        }
+
+        /**
+         * Set level at which the catalog file should be sync'ed to disk.
+         * <ul>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
+         * </ul>
+         *
+         * @param syncLevel to be applied for file writes.
+         * @return this for a fluent API.
+         */
+        public Context catalogFileSyncLevel(final int syncLevel)
+        {
+            this.catalogFileSyncLevel = syncLevel;
             return this;
         }
 

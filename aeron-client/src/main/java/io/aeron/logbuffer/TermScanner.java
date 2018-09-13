@@ -24,16 +24,16 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.align;
 
 /**
- * Scans a term buffer for an availability range of messages.
+ * Scans a term buffer for an availability range of message fragments.
  * <p>
  * This can be used to concurrently read a term buffer which is being appended to.
  */
 public final class TermScanner
 {
     /**
-     * Scan the term buffer for availability of new messages from a given offset up to a maxLength of bytes.
+     * Scan the term buffer for availability of new message fragments from a given offset up to a maxLength of bytes.
      *
-     * @param termBuffer to be scanned for new messages
+     * @param termBuffer to be scanned for new message fragments.
      * @param offset     at which the scan should begin.
      * @param maxLength  in bytes of how much should be scanned.
      * @return resulting status of the scan which packs the available bytes and padding into a long.
@@ -98,7 +98,7 @@ public final class TermScanner
     }
 
     /**
-     * The count of bytes that should be added for padding to the position on top of what is available
+     * The count of bytes that should be added for padding to the position on top of what is available.
      *
      * @param result into which the padding value has been packed.
      * @return the count of bytes that should be added for padding to the position on top of what is available.

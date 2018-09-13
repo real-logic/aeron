@@ -22,14 +22,14 @@ import static io.aeron.logbuffer.FrameDescriptor.frameLengthVolatile;
 import static org.agrona.BitUtil.align;
 
 /**
- * Scan a term buffer for a block of messages including padding. The block must include complete messages.
+ * Scan a term buffer for a block of message fragments including padding. The block must include complete fragments.
  */
 public class TermBlockScanner
 {
     /**
-     * Scan a term buffer for a block of messages from an offset up to a limit.
+     * Scan a term buffer for a block of message fragments from an offset up to a limit.
      *
-     * @param termBuffer to scan for messages.
+     * @param termBuffer to scan for message fragments.
      * @param termOffset at which the scan should begin.
      * @param limit      at which the scan should stop.
      * @return the offset at which the scan terminated.

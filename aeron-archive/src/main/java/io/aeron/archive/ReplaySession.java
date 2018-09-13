@@ -19,7 +19,7 @@ import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
-import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
@@ -42,7 +42,7 @@ import java.io.File;
  * <li>If the replay is aborted part way through, send a ReplayAborted message and terminate.</li>
  * </ul>
  */
-class ReplaySession implements Session, SimpleFragmentHandler
+class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
 {
     enum State
     {
@@ -169,15 +169,32 @@ class ReplaySession implements Session, SimpleFragmentHandler
         final byte flags,
         final long reservedValue)
     {
-        final long result = frameType == FrameDescriptor.PADDING_FRAME_TYPE ?
-            replayPublication.appendPadding(length) :
-            replayFrame(buffer, offset, length, flags, reservedValue);
-
-        if (result > 0)
+        long result = 0;
+        if (frameType == HeaderFlyweight.HDR_TYPE_DATA)
         {
-            return true;
+            final ExclusiveBufferClaim bufferClaim = this.bufferClaim;
+            result = replayPublication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                bufferClaim
+                    .flags(flags)
+                    .reservedValue(reservedValue)
+                    .buffer().putBytes(bufferClaim.offset(), buffer, offset, length);
+
+                bufferClaim.commit();
+                return true;
+            }
         }
-        else if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
+        else if (frameType == HeaderFlyweight.HDR_TYPE_PAD)
+        {
+            result = replayPublication.appendPadding(length);
+            if (result > 0)
+            {
+                return true;
+            }
+        }
+
+        if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
         {
             onError("stream closed before replay is complete");
         }
@@ -238,32 +255,6 @@ class ReplaySession implements Session, SimpleFragmentHandler
         }
 
         return workDone;
-    }
-
-    private long replayFrame(
-        final UnsafeBuffer buffer, final int offset, final int length, final byte flags, final long reservedValue)
-    {
-        long result = replayPublication.tryClaim(length, bufferClaim);
-        if (result > 0)
-        {
-            bufferClaim
-                .flags(flags)
-                .reservedValue(reservedValue)
-                .buffer().putBytes(bufferClaim.offset(), buffer, offset, length);
-
-            bufferClaim.commit();
-        }
-        else if ((result = replayPublication.tryClaim(length, bufferClaim)) > 0)
-        {
-            bufferClaim
-                .flags(flags)
-                .reservedValue(reservedValue)
-                .buffer().putBytes(bufferClaim.offset(), buffer, offset, length);
-
-            bufferClaim.commit();
-        }
-
-        return result;
     }
 
     private void onError(final String errorMessage)

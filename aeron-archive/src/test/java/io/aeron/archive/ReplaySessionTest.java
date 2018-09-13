@@ -216,36 +216,36 @@ public class ReplaySessionTest
     {
         final long correlationId = 1L;
 
-        final ReplaySession replaySession = replaySession(
+        try (ReplaySession replaySession = replaySession(
             RECORDING_POSITION,
             FRAME_LENGTH,
             correlationId,
             mockReplayPub,
-            mockControlSession);
+            mockControlSession))
+        {
+            when(mockReplayPub.isClosed()).thenReturn(false);
+            when(mockReplayPub.isConnected()).thenReturn(false);
 
-        when(mockReplayPub.isClosed()).thenReturn(false);
-        when(mockReplayPub.isConnected()).thenReturn(false);
+            replaySession.doWork();
 
-        replaySession.doWork();
+            assertEquals(replaySession.state(), ReplaySession.State.INIT);
 
-        assertEquals(replaySession.state(), ReplaySession.State.INIT);
+            when(mockReplayPub.isConnected()).thenReturn(true);
 
-        when(mockReplayPub.isConnected()).thenReturn(true);
+            replaySession.doWork();
+            assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        replaySession.doWork();
-        assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
+            verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
 
-        verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
+            final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
+            mockPublication(mockReplayPub, termBuffer);
+            assertNotEquals(0, replaySession.doWork());
+            assertThat(messageCounter, is(1));
 
-        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
-        mockPublication(mockReplayPub, termBuffer);
-        assertNotEquals(0, replaySession.doWork());
-        assertThat(messageCounter, is(1));
+            validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED);
 
-        validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED);
-
-        assertTrue(replaySession.isDone());
-        replaySession.close();
+            assertTrue(replaySession.isDone());
+        }
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -273,40 +273,40 @@ public class ReplaySessionTest
         final long length = 4 * FRAME_LENGTH;
         final long correlationId = 1L;
 
-        final ReplaySession replaySession = replaySession(
+        try (ReplaySession replaySession = replaySession(
             RECORDING_POSITION,
             length,
             correlationId,
             mockReplayPub,
-            mockControlSession);
+            mockControlSession))
+        {
+            when(mockReplayPub.isClosed()).thenReturn(false);
+            when(mockReplayPub.isConnected()).thenReturn(false);
 
-        when(mockReplayPub.isClosed()).thenReturn(false);
-        when(mockReplayPub.isConnected()).thenReturn(false);
+            replaySession.doWork();
 
-        replaySession.doWork();
+            assertEquals(replaySession.state(), ReplaySession.State.INIT);
 
-        assertEquals(replaySession.state(), ReplaySession.State.INIT);
+            when(mockReplayPub.isConnected()).thenReturn(true);
 
-        when(mockReplayPub.isConnected()).thenReturn(true);
+            replaySession.doWork();
+            assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        replaySession.doWork();
-        assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
+            verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
 
-        verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
+            final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
+            mockPublication(mockReplayPub, termBuffer);
 
-        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
-        mockPublication(mockReplayPub, termBuffer);
+            assertNotEquals(0, replaySession.doWork());
+            assertThat(messageCounter, is(4));
 
-        assertNotEquals(0, replaySession.doWork());
-        assertThat(messageCounter, is(4));
+            validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED);
+            validateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG);
+            validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);
 
-        validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED);
-        validateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG);
-        validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);
-
-        verify(mockReplayPub).appendPadding(FRAME_LENGTH - HEADER_LENGTH);
-        assertTrue(replaySession.isDone());
-        replaySession.close();
+            verify(mockReplayPub).appendPadding(FRAME_LENGTH - HEADER_LENGTH);
+            assertTrue(replaySession.isDone());
+        }
     }
 
     @Test
@@ -314,22 +314,22 @@ public class ReplaySessionTest
     {
         final long length = 1024L;
         final long correlationId = 1L;
-        final ReplaySession replaySession = replaySession(
+        try (ReplaySession replaySession = replaySession(
             RECORDING_POSITION,
             length,
             correlationId,
             mockReplayPub,
-            mockControlSession);
+            mockControlSession))
+        {
+            when(mockReplayPub.isClosed()).thenReturn(false);
+            when(mockReplayPub.isConnected()).thenReturn(false);
 
-        when(mockReplayPub.isClosed()).thenReturn(false);
-        when(mockReplayPub.isConnected()).thenReturn(false);
+            replaySession.doWork();
 
-        replaySession.doWork();
-
-        when(epochClock.time()).thenReturn(ReplaySession.CONNECT_TIMEOUT_MS + TIME + 1L);
-        replaySession.doWork();
-        assertTrue(replaySession.isDone());
-        replaySession.close();
+            when(epochClock.time()).thenReturn(ReplaySession.CONNECT_TIMEOUT_MS + TIME + 1L);
+            replaySession.doWork();
+            assertTrue(replaySession.isDone());
+        }
     }
 
     @Test
@@ -363,51 +363,51 @@ public class ReplaySessionTest
         final long length = 5 * FRAME_LENGTH;
         final long correlationId = 1L;
 
-        final ReplaySession replaySession = replaySession(
+        try (ReplaySession replaySession = replaySession(
             RECORDING_POSITION,
             length,
             correlationId,
             mockReplayPub,
-            mockControlSession);
+            mockControlSession))
+        {
+            when(mockReplayPub.isClosed()).thenReturn(false);
+            when(mockReplayPub.isConnected()).thenReturn(false);
 
-        when(mockReplayPub.isClosed()).thenReturn(false);
-        when(mockReplayPub.isConnected()).thenReturn(false);
+            replaySession.doWork();
 
-        replaySession.doWork();
+            assertEquals(replaySession.state(), ReplaySession.State.INIT);
 
-        assertEquals(replaySession.state(), ReplaySession.State.INIT);
+            when(mockReplayPub.isConnected()).thenReturn(true);
 
-        when(mockReplayPub.isConnected()).thenReturn(true);
+            replaySession.doWork();
+            assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
 
-        replaySession.doWork();
-        assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
+            verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
 
-        verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
+            mockPublication(mockReplayPub, termBuffer);
 
-        mockPublication(mockReplayPub, termBuffer);
+            assertNotEquals(0, replaySession.doWork());
+            assertThat(messageCounter, is(2));
 
-        assertNotEquals(0, replaySession.doWork());
-        assertThat(messageCounter, is(2));
+            validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED);
+            validateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG);
 
-        validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED);
-        validateFrame(termBuffer, 1, FrameDescriptor.BEGIN_FRAG_FLAG);
+            assertEquals(0, replaySession.doWork());
 
-        assertEquals(0, replaySession.doWork());
+            recordFragment(writer, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
+            recordFragment(writer, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
 
-        recordFragment(writer, buffer, headerFwt, header, 2, FrameDescriptor.END_FRAG_FLAG, HDR_TYPE_DATA);
-        recordFragment(writer, buffer, headerFwt, header, 3, FrameDescriptor.UNFRAGMENTED, HDR_TYPE_PAD);
+            writer.close();
 
-        writer.close();
+            when(position.isClosed()).thenReturn(true);
+            when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
+            assertNotEquals(0, replaySession.doWork());
 
-        when(position.isClosed()).thenReturn(true);
-        when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
-        assertNotEquals(0, replaySession.doWork());
+            validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);
+            verify(mockReplayPub).appendPadding(FRAME_LENGTH - HEADER_LENGTH);
 
-        validateFrame(termBuffer, 2, FrameDescriptor.END_FRAG_FLAG);
-        verify(mockReplayPub).appendPadding(FRAME_LENGTH - HEADER_LENGTH);
-
-        assertTrue(replaySession.isDone());
-        replaySession.close();
+            assertTrue(replaySession.isDone());
+        }
     }
 
     private void recordFragment(

@@ -144,7 +144,7 @@ class Catalog implements AutoCloseable
         {
             final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
             final boolean catalogPreExists = catalogFile.exists();
-            MappedByteBuffer catalogMappedByteBuffer = null;
+            final MappedByteBuffer catalogMappedByteBuffer;
             FileChannel catalogFileChannel = null;
             final long catalogLength;
 
@@ -165,8 +165,6 @@ class Catalog implements AutoCloseable
             catch (final Exception ex)
             {
                 CloseHelper.close(catalogFileChannel);
-                IoUtil.unmap(catalogMappedByteBuffer);
-
                 throw new RuntimeException(ex);
             }
 
@@ -227,7 +225,7 @@ class Catalog implements AutoCloseable
         try
         {
             final File catalogFile = new File(archiveDir, Archive.Configuration.CATALOG_FILE_NAME);
-            MappedByteBuffer catalogMappedByteBuffer = null;
+            final MappedByteBuffer catalogMappedByteBuffer;
             final long catalogLength;
 
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE))
@@ -237,8 +235,6 @@ class Catalog implements AutoCloseable
             }
             catch (final Exception ex)
             {
-                IoUtil.unmap(catalogMappedByteBuffer);
-
                 throw new RuntimeException(ex);
             }
 
@@ -314,36 +310,34 @@ class Catalog implements AutoCloseable
                 "' exceeds max allowed:" + maxDescriptorStringsCombinedLength);
         }
 
-        final long newRecordingId = nextRecordingId;
+        final long recordingId = nextRecordingId++;
 
-        catalogBuffer.wrap(catalogByteBuffer, recordingDescriptorOffset(newRecordingId), recordLength);
-        descriptorEncoder.wrap(catalogBuffer, DESCRIPTOR_HEADER_LENGTH);
-
-        initDescriptor(
-            descriptorEncoder,
-            newRecordingId,
-            startTimestamp,
-            startPosition,
-            imageInitialTermId,
-            segmentFileLength,
-            termBufferLength,
-            mtuLength,
-            sessionId,
-            streamId,
-            strippedChannel,
-            originalChannel,
-            sourceIdentity);
+        catalogBuffer.wrap(catalogByteBuffer, recordingDescriptorOffset(recordingId), recordLength);
+        descriptorEncoder
+            .wrap(catalogBuffer, DESCRIPTOR_HEADER_LENGTH)
+            .recordingId(recordingId)
+            .startTimestamp(startTimestamp)
+            .stopTimestamp(NULL_TIMESTAMP)
+            .startPosition(startPosition)
+            .stopPosition(NULL_POSITION)
+            .initialTermId(imageInitialTermId)
+            .segmentFileLength(segmentFileLength)
+            .termBufferLength(termBufferLength)
+            .mtuLength(mtuLength)
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .strippedChannel(strippedChannel)
+            .originalChannel(originalChannel)
+            .sourceIdentity(sourceIdentity);
 
         descriptorHeaderEncoder
             .wrap(catalogBuffer, 0)
             .length(descriptorEncoder.encodedLength())
             .valid(VALID);
 
-        nextRecordingId++;
-
         forceWrites(catalogChannel, forceWrites, forceMetadata);
 
-        return newRecordingId;
+        return recordingId;
     }
 
     boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
@@ -408,38 +402,6 @@ class Catalog implements AutoCloseable
         }
 
         return false;
-    }
-
-    static void initDescriptor(
-        final RecordingDescriptorEncoder recordingDescriptorEncoder,
-        final long recordingId,
-        final long startTimestamp,
-        final long startPosition,
-        final int initialTermId,
-        final int segmentFileLength,
-        final int termBufferLength,
-        final int mtuLength,
-        final int sessionId,
-        final int streamId,
-        final String strippedChannel,
-        final String originalChannel,
-        final String sourceIdentity)
-    {
-        recordingDescriptorEncoder
-            .recordingId(recordingId)
-            .startTimestamp(startTimestamp)
-            .stopTimestamp(NULL_TIMESTAMP)
-            .startPosition(startPosition)
-            .stopPosition(NULL_POSITION)
-            .initialTermId(initialTermId)
-            .segmentFileLength(segmentFileLength)
-            .termBufferLength(termBufferLength)
-            .mtuLength(mtuLength)
-            .sessionId(sessionId)
-            .streamId(streamId)
-            .strippedChannel(strippedChannel)
-            .originalChannel(originalChannel)
-            .sourceIdentity(sourceIdentity);
     }
 
     static void wrapDescriptorDecoder(final RecordingDescriptorDecoder decoder, final UnsafeBuffer descriptorBuffer)
@@ -677,7 +639,7 @@ class Catalog implements AutoCloseable
         nextRecordingId = recordingId + 1;
     }
 
-    private static void forceWrites(final FileChannel channel, final boolean forceWrites, final boolean forceMetadata)
+    private void forceWrites(final FileChannel channel, final boolean forceWrites, final boolean forceMetadata)
     {
         if (null != channel && forceWrites)
         {

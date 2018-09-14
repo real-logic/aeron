@@ -50,6 +50,8 @@ public class ClusterMarkFile implements AutoCloseable
     public static final String SERVICE_FILENAME_PREFIX = "cluster-mark-service-";
     public static final String SERVICE_FILENAME_FORMAT = SERVICE_FILENAME_PREFIX + "%d" + FILE_EXTENSION;
     public static final int HEADER_LENGTH = 8 * 1024;
+    public static final int VERSION_READY = MarkFileHeaderDecoder.SCHEMA_VERSION;
+    public static final int VERSION_FAILED = -1;
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
     private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();
@@ -78,8 +80,15 @@ public class ClusterMarkFile implements AutoCloseable
             {
                 if (version != MarkFileHeaderDecoder.SCHEMA_VERSION)
                 {
-                    throw new ClusterException("mark file version " + version +
-                        " does not match software:" + MarkFileHeaderDecoder.SCHEMA_VERSION);
+                    if (VERSION_FAILED == version && markFileExists)
+                    {
+                        System.err.println("mark file version -1 indicates error on previous startup.");
+                    }
+                    else
+                    {
+                        throw new ClusterException("mark file version " + version +
+                            " does not match software:" + MarkFileHeaderDecoder.SCHEMA_VERSION);
+                    }
                 }
             },
             null);
@@ -177,7 +186,13 @@ public class ClusterMarkFile implements AutoCloseable
 
     public void signalReady()
     {
-        markFile.signalReady(MarkFileHeaderDecoder.SCHEMA_VERSION);
+        markFile.signalReady(VERSION_READY);
+        markFile.mappedByteBuffer().force();
+    }
+
+    public void signalFailedStart()
+    {
+        markFile.signalReady(VERSION_FAILED);
         markFile.mappedByteBuffer().force();
     }
 

@@ -166,7 +166,20 @@ public class ConsensusModule implements AutoCloseable
     ConsensusModule(final Context ctx)
     {
         this.ctx = ctx;
-        ctx.conclude();
+
+        try
+        {
+            ctx.conclude();
+        }
+        catch (final Throwable ex)
+        {
+            if (null != ctx.markFile)
+            {
+                ctx.markFile.signalFailedStart();
+            }
+
+            throw ex;
+        }
 
         final ConsensusModuleAgent conductor = new ConsensusModuleAgent(ctx);
         conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);

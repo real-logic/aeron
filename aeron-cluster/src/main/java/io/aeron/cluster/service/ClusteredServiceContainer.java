@@ -70,7 +70,20 @@ public final class ClusteredServiceContainer implements AutoCloseable
     private ClusteredServiceContainer(final Context ctx)
     {
         this.ctx = ctx;
-        ctx.conclude();
+
+        try
+        {
+            ctx.conclude();
+        }
+        catch (final Throwable ex)
+        {
+            if (null != ctx.markFile)
+            {
+                ctx.markFile.signalFailedStart();
+            }
+
+            throw ex;
+        }
 
         final ClusteredServiceAgent agent = new ClusteredServiceAgent(ctx);
         serviceAgentRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), agent);

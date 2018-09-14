@@ -178,6 +178,7 @@ public class ClusterMarkFile implements AutoCloseable
     public void signalReady()
     {
         markFile.signalReady(MarkFileHeaderDecoder.SCHEMA_VERSION);
+        markFile.mappedByteBuffer().force();
     }
 
     public void updateActivityTimestamp(final long nowMs)

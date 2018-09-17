@@ -299,13 +299,13 @@ public class Image
      * <p>
      * Use a {@link ControlledFragmentAssembler} to assemble messages which span multiple fragments.
      *
-     * @param fragmentHandler to which message fragments are delivered.
-     * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
+     * @param handler       to which message fragments are delivered.
+     * @param fragmentLimit for the number of fragments to be consumed during one polling operation.
      * @return the number of fragments that have been consumed.
      * @see ControlledFragmentAssembler
      * @see ImageControlledFragmentAssembler
      */
-    public int controlledPoll(final ControlledFragmentHandler fragmentHandler, final int fragmentLimit)
+    public int controlledPoll(final ControlledFragmentHandler handler, final int fragmentLimit)
     {
         if (isClosed)
         {
@@ -322,7 +322,7 @@ public class Image
 
         try
         {
-            do
+            while (fragmentsRead < fragmentLimit && resultingOffset < capacity)
             {
                 final int length = frameLengthVolatile(termBuffer, resultingOffset);
                 if (length <= 0)
@@ -341,11 +341,8 @@ public class Image
 
                 header.offset(frameOffset);
 
-                final Action action = fragmentHandler.onFragment(
-                    termBuffer,
-                    frameOffset + HEADER_LENGTH,
-                    length - HEADER_LENGTH,
-                    header);
+                final Action action = handler.onFragment(
+                    termBuffer, frameOffset + HEADER_LENGTH, length - HEADER_LENGTH, header);
 
                 if (action == ABORT)
                 {
@@ -366,7 +363,6 @@ public class Image
                     subscriberPosition.setOrdered(initialPosition);
                 }
             }
-            while (fragmentsRead < fragmentLimit && resultingOffset < capacity);
         }
         catch (final Throwable t)
         {
@@ -391,15 +387,15 @@ public class Image
      * <p>
      * Use a {@link ControlledFragmentAssembler} to assemble messages which span multiple fragments.
      *
-     * @param fragmentHandler to which message fragments are delivered.
-     * @param maxPosition     to consume messages up to.
-     * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
+     * @param handler       to which message fragments are delivered.
+     * @param maxPosition   to consume messages up to.
+     * @param fragmentLimit for the number of fragments to be consumed during one polling operation.
      * @return the number of fragments that have been consumed.
      * @see ControlledFragmentAssembler
      * @see ImageControlledFragmentAssembler
      */
     public int boundedControlledPoll(
-        final ControlledFragmentHandler fragmentHandler, final long maxPosition, final int fragmentLimit)
+        final ControlledFragmentHandler handler, final long maxPosition, final int fragmentLimit)
     {
         if (isClosed)
         {
@@ -435,11 +431,8 @@ public class Image
 
                 header.offset(frameOffset);
 
-                final Action action = fragmentHandler.onFragment(
-                    termBuffer,
-                    frameOffset + HEADER_LENGTH,
-                    length - HEADER_LENGTH,
-                    header);
+                final Action action = handler.onFragment(
+                    termBuffer, frameOffset + HEADER_LENGTH, length - HEADER_LENGTH, header);
 
                 if (action == ABORT)
                 {
@@ -485,14 +478,14 @@ public class Image
      * start at the beginning of a message so that the assembler is reset.
      *
      * @param initialPosition from which to peek forward.
-     * @param fragmentHandler to which message fragments are delivered.
+     * @param handler         to which message fragments are delivered.
      * @param limitPosition   up to which can be scanned.
      * @return the resulting position after the scan terminates which is a complete message.
      * @see ControlledFragmentAssembler
      * @see ImageControlledFragmentAssembler
      */
     public long controlledPeek(
-        final long initialPosition, final ControlledFragmentHandler fragmentHandler, final long limitPosition)
+        final long initialPosition, final ControlledFragmentHandler handler, final long limitPosition)
     {
         if (isClosed)
         {
@@ -511,7 +504,7 @@ public class Image
 
         try
         {
-            do
+            while (position < limitPosition && offset < capacity)
             {
                 final int length = frameLengthVolatile(termBuffer, offset);
                 if (length <= 0)
@@ -525,16 +518,17 @@ public class Image
 
                 if (isPaddingFrame(termBuffer, frameOffset))
                 {
+                    position += (offset - initialOffset);
+                    initialOffset = offset;
+                    resultingPosition = position;
+
                     continue;
                 }
 
                 header.offset(frameOffset);
 
-                final Action action = fragmentHandler.onFragment(
-                    termBuffer,
-                    frameOffset + HEADER_LENGTH,
-                    length - HEADER_LENGTH,
-                    header);
+                final Action action = handler.onFragment(
+                    termBuffer, frameOffset + HEADER_LENGTH, length - HEADER_LENGTH, header);
 
                 if (action == ABORT)
                 {
@@ -554,7 +548,6 @@ public class Image
                     break;
                 }
             }
-            while (position < limitPosition && offset < capacity);
         }
         catch (final Throwable t)
         {
@@ -568,11 +561,11 @@ public class Image
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
      * will be delivered to the {@link BlockHandler} up to a limited number of bytes.
      *
-     * @param blockHandler     to which block is delivered.
+     * @param handler          to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.
      */
-    public int blockPoll(final BlockHandler blockHandler, final int blockLengthLimit)
+    public int blockPoll(final BlockHandler handler, final int blockLengthLimit)
     {
         if (isClosed)
         {
@@ -592,8 +585,7 @@ public class Image
             try
             {
                 final int termId = termBuffer.getInt(termOffset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
-
-                blockHandler.onBlock(termBuffer, termOffset, bytesConsumed, sessionId, termId);
+                handler.onBlock(termBuffer, termOffset, bytesConsumed, sessionId, termId);
             }
             catch (final Throwable t)
             {
@@ -614,11 +606,11 @@ public class Image
      * <p>
      * This method is useful for operations like bulk archiving a stream to file.
      *
-     * @param rawBlockHandler  to which block is delivered.
+     * @param handler          to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.
      */
-    public int rawPoll(final RawBlockHandler rawBlockHandler, final int blockLengthLimit)
+    public int rawPoll(final RawBlockHandler handler, final int blockLengthLimit)
     {
         if (isClosed)
         {
@@ -642,7 +634,7 @@ public class Image
                 final long fileOffset = ((long)capacity * activeIndex) + termOffset;
                 final int termId = termBuffer.getInt(termOffset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
 
-                rawBlockHandler.onBlock(
+                handler.onBlock(
                     logBuffers.fileChannel(), fileOffset, termBuffer, termOffset, length, sessionId, termId);
             }
             catch (final Throwable t)

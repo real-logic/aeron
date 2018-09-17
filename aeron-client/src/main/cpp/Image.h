@@ -96,13 +96,13 @@ public:
     /**
      * Construct a new image over a log to represent a stream of messages from a {@link Publication}.
      *
-     * @param sessionId          of the stream of messages.
-     * @param initialPosition    at which the subscriber is joining the stream.
-     * @param subscriberPosition for indicating the position of the subscriber in the stream.
-     * @param logBuffers         containing the stream of messages.
-     * @param correlationId      of the image with the media driver.
+     * @param sessionId                  of the stream of messages.
+     * @param initialPosition            at which the subscriber is joining the stream.
+     * @param subscriberPosition         for indicating the position of the subscriber in the stream.
+     * @param logBuffers                 containing the stream of messages.
+     * @param correlationId              of the image with the media driver.
      * @param subscriptionRegistrationId of the Subscription.
-     * @param exceptionHandler   to call if an exception is encountered on polling.
+     * @param exceptionHandler           to call if an exception is encountered on polling.
      */
     Image(
         std::int32_t sessionId,
@@ -345,8 +345,8 @@ public:
         {
             const std::int64_t position = m_subscriberPosition.get();
             const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(position,
-                m_positionBitsToShift)];
+            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
+                position, m_positionBitsToShift)];
             TermReader::ReadOutcome readOutcome;
 
             TermReader::read(readOutcome, termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
@@ -385,8 +385,8 @@ public:
             int fragmentsRead = 0;
             std::int64_t initialPosition = m_subscriberPosition.get();
             std::int32_t initialOffset = (std::int32_t) initialPosition & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(initialPosition,
-                m_positionBitsToShift)];
+            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
+                initialPosition, m_positionBitsToShift)];
             std::int32_t resultingOffset = initialOffset;
             const util::index_t capacity = termBuffer.capacity();
 
@@ -394,7 +394,7 @@ public:
 
             try
             {
-                do
+                while (fragmentsRead < fragmentLimit && resultingOffset < capacity)
                 {
                     const std::int32_t length = FrameDescriptor::frameLengthVolatile(termBuffer, resultingOffset);
                     if (length <= 0)
@@ -413,12 +413,11 @@ public:
 
                     m_header.offset(frameOffset);
 
-                    const ControlledPollAction action =
-                        fragmentHandler(
-                            termBuffer,
-                            frameOffset + DataFrameHeader::LENGTH,
-                            length - DataFrameHeader::LENGTH,
-                            m_header);
+                    const ControlledPollAction action = fragmentHandler(
+                        termBuffer,
+                        frameOffset + DataFrameHeader::LENGTH,
+                        length - DataFrameHeader::LENGTH,
+                        m_header);
 
                     if (ControlledPollAction::ABORT == action)
                     {
@@ -439,7 +438,6 @@ public:
                         m_subscriberPosition.setOrdered(initialPosition);
                     }
                 }
-                while (fragmentsRead < fragmentLimit && resultingOffset < capacity);
             }
             catch (const std::exception& ex)
             {
@@ -481,8 +479,8 @@ public:
             int fragmentsRead = 0;
             std::int64_t initialPosition = m_subscriberPosition.get();
             std::int32_t initialOffset = (std::int32_t) initialPosition & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(initialPosition,
-                m_positionBitsToShift)];
+            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
+                initialPosition, m_positionBitsToShift)];
             std::int32_t resultingOffset = initialOffset;
             const std::int64_t capacity = termBuffer.capacity();
             const std::int32_t endOffset =
@@ -511,12 +509,11 @@ public:
 
                     m_header.offset(frameOffset);
 
-                    const ControlledPollAction action =
-                        fragmentHandler(
-                            termBuffer,
-                            frameOffset + DataFrameHeader::LENGTH,
-                            length - DataFrameHeader::LENGTH,
-                            m_header);
+                    const ControlledPollAction action = fragmentHandler(
+                        termBuffer,
+                        frameOffset + DataFrameHeader::LENGTH,
+                        length - DataFrameHeader::LENGTH,
+                        m_header);
 
                     if (ControlledPollAction::ABORT == action)
                     {
@@ -580,15 +577,15 @@ public:
             std::int32_t initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
             std::int32_t offset = initialOffset;
             std::int64_t position = initialPosition;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(initialPosition,
-                m_positionBitsToShift)];
+            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
+                initialPosition, m_positionBitsToShift)];
             const util::index_t capacity = termBuffer.capacity();
 
             m_header.buffer(termBuffer);
 
             try
             {
-                do
+                while (position < limitPosition && offset < capacity)
                 {
                     const std::int32_t length = FrameDescriptor::frameLengthVolatile(termBuffer, offset);
                     if (length <= 0)
@@ -602,17 +599,19 @@ public:
 
                     if (FrameDescriptor::isPaddingFrame(termBuffer, frameOffset))
                     {
+                        position += (offset - initialOffset);
+                        initialOffset = offset;
+                        resultingPosition = position;
                         continue;
                     }
 
                     m_header.offset(frameOffset);
 
-                    const ControlledPollAction action =
-                        fragmentHandler(
-                            termBuffer,
-                            frameOffset + DataFrameHeader::LENGTH,
-                            length - DataFrameHeader::LENGTH,
-                            m_header);
+                    const ControlledPollAction action = fragmentHandler(
+                        termBuffer,
+                        frameOffset + DataFrameHeader::LENGTH,
+                        length - DataFrameHeader::LENGTH,
+                        m_header);
 
                     if (ControlledPollAction::ABORT == action)
                     {
@@ -632,7 +631,6 @@ public:
                         break;
                     }
                 }
-                while (position < limitPosition && offset < capacity);
             }
             catch (const std::exception& ex)
             {
@@ -662,8 +660,8 @@ public:
         {
             const std::int64_t position = m_subscriberPosition.get();
             const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(position,
-                m_positionBitsToShift)];
+            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
+                position, m_positionBitsToShift)];
             const std::int32_t limit = std::min(termOffset + blockLengthLimit, termBuffer.capacity());
 
             const std::int32_t resultingOffset = TermBlockScanner::scan(termBuffer, termOffset, limit);
@@ -675,7 +673,6 @@ public:
                 try
                 {
                     const std::int32_t termId = termBuffer.getInt32(termOffset + DataFrameHeader::TERM_ID_FIELD_OFFSET);
-
                     blockHandler(termBuffer, termOffset, bytesConsumed, m_sessionId, termId);
                 }
                 catch (const std::exception& ex)
@@ -704,7 +701,7 @@ public:
         {
             m_finalPosition = m_subscriberPosition.getVolatile();
             m_isEos = m_finalPosition >= LogBufferDescriptor::endOfStreamPosition(
-                    m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX));
+                m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX));
             std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
         }
     }

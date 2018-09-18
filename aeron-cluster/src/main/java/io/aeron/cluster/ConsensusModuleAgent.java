@@ -613,6 +613,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 ClusterMember.addMemberStatusPublication(
                     newMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+
+                logPublisher.addPassiveFollower(newMember.logEndpoint());
             }
         }
         else if (null == election && Cluster.Role.FOLLOWER == role)
@@ -1949,6 +1951,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 {
                     publication.addDestination(builder.endpoint(member.logEndpoint()).build());
                 }
+            }
+
+            for (final ClusterMember member : passiveMembers)
+            {
+                publication.addDestination(builder.endpoint(member.logEndpoint()).build());
             }
         }
 

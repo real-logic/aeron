@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
@@ -23,6 +24,8 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import static io.aeron.CommonContext.UDP_MEDIA;
 
 class LogPublisher
 {
@@ -79,6 +82,16 @@ class LogPublisher
     int sessionId()
     {
         return publication.sessionId();
+    }
+
+    void addPassiveFollower(final String followerLogEndpoint)
+    {
+        if (null != publication)
+        {
+            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media(UDP_MEDIA);
+
+            publication.addDestination(builder.endpoint(followerLogEndpoint).build());
+        }
     }
 
     boolean appendMessage(

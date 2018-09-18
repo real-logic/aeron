@@ -840,6 +840,6 @@ task uploadToMavenCentral {
 }
 
 wrapper {
-    gradleVersion = '4.10'
+    gradleVersion = '4.10.1'
     distributionType = 'ALL'
 }

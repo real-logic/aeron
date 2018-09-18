@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster.service;
+package io.aeron.cluster;
 
-import io.aeron.cluster.RecordingLog;
 import org.agrona.IoUtil;
 import org.junit.After;
 import org.junit.Test;

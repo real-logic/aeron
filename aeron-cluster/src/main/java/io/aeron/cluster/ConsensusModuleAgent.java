@@ -37,6 +37,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ArrayListUtil;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.LongHashSet;
 import org.agrona.concurrent.Agent;
@@ -107,6 +108,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> redirectSessions = new ArrayList<>();
+    private final Int2ObjectHashMap<ClusterMember> idToClusterMemberMap = new Int2ObjectHashMap<>();
     private final LongHashSet missedTimersSet = new LongHashSet();
     private final Authenticator authenticator;
     private final ClusterSessionProxy sessionProxy;
@@ -164,6 +166,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         memberStatusAdapter = new MemberStatusAdapter(
             aeron.addSubscription(memberStatusUri.toString(), statusStreamId), this);
 
+        ClusterMember.addClusterMemberIds(clusterMembers, idToClusterMemberMap);
         ClusterMember.addMemberStatusPublications(clusterMembers, thisMember, memberStatusUri, statusStreamId, aeron);
 
         ingressAdapter = new IngressAdapter(this, ctx.invalidRequestCounter());
@@ -230,6 +233,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             leadershipTermId,
             recoveryPlan.appendedLogPosition,
             clusterMembers,
+            idToClusterMemberMap,
             thisMember,
             memberStatusAdapter,
             memberStatusPublisher,
@@ -408,13 +412,18 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (Cluster.Role.LEADER == role)
         {
-            memberStatusPublisher.newLeadershipTerm(
-                clusterMembers[followerMemberId].publication(),
-                this.leadershipTermId,
-                recordingLog.getTermEntry(this.leadershipTermId).termBaseLogPosition,
-                this.leadershipTermId,
-                thisMember.id(),
-                logPublisher.sessionId());
+            final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+
+            if (null != follower)
+            {
+                memberStatusPublisher.newLeadershipTerm(
+                    follower.publication(),
+                    this.leadershipTermId,
+                    recordingLog.getTermEntry(this.leadershipTermId).termBaseLogPosition,
+                    this.leadershipTermId,
+                    thisMember.id(),
+                    logPublisher.sessionId());
+            }
         }
     }
 
@@ -473,7 +482,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
-            clusterMembers[followerMemberId].logPosition(logPosition);
+            final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+
+            if (null != follower)
+            {
+                follower.logPosition(logPosition);
+            }
         }
     }
 
@@ -498,31 +512,35 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
-            final String replayChannel = new ChannelUriStringBuilder()
-                .media(CommonContext.UDP_MEDIA)
-                .endpoint(clusterMembers[followerMemberId].transferEndpoint())
-                .isSessionIdTagged(true)
-                .sessionId(ConsensusModule.Configuration.LOG_PUBLICATION_SESSION_ID_TAG)
-                .build();
+            final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
 
-            final ClusterMember member = clusterMembers[followerMemberId];
-
-            if (member.catchupReplaySessionId() == Aeron.NULL_VALUE)
+            if (null != follower)
             {
-                member.catchupReplaySessionId(archive.startReplay(
-                    logRecordingId(), logPosition, Long.MAX_VALUE, replayChannel, ctx.logStreamId()));
+
+                final String replayChannel = new ChannelUriStringBuilder()
+                    .media(CommonContext.UDP_MEDIA)
+                    .endpoint(follower.transferEndpoint())
+                    .isSessionIdTagged(true)
+                    .sessionId(ConsensusModule.Configuration.LOG_PUBLICATION_SESSION_ID_TAG)
+                    .build();
+
+                if (follower.catchupReplaySessionId() == Aeron.NULL_VALUE)
+                {
+                    follower.catchupReplaySessionId(archive.startReplay(
+                        logRecordingId(), logPosition, Long.MAX_VALUE, replayChannel, ctx.logStreamId()));
+                }
             }
         }
     }
 
     public void onStopCatchup(final int replaySessionId, final int followerMemberId)
     {
-        final ClusterMember member = clusterMembers[followerMemberId];
+        final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
 
-        if (member.catchupReplaySessionId() == replaySessionId)
+        if (null != follower && follower.catchupReplaySessionId() == replaySessionId)
         {
-            archive.stopReplay(member.catchupReplaySessionId());
-            member.catchupReplaySessionId(Aeron.NULL_VALUE);
+            archive.stopReplay(follower.catchupReplaySessionId());
+            follower.catchupReplaySessionId(Aeron.NULL_VALUE);
         }
     }
 
@@ -530,12 +548,17 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (leaderMemberId == memberId)
         {
-            memberStatusPublisher.recoveryPlan(
-                clusterMembers[requestMemberId].publication(),
-                correlationId,
-                requestMemberId,
-                leaderMemberId,
-                recoveryPlan);
+            final ClusterMember follower = idToClusterMemberMap.get(requestMemberId);
+
+            if (null != follower)
+            {
+                memberStatusPublisher.recoveryPlan(
+                    follower.publication(),
+                    correlationId,
+                    requestMemberId,
+                    leaderMemberId,
+                    recoveryPlan);
+            }
         }
     }
 
@@ -553,15 +576,20 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (leaderMemberId == memberId)
         {
-            memberStatusPublisher.recordingLog(
-                clusterMembers[requestMemberId].publication(),
-                correlationId,
-                requestMemberId,
-                leaderMemberId,
-                recordingLog,
-                fromLeadershipTermId,
-                count,
-                includeSnapshots);
+            final ClusterMember follower = idToClusterMemberMap.get(requestMemberId);
+
+            if (null != follower)
+            {
+                memberStatusPublisher.recordingLog(
+                    follower.publication(),
+                    correlationId,
+                    requestMemberId,
+                    leaderMemberId,
+                    recordingLog,
+                    fromLeadershipTermId,
+                    count,
+                    includeSnapshots);
+            }
         }
     }
 
@@ -579,6 +607,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 newMember.changeCorrelationId(correlationId);
                 passiveMembers = ClusterMember.addMember(passiveMembers, newMember);
+                idToClusterMemberMap.put(newMember.id(), newMember);
 
                 final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
 
@@ -1769,6 +1798,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             leadershipTermId,
             commitPosition.getWeak(),
             clusterMembers,
+            idToClusterMemberMap,
             thisMember,
             memberStatusAdapter,
             memberStatusPublisher,

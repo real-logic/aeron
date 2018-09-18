@@ -21,6 +21,7 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.CachedEpochClock;
 import org.junit.Before;
 import org.junit.Test;
@@ -605,11 +606,16 @@ public class ElectionTest
         final ClusterMember[] clusterMembers,
         final ClusterMember thisMember)
     {
+        final Int2ObjectHashMap<ClusterMember> idToClusterMemberMap = new Int2ObjectHashMap<>();
+
+        ClusterMember.addClusterMemberIds(clusterMembers, idToClusterMemberMap);
+
         return new Election(
             isStartup,
             logLeadershipTermId,
             logPosition,
             clusterMembers,
+            idToClusterMemberMap,
             thisMember,
             memberStatusAdapter,
             memberStatusPublisher,
@@ -623,11 +629,16 @@ public class ElectionTest
         final ClusterMember[] clusterMembers,
         final ClusterMember thisMember)
     {
+        final Int2ObjectHashMap<ClusterMember> idToClusterMemberMap = new Int2ObjectHashMap<>();
+
+        ClusterMember.addClusterMemberIds(clusterMembers, idToClusterMemberMap);
+
         return new Election(
             true,
             logLeadershipTermId,
             logPosition,
             clusterMembers,
+            idToClusterMemberMap,
             thisMember,
             memberStatusAdapter,
             memberStatusPublisher,

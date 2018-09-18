@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.CloseHelper;
+import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -111,6 +112,7 @@ class Election implements AutoCloseable
     private final long leaderHeartbeatTimeoutMs;
     private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
+    private final Int2ObjectHashMap<ClusterMember> idToClusterMemberMap;
     private final MemberStatusAdapter memberStatusAdapter;
     private final MemberStatusPublisher memberStatusPublisher;
     private final ConsensusModule.Context ctx;
@@ -139,6 +141,7 @@ class Election implements AutoCloseable
         final long leadershipTermId,
         final long logPosition,
         final ClusterMember[] clusterMembers,
+        final Int2ObjectHashMap<ClusterMember> idToClusterMemberMap,
         final ClusterMember thisMember,
         final MemberStatusAdapter memberStatusAdapter,
         final MemberStatusPublisher memberStatusPublisher,
@@ -155,6 +158,7 @@ class Election implements AutoCloseable
         this.logLeadershipTermId = leadershipTermId;
         this.leadershipTermId = leadershipTermId;
         this.clusterMembers = clusterMembers;
+        this.idToClusterMemberMap = idToClusterMemberMap;
         this.thisMember = thisMember;
         this.memberStatusAdapter = memberStatusAdapter;
         this.memberStatusPublisher = memberStatusPublisher;
@@ -235,7 +239,14 @@ class Election implements AutoCloseable
 
     void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
     {
-        clusterMembers[followerMemberId]
+        final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+
+        if (null == follower)
+        {
+            return;
+        }
+
+        follower
             .leadershipTermId(logLeadershipTermId)
             .logPosition(logPosition);
 
@@ -243,12 +254,12 @@ class Election implements AutoCloseable
         {
             if (this.logLeadershipTermId == logLeadershipTermId)
             {
-                publishNewLeadershipTerm(clusterMembers[followerMemberId].publication(), leadershipTermId);
+                publishNewLeadershipTerm(follower.publication(), leadershipTermId);
             }
             else
             {
                 memberStatusPublisher.newLeadershipTerm(
-                    clusterMembers[followerMemberId].publication(),
+                    follower.publication(),
                     logLeadershipTermId,
                     consensusModuleAgent.logStopPosition(logLeadershipTermId),
                     logLeadershipTermId + 1,
@@ -295,11 +306,14 @@ class Election implements AutoCloseable
         final int followerMemberId,
         final boolean vote)
     {
+        final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+
         if (State.CANDIDATE_BALLOT == state &&
             candidateTermId == this.candidateTermId &&
-            candidateMemberId == thisMember.id())
+            candidateMemberId == thisMember.id() &&
+            null != follower)
         {
-            clusterMembers[followerMemberId]
+            follower
                 .candidateTermId(candidateTermId)
                 .leadershipTermId(logLeadershipTermId)
                 .logPosition(logPosition)
@@ -314,11 +328,18 @@ class Election implements AutoCloseable
         final int leaderMemberId,
         final int logSessionId)
     {
+        final ClusterMember leader = idToClusterMemberMap.get(leaderMemberId);
+
+        if (null == leader)
+        {
+            return;
+        }
+
         if ((State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state || State.CANVASS == state) &&
             leadershipTermId == this.candidateTermId)
         {
             this.leadershipTermId = leadershipTermId;
-            leaderMember = clusterMembers[leaderMemberId];
+            leaderMember = leader;
             this.logSessionId = logSessionId;
 
             if (this.logPosition < logPosition && NULL_POSITION == catchupLogPosition)
@@ -350,7 +371,7 @@ class Election implements AutoCloseable
             {
                 this.leadershipTermId = leadershipTermId;
                 this.candidateTermId = NULL_VALUE;
-                leaderMember = clusterMembers[leaderMemberId];
+                leaderMember = leader;
                 this.logSessionId = logSessionId;
                 catchupLogPosition = logPosition;
 
@@ -361,9 +382,14 @@ class Election implements AutoCloseable
 
     void onAppendedPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
-        clusterMembers[followerMemberId]
-            .logPosition(logPosition)
-            .leadershipTermId(leadershipTermId);
+        final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+
+        if (null != follower)
+        {
+            follower
+                .logPosition(logPosition)
+                .leadershipTermId(leadershipTermId);
+        }
     }
 
     @SuppressWarnings("unused")
@@ -578,7 +604,7 @@ class Election implements AutoCloseable
             logSessionId = consensusModuleAgent.addNewLogPublication().sessionId();
 
             ClusterMember.resetLogPositions(clusterMembers, NULL_POSITION);
-            clusterMembers[thisMember.id()].logPosition(logPosition).leadershipTermId(candidateTermId);
+            thisMember.logPosition(logPosition).leadershipTermId(candidateTermId);
 
             if (!shouldReplay || (logReplay = consensusModuleAgent.newLogReplay(logPosition)) == null)
             {
@@ -809,14 +835,19 @@ class Election implements AutoCloseable
 
     private void placeVote(final long candidateTermId, final int candidateId, final boolean vote)
     {
-        memberStatusPublisher.placeVote(
-            clusterMembers[candidateId].publication(),
-            candidateTermId,
-            logLeadershipTermId,
-            logPosition,
-            candidateId,
-            thisMember.id(),
-            vote);
+        final ClusterMember candidate = idToClusterMemberMap.get(candidateId);
+
+        if (null != candidate)
+        {
+            memberStatusPublisher.placeVote(
+                candidate.publication(),
+                candidateTermId,
+                logLeadershipTermId,
+                logPosition,
+                candidateId,
+                thisMember.id(),
+                vote);
+        }
     }
 
     private void publishNewLeadershipTerm(final Publication publication, final long leadershipTermId)

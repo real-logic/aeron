@@ -21,6 +21,7 @@ import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.collections.Int2ObjectHashMap;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.CommonContext.UDP_MEDIA;
@@ -478,6 +479,15 @@ public final class ClusterMember
         channelUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
         final String channel = channelUri.toString();
         member.publication(aeron.addExclusivePublication(channel, streamId));
+    }
+
+    public static void addClusterMemberIds(
+        final ClusterMember[] clusterMembers, final Int2ObjectHashMap<ClusterMember> idMap)
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            idMap.put(member.id(), member);
+        }
     }
 
     /**

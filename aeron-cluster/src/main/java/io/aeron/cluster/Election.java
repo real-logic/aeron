@@ -463,7 +463,7 @@ class Election implements AutoCloseable
 
     private int init(final long nowMs)
     {
-        stateCounter = ctx.aeron().addCounter(0, "Election State");
+        stateCounter = ctx.aeron().addCounter(ELECTION_STATE_TYPE_ID, "Election State");
 
         if (!isStartup)
         {

@@ -470,6 +470,14 @@ public final class ClusterMember
         }
     }
 
+    /**
+     * Add an exclusive {@link Publication} for communicating to a member on the member status channel.
+     *
+     * @param member     to which the publication is addressed.
+     * @param channelUri for the target member.
+     * @param streamId   for the target member.
+     * @param aeron      from which the publication will be created.
+     */
     public static void addMemberStatusPublication(
         final ClusterMember member,
         final ChannelUri channelUri,
@@ -481,12 +489,18 @@ public final class ClusterMember
         member.publication(aeron.addExclusivePublication(channel, streamId));
     }
 
+    /**
+     * Populate map of {@link ClusterMember}s which can be looked up by id.
+     *
+     * @param clusterMembers       to populate the map.
+     * @param clusterMemberByIdMap to be populated.
+     */
     public static void addClusterMemberIds(
-        final ClusterMember[] clusterMembers, final Int2ObjectHashMap<ClusterMember> idMap)
+        final ClusterMember[] clusterMembers, final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap)
     {
         for (final ClusterMember member : clusterMembers)
         {
-            idMap.put(member.id(), member);
+            clusterMemberByIdMap.put(member.id(), member);
         }
     }
 

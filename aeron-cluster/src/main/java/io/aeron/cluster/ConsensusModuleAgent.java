@@ -108,7 +108,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final ArrayList<ClusterSession> pendingSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> redirectSessions = new ArrayList<>();
-    private final Int2ObjectHashMap<ClusterMember> idToClusterMemberMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
     private final LongHashSet missedTimersSet = new LongHashSet();
     private final Authenticator authenticator;
     private final ClusterSessionProxy sessionProxy;
@@ -166,7 +166,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         memberStatusAdapter = new MemberStatusAdapter(
             aeron.addSubscription(memberStatusUri.toString(), statusStreamId), this);
 
-        ClusterMember.addClusterMemberIds(clusterMembers, idToClusterMemberMap);
+        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
         ClusterMember.addMemberStatusPublications(clusterMembers, thisMember, memberStatusUri, statusStreamId, aeron);
 
         ingressAdapter = new IngressAdapter(this, ctx.invalidRequestCounter());
@@ -233,7 +233,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             leadershipTermId,
             recoveryPlan.appendedLogPosition,
             clusterMembers,
-            idToClusterMemberMap,
+            clusterMemberByIdMap,
             thisMember,
             memberStatusAdapter,
             memberStatusPublisher,
@@ -412,7 +412,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (Cluster.Role.LEADER == role)
         {
-            final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+            final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
             if (null != follower)
             {
@@ -482,7 +482,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
-            final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+            final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
             if (null != follower)
             {
@@ -512,7 +512,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
-            final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+            final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
             if (null != follower)
             {
@@ -535,7 +535,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onStopCatchup(final int replaySessionId, final int followerMemberId)
     {
-        final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+        final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
         if (null != follower && follower.catchupReplaySessionId() == replaySessionId)
         {
@@ -548,7 +548,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (leaderMemberId == memberId)
         {
-            final ClusterMember follower = idToClusterMemberMap.get(requestMemberId);
+            final ClusterMember follower = clusterMemberByIdMap.get(requestMemberId);
 
             if (null != follower)
             {
@@ -576,7 +576,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (leaderMemberId == memberId)
         {
-            final ClusterMember follower = idToClusterMemberMap.get(requestMemberId);
+            final ClusterMember follower = clusterMemberByIdMap.get(requestMemberId);
 
             if (null != follower)
             {
@@ -607,7 +607,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 newMember.changeCorrelationId(correlationId);
                 passiveMembers = ClusterMember.addMember(passiveMembers, newMember);
-                idToClusterMemberMap.put(newMember.id(), newMember);
+                clusterMemberByIdMap.put(newMember.id(), newMember);
 
                 final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
 
@@ -1800,7 +1800,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             leadershipTermId,
             commitPosition.getWeak(),
             clusterMembers,
-            idToClusterMemberMap,
+            clusterMemberByIdMap,
             thisMember,
             memberStatusAdapter,
             memberStatusPublisher,

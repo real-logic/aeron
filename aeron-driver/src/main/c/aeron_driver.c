@@ -650,7 +650,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
             if (aeron_agent_init(
                 &_driver->runners[AERON_AGENT_RUNNER_SHARED_NETWORK],
                 "[sender, receiver]",
-                &_driver,
+                _driver,
                 _driver->context->agent_on_start_func,
                 _driver->context->agent_on_start_state,
                 aeron_driver_shared_network_do_work,

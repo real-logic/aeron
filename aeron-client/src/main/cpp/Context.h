@@ -20,7 +20,6 @@
 #include <memory>
 #include <util/Exceptions.h>
 #include <concurrent/AgentRunner.h>
-#include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include <concurrent/CountersReader.h>
 #include <CncFileDescriptor.h>
@@ -28,7 +27,6 @@
 
 namespace aeron {
 
-using namespace aeron::concurrent::ringbuffer;
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent;

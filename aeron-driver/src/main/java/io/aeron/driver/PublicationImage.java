@@ -39,6 +39,7 @@ import java.net.InetSocketAddress;
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
 import static io.aeron.driver.PublicationImage.State.ACTIVE;
+import static io.aeron.driver.PublicationImage.State.INIT;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermGapFiller.tryFillGap;
@@ -116,7 +117,7 @@ public class PublicationImage
     private final boolean isReliable;
 
     private boolean isTrackingRebuild = true;
-    private volatile State state = State.INIT;
+    private volatile State state = INIT;
 
     private final NanoClock nanoClock;
     private final NanoClock cachedNanoClock;
@@ -680,7 +681,7 @@ public class PublicationImage
      */
     boolean isAcceptingSubscriptions()
     {
-        return subscriberPositions.length > 0 && state == ACTIVE;
+        return subscriberPositions.length > 0 && (state == ACTIVE || state == INIT);
     }
 
     /**

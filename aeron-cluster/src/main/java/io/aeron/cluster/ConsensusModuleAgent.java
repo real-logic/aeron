@@ -628,7 +628,19 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (null == election && Cluster.Role.LEADER == role)
         {
-            // TODO: remove cluster member from passive list
+            final ClusterMember follower = clusterMemberByIdMap.remove(memberId);
+
+            if (null != follower)
+            {
+                passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
+
+                follower.publication().close();
+                follower.publication(null);
+
+                logPublisher.removePassiveFollower(follower.logEndpoint());
+
+                clusterMemberByIdMap.compact();
+            }
         }
     }
 
@@ -640,11 +652,45 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onSnapshotRecordingQuery(final long correlationId, final int requestMemberId)
     {
+        if (null == election && Cluster.Role.LEADER == role)
+        {
+            final ClusterMember requester = clusterMemberByIdMap.get(requestMemberId);
+
+            if (null != requester)
+            {
+                memberStatusPublisher.snapshotRecording(
+                    requester.publication(), correlationId, recoveryPlan, ClusterMember.membersString(clusterMembers));
+            }
+        }
     }
 
     public void onSnapshotRecordings(
         final long correlationId, final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
     {
+        final SnapshotRecordingsDecoder.SnapshotsDecoder snapshotsDecoder = snapshotRecordingsDecoder.snapshots();
+        final ArrayList<RecordingLog.Snapshot> snapshots = new ArrayList<>();
+
+        if (snapshotsDecoder.count() > 0)
+        {
+            for (final SnapshotRecordingsDecoder.SnapshotsDecoder snapshot : snapshotsDecoder)
+            {
+                if (snapshot.serviceId() <= ctx.serviceCount())
+                {
+                    snapshots.add(new RecordingLog.Snapshot(
+                        snapshot.recordingId(),
+                        snapshot.leadershipTermId(),
+                        snapshot.termBaseLogPosition(),
+                        snapshot.logPosition(),
+                        snapshot.timestamp(),
+                        snapshot.serviceId()));
+                }
+            }
+        }
+
+        clusterMembers = ClusterMember.parse(snapshotRecordingsDecoder.memberEndpoints());
+        highMemberId = ClusterMember.highMemberId(clusterMembers);
+
+        // TODO: setup for loading snapshots
     }
 
     public void onJoinCluster(final long leadershipTermId, final int memberId)

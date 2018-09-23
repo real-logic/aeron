@@ -94,6 +94,16 @@ class LogPublisher
         }
     }
 
+    void removePassiveFollower(final String followerLogEndpoint)
+    {
+        if (null != publication)
+        {
+            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media(UDP_MEDIA);
+
+            publication.removeDestination(builder.endpoint(followerLogEndpoint).build());
+        }
+    }
+
     boolean appendMessage(
         final long correlationId,
         final long clusterSessionId,

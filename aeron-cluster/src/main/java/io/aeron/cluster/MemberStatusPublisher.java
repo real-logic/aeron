@@ -46,6 +46,8 @@ class MemberStatusPublisher
     private final RecordingLogEncoder recordingLogEncoder = new RecordingLogEncoder();
     private final AddClusterMemberEncoder addClusterMemberEncoder = new AddClusterMemberEncoder();
     private final ClusterMembersChangeEncoder clusterMembersChangeEncoder = new ClusterMembersChangeEncoder();
+    private final SnapshotRecordingQueryEncoder snapshotRecordingQueryEncoder = new SnapshotRecordingQueryEncoder();
+    private final SnapshotRecordingsEncoder snapshotRecordingsEncoder = new SnapshotRecordingsEncoder();
 
     boolean canvassPosition(
         final Publication publication,
@@ -515,6 +517,82 @@ class MemberStatusPublisher
 
                 bufferClaim.commit();
 
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean snapshotRecordingQuery(
+        final Publication publication,
+        final long correlationId,
+        final int requestMemberId)
+    {
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SnapshotRecordingQueryEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                snapshotRecordingQueryEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .requestMemberId(requestMemberId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean snapshotRecording(
+        final Publication publication,
+        final long correlationId,
+        final RecordingLog.RecoveryPlan recoveryPlan,
+        final String memberEndpoints)
+    {
+        snapshotRecordingsEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId);
+
+        final SnapshotRecordingsEncoder.SnapshotsEncoder snapshotsEncoder =
+            snapshotRecordingsEncoder.snapshotsCount(recoveryPlan.snapshots.size());
+        for (int i = 0, length = recoveryPlan.snapshots.size(); i < length; i++)
+        {
+            final RecordingLog.Snapshot snapshot = recoveryPlan.snapshots.get(i);
+
+            snapshotsEncoder.next()
+                .recordingId(snapshot.recordingId)
+                .leadershipTermId(snapshot.leadershipTermId)
+                .termBaseLogPosition(snapshot.termBaseLogPosition)
+                .logPosition(snapshot.logPosition)
+                .timestamp(snapshot.timestamp)
+                .serviceId(snapshot.serviceId);
+        }
+
+        snapshotRecordingsEncoder.memberEndpoints(memberEndpoints);
+
+        final int length =
+            MessageHeaderEncoder.ENCODED_LENGTH + snapshotRecordingsEncoder.encodedLength();
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.offer(buffer, 0, length);
+            if (result > 0)
+            {
                 return true;
             }
 

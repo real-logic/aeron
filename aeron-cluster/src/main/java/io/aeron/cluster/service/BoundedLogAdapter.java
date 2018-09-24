@@ -44,7 +44,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder actionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
-    private final ClusterChangeDecoder clusterChangeDecoder = new ClusterChangeDecoder();
+    private final ClusterChangeEventDecoder clusterChangeEventDecoder = new ClusterChangeEventDecoder();
 
     private final Image image;
     private final ReadableCounter upperBound;
@@ -182,20 +182,20 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     newLeadershipTermEventDecoder.logSessionId());
                 break;
 
-            case ClusterChangeDecoder.TEMPLATE_ID:
-                clusterChangeDecoder.wrap(
+            case ClusterChangeEventDecoder.TEMPLATE_ID:
+                clusterChangeEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
                 agent.onClusterChange(
-                    clusterChangeDecoder.leaderMemberId(),
-                    clusterChangeDecoder.logPosition(),
-                    clusterChangeDecoder.timestamp(),
-                    clusterChangeDecoder.leaderMemberId(),
-                    clusterChangeDecoder.clusterSize(),
-                    clusterChangeDecoder.clusterMembers());
+                    clusterChangeEventDecoder.leaderMemberId(),
+                    clusterChangeEventDecoder.logPosition(),
+                    clusterChangeEventDecoder.timestamp(),
+                    clusterChangeEventDecoder.leaderMemberId(),
+                    clusterChangeEventDecoder.clusterSize(),
+                    clusterChangeEventDecoder.clusterMembers());
                 break;
         }
 

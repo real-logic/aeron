@@ -40,6 +40,7 @@ class LogPublisher
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
     private final ClusterActionRequestEncoder clusterActionRequestEncoder = new ClusterActionRequestEncoder();
     private final NewLeadershipTermEventEncoder newLeadershipTermEventEncoder = new NewLeadershipTermEventEncoder();
+    private final ClusterChangeEventEncoder clusterChangeEventEncoder = new ClusterChangeEventEncoder();
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
@@ -278,6 +279,43 @@ class LogPublisher
 
                 bufferClaim.commit();
 
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean appendClusterChangeEvent(
+        final long leadershipTermId,
+        final long logPosition,
+        final long nowMs,
+        final int leaderMemberId,
+        final int clusterSize,
+        final String clusterMembers)
+    {
+        long result;
+
+        clusterChangeEventEncoder
+            .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
+            .leadershipTermId(leadershipTermId)
+            .logPosition(logPosition)
+            .timestamp(nowMs)
+            .leaderMemberId(leaderMemberId)
+            .clusterSize(clusterSize)
+            .clusterMembers(clusterMembers);
+
+        final int length = clusterChangeEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            result = publication.offer(expandableArrayBuffer, 0, length);
+            if (result > 0)
+            {
                 return true;
             }
 

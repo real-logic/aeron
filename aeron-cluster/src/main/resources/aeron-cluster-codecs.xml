@@ -246,7 +246,7 @@
         <field name="logSessionId"         id="5" type="int32"/>
     </sbe:message>
 
-    <sbe:message name="ClusterChange"
+    <sbe:message name="ClusterChangeEvent"
                  id="26"
                  description="Event for the change of the cluster list that affects the size">
         <field name="leadershipTermId"     id="1" type="int64"/>

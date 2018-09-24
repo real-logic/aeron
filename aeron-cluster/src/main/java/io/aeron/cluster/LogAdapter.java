@@ -42,7 +42,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder clusterActionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
-    private final ClusterChangeDecoder clusterChangeDecoder = new ClusterChangeDecoder();
+    private final ClusterChangeEventDecoder clusterChangeEventDecoder = new ClusterChangeEventDecoder();
 
     LogAdapter(final Image image, final ConsensusModuleAgent consensusModuleAgent)
     {
@@ -168,20 +168,20 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     newLeadershipTermEventDecoder.logSessionId());
                 break;
 
-            case ClusterChangeDecoder.TEMPLATE_ID:
-                clusterChangeDecoder.wrap(
+            case ClusterChangeEventDecoder.TEMPLATE_ID:
+                clusterChangeEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
                 consensusModuleAgent.onReplayClusterChange(
-                    clusterChangeDecoder.leaderMemberId(),
-                    clusterChangeDecoder.logPosition(),
-                    clusterChangeDecoder.timestamp(),
-                    clusterChangeDecoder.leaderMemberId(),
-                    clusterChangeDecoder.clusterSize(),
-                    clusterChangeDecoder.clusterMembers());
+                    clusterChangeEventDecoder.leaderMemberId(),
+                    clusterChangeEventDecoder.logPosition(),
+                    clusterChangeEventDecoder.timestamp(),
+                    clusterChangeEventDecoder.leaderMemberId(),
+                    clusterChangeEventDecoder.clusterSize(),
+                    clusterChangeEventDecoder.clusterMembers());
                 break;
 
             case ClusterActionRequestDecoder.TEMPLATE_ID:

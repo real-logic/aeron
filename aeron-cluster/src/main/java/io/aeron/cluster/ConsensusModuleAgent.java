@@ -1005,8 +1005,54 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final String clusterMembers)
     {
         clusterTimeMs(timestamp);
+        this.leadershipTermId = leadershipTermId;
 
-        // TODO: update cluster member size and install new clusterMembers list
+        final ClusterMember[] newMembers = ClusterMember.parse(clusterMembers);
+
+        // TODO: if one being added, then simply install clusterMembers and add as follower.
+
+        if (Cluster.Role.LEADER == role)
+        {
+            final ClusterMember eventMember = clusterMemberByIdMap.computeIfAbsent(
+                memberId,
+                (id) -> ClusterMember.findMember(newMembers, id));
+
+            if (ChangeType.JOIN == eventType)
+            {
+                ClusterMember.removeMember(passiveMembers, memberId);
+                this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
+
+                if (null == eventMember.publication())
+                {
+                    final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+
+                    ClusterMember.addMemberStatusPublication(
+                        eventMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+
+                    logPublisher.addPassiveFollower(eventMember.logEndpoint());
+                }
+            }
+            else if (ChangeType.LEAVE == eventType)
+            {
+                ClusterMember.removeMember(this.clusterMembers, memberId);
+                passiveMembers = ClusterMember.addMember(passiveMembers, eventMember);
+            }
+        }
+        else
+        {
+            final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
+
+            if (ChangeType.JOIN == eventType)
+            {
+                this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
+                clusterMemberByIdMap.put(memberId, eventMember);
+            }
+            else if (ChangeType.LEAVE == eventType)
+            {
+                this.clusterMembers = ClusterMember.removeMember(this.clusterMembers, memberId);
+                clusterMemberByIdMap.remove(memberId);
+            }
+        }
     }
 
     void onReloadState(final long nextSessionId)

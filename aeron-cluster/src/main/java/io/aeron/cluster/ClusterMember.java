@@ -829,6 +829,27 @@ public final class ClusterMember
         return true;
     }
 
+    public static int findMemberIndex(final ClusterMember[] clusterMembers, final int memberId)
+    {
+        final int length = clusterMembers.length;
+        int index = ArrayUtil.UNKNOWN_INDEX;
+
+        for (int i = 0; i < length; i++)
+        {
+            if (clusterMembers[i].id() == memberId)
+            {
+                index = i;
+            }
+        }
+
+        return index;
+    }
+
+    public static ClusterMember findMember(final ClusterMember[] clusterMembers, final int memberId)
+    {
+        return clusterMembers[findMemberIndex(clusterMembers, memberId)];
+    }
+
     public static ClusterMember[] addMember(final ClusterMember[] oldMembers, final ClusterMember newMember)
     {
         return ArrayUtil.add(oldMembers, newMember);
@@ -836,18 +857,7 @@ public final class ClusterMember
 
     public static ClusterMember[] removeMember(final ClusterMember[] oldMembers, final int memberId)
     {
-        final int length = oldMembers.length;
-        int index = ArrayUtil.UNKNOWN_INDEX;
-
-        for (int i = 0; i < length; i++)
-        {
-            if (oldMembers[i].id() == memberId)
-            {
-                index = i;
-            }
-        }
-
-        return ArrayUtil.remove(oldMembers, index);
+        return ArrayUtil.remove(oldMembers, findMemberIndex(oldMembers, memberId));
     }
 
     public static int highMemberId(final ClusterMember[] clusterMembers)

@@ -52,6 +52,10 @@
             <validValue name="SECTION">1</validValue>
             <validValue name="END">2</validValue>
         </enum>
+        <enum name="ChangeType" encodingType="int32" description="Type of Cluster Change Event">
+            <validValue name="JOIN">0</validValue>
+            <validValue name="LEAVE">1</validValue>
+        </enum>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
     </types>
 
@@ -254,7 +258,9 @@
         <field name="timestamp"            id="3" type="time_t"/>
         <field name="leaderMemberId"       id="4" type="int32"/>
         <field name="clusterSize"          id="5" type="int32"/>
-        <data name="clusterMembers"        id="6" type="varAsciiEncoding"/>
+        <field name="eventType"            id="6" type="ChangeType"/>
+        <field name="memberId"             id="7" type="int32"/>
+        <data name="clusterMembers"        id="8" type="varAsciiEncoding"/>
     </sbe:message>
 
     <!-- Messages for service control between clustered services and the Consensus Module -->

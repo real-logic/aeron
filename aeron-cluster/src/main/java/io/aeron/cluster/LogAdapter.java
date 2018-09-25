@@ -181,6 +181,8 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     clusterChangeEventDecoder.timestamp(),
                     clusterChangeEventDecoder.leaderMemberId(),
                     clusterChangeEventDecoder.clusterSize(),
+                    clusterChangeEventDecoder.eventType(),
+                    clusterChangeEventDecoder.memberId(),
                     clusterChangeEventDecoder.clusterMembers());
                 break;
 

@@ -295,6 +295,8 @@ class LogPublisher
         final long nowMs,
         final int leaderMemberId,
         final int clusterSize,
+        final ChangeType eventType,
+        final int memberId,
         final String clusterMembers)
     {
         long result;
@@ -306,6 +308,8 @@ class LogPublisher
             .timestamp(nowMs)
             .leaderMemberId(leaderMemberId)
             .clusterSize(clusterSize)
+            .eventType(eventType)
+            .memberId(memberId)
             .clusterMembers(clusterMembers);
 
         final int length = clusterChangeEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;

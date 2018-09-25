@@ -365,6 +365,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         final long timestampMs,
         final int leaderMemberId,
         final int clusterSize,
+        final ChangeType eventType,
+        final int memberId,
         final String clusterMembers)
     {
         this.clusterTimeMs = timestampMs;

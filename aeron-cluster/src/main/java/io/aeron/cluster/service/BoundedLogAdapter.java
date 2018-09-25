@@ -195,6 +195,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     clusterChangeEventDecoder.timestamp(),
                     clusterChangeEventDecoder.leaderMemberId(),
                     clusterChangeEventDecoder.clusterSize(),
+                    clusterChangeEventDecoder.eventType(),
+                    clusterChangeEventDecoder.memberId(),
                     clusterChangeEventDecoder.clusterMembers());
                 break;
         }

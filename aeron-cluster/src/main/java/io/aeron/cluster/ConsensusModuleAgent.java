@@ -1000,6 +1000,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final long timestamp,
         final int leaderMemberId,
         final int clusterSize,
+        final ChangeType eventType,
+        final int memberId,
         final String clusterMembers)
     {
         clusterTimeMs(timestamp);

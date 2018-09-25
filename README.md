@@ -4,6 +4,7 @@ Aeron
 [![Gitter](https://img.shields.io/gitter/room/gitterHQ/gitter.svg)](https://gitter.im/real-logic/Aeron?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) To chat with other Aeron users and the contributors.
 
 [![Javadocs](http://www.javadoc.io/badge/io.aeron/aeron-all.svg)](http://www.javadoc.io/doc/io.aeron/aeron-all)
+[![GitHub](https://img.shields.io/github/license/real-logic/Aeron.svg)](https://github.com/real-logic/aeron/blob/master/LICENSE)
 [![Code Quality: Java](https://img.shields.io/lgtm/grade/java/g/real-logic/Aeron.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/real-logic/Aeron/context:java)
 [![Code Quality: C/C++](https://img.shields.io/lgtm/grade/cpp/g/real-logic/Aeron.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/real-logic/Aeron/context:cpp)
 [![Total Alerts](https://img.shields.io/lgtm/alerts/g/real-logic/Aeron.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/real-logic/Aeron/alerts)

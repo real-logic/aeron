@@ -3,7 +3,10 @@ Aeron
 
 [![Gitter](https://img.shields.io/gitter/room/gitterHQ/gitter.svg)](https://gitter.im/real-logic/Aeron?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) To chat with other Aeron users and the contributors.
 
-[![Javadocs](http://www.javadoc.io/badge/io.aeron/aeron-client.svg)](http://www.javadoc.io/doc/io.aeron/aeron-all)
+[![Javadocs](http://www.javadoc.io/badge/io.aeron/aeron-all.svg)](http://www.javadoc.io/doc/io.aeron/aeron-all)
+[![Code Quality: Java](https://img.shields.io/lgtm/grade/java/g/real-logic/Aeron.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/real-logic/Aeron/context:java)
+[![Code Quality: C/C++](https://img.shields.io/lgtm/grade/java/g/real-logic/Aeron.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/real-logic/Aeron/context:cpp)
+[![Total Alerts](https://img.shields.io/lgtm/alerts/g/real-logic/Aeron.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/real-logic/Aeron/alerts)
 
 Efficient reliable UDP unicast, UDP multicast, and IPC message transport. Java and C++ clients are available in this
 repository, and a [.NET client](https://github.com/AdaptiveConsulting/Aeron.NET) is available from a 3rd party. All

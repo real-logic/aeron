@@ -55,6 +55,9 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 set(AERON_THIRDPARTY_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/thirdparty")
 
+# relative file paths for use in exceptions
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
+
 ##########################################################
 # gmock usage
 

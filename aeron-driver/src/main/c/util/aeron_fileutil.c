@@ -73,7 +73,7 @@ int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         return -1;
     }
 #else
@@ -81,7 +81,7 @@ int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         return -1;
     }
 #endif
@@ -118,21 +118,21 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
             {
                 int errcode = errno;
 
-                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+                aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
             }
         }
         else
         {
             int errcode = errno;
 
-            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         }
     }
     else
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
     }
 
     return result;
@@ -160,14 +160,14 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
             {
                 int errcode = errno;
 
-                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+                aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
             }
         }
         else
         {
             int errcode = errno;
 
-            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         }
 
         close(fd);
@@ -176,7 +176,7 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
     }
 
     return result;
@@ -272,7 +272,7 @@ int aeron_map_raw_log(
             {
                 int errcode = errno;
 
-                aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+                aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
                 return -1;
             }
 
@@ -301,7 +301,7 @@ int aeron_map_raw_log(
         {
             int errcode = errno;
 
-            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
             close(fd);
         }
     }
@@ -309,7 +309,7 @@ int aeron_map_raw_log(
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
     }
 
     return result;
@@ -330,7 +330,7 @@ int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *
         {
             int errcode = errno;
 
-            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
             return -1;
         }
 

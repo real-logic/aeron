@@ -57,7 +57,7 @@ int aeron_driver_sender_init(
         {
             int errcode = errno;
 
-            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
             return -1;
         }
 

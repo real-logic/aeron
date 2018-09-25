@@ -203,7 +203,7 @@ public class CatalogTool
             stopSegmentOffset = Catalog.recoverStopOffset(maxSegmentFile, segmentFileLength);
 
             final long recordingLength =
-                startSegmentOffset + (maxSegmentIndex * segmentFileLength) + stopSegmentOffset;
+                startSegmentOffset + (maxSegmentIndex * (long)segmentFileLength) + stopSegmentOffset;
 
             stopPosition = startPosition + recordingLength;
 

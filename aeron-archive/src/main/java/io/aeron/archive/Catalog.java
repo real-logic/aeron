@@ -629,7 +629,7 @@ class Catalog implements AutoCloseable
                 final int termBufferLength = decoder.termBufferLength();
                 final long startPosition = decoder.startPosition();
                 final long recordingLength =
-                    (startPosition & (termBufferLength - 1)) + (maxSegmentIndex * segmentFileLength) + stopOffset;
+                    (startPosition & (termBufferLength - 1)) + (maxSegmentIndex * (long)segmentFileLength) + stopOffset;
                 encoder.stopPosition(startPosition + recordingLength);
             }
 

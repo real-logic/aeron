@@ -826,7 +826,7 @@ public class RecordingLog implements AutoCloseable
 
         buffer.putInt(0, NULL_VALUE, LITTLE_ENDIAN);
         byteBuffer.limit(SIZE_OF_INT).position(0);
-        final long filePosition = (index * ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
+        final long filePosition = (index * (long)ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
 
         try
         {
@@ -959,7 +959,7 @@ public class RecordingLog implements AutoCloseable
     {
         buffer.putLong(0, value, LITTLE_ENDIAN);
         byteBuffer.limit(SIZE_OF_LONG).position(0);
-        final long filePosition = (entryIndex * ENTRY_LENGTH) + fieldOffset;
+        final long filePosition = (entryIndex * (long)ENTRY_LENGTH) + fieldOffset;
 
         try
         {

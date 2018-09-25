@@ -52,6 +52,11 @@ std::string makeTempFileName()
 #endif
 }
 
+void throwIllegalArgumentException()
+{
+    throw util::IllegalArgumentException("Intentional IllegalArgumentException", SOURCEINFO);
+}
+
 }}
 
 #endif //AERON_TESTUTILS_H

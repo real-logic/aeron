@@ -170,7 +170,7 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
         {
             int errcode = errno;
 
-            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
             result = -1;
         }
     }
@@ -324,7 +324,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "socket %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "socket %s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         goto cleanup;
     }
 
@@ -334,7 +334,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "getsockopt(SO_SNDBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "getsockopt(SO_SNDBUF) %s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         goto cleanup;
     }
 
@@ -344,7 +344,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "getsockopt(SO_RCVBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "getsockopt(SO_RCVBUF) %s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         goto cleanup;
     }
 
@@ -359,7 +359,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
         {
             int errcode = errno;
 
-            aeron_set_err(errcode, "setsockopt(SO_SNDBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err(errcode, "setsockopt(SO_SNDBUF) %s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
             goto cleanup;
         }
 
@@ -368,7 +368,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
         {
             int errcode = errno;
 
-            aeron_set_err(errcode, "getsockopt(SO_SNDBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err(errcode, "getsockopt(SO_SNDBUF) %s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
             goto cleanup;
         }
 
@@ -393,7 +393,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
         {
             int errcode = errno;
 
-            aeron_set_err(errcode, "setsockopt(SO_RCVBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err(errcode, "setsockopt(SO_RCVBUF) %s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
             goto cleanup;
         }
 
@@ -402,7 +402,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
         {
             int errcode = errno;
 
-            aeron_set_err(errcode, "getsockopt(SO_RCVBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err(errcode, "getsockopt(SO_RCVBUF) %s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
             goto cleanup;
         }
 
@@ -536,7 +536,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         goto error;
     }
 

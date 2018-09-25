@@ -54,7 +54,7 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
 {
     if (NULL == counters || NULL == manager)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILENAME__, __LINE__, strerror(EINVAL));
         return -1;
     }
 
@@ -63,7 +63,7 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         return -1;
     }
 

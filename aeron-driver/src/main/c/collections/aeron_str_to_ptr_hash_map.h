@@ -76,7 +76,7 @@ inline int aeron_str_to_ptr_hash_map_init(
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         return -1;
     }
 
@@ -84,7 +84,7 @@ inline int aeron_str_to_ptr_hash_map_init(
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         return -1;
     }
 
@@ -116,7 +116,7 @@ inline int aeron_str_to_ptr_hash_map_rehash(aeron_str_to_ptr_hash_map_t *map, si
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         return -1;
     }
 
@@ -124,7 +124,7 @@ inline int aeron_str_to_ptr_hash_map_rehash(aeron_str_to_ptr_hash_map_t *map, si
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
         return -1;
     }
 

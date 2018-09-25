@@ -19,10 +19,14 @@
 #include <util/ScopeUtils.h>
 #include <util/StringUtil.h>
 #include <util/BitUtil.h>
+#include "TestUtils.h"
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
+
 
 using namespace aeron::util;
+using namespace aeron::test;
 
 TEST(utilTests, scopeTest)
 {
@@ -102,4 +106,19 @@ TEST(utilTests, numberOfTrailingZeroes)
     EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x0000FFFF), 0);
     EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0xFFFF0000), 16);
     EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x00000001), 0);
+}
+
+TEST(utilTests, sourcedExceptionContainsRelativePath)
+{
+    EXPECT_THROW({
+        try
+        {
+            throwIllegalArgumentException();
+        }
+        catch(const SourcedException& e)
+        {
+            EXPECT_THAT(e.where(), ::testing::HasSubstr(" aeron-client/"));
+            throw;
+        }
+    }, SourcedException);
 }

@@ -35,7 +35,7 @@ int aeron_broadcast_transmitter_init(volatile aeron_broadcast_transmitter_t *tra
     }
     else
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILENAME__, __LINE__, strerror(EINVAL));
     }
 
     return result;

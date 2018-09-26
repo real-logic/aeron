@@ -1032,51 +1032,28 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         final ClusterMember[] newMembers = ClusterMember.parse(clusterMembers);
 
-        // TODO: if one joining, then simply install clusterMembers and add as follower.
-
-        // TODO: if one leaving, then set terminationHook, etc. and shutdown.
-
-        if (Cluster.Role.LEADER == role)
+        if (memberId == this.memberId)
         {
-            final ClusterMember eventMember = clusterMemberByIdMap.computeIfAbsent(
-                memberId,
-                (id) -> ClusterMember.findMember(newMembers, id));
-
-            if (ChangeType.JOIN == eventType)
+            if (eventType == ChangeType.JOIN)
             {
-                ClusterMember.removeMember(passiveMembers, memberId);
-                this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
-
-                if (null == eventMember.publication())
-                {
-                    final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
-
-                    ClusterMember.addMemberStatusPublication(
-                        eventMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
-
-                    logPublisher.addPassiveFollower(eventMember.logEndpoint());
-                }
+                //TODO: install clusterMembers and add as follower
             }
-            else if (ChangeType.LEAVE == eventType)
+            else if (eventType == ChangeType.LEAVE)
             {
-                ClusterMember.removeMember(this.clusterMembers, memberId);
-                passiveMembers = ClusterMember.addMember(passiveMembers, eventMember);
+                expectedAckPosition = logPosition;
+                state(ConsensusModule.State.ABORT);
             }
+
+            return;
         }
-        else
-        {
-            final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
 
-            if (ChangeType.JOIN == eventType)
-            {
-                this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
-                clusterMemberByIdMap.put(memberId, eventMember);
-            }
-            else if (ChangeType.LEAVE == eventType)
-            {
-                this.clusterMembers = ClusterMember.removeMember(this.clusterMembers, memberId);
-                clusterMemberByIdMap.remove(memberId);
-            }
+        if (ChangeType.JOIN == eventType)
+        {
+            clusterMemberJoined(memberId, newMembers);
+        }
+        else if (ChangeType.LEAVE == eventType)
+        {
+            clusterMemberLeft(memberId, newMembers);
         }
     }
 
@@ -2127,6 +2104,56 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             this.leadershipTermId = leadershipTermId;
             expectedAckPosition = logPosition;
             state(newState);
+        }
+    }
+
+    private void clusterMemberJoined(final int memberId, final ClusterMember[] newMembers)
+    {
+        if (Cluster.Role.LEADER == role)
+        {
+            final ClusterMember eventMember = clusterMemberByIdMap.computeIfAbsent(
+                memberId,
+                (id) -> ClusterMember.findMember(newMembers, id));
+
+            ClusterMember.removeMember(passiveMembers, memberId);
+            this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
+
+            if (null == eventMember.publication())
+            {
+                final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+
+                ClusterMember.addMemberStatusPublication(
+                    eventMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+
+                logPublisher.addPassiveFollower(eventMember.logEndpoint());
+            }
+        }
+        else
+        {
+            final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
+
+            this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
+            clusterMemberByIdMap.put(memberId, eventMember);
+        }
+    }
+
+    private void clusterMemberLeft(final int memberId, final ClusterMember[] newMembers)
+    {
+        if (Cluster.Role.LEADER == role)
+        {
+            final ClusterMember eventMember = clusterMemberByIdMap.computeIfAbsent(
+                memberId,
+                (id) -> ClusterMember.findMember(newMembers, id));
+
+            ClusterMember.removeMember(this.clusterMembers, memberId);
+            passiveMembers = ClusterMember.addMember(passiveMembers, eventMember);
+        }
+        else
+        {
+            final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
+
+            this.clusterMembers = ClusterMember.removeMember(this.clusterMembers, memberId);
+            clusterMemberByIdMap.remove(memberId);
         }
     }
 

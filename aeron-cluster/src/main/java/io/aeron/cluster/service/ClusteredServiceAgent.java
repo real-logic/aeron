@@ -371,7 +371,13 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         this.clusterTimeMs = timestampMs;
 
-        // TODO: should service know of change?
+        // TODO: inform service of cluster membership change
+
+        if (memberId == this.memberId && eventType == ChangeType.LEAVE)
+        {
+            consensusModuleProxy.ack(logPosition, ackId++, serviceId);
+            ctx.terminationHook().run();
+        }
     }
 
     void addSession(

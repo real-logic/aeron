@@ -693,16 +693,39 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         // TODO: setup for loading snapshots
     }
 
+    @SuppressWarnings("unused")
     public void onJoinCluster(final long leadershipTermId, final int memberId)
     {
-        // TODO: add member officially from passive. Keep existing publication.
-        // TODO: send ClusterChange event to log
+        final ClusterMember member = clusterMemberByIdMap.get(memberId);
+
+        if (null == election && Cluster.Role.LEADER == role && null != member)
+        {
+            member.hasRequestJoin(true);
+        }
     }
 
+    @SuppressWarnings("unused")
     public void onLeaveCluster(final long leadershipTermId, final int memberId)
     {
-        // TODO: change member officially to passive.
-        // TODO: send ClusterChange event to log
+        final ClusterMember member = clusterMemberByIdMap.get(memberId);
+
+        if (null == election && Cluster.Role.LEADER == role && null != member)
+        {
+            final ClusterMember[] newMembers = ClusterMember.removeMember(clusterMembers, memberId);
+
+            if (logPublisher.appendClusterChangeEvent(
+                this.leadershipTermId,
+                logPublisher.position(),  // TODO: not needed?
+                clusterTimeMs,
+                memberId,
+                newMembers.length,
+                ChangeType.LEAVE,
+                memberId,
+                ClusterMember.membersString(newMembers)))
+            {
+                timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
+            }
+        }
     }
 
     void state(final ConsensusModule.State state)
@@ -1009,7 +1032,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         final ClusterMember[] newMembers = ClusterMember.parse(clusterMembers);
 
-        // TODO: if one being added, then simply install clusterMembers and add as follower.
+        // TODO: if one joining, then simply install clusterMembers and add as follower.
+
+        // TODO: if one leaving, then set terminationHook, etc. and shutdown.
 
         if (Cluster.Role.LEADER == role)
         {
@@ -1621,6 +1646,25 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     ClusterMember.membersString(passiveMembers)))
                 {
                     member.changeCorrelationId(Aeron.NULL_VALUE);
+                    workCount++;
+                }
+            }
+            else if (member.hasRequestedJoin() && member.logPosition() == logPublisher.position())
+            {
+                final ClusterMember[] newMembers = ClusterMember.addMember(clusterMembers, member);
+
+                if (logPublisher.appendClusterChangeEvent(
+                    this.leadershipTermId,
+                    logPublisher.position(),  // TODO: not needed?
+                    clusterTimeMs,
+                    member.id(),
+                    newMembers.length,
+                    ChangeType.JOIN,
+                    member.id(),
+                    ClusterMember.membersString(newMembers)))
+                {
+                    timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
+                    member.hasRequestJoin(false);
                     workCount++;
                 }
             }

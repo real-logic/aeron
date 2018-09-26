@@ -761,7 +761,7 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Stream id within a channel for receiving messages from a cluster.
          */
-        public static final String EGRESS_STREAM_ID_PROP_NAME = "aeron.archive.control.response.stream.id";
+        public static final String EGRESS_STREAM_ID_PROP_NAME = "aeron.cluster.egress.stream.id";
 
         /**
          * Default stream id within a channel for receiving messages from a cluster.

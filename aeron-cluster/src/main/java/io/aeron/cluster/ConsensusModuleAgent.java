@@ -1040,6 +1040,14 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
             else if (eventType == ChangeType.LEAVE)
             {
+                if (leaderMember.id() != memberId)
+                {
+                    memberStatusPublisher.removeClusterMember(
+                        leaderMember.publication(),
+                        aeron.nextCorrelationId(),
+                        memberId);
+                }
+
                 expectedAckPosition = logPosition;
                 state(ConsensusModule.State.ABORT);
             }

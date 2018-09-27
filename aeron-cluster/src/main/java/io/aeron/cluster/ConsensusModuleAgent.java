@@ -60,7 +60,6 @@ import static io.aeron.cluster.ConsensusModule.Configuration.*;
 
 class ConsensusModuleAgent implements Agent, MemberStatusListener
 {
-    private final int memberId;
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
     private final long leaderHeartbeatTimeoutMs;
@@ -75,6 +74,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long cachedTimeMs;
     private long clusterTimeMs = NULL_VALUE;
     private long lastRecordingId = RecordingPos.NULL_RECORDING_ID;
+    private int memberId;
     private int logPublicationInitialTermId = NULL_VALUE;
     private int logPublicationTermBufferLength = NULL_VALUE;
     private int logPublicationMtuLength = NULL_VALUE;
@@ -86,7 +86,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private ClusterMember[] clusterMembers;
     private ClusterMember[] passiveMembers = new ClusterMember[0];
     private ClusterMember leaderMember;
-    private final ClusterMember thisMember;
+    private ClusterMember thisMember;
     private long[] rankedPositions;
     private final ServiceAck[] serviceAcks;
     private final Counter clusterRoleCounter;
@@ -157,7 +157,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
         role(Cluster.Role.FOLLOWER);
 
-        thisMember = clusterMembers[memberId];
+        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+        thisMember = clusterMemberByIdMap.get(memberId);
         leaderMember = thisMember;
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
         memberStatusUri.put(ENDPOINT_PARAM_NAME, thisMember.memberFacingEndpoint());
@@ -166,7 +167,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         memberStatusAdapter = new MemberStatusAdapter(
             aeron.addSubscription(memberStatusUri.toString(), statusStreamId), this);
 
-        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
         ClusterMember.addMemberStatusPublications(clusterMembers, thisMember, memberStatusUri, statusStreamId, aeron);
 
         ingressAdapter = new IngressAdapter(this, ctx.invalidRequestCounter());
@@ -1068,6 +1068,32 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     void onReloadState(final long nextSessionId)
     {
         this.nextSessionId = nextSessionId;
+    }
+
+    void onReloadClusterMembers(final int memberId, final int highMemberId, final String members)
+    {
+        // TODO: this must be superset of any configured cluster members, unless being overridden
+
+        final ClusterMember[] snapshotClusterMembers = ClusterMember.parse(members);
+
+        if (Aeron.NULL_VALUE == this.memberId)
+        {
+            this.memberId = memberId;
+        }
+
+        if (null == this.clusterMembers)
+        {
+            clusterMembers = snapshotClusterMembers;
+            this.highMemberId = Math.max(ClusterMember.highMemberId(clusterMembers), highMemberId);
+            rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
+            thisMember = clusterMemberByIdMap.get(this.memberId);
+
+            final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+            memberStatusUri.put(ENDPOINT_PARAM_NAME, thisMember.memberFacingEndpoint());
+
+            ClusterMember.addMemberStatusPublications(
+                clusterMembers, thisMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+        }
     }
 
     Publication addNewLogPublication()
@@ -2040,6 +2066,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         timerService.snapshot(snapshotTaker);
         snapshotTaker.consensusModuleState(nextSessionId);
+        snapshotTaker.clusterMembers(memberId, highMemberId, clusterMembers);
 
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
@@ -2117,6 +2144,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void clusterMemberJoined(final int memberId, final ClusterMember[] newMembers)
     {
+        highMemberId = Math.max(highMemberId, memberId);
+
         if (Cluster.Role.LEADER == role)
         {
             final ClusterMember eventMember = clusterMemberByIdMap.computeIfAbsent(

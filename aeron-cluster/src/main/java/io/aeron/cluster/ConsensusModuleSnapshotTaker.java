@@ -29,6 +29,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
     private final ClusterSessionEncoder clusterSessionEncoder = new ClusterSessionEncoder();
     private final TimerEncoder timerEncoder = new TimerEncoder();
     private final ConsensusModuleEncoder consensusModuleEncoder = new ConsensusModuleEncoder();
+    private final ClusterMembersEncoder clusterMembersEncoder = new ClusterMembersEncoder();
 
     ConsensusModuleSnapshotTaker(
         final Publication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronClientInvoker)
@@ -100,6 +101,32 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
                 consensusModuleEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .nextSessionId(nextSessionId);
+
+                bufferClaim.commit();
+                break;
+            }
+
+            checkResultAndIdle(result);
+        }
+    }
+
+    void clusterMembers(final int memberId, final int highMemberId, final ClusterMember[] members)
+    {
+        final String clusterMembers = ClusterMember.membersString(members);
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersEncoder.BLOCK_LENGTH +
+            ClusterMembersEncoder.clusterMembersHeaderLength() + clusterMembers.length();
+
+        idleStrategy.reset();
+        while (true)
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                clusterMembersEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .memberId(memberId)
+                    .highMemberId(highMemberId)
+                    .clusterMembers(clusterMembers);
 
                 bufferClaim.commit();
                 break;

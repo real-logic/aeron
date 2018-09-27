@@ -35,6 +35,7 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
     private final ClusterSessionDecoder clusterSessionDecoder = new ClusterSessionDecoder();
     private final TimerDecoder timerDecoder = new TimerDecoder();
     private final ConsensusModuleDecoder consensusModuleDecoder = new ConsensusModuleDecoder();
+    private final ClusterMembersDecoder clusterMembersDecoder = new ClusterMembersDecoder();
     private final Image image;
     private final ConsensusModuleAgent consensusModuleAgent;
 
@@ -129,6 +130,19 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.version());
 
                 consensusModuleAgent.onReloadState(consensusModuleDecoder.nextSessionId());
+                break;
+
+            case ClusterMembersDecoder.TEMPLATE_ID:
+                clusterMembersDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                consensusModuleAgent.onReloadClusterMembers(
+                    clusterMembersDecoder.memberId(),
+                    clusterMembersDecoder.highMemberId(),
+                    clusterMembersDecoder.clusterMembers());
                 break;
 
             default:

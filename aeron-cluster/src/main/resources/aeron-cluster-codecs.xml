@@ -570,4 +570,12 @@
         <field name="nextSessionId"        id="1" type="int64"/>
     </sbe:message>
 
+    <sbe:message name="ClusterMembers"
+                 id="106"
+                 description="Serialized state of Cluster Members">
+        <field name="memberId"              id="1" type="int32"/>
+        <field name="highMemberId"          id="2" type="int32"/>
+        <data  name="clusterMembers"        id="1" type="varAsciiEncoding"/>
+    </sbe:message>
+
 </sbe:messageSchema>

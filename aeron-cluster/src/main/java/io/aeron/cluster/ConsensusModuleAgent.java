@@ -2154,6 +2154,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             ClusterMember.removeMember(passiveMembers, memberId);
             this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
+            rankedPositions = new long[this.clusterMembers.length];
 
             if (null == eventMember.publication())
             {
@@ -2171,6 +2172,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
             clusterMemberByIdMap.put(memberId, eventMember);
+            rankedPositions = new long[this.clusterMembers.length];
         }
     }
 
@@ -2183,6 +2185,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 (id) -> ClusterMember.findMember(newMembers, id));
 
             ClusterMember.removeMember(this.clusterMembers, memberId);
+            rankedPositions = new long[this.clusterMembers.length];
             passiveMembers = ClusterMember.addMember(passiveMembers, eventMember);
         }
         else
@@ -2191,6 +2194,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             this.clusterMembers = ClusterMember.removeMember(this.clusterMembers, memberId);
             clusterMemberByIdMap.remove(memberId);
+            rankedPositions = new long[this.clusterMembers.length];
         }
     }
 

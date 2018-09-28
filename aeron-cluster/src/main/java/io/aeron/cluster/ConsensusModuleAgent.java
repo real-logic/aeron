@@ -60,7 +60,6 @@ import static io.aeron.cluster.ConsensusModule.Configuration.*;
 
 class ConsensusModuleAgent implements Agent, MemberStatusListener
 {
-    private final int memberId;
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
     private final long leaderHeartbeatTimeoutMs;
@@ -75,6 +74,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long cachedTimeMs;
     private long clusterTimeMs = NULL_VALUE;
     private long lastRecordingId = RecordingPos.NULL_RECORDING_ID;
+    private int memberId;
     private int logPublicationInitialTermId = NULL_VALUE;
     private int logPublicationTermBufferLength = NULL_VALUE;
     private int logPublicationMtuLength = NULL_VALUE;
@@ -86,7 +86,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private ClusterMember[] clusterMembers;
     private ClusterMember[] passiveMembers = new ClusterMember[0];
     private ClusterMember leaderMember;
-    private final ClusterMember thisMember;
+    private ClusterMember thisMember;
     private long[] rankedPositions;
     private final ServiceAck[] serviceAcks;
     private final Counter clusterRoleCounter;
@@ -157,7 +157,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
         role(Cluster.Role.FOLLOWER);
 
-        thisMember = clusterMembers[memberId];
+        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+        thisMember = clusterMemberByIdMap.get(memberId);
         leaderMember = thisMember;
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
         memberStatusUri.put(ENDPOINT_PARAM_NAME, thisMember.memberFacingEndpoint());
@@ -166,7 +167,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         memberStatusAdapter = new MemberStatusAdapter(
             aeron.addSubscription(memberStatusUri.toString(), statusStreamId), this);
 
-        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
         ClusterMember.addMemberStatusPublications(clusterMembers, thisMember, memberStatusUri, statusStreamId, aeron);
 
         ingressAdapter = new IngressAdapter(this, ctx.invalidRequestCounter());
@@ -1032,57 +1032,68 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         final ClusterMember[] newMembers = ClusterMember.parse(clusterMembers);
 
-        // TODO: if one joining, then simply install clusterMembers and add as follower.
-
-        // TODO: if one leaving, then set terminationHook, etc. and shutdown.
-
-        if (Cluster.Role.LEADER == role)
+        if (memberId == this.memberId)
         {
-            final ClusterMember eventMember = clusterMemberByIdMap.computeIfAbsent(
-                memberId,
-                (id) -> ClusterMember.findMember(newMembers, id));
-
-            if (ChangeType.JOIN == eventType)
+            if (eventType == ChangeType.JOIN)
             {
-                ClusterMember.removeMember(passiveMembers, memberId);
-                this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
-
-                if (null == eventMember.publication())
+                //TODO: install clusterMembers and add as follower
+            }
+            else if (eventType == ChangeType.LEAVE)
+            {
+                if (leaderMember.id() != memberId)
                 {
-                    final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
-
-                    ClusterMember.addMemberStatusPublication(
-                        eventMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
-
-                    logPublisher.addPassiveFollower(eventMember.logEndpoint());
+                    memberStatusPublisher.removeClusterMember(
+                        leaderMember.publication(),
+                        aeron.nextCorrelationId(),
+                        memberId);
                 }
-            }
-            else if (ChangeType.LEAVE == eventType)
-            {
-                ClusterMember.removeMember(this.clusterMembers, memberId);
-                passiveMembers = ClusterMember.addMember(passiveMembers, eventMember);
-            }
-        }
-        else
-        {
-            final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
 
-            if (ChangeType.JOIN == eventType)
-            {
-                this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
-                clusterMemberByIdMap.put(memberId, eventMember);
+                expectedAckPosition = logPosition;
+                state(ConsensusModule.State.ABORT);
             }
-            else if (ChangeType.LEAVE == eventType)
-            {
-                this.clusterMembers = ClusterMember.removeMember(this.clusterMembers, memberId);
-                clusterMemberByIdMap.remove(memberId);
-            }
+
+            return;
+        }
+
+        if (ChangeType.JOIN == eventType)
+        {
+            clusterMemberJoined(memberId, newMembers);
+        }
+        else if (ChangeType.LEAVE == eventType)
+        {
+            clusterMemberLeft(memberId, newMembers);
         }
     }
 
     void onReloadState(final long nextSessionId)
     {
         this.nextSessionId = nextSessionId;
+    }
+
+    void onReloadClusterMembers(final int memberId, final int highMemberId, final String members)
+    {
+        // TODO: this must be superset of any configured cluster members, unless being overridden
+
+        final ClusterMember[] snapshotClusterMembers = ClusterMember.parse(members);
+
+        if (Aeron.NULL_VALUE == this.memberId)
+        {
+            this.memberId = memberId;
+        }
+
+        if (null == this.clusterMembers)
+        {
+            clusterMembers = snapshotClusterMembers;
+            this.highMemberId = Math.max(ClusterMember.highMemberId(clusterMembers), highMemberId);
+            rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
+            thisMember = clusterMemberByIdMap.get(this.memberId);
+
+            final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+            memberStatusUri.put(ENDPOINT_PARAM_NAME, thisMember.memberFacingEndpoint());
+
+            ClusterMember.addMemberStatusPublications(
+                clusterMembers, thisMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+        }
     }
 
     Publication addNewLogPublication()
@@ -2055,6 +2066,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         timerService.snapshot(snapshotTaker);
         snapshotTaker.consensusModuleState(nextSessionId);
+        snapshotTaker.clusterMembers(memberId, highMemberId, clusterMembers);
 
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
@@ -2127,6 +2139,58 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             this.leadershipTermId = leadershipTermId;
             expectedAckPosition = logPosition;
             state(newState);
+        }
+    }
+
+    private void clusterMemberJoined(final int memberId, final ClusterMember[] newMembers)
+    {
+        highMemberId = Math.max(highMemberId, memberId);
+
+        if (Cluster.Role.LEADER == role)
+        {
+            final ClusterMember eventMember = clusterMemberByIdMap.computeIfAbsent(
+                memberId,
+                (id) -> ClusterMember.findMember(newMembers, id));
+
+            ClusterMember.removeMember(passiveMembers, memberId);
+            this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
+
+            if (null == eventMember.publication())
+            {
+                final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+
+                ClusterMember.addMemberStatusPublication(
+                    eventMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+
+                logPublisher.addPassiveFollower(eventMember.logEndpoint());
+            }
+        }
+        else
+        {
+            final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
+
+            this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
+            clusterMemberByIdMap.put(memberId, eventMember);
+        }
+    }
+
+    private void clusterMemberLeft(final int memberId, final ClusterMember[] newMembers)
+    {
+        if (Cluster.Role.LEADER == role)
+        {
+            final ClusterMember eventMember = clusterMemberByIdMap.computeIfAbsent(
+                memberId,
+                (id) -> ClusterMember.findMember(newMembers, id));
+
+            ClusterMember.removeMember(this.clusterMembers, memberId);
+            passiveMembers = ClusterMember.addMember(passiveMembers, eventMember);
+        }
+        else
+        {
+            final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
+
+            this.clusterMembers = ClusterMember.removeMember(this.clusterMembers, memberId);
+            clusterMemberByIdMap.remove(memberId);
         }
     }
 

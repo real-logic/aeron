@@ -21,7 +21,7 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '2.0.4' apply false
+    id 'com.github.johnrengelman.shadow' version '4.0.0' apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'

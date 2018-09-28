@@ -63,7 +63,7 @@ public class ReplaySessionTest
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
     private final ControlSession mockControlSession = mock(ControlSession.class);
     private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
-    private final Counter position = mock(Counter.class);
+    private final Counter recordingPositionCounter = mock(Counter.class);
 
     private int messageCounter = 0;
 
@@ -78,8 +78,8 @@ public class ReplaySessionTest
     @Before
     public void before() throws IOException
     {
-        when(position.getWeak()).then((invocation) -> positionLong);
-        when(position.get()).then((invocation) -> positionLong);
+        when(recordingPositionCounter.getWeak()).then((invocation) -> positionLong);
+        when(recordingPositionCounter.get()).then((invocation) -> positionLong);
         when(mockArchiveConductor.catalog()).thenReturn(mockCatalog);
 
         doAnswer(
@@ -88,7 +88,7 @@ public class ReplaySessionTest
                 positionLong = invocation.getArgument(0);
                 return null;
             })
-            .when(position).setOrdered(anyLong());
+            .when(recordingPositionCounter).setOrdered(anyLong());
 
         doAnswer(
             (invocation) ->
@@ -97,7 +97,7 @@ public class ReplaySessionTest
                 positionLong += delta;
                 return null;
             })
-            .when(position).getAndAddOrdered(anyLong());
+            .when(recordingPositionCounter).getAndAddOrdered(anyLong());
 
         context = new Archive.Context()
             .archiveDir(archiveDir)
@@ -113,7 +113,13 @@ public class ReplaySessionTest
         recordingSummary.sessionId = SESSION_ID;
 
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, START_POSITION, JOIN_POSITION, TERM_BUFFER_LENGTH, context, ARCHIVE_DIR_CHANNEL, position);
+            RECORDING_ID,
+            START_POSITION,
+            JOIN_POSITION,
+            TERM_BUFFER_LENGTH,
+            context,
+            ARCHIVE_DIR_CHANNEL,
+            recordingPositionCounter);
 
         writer.init(INITIAL_TERM_OFFSET);
 
@@ -221,7 +227,8 @@ public class ReplaySessionTest
             FRAME_LENGTH,
             correlationId,
             mockReplayPub,
-            mockControlSession))
+            mockControlSession,
+            recordingPositionCounter))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -264,7 +271,7 @@ public class ReplaySessionTest
             epochClock,
             mockReplayPub,
             recordingSummary,
-            position);
+            recordingPositionCounter);
     }
 
     @Test
@@ -278,7 +285,8 @@ public class ReplaySessionTest
             length,
             correlationId,
             mockReplayPub,
-            mockControlSession))
+            mockControlSession,
+            null))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -319,7 +327,8 @@ public class ReplaySessionTest
             length,
             correlationId,
             mockReplayPub,
-            mockControlSession))
+            mockControlSession,
+            recordingPositionCounter))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -342,10 +351,16 @@ public class ReplaySessionTest
         recordingSummary.stopPosition = NULL_POSITION;
 
         when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
-        position.setOrdered(START_POSITION);
+        recordingPositionCounter.setOrdered(START_POSITION);
 
         final RecordingWriter writer = new RecordingWriter(
-            recordingId, START_POSITION, JOIN_POSITION, TERM_BUFFER_LENGTH, context, ARCHIVE_DIR_CHANNEL, position);
+            recordingId,
+            START_POSITION,
+            JOIN_POSITION,
+            TERM_BUFFER_LENGTH,
+            context,
+            ARCHIVE_DIR_CHANNEL,
+            recordingPositionCounter);
 
         writer.init(INITIAL_TERM_OFFSET);
 
@@ -368,7 +383,8 @@ public class ReplaySessionTest
             length,
             correlationId,
             mockReplayPub,
-            mockControlSession))
+            mockControlSession,
+            recordingPositionCounter))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -399,7 +415,7 @@ public class ReplaySessionTest
 
             writer.close();
 
-            when(position.isClosed()).thenReturn(true);
+            when(recordingPositionCounter.isClosed()).thenReturn(true);
             when(mockCatalog.stopPosition(recordingId)).thenReturn(START_POSITION + FRAME_LENGTH * 4);
             assertNotEquals(0, replaySession.doWork());
 
@@ -470,7 +486,8 @@ public class ReplaySessionTest
         final long length,
         final long correlationId,
         final ExclusivePublication replay,
-        final ControlSession control)
+        final ControlSession control,
+        final Counter recordingPositionCounter)
     {
         return new ReplaySession(
             recordingPosition,
@@ -484,7 +501,7 @@ public class ReplaySessionTest
             epochClock,
             replay,
             recordingSummary,
-            position);
+            recordingPositionCounter);
     }
 
     private static void validateFrame(final UnsafeBuffer buffer, final int message, final byte flags)

@@ -82,10 +82,8 @@ class RecordingFragmentReader implements AutoCloseable
 
         final long startPosition = recordingSummary.startPosition;
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
-        final long stopPosition = recordingSummary.stopPosition;
-        this.stopPosition = stopPosition == NULL_POSITION ? recordingPosition.get() : stopPosition;
-
-        final long maxLength = recordingPosition == null ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
+        stopPosition = null == recordingPosition ? recordingSummary.stopPosition : recordingPosition.get();
+        final long maxLength = null == recordingPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
         final long replayLength = length == AeronArchive.NULL_LENGTH ? maxLength : Math.min(length, maxLength);
         if (replayLength < 0)
         {

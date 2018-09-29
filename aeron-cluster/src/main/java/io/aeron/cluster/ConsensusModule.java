@@ -287,6 +287,18 @@ public class ConsensusModule implements AutoCloseable
             "0,localhost:10000,localhost:20000,localhost:30000,localhost:40000,localhost:8010";
 
         /**
+         * Property name for the comma separated list of cluster member status endpoints used for adding passive
+         * followers as well as dynamic join of a cluster.
+         */
+        public static final String CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME =
+            "aeron.cluster.members.status.endpoints";
+
+        /**
+         * Default property for the list of cluster member status endpoints.
+         */
+        public static final String CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT = "";
+
+        /**
          * Channel for the clustered log.
          */
         public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
@@ -547,6 +559,19 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * The value {@link #CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT} or system property
+         * {@link #CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT} or system property
+         * {@link #CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME} it set.
+         */
+        public static String clusterMembersStatusEndpoints()
+        {
+            return System.getProperty(
+                CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME, CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT);
+        }
+
+        /**
          * The value {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
          *
          * @return {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
@@ -771,6 +796,7 @@ public class ConsensusModule implements AutoCloseable
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
         private String clusterMembers = Configuration.clusterMembers();
+        private String clusterMembersStatusEndpoints = Configuration.clusterMembersStatusEndpoints();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private String logChannel = Configuration.logChannel();
@@ -1219,6 +1245,33 @@ public class ConsensusModule implements AutoCloseable
         public String clusterMembers()
         {
             return clusterMembers;
+        }
+
+        /**
+         * String representing the cluster members member status endpoints used to request to join the cluster.
+         * <p>
+         * {@code "0=endpoint,1=endpoint,2=endpoint"}
+         * <p>
+         *
+         * @param endpoints which are to be contacted for joining the cluster.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME
+         */
+        public Context clusterMembersStatusEndpoints(final String endpoints)
+        {
+            this.clusterMembersStatusEndpoints = endpoints;
+            return this;
+        }
+
+        /**
+         * The endpoints representing cluster members of the cluster to attempt to contact to join the cluster.
+         *
+         * @return members of the cluster to attempt to request to join from.
+         * @see Configuration#CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME
+         */
+        public String clusterMembersStatusEndpoints()
+        {
+            return clusterMembersStatusEndpoints;
         }
 
         /**

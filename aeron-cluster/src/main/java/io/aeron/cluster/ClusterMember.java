@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
+import org.agrona.AsciiEncoding;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -413,6 +414,38 @@ public final class ClusterMember
             memberAttributes[4],
             memberAttributes[5],
             endpointsDetail);
+    }
+
+    public static ClusterMember[] parseAsStatusEndpoints(final String statusEndpoints)
+    {
+        final String[] memberEndpoints = statusEndpoints.split(",");
+        final int length = memberEndpoints.length;
+        final ClusterMember[] members = new ClusterMember[length];
+
+        for (int i = 0; i < length; i++)
+        {
+            final String endpoint = memberEndpoints[i];
+            final int index = endpoint.indexOf('=');
+            if (-1 == index)
+            {
+                throw new ClusterException(
+                    "invalid format - endpoint missing '=' separator: " + statusEndpoints);
+            }
+
+            final int memberId = AsciiEncoding.parseIntAscii(endpoint, 0, index);
+            final String memberStatusEndpoint = endpoint.substring(index + 1);
+
+            members[i] = new ClusterMember(
+                memberId,
+                null,
+                memberStatusEndpoint,
+                null,
+                null,
+                null,
+                null);
+        }
+
+        return members;
     }
 
     /**

@@ -304,7 +304,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (Cluster.Role.LEADER != role)
         {
             final ClusterSession session = new ClusterSession(Aeron.NULL_VALUE, responseStreamId, responseChannel);
-            session.lastActivity(clusterTimeMs, correlationId);
+            session.lastActivity(cachedTimeMs, correlationId);
             session.connect(aeron);
             redirectSessions.add(session);
             return;

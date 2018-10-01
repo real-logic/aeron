@@ -587,7 +587,7 @@ public class RecordingLog implements AutoCloseable
         final int index = (int)indexByLeadershipTermIdMap.get(leadershipTermId);
         if (NULL_VALUE == index)
         {
-            throw new ClusterException("Unknown leadershipTermId=" + leadershipTermId);
+            throw new ClusterException("unknown leadershipTermId=" + leadershipTermId);
         }
 
         return entries.get(index);
@@ -598,13 +598,13 @@ public class RecordingLog implements AutoCloseable
      * and can optionally include snapshots or not.
      *
      * @param fromLeadershipTermId include value from which the query begins.
-     * @param entryCount           to limit the results.
+     * @param entryLimit           to limit the number of returned results.
      * @param includeSnapshots     to be included in the results.
      * @param results              into which the found entries will be placed.
      */
     public void findEntries(
         final long fromLeadershipTermId,
-        final int entryCount,
+        final int entryLimit,
         final boolean includeSnapshots,
         final List<Entry> results)
     {
@@ -614,7 +614,7 @@ public class RecordingLog implements AutoCloseable
             return;
         }
 
-        for (int size = entries.size(), count = 0; index < size && count < entryCount; index++)
+        for (int size = entries.size(), count = 0; index < size && count < entryLimit; index++)
         {
             final Entry entry = entries.get(index);
             if (ENTRY_TYPE_SNAPSHOT == entry.type && !includeSnapshots)
@@ -1022,7 +1022,7 @@ public class RecordingLog implements AutoCloseable
             {
                 if ((snapshotIndex - i) < 0)
                 {
-                    throw new ClusterException("Snapshot missing for service at index " + i + " in " + entries);
+                    throw new ClusterException("snapshot missing for service at index " + i + " in " + entries);
                 }
 
                 final Entry entry = entries.get(snapshotIndex - 1);

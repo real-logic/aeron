@@ -307,21 +307,22 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             session.lastActivity(cachedTimeMs, correlationId);
             session.connect(aeron);
             redirectSessions.add(session);
-            return;
-        }
-
-        final ClusterSession session = new ClusterSession(nextSessionId++, responseStreamId, responseChannel);
-        session.lastActivity(clusterTimeMs, correlationId);
-        session.connect(aeron);
-
-        if (pendingSessions.size() + sessionByIdMap.size() < ctx.maxConcurrentSessions())
-        {
-            authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeMs);
-            pendingSessions.add(session);
         }
         else
         {
-            rejectedSessions.add(session);
+            final ClusterSession session = new ClusterSession(nextSessionId++, responseStreamId, responseChannel);
+            session.lastActivity(clusterTimeMs, correlationId);
+            session.connect(aeron);
+
+            if (pendingSessions.size() + sessionByIdMap.size() < ctx.maxConcurrentSessions())
+            {
+                authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeMs);
+                pendingSessions.add(session);
+            }
+            else
+            {
+                rejectedSessions.add(session);
+            }
         }
     }
 

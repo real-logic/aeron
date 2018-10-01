@@ -367,7 +367,7 @@ class Election implements AutoCloseable
                 this.logPosition = logPosition;
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
-            else if (this.logPosition < logPosition && NULL_POSITION == catchupLogPosition)
+            else if (this.logPosition <= logPosition && NULL_POSITION == catchupLogPosition)
             {
                 this.leadershipTermId = leadershipTermId;
                 this.candidateTermId = NULL_VALUE;

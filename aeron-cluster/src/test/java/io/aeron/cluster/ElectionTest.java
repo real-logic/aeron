@@ -599,38 +599,6 @@ public class ElectionTest
         verify(consensusModuleAgent).role(Cluster.Role.FOLLOWER);
     }
 
-    @Test
-    public void shouldBecomeFollowerIfEnteringStableClusterWithNoState()
-    {
-        final long leadershipTermId = Aeron.NULL_VALUE;
-        final long logPosition = 0L;
-        final int logSessionId = -777;
-
-        final ClusterMember[] clusterMembers = prepareClusterMembers();
-        final ClusterMember followerMember = clusterMembers[1];
-
-        final Election election = newElection(leadershipTermId, logPosition, clusterMembers, followerMember);
-
-        assertThat(election.state(), is(Election.State.INIT));
-
-        final long t1 = 1;
-        election.doWork(t1);
-        assertThat(election.state(), is(Election.State.CANVASS));
-
-        final long currentLeadershipTermId = 0L;
-        final long currentBaseLogPosition = 0L;
-        final int leaderMemberId = 0;
-
-        election.onNewLeadershipTerm(
-            currentLeadershipTermId,
-            currentBaseLogPosition,
-            currentLeadershipTermId,
-            leaderMemberId,
-            logSessionId);
-
-        assertThat(election.state(), is(Election.State.FOLLOWER_REPLAY));
-    }
-
     private Election newElection(
         final boolean isStartup,
         final long logLeadershipTermId,

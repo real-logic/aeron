@@ -47,8 +47,9 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class ClusterTest
+public class ClusterFollowerTest
 {
+
     private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int MEMBER_COUNT = 3;
     private static final int MESSAGE_COUNT = 10;
@@ -81,73 +82,10 @@ public class ClusterTest
     @Before
     public void before()
     {
-        final String aeronDirName = CommonContext.getAeronDirectoryName();
-
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
-            echoServices[i] = new EchoService(i, latchOne, latchTwo);
-
-            final String baseDirName = aeronDirName + "-" + i;
-
-            final AeronArchive.Context archiveCtx = new AeronArchive.Context()
-                .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, i))
-                .controlRequestStreamId(100 + i)
-                .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, i))
-                .controlResponseStreamId(110 + i)
-                .aeronDirectoryName(baseDirName);
-
-            clusteredMediaDrivers[i] = ClusteredMediaDriver.launch(
-                new MediaDriver.Context()
-                    .aeronDirectoryName(baseDirName)
-                    .threadingMode(ThreadingMode.SHARED)
-                    .termBufferSparseFile(true)
-                    .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
-                    .errorHandler(Throwable::printStackTrace)
-                    .dirDeleteOnStart(true),
-                new Archive.Context()
-                    .maxCatalogEntries(MAX_CATALOG_ENTRIES)
-                    .aeronDirectoryName(baseDirName)
-                    .archiveDir(new File(baseDirName, "archive"))
-                    .controlChannel(archiveCtx.controlRequestChannel())
-                    .controlStreamId(archiveCtx.controlRequestStreamId())
-                    .localControlChannel("aeron:ipc?term-length=64k")
-                    .localControlStreamId(archiveCtx.controlRequestStreamId())
-                    .threadingMode(ArchiveThreadingMode.SHARED)
-                    .deleteArchiveOnStart(true),
-                new ConsensusModule.Context()
-                    .epochClock(epochClock)
-                    .errorHandler(Throwable::printStackTrace)
-                    .clusterMemberId(i)
-                    .clusterMembers(CLUSTER_MEMBERS)
-                    .aeronDirectoryName(baseDirName)
-                    .clusterDir(new File(baseDirName, "consensus-module"))
-                    .ingressChannel("aeron:udp?term-length=64k")
-                    .logChannel(memberSpecificPort(LOG_CHANNEL, i))
-                    .terminationHook(TestUtil.TERMINATION_HOOK)
-                    .archiveContext(archiveCtx.clone())
-                    .deleteDirOnStart(true));
-
-            containers[i] = ClusteredServiceContainer.launch(
-                new ClusteredServiceContainer.Context()
-                    .aeronDirectoryName(baseDirName)
-                    .archiveContext(archiveCtx.clone())
-                    .clusterDir(new File(baseDirName, "service"))
-                    .clusteredService(echoServices[i])
-                    .terminationHook(TestUtil.TERMINATION_HOOK)
-                    .errorHandler(Throwable::printStackTrace));
+            startNode(i, true);
         }
-
-        clientMediaDriver = MediaDriver.launch(
-            new MediaDriver.Context()
-                .threadingMode(ThreadingMode.SHARED)
-                .aeronDirectoryName(aeronDirName));
-
-        client = AeronCluster.connect(
-            new AeronCluster.Context()
-                .egressMessageListener(egressMessageListener)
-                .aeronDirectoryName(aeronDirName)
-                .ingressChannel("aeron:udp")
-                .clusterMemberEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
     }
 
     @After
@@ -173,14 +111,42 @@ public class ClusterTest
             if (null != driver)
             {
                 driver.mediaDriver().context().deleteAeronDirectory();
+                driver.consensusModule().context().deleteDirectory();
+                driver.archive().context().deleteArchiveDirectory();
             }
         }
     }
 
     @Ignore
     @Test(timeout = 30_000)
+    public void shouldStopFollowerAndRestartFollower() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        final int followerMemberId = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+
+        stopNode(followerMemberId);
+
+        Thread.sleep(1000);
+
+        startNode(followerMemberId, false);
+
+        Thread.sleep(1000);
+
+        assertThat(roleOf(followerMemberId), is(Cluster.Role.FOLLOWER));
+    }
+
+    @Ignore
+    @Test(timeout = 30_000)
     public void shouldEchoMessagesThenContinueOnNewLeader() throws Exception
     {
+        startClient();
+
         final int leaderMemberId = findLeaderId(NULL_VALUE);
         assertThat(leaderMemberId, not(NULL_VALUE));
 
@@ -199,8 +165,7 @@ public class ClusterTest
             assertThat(service.messageCount(), is(MESSAGE_COUNT));
         }
 
-        containers[leaderMemberId].close();
-        clusteredMediaDrivers[leaderMemberId].close();
+        stopNode(leaderMemberId);
 
         int newLeaderMemberId;
         while (NULL_VALUE == (newLeaderMemberId = findLeaderId(leaderMemberId)))
@@ -224,6 +189,85 @@ public class ClusterTest
                 assertThat(service.messageCount(), is(MESSAGE_COUNT * 2));
             }
         }
+    }
+
+    private void startNode(final int index, final boolean cleanStart)
+    {
+        echoServices[index] = new EchoService(index, latchOne, latchTwo);
+        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
+
+        final AeronArchive.Context archiveCtx = new AeronArchive.Context()
+            .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
+            .controlRequestStreamId(100 + index)
+            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
+            .controlResponseStreamId(110 + index)
+            .aeronDirectoryName(baseDirName);
+
+        clusteredMediaDrivers[index] = ClusteredMediaDriver.launch(
+            new MediaDriver.Context()
+                .aeronDirectoryName(aeronDirName)
+                .threadingMode(ThreadingMode.SHARED)
+                .termBufferSparseFile(true)
+                .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
+                .errorHandler(Throwable::printStackTrace)
+                .dirDeleteOnStart(true),
+            new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .aeronDirectoryName(aeronDirName)
+                .archiveDir(new File(baseDirName, "archive"))
+                .controlChannel(archiveCtx.controlRequestChannel())
+                .controlStreamId(archiveCtx.controlRequestStreamId())
+                .localControlChannel("aeron:ipc?term-length=64k")
+                .localControlStreamId(archiveCtx.controlRequestStreamId())
+                .threadingMode(ArchiveThreadingMode.SHARED)
+                .deleteArchiveOnStart(cleanStart),
+            new ConsensusModule.Context()
+                .epochClock(epochClock)
+                .errorHandler(Throwable::printStackTrace)
+                .clusterMemberId(index)
+                .clusterMembers(CLUSTER_MEMBERS)
+                .aeronDirectoryName(aeronDirName)
+                .clusterDir(new File(baseDirName, "consensus-module"))
+                .ingressChannel("aeron:udp?term-length=64k")
+                .logChannel(memberSpecificPort(LOG_CHANNEL, index))
+                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .archiveContext(archiveCtx.clone())
+                .deleteDirOnStart(cleanStart));
+
+        containers[index] = ClusteredServiceContainer.launch(
+            new ClusteredServiceContainer.Context()
+                .aeronDirectoryName(aeronDirName)
+                .archiveContext(archiveCtx.clone())
+                .clusterDir(new File(baseDirName, "service"))
+                .clusteredService(echoServices[index])
+                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .errorHandler(Throwable::printStackTrace));
+    }
+
+    private void stopNode(final int index)
+    {
+        containers[index].close();
+        containers[index] = null;
+        clusteredMediaDrivers[index].close();
+        clusteredMediaDrivers[index] = null;
+    }
+
+    private void startClient()
+    {
+        final String aeronDirName = CommonContext.getAeronDirectoryName();
+
+        clientMediaDriver = MediaDriver.launch(
+            new MediaDriver.Context()
+                .threadingMode(ThreadingMode.SHARED)
+                .aeronDirectoryName(aeronDirName));
+
+        client = AeronCluster.connect(
+            new AeronCluster.Context()
+                .egressMessageListener(egressMessageListener)
+                .aeronDirectoryName(aeronDirName)
+                .ingressChannel("aeron:udp")
+                .clusterMemberEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
     }
 
     private void sendMessages(final ExpandableArrayBuffer msgBuffer)
@@ -352,5 +396,13 @@ public class ClusterTest
         }
 
         return leaderMemberId;
+    }
+
+    private Cluster.Role roleOf(final int index)
+    {
+        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+
+        return Cluster.Role.get(
+            (int)driver.consensusModule().context().clusterNodeCounter().get());
     }
 }

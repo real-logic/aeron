@@ -417,26 +417,17 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (null != follower)
             {
-                if (this.leadershipTermId == logLeadershipTermId)
-                {
-                    memberStatusPublisher.newLeadershipTerm(
-                        follower.publication(),
-                        this.leadershipTermId,
-                        this.logPosition(),
-                        this.leadershipTermId,
-                        thisMember.id(),
-                        logPublisher.sessionId());
-                }
-                else
-                {
-                    memberStatusPublisher.newLeadershipTerm(
-                        follower.publication(),
-                        this.leadershipTermId,
-                        recordingLog.getTermEntry(this.leadershipTermId).termBaseLogPosition,
-                        this.leadershipTermId,
-                        thisMember.id(),
-                        logPublisher.sessionId());
-                }
+                final long position = (this.leadershipTermId == logLeadershipTermId) ?
+                    this.logPosition() :
+                    recordingLog.getTermEntry(this.leadershipTermId).termBaseLogPosition;
+
+                memberStatusPublisher.newLeadershipTerm(
+                    follower.publication(),
+                    this.leadershipTermId,
+                    position,
+                    this.leadershipTermId,
+                    thisMember.id(),
+                    logPublisher.sessionId());
             }
         }
     }

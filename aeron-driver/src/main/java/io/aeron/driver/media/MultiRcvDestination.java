@@ -93,7 +93,7 @@ public class MultiRcvDestination implements AutoCloseable
         {
             final ReceiveDestinationUdpTransport transport = transports[i];
 
-            if (transport.udpChannel().equals(udpChannel))
+            if (null != transport && transport.udpChannel().equals(udpChannel))
             {
                 index = i;
                 break;

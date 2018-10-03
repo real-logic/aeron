@@ -105,7 +105,7 @@ public class PublicationImage
     private long nextSmPosition;
     private int nextSmReceiverWindowLength;
 
-    private long timeOfLastStatusMessageNs;
+    private long timeOfLastStatusMessageScheduleNs;
 
     private final long correlationId;
     private final long imageLivenessTimeoutNs;
@@ -403,14 +403,14 @@ public class PublicationImage
     private void scheduleStatusMessage(final long nowNs, final long smPosition, final int receiverWindowLength)
     {
         final long changeNumber = beginSmChange + 1;
-
         beginSmChange = changeNumber;
 
         nextSmPosition = smPosition;
         nextSmReceiverWindowLength = receiverWindowLength;
-        timeOfLastStatusMessageNs = nowNs;
 
         endSmChange = changeNumber;
+
+        timeOfLastStatusMessageScheduleNs = nowNs;
     }
 
     /**
@@ -460,7 +460,7 @@ public class PublicationImage
         final long threshold = CongestionControlUtil.positionThreshold(window);
 
         if (CongestionControlUtil.shouldForceStatusMessage(ccOutcome) ||
-            (nowNs > (timeOfLastStatusMessageNs + statusMessageTimeoutNs)) ||
+            (nowNs > (timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs)) ||
             (minSubscriberPosition > (nextSmPosition + threshold)))
         {
             scheduleStatusMessage(nowNs, minSubscriberPosition, window);

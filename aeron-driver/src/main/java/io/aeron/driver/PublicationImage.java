@@ -93,6 +93,8 @@ public class PublicationImage
     private long timeOfLastStateChangeNs;
     private long lastLossChangeNumber = Aeron.NULL_VALUE;
     private long lastSmChangeNumber = Aeron.NULL_VALUE;
+    private long lastSmPosition;
+    private long lastSmWindowLimit;
 
     private volatile long beginLossChange = Aeron.NULL_VALUE;
     private volatile long endLossChange = Aeron.NULL_VALUE;
@@ -104,7 +106,6 @@ public class PublicationImage
     private volatile long endSmChange = Aeron.NULL_VALUE;
     private long nextSmPosition;
     private int nextSmReceiverWindowLength;
-
     private long timeOfLastStatusMessageScheduleNs;
 
     private final long correlationId;
@@ -205,6 +206,8 @@ public class PublicationImage
             activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         nextSmPosition = initialPosition;
         nextSmReceiverWindowLength = congestionControl.initialWindowLength();
+        lastSmPosition = initialPosition;
+        lastSmWindowLimit = initialPosition + nextSmReceiverWindowLength;
         cleanPosition = initialPosition;
 
         hwmPosition.setOrdered(initialPosition);
@@ -504,10 +507,8 @@ public class PublicationImage
         final boolean isHeartbeat = DataHeaderFlyweight.isHeartbeat(buffer, length);
         final long packetPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = isHeartbeat ? packetPosition : packetPosition + length;
-        final long windowPosition = nextSmPosition;
 
-        if (!isFlowControlUnderRun(windowPosition, packetPosition) &&
-            !isFlowControlOverRun(windowPosition, proposedPosition))
+        if (!isFlowControlUnderRun(packetPosition) && !isFlowControlOverRun(proposedPosition))
         {
             if (isHeartbeat)
             {
@@ -582,6 +583,8 @@ public class PublicationImage
 
                     statusMessagesSent.incrementOrdered();
 
+                    lastSmPosition = smPosition;
+                    lastSmWindowLimit = smPosition + receiverWindowLength;
                     lastSmChangeNumber = changeNumber;
                 }
 
@@ -738,9 +741,9 @@ public class PublicationImage
         return true;
     }
 
-    private boolean isFlowControlUnderRun(final long windowPosition, final long packetPosition)
+    private boolean isFlowControlUnderRun(final long packetPosition)
     {
-        final boolean isFlowControlUnderRun = packetPosition < windowPosition;
+        final boolean isFlowControlUnderRun = packetPosition < lastSmPosition;
 
         if (isFlowControlUnderRun)
         {
@@ -750,9 +753,9 @@ public class PublicationImage
         return isFlowControlUnderRun;
     }
 
-    private boolean isFlowControlOverRun(final long windowPosition, final long proposedPosition)
+    private boolean isFlowControlOverRun(final long proposedPosition)
     {
-        final boolean isFlowControlOverRun = proposedPosition > (windowPosition + nextSmReceiverWindowLength);
+        final boolean isFlowControlOverRun = proposedPosition > lastSmWindowLimit;
 
         if (isFlowControlOverRun)
         {

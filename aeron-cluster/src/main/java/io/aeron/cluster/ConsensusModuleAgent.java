@@ -1077,6 +1077,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void onReloadClusterMembers(final int memberId, final int highMemberId, final String members)
     {
+        if (ctx.clusterMembersIgnoreSnapshot())
+        {
+            return;
+        }
+
         // TODO: this must be superset of any configured cluster members, unless being overridden
 
         final ClusterMember[] snapshotClusterMembers = ClusterMember.parse(members);

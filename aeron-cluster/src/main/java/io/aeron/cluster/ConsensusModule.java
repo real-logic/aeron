@@ -299,6 +299,16 @@ public class ConsensusModule implements AutoCloseable
         public static final String CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT = "";
 
         /**
+         * Property name for whether cluster member information in snapshots should be ignored on load or not.
+         */
+        public static final String CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME = "aeron.cluster.members.ignore.snapshot";
+
+        /**
+         * Default property for whether cluster member information in snapshots should be ignored or not.
+         */
+        public static final String CLUSTER_MEMBERS_IGNORE_SNAPSHOT_DEFAULT = "false";
+
+        /**
          * Channel for the clustered log.
          */
         public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
@@ -572,6 +582,19 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * The value {@link #CLUSTER_MEMBERS_IGNORE_SNAPSHOT_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_MEMBERS_IGNORE_SNAPSHOT_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME} it set.
+         */
+        public static boolean clusterMembersIgnoreSnapshot()
+        {
+            return "true".equalsIgnoreCase(System.getProperty(
+                CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME, CLUSTER_MEMBERS_IGNORE_SNAPSHOT_DEFAULT));
+        }
+
+        /**
          * The value {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
          *
          * @return {@link #LOG_CHANNEL_DEFAULT} or system property {@link #LOG_CHANNEL_PROP_NAME} if set.
@@ -797,6 +820,7 @@ public class ConsensusModule implements AutoCloseable
         private int appointedLeaderId = Configuration.appointedLeaderId();
         private String clusterMembers = Configuration.clusterMembers();
         private String clusterMembersStatusEndpoints = Configuration.clusterMembersStatusEndpoints();
+        private boolean clusterMembersIgnoreSnapshot = Configuration.clusterMembersIgnoreSnapshot();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private String logChannel = Configuration.logChannel();
@@ -1272,6 +1296,30 @@ public class ConsensusModule implements AutoCloseable
         public String clusterMembersStatusEndpoints()
         {
             return clusterMembersStatusEndpoints;
+        }
+
+        /**
+         * Whether the cluster members in the snapshot should be ignored or not.
+         *
+         * @param ignore or not the cluster members in the snapshot.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME
+         */
+        public Context clusterMembersIgnoreSnapshot(final boolean ignore)
+        {
+            this.clusterMembersIgnoreSnapshot = ignore;
+            return this;
+        }
+
+        /**
+         * Whether the cluster members in the snapshot should be ignored or not.
+         *
+         * @return ignore or not the cluster members in the snapshot.
+         * @see Configuration#CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME
+         */
+        public boolean clusterMembersIgnoreSnapshot()
+        {
+            return clusterMembersIgnoreSnapshot;
         }
 
         /**

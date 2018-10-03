@@ -377,6 +377,12 @@ class Election implements AutoCloseable
 
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
+            else if (logPosition == this.logPosition)
+            {
+                // may have left at this exact point from previous log
+                this.leadershipTermId = this.leadershipTermId + 1;
+                this.candidateTermId = this.candidateTermId + 1;
+            }
         }
     }
 

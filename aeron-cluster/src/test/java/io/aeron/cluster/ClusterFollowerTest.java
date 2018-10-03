@@ -216,7 +216,7 @@ public class ClusterFollowerTest
         Thread.sleep(5000);
 
         assertThat(roleOf(leaderMemberId), is(Cluster.Role.FOLLOWER));
-        assertThat(electionCounterOf(leaderMemberId), is(NULL_VALUE));
+        assertThat(electionCounterOf(leaderMemberId), is((long)NULL_VALUE));
     }
 
     private void startNode(final int index, final boolean cleanStart)

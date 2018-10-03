@@ -219,6 +219,41 @@ public class ClusterFollowerTest
         assertThat(electionCounterOf(leaderMemberId), is((long)NULL_VALUE));
     }
 
+    @Ignore
+    @Test(timeout = 30_000)
+    public void shouldStopLeaderAndRestartAfterElectionAsFollowerWithSendingAfter() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        stopNode(leaderMemberId);
+
+        while (NULL_VALUE == findLeaderId(leaderMemberId))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        startNode(leaderMemberId, false);
+
+        Thread.sleep(5000);
+
+        assertThat(roleOf(leaderMemberId), is(Cluster.Role.FOLLOWER));
+        assertThat(electionCounterOf(leaderMemberId), is((long)NULL_VALUE));
+
+        startClient();
+
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+
+        sendMessages(msgBuffer);
+        awaitResponses(MESSAGE_COUNT);
+    }
+
     private void startNode(final int index, final boolean cleanStart)
     {
         echoServices[index] = new EchoService(index, latchOne, latchTwo);

@@ -538,11 +538,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
+    @SuppressWarnings("unused")
     public void onStopCatchup(final int replaySessionId, final int followerMemberId)
     {
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
-        if (null != follower && follower.catchupReplaySessionId() == replaySessionId)
+        if (null != follower && follower.catchupReplaySessionId() != Aeron.NULL_VALUE)
         {
             archive.stopReplay(follower.catchupReplaySessionId());
             follower.catchupReplaySessionId(Aeron.NULL_VALUE);

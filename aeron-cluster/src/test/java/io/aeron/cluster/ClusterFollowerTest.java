@@ -33,6 +33,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -189,6 +190,33 @@ public class ClusterFollowerTest
                 assertThat(service.messageCount(), is(MESSAGE_COUNT * 2));
             }
         }
+    }
+
+    @Ignore
+    @Test(timeout = 30_000)
+    public void shouldStopLeaderAndRestartAfterElectionAsFollower() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        stopNode(leaderMemberId);
+
+        while (NULL_VALUE == findLeaderId(leaderMemberId))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        startNode(leaderMemberId, false);
+
+        Thread.sleep(5000);
+
+        assertThat(roleOf(leaderMemberId), is(Cluster.Role.FOLLOWER));
+        assertThat(electionCounterOf(leaderMemberId), is(NULL_VALUE));
     }
 
     private void startNode(final int index, final boolean cleanStart)
@@ -404,5 +432,24 @@ public class ClusterFollowerTest
 
         return Cluster.Role.get(
             (int)driver.consensusModule().context().clusterNodeCounter().get());
+    }
+
+    private long electionCounterOf(final int index)
+    {
+        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+        final CountersReader counters = driver.mediaDriver().context().countersManager();
+
+        final long[] electionState = {NULL_VALUE};
+
+        counters.forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                if (typeId == Election.ELECTION_STATE_TYPE_ID)
+                {
+                    electionState[0] = counters.getCounterValue(counterId);
+                }
+            });
+
+        return electionState[0];
     }
 }

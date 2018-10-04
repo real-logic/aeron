@@ -80,15 +80,17 @@ typedef struct aeron_publication_image_stct
     aeron_map_raw_log_close_func_t map_raw_log_close_func;
 
     int64_t last_packet_timestamp_ns;
-    int64_t last_status_message_timestamp;
 
     int64_t last_sm_change_number;
+    int64_t last_sm_position;
+    int64_t last_sm_position_window_limit;
     int64_t last_loss_change_number;
 
     volatile int64_t begin_sm_change;
     volatile int64_t end_sm_change;
     int64_t next_sm_position;
     int32_t next_sm_receiver_window_length;
+    int64_t last_status_message_timestamp;
 
     volatile int64_t begin_loss_change;
     volatile int64_t end_loss_change;
@@ -162,10 +164,9 @@ inline bool aeron_publication_image_is_end_of_stream(const uint8_t *buffer, size
     return (((aeron_frame_header_t *)buffer)->flags & AERON_DATA_HEADER_EOS_FLAG) != 0;
 }
 
-inline bool aeron_publication_image_is_flow_control_under_run(
-    aeron_publication_image_t *image, int64_t window_position, int64_t packet_position)
+inline bool aeron_publication_image_is_flow_control_under_run(aeron_publication_image_t *image, int64_t packet_position)
 {
-    const bool is_flow_control_under_run = packet_position < window_position;
+    const bool is_flow_control_under_run = packet_position < image->last_sm_position;
 
     if (is_flow_control_under_run)
     {
@@ -175,10 +176,9 @@ inline bool aeron_publication_image_is_flow_control_under_run(
     return is_flow_control_under_run;
 }
 
-inline bool aeron_publication_image_is_flow_control_over_run(
-    aeron_publication_image_t *image, int64_t window_position, int64_t proposed_position)
+inline bool aeron_publication_image_is_flow_control_over_run(aeron_publication_image_t *image, int64_t proposed_position)
 {
-    const bool is_flow_control_over_run = proposed_position > (window_position + image->next_sm_receiver_window_length);
+    const bool is_flow_control_over_run = proposed_position > image->last_sm_position_window_limit;
 
     if (is_flow_control_over_run)
     {
@@ -197,9 +197,10 @@ inline void aeron_publication_image_schedule_status_message(
 
     image->next_sm_position = sm_position;
     image->next_sm_receiver_window_length = window_length;
-    image->last_status_message_timestamp = now_ns;
 
     AERON_PUT_ORDERED(image->end_sm_change, change_number);
+
+    image->last_status_message_timestamp = now_ns;
 }
 
 inline bool aeron_publication_image_is_drained(aeron_publication_image_t *image)

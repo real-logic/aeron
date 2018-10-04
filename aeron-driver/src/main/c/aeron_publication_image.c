@@ -186,6 +186,8 @@ int aeron_publication_image_create(
     _image->next_sm_position = initial_position;
     _image->next_sm_receiver_window_length =
         _image->congestion_control->initial_window_length(_image->congestion_control->state);
+    _image->last_sm_position = initial_position;
+    _image->last_sm_position_window_limit = initial_position + _image->next_sm_receiver_window_length;
     _image->last_packet_timestamp_ns = now_ns;
     _image->last_status_message_timestamp = 0;
     _image->conductor_fields.clean_position = initial_position;
@@ -268,17 +270,16 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
 
         if (NULL != image->endpoint)
         {
-            image->loss_reporter_offset =
-                aeron_loss_reporter_create_entry(
-                    image->loss_reporter,
-                    (int64_t) length,
-                    image->epoch_clock(),
-                    image->session_id,
-                    image->stream_id,
-                    image->endpoint->conductor_fields.udp_channel->original_uri,
-                    image->endpoint->conductor_fields.udp_channel->uri_length,
-                    source,
-                    strlen(source));
+            image->loss_reporter_offset = aeron_loss_reporter_create_entry(
+                image->loss_reporter,
+                (int64_t) length,
+                image->epoch_clock(),
+                image->session_id,
+                image->stream_id,
+                image->endpoint->conductor_fields.udp_channel->original_uri,
+                image->endpoint->conductor_fields.udp_channel->uri_length,
+                source,
+                strlen(source));
         }
 
         if (-1 == image->loss_reporter_offset)
@@ -308,17 +309,16 @@ void aeron_publication_image_track_rebuild(
 
     bool loss_found = false;
     const size_t index = aeron_logbuffer_index_by_position(rebuild_position, image->position_bits_to_shift);
-    const int32_t rebuild_offset =
-        aeron_loss_detector_scan(
-            &image->loss_detector,
-            &loss_found,
-            image->mapped_raw_log.term_buffers[index].addr,
-            rebuild_position,
-            hwm_position,
-            now_ns,
-            (size_t)image->term_length_mask,
-            image->position_bits_to_shift,
-            image->initial_term_id);
+    const int32_t rebuild_offset = aeron_loss_detector_scan(
+        &image->loss_detector,
+        &loss_found,
+        image->mapped_raw_log.term_buffers[index].addr,
+        rebuild_position,
+        hwm_position,
+        now_ns,
+        (size_t)image->term_length_mask,
+        image->position_bits_to_shift,
+        image->initial_term_id);
 
     const int32_t rebuild_term_offset = (int32_t)(rebuild_position & image->term_length_mask);
     const int64_t new_rebuild_position = (rebuild_position - rebuild_term_offset) + rebuild_offset;
@@ -352,13 +352,12 @@ int aeron_publication_image_insert_packet(
     aeron_publication_image_t *image, int32_t term_id, int32_t term_offset, const uint8_t *buffer, size_t length)
 {
     const bool is_heartbeat = aeron_publication_image_is_heartbeat(buffer, length);
-    const int64_t packet_position =
-        aeron_logbuffer_compute_position(term_id, term_offset, image->position_bits_to_shift, image->initial_term_id);
+    const int64_t packet_position = aeron_logbuffer_compute_position(
+        term_id, term_offset, image->position_bits_to_shift, image->initial_term_id);
     const int64_t proposed_position = is_heartbeat ? packet_position : packet_position + (int64_t)length;
-    const int64_t window_position = image->next_sm_position;
 
-    if (!aeron_publication_image_is_flow_control_under_run(image, window_position, packet_position) &&
-        !aeron_publication_image_is_flow_control_over_run(image, window_position, proposed_position))
+    if (!aeron_publication_image_is_flow_control_under_run(image, packet_position) &&
+        !aeron_publication_image_is_flow_control_over_run(image, proposed_position))
     {
         if (is_heartbeat)
         {
@@ -392,6 +391,7 @@ int aeron_publication_image_on_rttm(
     const int64_t rtt_in_ns = now_ns - header->echo_timestamp - header->reception_delta;
 
     image->congestion_control->on_rttm(image->congestion_control->state, now_ns, rtt_in_ns, addr);
+
     return 1;
 }
 
@@ -413,9 +413,8 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
 
             if (change_number == image->begin_sm_change)
             {
-                const int32_t term_id =
-                    aeron_logbuffer_compute_term_id_from_position(
-                        sm_position, image->position_bits_to_shift, image->initial_term_id);
+                const int32_t term_id = aeron_logbuffer_compute_term_id_from_position(
+                    sm_position, image->position_bits_to_shift, image->initial_term_id);
                 const int32_t term_offset = (int32_t)(sm_position & image->term_length_mask);
 
                 int send_sm_result = aeron_receive_channel_endpoint_send_sm(
@@ -431,6 +430,8 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
                 aeron_counter_ordered_increment(image->status_messages_sent_counter, 1);
 
                 image->last_sm_change_number = change_number;
+                image->last_sm_position = sm_position;
+                image->last_sm_position_window_limit = sm_position + receiver_window_length;
                 work_count = send_sm_result < 0 ? send_sm_result : 1;
             }
         }
@@ -445,7 +446,6 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
 
     if (NULL != image->endpoint && AERON_PUBLICATION_IMAGE_STATUS_ACTIVE == image->conductor_fields.status)
     {
-
         int64_t change_number;
         AERON_GET_VOLATILE(change_number, image->end_loss_change);
 
@@ -575,9 +575,9 @@ void aeron_publication_image_on_time_event(
 extern bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length);
 extern bool aeron_publication_image_is_end_of_stream(const uint8_t *buffer, size_t length);
 extern bool aeron_publication_image_is_flow_control_under_run(
-    aeron_publication_image_t *image, int64_t window_position, int64_t packet_position);
+    aeron_publication_image_t *image, int64_t packet_position);
 extern bool aeron_publication_image_is_flow_control_over_run(
-    aeron_publication_image_t *image, int64_t window_position, int64_t proposed_position);
+    aeron_publication_image_t *image, int64_t proposed_position);
 extern void aeron_publication_image_schedule_status_message(
     aeron_publication_image_t *image, int64_t now_ns, int64_t sm_position, int32_t window_length);
 extern bool aeron_publication_image_is_drained(aeron_publication_image_t *image);

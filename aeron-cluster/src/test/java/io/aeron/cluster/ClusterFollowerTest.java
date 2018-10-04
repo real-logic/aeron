@@ -48,6 +48,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
+@Ignore
 public class ClusterFollowerTest
 {
 
@@ -118,7 +119,6 @@ public class ClusterFollowerTest
         }
     }
 
-    @Ignore
     @Test(timeout = 30_000)
     public void shouldStopFollowerAndRestartFollower() throws Exception
     {
@@ -142,7 +142,6 @@ public class ClusterFollowerTest
         assertThat(roleOf(followerMemberId), is(Cluster.Role.FOLLOWER));
     }
 
-    @Ignore
     @Test(timeout = 30_000)
     public void shouldEchoMessagesThenContinueOnNewLeader() throws Exception
     {
@@ -192,7 +191,6 @@ public class ClusterFollowerTest
         }
     }
 
-    @Ignore
     @Test(timeout = 30_000)
     public void shouldStopLeaderAndRestartAfterElectionAsFollower() throws Exception
     {
@@ -219,7 +217,6 @@ public class ClusterFollowerTest
         assertThat(electionCounterOf(leaderMemberId), is((long)NULL_VALUE));
     }
 
-    @Ignore
     @Test(timeout = 30_000)
     public void shouldStopLeaderAndRestartAfterElectionAsFollowerWithSendingAfter() throws Exception
     {
@@ -254,7 +251,6 @@ public class ClusterFollowerTest
         awaitResponses(MESSAGE_COUNT);
     }
 
-    @Ignore
     @Test(timeout = 60_000)
     public void shouldStopLeaderAndRestartAfterElectionAsFollowerWithSendingAfterThenStopLeader() throws Exception
     {
@@ -297,6 +293,69 @@ public class ClusterFollowerTest
             TestUtil.checkInterruptedStatus();
             Thread.sleep(1000);
         }
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldAcceptMessagesAfterSingleNodeGoDownAndComeBackUpClean() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        final int followerMemberId = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+
+        stopNode(followerMemberId);
+
+        Thread.sleep(10000);
+
+        startNode(followerMemberId, true);
+
+        Thread.sleep(1000);
+
+        assertThat(roleOf(followerMemberId), is(Cluster.Role.FOLLOWER));
+
+        startClient();
+
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+
+        sendMessages(msgBuffer);
+        awaitResponses(MESSAGE_COUNT);
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldAcceptMessagesAfterTwoNodesGoDownAndComeBackUpClean() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        stopNode(followerMemberIdA);
+        stopNode(followerMemberIdB);
+
+        Thread.sleep(10000);
+
+        startNode(followerMemberIdA, true);
+        startNode(followerMemberIdB, true);
+
+        Thread.sleep(1000);
+
+        startClient();
+
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+
+        sendMessages(msgBuffer);
+        awaitResponses(MESSAGE_COUNT);
     }
 
     private void startNode(final int index, final boolean cleanStart)

@@ -96,11 +96,11 @@ public class PublicationImage
     private int lossTermOffset;
     private int lossLength;
 
-    private long timeOfLastStatusMessageScheduleNs;
     private volatile long beginSmChange = Aeron.NULL_VALUE;
     private volatile long endSmChange = Aeron.NULL_VALUE;
     private long nextSmPosition;
     private int nextSmReceiverWindowLength;
+    private long timeOfLastStatusMessageScheduleNs;
 
     private long lastLossChangeNumber = Aeron.NULL_VALUE;
     private long lastSmChangeNumber = Aeron.NULL_VALUE;

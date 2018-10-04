@@ -203,16 +203,15 @@ public class PublicationImage
         termLengthMask = termLength - 1;
         positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
 
-        final long initialPosition = computePosition(
-            activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
-        nextSmPosition = initialPosition;
+        final long position = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
+        nextSmPosition = position;
         nextSmReceiverWindowLength = congestionControl.initialWindowLength();
-        lastSmPosition = initialPosition;
-        lastSmWindowLimit = initialPosition + nextSmReceiverWindowLength;
-        cleanPosition = initialPosition;
+        lastSmPosition = position;
+        lastSmWindowLimit = position + nextSmReceiverWindowLength;
+        cleanPosition = position;
 
-        hwmPosition.setOrdered(initialPosition);
-        rebuildPosition.setOrdered(initialPosition);
+        hwmPosition.setOrdered(position);
+        rebuildPosition.setOrdered(position);
     }
 
     public boolean free()

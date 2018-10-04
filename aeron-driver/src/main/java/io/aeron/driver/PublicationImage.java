@@ -108,7 +108,7 @@ public class PublicationImage
     private long lastSmWindowLimit;
 
     private long timeOfLastStateChangeNs;
-    
+
     private final long correlationId;
     private final long imageLivenessTimeoutNs;
     private final int sessionId;

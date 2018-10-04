@@ -190,8 +190,8 @@ public class StreamPositionCounter
 
         if (labelLength < (MAX_LABEL_LENGTH - 20))
         {
-            labelLength += tempBuffer.putStringWithoutLengthAscii(keyLength + labelLength, " @");
-            labelLength += tempBuffer.putLongAscii(keyLength + labelLength, joinPosition);
+            labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, " @");
+            labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, joinPosition);
         }
 
         final int counterId = countersManager.allocate(

@@ -319,6 +319,22 @@ public class ConsensusModule implements AutoCloseable
         public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030";
 
         /**
+         * Property name for the comma separated list of member endpoints.
+         * <p>
+         * <code>
+         *     client-facing:port,member-facing:port,log:port,transfer:port,archive:port
+         * </code>
+         * @see #CLUSTER_MEMBERS_PROP_NAME
+         */
+        public static final String MEMBER_ENDPOINTS_PROP_NAME = "aeron.cluster.member.endpoints";
+
+        /**
+         * Default property for member endpoints.
+         */
+        public static final String MEMBER_ENDPOINTSL_DEFAULT =
+            "localhost:10000,localhost:20000,localhost:30000,localhost:40000,localhost:8010";
+
+        /**
          * Stream id within a channel for the clustered log.
          */
         public static final String LOG_STREAM_ID_PROP_NAME = "aeron.cluster.log.stream.id";
@@ -508,6 +524,18 @@ public class ConsensusModule implements AutoCloseable
         public static final long ELECTION_STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(20);
 
         /**
+         * Interval at which a dynamic joining member will send add cluster member and snapshot recording
+         * queries.
+         */
+        public static final String DYNAMIC_JOIN_INTERVAL_PROP_NAME = "aeron.cluster.dynamic.join.interval";
+
+        /**
+         * Default interval at which a dynamic joining member will send add cluster member and snapshot recording
+         * queries.
+         */
+        public static final long DYNAMIC_JOIN_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
+
+        /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.
          */
         public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.Authenticator.supplier";
@@ -612,6 +640,16 @@ public class ConsensusModule implements AutoCloseable
         public static int logStreamId()
         {
             return Integer.getInteger(LOG_STREAM_ID_PROP_NAME, LOG_STREAM_ID_DEFAULT);
+        }
+
+        /**
+         * The value {@link #MEMBER_ENDPOINTSL_DEFAULT} or system property {@link #MEMBER_ENDPOINTS_PROP_NAME} if set.
+         *
+         * @return {@link #MEMBER_ENDPOINTSL_DEFAULT} or system property {@link #MEMBER_ENDPOINTS_PROP_NAME} if set.
+         */
+        public static String memberEndpoints()
+        {
+            return System.getProperty(MEMBER_ENDPOINTS_PROP_NAME, MEMBER_ENDPOINTSL_DEFAULT);
         }
 
         /**
@@ -740,6 +778,19 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Interval at which a dynamic joining member will send out add lcuster members and snapshot recording
+         * queries.
+         *
+         * @return Interval at which a dynamic joining member will send out add lcuster members and snapshot recording
+         * queries.
+         * @see #DYNAMIC_JOIN_INTERVAL_PROP_NAME
+         */
+        public static long dynamicJoinIntervalNs()
+        {
+            return getDurationInNanos(DYNAMIC_JOIN_INTERVAL_PROP_NAME, DYNAMIC_JOIN_INTERVAL_DEFAULT_NS);
+        }
+
+        /**
          * Size in bytes of the error buffer in the mark file.
          *
          * @return length of error buffer in bytes.
@@ -825,6 +876,7 @@ public class ConsensusModule implements AutoCloseable
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private String logChannel = Configuration.logChannel();
         private int logStreamId = Configuration.logStreamId();
+        private String memberEndpoints = Configuration.memberEndpoints();
         private String replayChannel = ClusteredServiceContainer.Configuration.replayChannel();
         private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
         private String serviceControlChannel = ClusteredServiceContainer.Configuration.serviceControlChannel();
@@ -846,6 +898,7 @@ public class ConsensusModule implements AutoCloseable
         private long startupCanvassTimeoutNs = Configuration.startupCanvassTimeoutNs();
         private long electionTimeoutNs = Configuration.electionTimeoutNs();
         private long electionStatusIntervalNs = Configuration.electionStatusIntervalNs();
+        private long dynamicJoinIntervalNs = Configuration.dynamicJoinIntervalNs();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -1419,6 +1472,30 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Set the endpoints for this cluster node.
+         *
+         * @param endpoints for the cluster node.
+         * @return this for a fluent API.
+         * @see Configuration#MEMBER_ENDPOINTS_PROP_NAME
+         */
+        public Context memberEndpoints(final String endpoints)
+        {
+            memberEndpoints = endpoints;
+            return this;
+        }
+
+        /**
+         * Get the endpoints for this cluster node.
+         *
+         * @return the endpoints for the cluster node.
+         * @see Configuration#MEMBER_ENDPOINTS_PROP_NAME
+         */
+        public String memberEndpoints()
+        {
+            return memberEndpoints;
+        }
+
+        /**
          * Set the channel parameter for the cluster log and snapshot replay channel.
          *
          * @param channel parameter for the cluster log replay channel.
@@ -1874,6 +1951,33 @@ public class ConsensusModule implements AutoCloseable
         public long electionStatusIntervalNs()
         {
             return electionStatusIntervalNs;
+        }
+
+        /**
+         * Interval at which a dynamic joining member will send add cluster member and snapshot recording queries.
+         *
+         * @param dynamicJoinIntervalNs between add cluster members and snapshot recording queries.
+         * @return this for a fluent API.
+         * @see Configuration#DYNAMIC_JOIN_INTERVAL_PROP_NAME
+         * @see Configuration#DYNAMIC_JOIN_INTERVAL_DEFAULT_NS
+         */
+        public Context dynamicJoinIntervalNs(final long dynamicJoinIntervalNs)
+        {
+            this.dynamicJoinIntervalNs = dynamicJoinIntervalNs;
+            return this;
+        }
+
+        /**
+         * Interval at which a dynamic joining member will send add cluster member and snapshot recording queries.
+         *
+         * @return the interval at which a dynamic joining member will send add cluster member and snapshot recording
+         * queries.
+         * @see Configuration#DYNAMIC_JOIN_INTERVAL_PROP_NAME
+         * @see Configuration#DYNAMIC_JOIN_INTERVAL_DEFAULT_NS
+         */
+        public long dynamicJoinIntervalNs()
+        {
+            return dynamicJoinIntervalNs;
         }
 
         /**

@@ -121,6 +121,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final RecordingLog recordingLog;
     private RecordingLog.RecoveryPlan recoveryPlan;
     private Election election;
+    private DynamicJoin dynamicJoin;
     private String logRecordingChannel;
     private String liveLogDestination;
     private String clientFacingEndpoints;
@@ -228,17 +229,20 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         timeOfLastLogUpdateMs = cachedTimeMs = epochClock.time();
         leadershipTermId = recoveryPlan.lastLeadershipTermId;
 
-        election = new Election(
-            true,
-            leadershipTermId,
-            recoveryPlan.appendedLogPosition,
-            clusterMembers,
-            clusterMemberByIdMap,
-            thisMember,
-            memberStatusAdapter,
-            memberStatusPublisher,
-            ctx,
-            this);
+        if (null == (dynamicJoin = newDynamicJoin()))
+        {
+            election = new Election(
+                true,
+                leadershipTermId,
+                recoveryPlan.appendedLogPosition,
+                clusterMembers,
+                clusterMemberByIdMap,
+                thisMember,
+                memberStatusAdapter,
+                memberStatusPublisher,
+                ctx,
+                this);
+        }
     }
 
     public int doWork()
@@ -256,7 +260,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             workCount += slowTickCycle(nowMs);
         }
 
-        if (null != election)
+        if (null != dynamicJoin)
+        {
+            dynamicJoin.doWork(nowMs);
+        }
+        else if (null != election)
         {
             workCount += election.doWork(nowMs);
         }
@@ -653,7 +661,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     public void onClusterMembersChange(
         final long correlationId, final int leaderMemberId, final String activeMembers, final String passiveMembers)
     {
-        // TODO: send snapshotRecordingQuery if was added to passiveMembers
+        if (null != dynamicJoin)
+        {
+            dynamicJoin.onClusterMembersChange(correlationId, leaderMemberId, activeMembers, passiveMembers);
+        }
     }
 
     public void onSnapshotRecordingQuery(final long correlationId, final int requestMemberId)
@@ -673,30 +684,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     public void onSnapshotRecordings(
         final long correlationId, final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
     {
-        final SnapshotRecordingsDecoder.SnapshotsDecoder snapshotsDecoder = snapshotRecordingsDecoder.snapshots();
-        final ArrayList<RecordingLog.Snapshot> snapshots = new ArrayList<>();
-
-        if (snapshotsDecoder.count() > 0)
+        if (null != dynamicJoin)
         {
-            for (final SnapshotRecordingsDecoder.SnapshotsDecoder snapshot : snapshotsDecoder)
-            {
-                if (snapshot.serviceId() <= ctx.serviceCount())
-                {
-                    snapshots.add(new RecordingLog.Snapshot(
-                        snapshot.recordingId(),
-                        snapshot.leadershipTermId(),
-                        snapshot.termBaseLogPosition(),
-                        snapshot.logPosition(),
-                        snapshot.timestamp(),
-                        snapshot.serviceId()));
-                }
-            }
+            dynamicJoin.onSnapshotRecordings(correlationId, snapshotRecordingsDecoder);
         }
-
-        clusterMembers = ClusterMember.parse(snapshotRecordingsDecoder.memberEndpoints());
-        highMemberId = ClusterMember.highMemberId(clusterMembers);
-
-        // TODO: setup for loading snapshots
     }
 
     @SuppressWarnings("unused")
@@ -1865,6 +1856,21 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         return RecoveryState.allocate(aeron, tempBuffer, leadershipTermId, 0, 0, plan.hasReplay());
+    }
+
+    private DynamicJoin newDynamicJoin()
+    {
+        if (recoveryPlan.snapshots.isEmpty() && null == clusterMembers && null != ctx.clusterMembersStatusEndpoints())
+        {
+            return new DynamicJoin(
+                ctx.clusterMembersStatusEndpoints(),
+                memberStatusAdapter,
+                memberStatusPublisher,
+                ctx,
+                this);
+        }
+
+        return null;
     }
 
     private void awaitServiceAcks(final long logPosition)

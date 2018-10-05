@@ -41,9 +41,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.cluster.service.CommitPos.COMMIT_POSITION_TYPE_ID;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -358,6 +360,32 @@ public class ClusterFollowerTest
         awaitResponses(MESSAGE_COUNT);
     }
 
+
+    @Test(timeout = 30_000)
+    public void membersShouldHaveOneCommitPositionCounter() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        stopNode(leaderMemberId);
+
+        while (NULL_VALUE == findLeaderId(leaderMemberId))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        assertThat(countersOfType(followerMemberIdA, COMMIT_POSITION_TYPE_ID), is(1));
+        assertThat(countersOfType(followerMemberIdB, COMMIT_POSITION_TYPE_ID), is(1));
+    }
+
     private void startNode(final int index, final boolean cleanStart)
     {
         echoServices[index] = new EchoService(index, latchOne, latchTwo);
@@ -590,5 +618,24 @@ public class ClusterFollowerTest
             });
 
         return electionState[0];
+    }
+
+    private int countersOfType(final int index, final int typeIdToCount)
+    {
+        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+        final CountersReader counters = driver.mediaDriver().context().countersManager();
+
+        final AtomicInteger count = new AtomicInteger();
+
+        counters.forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                if (typeId == typeIdToCount)
+                {
+                    count.incrementAndGet();
+                }
+            });
+
+        return count.get();
     }
 }

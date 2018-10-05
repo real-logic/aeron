@@ -1127,7 +1127,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, Long.MAX_VALUE);
+        allocateCommitPosition(logPosition, leadershipTermId);
         awaitServicesReady(channelUri, logSessionId, logPosition);
 
         for (final ClusterSession session : sessionByIdMap.values())
@@ -1177,9 +1177,19 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         closeExistingLog();
         final Subscription subscription = aeron.addSubscription(logChannel, ctx.logStreamId());
         startLogRecording(logChannel, SourceLocation.REMOTE);
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, Long.MAX_VALUE);
+        allocateCommitPosition(logPosition, leadershipTermId);
 
         return subscription;
+    }
+
+    private void allocateCommitPosition(final long logPosition, final long leadershipTermId)
+    {
+        if (null != commitPosition)
+        {
+            commitPosition.close();
+        }
+
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, Long.MAX_VALUE);
     }
 
     boolean pollImageAndLogAdapter(final Subscription subscription, final int logSessionId)

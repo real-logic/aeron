@@ -17,13 +17,27 @@ package io.aeron.cluster;
 
 import io.aeron.ChannelUri;
 import io.aeron.ExclusivePublication;
+import io.aeron.Image;
+import io.aeron.Subscription;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ControlResponsePoller;
+import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.codecs.MessageHeaderDecoder;
+import io.aeron.cluster.codecs.SnapshotMarkerDecoder;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
+import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.Header;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
+import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_TYPE_ID;
 
 public class DynamicJoin implements AutoCloseable
 {
@@ -37,7 +51,6 @@ public class DynamicJoin implements AutoCloseable
         DONE
     }
 
-    private final ExclusivePublication clusterPublication;
     private final MemberStatusAdapter memberStatusAdapter;
     private final MemberStatusPublisher memberStatusPublisher;
     private final ConsensusModule.Context ctx;
@@ -45,15 +58,25 @@ public class DynamicJoin implements AutoCloseable
     private final String[] clusterMembersStatusEndpoints;
     private final String memberEndpoints;
     private final String memberStatusEndpoint;
+    private final ArrayList<RecordingLog.Snapshot> leaderSnapshots = new ArrayList<>();
     private final long intervalMs;
 
+    private ExclusivePublication clusterPublication;
     private State state = State.INIT;
     private ClusterMember[] clusterMembers;
+    private ClusterMember leaderMember;
+    private AeronArchive.AsyncConnect leaderArchiveAsyncConnect;
+    private AeronArchive leaderArchive;
+    private Subscription snapshotRetrieveSubscription;
+    private Image snapshotRetrieveImage;
+    private SnapshotReader snapshotReader;
     private long timeOfLastActivity = 0;
     private long correlationId = NULL_VALUE;
     private int memberId = NULL_VALUE;
     private int highMemberId = NULL_VALUE;
     private int clusterMembersSattusEndpointsCursor = 0;
+    private int recordingIdCursor = 0;
+    private int snapshotReplaySessionId = NULL_VALUE;
 
     public DynamicJoin(
         final String clusterMembersStatusEndpoints,
@@ -80,7 +103,7 @@ public class DynamicJoin implements AutoCloseable
 
     public void close()
     {
-        clusterPublication.close();
+        CloseHelper.close(clusterPublication);
     }
 
     boolean isDone()
@@ -132,12 +155,40 @@ public class DynamicJoin implements AutoCloseable
                 {
                     memberId = follower.id();
 
-                    final ClusterMember[] clusterMembers = ClusterMember.parse(activeMembers);
+                    clusterMembers = ClusterMember.parse(activeMembers);
+                    leaderMember = ClusterMember.findMember(clusterMembers, leaderMemberId);
 
-                    // TODO: check that leader is in use. If not, close clusterPublication and use leader.
+                    if (null != leaderMember)
+                    {
+                        if (!leaderMember.memberFacingEndpoint().equals(
+                            clusterMembersStatusEndpoints[clusterMembersSattusEndpointsCursor]))
+                        {
+                            clusterPublication.close();
 
-                    timeOfLastActivity = 0;
-                    state = State.PASSIVE_FOLLOWER;
+                            final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+                            memberStatusUri.put(ENDPOINT_PARAM_NAME, leaderMember.memberFacingEndpoint());
+                            clusterPublication = ctx.aeron().addExclusivePublication(
+                                memberStatusUri.toString(), ctx.memberStatusStreamId());
+                        }
+
+                        final ChannelUri leaderArchiveUri = ChannelUri.parse(
+                            ctx.archiveContext().controlRequestChannel());
+                        final ChannelUri localArchiveUri = ChannelUri.parse(
+                            ctx.archiveContext().controlResponseChannel());
+                        leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
+
+                        final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
+                            .aeron(ctx.aeron())
+                            .controlRequestChannel(leaderArchiveUri.toString())
+                            .controlRequestStreamId(ctx.archiveContext().controlResponseStreamId())
+                            .controlResponseChannel(localArchiveUri.toString())
+                            .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());
+
+                        leaderArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);
+
+                        timeOfLastActivity = 0;
+                        state = State.PASSIVE_FOLLOWER;
+                    }
                     break;
                 }
             }
@@ -150,7 +201,6 @@ public class DynamicJoin implements AutoCloseable
         if (State.PASSIVE_FOLLOWER == state && correlationId == this.correlationId)
         {
             final SnapshotRecordingsDecoder.SnapshotsDecoder snapshotsDecoder = snapshotRecordingsDecoder.snapshots();
-            final ArrayList<RecordingLog.Snapshot> snapshots = new ArrayList<>();
 
             if (snapshotsDecoder.count() > 0)
             {
@@ -158,7 +208,7 @@ public class DynamicJoin implements AutoCloseable
                 {
                     if (snapshot.serviceId() <= ctx.serviceCount())
                     {
-                        snapshots.add(new RecordingLog.Snapshot(
+                        leaderSnapshots.add(new RecordingLog.Snapshot(
                             snapshot.recordingId(),
                             snapshot.leadershipTermId(),
                             snapshot.termBaseLogPosition(),
@@ -169,11 +219,10 @@ public class DynamicJoin implements AutoCloseable
                 }
             }
 
-            clusterMembers = ClusterMember.parse(snapshotRecordingsDecoder.memberEndpoints());
-            highMemberId = ClusterMember.highMemberId(clusterMembers);
-
             timeOfLastActivity = 0;
-            state = State.SNAPSHOT_RETRIEVE;
+            recordingIdCursor = 0;
+            this.correlationId = NULL_VALUE;
+            state = leaderSnapshots.isEmpty() ? State.JOIN_CLUSTER : State.SNAPSHOT_RETRIEVE;
         }
     }
 
@@ -209,13 +258,89 @@ public class DynamicJoin implements AutoCloseable
 
     private int snapshotRetrieve(final long nowMs)
     {
-        // TODO: once have snapshots recordings info, then retrieve relevant snapshots, once done, go to load
-        return 0;
+        int workCount = 0;
+
+        if (null == leaderArchive)
+        {
+            leaderArchive = leaderArchiveAsyncConnect.poll();
+            return (null == leaderArchive) ? 0 : 1;
+        }
+
+        if (null != snapshotReader)
+        {
+            if (snapshotReader.poll() == 0)
+            {
+                if (snapshotReader.isDone())
+                {
+                    snapshotRetrieveSubscription.close();
+                    snapshotRetrieveSubscription = null;
+                    snapshotRetrieveImage = null;
+                    snapshotReader = null;
+                    correlationId = NULL_VALUE;
+                    snapshotReplaySessionId = NULL_VALUE;
+
+                    if (++recordingIdCursor >= leaderSnapshots.size())
+                    {
+                        // TODO: local stop recording
+                        state = State.SNAPSHOT_LOAD;
+                        workCount++;
+                    }
+                }
+                else if (snapshotRetrieveImage.isClosed())
+                {
+                    throw new ClusterException("retrieval of snapshot image ended unexpectedly");
+                }
+            }
+            else
+            {
+                workCount++;
+            }
+        }
+        else if (null == snapshotRetrieveImage && null != snapshotRetrieveSubscription)
+        {
+            snapshotRetrieveImage = snapshotRetrieveSubscription.imageBySessionId(snapshotReplaySessionId);
+            if (null != snapshotRetrieveImage)
+            {
+                snapshotReader = new SnapshotReader(snapshotRetrieveImage);
+            }
+        }
+        else if (NULL_VALUE == correlationId)
+        {
+            // TODO: startRecording on local archive
+
+            final long replayId = ctx.aeron().nextCorrelationId();
+
+            final RecordingLog.Snapshot snapshot = leaderSnapshots.get(recordingIdCursor);
+
+            if (leaderArchive.archiveProxy().replay(
+                snapshot.recordingId,
+                0,
+                NULL_LENGTH,
+                ctx.replayChannel(),
+                ctx.replayStreamId(),
+                replayId,
+                leaderArchive.controlSessionId()))
+            {
+                this.correlationId = replayId;
+                workCount++;
+            }
+        }
+        else if (pollForResponse(leaderArchive, correlationId))
+        {
+            final int replaySessionId = (int)leaderArchive.controlResponsePoller().relevantId();
+            final String channel = ctx.replayChannel();
+            final String replaySubscriptionChannel = ChannelUri.addSessionId(channel, replaySessionId);
+
+            snapshotRetrieveSubscription = ctx.aeron().addSubscription(replaySubscriptionChannel, ctx.replayStreamId());
+        }
+
+        return workCount;
     }
 
     private int snapshotLoad(final long nowMs)
     {
         // TODO: perform loading of snapshot and wait for done by the services, once done, go to join
+        // TODO: loading of the snapshot will set the consensus module clusterMembers, etc.
         return 0;
     }
 
@@ -223,5 +348,94 @@ public class DynamicJoin implements AutoCloseable
     {
         // TODO: send join, create election, and go to done
         return 0;
+    }
+
+    private static boolean pollForResponse(final AeronArchive archive, final long correlationId)
+    {
+        final ControlResponsePoller poller = archive.controlResponsePoller();
+
+        if (poller.poll() > 0 && poller.isPollComplete())
+        {
+            if (poller.controlSessionId() == archive.controlSessionId() &&
+                poller.correlationId() == correlationId)
+            {
+                if (poller.code() == ControlResponseCode.ERROR)
+                {
+                    throw new ClusterException("archive response for correlationId=" + correlationId +
+                        ", error: " + poller.errorMessage());
+                }
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static class SnapshotReader implements ControlledFragmentHandler
+    {
+        private static final int FRAGMENT_LIMIT = 10;
+
+        private boolean inSnapshot = false;
+        private boolean isDone = false;
+        private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+        private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
+        private final Image image;
+
+        SnapshotReader(final Image image)
+        {
+            this.image = image;
+        }
+
+        boolean isDone()
+        {
+            return isDone;
+        }
+
+        int poll()
+        {
+            return image.controlledPoll(this, FRAGMENT_LIMIT);
+        }
+
+        public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+        {
+            messageHeaderDecoder.wrap(buffer, offset);
+
+            if (messageHeaderDecoder.templateId() == SnapshotMarkerDecoder.TEMPLATE_ID)
+            {
+                snapshotMarkerDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final long typeId = snapshotMarkerDecoder.typeId();
+                if (typeId != SNAPSHOT_TYPE_ID)
+                {
+                    throw new ClusterException("unexpected snapshot type: " + typeId);
+                }
+
+                switch (snapshotMarkerDecoder.mark())
+                {
+                    case BEGIN:
+                        if (inSnapshot)
+                        {
+                            throw new ClusterException("already in snapshot");
+                        }
+                        inSnapshot = true;
+                        return Action.CONTINUE;
+
+                    case END:
+                        if (!inSnapshot)
+                        {
+                            throw new ClusterException("missing begin snapshot");
+                        }
+                        isDone = true;
+                        return Action.BREAK;
+                }
+            }
+
+            return ControlledFragmentHandler.Action.CONTINUE;
+        }
     }
 }

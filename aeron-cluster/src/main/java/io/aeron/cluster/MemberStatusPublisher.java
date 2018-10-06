@@ -49,6 +49,7 @@ class MemberStatusPublisher
     private final ClusterMembersChangeEncoder clusterMembersChangeEncoder = new ClusterMembersChangeEncoder();
     private final SnapshotRecordingQueryEncoder snapshotRecordingQueryEncoder = new SnapshotRecordingQueryEncoder();
     private final SnapshotRecordingsEncoder snapshotRecordingsEncoder = new SnapshotRecordingsEncoder();
+    private final JoinClusterEncoder joinClusterEncoder = new JoinClusterEncoder();
 
     boolean canvassPosition(
         final Publication publication,
@@ -621,6 +622,37 @@ class MemberStatusPublisher
             final long result = publication.offer(buffer, 0, length);
             if (result > 0)
             {
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean joinCluster(
+        final Publication publication,
+        final long leadershipTermId,
+        final int memberId)
+    {
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinClusterEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                joinClusterEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
+                    .memberId(memberId);
+
+                bufferClaim.commit();
+
                 return true;
             }
 

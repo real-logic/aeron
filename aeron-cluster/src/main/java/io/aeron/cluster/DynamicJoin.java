@@ -375,8 +375,20 @@ public class DynamicJoin implements AutoCloseable
 
     private int joinCluster(final long nowMs)
     {
-        // TODO: send join, create election, and go to done
-        return 0;
+        int workCount = 0;
+        final long leadershipTermId = leaderSnapshots.isEmpty() ? -1 : leaderSnapshots.get(0).leadershipTermId;
+
+        if (memberStatusPublisher.joinCluster(clusterPublication, leadershipTermId, memberId))
+        {
+            if (consensusModuleAgent.dynamicJoinComplete(nowMs))
+            {
+                state = State.DONE;
+                close();
+                workCount++;
+            }
+        }
+
+        return workCount;
     }
 
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)

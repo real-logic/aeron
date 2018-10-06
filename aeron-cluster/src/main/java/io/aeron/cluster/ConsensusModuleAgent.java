@@ -1372,6 +1372,25 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return result;
     }
 
+    boolean dynamicJoinComplete(final long nowMs)
+    {
+        election = new Election(
+            true,
+            leadershipTermId,
+            recoveryPlan.appendedLogPosition,
+            clusterMembers,
+            clusterMemberByIdMap,
+            thisMember,
+            memberStatusAdapter,
+            memberStatusPublisher,
+            ctx,
+            this);
+
+        dynamicJoin = null;
+
+        return true;
+    }
+
     void catchupLogPoll(final Subscription subscription, final int logSessionId, final long stopPosition)
     {
         if (pollImageAndLogAdapter(subscription, logSessionId))

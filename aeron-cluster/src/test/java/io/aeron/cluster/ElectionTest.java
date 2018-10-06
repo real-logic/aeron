@@ -235,7 +235,7 @@ public class ElectionTest
         election.onNewLeadershipTerm(leadershipTermId, logPosition, candidateTermId, candidateId, logSessionId);
         assertThat(election.state(), is(Election.State.FOLLOWER_REPLAY));
 
-        when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString(), anyLong()))
+        when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString()))
             .thenReturn(mock(Subscription.class));
         final long t3 = 3;
         election.doWork(t3);

@@ -72,7 +72,7 @@ class LogReplay implements AutoCloseable
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         this.channel = channelUri.toString();
 
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, startPosition, stopPosition);
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId);
         logSubscription = aeron.addSubscription(channel, replayStreamId);
     }
 
@@ -90,8 +90,9 @@ class LogReplay implements AutoCloseable
 
         if (State.INIT == state)
         {
+            final int counterId = commitPosition.id();
             consensusModuleAgent.awaitServicesReadyForReplay(
-                channel, replayStreamId, logSessionId, commitPosition.id(), leadershipTermId, startPosition);
+                channel, replayStreamId, logSessionId, counterId, leadershipTermId, startPosition, stopPosition);
 
             final long length = stopPosition - startPosition;
             replaySessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, replayStreamId);

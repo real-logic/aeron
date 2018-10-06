@@ -61,6 +61,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private long ackId = 0;
     private long clusterTimeMs;
     private long cachedTimeMs;
+    private long maxLogPosition = Long.MAX_VALUE;
     private int memberId;
     private BoundedLogAdapter logAdapter;
     private ActiveLogEvent activeLogEvent;
@@ -139,7 +140,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             final int polled = logAdapter.poll();
             if (0 == polled)
             {
-                if (logAdapter.isConsumed(aeron.countersReader()))
+                if (logAdapter.position() >= maxLogPosition)
                 {
                     consensusModuleProxy.ack(logAdapter.position(), ackId++, serviceId);
                     logAdapter.close();
@@ -264,12 +265,15 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public void onJoinLog(
         final long leadershipTermId,
+        final long logPosition,
+        final long maxLogPosition,
         final int commitPositionId,
         final int logSessionId,
         final int logStreamId,
         final String logChannel)
     {
-        activeLogEvent = new ActiveLogEvent(leadershipTermId, commitPositionId, logSessionId, logStreamId, logChannel);
+        activeLogEvent = new ActiveLogEvent(
+            leadershipTermId, logPosition, maxLogPosition, commitPositionId, logSessionId, logStreamId, logChannel);
     }
 
     void onSessionMessage(
@@ -420,17 +424,16 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             awaitActiveLog();
 
-            final int counterId = activeLogEvent.commitPositionId;
-
             try (Subscription subscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId))
             {
-                consensusModuleProxy.ack(CommitPos.getLogPosition(counters, counterId), ackId++, serviceId);
+                consensusModuleProxy.ack(activeLogEvent.logPosition, ackId++, serviceId);
+
 
                 final Image image = awaitImage(activeLogEvent.sessionId, subscription);
-                final ReadableCounter limit = new ReadableCounter(counters, counterId);
+                final ReadableCounter limit = new ReadableCounter(counters, activeLogEvent.commitPositionId);
                 final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
 
-                consumeImage(image, adapter);
+                consumeImage(image, adapter, activeLogEvent.maxLogPosition);
             }
 
             activeLogEvent = null;
@@ -449,14 +452,14 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
     }
 
-    private void consumeImage(final Image image, final BoundedLogAdapter adapter)
+    private void consumeImage(final Image image, final BoundedLogAdapter adapter, final long maxLogPosition)
     {
         while (true)
         {
             final int workCount = adapter.poll();
             if (workCount == 0)
             {
-                if (adapter.isConsumed(aeron.countersReader()))
+                if (adapter.position() >= maxLogPosition)
                 {
                     consensusModuleProxy.ack(image.position(), ackId++, serviceId);
                     break;
@@ -491,19 +494,17 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         final CountersReader counters = aeron.countersReader();
         final int commitPositionId = activeLogEvent.commitPositionId;
-        if (!CommitPos.isActive(counters, commitPositionId))
-        {
-            throw new ClusterException("CommitPos counter not active: " + commitPositionId);
-        }
 
         final Subscription logSubscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId);
-        consensusModuleProxy.ack(CommitPos.getLogPosition(counters, commitPositionId), ackId++, serviceId);
+        consensusModuleProxy.ack(activeLogEvent.logPosition, ackId++, serviceId);
 
         final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
         heartbeatCounter.setOrdered(epochClock.time());
 
+        maxLogPosition = activeLogEvent.maxLogPosition;
         activeLogEvent = null;
         logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, commitPositionId), this);
+
 
         role(Role.get((int)roleCounter.get()));
 

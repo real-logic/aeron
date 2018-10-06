@@ -1118,7 +1118,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
-        allocateCommitPosition(logPosition, leadershipTermId);
+        allocateCommitPosition(leadershipTermId);
         awaitServicesReady(channelUri, logSessionId, logPosition);
 
         for (final ClusterSession session : sessionByIdMap.values())
@@ -1163,24 +1163,24 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.liveLogDestination = liveLogDestination;
     }
 
-    Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel, final long logPosition)
+    Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel)
     {
         closeExistingLog();
         final Subscription subscription = aeron.addSubscription(logChannel, ctx.logStreamId());
         startLogRecording(logChannel, SourceLocation.REMOTE);
-        allocateCommitPosition(logPosition, leadershipTermId);
+        allocateCommitPosition(leadershipTermId);
 
         return subscription;
     }
 
-    private void allocateCommitPosition(final long logPosition, final long leadershipTermId)
+    private void allocateCommitPosition(final long leadershipTermId)
     {
         if (null != commitPosition)
         {
             commitPosition.close();
         }
 
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId, logPosition, Long.MAX_VALUE);
+        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId);
     }
 
     boolean pollImageAndLogAdapter(final Subscription subscription, final int logSessionId)
@@ -1219,9 +1219,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void awaitServicesReady(final ChannelUri logChannelUri, final int logSessionId, final long logPosition)
     {
+        final int counterId = commitPosition.id();
         final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(logChannelUri.media()) ?
             logChannelUri.prefix(SPY_QUALIFIER).toString() : logChannelUri.toString();
-        serviceProxy.joinLog(leadershipTermId, commitPosition.id(), logSessionId, ctx.logStreamId(), channel);
+        serviceProxy.joinLog(
+            leadershipTermId, logPosition, Long.MAX_VALUE, counterId, logSessionId, ctx.logStreamId(), channel);
 
         expectedAckPosition = logPosition;
         awaitServiceAcks(logPosition);
@@ -1267,11 +1269,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final int logSessionId,
         final int counterId,
         final long leadershipTermId,
-        final long startPosition)
+        final long logPosition,
+        final long maxLogPosition)
     {
-        serviceProxy.joinLog(leadershipTermId, counterId, logSessionId, streamId, channel);
-        expectedAckPosition = startPosition;
-        awaitServiceAcks(startPosition);
+        serviceProxy.joinLog(leadershipTermId, logPosition, maxLogPosition, counterId, logSessionId, streamId, channel);
+        expectedAckPosition = logPosition;
+        awaitServiceAcks(logPosition);
     }
 
     void awaitServicesReplayComplete(final long stopPosition)

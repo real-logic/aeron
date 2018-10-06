@@ -736,8 +736,7 @@ class Election implements AutoCloseable
         {
             final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
 
-            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(
-                logChannelUri.toString(), logPosition);
+            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
             consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
 
             replayDestination = new ChannelUriStringBuilder()
@@ -787,8 +786,7 @@ class Election implements AutoCloseable
         {
             final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
 
-            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(
-                logChannelUri.toString(), logPosition);
+            logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
             consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
         }
 

@@ -21,6 +21,8 @@ package io.aeron.cluster.service;
 class ActiveLogEvent
 {
     final long leadershipTermId;
+    final long logPosition;
+    final long maxLogPosition;
     final int commitPositionId;
     final int sessionId;
     final int streamId;
@@ -28,12 +30,16 @@ class ActiveLogEvent
 
     ActiveLogEvent(
         final long leadershipTermId,
+        final long logPosition,
+        final long maxLogPosition,
         final int commitPositionId,
         final int sessionId,
         final int streamId,
         final String channel)
     {
         this.leadershipTermId = leadershipTermId;
+        this.logPosition = logPosition;
+        this.maxLogPosition = maxLogPosition;
         this.commitPositionId = commitPositionId;
         this.sessionId = sessionId;
         this.streamId = streamId;
@@ -44,6 +50,8 @@ class ActiveLogEvent
     {
         return "ActiveLogEvent{" +
             "leadershipTermId=" + leadershipTermId +
+            ", logPosition=" + logPosition +
+            ", maxLogPosition=" + maxLogPosition +
             ", commitPositionId=" + commitPositionId +
             ", sessionId=" + sessionId +
             ", streamId=" + streamId +

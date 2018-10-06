@@ -53,7 +53,6 @@ import static org.junit.Assert.assertThat;
 @Ignore
 public class ClusterFollowerTest
 {
-
     private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int MEMBER_COUNT = 3;
     private static final int MESSAGE_COUNT = 10;

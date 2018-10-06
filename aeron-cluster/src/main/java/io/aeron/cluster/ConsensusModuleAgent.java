@@ -1867,6 +1867,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             return new DynamicJoin(
                 ctx.clusterMembersStatusEndpoints(),
+                archive,
                 memberStatusAdapter,
                 memberStatusPublisher,
                 ctx,

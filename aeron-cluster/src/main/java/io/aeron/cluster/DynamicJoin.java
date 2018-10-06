@@ -72,6 +72,7 @@ public class DynamicJoin implements AutoCloseable
     private Subscription snapshotRetrieveSubscription;
     private Image snapshotRetrieveImage;
     private SnapshotReader snapshotReader;
+    private Counter recoveryStateCounter;
     private long timeOfLastActivity = 0;
     private long correlationId = NULL_VALUE;
     private long snapshotRetrieveSubscriptionId = NULL_VALUE;
@@ -368,9 +369,21 @@ public class DynamicJoin implements AutoCloseable
 
     private int snapshotLoad(final long nowMs)
     {
-        // TODO: perform loading of snapshot and wait for done by the services, once done, go to join
-        // TODO: loading of the snapshot will set the consensus module clusterMembers, etc.
-        return 0;
+        int workCount = 0;
+
+        if (null == recoveryStateCounter)
+        {
+            recoveryStateCounter = consensusModuleAgent.loadSnapshotsFromDynamicJoin();
+            workCount++;
+        }
+        else if (consensusModuleAgent.pollForEndOfSnapshotLoad(recoveryStateCounter))
+        {
+            recoveryStateCounter = null;
+            state = State.JOIN_CLUSTER;
+            workCount++;
+        }
+
+        return workCount;
     }
 
     private int joinCluster(final long nowMs)

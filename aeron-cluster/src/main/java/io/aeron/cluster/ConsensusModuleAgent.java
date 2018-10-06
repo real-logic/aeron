@@ -1464,6 +1464,41 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
+    Counter loadSnapshotsFromDynamicJoin()
+    {
+        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+
+        final Counter recoveryStateCounter = addRecoveryStateCounter(recoveryPlan);
+        if (!recoveryPlan.snapshots.isEmpty())
+        {
+            recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
+        }
+
+        return recoveryStateCounter;
+    }
+
+    boolean pollForEndOfSnapshotLoad(final Counter recoveryStateCounter)
+    {
+        consensusModuleAdapter.poll();
+
+        if (ServiceAck.hasReachedPosition(expectedAckPosition, serviceAckId, serviceAcks))
+        {
+            ++serviceAckId;
+            recoveryStateCounter.close();
+            if (ConsensusModule.State.SUSPENDED != state)
+            {
+                state(ConsensusModule.State.ACTIVE);
+            }
+
+            timeOfLastLogUpdateMs = cachedTimeMs = epochClock.time();
+            leadershipTermId = recoveryPlan.lastLeadershipTermId;
+
+            return true;
+        }
+
+        return false;
+    }
+
     private int slowTickCycle(final long nowMs)
     {
         int workCount = 0;

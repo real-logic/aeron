@@ -262,7 +262,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (null != dynamicJoin)
         {
-            dynamicJoin.doWork(nowMs);
+            workCount += dynamicJoin.doWork(nowMs);
         }
         else if (null != election)
         {

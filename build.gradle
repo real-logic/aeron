@@ -123,7 +123,7 @@ subprojects {
     jar.enabled = true
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:8.12'
+        checkstyle 'com.puppycrawl.tools:checkstyle:8.13'
 
         testCompile 'junit:junit:4.12'
         testCompile 'org.mockito:mockito-core:2.23.0'
@@ -131,7 +131,7 @@ subprojects {
     }
 
     checkstyle {
-        toolVersion = '8.12'
+        toolVersion = '8.13'
     }
 
     compileJava {

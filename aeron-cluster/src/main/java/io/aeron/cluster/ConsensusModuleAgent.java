@@ -211,26 +211,26 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
 
-        try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
-        {
-            if (!recoveryPlan.snapshots.isEmpty())
-            {
-                recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
-            }
-
-            awaitServiceAcks(expectedAckPosition);
-        }
-
-        if (ConsensusModule.State.SUSPENDED != state)
-        {
-            state(ConsensusModule.State.ACTIVE);
-        }
-
-        timeOfLastLogUpdateMs = cachedTimeMs = epochClock.time();
-        leadershipTermId = recoveryPlan.lastLeadershipTermId;
-
         if (null == (dynamicJoin = newDynamicJoin()))
         {
+            try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
+            {
+                if (!recoveryPlan.snapshots.isEmpty())
+                {
+                    recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
+                }
+
+                awaitServiceAcks(expectedAckPosition);
+            }
+
+            if (ConsensusModule.State.SUSPENDED != state)
+            {
+                state(ConsensusModule.State.ACTIVE);
+            }
+
+            timeOfLastLogUpdateMs = cachedTimeMs = epochClock.time();
+            leadershipTermId = recoveryPlan.lastLeadershipTermId;
+
             election = new Election(
                 true,
                 leadershipTermId,

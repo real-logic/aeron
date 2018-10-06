@@ -158,7 +158,7 @@ subprojects {
     javadoc {
         title = '<h1>Aeron Message Transport</h1>'
         options.bottom = '<i>Copyright &#169; 2014-2018 Real Logic Ltd. All Rights Reserved.</i>'
-        if (JavaVersion.current() == JavaVersion.VERSION_1_10) {
+        if (JavaVersion.current() == JavaVersion.VERSION_11) {
             options.addBooleanOption 'html5', true
         }
     }

@@ -61,7 +61,6 @@ class ClusteredServiceAgent implements Agent, Cluster
     private long ackId = 0;
     private long clusterTimeMs;
     private long cachedTimeMs;
-    private long maxLogPosition = Long.MAX_VALUE;
     private int memberId;
     private BoundedLogAdapter logAdapter;
     private AtomicCounter heartbeatCounter;
@@ -142,13 +141,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             final int polled = logAdapter.poll();
             if (0 == polled)
             {
-                if (logAdapter.position() >= maxLogPosition)
-                {
-                    consensusModuleProxy.ack(logAdapter.position(), ackId++, serviceId);
-                    logAdapter.close();
-                    logAdapter = null;
-                }
-                else if (logAdapter.isImageClosed())
+                if (logAdapter.isDone())
                 {
                     logAdapter.close();
                     logAdapter = null;
@@ -498,10 +491,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
         heartbeatCounter.setOrdered(epochClock.time());
 
-        maxLogPosition = activeLogEvent.maxLogPosition;
         activeLogEvent = null;
         logAdapter = new BoundedLogAdapter(image, commitPosition, this);
-
 
         role(Role.get((int)roleCounter.get()));
 

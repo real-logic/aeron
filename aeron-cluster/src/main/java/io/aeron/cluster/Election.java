@@ -112,7 +112,7 @@ class Election implements AutoCloseable
     private final long leaderHeartbeatTimeoutMs;
     private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
-    private final Int2ObjectHashMap<ClusterMember> idToClusterMemberMap;
+    private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap;
     private final MemberStatusAdapter memberStatusAdapter;
     private final MemberStatusPublisher memberStatusPublisher;
     private final ConsensusModule.Context ctx;
@@ -141,7 +141,7 @@ class Election implements AutoCloseable
         final long leadershipTermId,
         final long logPosition,
         final ClusterMember[] clusterMembers,
-        final Int2ObjectHashMap<ClusterMember> idToClusterMemberMap,
+        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap,
         final ClusterMember thisMember,
         final MemberStatusAdapter memberStatusAdapter,
         final MemberStatusPublisher memberStatusPublisher,
@@ -158,7 +158,7 @@ class Election implements AutoCloseable
         this.logLeadershipTermId = leadershipTermId;
         this.leadershipTermId = leadershipTermId;
         this.clusterMembers = clusterMembers;
-        this.idToClusterMemberMap = idToClusterMemberMap;
+        this.clusterMemberByIdMap = clusterMemberByIdMap;
         this.thisMember = thisMember;
         this.memberStatusAdapter = memberStatusAdapter;
         this.memberStatusPublisher = memberStatusPublisher;
@@ -239,7 +239,7 @@ class Election implements AutoCloseable
 
     void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
     {
-        final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+        final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
         if (null == follower)
         {
@@ -306,7 +306,7 @@ class Election implements AutoCloseable
         final int followerMemberId,
         final boolean vote)
     {
-        final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+        final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
         if (State.CANDIDATE_BALLOT == state &&
             candidateTermId == this.candidateTermId &&
@@ -328,7 +328,7 @@ class Election implements AutoCloseable
         final int leaderMemberId,
         final int logSessionId)
     {
-        final ClusterMember leader = idToClusterMemberMap.get(leaderMemberId);
+        final ClusterMember leader = clusterMemberByIdMap.get(leaderMemberId);
 
         if (null == leader)
         {
@@ -388,7 +388,7 @@ class Election implements AutoCloseable
 
     void onAppendedPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
-        final ClusterMember follower = idToClusterMemberMap.get(followerMemberId);
+        final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
         if (null != follower)
         {
@@ -839,7 +839,7 @@ class Election implements AutoCloseable
 
     private void placeVote(final long candidateTermId, final int candidateId, final boolean vote)
     {
-        final ClusterMember candidate = idToClusterMemberMap.get(candidateId);
+        final ClusterMember candidate = clusterMemberByIdMap.get(candidateId);
 
         if (null != candidate)
         {

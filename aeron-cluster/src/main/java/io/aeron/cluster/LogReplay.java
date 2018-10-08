@@ -17,9 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.service.CommitPos;
 import org.agrona.CloseHelper;
-import org.agrona.MutableDirectBuffer;
 
 class LogReplay implements AutoCloseable
 {
@@ -42,7 +40,6 @@ class LogReplay implements AutoCloseable
 
     private int replaySessionId = Aeron.NULL_VALUE;
     private State state = State.INIT;
-    private Counter commitPosition;
     private Subscription logSubscription;
     private LogAdapter logAdapter;
 
@@ -66,19 +63,16 @@ class LogReplay implements AutoCloseable
         this.replayStreamId = ctx.replayStreamId();
 
         final Aeron aeron = ctx.aeron();
-        final MutableDirectBuffer tempBuffer = ctx.tempBuffer();
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.replayChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
         this.channel = channelUri.toString();
 
-        commitPosition = CommitPos.allocate(aeron, tempBuffer, leadershipTermId);
         logSubscription = aeron.addSubscription(channel, replayStreamId);
     }
 
     public void close()
     {
-        CloseHelper.close(commitPosition);
         CloseHelper.close(logSubscription);
         CloseHelper.close(logAdapter);
     }
@@ -90,9 +84,8 @@ class LogReplay implements AutoCloseable
 
         if (State.INIT == state)
         {
-            final int counterId = commitPosition.id();
             consensusModuleAgent.awaitServicesReadyForReplay(
-                channel, replayStreamId, logSessionId, counterId, leadershipTermId, startPosition, stopPosition);
+                channel, replayStreamId, logSessionId, leadershipTermId, startPosition, stopPosition);
 
             final long length = stopPosition - startPosition;
             replaySessionId = (int)archive.startReplay(recordingId, startPosition, length, channel, replayStreamId);
@@ -112,13 +105,10 @@ class LogReplay implements AutoCloseable
             }
             else
             {
-                consensusModuleAgent.replayLogPoll(logAdapter, stopPosition, commitPosition);
+                consensusModuleAgent.replayLogPoll(logAdapter, stopPosition);
                 if (logAdapter.position() == stopPosition)
                 {
                     consensusModuleAgent.awaitServicesReplayComplete(stopPosition);
-
-                    commitPosition.close();
-                    commitPosition = null;
 
                     logSubscription.close();
                     logSubscription = null;

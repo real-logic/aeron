@@ -17,24 +17,16 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.Counter;
-import org.agrona.BitUtil;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.status.CountersReader;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
+import static org.agrona.concurrent.status.CountersReader.RECORD_ALLOCATED;
+import static org.agrona.concurrent.status.CountersReader.TYPE_ID_OFFSET;
 
 /**
- * Counter representing the commit position that can consumed by a state machine on a stream for the a leadership term.
- * <p>
- * Key layout as follows:
- * <pre>
- *   0                   1                   2                   3
- *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                     Leadership Term ID                        |
- *  |                                                               |
- *  +---------------------------------------------------------------+
- * </pre>
+ * Counter representing the commit position that can consumed by a state machine on a stream, it is the consensus
+ * position reached by the cluster.
  */
 public class CommitPos
 {
@@ -46,30 +38,43 @@ public class CommitPos
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "commit-pos: leadershipTermId=";
+    public static final String NAME = "cluster-commit-pos";
 
-    public static final int LEADERSHIP_TERM_ID_OFFSET = 0;
-    public static final int KEY_LENGTH = LEADERSHIP_TERM_ID_OFFSET + SIZE_OF_LONG;
 
     /**
      * Allocate a counter to represent the commit position on stream for the current leadership term.
      *
-     * @param aeron                to allocate the counter.
-     * @param tempBuffer           to use for building the key and label without allocation.
-     * @param leadershipTermId     of the log at the beginning of the leadership term.
+     * @param aeron to allocate the counter.
      * @return the {@link Counter} for the commit position.
      */
-    public static Counter allocate(
-        final Aeron aeron, final MutableDirectBuffer tempBuffer, final long leadershipTermId)
+    public static Counter allocate(final Aeron aeron)
     {
-        tempBuffer.putLong(LEADERSHIP_TERM_ID_OFFSET, leadershipTermId);
+        return aeron.addCounter(COMMIT_POSITION_TYPE_ID, NAME);
+    }
 
-        final int labelOffset = BitUtil.align(KEY_LENGTH, SIZE_OF_INT);
-        int labelLength = 0;
-        labelLength += tempBuffer.putStringWithoutLengthAscii(labelOffset + labelLength, NAME);
-        labelLength += tempBuffer.putLongAscii(labelOffset + labelLength, leadershipTermId);
+    /**
+     * Find the active counter id for a cluster commit position
+     *
+     * @param counters to search within.
+     * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
+     */
+    public static int findCounterId(final CountersReader counters)
+    {
+        final DirectBuffer buffer = counters.metaDataBuffer();
 
-        return aeron.addCounter(
-            COMMIT_POSITION_TYPE_ID, tempBuffer, 0, KEY_LENGTH, tempBuffer, labelOffset, labelLength);
+        for (int i = 0, size = counters.maxCounterId(); i < size; i++)
+        {
+            if (counters.getCounterState(i) == RECORD_ALLOCATED)
+            {
+                final int recordOffset = CountersReader.metaDataOffset(i);
+
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == COMMIT_POSITION_TYPE_ID)
+                {
+                    return i;
+                }
+            }
+        }
+
+        return NULL_COUNTER_ID;
     }
 }

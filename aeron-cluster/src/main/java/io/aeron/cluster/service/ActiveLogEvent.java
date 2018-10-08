@@ -23,7 +23,6 @@ class ActiveLogEvent
     final long leadershipTermId;
     final long logPosition;
     final long maxLogPosition;
-    final int commitPositionId;
     final int sessionId;
     final int streamId;
     final String channel;
@@ -32,7 +31,6 @@ class ActiveLogEvent
         final long leadershipTermId,
         final long logPosition,
         final long maxLogPosition,
-        final int commitPositionId,
         final int sessionId,
         final int streamId,
         final String channel)
@@ -40,7 +38,6 @@ class ActiveLogEvent
         this.leadershipTermId = leadershipTermId;
         this.logPosition = logPosition;
         this.maxLogPosition = maxLogPosition;
-        this.commitPositionId = commitPositionId;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.channel = channel;
@@ -52,7 +49,6 @@ class ActiveLogEvent
             "leadershipTermId=" + leadershipTermId +
             ", logPosition=" + logPosition +
             ", maxLogPosition=" + maxLogPosition +
-            ", commitPositionId=" + commitPositionId +
             ", sessionId=" + sessionId +
             ", streamId=" + streamId +
             ", channel='" + channel + '\'' +

@@ -64,9 +64,10 @@ class ClusteredServiceAgent implements Agent, Cluster
     private long maxLogPosition = Long.MAX_VALUE;
     private int memberId;
     private BoundedLogAdapter logAdapter;
-    private ActiveLogEvent activeLogEvent;
     private AtomicCounter heartbeatCounter;
     private ReadableCounter roleCounter;
+    private ReadableCounter commitPosition;
+    private ActiveLogEvent activeLogEvent;
     private Role role = Role.FOLLOWER;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
@@ -97,6 +98,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final CountersReader counters = aeron.countersReader();
         roleCounter = awaitClusterRoleCounter(counters);
         heartbeatCounter = awaitHeartbeatCounter(counters);
+        commitPosition = awaitCommitPositionCounter(counters);
 
         service.onStart(this);
 
@@ -267,13 +269,12 @@ class ClusteredServiceAgent implements Agent, Cluster
         final long leadershipTermId,
         final long logPosition,
         final long maxLogPosition,
-        final int commitPositionId,
         final int logSessionId,
         final int logStreamId,
         final String logChannel)
     {
         activeLogEvent = new ActiveLogEvent(
-            leadershipTermId, logPosition, maxLogPosition, commitPositionId, logSessionId, logStreamId, logChannel);
+            leadershipTermId, logPosition, maxLogPosition, logSessionId, logStreamId, logChannel);
     }
 
     void onSessionMessage(
@@ -430,8 +431,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
 
                 final Image image = awaitImage(activeLogEvent.sessionId, subscription);
-                final ReadableCounter limit = new ReadableCounter(counters, activeLogEvent.commitPositionId);
-                final BoundedLogAdapter adapter = new BoundedLogAdapter(image, limit, this);
+                final BoundedLogAdapter adapter = new BoundedLogAdapter(image, commitPosition, this);
 
                 consumeImage(image, adapter, activeLogEvent.maxLogPosition);
             }
@@ -492,9 +492,6 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void joinActiveLog()
     {
-        final CountersReader counters = aeron.countersReader();
-        final int commitPositionId = activeLogEvent.commitPositionId;
-
         final Subscription logSubscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId);
         consensusModuleProxy.ack(activeLogEvent.logPosition, ackId++, serviceId);
 
@@ -503,7 +500,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         maxLogPosition = activeLogEvent.maxLogPosition;
         activeLogEvent = null;
-        logAdapter = new BoundedLogAdapter(image, new ReadableCounter(counters, commitPositionId), this);
+        logAdapter = new BoundedLogAdapter(image, commitPosition, this);
 
 
         role(Role.get((int)roleCounter.get()));
@@ -548,6 +545,20 @@ class ClusteredServiceAgent implements Agent, Cluster
             checkInterruptedStatus();
             idleStrategy.idle();
             counterId = ClusterNodeRole.findCounterId(counters);
+        }
+
+        return new ReadableCounter(counters, counterId);
+    }
+
+    private ReadableCounter awaitCommitPositionCounter(final CountersReader counters)
+    {
+        idleStrategy.reset();
+        int counterId = CommitPos.findCounterId(counters);
+        while (NULL_COUNTER_ID == counterId)
+        {
+            checkInterruptedStatus();
+            idleStrategy.idle();
+            counterId = CommitPos.findCounterId(counters);
         }
 
         return new ReadableCounter(counters, counterId);

@@ -912,6 +912,7 @@ public class ConsensusModule implements AutoCloseable
 
         private Counter moduleState;
         private Counter clusterNodeRole;
+        private Counter commitPosition;
         private Counter controlToggle;
         private Counter snapshotCounter;
         private Counter invalidRequestCounter;
@@ -1034,6 +1035,11 @@ public class ConsensusModule implements AutoCloseable
             if (null == moduleState)
             {
                 moduleState = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus module state");
+            }
+
+            if (null == commitPosition)
+            {
+                commitPosition = CommitPos.allocate(aeron);
             }
 
             if (null == controlToggle)
@@ -2137,6 +2143,30 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Get the counter for the commit position the cluster has reached for consensus.
+         *
+         * @return the counter for the commit position the cluster has reached for consensus.
+         * @see State
+         */
+        public Counter commitPositionCounter()
+        {
+            return commitPosition;
+        }
+
+        /**
+         * Set the counter for the commit position the cluster has reached for consensus.
+         *
+         * @param commitPosition counter for the commit position the cluster has reached for consensus.
+         * @return this for a fluent API.
+         * @see State
+         */
+        public Context commitPositionCounter(final Counter commitPosition)
+        {
+            this.commitPosition = commitPosition;
+            return this;
+        }
+
+        /**
          * Get the counter for representing the current {@link Cluster.Role} of the consensus module node.
          *
          * @return the counter for representing the current {@link Cluster.Role} of the cluster node.
@@ -2553,6 +2583,7 @@ public class ConsensusModule implements AutoCloseable
             else
             {
                 CloseHelper.close(moduleState);
+                CloseHelper.close(commitPosition);
                 CloseHelper.close(clusterNodeRole);
                 CloseHelper.close(controlToggle);
                 CloseHelper.close(snapshotCounter);

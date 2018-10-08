@@ -67,7 +67,6 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
             joinLogDecoder.leadershipTermId(),
             joinLogDecoder.logPosition(),
             joinLogDecoder.maxLogPosition(),
-            joinLogDecoder.commitPositionId(),
             joinLogDecoder.logSessionId(),
             joinLogDecoder.logStreamId(),
             joinLogDecoder.logChannel());

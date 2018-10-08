@@ -59,6 +59,7 @@ public class ConsensusModuleAgentTest
         .errorHandler(Throwable::printStackTrace)
         .errorCounter(mock(AtomicCounter.class))
         .moduleStateCounter(mock(Counter.class))
+        .commitPositionCounter(mock(Counter.class))
         .controlToggleCounter(mock(Counter.class))
         .clusterNodeCounter(mock(Counter.class))
         .timedOutClientCounter(mockTimedOutClientCounter)
@@ -101,7 +102,6 @@ public class ConsensusModuleAgentTest
         final long correlationIdOne = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
-        agent.commitPositionCounter(mock(Counter.class));
         agent.appendedPositionCounter(mock(ReadableCounter.class));
         agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
 
@@ -133,7 +133,6 @@ public class ConsensusModuleAgentTest
         final long correlationId = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
-        agent.commitPositionCounter(mock(Counter.class));
         agent.appendedPositionCounter(mock(ReadableCounter.class));
         agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
 
@@ -187,7 +186,6 @@ public class ConsensusModuleAgentTest
         ctx.epochClock(clock);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
-        agent.commitPositionCounter(mock(Counter.class));
         agent.appendedPositionCounter(mock(ReadableCounter.class));
 
         assertThat((int)stateValue.get(), is(ConsensusModule.State.INIT.code()));

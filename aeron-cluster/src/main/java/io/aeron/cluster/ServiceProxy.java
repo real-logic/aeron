@@ -45,7 +45,6 @@ final class ServiceProxy implements AutoCloseable
         final long leadershipTermId,
         final long logPosition,
         final long maxLogPosition,
-        final int commitPositionId,
         final int logSessionId,
         final int logStreamId,
         final String channel)
@@ -64,7 +63,6 @@ final class ServiceProxy implements AutoCloseable
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
                     .maxLogPosition(maxLogPosition)
-                    .commitPositionId(commitPositionId)
                     .logSessionId(logSessionId)
                     .logStreamId(logStreamId)
                     .logChannel(channel);

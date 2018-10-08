@@ -80,7 +80,8 @@ final class ServiceProxy implements AutoCloseable
         throw new ClusterException("failed to send join log request");
     }
 
-    void clusterMembersResponse(final long correlationId, final String activeMembers, final String passievFollowers)
+    void clusterMembersResponse(
+        final long correlationId, final int leaderMemberId, final String activeMembers, final String passievFollowers)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersResponseEncoder.BLOCK_LENGTH +
             ClusterMembersResponseEncoder.activeMembersHeaderLength() + activeMembers.length() +
@@ -95,6 +96,7 @@ final class ServiceProxy implements AutoCloseable
                 clusterMembersResponseEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .correlationId(correlationId)
+                    .leaderMemberId(leaderMemberId)
                     .activeMembers(activeMembers)
                     .passiveFollowers(passievFollowers);
 

@@ -848,6 +848,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         serviceProxy.clusterMembersResponse(
             correlationId,
+            leaderMember.id(),
             ClusterMember.membersString(clusterMembers),
             ClusterMember.membersString(passiveMembers));
     }

@@ -28,7 +28,8 @@ public class MemberServiceAdapter implements FragmentHandler, AutoCloseable
 {
     public interface MemberServiceHandler
     {
-        void onClusterMembersResponse(long correlationId, String activeMembers, String passiveMembers);
+        void onClusterMembersResponse(
+            long correlationId, int leaderMemberId, String activeMembers, String passiveMembers);
     }
 
     private final Subscription subscription;
@@ -74,6 +75,7 @@ public class MemberServiceAdapter implements FragmentHandler, AutoCloseable
 
                 handler.onClusterMembersResponse(
                     clusterMembersResponseDecoder.correlationId(),
+                    clusterMembersResponseDecoder.leaderMemberId(),
                     clusterMembersResponseDecoder.activeMembers(),
                     clusterMembersResponseDecoder.passiveFollowers());
                 break;

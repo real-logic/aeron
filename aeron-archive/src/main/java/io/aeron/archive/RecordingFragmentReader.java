@@ -90,6 +90,15 @@ class RecordingFragmentReader implements AutoCloseable
             throw new IllegalArgumentException("length must be positive");
         }
 
+        if (null != recordingPosition)
+        {
+            final long currentPosition = recordingPosition.get();
+            if (currentPosition < fromPosition)
+            {
+                throw new IllegalArgumentException(fromPosition + " after current position of " + currentPosition);
+            }
+        }
+
         segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentLength);
         openRecordingSegment();
 
@@ -102,7 +111,7 @@ class RecordingFragmentReader implements AutoCloseable
         termBaseSegmentOffset = segmentOffset - termOffset;
         termBuffer = new UnsafeBuffer(mappedSegmentBuffer, termBaseSegmentOffset, termLength);
 
-        if (fromPosition > startPosition &&
+        if (fromPosition > startPosition && fromPosition != stopPosition &&
             (DataHeaderFlyweight.termOffset(termBuffer, termOffset) != termOffset ||
             DataHeaderFlyweight.termId(termBuffer, termOffset) != termId ||
             DataHeaderFlyweight.streamId(termBuffer, termOffset) != recordingSummary.streamId))

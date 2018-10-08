@@ -219,6 +219,54 @@ public class BasicArchiveTest
         aeronArchive.stopReplay(replaySessionId);
     }
 
+    @Test(timeout = 10_000)
+    public void shouldReplayRecordingJoiningLate()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+
+        final long subscriptionId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+
+        try (Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+            Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        {
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = getRecordingCounterId(publication.sessionId(), counters);
+            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            assertThat(RecordingPos.getSourceIdentity(counters, counterId), is(CommonContext.IPC_CHANNEL));
+
+            offer(publication, messageCount, messagePrefix);
+            consume(subscription, messageCount, messagePrefix);
+
+            final long currentPosition = publication.position();
+            while (counters.getCounterValue(counterId) < currentPosition)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            try (Subscription replaySubscription = aeronArchive.replay(
+                recordingId, currentPosition, AeronArchive.NULL_LENGTH, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+            {
+                offer(publication, messageCount, messagePrefix);
+                consume(replaySubscription, messageCount, messagePrefix);
+
+                final long endPosition = publication.position();
+
+                while (counters.getCounterValue(counterId) < endPosition)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
+
+                assertEquals(endPosition, replaySubscription.imageAtIndex(0).position());
+            }
+        }
+
+        aeronArchive.stopRecording(subscriptionId);
+    }
+
     private int getRecordingCounterId(final int sessionId, final CountersReader counters)
     {
         int counterId;

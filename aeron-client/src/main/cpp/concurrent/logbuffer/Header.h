@@ -38,6 +38,16 @@ public:
 
     Header(const Header& header) = default;
 
+    Header& operator=(Header& header)
+    {
+        m_buffer.wrap(header.m_buffer);
+        m_offset = header.m_offset;
+        m_initialTermId = header.m_initialTermId;
+        m_positionBitsToShift = header.m_positionBitsToShift;
+
+        return *this;
+    }
+
     /**
      * Get the initial term id this stream started at.
      *
@@ -142,7 +152,7 @@ public:
      *
      * @return type of the the frame which should always be {@link DataFrameHeader::HDR_TYPE_DATA}
      */
-    inline std::uint16_t type()
+    inline std::uint16_t type() const
     {
         // TODO: add LITTLE_ENDIAN check
         return m_buffer.getUInt16(m_offset + DataFrameHeader::TYPE_FIELD_OFFSET);
@@ -155,7 +165,7 @@ public:
      *
      * @return the flags for this frame.
      */
-    inline std::uint8_t flags()
+    inline std::uint8_t flags() const
     {
         return m_buffer.getUInt8(m_offset + DataFrameHeader::FLAGS_FIELD_OFFSET);
     }

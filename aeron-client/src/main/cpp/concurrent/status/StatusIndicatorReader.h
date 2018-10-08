@@ -69,6 +69,26 @@ public:
         m_buffer.putInt64Ordered(m_offset, indicatorReader.m_buffer.getInt64Volatile(indicatorReader.m_offset));
     }
 
+    StatusIndicatorReader& operator=(const StatusIndicatorReader& indicatorReader)
+    {
+        m_staticBuffer = indicatorReader.m_staticBuffer;
+        m_id = indicatorReader.m_id;
+        m_offset = indicatorReader.m_offset;
+
+        if (ChannelEndpointStatus::NO_ID_ALLOCATED == m_id)
+        {
+            m_buffer.wrap(m_staticBuffer);
+        }
+        else
+        {
+            m_buffer.wrap(indicatorReader.m_buffer);
+        }
+
+        m_buffer.putInt64Ordered(m_offset, indicatorReader.m_buffer.getInt64Volatile(indicatorReader.m_offset));
+
+        return *this;
+    }
+
     inline std::int32_t id() const
     {
         return m_id;

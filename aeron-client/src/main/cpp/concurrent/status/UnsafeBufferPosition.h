@@ -46,6 +46,13 @@ public:
     {
     }
 
+    UnsafeBufferPosition& operator=(const UnsafeBufferPosition& position)
+    {
+        wrap(position);
+
+        return *this;
+    }
+
     inline void wrap(const UnsafeBufferPosition& position)
     {
         m_buffer.wrap(position.m_buffer);

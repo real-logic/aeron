@@ -220,7 +220,7 @@ public class BasicArchiveTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldReplayRecordingJoiningLate()
+    public void shouldReplayRecordingFromLateJoinPosition()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -233,8 +233,6 @@ public class BasicArchiveTest
             final CountersReader counters = aeron.countersReader();
             final int counterId = getRecordingCounterId(publication.sessionId(), counters);
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-
-            assertThat(RecordingPos.getSourceIdentity(counters, counterId), is(CommonContext.IPC_CHANNEL));
 
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
@@ -250,16 +248,10 @@ public class BasicArchiveTest
                 recordingId, currentPosition, AeronArchive.NULL_LENGTH, REPLAY_CHANNEL, REPLAY_STREAM_ID))
             {
                 offer(publication, messageCount, messagePrefix);
+                consume(subscription, messageCount, messagePrefix);
                 consume(replaySubscription, messageCount, messagePrefix);
 
                 final long endPosition = publication.position();
-
-                while (counters.getCounterValue(counterId) < endPosition)
-                {
-                    SystemTest.checkInterruptedStatus();
-                    Thread.yield();
-                }
-
                 assertEquals(endPosition, replaySubscription.imageAtIndex(0).position());
             }
         }

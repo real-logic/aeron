@@ -286,27 +286,30 @@ public class DynamicJoin implements AutoCloseable
                     final int counterId = RecordingPos.findCounterIdBySession(countersReader, snapshotReplaySessionId);
                     final long recordingId = RecordingPos.getRecordingId(countersReader, counterId);
 
-                    final RecordingLog.Snapshot snapshot = leaderSnapshots.get(recordingIdCursor);
-                    ctx.recordingLog().appendSnapshot(
-                        recordingId,
-                        snapshot.leadershipTermId,
-                        snapshot.termBaseLogPosition,
-                        snapshot.logPosition,
-                        snapshot.timestamp,
-                        snapshot.serviceId);
-
-                    snapshotRetrieveSubscription.close();
-                    snapshotRetrieveSubscription = null;
-                    snapshotRetrieveImage = null;
-                    snapshotReader = null;
-                    correlationId = NULL_VALUE;
-                    snapshotReplaySessionId = NULL_VALUE;
-
-                    if (++recordingIdCursor >= leaderSnapshots.size())
+                    if (snapshotReader.endPosition() <= countersReader.getCounterValue(counterId))
                     {
-                        localArchive.stopRecording(snapshotRetrieveSubscriptionId);
-                        state = State.SNAPSHOT_LOAD;
-                        workCount++;
+                        final RecordingLog.Snapshot snapshot = leaderSnapshots.get(recordingIdCursor);
+                        ctx.recordingLog().appendSnapshot(
+                            recordingId,
+                            snapshot.leadershipTermId,
+                            snapshot.termBaseLogPosition,
+                            snapshot.logPosition,
+                            snapshot.timestamp,
+                            snapshot.serviceId);
+
+                        snapshotRetrieveSubscription.close();
+                        snapshotRetrieveSubscription = null;
+                        snapshotRetrieveImage = null;
+                        snapshotReader = null;
+                        correlationId = NULL_VALUE;
+                        snapshotReplaySessionId = NULL_VALUE;
+
+                        if (++recordingIdCursor >= leaderSnapshots.size())
+                        {
+                            localArchive.stopRecording(snapshotRetrieveSubscriptionId);
+                            state = State.SNAPSHOT_LOAD;
+                            workCount++;
+                        }
                     }
                 }
                 else if (snapshotRetrieveImage.isClosed())
@@ -331,9 +334,7 @@ public class DynamicJoin implements AutoCloseable
         else if (NULL_VALUE == correlationId)
         {
             final long replayId = ctx.aeron().nextCorrelationId();
-
             final RecordingLog.Snapshot snapshot = leaderSnapshots.get(recordingIdCursor);
-
             final ChannelUri replayChannelUri = ChannelUri.parse(ctx.replayChannel());
             replayChannelUri.put(CommonContext.ENDPOINT_PARAM_NAME, transferEndpoint);
 
@@ -432,6 +433,7 @@ public class DynamicJoin implements AutoCloseable
 
         private boolean inSnapshot = false;
         private boolean isDone = false;
+        private long endPosition = 0;
         private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
         private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
         private final Image image;
@@ -444,6 +446,11 @@ public class DynamicJoin implements AutoCloseable
         boolean isDone()
         {
             return isDone;
+        }
+
+        long endPosition()
+        {
+            return endPosition;
         }
 
         int poll()
@@ -485,6 +492,7 @@ public class DynamicJoin implements AutoCloseable
                             throw new ClusterException("missing begin snapshot");
                         }
                         isDone = true;
+                        endPosition = header.position();
                         return Action.BREAK;
                 }
             }

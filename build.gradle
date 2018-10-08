@@ -28,6 +28,7 @@ defaultTasks 'clean', 'build', 'shadowJar', 'install'
 
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
+def aeronJavaVersion = '1.8'
 
 def agronaVersion = '0.9.25'
 def sbeVersion = '1.8.9'
@@ -135,15 +136,15 @@ subprojects {
     }
 
     compileJava {
-        sourceCompatibility = '1.8'
-        targetCompatibility = '1.8'
+        sourceCompatibility = aeronJavaVersion
+        targetCompatibility = aeronJavaVersion
         options.encoding = 'UTF-8'
         options.deprecation = true
     }
 
     compileTestJava {
-        sourceCompatibility = '1.8'
-        targetCompatibility = '1.8'
+        sourceCompatibility = aeronJavaVersion
+        targetCompatibility = aeronJavaVersion
         options.encoding = 'UTF-8'
         options.deprecation = true
     }
@@ -409,8 +410,8 @@ project(':aeron-archive') {
 
     compileGeneratedJava {
         dependsOn 'generateCodecs'
-        sourceCompatibility = '1.8'
-        targetCompatibility = '1.8'
+        sourceCompatibility = aeronJavaVersion
+        targetCompatibility = aeronJavaVersion
         options.encoding = 'UTF-8'
         options.deprecation = true
         classpath += configurations.codecGeneration
@@ -517,8 +518,8 @@ project(':aeron-cluster') {
 
     compileGeneratedJava {
         dependsOn 'generateCodecs'
-        sourceCompatibility = '1.8'
-        targetCompatibility = '1.8'
+        sourceCompatibility = aeronJavaVersion
+        targetCompatibility = aeronJavaVersion
         options.encoding = 'UTF-8'
         options.deprecation = true
         classpath += configurations.codecGeneration

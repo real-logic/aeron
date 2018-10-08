@@ -56,7 +56,7 @@ public class DynamicJoin implements AutoCloseable
     private final MemberStatusPublisher memberStatusPublisher;
     private final ConsensusModule.Context ctx;
     private final ConsensusModuleAgent consensusModuleAgent;
-    private final String[] clusterMembersStatusEndpoints;
+    private final String[] clusterMemberStatusEndpoints;
     private final String memberEndpoints;
     private final String memberStatusEndpoint;
     private final String transferEndpoint;
@@ -73,17 +73,17 @@ public class DynamicJoin implements AutoCloseable
     private Image snapshotRetrieveImage;
     private SnapshotReader snapshotReader;
     private Counter recoveryStateCounter;
-    private long timeOfLastActivity = 0;
+    private long timeOfLastActivityMs = 0;
     private long correlationId = NULL_VALUE;
     private long snapshotRetrieveSubscriptionId = NULL_VALUE;
     private int memberId = NULL_VALUE;
     private int highMemberId = NULL_VALUE;
-    private int clusterMembersSattusEndpointsCursor = 0;
+    private int clusterMembersStatusEndpointsCursor = 0;
     private int recordingIdCursor = 0;
     private int snapshotReplaySessionId = NULL_VALUE;
 
     public DynamicJoin(
-        final String clusterMembersStatusEndpoints,
+        final String clusterMemberStatusEndpoints,
         final AeronArchive localArchive,
         final MemberStatusAdapter memberStatusAdapter,
         final MemberStatusPublisher memberStatusPublisher,
@@ -101,11 +101,11 @@ public class DynamicJoin implements AutoCloseable
         this.memberEndpoints = ctx.memberEndpoints();
         this.memberStatusEndpoint = thisMember.memberFacingEndpoint();
         this.transferEndpoint = thisMember.transferEndpoint();
-        this.clusterMembersStatusEndpoints = clusterMembersStatusEndpoints.split(",");
+        this.clusterMemberStatusEndpoints = clusterMemberStatusEndpoints.split(",");
 
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
         memberStatusUri.put(
-            ENDPOINT_PARAM_NAME, this.clusterMembersStatusEndpoints[clusterMembersSattusEndpointsCursor]);
+            ENDPOINT_PARAM_NAME, this.clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]);
         clusterPublication = ctx.aeron().addExclusivePublication(
             memberStatusUri.toString(), ctx.memberStatusStreamId());
     }
@@ -171,7 +171,7 @@ public class DynamicJoin implements AutoCloseable
                     if (null != leaderMember)
                     {
                         if (!leaderMember.memberFacingEndpoint().equals(
-                            clusterMembersStatusEndpoints[clusterMembersSattusEndpointsCursor]))
+                            clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]))
                         {
                             clusterPublication.close();
 
@@ -196,7 +196,7 @@ public class DynamicJoin implements AutoCloseable
 
                         leaderArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);
 
-                        timeOfLastActivity = 0;
+                        timeOfLastActivityMs = 0;
                         state = State.PASSIVE_FOLLOWER;
                     }
                     break;
@@ -229,7 +229,7 @@ public class DynamicJoin implements AutoCloseable
                 }
             }
 
-            timeOfLastActivity = 0;
+            timeOfLastActivityMs = 0;
             recordingIdCursor = 0;
             this.correlationId = NULL_VALUE;
             state = leaderSnapshots.isEmpty() ? State.JOIN_CLUSTER : State.SNAPSHOT_RETRIEVE;
@@ -238,28 +238,28 @@ public class DynamicJoin implements AutoCloseable
 
     private int init(final long nowMs)
     {
-        if (nowMs > (timeOfLastActivity + intervalMs))
+        if (nowMs > (timeOfLastActivityMs + intervalMs))
         {
             correlationId = ctx.aeron().nextCorrelationId();
 
             if (memberStatusPublisher.addClusterMember(clusterPublication, correlationId, memberEndpoints))
             {
-                timeOfLastActivity = nowMs;
+                timeOfLastActivityMs = nowMs;
                 return 1;
             }
         }
         return 0;
     }
 
-    private int passiveFollower(final long nowms)
+    private int passiveFollower(final long nowMs)
     {
-        if (nowms > (timeOfLastActivity + intervalMs))
+        if (nowMs > (timeOfLastActivityMs + intervalMs))
         {
             correlationId = ctx.aeron().nextCorrelationId();
 
             if (memberStatusPublisher.snapshotRecordingQuery(clusterPublication, correlationId, memberId))
             {
-                timeOfLastActivity = nowms;
+                timeOfLastActivityMs = nowMs;
                 return 1;
             }
         }

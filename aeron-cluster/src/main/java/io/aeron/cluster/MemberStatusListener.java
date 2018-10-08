@@ -58,9 +58,7 @@ interface MemberStatusListener
 
     void onRecordingLog(RecordingLogDecoder recordingLogDecoder);
 
-    void onAddClusterMember(long correlationId, String memberEndpoints);
-
-    void onRemoveClusterMember(long correlationId, int memberId);
+    void onAddPassiveMember(long correlationId, String memberEndpoints);
 
     void onClusterMembersChange(long correlationId, int leaderMemberId, String activeMembers, String passiveMembers);
 
@@ -69,6 +67,4 @@ interface MemberStatusListener
     void onSnapshotRecordings(long correlationId, SnapshotRecordingsDecoder snapshotRecordingsDecoder);
 
     void onJoinCluster(long leadershipTermId, int memberId);
-
-    void onLeaveCluster(long leadershipTermId, int memberId);
 }

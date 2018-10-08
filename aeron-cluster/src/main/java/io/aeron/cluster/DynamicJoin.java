@@ -242,7 +242,7 @@ public class DynamicJoin implements AutoCloseable
         {
             correlationId = ctx.aeron().nextCorrelationId();
 
-            if (memberStatusPublisher.addClusterMember(clusterPublication, correlationId, memberEndpoints))
+            if (memberStatusPublisher.addPassiveMember(clusterPublication, correlationId, memberEndpoints))
             {
                 timeOfLastActivityMs = nowMs;
                 return 1;

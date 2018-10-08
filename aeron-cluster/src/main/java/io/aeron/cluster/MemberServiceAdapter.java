@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.cluster.service;
+package io.aeron.cluster;
 
 import io.aeron.Subscription;
+import io.aeron.cluster.codecs.ClusterMembersResponseDecoder;
 import io.aeron.cluster.codecs.JoinLogDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.logbuffer.FragmentHandler;
@@ -23,18 +24,24 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
-final class ServiceAdapter implements FragmentHandler, AutoCloseable
+public class MemberServiceAdapter implements FragmentHandler, AutoCloseable
 {
+    public interface MemberServiceHandler
+    {
+        void onClusterMembersResponse(long correlationId, String activeMembers, String passiveMembers);
+    }
+
     private final Subscription subscription;
-    private final ClusteredServiceAgent clusteredServiceAgent;
+    private final MemberServiceHandler handler;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final JoinLogDecoder joinLogDecoder = new JoinLogDecoder();
+    private final ClusterMembersResponseDecoder clusterMembersResponseDecoder = new ClusterMembersResponseDecoder();
 
-    ServiceAdapter(final Subscription subscription, final ClusteredServiceAgent clusteredServiceAgent)
+    MemberServiceAdapter(final Subscription subscription, final MemberServiceHandler handler)
     {
         this.subscription = subscription;
-        this.clusteredServiceAgent = clusteredServiceAgent;
+        this.handler = handler;
     }
 
     public void close()
@@ -52,21 +59,24 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int templateId = messageHeaderDecoder.templateId();
-        if (JoinLogDecoder.TEMPLATE_ID == templateId)
-        {
-            joinLogDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
 
-            clusteredServiceAgent.onJoinLog(
-                joinLogDecoder.leadershipTermId(),
-                joinLogDecoder.logPosition(),
-                joinLogDecoder.maxLogPosition(),
-                joinLogDecoder.logSessionId(),
-                joinLogDecoder.logStreamId(),
-                joinLogDecoder.logChannel());
+        switch (templateId)
+        {
+            case JoinLogDecoder.TEMPLATE_ID:
+                break;
+
+            case ClusterMembersResponseDecoder.TEMPLATE_ID:
+                clusterMembersResponseDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                handler.onClusterMembersResponse(
+                    clusterMembersResponseDecoder.correlationId(),
+                    clusterMembersResponseDecoder.activeMembers(),
+                    clusterMembersResponseDecoder.passiveFollowers());
+                break;
         }
     }
 }

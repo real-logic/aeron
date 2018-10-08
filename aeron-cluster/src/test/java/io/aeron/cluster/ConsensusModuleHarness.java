@@ -719,16 +719,10 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 nextListener.onRecordingLog(decoder);
             }
 
-            public void onAddClusterMember(final long correlationId, final String memberEndpoints)
+            public void onAddPassiveMember(final long correlationId, final String memberEndpoints)
             {
-                stream.format("onAddClusterMember[%d] %d %s%n", index, correlationId, memberEndpoints);
-                nextListener.onAddClusterMember(correlationId, memberEndpoints);
-            }
-
-            public void onRemoveClusterMember(final long correlationId, final int memberId)
-            {
-                stream.format("onAddClusterMember[%d] %d %d%n", index, correlationId, memberId);
-                nextListener.onRemoveClusterMember(correlationId, memberId);
+                stream.format("onAddPassiveMember[%d] %d %s%n", index, correlationId, memberEndpoints);
+                nextListener.onAddPassiveMember(correlationId, memberEndpoints);
             }
 
             public void onClusterMembersChange(
@@ -759,12 +753,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             {
                 stream.format("onJoinCluster[%d] %d %d%n", index, leadershipTermId, memberId);
                 nextListener.onJoinCluster(leadershipTermId, memberId);
-            }
-
-            public void onLeaveCluster(final long leadershipTermId, final int memberId)
-            {
-                stream.format("onLeaveCluster[%d] %d %d%n", index, leadershipTermId, memberId);
-                nextListener.onLeaveCluster(leadershipTermId, memberId);
             }
         };
     }

@@ -29,6 +29,7 @@ final class ServiceProxy implements AutoCloseable
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final JoinLogEncoder joinLogEncoder = new JoinLogEncoder();
+    private final ClusterMembersResponseEncoder clusterMembersResponseEncoder = new ClusterMembersResponseEncoder();
     private final Publication publication;
 
     ServiceProxy(final Publication publication)
@@ -76,7 +77,37 @@ final class ServiceProxy implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new ClusterException("failed to send log connect request");
+        throw new ClusterException("failed to send join log request");
+    }
+
+    void clusterMembersResponse(final long correlationId, final String activeMembers, final String passievFollowers)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersResponseEncoder.BLOCK_LENGTH +
+            ClusterMembersResponseEncoder.activeMembersHeaderLength() + activeMembers.length() +
+            ClusterMembersResponseEncoder.passiveFollowersHeaderLength() + passievFollowers.length();
+
+        int attempts = SEND_ATTEMPTS * 2;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                clusterMembersResponseEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .activeMembers(activeMembers)
+                    .passiveFollowers(passievFollowers);
+
+                bufferClaim.commit();
+
+                return;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        throw new ClusterException("failed to send cluster members response");
     }
 
     private static void checkResult(final long result)

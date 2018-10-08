@@ -33,6 +33,8 @@ final class ConsensusModuleProxy implements AutoCloseable
     private final CancelTimerEncoder cancelTimerEncoder = new CancelTimerEncoder();
     private final ServiceAckEncoder serviceAckEncoder = new ServiceAckEncoder();
     private final CloseSessionEncoder closeSessionEncoder = new CloseSessionEncoder();
+    private final ClusterMembersQueryEncoder clusterMembersQueryEncoder = new ClusterMembersQueryEncoder();
+    private final RemoveMemberEncoder removeMemberEncoder = new RemoveMemberEncoder();
     private final Publication publication;
 
     ConsensusModuleProxy(final Publication publication)
@@ -150,6 +152,60 @@ final class ConsensusModuleProxy implements AutoCloseable
                 closeSessionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(clusterSessionId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean clusterMembersQuery(final long correlationId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersQueryEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                clusterMembersQueryEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean removeMember(final long correlationId, final int memberId, final BooleanType isPassive)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RemoveMemberEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                removeMemberEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .memberId(memberId)
+                    .isPassive(isPassive);
 
                 bufferClaim.commit();
 

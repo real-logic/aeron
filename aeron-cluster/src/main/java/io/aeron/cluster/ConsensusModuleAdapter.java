@@ -32,6 +32,8 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
     private final CancelTimerDecoder cancelTimerDecoder = new CancelTimerDecoder();
     private final ServiceAckDecoder serviceAckDecoder = new ServiceAckDecoder();
     private final CloseSessionDecoder closeSessionDecoder = new CloseSessionDecoder();
+    private final ClusterMembersQueryDecoder clusterMembersQueryDecoder = new ClusterMembersQueryDecoder();
+    private final RemoveMemberDecoder removeMemberDecoder = new RemoveMemberDecoder();
 
     ConsensusModuleAdapter(final Subscription subscription, final ConsensusModuleAgent consensusModuleAgent)
     {
@@ -100,6 +102,29 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                     serviceAckDecoder.ackId(),
                     serviceAckDecoder.relevantId(),
                     serviceAckDecoder.serviceId());
+                break;
+
+            case ClusterMembersQueryDecoder.TEMPLATE_ID:
+                clusterMembersQueryDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                consensusModuleAgent.onClusterMembersQuery(clusterMembersQueryDecoder.correlationId());
+                break;
+
+            case RemoveMemberDecoder.TEMPLATE_ID:
+                removeMemberDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                consensusModuleAgent.onRemoveMember(
+                    removeMemberDecoder.correlationId(),
+                    removeMemberDecoder.memberId(),
+                    BooleanType.TRUE == removeMemberDecoder.isPassive());
                 break;
 
             default:

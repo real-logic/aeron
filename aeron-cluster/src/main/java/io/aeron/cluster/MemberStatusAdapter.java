@@ -43,13 +43,11 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final RecordingLogQueryDecoder recordingLogQueryDecoder = new RecordingLogQueryDecoder();
     private final RecordingLogDecoder recordingLogDecoder = new RecordingLogDecoder();
 
-    private final AddClusterMemberDecoder addClusterMemberDecoder = new AddClusterMemberDecoder();
-    private final RemoveClusterMemberDecoder removeClusterMemberDecoder = new RemoveClusterMemberDecoder();
+    private final AddPassiveMemberDecoder addPassiveMemberDecoder = new AddPassiveMemberDecoder();
     private final ClusterMembersChangeDecoder clusterMembersChangeDecoder = new ClusterMembersChangeDecoder();
     private final SnapshotRecordingQueryDecoder snapshotRecordingQueryDecoder = new SnapshotRecordingQueryDecoder();
     private final SnapshotRecordingsDecoder snapshotRecordingsDecoder = new SnapshotRecordingsDecoder();
     private final JoinClusterDecoder joinClusterDecoder = new JoinClusterDecoder();
-    private final LeaveClusterDecoder leaveClusterDecoder = new LeaveClusterDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -237,26 +235,15 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                 memberStatusListener.onRecordingLog(recordingLogDecoder);
                 break;
 
-            case AddClusterMemberDecoder.TEMPLATE_ID:
-                addClusterMemberDecoder.wrap(
+            case AddPassiveMemberDecoder.TEMPLATE_ID:
+                addPassiveMemberDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                memberStatusListener.onAddClusterMember(
-                    addClusterMemberDecoder.correlationId(), addClusterMemberDecoder.memberEndpoints());
-                break;
-
-            case RemoveClusterMemberDecoder.TEMPLATE_ID:
-                removeClusterMemberDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                memberStatusListener.onRemoveClusterMember(
-                    removeClusterMemberDecoder.correlationId(), removeClusterMemberDecoder.memberId());
+                memberStatusListener.onAddPassiveMember(
+                    addPassiveMemberDecoder.correlationId(), addPassiveMemberDecoder.memberEndpoints());
                 break;
 
             case ClusterMembersChangeDecoder.TEMPLATE_ID:
@@ -304,17 +291,6 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onJoinCluster(
                     joinClusterDecoder.leadershipTermId(), joinClusterDecoder.memberId());
-                break;
-
-            case LeaveClusterDecoder.TEMPLATE_ID:
-                leaveClusterDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                memberStatusListener.onLeaveCluster(
-                    leaveClusterDecoder.leadershipTermId(), leaveClusterDecoder.memberId());
                 break;
 
             default:

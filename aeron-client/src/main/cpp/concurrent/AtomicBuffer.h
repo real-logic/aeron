@@ -154,14 +154,14 @@ public:
     }
 
     template <typename struct_t>
-    struct_t& overlayStruct (util::index_t offset)
+    struct_t& overlayStruct(util::index_t offset)
     {
         boundsCheck(offset, sizeof(struct_t));
         return *reinterpret_cast<struct_t*>(m_buffer + offset);
     }
 
     template <typename struct_t>
-    const struct_t& overlayStruct (util::index_t offset) const
+    const struct_t& overlayStruct(util::index_t offset) const
     {
         boundsCheck(offset, sizeof(struct_t));
         return *reinterpret_cast<struct_t*>(m_buffer + offset);
@@ -309,7 +309,8 @@ public:
         return atomic::getAndAddInt32((volatile std::int32_t*)(m_buffer + offset), delta);
     }
 
-    inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, const concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
+    inline COND_MOCK_VIRTUAL void putBytes(
+        util::index_t index, const concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
     {
         boundsCheck(index, length);
         srcBuffer.boundsCheck(srcIndex, length);

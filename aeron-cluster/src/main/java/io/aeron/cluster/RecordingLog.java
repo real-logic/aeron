@@ -710,12 +710,19 @@ public class RecordingLog implements AutoCloseable
         final int size = entries.size();
         if (size > 0)
         {
-            final Entry entry = entries.get(size - 1);
+            final Entry lastEntry = entries.get(size - 1);
 
-            if (entry.type != NULL_VALUE && entry.leadershipTermId > leadershipTermId)
+            if (NULL_VALUE != lastEntry.type &&
+                leadershipTermId == lastEntry.leadershipTermId &&
+                termBaseLogPosition == lastEntry.termBaseLogPosition)
+            {
+                return;
+            }
+
+            if (lastEntry.type != NULL_VALUE && lastEntry.leadershipTermId > leadershipTermId)
             {
                 throw new ClusterException("leadershipTermId out of sequence: previous " +
-                    entry.leadershipTermId + " this " + leadershipTermId);
+                    lastEntry.leadershipTermId + " this " + leadershipTermId);
             }
         }
 

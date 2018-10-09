@@ -796,8 +796,11 @@ class Election implements AutoCloseable
         }
 
         consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
-        ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
-        ctx.recordingLog().force();
+        if (!ctx.recordingLog().hasTermBeenAppended(leadershipTermId))
+        {
+            ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
+            ctx.recordingLog().force();
+        }
 
         state(State.FOLLOWER_READY, nowMs);
 

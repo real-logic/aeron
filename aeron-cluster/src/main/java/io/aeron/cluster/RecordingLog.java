@@ -697,6 +697,19 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
+     * Has the given leadershipTermId already been appended?
+     *
+     * @param leadershipTermId to check
+     * @return true if term was already appended or false if not.
+     */
+    public boolean hasTermBeenAppended(final long leadershipTermId)
+    {
+        final int index = (int)indexByLeadershipTermIdMap.get(leadershipTermId);
+
+        return (NULL_VALUE != index);
+    }
+
+    /**
      * Append a log entry for a leadership term.
      *
      * @param recordingId         of the log.
@@ -712,14 +725,7 @@ public class RecordingLog implements AutoCloseable
         {
             final Entry lastEntry = entries.get(size - 1);
 
-            if (NULL_VALUE != lastEntry.type &&
-                leadershipTermId == lastEntry.leadershipTermId &&
-                termBaseLogPosition == lastEntry.termBaseLogPosition)
-            {
-                return;
-            }
-
-            if (lastEntry.type != NULL_VALUE && lastEntry.leadershipTermId > leadershipTermId)
+            if (lastEntry.type != NULL_VALUE && lastEntry.leadershipTermId >= leadershipTermId)
             {
                 throw new ClusterException("leadershipTermId out of sequence: previous " +
                     lastEntry.leadershipTermId + " this " + leadershipTermId);

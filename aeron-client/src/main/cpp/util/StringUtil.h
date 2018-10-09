@@ -139,7 +139,7 @@ std::string strconcat (Ts... vs)
 inline bool continuationBarrier(const std::string& label)
 {
     bool result = false;
-    char response;
+    char response = '\0';
     std::cout << std::endl << label << " (y/n): ";
     std::cin >> response;
 

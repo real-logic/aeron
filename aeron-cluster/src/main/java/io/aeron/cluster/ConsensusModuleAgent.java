@@ -82,8 +82,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
     private Cluster.Role role;
-    private ClusterMember[] clusterMembers;
-    private ClusterMember[] passiveMembers = new ClusterMember[0];
+    private ClusterMember[] clusterMembers = ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY;
+    private ClusterMember[] passiveMembers = ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY;
     private ClusterMember leaderMember;
     private ClusterMember thisMember;
     private long[] rankedPositions;
@@ -159,8 +159,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         role(Cluster.Role.FOLLOWER);
 
         ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
-        thisMember = clusterMemberByIdMap.get(memberId);
+        thisMember = determineMemberAndCheckEndpoints(clusterMembers, ctx);
         leaderMember = thisMember;
+
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
         memberStatusUri.put(ENDPOINT_PARAM_NAME, thisMember.memberFacingEndpoint());
 
@@ -1892,7 +1893,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private DynamicJoin newDynamicJoin()
     {
-        if (recoveryPlan.snapshots.isEmpty() && null == clusterMembers && null != ctx.clusterMembersStatusEndpoints())
+        if (recoveryPlan.snapshots.isEmpty() &&
+            0 == clusterMembers.length &&
+            null != ctx.clusterMembersStatusEndpoints())
         {
             return new DynamicJoin(
                 ctx.clusterMembersStatusEndpoints(),
@@ -2283,5 +2286,34 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         clusterTimeMs = nowMs;
+    }
+
+    private static ClusterMember determineMemberAndCheckEndpoints(
+        final ClusterMember[] clusterMembers, final ConsensusModule.Context context)
+    {
+        ClusterMember thisMember = (NULL_VALUE != context.clusterMemberId()) ?
+            ClusterMember.findMember(clusterMembers, context.clusterMemberId()) : null;
+
+        if (null == clusterMembers)
+        {
+            thisMember = (null != thisMember) ?
+                thisMember : ClusterMember.parseEndpoints(NULL_VALUE, context.memberEndpoints());
+        }
+        else
+        {
+            if (null != thisMember)
+            {
+                if (!context.memberEndpoints().equals(""))
+                {
+                    ClusterMember.validateMemberEndpoints(thisMember, context.memberEndpoints());
+                }
+            }
+            else
+            {
+                throw new ClusterException("memberId=" + context.clusterMemberId() + " not found in clusterMembers");
+            }
+        }
+
+        return thisMember;
     }
 }

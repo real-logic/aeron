@@ -33,6 +33,8 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
  */
 public final class ClusterMember
 {
+    public static final ClusterMember[] EMPTY_CLUSTER_MEMBER_ARRAY = new ClusterMember[0];
+
     private boolean isBallotSent;
     private boolean isLeader;
     private boolean hasRequestedJoin;
@@ -364,6 +366,11 @@ public final class ClusterMember
      */
     public static ClusterMember[] parse(final String value)
     {
+        if (null == value || value.length() == 0)
+        {
+            return ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY;
+        }
+
         final String[] memberValues = value.split("\\|");
         final int length = memberValues.length;
         final ClusterMember[] members = new ClusterMember[length];
@@ -408,11 +415,11 @@ public final class ClusterMember
 
         return new ClusterMember(
             id,
+            memberAttributes[0],
             memberAttributes[1],
             memberAttributes[2],
             memberAttributes[3],
             memberAttributes[4],
-            memberAttributes[5],
             endpointsDetail);
     }
 
@@ -766,6 +773,47 @@ public final class ClusterMember
     }
 
     /**
+     * Check the member with the memberEndpoints
+     *
+     * @param member to check memberEndpoints against
+     * @param memberEndpoints to check member against
+     * @see ConsensusModule.Context#memberEndpoints
+     * @see ConsensusModule.Context#clusterMembers
+     */
+    public static void validateMemberEndpoints(final ClusterMember member, final String memberEndpoints)
+    {
+        final ClusterMember endpointMember = ClusterMember.parseEndpoints(Aeron.NULL_VALUE, memberEndpoints);
+
+        if (!areSameEndpoints(member, endpointMember))
+        {
+            throw new ClusterException(
+                "clusterMembers and memberEndpoints differ on endpoints: " +
+                member.endpointsDetail() + " != " + memberEndpoints);
+        }
+    }
+
+    /**
+     * Are two cluster members using the same endpoints?
+     *
+     * @param lhs to check
+     * @param rhs to check
+     * @return true if both are using the same endpoints or false if not.
+     */
+    public static boolean areSameEndpoints(final ClusterMember lhs, final ClusterMember rhs)
+    {
+        if (lhs.clientFacingEndpoint().equals(rhs.clientFacingEndpoint()) &&
+            lhs.memberFacingEndpoint().equals(rhs.memberFacingEndpoint()) &&
+            lhs.logEndpoint().equals(rhs.logEndpoint()) &&
+            lhs.transferEndpoint().equals(rhs.transferEndpoint()) &&
+            lhs.archiveEndpoint().equals(rhs.archiveEndpoint()))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Has the member achieved a unanimous view to be a suitable candidate in an election.
      *
      * @param clusterMembers to compare the candidate against.
@@ -893,7 +941,9 @@ public final class ClusterMember
 
     public static ClusterMember findMember(final ClusterMember[] clusterMembers, final int memberId)
     {
-        return clusterMembers[findMemberIndex(clusterMembers, memberId)];
+        final int index = findMemberIndex(clusterMembers, memberId);
+
+        return (ArrayUtil.UNKNOWN_INDEX == index) ? null : clusterMembers[findMemberIndex(clusterMembers, memberId)];
     }
 
     public static ClusterMember[] addMember(final ClusterMember[] oldMembers, final ClusterMember newMember)

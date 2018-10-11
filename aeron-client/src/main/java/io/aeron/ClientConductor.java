@@ -49,7 +49,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private final long interServiceTimeoutNs;
     private long timeOfLastKeepAliveNs;
     private long timeOfLastServiceNs;
-    private volatile boolean isClosed;
+    private boolean isClosed;
     private boolean isInCallback;
     private String stashedChannel;
     private RegistrationException driverException;

@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import static io.aeron.Aeron.Configuration.IDLE_SLEEP_NS;
-import static io.aeron.Aeron.sleep;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -114,7 +113,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 if (lingeringResources.size() > lingeringResourcesSize)
                 {
-                    sleep(16);
+                    Aeron.sleep(16);
                 }
 
                 for (int i = 0, size = lingeringResources.size(); i < size; i++)
@@ -745,7 +744,15 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (null == driverAgentInvoker)
             {
-                sleep(1);
+                try
+                {
+                    Thread.sleep(1);
+                }
+                catch (final InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                    LangUtil.rethrowUnchecked(ex);
+                }
             }
             else
             {
@@ -801,7 +808,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
             if (lingeringResources.size() > lingeringResourcesSize)
             {
-                sleep(TimeUnit.NANOSECONDS.toMillis(ctx.resourceLingerDurationNs()));
+                Aeron.sleep(TimeUnit.NANOSECONDS.toMillis(ctx.resourceLingerDurationNs()));
             }
 
             onClose();

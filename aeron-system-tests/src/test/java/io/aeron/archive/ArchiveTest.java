@@ -778,9 +778,9 @@ public class ArchiveTest
                             Thread.yield();
                         }
                     }
-
-                    waitForData.countDown();
                 }
+
+                waitForData.countDown();
             });
 
         thread.setName("replay-consumer");

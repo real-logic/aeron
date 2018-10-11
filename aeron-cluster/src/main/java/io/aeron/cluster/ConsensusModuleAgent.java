@@ -1074,7 +1074,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             this.memberId = memberId;
         }
 
-        if (null == this.clusterMembers)
+        if (ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY == this.clusterMembers)
         {
             clusterMembers = snapshotClusterMembers;
             this.highMemberId = Math.max(ClusterMember.highMemberId(clusterMembers), highMemberId);

@@ -67,10 +67,11 @@ public final class AeronCluster implements AutoCloseable
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final EgressMessageHeaderDecoder egressMessageHeaderDecoder = new EgressMessageHeaderDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
+    private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
     private final DirectBufferVector[] vectors = new DirectBufferVector[2];
     private final DirectBufferVector messageVector = new DirectBufferVector();
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment, 0, true);
-    private final EgressMessageListener egressMessageListener;
+    private final EgressListener egressListener;
 
     /**
      * Connect to the cluster using default configuration.
@@ -107,7 +108,7 @@ public final class AeronCluster implements AutoCloseable
             this.idleStrategy = ctx.idleStrategy();
             this.nanoClock = aeron.context().nanoClock();
             this.isUnicast = ctx.clusterMemberEndpoints() != null;
-            this.egressMessageListener = ctx.egressMessageListener();
+            this.egressListener = ctx.egressListener();
 
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
             this.subscription = subscription;
@@ -305,9 +306,9 @@ public final class AeronCluster implements AutoCloseable
 
     /**
      * Poll the {@link #egressSubscription()} for session messages which are dispatched to
-     * {@link Context#egressMessageListener()}.
+     * {@link Context#egressListener()}.
      * <p>
-     * <b>Note:</b> if {@link Context#egressMessageListener()} is not set then a {@link ConfigurationException} could
+     * <b>Note:</b> if {@link Context#egressListener()} is not set then a {@link ConfigurationException} could
      * result.
      *
      * @return the number of fragments processed.
@@ -349,6 +350,13 @@ public final class AeronCluster implements AutoCloseable
             ctx.clusterMemberEndpoints(memberEndpoints);
             updateMemberEndpoints(memberEndpoints, leaderMemberId);
         }
+
+        egressListener.newLeader(
+            clusterSessionId,
+            leadershipTermId,
+            leaderMemberId,
+            memberEndpoints
+        );
     }
 
     private void updateMemberEndpoints(final String memberEndpoints, final int leaderMemberId)
@@ -409,7 +417,7 @@ public final class AeronCluster implements AutoCloseable
             final long sessionId = egressMessageHeaderDecoder.clusterSessionId();
             if (sessionId == clusterSessionId)
             {
-                egressMessageListener.onMessage(
+                egressListener.onMessage(
                     egressMessageHeaderDecoder.correlationId(),
                     sessionId,
                     egressMessageHeaderDecoder.timestamp(),
@@ -435,6 +443,26 @@ public final class AeronCluster implements AutoCloseable
                     newLeaderEventDecoder.leadershipTermId(),
                     newLeaderEventDecoder.leaderMemberId(),
                     newLeaderEventDecoder.memberEndpoints());
+            }
+        }
+        else if (SessionEventDecoder.TEMPLATE_ID == templateId)
+        {
+            sessionEventDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            final long sessionId = sessionEventDecoder.clusterSessionId();
+            if (sessionId == clusterSessionId)
+            {
+                egressListener.sessionEvent(
+                    sessionEventDecoder.correlationId(),
+                    sessionId,
+                    sessionEventDecoder.leadershipTermId(),
+                    sessionEventDecoder.leaderMemberId(),
+                    sessionEventDecoder.code(),
+                    sessionEventDecoder.detail());
             }
         }
     }
@@ -858,7 +886,7 @@ public final class AeronCluster implements AutoCloseable
         private boolean ownsAeronClient = false;
         private boolean isIngressExclusive = true;
         private ErrorHandler errorHandler = Aeron.Configuration.DEFAULT_ERROR_HANDLER;
-        private EgressMessageListener egressMessageListener;
+        private EgressListener egressListener;
 
         /**
          * Perform a shallow copy of the object.
@@ -899,13 +927,13 @@ public final class AeronCluster implements AutoCloseable
                 credentialsSupplier = new NullCredentialsSupplier();
             }
 
-            if (null == egressMessageListener)
+            if (null == egressListener)
             {
-                egressMessageListener =
+                egressListener =
                     (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
                     {
                         throw new ConfigurationException(
-                            "egressMessageListener must be specified on AeronCluster.Context");
+                            "egressListener must be specified on AeronCluster.Context");
                     };
             }
         }
@@ -1228,27 +1256,27 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Get the {@link EgressMessageListener} function that will be called when polling for egress via
+         * Get the {@link EgressListener} function that will be called when polling for egress via
          * {@link AeronCluster#pollEgress()}.
          *
-         * @return the {@link EgressMessageListener} function that will be called when polling for egress via
+         * @return the {@link EgressListener} function that will be called when polling for egress via
          * {@link AeronCluster#pollEgress()}.
          */
-        public EgressMessageListener egressMessageListener()
+        public EgressListener egressListener()
         {
-            return egressMessageListener;
+            return egressListener;
         }
 
         /**
-         * Get the {@link EgressMessageListener} function that will be called when polling for egress via
+         * Get the {@link EgressListener} function that will be called when polling for egress via
          * {@link AeronCluster#pollEgress()}.
          *
          * @param listener function that will be called when polling for egress via {@link AeronCluster#pollEgress()}.
          * @return this for a fluent API.
          */
-        public Context egressMessageListener(final EgressMessageListener listener)
+        public Context egressListener(final EgressListener listener)
         {
-            this.egressMessageListener = listener;
+            this.egressListener = listener;
             return this;
         }
 

@@ -1032,7 +1032,20 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             if (eventType == ChangeType.JOIN)
             {
-                //TODO: install clusterMembers and add as follower
+                if (0 == this.clusterMembers.length)
+                {
+                    this.clusterMembers = newMembers;
+                    ClusterMember.addClusterMemberIds(newMembers, clusterMemberByIdMap);
+                    thisMember = determineMemberAndCheckEndpoints(newMembers, ctx);
+                    leaderMember = ClusterMember.findMember(newMembers, leaderMemberId);
+
+                    ClusterMember.addMemberStatusPublications(
+                        newMembers,
+                        thisMember,
+                        ChannelUri.parse(ctx.memberStatusChannel()),
+                        ctx.memberStatusStreamId(),
+                        aeron);
+                }
             }
             else if (eventType == ChangeType.LEAVE)
             {

@@ -16,19 +16,48 @@
 package io.aeron.cluster.client;
 
 import io.aeron.cluster.codecs.EventCode;
+import io.aeron.logbuffer.Header;
+import org.agrona.DirectBuffer;
 
 /**
  * Interface for consuming messages coming from the cluster that also include administrative events.
  */
-public interface EgressListener extends EgressMessageListener
+@FunctionalInterface
+public interface EgressListener
 {
-    void sessionEvent(
+    /**
+     * Message event returned from the clustered service.
+     *
+     * @param correlationId    to associate with the ingress message to which it is correlated.
+     * @param clusterSessionId to which the message belongs.
+     * @param timestampMs      at which the correlated ingress was sequenced in the cluster.
+     * @param buffer           containing the message.
+     * @param offset           at which the message begins.
+     * @param length           of the message in bytes.
+     * @param header           Aeron header associated with the message fragment.
+     */
+    void onMessage(
+        long correlationId,
+        long clusterSessionId,
+        long timestampMs,
+        DirectBuffer buffer,
+        int offset,
+        int length,
+        Header header);
+
+    default void sessionEvent(
         long correlationId,
         long clusterSessionId,
         long leadershipTermId,
         int leaderMemberId,
         EventCode code,
-        String detail);
+        String detail)
+    {
 
-    void newLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String memberEndpoints);
+    }
+
+    default void newLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String memberEndpoints)
+    {
+
+    }
 }

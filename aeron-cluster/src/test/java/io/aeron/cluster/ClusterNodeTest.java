@@ -18,7 +18,7 @@ package io.aeron.cluster;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.EgressMessageListener;
+import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -99,7 +99,7 @@ public class ClusterNodeTest
         final MutableLong msgCorrelationId = new MutableLong();
         final MutableInteger messageCount = new MutableInteger();
 
-        final EgressMessageListener listener =
+        final EgressListener listener =
             (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
             {
                 assertThat(correlationId, is(msgCorrelationId.value));
@@ -139,7 +139,7 @@ public class ClusterNodeTest
         final MutableLong msgCorrelationId = new MutableLong();
         final MutableInteger messageCount = new MutableInteger();
 
-        final EgressMessageListener listener =
+        final EgressListener listener =
             (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
             {
                 assertThat(correlationId, is(msgCorrelationId.value));
@@ -244,11 +244,11 @@ public class ClusterNodeTest
                 .errorHandler(Throwable::printStackTrace));
     }
 
-    private AeronCluster connectToCluster(final EgressMessageListener egressMessageListener)
+    private AeronCluster connectToCluster(final EgressListener egressListener)
     {
         return AeronCluster.connect(
             new AeronCluster.Context()
-                .egressMessageListener(egressMessageListener)
+                .egressListener(egressListener)
                 .ingressChannel("aeron:udp")
                 .clusterMemberEndpoints("0=localhost:9010,1=localhost:9011,2=localhost:9012"));
     }

@@ -25,7 +25,7 @@ import org.agrona.DirectBuffer;
 public class EgressAdapter implements FragmentHandler
 {
     /**
-     * Length of the session header that will be prepended to the message.
+     * Length of the session header before the message.
      */
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
@@ -62,31 +62,32 @@ public class EgressAdapter implements FragmentHandler
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        if (EgressMessageHeaderDecoder.TEMPLATE_ID == templateId)
         {
-            case EgressMessageHeaderDecoder.TEMPLATE_ID:
-            {
-                egressMessageHeaderDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+            egressMessageHeaderDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
 
-                final long sessionId = egressMessageHeaderDecoder.clusterSessionId();
-                if (sessionId == clusterSessionId)
-                {
-                    listener.onMessage(
-                        egressMessageHeaderDecoder.correlationId(),
-                        sessionId,
-                        egressMessageHeaderDecoder.timestamp(),
-                        buffer,
-                        offset + SESSION_HEADER_LENGTH,
-                        length - SESSION_HEADER_LENGTH,
-                        header);
-                }
-                break;
+            final long sessionId = egressMessageHeaderDecoder.clusterSessionId();
+            if (sessionId == clusterSessionId)
+            {
+                listener.onMessage(
+                    egressMessageHeaderDecoder.correlationId(),
+                    sessionId,
+                    egressMessageHeaderDecoder.timestamp(),
+                    buffer,
+                    offset + SESSION_HEADER_LENGTH,
+                    length - SESSION_HEADER_LENGTH,
+                    header);
             }
 
+            return;
+        }
+
+        switch (templateId)
+        {
             case SessionEventDecoder.TEMPLATE_ID:
             {
                 sessionEventDecoder.wrap(

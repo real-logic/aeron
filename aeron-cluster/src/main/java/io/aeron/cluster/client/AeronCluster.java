@@ -308,8 +308,7 @@ public final class AeronCluster implements AutoCloseable
      * Poll the {@link #egressSubscription()} for session messages which are dispatched to
      * {@link Context#egressListener()}.
      * <p>
-     * <b>Note:</b> if {@link Context#egressListener()} is not set then a {@link ConfigurationException} could
-     * result.
+     * <b>Note:</b> if {@link Context#egressListener()} is not set then a {@link ConfigurationException} could result.
      *
      * @return the number of fragments processed.
      */
@@ -351,12 +350,7 @@ public final class AeronCluster implements AutoCloseable
             updateMemberEndpoints(memberEndpoints, leaderMemberId);
         }
 
-        egressListener.newLeader(
-            clusterSessionId,
-            leadershipTermId,
-            leaderMemberId,
-            memberEndpoints
-        );
+        egressListener.newLeader(clusterSessionId, leadershipTermId, leaderMemberId, memberEndpoints);
     }
 
     private void updateMemberEndpoints(final String memberEndpoints, final int leaderMemberId)

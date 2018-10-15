@@ -136,7 +136,7 @@ public class DynamicClusterTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldDynamicallyJoinClusterOfThree() throws Exception
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshots() throws Exception
     {
         for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
         {

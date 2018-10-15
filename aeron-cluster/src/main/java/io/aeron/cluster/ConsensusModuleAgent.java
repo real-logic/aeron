@@ -1363,6 +1363,24 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     boolean dynamicJoinComplete(final long nowMs)
     {
+        if (0 == clusterMembers.length)
+        {
+            clusterMembers = dynamicJoin.clusterMembers();
+            ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+            leaderMember = dynamicJoin.leader();
+
+            final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+
+            ClusterMember.addMemberStatusPublications(
+                clusterMembers, thisMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+        }
+
+        if (NULL_VALUE == memberId)
+        {
+            memberId = dynamicJoin.memberId();
+            thisMember.id(dynamicJoin.memberId());
+        }
+
         election = new Election(
             true,
             leadershipTermId,
@@ -1527,9 +1545,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final long heartbeatThreshold = nowMs - serviceHeartbeatTimeoutMs;
         for (final Counter serviceHeartbeat : serviceHeartbeats)
         {
-            if (serviceHeartbeat.get() < heartbeatThreshold)
+            final long heartbeat = serviceHeartbeat.get();
+
+            if (heartbeat < heartbeatThreshold)
             {
-                ctx.errorHandler().onError(new TimeoutException("no heartbeat from clustered service"));
+                ctx.errorHandler().onError(new TimeoutException("no heartbeat from clustered service: " + heartbeat));
                 ctx.terminationHook().run();
             }
         }
@@ -2307,7 +2327,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         ClusterMember thisMember = (NULL_VALUE != context.clusterMemberId()) ?
             ClusterMember.findMember(clusterMembers, context.clusterMemberId()) : null;
 
-        if (null == clusterMembers)
+        if (null == clusterMembers || 0 == clusterMembers.length)
         {
             thisMember = (null != thisMember) ?
                 thisMember : ClusterMember.parseEndpoints(NULL_VALUE, context.memberEndpoints());

@@ -1332,7 +1332,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * String representing the cluster members member status endpoints used to request to join the cluster.
          * <p>
-         * {@code "0=endpoint,1=endpoint,2=endpoint"}
+         * {@code "endpoint,endpoint,endpoint"}
          * <p>
          *
          * @param endpoints which are to be contacted for joining the cluster.

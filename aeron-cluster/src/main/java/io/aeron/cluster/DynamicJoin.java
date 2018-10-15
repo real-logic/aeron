@@ -116,6 +116,21 @@ public class DynamicJoin implements AutoCloseable
         CloseHelper.close(snapshotRetrieveSubscription);
     }
 
+    public ClusterMember[] clusterMembers()
+    {
+        return clusterMembers;
+    }
+
+    public ClusterMember leader()
+    {
+        return leaderMember;
+    }
+
+    public int memberId()
+    {
+        return memberId;
+    }
+
     boolean isDone()
     {
         return State.DONE == state;
@@ -197,7 +212,7 @@ public class DynamicJoin implements AutoCloseable
                         leaderArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);
 
                         timeOfLastActivityMs = 0;
-                        state = State.PASSIVE_FOLLOWER;
+                        state(State.PASSIVE_FOLLOWER);
                     }
                     break;
                 }
@@ -232,7 +247,7 @@ public class DynamicJoin implements AutoCloseable
             timeOfLastActivityMs = 0;
             recordingIdCursor = 0;
             this.correlationId = NULL_VALUE;
-            state = leaderSnapshots.isEmpty() ? State.JOIN_CLUSTER : State.SNAPSHOT_RETRIEVE;
+            state(leaderSnapshots.isEmpty() ? State.SNAPSHOT_LOAD : State.SNAPSHOT_RETRIEVE);
         }
     }
 
@@ -307,7 +322,7 @@ public class DynamicJoin implements AutoCloseable
                         if (++recordingIdCursor >= leaderSnapshots.size())
                         {
                             localArchive.stopRecording(snapshotRetrieveSubscriptionId);
-                            state = State.SNAPSHOT_LOAD;
+                            state(State.SNAPSHOT_LOAD);
                             workCount++;
                         }
                     }
@@ -379,8 +394,9 @@ public class DynamicJoin implements AutoCloseable
         }
         else if (consensusModuleAgent.pollForEndOfSnapshotLoad(recoveryStateCounter))
         {
+            recoveryStateCounter.close();
             recoveryStateCounter = null;
-            state = State.JOIN_CLUSTER;
+            state(State.JOIN_CLUSTER);
             workCount++;
         }
 
@@ -396,13 +412,19 @@ public class DynamicJoin implements AutoCloseable
         {
             if (consensusModuleAgent.dynamicJoinComplete(nowMs))
             {
-                state = State.DONE;
+                state(State.DONE);
                 close();
                 workCount++;
             }
         }
 
         return workCount;
+    }
+
+    private void state(final State state)
+    {
+        //System.out.println("dynamicJoin " + this.state + " -> " + state);
+        this.state = state;
     }
 
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)

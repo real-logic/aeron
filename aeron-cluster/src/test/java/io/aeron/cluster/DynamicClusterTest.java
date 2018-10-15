@@ -53,11 +53,14 @@ import static org.junit.Assert.assertThat;
 public class DynamicClusterTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;
-    private static final int MEMBER_COUNT = 3;
+    private static final int MAX_MEMBER_COUNT = 4;
+    private static final int STATIC_MEMBER_COUNT = 3;
     private static final int MESSAGE_COUNT = 10;
     private static final String MSG = "Hello World!";
 
     private static final String CLUSTER_MEMBERS = clusterMembersString();
+    private static final String[] CLUSTER_MEMBERS_ENDPOINTS = clusterMembersEndpoints();
+    private static final String CLUSTER_MEMBERS_STATUS_ENDPOINTS = clusterMembersStatusEndpoints();
     private static final String LOG_CHANNEL =
         "aeron:udp?term-length=64k|control-mode=manual|control=localhost:55550";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
@@ -68,12 +71,12 @@ public class DynamicClusterTest
     private final AtomicLong timeOffset = new AtomicLong();
     private final EpochClock epochClock = () -> System.currentTimeMillis() + timeOffset.get();
 
-    private final CountDownLatch latchOne = new CountDownLatch(MEMBER_COUNT);
-    private final CountDownLatch latchTwo = new CountDownLatch(MEMBER_COUNT - 1);
+    private final CountDownLatch latchOne = new CountDownLatch(MAX_MEMBER_COUNT);
+    private final CountDownLatch latchTwo = new CountDownLatch(MAX_MEMBER_COUNT - 1);
 
-    private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
-    private ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MEMBER_COUNT];
-    private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
+    private final EchoService[] echoServices = new EchoService[MAX_MEMBER_COUNT];
+    private ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MAX_MEMBER_COUNT];
+    private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MAX_MEMBER_COUNT];
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
 
@@ -110,10 +113,10 @@ public class DynamicClusterTest
         }
     }
 
-    @Test(timeout = 30_000)
+    @Test(timeout = 10_000)
     public void shouldQueryClusterMembers() throws Exception
     {
-        for (int i = 0; i < MEMBER_COUNT; i++)
+        for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
         {
             startStaticNode(i, true);
         }
@@ -130,6 +133,29 @@ public class DynamicClusterTest
         assertThat(clusterMembersInfo.leaderMemberId, is(leaderMemberId));
         assertThat(clusterMembersInfo.passiveMembers, is(""));
         assertThat(clusterMembersInfo.activeMembers, is(CLUSTER_MEMBERS));
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldDynamicallyJoinClusterOfThree() throws Exception
+    {
+        for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
+        {
+            startStaticNode(i, true);
+        }
+
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        final int dynamicMemberIndex = STATIC_MEMBER_COUNT;
+        startDynamicNode(dynamicMemberIndex, true);
+
+        Thread.sleep(1000);
+
+        assertThat(roleOf(dynamicMemberIndex), is(Cluster.Role.FOLLOWER));
     }
 
     private void startStaticNode(final int index, final boolean cleanStart)
@@ -168,6 +194,62 @@ public class DynamicClusterTest
                 .errorHandler(Throwable::printStackTrace)
                 .clusterMemberId(index)
                 .clusterMembers(CLUSTER_MEMBERS)
+                .aeronDirectoryName(aeronDirName)
+                .clusterDir(new File(baseDirName, "consensus-module"))
+                .ingressChannel("aeron:udp?term-length=64k")
+                .logChannel(memberSpecificPort(LOG_CHANNEL, index))
+                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .archiveContext(archiveCtx.clone())
+                .deleteDirOnStart(cleanStart));
+
+        containers[index] = ClusteredServiceContainer.launch(
+            new ClusteredServiceContainer.Context()
+                .aeronDirectoryName(aeronDirName)
+                .archiveContext(archiveCtx.clone())
+                .clusterDir(new File(baseDirName, "service"))
+                .clusteredService(echoServices[index])
+                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .errorHandler(Throwable::printStackTrace));
+    }
+
+    private void startDynamicNode(final int index, final boolean cleanStart)
+    {
+        echoServices[index] = new EchoService(index, latchOne, latchTwo);
+        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
+
+        final AeronArchive.Context archiveCtx = new AeronArchive.Context()
+            .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
+            .controlRequestStreamId(100 + index)
+            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
+            .controlResponseStreamId(110 + index)
+            .aeronDirectoryName(baseDirName);
+
+        clusteredMediaDrivers[index] = ClusteredMediaDriver.launch(
+            new MediaDriver.Context()
+                .aeronDirectoryName(aeronDirName)
+                .threadingMode(ThreadingMode.SHARED)
+                .termBufferSparseFile(true)
+                .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
+                .errorHandler(Throwable::printStackTrace)
+                .dirDeleteOnStart(true),
+            new Archive.Context()
+                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .aeronDirectoryName(aeronDirName)
+                .archiveDir(new File(baseDirName, "archive"))
+                .controlChannel(archiveCtx.controlRequestChannel())
+                .controlStreamId(archiveCtx.controlRequestStreamId())
+                .localControlChannel("aeron:ipc?term-length=64k")
+                .localControlStreamId(archiveCtx.controlRequestStreamId())
+                .threadingMode(ArchiveThreadingMode.SHARED)
+                .deleteArchiveOnStart(cleanStart),
+            new ConsensusModule.Context()
+                .epochClock(epochClock)
+                .errorHandler(Throwable::printStackTrace)
+                .clusterMemberId(NULL_VALUE)
+                .clusterMembers("")
+                .clusterMembersStatusEndpoints(CLUSTER_MEMBERS_STATUS_ENDPOINTS)
+                .memberEndpoints(CLUSTER_MEMBERS_ENDPOINTS[index])
                 .aeronDirectoryName(aeronDirName)
                 .clusterDir(new File(baseDirName, "consensus-module"))
                 .ingressChannel("aeron:udp?term-length=64k")
@@ -246,7 +328,7 @@ public class DynamicClusterTest
     {
         final StringBuilder builder = new StringBuilder();
 
-        for (int i = 0; i < MEMBER_COUNT; i++)
+        for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
         {
             builder
                 .append(i).append(',')
@@ -255,6 +337,41 @@ public class DynamicClusterTest
                 .append("localhost:2033").append(i).append(',')
                 .append("localhost:2044").append(i).append(',')
                 .append("localhost:801").append(i).append('|');
+        }
+
+        builder.setLength(builder.length() - 1);
+
+        return builder.toString();
+    }
+
+    private static String[] clusterMembersEndpoints()
+    {
+        final String[] clusterMembersEndpoints = new String[MAX_MEMBER_COUNT];
+
+        for (int i = 0; i < MAX_MEMBER_COUNT; i++)
+        {
+            final StringBuilder builder = new StringBuilder();
+
+            builder
+                .append("localhost:2011").append(i).append(',')
+                .append("localhost:2022").append(i).append(',')
+                .append("localhost:2033").append(i).append(',')
+                .append("localhost:2044").append(i).append(',')
+                .append("localhost:801").append(i);
+
+            clusterMembersEndpoints[i] = builder.toString();
+        }
+
+        return clusterMembersEndpoints;
+    }
+
+    private static String clusterMembersStatusEndpoints()
+    {
+        final StringBuilder builder = new StringBuilder();
+
+        for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
+        {
+            builder.append("localhost:2022").append(i).append(',');
         }
 
         builder.setLength(builder.length() - 1);
@@ -326,6 +443,11 @@ public class DynamicClusterTest
             }
 
             final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
+
+            if (null == driver)
+            {
+                continue;
+            }
 
             final Cluster.Role role = Cluster.Role.get(
                 (int)driver.consensusModule().context().clusterNodeCounter().get());
@@ -401,5 +523,13 @@ public class DynamicClusterTest
         }
 
         return members;
+    }
+
+    private Cluster.Role roleOf(final int index)
+    {
+        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+
+        return Cluster.Role.get(
+            (int)driver.consensusModule().context().clusterNodeCounter().get());
     }
 }

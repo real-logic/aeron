@@ -477,6 +477,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             checkInterruptedStatus();
             idleStrategy.idle();
 
+            heartbeatCounter.setOrdered(epochClock.time());
             counterId = RecoveryState.findCounterId(counters);
         }
 
@@ -549,6 +550,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             checkInterruptedStatus();
             idleStrategy.idle();
+            heartbeatCounter.setOrdered(epochClock.time());
             counterId = CommitPos.findCounterId(counters);
         }
 

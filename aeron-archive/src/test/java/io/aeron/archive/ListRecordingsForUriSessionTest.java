@@ -1,6 +1,7 @@
 package io.aeron.archive;
 
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.collections.MutableLong;
@@ -13,7 +14,6 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 
-import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.BLOCK_LENGTH;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -242,13 +242,18 @@ public class ListRecordingsForUriSessionTest
     {
         return (invocation) ->
         {
-            final UnsafeBuffer b = invocation.getArgument(1);
-            wrapDescriptorDecoder(recordingDescriptorDecoder, b);
+            final UnsafeBuffer buffer = invocation.getArgument(1);
+            recordingDescriptorDecoder.wrap(
+                buffer,
+                RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.SCHEMA_VERSION);
 
             final int i = counter.intValue();
             assertThat(recordingDescriptorDecoder.recordingId(), is(matchingRecordingIds[i]));
             counter.set(i + 1);
-            return b.getInt(0);
+
+            return buffer.getInt(0);
         };
     }
 }

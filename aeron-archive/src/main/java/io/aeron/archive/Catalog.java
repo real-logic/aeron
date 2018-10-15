@@ -379,9 +379,18 @@ class Catalog implements AutoCloseable
         {
             descriptorHeaderDecoder.wrap(
                 catalogBuffer, 0, DESCRIPTOR_HEADER_LENGTH, RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
+
             descriptorHeaderEncoder.wrap(catalogBuffer, 0);
-            wrapDescriptorDecoder(descriptorDecoder, catalogBuffer);
+
+            descriptorDecoder.wrap(
+                catalogBuffer,
+                DESCRIPTOR_HEADER_LENGTH,
+                RecordingDescriptorDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.SCHEMA_VERSION);
+
+
             descriptorEncoder.wrap(catalogBuffer, DESCRIPTOR_HEADER_LENGTH);
+
             consumer.accept(descriptorHeaderEncoder, descriptorHeaderDecoder, descriptorEncoder, descriptorDecoder);
             ++recordingId;
         }
@@ -393,24 +402,23 @@ class Catalog implements AutoCloseable
         {
             descriptorHeaderDecoder.wrap(
                 catalogBuffer, 0, DESCRIPTOR_HEADER_LENGTH, RecordingDescriptorHeaderDecoder.SCHEMA_VERSION);
+
             descriptorHeaderEncoder.wrap(catalogBuffer, 0);
-            wrapDescriptorDecoder(descriptorDecoder, catalogBuffer);
+
+            descriptorDecoder.wrap(
+                catalogBuffer,
+                DESCRIPTOR_HEADER_LENGTH,
+                RecordingDescriptorDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.SCHEMA_VERSION);
+
             descriptorEncoder.wrap(catalogBuffer, DESCRIPTOR_HEADER_LENGTH);
+
             consumer.accept(descriptorHeaderEncoder, descriptorHeaderDecoder, descriptorEncoder, descriptorDecoder);
 
             return true;
         }
 
         return false;
-    }
-
-    static void wrapDescriptorDecoder(final RecordingDescriptorDecoder decoder, final UnsafeBuffer descriptorBuffer)
-    {
-        decoder.wrap(
-            descriptorBuffer,
-            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.BLOCK_LENGTH,
-            RecordingDescriptorDecoder.SCHEMA_VERSION);
     }
 
     //

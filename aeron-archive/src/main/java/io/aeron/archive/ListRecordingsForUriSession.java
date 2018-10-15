@@ -16,9 +16,8 @@
 package io.aeron.archive;
 
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 
 class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
@@ -69,7 +68,11 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
                 break;
             }
 
-            wrapDescriptorDecoder(decoder, descriptorBuffer);
+            decoder.wrap(
+                descriptorBuffer,
+                RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.SCHEMA_VERSION);
 
             if (Catalog.isValidDescriptor(descriptorBuffer) &&
                 decoder.streamId() == streamId &&

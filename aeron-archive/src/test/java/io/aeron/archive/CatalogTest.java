@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -34,7 +35,6 @@ import java.nio.file.Paths;
 
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.PAGE_SIZE;
-import static io.aeron.archive.Catalog.wrapDescriptorDecoder;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -102,7 +102,11 @@ public class CatalogTest
     {
         assertTrue(catalog.wrapDescriptor(id, unsafeBuffer));
 
-        wrapDescriptorDecoder(recordingDescriptorDecoder, unsafeBuffer);
+        recordingDescriptorDecoder.wrap(
+            unsafeBuffer,
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.BLOCK_LENGTH,
+            RecordingDescriptorDecoder.SCHEMA_VERSION);
 
         assertEquals(id, recordingDescriptorDecoder.recordingId());
         assertEquals(sessionId, recordingDescriptorDecoder.sessionId());

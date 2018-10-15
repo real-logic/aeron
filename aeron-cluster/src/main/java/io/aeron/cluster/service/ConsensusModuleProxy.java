@@ -23,7 +23,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 
-final class ConsensusModuleProxy implements AutoCloseable
+public final class ConsensusModuleProxy implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
 
@@ -37,7 +37,7 @@ final class ConsensusModuleProxy implements AutoCloseable
     private final RemoveMemberEncoder removeMemberEncoder = new RemoveMemberEncoder();
     private final Publication publication;
 
-    ConsensusModuleProxy(final Publication publication)
+    public ConsensusModuleProxy(final Publication publication)
     {
         this.publication = publication;
     }

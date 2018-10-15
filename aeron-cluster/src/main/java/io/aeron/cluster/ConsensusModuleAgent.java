@@ -1543,6 +1543,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private void checkServiceHeartbeats(final long nowMs)
     {
         final long heartbeatThreshold = nowMs - serviceHeartbeatTimeoutMs;
+
+        if (null != dynamicJoin)
+        {
+            return;
+        }
+
         for (final Counter serviceHeartbeat : serviceHeartbeats)
         {
             final long heartbeat = serviceHeartbeat.get();

@@ -41,8 +41,6 @@ import static io.aeron.archive.Archive.segmentFileName;
  * <ul>
  * <li>Easier testing and in particular simplified re-use in testing.</li>
  * <li>Isolation of an external relationship, namely the file system.</li>
- * <li>While a {@link RecordingWriter} is part of a {@link RecordingSession}, a session may transition without actually
- * creating a {@link RecordingWriter}.</li>
  * </ul>
  */
 class RecordingWriter implements BlockHandler
@@ -129,17 +127,17 @@ class RecordingWriter implements BlockHandler
         }
     }
 
-    public long startPosition()
+    long startPosition()
     {
         return startPosition;
     }
 
-    public int segmentFileLength()
+    int segmentFileLength()
     {
         return segmentFileLength;
     }
 
-    public void close()
+    void close()
     {
         if (isClosed)
         {

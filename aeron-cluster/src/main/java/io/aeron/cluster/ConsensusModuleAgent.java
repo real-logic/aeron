@@ -1040,41 +1040,47 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         final ClusterMember[] newMembers = ClusterMember.parse(clusterMembers);
 
-        if (memberId == this.memberId)
+        if (ChangeType.JOIN == eventType)
         {
-            if (eventType == ChangeType.JOIN)
+            if (memberId == this.memberId)
             {
-                if (0 == this.clusterMembers.length)
-                {
-                    this.clusterMembers = newMembers;
-                    ClusterMember.addClusterMemberIds(newMembers, clusterMemberByIdMap);
-                    thisMember = determineMemberAndCheckEndpoints(newMembers, ctx);
-                    leaderMember = ClusterMember.findMember(newMembers, leaderMemberId);
+                this.clusterMembers = newMembers;
+                clusterMemberByIdMap.clear();
+                clusterMemberByIdMap.compact();
+                ClusterMember.addClusterMemberIds(newMembers, clusterMemberByIdMap);
+                thisMember = ClusterMember.findMember(this.clusterMembers, memberId);
+                leaderMember = ClusterMember.findMember(this.clusterMembers, leaderMemberId);
 
-                    ClusterMember.addMemberStatusPublications(
-                        newMembers,
-                        thisMember,
-                        ChannelUri.parse(ctx.memberStatusChannel()),
-                        ctx.memberStatusStreamId(),
-                        aeron);
-                }
+                ClusterMember.addMemberStatusPublications(
+                    newMembers,
+                    thisMember,
+                    ChannelUri.parse(ctx.memberStatusChannel()),
+                    ctx.memberStatusStreamId(),
+                    aeron);
             }
-            else if (eventType == ChangeType.LEAVE)
+            else
+            {
+                clusterMemberJoined(memberId, newMembers);
+            }
+        }
+        else if (ChangeType.LEAVE == eventType)
+        {
+            if (memberId == this.memberId)
             {
                 expectedAckPosition = logPosition;
                 state(ConsensusModule.State.ABORT);
             }
+            else
+            {
+                final boolean wasLeader = leaderMemberId == memberId;
 
-            return;
-        }
+                clusterMemberLeft(memberId, newMembers);
 
-        if (ChangeType.JOIN == eventType)
-        {
-            clusterMemberJoined(memberId, newMembers);
-        }
-        else if (ChangeType.LEAVE == eventType)
-        {
-            clusterMemberLeft(memberId, newMembers);
+                if (wasLeader)
+                {
+                    enterElection(cachedTimeMs);
+                }
+            }
         }
     }
 
@@ -1772,7 +1778,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 {
                     timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
 
-                    this.passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
+                    this.passiveMembers = ClusterMember.removeMember(this.passiveMembers, member.id());
                     this.clusterMembers = newMembers;
                     rankedPositions = new long[this.clusterMembers.length];
 

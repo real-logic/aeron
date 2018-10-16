@@ -195,6 +195,35 @@ public class DynamicClusterTest
         awaitMessageCountForService(dynamicMemberIndex, MESSAGE_COUNT);
     }
 
+    @Test(timeout = 10_000)
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup() throws Exception
+    {
+        for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
+        {
+            startStaticNode(i, true);
+        }
+
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        startClient();
+
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+
+        sendMessages(msgBuffer);
+        awaitResponses(MESSAGE_COUNT);
+
+        final int dynamicMemberIndex = STATIC_MEMBER_COUNT;
+        startDynamicNode(dynamicMemberIndex, true);
+
+        awaitMessageCountForService(dynamicMemberIndex, MESSAGE_COUNT);
+    }
+
     private void startStaticNode(final int index, final boolean cleanStart)
     {
         echoServices[index] = new EchoService(index, latchOne, latchTwo);

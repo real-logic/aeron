@@ -54,7 +54,7 @@ class RecordingWriter implements BlockHandler
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
 
-    private int segmentPosition;
+    private int segmentOffset;
     private int segmentIndex;
     private FileChannel recordingFileChannel;
 
@@ -91,7 +91,7 @@ class RecordingWriter implements BlockHandler
     {
         try
         {
-            if (segmentFileLength == segmentPosition)
+            if (segmentFileLength == segmentOffset)
             {
                 onFileRollOver();
             }
@@ -110,7 +110,7 @@ class RecordingWriter implements BlockHandler
                 recordingFileChannel.force(forceMetadata);
             }
 
-            segmentPosition += length;
+            segmentOffset += length;
             recordedPosition.getAndAddOrdered(length);
         }
         catch (final ClosedByInterruptException ex)
@@ -148,7 +148,7 @@ class RecordingWriter implements BlockHandler
 
     void init(final int segmentOffset) throws IOException
     {
-        segmentPosition = segmentOffset;
+        this.segmentOffset = segmentOffset;
         openRecordingSegmentFile();
 
         if (segmentOffset != 0)
@@ -188,7 +188,7 @@ class RecordingWriter implements BlockHandler
     private void onFileRollOver()
     {
         CloseHelper.close(recordingFileChannel);
-        segmentPosition = 0;
+        segmentOffset = 0;
         segmentIndex++;
 
         openRecordingSegmentFile();

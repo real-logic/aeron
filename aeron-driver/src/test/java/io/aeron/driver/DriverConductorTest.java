@@ -1639,7 +1639,27 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldUseExistingChannelEndpointOnAddPublciationWithSameTagId()
+    public void shouldUseExistingChannelEndpointOnAddPublciationWithSameTagIdAndSameStreamId()
+    {
+        final long id1 = driverProxy.addPublication(CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
+        final long id2 = driverProxy.addPublication(CHANNEL_TAG_ID_1, STREAM_ID_1);
+
+        driverConductor.doWork();
+        verify(mockErrorHandler, never()).onError(any());
+
+        verify(senderProxy).registerSendChannelEndpoint(any());
+        verify(senderProxy).newNetworkPublication(any());
+
+        driverProxy.removePublication(id1);
+        driverProxy.removePublication(id2);
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        verify(senderProxy).closeSendChannelEndpoint(any());
+    }
+
+    @Test
+    public void shouldUseExistingChannelEndpointOnAddPublciationWithSameTagIdDifferentStreamId()
     {
         final long id1 = driverProxy.addPublication(CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
         final long id2 = driverProxy.addPublication(CHANNEL_TAG_ID_1, STREAM_ID_2);
@@ -1648,6 +1668,7 @@ public class DriverConductorTest
         verify(mockErrorHandler, never()).onError(any());
 
         verify(senderProxy).registerSendChannelEndpoint(any());
+        verify(senderProxy, times(2)).newNetworkPublication(any());
 
         driverProxy.removePublication(id1);
         driverProxy.removePublication(id2);

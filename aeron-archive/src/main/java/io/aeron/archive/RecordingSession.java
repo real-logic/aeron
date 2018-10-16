@@ -156,12 +156,16 @@ class RecordingSession implements Session
         try
         {
             workCount = image.blockPoll(recordingWriter, blockLengthLimit);
-            if (0 != workCount)
+            if (workCount > 0)
             {
                 recordingEventsProxy.progress(recordingId, image.joinPosition(), position.getWeak());
             }
+            else if (image.isClosed() || image.isEndOfStream())
+            {
+                this.state = State.INACTIVE;
+            }
 
-            if (image.isClosed() || recordingWriter.isClosed())
+            if (recordingWriter.isClosed())
             {
                 this.state = State.INACTIVE;
             }

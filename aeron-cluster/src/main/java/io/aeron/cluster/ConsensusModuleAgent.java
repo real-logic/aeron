@@ -675,16 +675,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         final ClusterMember member = clusterMemberByIdMap.get(memberId);
 
-        // TODO: check for dup join
-        if (null == election && Cluster.Role.LEADER == role && null != member)
+        if (null == election && Cluster.Role.LEADER == role && null != member && !member.hasRequestedJoin())
         {
-            highMemberId = Math.max(highMemberId, memberId);
-
-            // TODO: move to check passive followers and only change cluster when joiner has reached position of append
-            passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
-            this.clusterMembers = ClusterMember.addMember(this.clusterMembers, member);
-            rankedPositions = new long[this.clusterMembers.length];
-
             if (null == member.publication())
             {
                 final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
@@ -695,7 +687,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 logPublisher.addPassiveFollower(member.logEndpoint());
             }
 
-            member.hasRequestJoin(true);
+            member.hasRequestedJoin(true);
         }
     }
 
@@ -901,7 +893,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     this.leadershipTermId,
                     logPublisher.position(),  // TODO: not needed?
                     clusterTimeMs,
-                    memberId,
+                    thisMember.id(),
                     clusterMembers.length,
                     ChangeType.LEAVE,
                     memberId,
@@ -1772,15 +1764,21 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     this.leadershipTermId,
                     logPublisher.position(),  // TODO: not needed?
                     clusterTimeMs,
-                    member.id(),
+                    thisMember.id(),
                     newMembers.length,
                     ChangeType.JOIN,
                     member.id(),
                     ClusterMember.membersString(newMembers)))
                 {
                     timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
-                    member.hasRequestJoin(false);
+
+                    this.passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
+                    this.clusterMembers = newMembers;
+                    rankedPositions = new long[this.clusterMembers.length];
+
+                    member.hasRequestedJoin(false);
                     workCount++;
+                    break;
                 }
             }
         }

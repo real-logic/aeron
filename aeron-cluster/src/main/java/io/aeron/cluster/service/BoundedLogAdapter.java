@@ -184,7 +184,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     messageHeaderDecoder.version());
 
                 agent.onClusterChange(
-                    clusterChangeEventDecoder.leaderMemberId(),
+                    clusterChangeEventDecoder.leadershipTermId(),
                     clusterChangeEventDecoder.logPosition(),
                     clusterChangeEventDecoder.timestamp(),
                     clusterChangeEventDecoder.leaderMemberId(),

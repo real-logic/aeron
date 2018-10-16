@@ -176,7 +176,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 consensusModuleAgent.onReplayClusterChange(
-                    clusterChangeEventDecoder.leaderMemberId(),
+                    clusterChangeEventDecoder.leadershipTermId(),
                     clusterChangeEventDecoder.logPosition(),
                     clusterChangeEventDecoder.timestamp(),
                     clusterChangeEventDecoder.leaderMemberId(),

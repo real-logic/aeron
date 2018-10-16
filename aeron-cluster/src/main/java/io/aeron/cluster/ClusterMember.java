@@ -38,6 +38,7 @@ public final class ClusterMember
     private boolean isBallotSent;
     private boolean isLeader;
     private boolean hasRequestedJoin;
+    private boolean hasRequestedRemove;
     private int id;
     private long leadershipTermId = Aeron.NULL_VALUE;
     private long logPosition = NULL_POSITION;
@@ -140,7 +141,7 @@ public final class ClusterMember
         return isBallotSent;
     }
 
-    public ClusterMember hasRequestJoin(final boolean hasRequestedJoin)
+    public ClusterMember hasRequestedJoin(final boolean hasRequestedJoin)
     {
         this.hasRequestedJoin = hasRequestedJoin;
         return this;
@@ -149,6 +150,17 @@ public final class ClusterMember
     public boolean hasRequestedJoin()
     {
         return hasRequestedJoin;
+    }
+
+    public ClusterMember hasRequestedRemove(final boolean hasRequestedRemove)
+    {
+        this.hasRequestedRemove = hasRequestedRemove;
+        return this;
+    }
+
+    public boolean isHasRequestedRemove()
+    {
+        return hasRequestedRemove;
     }
 
     public ClusterMember id(final int id)

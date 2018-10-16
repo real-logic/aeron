@@ -997,7 +997,8 @@ public class AeronArchive implements AutoCloseable
     private int pollForDescriptors(
         final long correlationId, final int recordCount, final RecordingDescriptorConsumer consumer)
     {
-        final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
+        int existingRemainCount = recordCount;
+        long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final RecordingDescriptorPoller poller = recordingDescriptorPoller;
         poller.reset(correlationId, recordCount, consumer);
         idleStrategy.reset();
@@ -1005,10 +1006,17 @@ public class AeronArchive implements AutoCloseable
         while (true)
         {
             final int fragments = poller.poll();
+            final int remainingRecordCount = poller.remainingRecordCount();
 
             if (poller.isDispatchComplete())
             {
-                return recordCount - poller.remainingRecordCount();
+                return recordCount - remainingRecordCount;
+            }
+
+            if (remainingRecordCount != existingRemainCount)
+            {
+                existingRemainCount = remainingRecordCount;
+                deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
             }
 
             invokeAeronClient();

@@ -126,8 +126,7 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
         isDispatchComplete = false;
     }
 
-    public Action
-        onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 

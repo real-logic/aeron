@@ -110,8 +110,8 @@ class RecordingWriter implements BlockHandler
                 recordingFileChannel.force(forceMetadata);
             }
 
-            segmentOffset += length;
             recordedPosition.getAndAddOrdered(length);
+            segmentOffset += length;
         }
         catch (final ClosedByInterruptException ex)
         {

@@ -129,11 +129,6 @@ class RecordingWriter implements BlockHandler
         }
     }
 
-    public long recordingId()
-    {
-        return recordingId;
-    }
-
     public long startPosition()
     {
         return startPosition;

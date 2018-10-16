@@ -19,6 +19,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 abstract class AbstractListRecordingsSession implements Session
 {
+    protected static final int MAX_SCANS_PER_WORK_CYCLE = 256;
+
     protected final UnsafeBuffer descriptorBuffer;
     protected final Catalog catalog;
     protected final ControlSession controlSession;

@@ -152,7 +152,7 @@ class RecordingSession implements Session
 
     private int record()
     {
-        int workCount = 1;
+        int workCount = 0;
         try
         {
             workCount = image.blockPoll(recordingWriter, blockLengthLimit);
@@ -160,7 +160,7 @@ class RecordingSession implements Session
             {
                 recordingEventsProxy.progress(recordingId, image.joinPosition(), position.getWeak());
             }
-            else if (image.isClosed() || image.isEndOfStream())
+            else if (image.isClosed())
             {
                 this.state = State.INACTIVE;
             }

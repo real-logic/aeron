@@ -21,8 +21,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
-    private static final int MAX_SCANS_PER_WORK_CYCLE = 16;
-
     private final RecordingDescriptorDecoder decoder;
     private final int count;
     private final String channel;
@@ -56,9 +54,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         int totalBytesSent = 0;
         int recordsScanned = 0;
 
-        while (sent < count &&
-            totalBytesSent < controlSession.maxPayloadLength() &&
-            recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
+        while (sent < count && recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {

@@ -40,8 +40,9 @@ class ListRecordingsSession extends AbstractListRecordingsSession
     protected int sendDescriptors()
     {
         int totalBytesSent = 0;
+        int recordsScanned = 0;
 
-        while (recordingId < limitId && totalBytesSent < controlSession.maxPayloadLength())
+        while (recordingId < limitId && recordsScanned < MAX_SCANS_PER_WORK_CYCLE)
         {
             if (!catalog.wrapDescriptor(recordingId, descriptorBuffer))
             {
@@ -62,6 +63,7 @@ class ListRecordingsSession extends AbstractListRecordingsSession
             }
 
             ++recordingId;
+            recordsScanned++;
         }
 
         if (recordingId >= limitId)

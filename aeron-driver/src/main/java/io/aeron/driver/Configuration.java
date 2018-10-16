@@ -474,7 +474,7 @@ public class Configuration
     /**
      * Maximum back-off park time which doubles on each interval stepping up from the min park idle.
      */
-    public static final long IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(1000);
+    public static final long IDLE_MAX_PARK_NS = TimeUnit.MILLISECONDS.toNanos(1);
 
     private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
 

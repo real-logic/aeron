@@ -39,7 +39,6 @@ import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.align;
@@ -367,9 +366,9 @@ class Catalog implements AutoCloseable
     boolean hasRecording(final long recordingId)
     {
         return recordingId >= 0 && recordingId < nextRecordingId &&
-            fieldAccessBuffer.getInt(
+            fieldAccessBuffer.getByte(
                 recordingDescriptorOffset(recordingId) +
-                    RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), LITTLE_ENDIAN) > 0;
+                    RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
     void forEach(final CatalogEntryProcessor consumer)

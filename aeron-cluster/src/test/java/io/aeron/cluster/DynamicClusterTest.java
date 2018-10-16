@@ -156,6 +156,43 @@ public class DynamicClusterTest
         Thread.sleep(1000);
 
         assertThat(roleOf(dynamicMemberIndex), is(Cluster.Role.FOLLOWER));
+
+        final ClusterMembersInfo clusterMembersInfo = queryClusterMembers(leaderMemberId);
+
+        assertThat(clusterMembersInfo.leaderMemberId, is(leaderMemberId));
+        assertThat(clusterMembersInfo.passiveMembers, is(""));
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend() throws Exception
+    {
+        for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
+        {
+            startStaticNode(i, true);
+        }
+
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        final int dynamicMemberIndex = STATIC_MEMBER_COUNT;
+        startDynamicNode(dynamicMemberIndex, true);
+
+        Thread.sleep(1000);
+
+        assertThat(roleOf(dynamicMemberIndex), is(Cluster.Role.FOLLOWER));
+
+        startClient();
+
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+
+        sendMessages(msgBuffer);
+        awaitResponses(MESSAGE_COUNT);
+        awaitMessageCountForService(dynamicMemberIndex, MESSAGE_COUNT);
     }
 
     private void startStaticNode(final int index, final boolean cleanStart)
@@ -316,6 +353,15 @@ public class DynamicClusterTest
             TestUtil.checkInterruptedStatus();
             Thread.yield();
             client.pollEgress();
+        }
+    }
+
+    private void awaitMessageCountForService(final int index, final int messageCount)
+    {
+        while (echoServices[index].messageCount() < messageCount)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
         }
     }
 

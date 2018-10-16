@@ -677,6 +677,22 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (null == election && Cluster.Role.LEADER == role && null != member)
         {
+            highMemberId = Math.max(highMemberId, memberId);
+
+            passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
+            this.clusterMembers = ClusterMember.addMember(this.clusterMembers, member);
+            rankedPositions = new long[this.clusterMembers.length];
+
+            if (null == member.publication())
+            {
+                final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+
+                ClusterMember.addMemberStatusPublication(
+                    member, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+
+                logPublisher.addPassiveFollower(member.logEndpoint());
+            }
+
             member.hasRequestJoin(true);
         }
     }
@@ -875,17 +891,19 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
             else
             {
-                final ClusterMember[] newMembers = ClusterMember.removeMember(clusterMembers, memberId);
+                clusterMembers = ClusterMember.removeMember(clusterMembers, memberId);
+                rankedPositions = new long[this.clusterMembers.length];
+                passiveMembers = ClusterMember.addMember(passiveMembers, member);
 
                 if (logPublisher.appendClusterChangeEvent(
                     this.leadershipTermId,
                     logPublisher.position(),  // TODO: not needed?
                     clusterTimeMs,
                     memberId,
-                    newMembers.length,
+                    clusterMembers.length,
                     ChangeType.LEAVE,
                     memberId,
-                    ClusterMember.membersString(newMembers)))
+                    ClusterMember.membersString(clusterMembers)))
                 {
                     timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
                 }
@@ -2248,56 +2266,18 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         highMemberId = Math.max(highMemberId, memberId);
 
-        if (Cluster.Role.LEADER == role)
-        {
-            final ClusterMember eventMember = clusterMemberByIdMap.computeIfAbsent(
-                memberId,
-                (id) -> ClusterMember.findMember(newMembers, id));
+        final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
 
-            ClusterMember.removeMember(passiveMembers, memberId);
-            this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
-            rankedPositions = new long[this.clusterMembers.length];
-
-            if (null == eventMember.publication())
-            {
-                final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
-
-                ClusterMember.addMemberStatusPublication(
-                    eventMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
-
-                logPublisher.addPassiveFollower(eventMember.logEndpoint());
-            }
-        }
-        else
-        {
-            final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
-
-            this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
-            clusterMemberByIdMap.put(memberId, eventMember);
-            rankedPositions = new long[this.clusterMembers.length];
-        }
+        this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
+        clusterMemberByIdMap.put(memberId, eventMember);
+        rankedPositions = new long[this.clusterMembers.length];
     }
 
     private void clusterMemberLeft(final int memberId, final ClusterMember[] newMembers)
     {
-        if (Cluster.Role.LEADER == role)
-        {
-            final ClusterMember eventMember = clusterMemberByIdMap.computeIfAbsent(
-                memberId,
-                (id) -> ClusterMember.findMember(newMembers, id));
-
-            ClusterMember.removeMember(this.clusterMembers, memberId);
-            rankedPositions = new long[this.clusterMembers.length];
-            passiveMembers = ClusterMember.addMember(passiveMembers, eventMember);
-        }
-        else
-        {
-            final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
-
-            this.clusterMembers = ClusterMember.removeMember(this.clusterMembers, memberId);
-            clusterMemberByIdMap.remove(memberId);
-            rankedPositions = new long[this.clusterMembers.length];
-        }
+        this.clusterMembers = ClusterMember.removeMember(this.clusterMembers, memberId);
+        clusterMemberByIdMap.remove(memberId);
+        rankedPositions = new long[this.clusterMembers.length];
     }
 
     private void closeExistingLog()

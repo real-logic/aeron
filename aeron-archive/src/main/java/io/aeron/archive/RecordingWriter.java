@@ -139,13 +139,11 @@ class RecordingWriter implements BlockHandler
 
     void close()
     {
-        if (isClosed)
+        if (!isClosed)
         {
-            return;
+            CloseHelper.close(recordingFileChannel);
+            isClosed = true;
         }
-
-        isClosed = true;
-        CloseHelper.close(recordingFileChannel);
     }
 
     void init(final int segmentOffset) throws IOException

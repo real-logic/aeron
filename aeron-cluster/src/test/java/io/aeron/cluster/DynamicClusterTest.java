@@ -15,7 +15,10 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.*;
+import io.aeron.CommonContext;
+import io.aeron.Counter;
+import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
@@ -24,7 +27,6 @@ import io.aeron.cluster.client.EgressListener;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import io.aeron.cluster.service.ConsensusModuleProxy;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
@@ -33,7 +35,6 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
@@ -43,15 +44,14 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Ignore
 public class DynamicClusterTest
@@ -132,7 +132,10 @@ public class DynamicClusterTest
             Thread.sleep(1000);
         }
 
-        final ClusterMembersInfo clusterMembersInfo = queryClusterMembers(leaderMemberId);
+        final ClusterTool.ClusterMembersInfo clusterMembersInfo = new ClusterTool.ClusterMembersInfo();
+
+        assertTrue(ClusterTool.listMembers(
+            clusterMembersInfo, consensusModuleDir(leaderMemberId), TimeUnit.SECONDS.toMillis(1)));
 
         assertThat(clusterMembersInfo.leaderMemberId, is(leaderMemberId));
         assertThat(clusterMembersInfo.passiveMembers, is(""));
@@ -161,7 +164,10 @@ public class DynamicClusterTest
 
         assertThat(roleOf(dynamicMemberIndex), is(Cluster.Role.FOLLOWER));
 
-        final ClusterMembersInfo clusterMembersInfo = queryClusterMembers(leaderMemberId);
+        final ClusterTool.ClusterMembersInfo clusterMembersInfo = new ClusterTool.ClusterMembersInfo();
+
+        assertTrue(ClusterTool.listMembers(
+            clusterMembersInfo, consensusModuleDir(leaderMemberId), TimeUnit.SECONDS.toMillis(1)));
 
         assertThat(clusterMembersInfo.leaderMemberId, is(leaderMemberId));
         assertThat(clusterMembersInfo.passiveMembers, is(""));
@@ -477,6 +483,11 @@ public class DynamicClusterTest
                 .clusterMemberEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
     }
 
+    private File consensusModuleDir(final int index)
+    {
+        return clusteredMediaDrivers[index].consensusModule().context().clusterDir();
+    }
+
     private void sendMessages(final ExpandableArrayBuffer msgBuffer)
     {
         for (int i = 0; i < MESSAGE_COUNT; i++)
@@ -722,70 +733,6 @@ public class DynamicClusterTest
         return leaderMemberId;
     }
 
-    private static class ClusterMembersInfo
-    {
-        int leaderMemberId = NULL_VALUE;
-        String activeMembers = null;
-        String passiveMembers = null;
-    }
-
-    private ClusterMembersInfo queryClusterMembers(final int index) throws Exception
-    {
-        final ConsensusModule.Context consensusModuleContext =
-            clusteredMediaDrivers[index].consensusModule().context();
-
-        // to consensus module - serviceControlChannel, consensusModuleStreamId
-        // to services - serviceControlChannel, serviceStreamId
-        final String channel = consensusModuleContext.serviceControlChannel();
-        final int toConsensusModuleStreamId = consensusModuleContext.consensusModuleStreamId();
-        final int toServiceStreamId = consensusModuleContext.serviceStreamId();
-
-        final MutableLong id = new MutableLong(NULL_VALUE);
-        final ClusterMembersInfo members = new ClusterMembersInfo();
-
-        final MemberServiceAdapter.MemberServiceHandler handler =
-            new MemberServiceAdapter.MemberServiceHandler()
-            {
-                public void onClusterMembersResponse(
-                    final long correlationId,
-                    final int leaderMemberId,
-                    final String activeMembers,
-                    final String passiveMembers)
-                {
-                    if (correlationId == id.longValue())
-                    {
-                        members.leaderMemberId = leaderMemberId;
-                        members.activeMembers = activeMembers;
-                        members.passiveMembers = passiveMembers;
-                    }
-                }
-            };
-
-        try (
-            Aeron aeron = Aeron.connect(
-                new Aeron.Context().aeronDirectoryName(consensusModuleContext.aeronDirectoryName()));
-            ConsensusModuleProxy consensusModuleProxy =
-                new ConsensusModuleProxy(aeron.addPublication(channel, toConsensusModuleStreamId));
-            MemberServiceAdapter memberServiceAdapter =
-                new MemberServiceAdapter(aeron.addSubscription(channel, toServiceStreamId), handler))
-        {
-            id.set(aeron.nextCorrelationId());
-            if (consensusModuleProxy.clusterMembersQuery(id.longValue()))
-            {
-                do
-                {
-                    if (memberServiceAdapter.poll() == 0)
-                    {
-                        Thread.sleep(1);
-                    }
-                }
-                while (null == members.activeMembers);
-            }
-        }
-
-        return members;
-    }
-
     private Cluster.Role roleOf(final int index)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
@@ -816,4 +763,8 @@ public class DynamicClusterTest
         }
     }
 
+    private int numberOfMembers(final String memberString)
+    {
+        return memberString.split("|").length;
+    }
 }

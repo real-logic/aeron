@@ -15,20 +15,27 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Aeron;
 import io.aeron.CncFileDescriptor;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.codecs.BooleanType;
 import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.cluster.service.ConsensusModuleProxy;
 import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AtomicBuffer;
 
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
+import static io.aeron.Aeron.NULL_VALUE;
 
 /**
  * Tool for investigating the state of a cluster node.
@@ -40,6 +47,9 @@ import java.util.function.Consumer;
  *     recovery-plan: [service count] prints recovery plan of cluster component.
  *     recording-log: prints recording log of cluster component.
  *            errors: prints Aeron and cluster component error logs.
+ *      list-members: print leader memberId, active members list, and passive members list
+ *     remove-member: [memberid] requests node (if leader) to remove member specified in memberId
+ *    remove-passive: [memberId] requests node (if leader) to remove passive member specified in memberId
  * </pre>
  */
 public class ClusterTool
@@ -87,6 +97,28 @@ public class ClusterTool
 
             case "errors":
                 errors(System.out, clusterDir);
+                break;
+
+            case "list-members":
+                listMembers(System.out, clusterDir);
+                break;
+
+            case "remove-member":
+                if (args.length < 3)
+                {
+                    printHelp(System.out);
+                    System.exit(-1);
+                }
+                removeMember(System.out, clusterDir, Integer.parseInt(args[2]), false);
+                break;
+
+            case "remove-passive":
+                if (args.length < 3)
+                {
+                    printHelp(System.out);
+                    System.exit(-1);
+                }
+                removeMember(System.out, clusterDir, Integer.parseInt(args[2]), true);
                 break;
         }
     }
@@ -161,6 +193,54 @@ public class ClusterTool
         errors(out, serviceMarkFiles);
     }
 
+    public static void listMembers(final PrintStream out, final File clusterDir)
+    {
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
+        {
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            {
+                final ClusterMembersInfo clusterMembersInfo = new ClusterMembersInfo();
+                final long timeoutMs = Math.max(TimeUnit.SECONDS.toMillis(1), TIMEOUT_MS);
+
+                if (queryClusterMembers(markFile, clusterMembersInfo, timeoutMs))
+                {
+                    out.format("leaderMemberId=%d, activeMembers=%s, passiveMembers=%s%n",
+                        clusterMembersInfo.leaderMemberId,
+                        clusterMembersInfo.activeMembers,
+                        clusterMembersInfo.passiveMembers);
+                }
+                else
+                {
+                    out.format("timeout waiting for response from node");
+                }
+            }
+        }
+        else
+        {
+            out.println(ClusterMarkFile.FILENAME + " does not exist.");
+        }
+    }
+
+    public static void removeMember(
+        final PrintStream out, final File clusterDir, final int memberId, final boolean isPassive)
+    {
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
+        {
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            {
+                if (!removeMember(markFile, memberId, isPassive))
+                {
+                    out.println("could not send remove member request");
+                }
+            }
+        }
+        else
+        {
+            out.println(ClusterMarkFile.FILENAME + " does not exist.");
+        }
+
+    }
+
     public static void describe(final PrintStream out, final ClusterMarkFile[] serviceMarkFiles)
     {
         for (final ClusterMarkFile serviceMarkFile : serviceMarkFiles)
@@ -186,6 +266,130 @@ public class ClusterTool
         final File markFile = new File(clusterDir, ClusterMarkFile.FILENAME);
 
         return markFile.exists();
+    }
+
+    public static class ClusterMembersInfo
+    {
+        int leaderMemberId = NULL_VALUE;
+        String activeMembers = null;
+        String passiveMembers = null;
+    }
+
+    public static boolean listMembers(
+        final ClusterMembersInfo clusterMembersInfo, final File clusterDir, final long timeoutMs)
+    {
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
+        {
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+            {
+                return queryClusterMembers(markFile, clusterMembersInfo, timeoutMs);
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean queryClusterMembers(
+        final ClusterMarkFile markFile,
+        final ClusterMembersInfo clusterMembersInfo,
+        final long timeoutMs)
+    {
+        final String aeronDirectoryName = markFile.decoder().aeronDirectory();
+        final String archiveChannel = markFile.decoder().archiveChannel();
+        final String channel = markFile.decoder().serviceControlChannel();
+        final int toServiceStreamId = markFile.decoder().serviceStreamId();
+        final int toConsensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
+
+        final MutableLong id = new MutableLong(NULL_VALUE);
+        final MemberServiceAdapter.MemberServiceHandler handler =
+            new MemberServiceAdapter.MemberServiceHandler()
+            {
+                public void onClusterMembersResponse(
+                    final long correlationId,
+                    final int leaderMemberId,
+                    final String activeMembers,
+                    final String passiveMembers)
+                {
+                    if (correlationId == id.longValue())
+                    {
+                        clusterMembersInfo.leaderMemberId = leaderMemberId;
+                        clusterMembersInfo.activeMembers = activeMembers;
+                        clusterMembersInfo.passiveMembers = passiveMembers;
+                        id.set(NULL_VALUE);
+                    }
+                }
+            };
+
+
+        try (
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
+            ConsensusModuleProxy consensusModuleProxy =
+                new ConsensusModuleProxy(aeron.addPublication(channel, toConsensusModuleStreamId));
+            MemberServiceAdapter memberServiceAdapter =
+                new MemberServiceAdapter(aeron.addSubscription(channel, toServiceStreamId), handler))
+        {
+            id.set(aeron.nextCorrelationId());
+            if (consensusModuleProxy.clusterMembersQuery(id.longValue()))
+            {
+                final long startTime = System.currentTimeMillis();
+                do
+                {
+                    if (memberServiceAdapter.poll() == 0)
+                    {
+                        if ((System.currentTimeMillis() - startTime) > timeoutMs)
+                        {
+                            break;
+                        }
+                        Thread.yield();
+                    }
+                }
+                while (NULL_VALUE != id.longValue());
+            }
+        }
+
+        return id.longValue() == NULL_VALUE;
+    }
+
+    public static boolean removeMember(
+        final File clusterDir,
+        final int memberId,
+        final boolean isPassive)
+    {
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
+        {
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+            {
+                return removeMember(markFile, memberId, isPassive);
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean removeMember(
+        final ClusterMarkFile markFile,
+        final int memberId,
+        final boolean isPassive)
+    {
+        final String aeronDirectoryName = markFile.decoder().aeronDirectory();
+        final String archiveChannel = markFile.decoder().archiveChannel();
+        final String channel = markFile.decoder().serviceControlChannel();
+        final int toServiceStreamId = markFile.decoder().serviceStreamId();
+        final int toConsensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
+
+        try (
+            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
+            ConsensusModuleProxy consensusModuleProxy =
+                new ConsensusModuleProxy(aeron.addPublication(channel, toConsensusModuleStreamId)))
+        {
+            if (consensusModuleProxy.removeMember(
+                aeron.nextCorrelationId(), memberId, isPassive ? BooleanType.TRUE : BooleanType.FALSE))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)

@@ -52,7 +52,11 @@ public class RecordedBasicPublisher
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
-        try (AeronArchive archive = AeronArchive.connect())
+        // Create a unique response stream id so not to clash with other archive clients.
+        final AeronArchive.Context archiveCtx = new AeronArchive.Context()
+            .controlResponseStreamId(AeronArchive.Configuration.controlResponseStreamId() + 1);
+
+        try (AeronArchive archive = AeronArchive.connect(archiveCtx))
         {
             archive.startRecording(CHANNEL, STREAM_ID, SourceLocation.LOCAL);
 

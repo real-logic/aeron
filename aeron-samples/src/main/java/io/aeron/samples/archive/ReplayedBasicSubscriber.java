@@ -49,7 +49,11 @@ public class ReplayedBasicSubscriber
 
         SigInt.register(() -> running.set(false));
 
-        try (AeronArchive archive = AeronArchive.connect())
+        // Create a unique response stream id so not to clash with other archive clients.
+        final AeronArchive.Context archiveCtx = new AeronArchive.Context()
+            .controlResponseStreamId(AeronArchive.Configuration.controlResponseStreamId() + 2);
+
+        try (AeronArchive archive = AeronArchive.connect(archiveCtx))
         {
             final long recordingId = findLatestRecording(archive);
             final long position = 0L;

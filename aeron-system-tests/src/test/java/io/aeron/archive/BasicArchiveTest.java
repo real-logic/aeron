@@ -206,8 +206,12 @@ public class BasicArchiveTest
             }
 
             assertThat(aeronArchive.getRecordingPosition(recordingId), is(stopPosition));
+
             aeronArchive.stopRecording(publication);
-            assertThat(aeronArchive.getRecordingPosition(recordingId), is(NULL_POSITION));
+            while (NULL_POSITION != aeronArchive.getRecordingPosition(recordingId))
+            {
+                SystemTest.checkInterruptedStatus();
+            }
         }
 
         final long position = 0L;

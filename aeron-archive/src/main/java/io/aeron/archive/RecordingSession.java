@@ -160,7 +160,7 @@ class RecordingSession implements Session
             {
                 recordingEventsProxy.progress(recordingId, image.joinPosition(), position.getWeak());
             }
-            else if (image.isClosed())
+            else if (image.isEndOfStream() || image.isClosed())
             {
                 this.state = State.INACTIVE;
             }

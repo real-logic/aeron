@@ -63,7 +63,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 
     boolean isDone()
     {
-        return image.isClosed() || image.isEndOfStream();
+        return image.isEndOfStream() || image.isClosed();
     }
 
     public long position()

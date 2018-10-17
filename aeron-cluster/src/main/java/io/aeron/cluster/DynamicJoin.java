@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 public class DynamicJoin implements AutoCloseable
 {
@@ -299,34 +300,21 @@ public class DynamicJoin implements AutoCloseable
             {
                 if (snapshotReader.isDone())
                 {
-                    final CountersReader countersReader = ctx.aeron().countersReader();
-                    final int counterId = RecordingPos.findCounterIdBySession(countersReader, snapshotReplaySessionId);
-                    final long recordingId = RecordingPos.getRecordingId(countersReader, counterId);
+                    consensusModuleAgent.retrievedSnapshot(
+                        snapshotReader.recordingId(), leaderSnapshots.get(snapshotCursor));
 
-                    if (snapshotReader.endPosition() <= countersReader.getCounterValue(counterId))
+                    snapshotRetrieveSubscription.close();
+                    snapshotRetrieveSubscription = null;
+                    snapshotRetrieveImage = null;
+                    snapshotReader = null;
+                    correlationId = NULL_VALUE;
+                    snapshotReplaySessionId = NULL_VALUE;
+
+                    if (++snapshotCursor >= leaderSnapshots.size())
                     {
-                        final RecordingLog.Snapshot snapshot = leaderSnapshots.get(snapshotCursor);
-                        ctx.recordingLog().appendSnapshot(
-                            recordingId,
-                            snapshot.leadershipTermId,
-                            snapshot.termBaseLogPosition,
-                            snapshot.logPosition,
-                            snapshot.timestamp,
-                            snapshot.serviceId);
-
-                        snapshotRetrieveSubscription.close();
-                        snapshotRetrieveSubscription = null;
-                        snapshotRetrieveImage = null;
-                        snapshotReader = null;
-                        correlationId = NULL_VALUE;
-                        snapshotReplaySessionId = NULL_VALUE;
-
-                        if (++snapshotCursor >= leaderSnapshots.size())
-                        {
-                            localArchive.stopRecording(snapshotRetrieveSubscriptionId);
-                            state(State.SNAPSHOT_LOAD);
-                            workCount++;
-                        }
+                        localArchive.stopRecording(snapshotRetrieveSubscriptionId);
+                        state(State.SNAPSHOT_LOAD);
+                        workCount++;
                     }
                 }
                 else if (snapshotRetrieveImage.isClosed())
@@ -344,7 +332,7 @@ public class DynamicJoin implements AutoCloseable
             snapshotRetrieveImage = snapshotRetrieveSubscription.imageBySessionId(snapshotReplaySessionId);
             if (null != snapshotRetrieveImage)
             {
-                snapshotReader = new SnapshotReader(snapshotRetrieveImage);
+                snapshotReader = new SnapshotReader(snapshotRetrieveImage, ctx.aeron().countersReader());
                 workCount++;
             }
         }
@@ -458,16 +446,22 @@ public class DynamicJoin implements AutoCloseable
         private long endPosition = 0;
         private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
         private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
+        private final CountersReader countersReader;
         private final Image image;
+        private long recordingId = RecordingPos.NULL_RECORDING_ID;
+        private long recPos = NULL_POSITION;
+        private int counterId = CountersReader.NULL_COUNTER_ID;
 
-        SnapshotReader(final Image image)
+        SnapshotReader(final Image image, final CountersReader countersReader)
         {
+            this.countersReader = countersReader;
             this.image = image;
+            counterId = RecordingPos.findCounterIdBySession(countersReader, image.sessionId());
         }
 
         boolean isDone()
         {
-            return isDone;
+            return isDone && (endPosition <= recPos);
         }
 
         long endPosition()
@@ -475,8 +469,31 @@ public class DynamicJoin implements AutoCloseable
             return endPosition;
         }
 
+        long recordingId()
+        {
+            return recordingId;
+        }
+
+        void pollRecPos()
+        {
+            if (CountersReader.NULL_COUNTER_ID == counterId)
+            {
+                counterId = RecordingPos.findCounterIdBySession(countersReader, image.sessionId());
+            }
+            else if (RecordingPos.NULL_RECORDING_ID == recordingId)
+            {
+                recordingId = RecordingPos.getRecordingId(countersReader, counterId);
+            }
+            else
+            {
+                recPos = countersReader.getCounterValue(counterId);
+            }
+        }
+
         int poll()
         {
+            pollRecPos();
+
             return image.controlledPoll(this, FRAGMENT_LIMIT);
         }
 

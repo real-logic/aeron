@@ -697,6 +697,39 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
+     * Create a recovery plan that has only snapshots. Used for dynamicJoin snapshot load.
+     *
+     * @param snapshots to construct plan from
+     * @return a new {@link RecoveryPlan} for the cluster
+     */
+    public static RecoveryPlan createRecoveryPlan(final ArrayList<RecordingLog.Snapshot> snapshots)
+    {
+        long lastLeadershipTermId = NULL_VALUE;
+        long lastTermBaseLogPosition = 0;
+        long committedLogPosition = -1;
+        long appendedLogPosition = 0;
+
+        final int snapshotStepsSize = snapshots.size();
+        if (snapshotStepsSize > 0)
+        {
+            final Snapshot snapshot = snapshots.get(0);
+
+            lastLeadershipTermId = snapshot.leadershipTermId;
+            lastTermBaseLogPosition = snapshot.termBaseLogPosition;
+            appendedLogPosition = snapshot.logPosition;
+            committedLogPosition = snapshot.logPosition;
+        }
+
+        return new RecoveryPlan(
+            lastLeadershipTermId,
+            lastTermBaseLogPosition,
+            appendedLogPosition,
+            committedLogPosition,
+            snapshots,
+            new ArrayList<>());
+    }
+
+    /**
      * Has the given leadershipTermId already been appended?
      *
      * @param leadershipTermId to check

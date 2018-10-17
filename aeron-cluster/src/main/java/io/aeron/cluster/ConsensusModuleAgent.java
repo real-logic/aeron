@@ -118,6 +118,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final Counter[] serviceHeartbeats;
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
+    private final ArrayList<RecordingLog.Snapshot> dynamicJoinRetrievedSnapshots = new ArrayList<>();
     private RecordingLog.RecoveryPlan recoveryPlan;
     private Election election;
     private DynamicJoin dynamicJoin;
@@ -1199,6 +1200,38 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return subscription;
     }
 
+    void appendDynamicJoinTermAndSnapshots()
+    {
+        if (!dynamicJoinRetrievedSnapshots.isEmpty())
+        {
+            final long logRecordingId = logRecordingId();
+            final RecordingLog.Snapshot lastSnapshot =
+                dynamicJoinRetrievedSnapshots.get(dynamicJoinRetrievedSnapshots.size() - 1);
+
+            recordingLog.appendTerm(
+                logRecordingId,
+                lastSnapshot.leadershipTermId,
+                lastSnapshot.termBaseLogPosition,
+                lastSnapshot.timestamp);
+
+            for (int i = dynamicJoinRetrievedSnapshots.size() - 1; i >= 0; i--)
+            {
+                final RecordingLog.Snapshot snapshot = dynamicJoinRetrievedSnapshots.get(i);
+
+                recordingLog.appendSnapshot(
+                    snapshot.recordingId,
+                    snapshot.leadershipTermId,
+                    snapshot.termBaseLogPosition,
+                    snapshot.logPosition,
+                    snapshot.timestamp,
+                    snapshot.serviceId);
+            }
+
+            dynamicJoinRetrievedSnapshots.clear();
+        }
+
+    }
+
     boolean pollImageAndLogAdapter(final Subscription subscription, final int logSessionId)
     {
         boolean result = false;
@@ -1211,6 +1244,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 logAdapter = new LogAdapter(image, this);
                 lastAppendedPosition = 0;
                 createAppendPosition(logSessionId);
+                appendDynamicJoinTermAndSnapshots();
 
                 result = true;
             }
@@ -1495,9 +1529,20 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
+    void retrievedSnapshot(final long localRecordingId, final RecordingLog.Snapshot leaderSnapshot)
+    {
+        dynamicJoinRetrievedSnapshots.add(new RecordingLog.Snapshot(
+            localRecordingId,
+            leaderSnapshot.leadershipTermId,
+            leaderSnapshot.termBaseLogPosition,
+            leaderSnapshot.logPosition,
+            leaderSnapshot.timestamp,
+            leaderSnapshot.serviceId));
+    }
+
     Counter loadSnapshotsFromDynamicJoin()
     {
-        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+        recoveryPlan = RecordingLog.createRecoveryPlan(dynamicJoinRetrievedSnapshots);
 
         final Counter recoveryStateCounter = addRecoveryStateCounter(recoveryPlan);
         if (!recoveryPlan.snapshots.isEmpty())

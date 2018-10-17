@@ -228,7 +228,6 @@ public class DynamicClusterTest
         awaitMessageCountForService(dynamicMemberIndex, MESSAGE_COUNT);
     }
 
-    @Ignore
     @Test(timeout = 10_000)
     public void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot() throws Exception
     {
@@ -256,8 +255,7 @@ public class DynamicClusterTest
 
         assertThat(roleOf(dynamicMemberIndex), is(Cluster.Role.FOLLOWER));
 
-//        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-//        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+        awaitSnapshotLoadedForService(dynamicMemberIndex);
     }
 
     private void startStaticNode(final int index, final boolean cleanStart)
@@ -430,6 +428,15 @@ public class DynamicClusterTest
         }
     }
 
+    private void awaitSnapshotLoadedForService(final int index)
+    {
+        while (!echoServices[index].wasSnapshotLoaded())
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+    }
+
     private static String memberSpecificPort(final String channel, final int memberId)
     {
         return channel.substring(0, channel.length() - 1) + memberId;
@@ -492,8 +499,10 @@ public class DynamicClusterTest
 
     static class EchoService extends StubClusteredService
     {
-        private volatile int messageCount;
-        private AtomicReference<String> messageCountString = new AtomicReference<>();
+        private volatile int messageCount = 0;
+        private volatile boolean wasSnapshotTaken = false;
+        private volatile boolean wasSnapshotLoaded = false;
+        private AtomicReference<String> messageCountString = new AtomicReference<>("no snapshot loaded");
         private final int index;
         private final CountDownLatch latchOne;
         private final CountDownLatch latchTwo;
@@ -518,6 +527,16 @@ public class DynamicClusterTest
         String messageCountString()
         {
             return messageCountString.get();
+        }
+
+        boolean wasSnapshotTaken()
+        {
+            return wasSnapshotTaken;
+        }
+
+        boolean wasSnapshotLoaded()
+        {
+            return wasSnapshotLoaded;
         }
 
         public void onSessionMessage(
@@ -558,11 +577,11 @@ public class DynamicClusterTest
             length += buffer.putIntAscii(length, messageCount);
 
             snapshotPublication.offer(buffer, 0, length);
+            wasSnapshotTaken = true;
         }
 
         public void onLoadSnapshot(final Image snapshotImage)
         {
-            System.out.println("onLoadSnapshot");
             while (true)
             {
                 final int fragments = snapshotImage.poll(
@@ -584,6 +603,8 @@ public class DynamicClusterTest
 
                 cluster.idle();
             }
+
+            wasSnapshotLoaded = true;
         }
     }
 

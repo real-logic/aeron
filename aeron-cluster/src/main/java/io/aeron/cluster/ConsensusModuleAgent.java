@@ -655,8 +655,14 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (null != requester)
             {
+                final RecordingLog.RecoveryPlan currentRecoveryPlan =
+                    recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+
                 memberStatusPublisher.snapshotRecording(
-                    requester.publication(), correlationId, recoveryPlan, ClusterMember.membersString(clusterMembers));
+                    requester.publication(),
+                    correlationId,
+                    currentRecoveryPlan,
+                    ClusterMember.membersString(clusterMembers));
             }
         }
     }
@@ -1091,7 +1097,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void onReloadClusterMembers(final int memberId, final int highMemberId, final String members)
     {
-        if (ctx.clusterMembersIgnoreSnapshot())
+        if (ctx.clusterMembersIgnoreSnapshot() || null != dynamicJoin)
         {
             return;
         }

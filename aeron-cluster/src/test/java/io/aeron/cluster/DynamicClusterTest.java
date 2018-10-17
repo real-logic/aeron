@@ -15,9 +15,7 @@
  */
 package io.aeron.cluster;
 
-
-import io.aeron.Aeron;
-import io.aeron.CommonContext;
+import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
@@ -37,6 +35,8 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,10 +44,14 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @Ignore
 public class DynamicClusterTest
@@ -224,6 +228,38 @@ public class DynamicClusterTest
         awaitMessageCountForService(dynamicMemberIndex, MESSAGE_COUNT);
     }
 
+    @Ignore
+    @Test(timeout = 10_000)
+    public void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot() throws Exception
+    {
+        for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
+        {
+            startStaticNode(i, true);
+        }
+
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        takeSnapshot(leaderMemberId);
+        awaitsSnapshotCounter(0, 1);
+        awaitsSnapshotCounter(1, 1);
+        awaitsSnapshotCounter(2, 1);
+
+        final int dynamicMemberIndex = STATIC_MEMBER_COUNT;
+        startDynamicNode(dynamicMemberIndex, true);
+
+        Thread.sleep(1000);
+
+        assertThat(roleOf(dynamicMemberIndex), is(Cluster.Role.FOLLOWER));
+
+//        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+//        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+    }
+
     private void startStaticNode(final int index, final boolean cleanStart)
     {
         echoServices[index] = new EchoService(index, latchOne, latchTwo);
@@ -232,7 +268,7 @@ public class DynamicClusterTest
 
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlRequestStreamId(100 + index)
+            .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
@@ -286,7 +322,7 @@ public class DynamicClusterTest
 
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlRequestStreamId(100 + index)
+            .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
@@ -457,6 +493,7 @@ public class DynamicClusterTest
     static class EchoService extends StubClusteredService
     {
         private volatile int messageCount;
+        private AtomicReference<String> messageCountString = new AtomicReference<>();
         private final int index;
         private final CountDownLatch latchOne;
         private final CountDownLatch latchTwo;
@@ -478,6 +515,11 @@ public class DynamicClusterTest
             return messageCount;
         }
 
+        String messageCountString()
+        {
+            return messageCountString.get();
+        }
+
         public void onSessionMessage(
             final ClientSession session,
             final long correlationId,
@@ -493,6 +535,7 @@ public class DynamicClusterTest
             }
 
             ++messageCount;
+            messageCountString.set(Integer.toString(messageCount));
 
             if (messageCount == MESSAGE_COUNT)
             {
@@ -502,6 +545,44 @@ public class DynamicClusterTest
             if (messageCount == (MESSAGE_COUNT * 2))
             {
                 latchTwo.countDown();
+            }
+        }
+
+        public void onTakeSnapshot(final Publication snapshotPublication)
+        {
+            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+
+            int length = 0;
+            buffer.putInt(length, messageCount);
+            length += SIZE_OF_INT;
+            length += buffer.putIntAscii(length, messageCount);
+
+            snapshotPublication.offer(buffer, 0, length);
+        }
+
+        public void onLoadSnapshot(final Image snapshotImage)
+        {
+            System.out.println("onLoadSnapshot");
+            while (true)
+            {
+                final int fragments = snapshotImage.poll(
+                    (buffer, offset, length, header) ->
+                    {
+                        messageCount = buffer.getInt(offset);
+
+                        final String s = buffer.getStringWithoutLengthAscii(
+                            offset + SIZE_OF_INT, length - SIZE_OF_INT);
+
+                        messageCountString.set(s);
+                    },
+                    1);
+
+                if (fragments == 1)
+                {
+                    break;
+                }
+
+                cluster.idle();
             }
         }
     }
@@ -607,4 +688,27 @@ public class DynamicClusterTest
         return Cluster.Role.get(
             (int)driver.consensusModule().context().clusterNodeCounter().get());
     }
+
+    private void takeSnapshot(final int index)
+    {
+        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+
+        final CountersReader countersReader = driver.consensusModule().context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader);
+        assertNotNull(controlToggle);
+        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+    }
+
+    private void awaitsSnapshotCounter(final int index, final long value)
+    {
+        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+        final Counter snapshotCounter = driver.consensusModule().context().snapshotCounter();
+
+        while (snapshotCounter.getWeak() != value)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+    }
+
 }

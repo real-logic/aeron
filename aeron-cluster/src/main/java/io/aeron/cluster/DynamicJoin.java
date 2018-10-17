@@ -25,6 +25,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.SnapshotMarkerDecoder;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
+import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
@@ -37,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
-import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_TYPE_ID;
 
 public class DynamicJoin implements AutoCloseable
 {
@@ -79,7 +79,7 @@ public class DynamicJoin implements AutoCloseable
     private int memberId = NULL_VALUE;
     private int highMemberId = NULL_VALUE;
     private int clusterMembersStatusEndpointsCursor = 0;
-    private int recordingIdCursor = 0;
+    private int snapshotCursor = 0;
     private int snapshotReplaySessionId = NULL_VALUE;
 
     public DynamicJoin(
@@ -114,6 +114,8 @@ public class DynamicJoin implements AutoCloseable
     {
         CloseHelper.close(clusterPublication);
         CloseHelper.close(snapshotRetrieveSubscription);
+        CloseHelper.close(leaderArchive);
+        CloseHelper.close(leaderArchiveAsyncConnect);
     }
 
     public ClusterMember[] clusterMembers()
@@ -205,7 +207,7 @@ public class DynamicJoin implements AutoCloseable
                         final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
                             .aeron(ctx.aeron())
                             .controlRequestChannel(leaderArchiveUri.toString())
-                            .controlRequestStreamId(ctx.archiveContext().controlResponseStreamId())
+                            .controlRequestStreamId(ctx.archiveContext().controlRequestStreamId())
                             .controlResponseChannel(localArchiveUri.toString())
                             .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());
 
@@ -245,7 +247,7 @@ public class DynamicJoin implements AutoCloseable
             }
 
             timeOfLastActivityMs = 0;
-            recordingIdCursor = 0;
+            snapshotCursor = 0;
             this.correlationId = NULL_VALUE;
             state(leaderSnapshots.isEmpty() ? State.SNAPSHOT_LOAD : State.SNAPSHOT_RETRIEVE);
         }
@@ -303,7 +305,7 @@ public class DynamicJoin implements AutoCloseable
 
                     if (snapshotReader.endPosition() <= countersReader.getCounterValue(counterId))
                     {
-                        final RecordingLog.Snapshot snapshot = leaderSnapshots.get(recordingIdCursor);
+                        final RecordingLog.Snapshot snapshot = leaderSnapshots.get(snapshotCursor);
                         ctx.recordingLog().appendSnapshot(
                             recordingId,
                             snapshot.leadershipTermId,
@@ -319,7 +321,7 @@ public class DynamicJoin implements AutoCloseable
                         correlationId = NULL_VALUE;
                         snapshotReplaySessionId = NULL_VALUE;
 
-                        if (++recordingIdCursor >= leaderSnapshots.size())
+                        if (++snapshotCursor >= leaderSnapshots.size())
                         {
                             localArchive.stopRecording(snapshotRetrieveSubscriptionId);
                             state(State.SNAPSHOT_LOAD);
@@ -349,15 +351,15 @@ public class DynamicJoin implements AutoCloseable
         else if (NULL_VALUE == correlationId)
         {
             final long replayId = ctx.aeron().nextCorrelationId();
-            final RecordingLog.Snapshot snapshot = leaderSnapshots.get(recordingIdCursor);
-            final ChannelUri replayChannelUri = ChannelUri.parse(ctx.replayChannel());
-            replayChannelUri.put(CommonContext.ENDPOINT_PARAM_NAME, transferEndpoint);
+            final RecordingLog.Snapshot snapshot = leaderSnapshots.get(snapshotCursor);
+            final String transferChannel = new ChannelUriStringBuilder()
+                .media(CommonContext.UDP_MEDIA).endpoint(transferEndpoint).build();
 
             if (leaderArchive.archiveProxy().replay(
                 snapshot.recordingId,
                 0,
                 NULL_LENGTH,
-                replayChannelUri.toString(),
+                transferChannel,
                 ctx.replayStreamId(),
                 replayId,
                 leaderArchive.controlSessionId()))
@@ -368,11 +370,9 @@ public class DynamicJoin implements AutoCloseable
         }
         else if (pollForResponse(leaderArchive, correlationId))
         {
-            final int replaySessionId = (int)leaderArchive.controlResponsePoller().relevantId();
-            final ChannelUri replayChannelUri = ChannelUri.parse(ctx.replayChannel());
-            replayChannelUri.put(CommonContext.ENDPOINT_PARAM_NAME, transferEndpoint);
-            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
-            final String replaySubscriptionChannel = replayChannelUri.toString();
+            snapshotReplaySessionId = (int)leaderArchive.controlResponsePoller().relevantId();
+            final String replaySubscriptionChannel = new ChannelUriStringBuilder()
+                .media(CommonContext.UDP_MEDIA).endpoint(transferEndpoint).sessionId(snapshotReplaySessionId).build();
 
             snapshotRetrieveSubscription = ctx.aeron().addSubscription(replaySubscriptionChannel, ctx.replayStreamId());
             snapshotRetrieveSubscriptionId = localArchive.startRecording(
@@ -493,7 +493,8 @@ public class DynamicJoin implements AutoCloseable
                     messageHeaderDecoder.version());
 
                 final long typeId = snapshotMarkerDecoder.typeId();
-                if (typeId != SNAPSHOT_TYPE_ID)
+                if (typeId != ConsensusModule.Configuration.SNAPSHOT_TYPE_ID &&
+                    typeId != ClusteredServiceContainer.SNAPSHOT_TYPE_ID)
                 {
                     throw new ClusterException("unexpected snapshot type: " + typeId);
                 }

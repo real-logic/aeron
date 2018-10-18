@@ -78,6 +78,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private int logPublicationTermBufferLength = NULL_VALUE;
     private int logPublicationMtuLength = NULL_VALUE;
     private int highMemberId;
+    private int pendingRemovals = 0;
     private ReadableCounter appendedPosition;
     private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -892,10 +893,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
             else
             {
-                clusterMembers = ClusterMember.removeMember(clusterMembers, memberId);
-                rankedPositions = new long[this.clusterMembers.length];
-                passiveMembers = ClusterMember.addMember(passiveMembers, member);
-
                 if (logPublisher.appendClusterChangeEvent(
                     this.leadershipTermId,
                     logPublisher.position(),  // TODO: not needed?
@@ -906,7 +903,17 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     memberId,
                     ClusterMember.membersString(clusterMembers)))
                 {
+                    final long position = logPublisher.position();
+
                     timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
+                    member.removalPosition(position);
+                    pendingRemovals++;
+
+                    if (member == thisMember)
+                    {
+                        expectedAckPosition = position;
+                        state(ConsensusModule.State.ABORT);
+                    }
                 }
             }
         }
@@ -2067,6 +2074,25 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         clientFacingEndpoints = builder.toString();
     }
 
+    private void handleRemovals(final long commitPosition)
+    {
+        ClusterMember[] newClusterMembers = clusterMembers;
+
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member.hasRequestedRemove() && member.removalPosition() <= commitPosition)
+            {
+                newClusterMembers = ClusterMember.removeMember(newClusterMembers, member.id());
+                clusterMemberByIdMap.remove(member.id());
+                passiveMembers = ClusterMember.addMember(passiveMembers, member);
+                pendingRemovals--;
+            }
+        }
+
+        clusterMembers = newClusterMembers;
+        rankedPositions = new long[clusterMembers.length];
+    }
+
     private int updateMemberPosition(final long nowMs)
     {
         int workCount = 0;
@@ -2089,6 +2115,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 }
 
                 timeOfLastLogUpdateMs = nowMs;
+
+                if (pendingRemovals > 0)
+                {
+                    handleRemovals(commitPosition);
+                }
                 workCount += 1;
             }
         }

@@ -348,6 +348,39 @@ public class DynamicClusterTest
         awaitMessageCountForService(dynamicMemberIndex, MESSAGE_COUNT * 2);
     }
 
+    @Ignore
+    @Test(timeout = 10_000)
+    public void shouldRemoveMember() throws Exception
+    {
+        for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
+        {
+            startStaticNode(i, true);
+        }
+
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        final int followerMemberId = (leaderMemberId + 1) >= STATIC_MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+
+        assertTrue(ClusterTool.removeMember(consensusModuleDir(leaderMemberId), followerMemberId, false));
+
+        final ClusterTool.ClusterMembersInfo clusterMembersInfo = new ClusterTool.ClusterMembersInfo();
+
+        do
+        {
+            assertTrue(ClusterTool.listMembers(
+                clusterMembersInfo, consensusModuleDir(leaderMemberId), TimeUnit.SECONDS.toMillis(1)));
+        }
+        while (numberOfMembers(clusterMembersInfo.activeMembers) != (STATIC_MEMBER_COUNT - 1));
+
+        assertThat(clusterMembersInfo.leaderMemberId, is(leaderMemberId));
+    }
+
+
     private void startStaticNode(final int index, final boolean cleanStart)
     {
         echoServices[index] = new EchoService(index, latchOne, latchTwo);

@@ -89,9 +89,14 @@ public class ConsensusModule implements AutoCloseable
         ABORT(5),
 
         /**
+         * Leaving cluster and shutting down as soon as services ack without taking a snapshot.
+         */
+        LEAVING(6),
+
+        /**
          * Terminal state.
          */
-        CLOSED(6);
+        CLOSED(7);
 
         static final State[] STATES;
 

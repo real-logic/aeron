@@ -21,11 +21,14 @@ import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
+import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.CommonContext.UDP_MEDIA;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 class LogPublisher
 {
@@ -287,6 +290,18 @@ class LogPublisher
         while (--attempts > 0);
 
         return false;
+    }
+
+    long calculatePositionForClusterChangeEvent(final String clusterMembers)
+    {
+        final int length =
+            DataHeaderFlyweight.HEADER_LENGTH +
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            ClusterChangeEventEncoder.BLOCK_LENGTH +
+            ClusterChangeEventEncoder.clusterMembersHeaderLength() +
+            clusterMembers.length();
+
+        return position() + BitUtil.align(length, FRAME_ALIGNMENT);
     }
 
     boolean appendClusterChangeEvent(

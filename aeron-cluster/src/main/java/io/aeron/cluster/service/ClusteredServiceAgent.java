@@ -68,6 +68,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private ReadableCounter commitPosition;
     private ActiveLogEvent activeLogEvent;
     private Role role = Role.FOLLOWER;
+    private String logChannel = null;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
@@ -266,6 +267,12 @@ class ClusteredServiceAgent implements Agent, Cluster
         final int logStreamId,
         final String logChannel)
     {
+        if (null != logAdapter && !logChannel.equals(this.logChannel))
+        {
+            logAdapter.close();
+            logAdapter = null;
+        }
+
         activeLogEvent = new ActiveLogEvent(
             leadershipTermId, logPosition, maxLogPosition, logSessionId, logStreamId, logChannel);
     }
@@ -368,8 +375,6 @@ class ClusteredServiceAgent implements Agent, Cluster
         final String clusterMembers)
     {
         this.clusterTimeMs = timestampMs;
-
-        // TODO: inform service of cluster membership change
 
         if (memberId == this.memberId && eventType == ChangeType.LEAVE)
         {
@@ -492,6 +497,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
         heartbeatCounter.setOrdered(epochClock.time());
 
+        logChannel = activeLogEvent.channel;
         activeLogEvent = null;
         logAdapter = new BoundedLogAdapter(image, commitPosition, this);
 

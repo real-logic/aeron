@@ -390,6 +390,49 @@ public class DynamicClusterTest
         assertThat(clusterMembersInfo.leaderMemberId, is(leaderMemberId));
     }
 
+    @Test(timeout = 10_000)
+    public void shouldRemoveLeader() throws Exception
+    {
+        for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
+        {
+            startStaticNode(i, true);
+        }
+
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        terminationExpected[leaderMemberId].lazySet(true);
+
+        assertTrue(ClusterTool.removeMember(consensusModuleDir(leaderMemberId), leaderMemberId, false));
+
+        while (!memberWasTerminated[leaderMemberId].get())
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1);
+        }
+
+        stopNode(leaderMemberId);
+
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(leaderMemberId)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+
+        final ClusterTool.ClusterMembersInfo clusterMembersInfo = new ClusterTool.ClusterMembersInfo();
+
+        assertTrue(ClusterTool.listMembers(
+            clusterMembersInfo, consensusModuleDir(leaderMemberId), TimeUnit.SECONDS.toMillis(1)));
+
+        assertThat(numberOfMembers(clusterMembersInfo), is(STATIC_MEMBER_COUNT - 1));
+        assertThat(clusterMembersInfo.leaderMemberId, is(leaderMemberId));
+    }
+
     private void startStaticNode(final int index, final boolean cleanStart)
     {
         echoServices[index] = new EchoService(index, latchOne, latchTwo);

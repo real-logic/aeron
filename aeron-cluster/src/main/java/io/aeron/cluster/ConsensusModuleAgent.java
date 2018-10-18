@@ -859,6 +859,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
                     break;
+
+                case LEAVING:
+                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.terminationHook().run();
+                    break;
             }
         }
     }
@@ -893,27 +899,25 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
             else
             {
+                final ClusterMember[] newClusterMembers = ClusterMember.removeMember(clusterMembers, memberId);
+                final String newClusterMembersString = ClusterMember.membersString(newClusterMembers);
+                final long position = logPublisher.calculatePositionForClusterChangeEvent(newClusterMembersString);
+
                 if (logPublisher.appendClusterChangeEvent(
                     this.leadershipTermId,
-                    logPublisher.position(),  // TODO: not needed?
+                    position,
                     clusterTimeMs,
                     thisMember.id(),
                     clusterMembers.length,
                     ChangeType.LEAVE,
                     memberId,
-                    ClusterMember.membersString(clusterMembers)))
+                    newClusterMembersString))
                 {
-                    final long position = logPublisher.position();
+                    final long currentPosition = logPublisher.position();
 
                     timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
-                    member.removalPosition(position);
+                    member.removalPosition(currentPosition);
                     pendingRemovals++;
-
-                    if (member == thisMember)
-                    {
-                        expectedAckPosition = position;
-                        state(ConsensusModule.State.ABORT);
-                    }
                 }
             }
         }
@@ -1082,7 +1086,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             if (memberId == this.memberId)
             {
                 expectedAckPosition = logPosition;
-                state(ConsensusModule.State.ABORT);
+                state(ConsensusModule.State.LEAVING);
             }
             else
             {
@@ -2084,6 +2088,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             if (member.hasRequestedRemove() && member.removalPosition() <= commitPosition)
             {
+                if (member == thisMember)
+                {
+                    expectedAckPosition = commitPosition;
+                    state(ConsensusModule.State.LEAVING);
+                }
+
                 newClusterMembers = ClusterMember.removeMember(newClusterMembers, member.id());
                 clusterMemberByIdMap.remove(member.id());
                 passiveMembers = ClusterMember.addMember(passiveMembers, member);

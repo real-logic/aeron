@@ -1762,7 +1762,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (member.changeCorrelationId() != Aeron.NULL_VALUE)
             {
-                // TODO: differentiate leave and add as leave needs to remove close publication and member on success.
                 if (memberStatusPublisher.clusterMemberChange(
                     member.publication(),
                     member.changeCorrelationId(),
@@ -1780,7 +1779,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 if (logPublisher.appendClusterChangeEvent(
                     this.leadershipTermId,
-                    logPublisher.position(),  // TODO: not needed?
+                    logPublisher.position(),
                     clusterTimeMs,
                     thisMember.id(),
                     newMembers.length,

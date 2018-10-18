@@ -17,9 +17,9 @@ package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.RecoveryPlanDecoder;
-import io.aeron.cluster.codecs.RecoveryPlanEncoder;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -178,27 +178,6 @@ public class RecordingLog implements AutoCloseable
             this.serviceId = serviceId;
         }
 
-        public Snapshot(final RecoveryPlanDecoder.SnapshotsDecoder decoder)
-        {
-            this.recordingId = decoder.recordingId();
-            this.leadershipTermId = decoder.leadershipTermId();
-            this.termBaseLogPosition = decoder.termBaseLogPosition();
-            this.logPosition = decoder.logPosition();
-            this.timestamp = decoder.timestamp();
-            this.serviceId = decoder.serviceId();
-        }
-
-        public void encode(final RecoveryPlanEncoder.SnapshotsEncoder encoder)
-        {
-            encoder
-                .recordingId(recordingId)
-                .leadershipTermId(leadershipTermId)
-                .termBaseLogPosition(termBaseLogPosition)
-                .logPosition(logPosition)
-                .timestamp(timestamp)
-                .serviceId(serviceId);
-        }
-
         public String toString()
         {
             return "Snapshot{" +
@@ -252,35 +231,6 @@ public class RecordingLog implements AutoCloseable
             this.sessionId = sessionId;
         }
 
-        public Log(final RecoveryPlanDecoder.LogsDecoder decoder)
-        {
-            this.recordingId = decoder.recordingId();
-            this.leadershipTermId = decoder.leadershipTermId();
-            this.termBaseLogPosition = decoder.termBaseLogPosition();
-            this.logPosition = decoder.logPosition();
-            this.startPosition = decoder.startPosition();
-            this.stopPosition = decoder.stopPosition();
-            this.initialTermId = decoder.initialTermId();
-            this.termBufferLength = decoder.termBufferLength();
-            this.mtuLength = decoder.mtuLength();
-            this.sessionId = decoder.sessionId();
-        }
-
-        public void encode(final RecoveryPlanEncoder.LogsEncoder encoder)
-        {
-            encoder
-                .recordingId(recordingId)
-                .leadershipTermId(leadershipTermId)
-                .termBaseLogPosition(termBaseLogPosition)
-                .logPosition(logPosition)
-                .startPosition(startPosition)
-                .stopPosition(stopPosition)
-                .initialTermId(initialTermId)
-                .termBufferLength(termBufferLength)
-                .mtuLength(mtuLength)
-                .sessionId(sessionId);
-        }
-
         public String toString()
         {
             return "Log{" +
@@ -324,52 +274,6 @@ public class RecordingLog implements AutoCloseable
             this.committedLogPosition = committedLogPosition;
             this.snapshots = snapshots;
             this.logs = logs;
-        }
-
-        public RecoveryPlan(final RecoveryPlanDecoder decoder)
-        {
-            this.lastLeadershipTermId = decoder.lastLeadershipTermId();
-            this.lastTermBaseLogPosition = decoder.lastTermBaseLogPosition();
-            this.appendedLogPosition = decoder.appendedLogPosition();
-            this.committedLogPosition = decoder.committedLogPosition();
-
-            snapshots = new ArrayList<>();
-            logs = new ArrayList<>();
-
-            for (final RecoveryPlanDecoder.SnapshotsDecoder snapshotsDecoder : decoder.snapshots())
-            {
-                snapshots.add(new Snapshot(snapshotsDecoder));
-            }
-
-            for (final RecoveryPlanDecoder.LogsDecoder logsDecoder : decoder.logs())
-            {
-                logs.add(new Log(logsDecoder));
-            }
-        }
-
-        public int encode(final RecoveryPlanEncoder encoder)
-        {
-            encoder
-                .lastLeadershipTermId(lastLeadershipTermId)
-                .lastTermBaseLogPosition(lastTermBaseLogPosition)
-                .appendedLogPosition(appendedLogPosition)
-                .committedLogPosition(committedLogPosition);
-
-            final RecoveryPlanEncoder.SnapshotsEncoder snapshotsEncoder = encoder.snapshotsCount(snapshots.size());
-            for (int i = 0, size = snapshots.size(); i < size; i++)
-            {
-                snapshotsEncoder.next();
-                snapshots.get(i).encode(snapshotsEncoder);
-            }
-
-            final RecoveryPlanEncoder.LogsEncoder logsEncoder = encoder.logsCount(logs.size());
-            for (int i = 0, size = logs.size(); i < size; i++)
-            {
-                logsEncoder.next();
-                logs.get(i).encode(logsEncoder);
-            }
-
-            return encoder.encodedLength();
         }
 
         /**

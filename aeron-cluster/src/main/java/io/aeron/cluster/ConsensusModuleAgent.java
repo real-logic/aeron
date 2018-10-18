@@ -560,59 +560,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    public void onRecoveryPlanQuery(final long correlationId, final int requestMemberId, final int leaderMemberId)
-    {
-        if (leaderMemberId == memberId)
-        {
-            final ClusterMember follower = clusterMemberByIdMap.get(requestMemberId);
-
-            if (null != follower)
-            {
-                memberStatusPublisher.recoveryPlan(
-                    follower.publication(),
-                    correlationId,
-                    requestMemberId,
-                    leaderMemberId,
-                    recoveryPlan);
-            }
-        }
-    }
-
-    public void onRecoveryPlan(final RecoveryPlanDecoder recoveryPlanDecoder)
-    {
-    }
-
-    public void onRecordingLogQuery(
-        final long correlationId,
-        final int requestMemberId,
-        final int leaderMemberId,
-        final long fromLeadershipTermId,
-        final int count,
-        final boolean includeSnapshots)
-    {
-        if (leaderMemberId == memberId)
-        {
-            final ClusterMember follower = clusterMemberByIdMap.get(requestMemberId);
-
-            if (null != follower)
-            {
-                memberStatusPublisher.recordingLog(
-                    follower.publication(),
-                    correlationId,
-                    requestMemberId,
-                    leaderMemberId,
-                    recordingLog,
-                    fromLeadershipTermId,
-                    count,
-                    includeSnapshots);
-            }
-        }
-    }
-
-    public void onRecordingLog(final RecordingLogDecoder recordingLogDecoder)
-    {
-    }
-
     public void onAddPassiveMember(final long correlationId, final String memberEndpoints)
     {
         if (null == election && Cluster.Role.LEADER == role)

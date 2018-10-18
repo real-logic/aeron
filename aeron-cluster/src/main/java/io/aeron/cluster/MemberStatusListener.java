@@ -15,8 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.cluster.codecs.RecordingLogDecoder;
-import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 
 interface MemberStatusListener
@@ -43,20 +41,6 @@ interface MemberStatusListener
     void onCatchupPosition(long leadershipTermId, long logPosition, int followerMemberId);
 
     void onStopCatchup(int replaySessionId, int followerMemberId);
-
-    void onRecoveryPlanQuery(long correlationId, int requestMemberId, int leaderMemberId);
-
-    void onRecoveryPlan(RecoveryPlanDecoder recoveryPlanDecoder);
-
-    void onRecordingLogQuery(
-        long correlationId,
-        int requestMemberId,
-        int leaderMemberId,
-        long fromLeadershipTermId,
-        int count,
-        boolean includeSnapshots);
-
-    void onRecordingLog(RecordingLogDecoder recordingLogDecoder);
 
     void onAddPassiveMember(long correlationId, String memberEndpoints);
 

@@ -21,10 +21,6 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
 
-import java.util.ArrayList;
-
-import static io.aeron.Aeron.NULL_VALUE;
-
 class MemberStatusPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
@@ -40,10 +36,6 @@ class MemberStatusPublisher
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
     private final CatchupPositionEncoder catchupPositionEncoder = new CatchupPositionEncoder();
     private final StopCatchupEncoder stopCatchupEncoder = new StopCatchupEncoder();
-    private final RecoveryPlanQueryEncoder recoveryPlanQueryEncoder = new RecoveryPlanQueryEncoder();
-    private final RecoveryPlanEncoder recoveryPlanEncoder = new RecoveryPlanEncoder();
-    private final RecordingLogQueryEncoder recordingLogQueryEncoder = new RecordingLogQueryEncoder();
-    private final RecordingLogEncoder recordingLogEncoder = new RecordingLogEncoder();
     private final AddPassiveMemberEncoder addPassiveMemberEncoder = new AddPassiveMemberEncoder();
     private final ClusterMembersChangeEncoder clusterMembersChangeEncoder = new ClusterMembersChangeEncoder();
     private final SnapshotRecordingQueryEncoder snapshotRecordingQueryEncoder = new SnapshotRecordingQueryEncoder();
@@ -304,157 +296,6 @@ class MemberStatusPublisher
 
         return false;
     }
-
-    boolean recoveryPlanQuery(
-        final Publication publication, final long correlationId, final int leaderMemberId, final int memberId)
-    {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecoveryPlanQueryEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                recoveryPlanQueryEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .leaderMemberId(leaderMemberId)
-                    .requestMemberId(memberId);
-
-                bufferClaim.commit();
-
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
-    }
-
-    boolean recoveryPlan(
-        final Publication publication,
-        final long correlationId,
-        final int requestMemberId,
-        final int leaderMemberId,
-        final RecordingLog.RecoveryPlan recoveryPlan)
-    {
-        recoveryPlanEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(correlationId)
-            .requestMemberId(requestMemberId)
-            .leaderMemberId(leaderMemberId);
-
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + recoveryPlan.encode(recoveryPlanEncoder);
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.offer(buffer, 0, length);
-            if (result > 0)
-            {
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
-    }
-
-    boolean recordingLogQuery(
-        final Publication publication,
-        final long correlationId,
-        final int leaderMemberId,
-        final int memberId,
-        final long fromLeadershipTermId,
-        final int count,
-        final boolean includeSnapshots)
-    {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + RecordingLogQueryEncoder.BLOCK_LENGTH;
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                recordingLogQueryEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlationId)
-                    .leaderMemberId(leaderMemberId)
-                    .requestMemberId(memberId)
-                    .fromLeadershipTermId(fromLeadershipTermId)
-                    .count(count)
-                    .includeSnapshots(includeSnapshots ? BooleanType.TRUE : BooleanType.FALSE);
-
-                bufferClaim.commit();
-
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
-    }
-
-    boolean recordingLog(
-        final Publication publication,
-        final long correlationId,
-        final int requestMemberId,
-        final int leaderMemberId,
-        final RecordingLog recordingLog,
-        final long fromLeadershipTermId,
-        final int count,
-        final boolean includeSnapshots)
-    {
-        recordingLogEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(correlationId)
-            .requestMemberId(requestMemberId)
-            .leaderMemberId(leaderMemberId);
-
-        final ArrayList<RecordingLog.Entry> results = new ArrayList<>();
-        recordingLog.findEntries(fromLeadershipTermId, count, includeSnapshots, results);
-
-        final int resultsSize = results.size();
-        final RecordingLogEncoder.EntriesEncoder entriesEncoder = recordingLogEncoder.entriesCount(resultsSize);
-        for (int i = 0; i < resultsSize; i++)
-        {
-            final RecordingLog.Entry entry = results.get(i);
-
-            entriesEncoder.next()
-                .recordingId(entry.recordingId)
-                .leadershipTermId(entry.leadershipTermId)
-                .termBaseLogPosition(entry.termBaseLogPosition)
-                .logPosition(entry.logPosition)
-                .timestamp(entry.timestamp)
-                .serviceId(entry.serviceId)
-                .entryType(entry.type)
-                .isCurrent(NULL_VALUE == entry.logPosition ? BooleanType.TRUE : BooleanType.FALSE);
-        }
-
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + recordingLogEncoder.encodedLength();
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.offer(buffer, 0, length);
-            if (result > 0)
-            {
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
-    }
-
 
     boolean addPassiveMember(
         final Publication publication, final long correlctionId, final String memberEndpoints)

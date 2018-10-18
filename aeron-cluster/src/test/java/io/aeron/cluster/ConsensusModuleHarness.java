@@ -23,8 +23,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.IngressSessionDecorator;
 import io.aeron.cluster.codecs.CloseReason;
-import io.aeron.cluster.codecs.RecordingLogDecoder;
-import io.aeron.cluster.codecs.RecoveryPlanDecoder;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
@@ -682,46 +680,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 stream.format("onStopCatchup[%d] %d %d%n",
                     index, replaySessionId, followerMemberId);
                 nextListener.onStopCatchup(replaySessionId, followerMemberId);
-            }
-
-            public void onRecoveryPlanQuery(
-                final long correlationId, final int requestMemberId, final int leaderMemberId)
-            {
-                counters.onRecoveryPlanQueryCounter++;
-                stream.format("onRecoveryPlanQueryCounter[%d] %d %d %d%n",
-                    index, correlationId, requestMemberId, leaderMemberId);
-                nextListener.onRecoveryPlanQuery(correlationId, requestMemberId, leaderMemberId);
-            }
-
-            public void onRecoveryPlan(final RecoveryPlanDecoder decoder)
-            {
-                counters.onRecoveryPlanCounter++;
-                stream.format("onRecoveryPlan[%d] %d %d %d%n",
-                    index, decoder.correlationId(), decoder.requestMemberId(), decoder.leaderMemberId());
-                nextListener.onRecoveryPlan(decoder);
-            }
-
-            public void onRecordingLogQuery(
-                final long correlationId,
-                final int requestMemberId,
-                final int leaderMemberId,
-                final long fromLeadershipTermId,
-                final int count,
-                final boolean includeSnapshots)
-            {
-                counters.onRecordingLogQueryCounter++;
-                stream.format("onRecordingLogQuery[%d] %d %d %d%n",
-                    index, correlationId, requestMemberId, leaderMemberId);
-                nextListener.onRecordingLogQuery(
-                    correlationId, requestMemberId, leaderMemberId, fromLeadershipTermId, count, includeSnapshots);
-            }
-
-            public void onRecordingLog(final RecordingLogDecoder decoder)
-            {
-                counters.onRecordingLogCounter++;
-                stream.format("onRecordingLog[%d] %d %d %d%n",
-                    index, decoder.correlationId(), decoder.requestMemberId(), decoder.leaderMemberId());
-                nextListener.onRecordingLog(decoder);
             }
 
             public void onAddPassiveMember(final long correlationId, final String memberEndpoints)

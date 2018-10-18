@@ -38,11 +38,6 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final CatchupPositionDecoder catchupPositionDecoder = new CatchupPositionDecoder();
     private final StopCatchupDecoder stopCatchupDecoder = new StopCatchupDecoder();
 
-    private final RecoveryPlanQueryDecoder recoveryPlanQueryDecoder = new RecoveryPlanQueryDecoder();
-    private final RecoveryPlanDecoder recoveryPlanDecoder = new RecoveryPlanDecoder();
-    private final RecordingLogQueryDecoder recordingLogQueryDecoder = new RecordingLogQueryDecoder();
-    private final RecordingLogDecoder recordingLogDecoder = new RecordingLogDecoder();
-
     private final AddPassiveMemberDecoder addPassiveMemberDecoder = new AddPassiveMemberDecoder();
     private final ClusterMembersChangeDecoder clusterMembersChangeDecoder = new ClusterMembersChangeDecoder();
     private final SnapshotRecordingQueryDecoder snapshotRecordingQueryDecoder = new SnapshotRecordingQueryDecoder();
@@ -184,55 +179,6 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                 memberStatusListener.onStopCatchup(
                     stopCatchupDecoder.replaySessionId(),
                     stopCatchupDecoder.followerMemberId());
-                break;
-
-            case RecoveryPlanQueryDecoder.TEMPLATE_ID:
-                recoveryPlanQueryDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                memberStatusListener.onRecoveryPlanQuery(
-                    recoveryPlanQueryDecoder.correlationId(),
-                    recoveryPlanQueryDecoder.requestMemberId(),
-                    recoveryPlanQueryDecoder.leaderMemberId());
-                break;
-
-            case RecoveryPlanDecoder.TEMPLATE_ID:
-                recoveryPlanDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                memberStatusListener.onRecoveryPlan(recoveryPlanDecoder);
-                break;
-
-            case RecordingLogQueryDecoder.TEMPLATE_ID:
-                recordingLogQueryDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                memberStatusListener.onRecordingLogQuery(
-                    recordingLogQueryDecoder.correlationId(),
-                    recordingLogQueryDecoder.requestMemberId(),
-                    recordingLogQueryDecoder.leaderMemberId(),
-                    recordingLogQueryDecoder.fromLeadershipTermId(),
-                    recordingLogQueryDecoder.count(),
-                    recordingLogQueryDecoder.includeSnapshots() == BooleanType.TRUE);
-                break;
-
-            case RecordingLogDecoder.TEMPLATE_ID:
-                recordingLogDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                memberStatusListener.onRecordingLog(recordingLogDecoder);
                 break;
 
             case AddPassiveMemberDecoder.TEMPLATE_ID:

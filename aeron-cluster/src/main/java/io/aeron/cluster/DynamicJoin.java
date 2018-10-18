@@ -199,21 +199,6 @@ public class DynamicJoin implements AutoCloseable
                                 memberStatusUri.toString(), ctx.memberStatusStreamId());
                         }
 
-                        final ChannelUri leaderArchiveUri = ChannelUri.parse(
-                            ctx.archiveContext().controlRequestChannel());
-                        final ChannelUri localArchiveUri = ChannelUri.parse(
-                            ctx.archiveContext().controlResponseChannel());
-                        leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
-
-                        final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
-                            .aeron(ctx.aeron())
-                            .controlRequestChannel(leaderArchiveUri.toString())
-                            .controlRequestStreamId(ctx.archiveContext().controlRequestStreamId())
-                            .controlResponseChannel(localArchiveUri.toString())
-                            .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());
-
-                        leaderArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);
-
                         timeOfLastActivityMs = 0;
                         state(State.PASSIVE_FOLLOWER);
                     }
@@ -250,7 +235,29 @@ public class DynamicJoin implements AutoCloseable
             timeOfLastActivityMs = 0;
             snapshotCursor = 0;
             this.correlationId = NULL_VALUE;
-            state(leaderSnapshots.isEmpty() ? State.SNAPSHOT_LOAD : State.SNAPSHOT_RETRIEVE);
+
+            if (leaderSnapshots.isEmpty())
+            {
+                state(State.SNAPSHOT_LOAD);
+            }
+            else
+            {
+                final ChannelUri leaderArchiveUri = ChannelUri.parse(
+                    ctx.archiveContext().controlRequestChannel());
+                final ChannelUri localArchiveUri = ChannelUri.parse(
+                    ctx.archiveContext().controlResponseChannel());
+                leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
+
+                final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
+                    .aeron(ctx.aeron())
+                    .controlRequestChannel(leaderArchiveUri.toString())
+                    .controlRequestStreamId(ctx.archiveContext().controlRequestStreamId())
+                    .controlResponseChannel(localArchiveUri.toString())
+                    .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());
+
+                leaderArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);
+                state(State.SNAPSHOT_RETRIEVE);
+            }
         }
     }
 

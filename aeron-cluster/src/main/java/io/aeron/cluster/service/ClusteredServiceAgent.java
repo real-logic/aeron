@@ -61,7 +61,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private long ackId = 0;
     private long clusterTimeMs;
     private long cachedTimeMs;
-    private int memberId;
+    private int memberId = NULL_VALUE;
     private BoundedLogAdapter logAdapter;
     private AtomicCounter heartbeatCounter;
     private ReadableCounter roleCounter;
@@ -263,6 +263,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final long leadershipTermId,
         final long logPosition,
         final long maxLogPosition,
+        final int memberId,
         final int logSessionId,
         final int logStreamId,
         final String logChannel)
@@ -274,7 +275,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
 
         activeLogEvent = new ActiveLogEvent(
-            leadershipTermId, logPosition, maxLogPosition, logSessionId, logStreamId, logChannel);
+            leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, logStreamId, logChannel);
     }
 
     void onSessionMessage(
@@ -497,6 +498,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
         heartbeatCounter.setOrdered(epochClock.time());
 
+        memberId = activeLogEvent.memberId;
+        ctx.clusterMarkFile().memberId(memberId);
         logChannel = activeLogEvent.channel;
         activeLogEvent = null;
         logAdapter = new BoundedLogAdapter(image, commitPosition, this);
@@ -573,8 +576,6 @@ class ClusteredServiceAgent implements Agent, Cluster
             idleStrategy.idle();
             counterId = ServiceHeartbeat.findCounterId(counters, ctx.serviceId());
         }
-
-        memberId = ServiceHeartbeat.getClusterMemberId(counters, counterId);
 
         return new AtomicCounter(counters.valuesBuffer(), counterId);
     }

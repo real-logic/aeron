@@ -184,6 +184,11 @@ public class ClusterMarkFile implements AutoCloseable
         markFile.mappedByteBuffer().force();
     }
 
+    public int memberId()
+    {
+        return buffer.getIntVolatile(MarkFileHeaderDecoder.memberIdEncodingOffset());
+    }
+
     public void memberId(final int memberId)
     {
         buffer.putIntVolatile(MarkFileHeaderEncoder.memberIdEncodingOffset(), memberId);

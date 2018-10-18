@@ -20,10 +20,8 @@ import io.aeron.Counter;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
-import static io.aeron.Aeron.NULL_VALUE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.concurrent.status.CountersReader.*;
 
@@ -37,8 +35,6 @@ import static org.agrona.concurrent.status.CountersReader.*;
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *  |                         Service ID                            |
  *  +---------------------------------------------------------------+
- *  |                      Cluster Member ID                        |
- *  +---------------------------------------------------------------+
  * </pre>
  */
 public class ServiceHeartbeat
@@ -49,14 +45,13 @@ public class ServiceHeartbeat
     public static final int SERVICE_HEARTBEAT_TYPE_ID = 206;
 
     public static final int SERVICE_ID_OFFSET = 0;
-    public static final int MEMBER_ID_OFFSET = SERVICE_ID_OFFSET + SIZE_OF_INT;
 
     /**
      * Human readable name for the counter.
      */
     public static final String NAME = "service-heartbeat: serviceId=";
 
-    public static final int KEY_LENGTH = MEMBER_ID_OFFSET + SIZE_OF_INT;
+    public static final int KEY_LENGTH = SIZE_OF_INT;
 
     /**
      * Allocate a counter to represent the heartbeat of a clustered service.
@@ -64,17 +59,14 @@ public class ServiceHeartbeat
      * @param aeron           to allocate the counter.
      * @param tempBuffer      to use for building the key and label without allocation.
      * @param serviceId       of the service heartbeat.
-     * @param clusterMemberId the service will be associated with.
      * @return the {@link Counter} for the commit position.
      */
     public static Counter allocate(
         final Aeron aeron,
         final MutableDirectBuffer tempBuffer,
-        final int serviceId,
-        final int clusterMemberId)
+        final int serviceId)
     {
         tempBuffer.putInt(SERVICE_ID_OFFSET, serviceId);
-        tempBuffer.putInt(MEMBER_ID_OFFSET, clusterMemberId);
 
         final int labelOffset = BitUtil.align(KEY_LENGTH, SIZE_OF_INT);
         int labelLength = 0;
@@ -111,29 +103,5 @@ public class ServiceHeartbeat
         }
 
         return NULL_COUNTER_ID;
-    }
-
-    /**
-     * Get the cluster member id this service is associated with.
-     *
-     * @param counters  to search within.
-     * @param counterId for the active service heartbeat counter.
-     * @return if found otherwise {@link Aeron#NULL_VALUE}.
-     */
-    public static int getClusterMemberId(final CountersReader counters, final int counterId)
-    {
-        final AtomicBuffer buffer = counters.metaDataBuffer();
-
-        if (counters.getCounterState(counterId) == RECORD_ALLOCATED)
-        {
-            final int recordOffset = CountersReader.metaDataOffset(counterId);
-
-            if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == SERVICE_HEARTBEAT_TYPE_ID)
-            {
-                return buffer.getInt(recordOffset + KEY_OFFSET + MEMBER_ID_OFFSET);
-            }
-        }
-
-        return NULL_VALUE;
     }
 }

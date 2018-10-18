@@ -1230,7 +1230,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(logChannelUri.media()) ?
             logChannelUri.prefix(SPY_QUALIFIER).toString() : logChannelUri.toString();
-        serviceProxy.joinLog(leadershipTermId, logPosition, Long.MAX_VALUE, logSessionId, ctx.logStreamId(), channel);
+        serviceProxy.joinLog(
+            leadershipTermId, logPosition, Long.MAX_VALUE, memberId, logSessionId, ctx.logStreamId(), channel);
 
         expectedAckPosition = logPosition;
         awaitServiceAcks(logPosition);
@@ -1278,7 +1279,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final long logPosition,
         final long maxLogPosition)
     {
-        serviceProxy.joinLog(leadershipTermId, logPosition, maxLogPosition, logSessionId, streamId, channel);
+        serviceProxy.joinLog(leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, streamId, channel);
         expectedAckPosition = logPosition;
         awaitServiceAcks(logPosition);
     }

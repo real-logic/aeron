@@ -314,9 +314,9 @@
         <field name="logPosition"          id="2" type="int64"/>
         <field name="maxLogPosition"       id="3" type="int64"/>
         <field name="memberId"             id="4" type="int32"/>
-        <field name="logSessionId"         id="4" type="int32"/>
-        <field name="logStreamId"          id="5" type="int32"/>
-        <data  name="logChannel"           id="6" type="varAsciiEncoding"/>
+        <field name="logSessionId"         id="5" type="int32"/>
+        <field name="logStreamId"          id="6" type="int32"/>
+        <data  name="logChannel"           id="7" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="ClusterMembersResponse"

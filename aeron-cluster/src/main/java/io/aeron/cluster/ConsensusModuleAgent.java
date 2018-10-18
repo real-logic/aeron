@@ -1117,6 +1117,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (Aeron.NULL_VALUE == this.memberId)
         {
             this.memberId = memberId;
+            ctx.clusterMarkFile().memberId(memberId);
         }
 
         if (ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY == this.clusterMembers)
@@ -1443,6 +1444,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (NULL_VALUE == memberId)
         {
             memberId = dynamicJoin.memberId();
+            ctx.clusterMarkFile().memberId(memberId);
             thisMember.id(dynamicJoin.memberId());
         }
 

@@ -45,6 +45,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -79,6 +80,9 @@ public class DynamicClusterTest
     private final CountDownLatch latchTwo = new CountDownLatch(MAX_MEMBER_COUNT - 1);
 
     private final EchoService[] echoServices = new EchoService[MAX_MEMBER_COUNT];
+    private final AtomicBoolean[] terminationExpected = new AtomicBoolean[MAX_MEMBER_COUNT];
+    private final AtomicBoolean[] serviceWasTerminated = new AtomicBoolean[MAX_MEMBER_COUNT];
+    private final AtomicBoolean[] memberWasTerminated = new AtomicBoolean[MAX_MEMBER_COUNT];
     private ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MAX_MEMBER_COUNT];
     private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MAX_MEMBER_COUNT];
     private MediaDriver clientMediaDriver;
@@ -348,9 +352,8 @@ public class DynamicClusterTest
         awaitMessageCountForService(dynamicMemberIndex, MESSAGE_COUNT * 2);
     }
 
-    @Ignore
     @Test(timeout = 10_000)
-    public void shouldRemoveMember() throws Exception
+    public void shouldRemoveFollower() throws Exception
     {
         for (int i = 0; i < STATIC_MEMBER_COUNT; i++)
         {
@@ -366,20 +369,26 @@ public class DynamicClusterTest
 
         final int followerMemberId = (leaderMemberId + 1) >= STATIC_MEMBER_COUNT ? 0 : (leaderMemberId + 1);
 
+        terminationExpected[followerMemberId].lazySet(true);
+
         assertTrue(ClusterTool.removeMember(consensusModuleDir(leaderMemberId), followerMemberId, false));
+
+        while (!memberWasTerminated[followerMemberId].get())
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1);
+        }
+
+        stopNode(followerMemberId);
 
         final ClusterTool.ClusterMembersInfo clusterMembersInfo = new ClusterTool.ClusterMembersInfo();
 
-        do
-        {
-            assertTrue(ClusterTool.listMembers(
-                clusterMembersInfo, consensusModuleDir(leaderMemberId), TimeUnit.SECONDS.toMillis(1)));
-        }
-        while (numberOfMembers(clusterMembersInfo.activeMembers) != (STATIC_MEMBER_COUNT - 1));
+        assertTrue(ClusterTool.listMembers(
+            clusterMembersInfo, consensusModuleDir(leaderMemberId), TimeUnit.SECONDS.toMillis(1)));
 
+        assertThat(numberOfMembers(clusterMembersInfo), is(STATIC_MEMBER_COUNT - 1));
         assertThat(clusterMembersInfo.leaderMemberId, is(leaderMemberId));
     }
-
 
     private void startStaticNode(final int index, final boolean cleanStart)
     {
@@ -393,6 +402,10 @@ public class DynamicClusterTest
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
+
+        terminationExpected[index] = new AtomicBoolean(false);
+        memberWasTerminated[index] = new AtomicBoolean(false);
+        serviceWasTerminated[index] = new AtomicBoolean(false);
 
         clusteredMediaDrivers[index] = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
@@ -421,7 +434,8 @@ public class DynamicClusterTest
                 .clusterDir(new File(baseDirName, "consensus-module"))
                 .ingressChannel("aeron:udp?term-length=64k")
                 .logChannel(memberSpecificPort(LOG_CHANNEL, index))
-                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .terminationHook(TestUtil.dynamicTerminationHook(
+                    terminationExpected[index], memberWasTerminated[index]))
                 .archiveContext(archiveCtx.clone())
                 .deleteDirOnStart(cleanStart));
 
@@ -431,7 +445,8 @@ public class DynamicClusterTest
                 .archiveContext(archiveCtx.clone())
                 .clusterDir(new File(baseDirName, "service"))
                 .clusteredService(echoServices[index])
-                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .terminationHook(TestUtil.dynamicTerminationHook(
+                    terminationExpected[index], serviceWasTerminated[index]))
                 .errorHandler(Throwable::printStackTrace));
     }
 
@@ -796,8 +811,10 @@ public class DynamicClusterTest
         }
     }
 
-    private int numberOfMembers(final String memberString)
+    private int numberOfMembers(final ClusterTool.ClusterMembersInfo clusterMembersInfo)
     {
-        return memberString.split("|").length;
+        final String[] members = clusterMembersInfo.activeMembers.split("\\|");
+
+        return members.length;
     }
 }

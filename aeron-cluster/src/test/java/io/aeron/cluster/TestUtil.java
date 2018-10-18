@@ -17,6 +17,8 @@ package io.aeron.cluster;
 
 import org.agrona.concurrent.AgentTerminationException;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.junit.Assert.fail;
 
 class TestUtil
@@ -33,5 +35,22 @@ class TestUtil
         {
             fail("Unexpected interrupt - Test likely to have timed out");
         }
+    }
+
+    public static Runnable dynamicTerminationHook(
+        final AtomicBoolean terminationExpected, final AtomicBoolean wasTerminated)
+    {
+        return () ->
+        {
+            if (null == terminationExpected || !terminationExpected.get())
+            {
+                throw new AgentTerminationException();
+            }
+
+            if (null != wasTerminated)
+            {
+                wasTerminated.lazySet(true);
+            }
+        };
     }
 }

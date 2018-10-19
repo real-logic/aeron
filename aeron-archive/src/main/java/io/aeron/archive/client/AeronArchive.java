@@ -425,7 +425,7 @@ public class AeronArchive implements AutoCloseable
      * @param channel        to be recorded.
      * @param streamId       to be recorded.
      * @param sourceLocation of the publication to be recorded.
-     * @return the subscriptionId of the recording.
+     * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording.
      */
     public long startRecording(final String channel, final int streamId, final SourceLocation sourceLocation)
     {
@@ -456,7 +456,7 @@ public class AeronArchive implements AutoCloseable
      * @param channel        to be recorded.
      * @param streamId       to be recorded.
      * @param sourceLocation of the publication to be recorded.
-     * @return the subscriptionId of the recording.
+     * @return the subscriptionId, i.e. {@link Subscription#registrationId()}, of the recording.
      */
     public long extendRecording(
         final long recordingId, final String channel, final int streamId, final SourceLocation sourceLocation)

@@ -73,4 +73,12 @@ interface ControlRequestListener
     void onStopRecordingSubscription(long controlSessionId, long correlationId, long subscriptionId);
 
     void onGetStopPosition(long controlSessionId, long correlationId, long recordingId);
+
+    void onFindLastMatchingRecording(
+        long controlSessionId,
+        long correlationId,
+        long minRecordingId,
+        int sessionId,
+        int streamId,
+        String channel);
 }

@@ -137,12 +137,15 @@ public class BasicArchiveTest
 
         final long subscriptionId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
         final long recordingIdFromCounter;
+        final int sessionId;
 
         try (Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID);
             Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
+            sessionId = publication.sessionId();
+
             final CountersReader counters = aeron.countersReader();
-            final int counterId = getRecordingCounterId(publication.sessionId(), counters);
+            final int counterId = getRecordingCounterId(sessionId, counters);
             recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             assertThat(RecordingPos.getSourceIdentity(counters, counterId), is(CommonContext.IPC_CHANNEL));
@@ -164,7 +167,9 @@ public class BasicArchiveTest
 
         aeronArchive.stopRecording(subscriptionId);
 
-        final long recordingId = queryRecordingId(stopPosition);
+        final long recordingId = aeronArchive.findLastMatchingRecording(
+            0, "endpoint=localhost:3333", RECORDING_STREAM_ID, sessionId);
+
         assertEquals(recordingIdFromCounter, recordingId);
         assertThat(aeronArchive.getStopPosition(recordingIdFromCounter), is(stopPosition));
 

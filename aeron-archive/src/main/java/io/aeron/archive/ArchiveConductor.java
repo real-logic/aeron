@@ -359,6 +359,26 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
     }
 
+    void findLastMatchingRecording(
+        final long correlationId,
+        final long minRecordingId,
+        final int sessionId,
+        final int streamId,
+        final String channel,
+        final ControlSession controlSession)
+    {
+        if (minRecordingId < 0 || minRecordingId >= catalog.countEntries())
+        {
+            final String msg = "min recording id outside valid range: " + minRecordingId;
+            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
+        }
+        else
+        {
+            final long recordingId = catalog.findLast(minRecordingId, sessionId, streamId, channel);
+            controlSession.sendOkResponse(correlationId, recordingId, controlResponseProxy);
+        }
+    }
+
     void startReplay(
         final long correlationId,
         final ControlSession controlSession,
@@ -370,8 +390,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     {
         if (replaySessionByIdMap.size() >= maxConcurrentReplays)
         {
-            final String errorMessage = "max concurrent replays reached " + maxConcurrentReplays;
-            controlSession.sendErrorResponse(correlationId, MAX_REPLAYS, errorMessage, controlResponseProxy);
+            final String msg = "max concurrent replays reached " + maxConcurrentReplays;
+            controlSession.sendErrorResponse(correlationId, MAX_REPLAYS, msg, controlResponseProxy);
 
             return;
         }

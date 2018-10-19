@@ -164,6 +164,22 @@ class ControlSession implements Session
         conductor.listRecording(correlationId, this, recordingId);
     }
 
+    public void onFindLastMatchingRecording(
+        final long correlationId,
+        final long minRecordingId,
+        final int sessionId,
+        final int streamId,
+        final String channel)
+    {
+        conductor.findLastMatchingRecording(
+            correlationId,
+            minRecordingId,
+            sessionId,
+            streamId,
+            channel,
+            this);
+    }
+
     public void onStartReplay(
         final long correlationId,
         final long recordingId,

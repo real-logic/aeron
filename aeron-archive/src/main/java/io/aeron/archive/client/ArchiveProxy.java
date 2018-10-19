@@ -59,6 +59,8 @@ public class ArchiveProxy
     private final TruncateRecordingRequestEncoder truncateRecordingRequestEncoder =
         new TruncateRecordingRequestEncoder();
     private final StopPositionRequestEncoder stopPositionRequestEncoder = new StopPositionRequestEncoder();
+    private final FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequestEncoder =
+        new FindLastMatchingRecordingRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -449,6 +451,29 @@ public class ArchiveProxy
     }
 
     /**
+     * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
+     * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
+     *
+     * @param recordingId      of the stopped recording to be truncated.
+     * @param position         to which the recording will be truncated.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean truncateRecording(
+        final long recordingId, final long position, final long correlationId, final long controlSessionId)
+    {
+        truncateRecordingRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .position(position);
+
+        return offer(truncateRecordingRequestEncoder.encodedLength());
+    }
+
+    /**
      * Get the stop position of a recording.
      *
      * @param recordingId      of the recording that the stop position is being requested for.
@@ -470,24 +495,35 @@ public class ArchiveProxy
     /**
      * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
      * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
+     * <p>
+     * Find the last recording that matches the given criteria.
      *
-     * @param recordingId      of the stopped recording to be truncated.
-     * @param position         to which the recording will be truncated.
+     * @param minRecordingId   to search back to.
+     * @param channel          for a contains match on the stripped channel stored with the archive descriptor.
+     * @param streamId         of the recording to match.
+     * @param sessionId        of the recording to match.
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean truncateRecording(
-        final long recordingId, final long position, final long correlationId, final long controlSessionId)
+    public boolean findLastMatchingRecording(
+        final long minRecordingId,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final long correlationId,
+        final long controlSessionId)
     {
-        truncateRecordingRequestEncoder
+        findLastMatchingRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
-            .recordingId(recordingId)
-            .position(position);
+            .minRecordingId(minRecordingId)
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .channel(channel);
 
-        return offer(truncateRecordingRequestEncoder.encodedLength());
+        return offer(findLastMatchingRecordingRequestEncoder.encodedLength());
     }
 
     private boolean offer(final int length)

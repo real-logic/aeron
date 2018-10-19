@@ -205,6 +205,18 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         controlSession.onGetStopPosition(correlationId, recordingId);
     }
 
+    public void onFindLastMatchingRecording(
+        final long controlSessionId,
+        final long correlationId,
+        final long minRecordingId,
+        final int sessionId,
+        final int streamId,
+        final String channel)
+    {
+        final ControlSession controlSession = getControlSession(controlSessionId);
+        controlSession.onFindLastMatchingRecording(correlationId, minRecordingId, sessionId, streamId, channel);
+    }
+
     void removeControlSession(final ControlSession controlSession)
     {
         controlSessionByIdMap.remove(controlSession.sessionId());

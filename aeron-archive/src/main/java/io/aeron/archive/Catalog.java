@@ -282,7 +282,7 @@ class Catalog implements AutoCloseable
         return (int)nextRecordingId;
     }
 
-    long addNewRecording(
+    public long addNewRecording(
         final long startPosition,
         final long startTimestamp,
         final int imageInitialTermId,
@@ -339,7 +339,7 @@ class Catalog implements AutoCloseable
         return recordingId;
     }
 
-    boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
+    public boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
     {
         if (recordingId < 0 || recordingId > maxRecordingId)
         {
@@ -351,7 +351,7 @@ class Catalog implements AutoCloseable
         return descriptorLength(buffer) > 0;
     }
 
-    boolean wrapAndValidateDescriptor(final long recordingId, final UnsafeBuffer buffer)
+    public boolean wrapAndValidateDescriptor(final long recordingId, final UnsafeBuffer buffer)
     {
         if (recordingId < 0 || recordingId > maxRecordingId)
         {
@@ -363,7 +363,7 @@ class Catalog implements AutoCloseable
         return descriptorLength(buffer) > 0 && isValidDescriptor(buffer);
     }
 
-    boolean hasRecording(final long recordingId)
+    public boolean hasRecording(final long recordingId)
     {
         return recordingId >= 0 && recordingId < nextRecordingId &&
             fieldAccessBuffer.getByte(
@@ -371,7 +371,7 @@ class Catalog implements AutoCloseable
                     RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
-    void forEach(final CatalogEntryProcessor consumer)
+    public void forEach(final CatalogEntryProcessor consumer)
     {
         long recordingId = 0L;
         while (wrapDescriptor(recordingId, catalogBuffer))
@@ -387,7 +387,6 @@ class Catalog implements AutoCloseable
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-
             descriptorEncoder.wrap(catalogBuffer, DESCRIPTOR_HEADER_LENGTH);
 
             consumer.accept(descriptorHeaderEncoder, descriptorHeaderDecoder, descriptorEncoder, descriptorDecoder);
@@ -395,7 +394,7 @@ class Catalog implements AutoCloseable
         }
     }
 
-    boolean forEntry(final CatalogEntryProcessor consumer, final long recordingId)
+    public boolean forEntry(final CatalogEntryProcessor consumer, final long recordingId)
     {
         if (wrapDescriptor(recordingId, catalogBuffer))
         {
@@ -420,12 +419,39 @@ class Catalog implements AutoCloseable
         return false;
     }
 
+    public long findLast(final long minRecordingId, final int sessionId, final int streamId, final String channel)
+    {
+        long recordingId = nextRecordingId;
+        while (--recordingId >= minRecordingId)
+        {
+            catalogBuffer.wrap(catalogByteBuffer, recordingDescriptorOffset(recordingId), recordLength);
+
+            if (isValidDescriptor(catalogBuffer))
+            {
+                descriptorDecoder.wrap(
+                    catalogBuffer,
+                    DESCRIPTOR_HEADER_LENGTH,
+                    RecordingDescriptorDecoder.BLOCK_LENGTH,
+                    RecordingDescriptorDecoder.SCHEMA_VERSION);
+
+                if (sessionId == descriptorDecoder.sessionId() &&
+                    streamId == descriptorDecoder.streamId() &&
+                    descriptorDecoder.strippedChannel().contains(channel))
+                {
+                    return recordingId;
+                }
+            }
+        }
+
+        return NULL_RECORD_ID;
+    }
+
     //
-    // Methods for access specify record fields by recordingId.
+    // Methods for access specific record fields by recordingId.
     // Note: These methods are thread safe.
     /////////////////////////////////////////////////////////////
 
-    void recordingStopped(final long recordingId, final long position, final long timestamp)
+    public void recordingStopped(final long recordingId, final long position, final long timestamp)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
@@ -437,7 +463,7 @@ class Catalog implements AutoCloseable
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
-    void recordingStopped(final long recordingId, final long position)
+    public void recordingStopped(final long recordingId, final long position)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
         final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
@@ -446,7 +472,7 @@ class Catalog implements AutoCloseable
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
-    void extendRecording(final long recordingId)
+    public void extendRecording(final long recordingId)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
@@ -458,7 +484,7 @@ class Catalog implements AutoCloseable
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
-    long stopPosition(final long recordingId)
+    public long stopPosition(final long recordingId)
     {
         final int offset = recordingDescriptorOffset(recordingId) +
             RecordingDescriptorHeaderDecoder.BLOCK_LENGTH +
@@ -469,7 +495,7 @@ class Catalog implements AutoCloseable
         return nativeOrder() == BYTE_ORDER ? stopPosition : Long.reverseBytes(stopPosition);
     }
 
-    RecordingSummary recordingSummary(final long recordingId, final RecordingSummary summary)
+    public RecordingSummary recordingSummary(final long recordingId, final RecordingSummary summary)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
@@ -486,12 +512,12 @@ class Catalog implements AutoCloseable
         return summary;
     }
 
-    static int descriptorLength(final UnsafeBuffer descriptorBuffer)
+    public static int descriptorLength(final UnsafeBuffer descriptorBuffer)
     {
         return descriptorBuffer.getInt(RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), BYTE_ORDER);
     }
 
-    static boolean isValidDescriptor(final UnsafeBuffer descriptorBuffer)
+    public static boolean isValidDescriptor(final UnsafeBuffer descriptorBuffer)
     {
         return descriptorBuffer.getByte(RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }

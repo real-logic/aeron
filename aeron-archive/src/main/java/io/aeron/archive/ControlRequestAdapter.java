@@ -41,6 +41,8 @@ class ControlRequestAdapter implements FragmentHandler
     private final StopRecordingSubscriptionRequestDecoder stopRecordingSubscriptionRequestDecoder =
         new StopRecordingSubscriptionRequestDecoder();
     private final StopPositionRequestDecoder stopPositionRequestDecoder = new StopPositionRequestDecoder();
+    private final FindLastMatchingRecordingRequestDecoder findLastMatchingRecordingRequestDecoder =
+        new FindLastMatchingRecordingRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -247,6 +249,22 @@ class ControlRequestAdapter implements FragmentHandler
                     stopPositionRequestDecoder.controlSessionId(),
                     stopPositionRequestDecoder.correlationId(),
                     stopPositionRequestDecoder.recordingId());
+                break;
+
+            case FindLastMatchingRecordingRequestDecoder.TEMPLATE_ID:
+                findLastMatchingRecordingRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onFindLastMatchingRecording(
+                    findLastMatchingRecordingRequestDecoder.controlSessionId(),
+                    findLastMatchingRecordingRequestDecoder.correlationId(),
+                    findLastMatchingRecordingRequestDecoder.minRecordingId(),
+                    findLastMatchingRecordingRequestDecoder.sessionId(),
+                    findLastMatchingRecordingRequestDecoder.streamId(),
+                    findLastMatchingRecordingRequestDecoder.channel());
                 break;
 
             default:

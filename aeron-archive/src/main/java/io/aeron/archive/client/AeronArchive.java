@@ -878,6 +878,37 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Find the last recording that matches the given criteria.
+     *
+     * @param minRecordingId to search back to.
+     * @param channel        for a contains match on the stripped channel stored with the archive descriptor
+     * @param streamId       of the recording to match.
+     * @param sessionId      of the recording to match.
+     * @return the recordingId if found otherwise {@link Aeron#NULL_VALUE} if not found.
+     */
+    public long findLastMatchingRecording(
+        final long minRecordingId, final String channel, final int streamId, final int sessionId)
+    {
+        lock.lock();
+        try
+        {
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.findLastMatchingRecording(
+                minRecordingId, channel, streamId, sessionId, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send find last matching request");
+            }
+
+            return pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
      * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
      *

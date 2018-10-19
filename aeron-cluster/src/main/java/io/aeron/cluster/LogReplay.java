@@ -77,8 +77,7 @@ class LogReplay implements AutoCloseable
         CloseHelper.close(logAdapter);
     }
 
-    @SuppressWarnings("unused")
-    int doWork(final long nowMs)
+    int doWork(@SuppressWarnings("unused") final long nowMs)
     {
         int workCount = 0;
 

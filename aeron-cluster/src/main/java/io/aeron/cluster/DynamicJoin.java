@@ -40,7 +40,7 @@ import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
-public class DynamicJoin implements AutoCloseable
+class DynamicJoin implements AutoCloseable
 {
     enum State
     {
@@ -78,12 +78,11 @@ public class DynamicJoin implements AutoCloseable
     private long correlationId = NULL_VALUE;
     private long snapshotRetrieveSubscriptionId = NULL_VALUE;
     private int memberId = NULL_VALUE;
-    private int highMemberId = NULL_VALUE;
     private int clusterMembersStatusEndpointsCursor = 0;
     private int snapshotCursor = 0;
     private int snapshotReplaySessionId = NULL_VALUE;
 
-    public DynamicJoin(
+    DynamicJoin(
         final String clusterMemberStatusEndpoints,
         final AeronArchive localArchive,
         final MemberStatusAdapter memberStatusAdapter,
@@ -134,11 +133,6 @@ public class DynamicJoin implements AutoCloseable
         return memberId;
     }
 
-    boolean isDone()
-    {
-        return State.DONE == state;
-    }
-
     int doWork(final long nowMs)
     {
         int workCount = 0;
@@ -155,15 +149,15 @@ public class DynamicJoin implements AutoCloseable
                 break;
 
             case SNAPSHOT_RETRIEVE:
-                workCount += snapshotRetrieve(nowMs);
+                workCount += snapshotRetrieve();
                 break;
 
             case SNAPSHOT_LOAD:
-                workCount += snapshotLoad(nowMs);
+                workCount += snapshotLoad();
                 break;
 
             case JOIN_CLUSTER:
-                workCount += joinCluster(nowMs);
+                workCount += joinCluster();
                 break;
         }
 
@@ -291,7 +285,7 @@ public class DynamicJoin implements AutoCloseable
         return 0;
     }
 
-    private int snapshotRetrieve(final long nowMs)
+    private int snapshotRetrieve()
     {
         int workCount = 0;
 
@@ -378,7 +372,7 @@ public class DynamicJoin implements AutoCloseable
         return workCount;
     }
 
-    private int snapshotLoad(final long nowMs)
+    private int snapshotLoad()
     {
         int workCount = 0;
 
@@ -398,14 +392,14 @@ public class DynamicJoin implements AutoCloseable
         return workCount;
     }
 
-    private int joinCluster(final long nowMs)
+    private int joinCluster()
     {
         int workCount = 0;
         final long leadershipTermId = leaderSnapshots.isEmpty() ? -1 : leaderSnapshots.get(0).leadershipTermId;
 
         if (memberStatusPublisher.joinCluster(clusterPublication, leadershipTermId, memberId))
         {
-            if (consensusModuleAgent.dynamicJoinComplete(nowMs))
+            if (consensusModuleAgent.dynamicJoinComplete())
             {
                 state(State.DONE);
                 close();
@@ -457,7 +451,7 @@ public class DynamicJoin implements AutoCloseable
         private final Image image;
         private long recordingId = RecordingPos.NULL_RECORDING_ID;
         private long recPos = NULL_POSITION;
-        private int counterId = CountersReader.NULL_COUNTER_ID;
+        private int counterId;
 
         SnapshotReader(final Image image, final CountersReader countersReader)
         {
@@ -469,11 +463,6 @@ public class DynamicJoin implements AutoCloseable
         boolean isDone()
         {
             return isDone && (endPosition <= recPos);
-        }
-
-        long endPosition()
-        {
-            return endPosition;
         }
 
         long recordingId()

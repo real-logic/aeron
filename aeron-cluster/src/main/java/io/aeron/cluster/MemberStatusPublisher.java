@@ -241,7 +241,7 @@ class MemberStatusPublisher
     }
 
     boolean catchupPosition(
-        final Publication publication, final long leadershipTermId, final long logPosition, final int followerMemerId)
+        final Publication publication, final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CatchupPositionEncoder.BLOCK_LENGTH;
 
@@ -255,7 +255,7 @@ class MemberStatusPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
-                    .followerMemberId(followerMemerId);
+                    .followerMemberId(followerMemberId);
 
                 bufferClaim.commit();
 
@@ -269,8 +269,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean stopCatchup(
-        final Publication publication, final int replaySessionId, final int followerMemerId)
+    boolean stopCatchup(final Publication publication, final int replaySessionId, final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + StopCatchupEncoder.BLOCK_LENGTH;
 
@@ -283,7 +282,7 @@ class MemberStatusPublisher
                 stopCatchupEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .replaySessionId(replaySessionId)
-                    .followerMemberId(followerMemerId);
+                    .followerMemberId(followerMemberId);
 
                 bufferClaim.commit();
 
@@ -331,7 +330,7 @@ class MemberStatusPublisher
 
     boolean clusterMemberChange(
         final Publication publication,
-        final long correlctionId,
+        final long correlationId,
         final int leaderMemberId,
         final String activeMembers,
         final String passiveMembers)
@@ -352,7 +351,7 @@ class MemberStatusPublisher
             {
                 clusterMembersChangeEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlctionId)
+                    .correlationId(correlationId)
                     .leaderMemberId(leaderMemberId)
                     .activeMembers(activeMembers)
                     .passiveMembers(passiveMembers);
@@ -426,8 +425,7 @@ class MemberStatusPublisher
 
         snapshotRecordingsEncoder.memberEndpoints(memberEndpoints);
 
-        final int length =
-            MessageHeaderEncoder.ENCODED_LENGTH + snapshotRecordingsEncoder.encodedLength();
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + snapshotRecordingsEncoder.encodedLength();
 
         int attempts = SEND_ATTEMPTS;
         do

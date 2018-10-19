@@ -824,16 +824,11 @@ public final class ClusterMember
      */
     public static boolean areSameEndpoints(final ClusterMember lhs, final ClusterMember rhs)
     {
-        if (lhs.clientFacingEndpoint().equals(rhs.clientFacingEndpoint()) &&
+        return lhs.clientFacingEndpoint().equals(rhs.clientFacingEndpoint()) &&
             lhs.memberFacingEndpoint().equals(rhs.memberFacingEndpoint()) &&
             lhs.logEndpoint().equals(rhs.logEndpoint()) &&
             lhs.transferEndpoint().equals(rhs.transferEndpoint()) &&
-            lhs.archiveEndpoint().equals(rhs.archiveEndpoint()))
-        {
-            return true;
-        }
-
-        return false;
+            lhs.archiveEndpoint().equals(rhs.archiveEndpoint());
     }
 
     /**
@@ -994,19 +989,24 @@ public final class ClusterMember
     public String toString()
     {
         return "ClusterMember{" +
-            "id=" + id +
+            "isBallotSent=" + isBallotSent +
             ", isLeader=" + isLeader +
-            ", isBallotSent=" + isBallotSent +
-            ", vote=" + vote +
+            ", hasRequestedJoin=" + hasRequestedJoin +
+            ", id=" + id +
             ", leadershipTermId=" + leadershipTermId +
             ", logPosition=" + logPosition +
             ", candidateTermId=" + candidateTermId +
+            ", catchupReplaySessionId=" + catchupReplaySessionId +
+            ", changeCorrelationId=" + changeCorrelationId +
+            ", removalPosition=" + removalPosition +
             ", clientFacingEndpoint='" + clientFacingEndpoint + '\'' +
             ", memberFacingEndpoint='" + memberFacingEndpoint + '\'' +
             ", logEndpoint='" + logEndpoint + '\'' +
             ", transferEndpoint='" + transferEndpoint + '\'' +
             ", archiveEndpoint='" + archiveEndpoint + '\'' +
             ", endpointsDetail='" + endpointsDetail + '\'' +
+            ", publication=" + publication +
+            ", vote=" + vote +
             '}';
     }
 }

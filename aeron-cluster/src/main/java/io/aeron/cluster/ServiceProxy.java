@@ -83,11 +83,11 @@ final class ServiceProxy implements AutoCloseable
     }
 
     void clusterMembersResponse(
-        final long correlationId, final int leaderMemberId, final String activeMembers, final String passievFollowers)
+        final long correlationId, final int leaderMemberId, final String activeMembers, final String passiveFollowers)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersResponseEncoder.BLOCK_LENGTH +
             ClusterMembersResponseEncoder.activeMembersHeaderLength() + activeMembers.length() +
-            ClusterMembersResponseEncoder.passiveFollowersHeaderLength() + passievFollowers.length();
+            ClusterMembersResponseEncoder.passiveFollowersHeaderLength() + passiveFollowers.length();
 
         int attempts = SEND_ATTEMPTS * 2;
         do
@@ -100,7 +100,7 @@ final class ServiceProxy implements AutoCloseable
                     .correlationId(correlationId)
                     .leaderMemberId(leaderMemberId)
                     .activeMembers(activeMembers)
-                    .passiveFollowers(passievFollowers);
+                    .passiveFollowers(passiveFollowers);
 
                 bufferClaim.commit();
 

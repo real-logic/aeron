@@ -83,7 +83,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
     private Cluster.Role role;
-    private ClusterMember[] clusterMembers = ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY;
+    private ClusterMember[] clusterMembers;
     private ClusterMember[] passiveMembers = ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY;
     private ClusterMember leaderMember;
     private ClusterMember thisMember;
@@ -1039,7 +1039,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 final boolean wasLeader = leaderMemberId == memberId;
 
-                clusterMemberLeft(memberId, newMembers);
+                clusterMemberLeft(memberId);
 
                 if (wasLeader)
                 {
@@ -1379,7 +1379,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return result;
     }
 
-    boolean dynamicJoinComplete(final long nowMs)
+    boolean dynamicJoinComplete()
     {
         if (0 == clusterMembers.length)
         {
@@ -2320,7 +2320,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         rankedPositions = new long[this.clusterMembers.length];
     }
 
-    private void clusterMemberLeft(final int memberId, final ClusterMember[] newMembers)
+    private void clusterMemberLeft(final int memberId)
     {
         this.clusterMembers = ClusterMember.removeMember(this.clusterMembers, memberId);
         clusterMemberByIdMap.remove(memberId);

@@ -498,40 +498,6 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Find entries in a {@link RecordingLog} from a leadershipTermId inclusive. The results are limited to a count
-     * and can optionally include snapshots or not.
-     *
-     * @param fromLeadershipTermId include value from which the query begins.
-     * @param entryLimit           to limit the number of returned results.
-     * @param includeSnapshots     to be included in the results.
-     * @param results              into which the found entries will be placed.
-     */
-    public void findEntries(
-        final long fromLeadershipTermId,
-        final int entryLimit,
-        final boolean includeSnapshots,
-        final List<Entry> results)
-    {
-        int index = (int)indexByLeadershipTermIdMap.get(fromLeadershipTermId);
-        if (NULL_VALUE == index)
-        {
-            return;
-        }
-
-        for (int size = entries.size(), count = 0; index < size && count < entryLimit; index++)
-        {
-            final Entry entry = entries.get(index);
-            if (ENTRY_TYPE_SNAPSHOT == entry.type && !includeSnapshots)
-            {
-                continue;
-            }
-
-            results.add(entry);
-            count++;
-        }
-    }
-
-    /**
      * Get the latest snapshot {@link Entry} in the log.
      *
      * @param serviceId for the snapshot.

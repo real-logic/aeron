@@ -23,8 +23,7 @@ import org.agrona.concurrent.IdleStrategy;
 
 class ConsensusModuleSnapshotTaker extends SnapshotTaker
 {
-    private static final int ENCODED_TIMER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + TimerEncoder.BLOCK_LENGTH;
+    private static final int ENCODED_TIMER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH + TimerEncoder.BLOCK_LENGTH;
 
     private final ClusterSessionEncoder clusterSessionEncoder = new ClusterSessionEncoder();
     private final TimerEncoder timerEncoder = new TimerEncoder();

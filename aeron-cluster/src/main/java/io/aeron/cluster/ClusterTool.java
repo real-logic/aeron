@@ -40,7 +40,6 @@ import static io.aeron.Aeron.NULL_VALUE;
 /**
  * Tool for investigating the state of a cluster node.
  * <pre>
- *
  * Usage: ClusterTool &#60;cluster-dir&#62; &#60;command&#62; [options]
  *          describe: prints out all descriptors in the file.
  *               pid: prints PID of cluster component.
@@ -48,7 +47,7 @@ import static io.aeron.Aeron.NULL_VALUE;
  *     recording-log: prints recording log of cluster component.
  *            errors: prints Aeron and cluster component error logs.
  *      list-members: print leader memberId, active members list, and passive members list
- *     remove-member: [memberid] requests node (if leader) to remove member specified in memberId
+ *     remove-member: [memberId] requests node (if leader) to remove member specified in memberId
  *    remove-passive: [memberId] requests node (if leader) to remove passive member specified in memberId
  * </pre>
  */
@@ -238,7 +237,6 @@ public class ClusterTool
         {
             out.println(ClusterMarkFile.FILENAME + " does not exist.");
         }
-
     }
 
     public static void describe(final PrintStream out, final ClusterMarkFile[] serviceMarkFiles)
@@ -302,31 +300,22 @@ public class ClusterTool
 
         final MutableLong id = new MutableLong(NULL_VALUE);
         final MemberServiceAdapter.MemberServiceHandler handler =
-            new MemberServiceAdapter.MemberServiceHandler()
+            (correlationId, leaderMemberId, activeMembers, passiveMembers) ->
             {
-                public void onClusterMembersResponse(
-                    final long correlationId,
-                    final int leaderMemberId,
-                    final String activeMembers,
-                    final String passiveMembers)
+                if (correlationId == id.longValue())
                 {
-                    if (correlationId == id.longValue())
-                    {
-                        clusterMembersInfo.leaderMemberId = leaderMemberId;
-                        clusterMembersInfo.activeMembers = activeMembers;
-                        clusterMembersInfo.passiveMembers = passiveMembers;
-                        id.set(NULL_VALUE);
-                    }
+                    clusterMembersInfo.leaderMemberId = leaderMemberId;
+                    clusterMembersInfo.activeMembers = activeMembers;
+                    clusterMembersInfo.passiveMembers = passiveMembers;
+                    id.set(NULL_VALUE);
                 }
             };
 
-
-        try (
-            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
-            ConsensusModuleProxy consensusModuleProxy =
-                new ConsensusModuleProxy(aeron.addPublication(channel, toConsensusModuleStreamId));
-            MemberServiceAdapter memberServiceAdapter =
-                new MemberServiceAdapter(aeron.addSubscription(channel, toServiceStreamId), handler))
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
+            ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(
+                aeron.addPublication(channel, toConsensusModuleStreamId));
+            MemberServiceAdapter memberServiceAdapter = new MemberServiceAdapter(
+                aeron.addSubscription(channel, toServiceStreamId), handler))
         {
             id.set(aeron.nextCorrelationId());
             if (consensusModuleProxy.clusterMembersQuery(id.longValue()))
@@ -350,10 +339,7 @@ public class ClusterTool
         return id.longValue() == NULL_VALUE;
     }
 
-    public static boolean removeMember(
-        final File clusterDir,
-        final int memberId,
-        final boolean isPassive)
+    public static boolean removeMember(final File clusterDir, final int memberId, final boolean isPassive)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
@@ -377,10 +363,9 @@ public class ClusterTool
         final int toServiceStreamId = markFile.decoder().serviceStreamId();
         final int toConsensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
 
-        try (
-            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
-            ConsensusModuleProxy consensusModuleProxy =
-                new ConsensusModuleProxy(aeron.addPublication(channel, toConsensusModuleStreamId)))
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
+            ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(
+                aeron.addPublication(channel, toConsensusModuleStreamId)))
         {
             if (consensusModuleProxy.removeMember(
                 aeron.nextCorrelationId(), memberId, isPassive ? BooleanType.TRUE : BooleanType.FALSE))

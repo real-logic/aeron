@@ -24,9 +24,9 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
-public class MemberServiceAdapter implements FragmentHandler, AutoCloseable
+class MemberServiceAdapter implements FragmentHandler, AutoCloseable
 {
-    public interface MemberServiceHandler
+    interface MemberServiceHandler
     {
         void onClusterMembersResponse(
             long correlationId, int leaderMemberId, String activeMembers, String passiveMembers);
@@ -36,7 +36,6 @@ public class MemberServiceAdapter implements FragmentHandler, AutoCloseable
     private final MemberServiceHandler handler;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final JoinLogDecoder joinLogDecoder = new JoinLogDecoder();
     private final ClusterMembersResponseDecoder clusterMembersResponseDecoder = new ClusterMembersResponseDecoder();
 
     MemberServiceAdapter(final Subscription subscription, final MemberServiceHandler handler)

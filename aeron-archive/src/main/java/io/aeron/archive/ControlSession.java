@@ -207,6 +207,11 @@ class ControlSession implements Session
         conductor.truncateRecording(correlationId, this, recordingId, position);
     }
 
+    public void onGetStopPosition(final long correlationId, final long recordingId)
+    {
+        conductor.getStopPosition(correlationId, this, recordingId);
+    }
+
     void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)
     {
         if (listRecordingsSession != activeListRecordingsSession)

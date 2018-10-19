@@ -852,6 +852,32 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Get the stop position for a recording.
+     *
+     * @param recordingId of the active recording for which the position is required.
+     * @return the stop position, or {@link #NULL_POSITION} if still active.
+     */
+    public long getStopPosition(final long recordingId)
+    {
+        lock.lock();
+        try
+        {
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.getStopPosition(recordingId, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send get stop position request");
+            }
+
+            return pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
      * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
      *

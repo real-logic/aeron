@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Image;
 import io.aeron.ImageFragmentAssembler;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -28,7 +29,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         ACTIVE, INACTIVE, CLOSED
     }
 
-    private static final int FRAGMENT_LIMIT = 16;
+    private static final int FRAGMENT_LIMIT = 10;
 
     private final Image image;
     private final ArchiveConductor conductor;
@@ -109,7 +110,6 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final SourceLocation sourceLocation)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onStartRecording(correlationId, channel, streamId, sourceLocation);
     }
 
@@ -117,7 +117,6 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final long controlSessionId, final long correlationId, final int streamId, final String channel)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onStopRecording(correlationId, streamId, channel);
     }
 
@@ -125,7 +124,6 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final long controlSessionId, final long correlationId, final long subscriptionId)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onStopRecordingSubscription(correlationId, subscriptionId);
     }
 
@@ -139,14 +137,12 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final String replayChannel)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onStartReplay(correlationId, recordingId, position, length, replayStreamId, replayChannel);
     }
 
     public void onStopReplay(final long controlSessionId, final long correlationId, final long replaySessionId)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onStopReplay(correlationId, replaySessionId);
     }
 
@@ -159,7 +155,6 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final String channel)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onListRecordingsForUri(correlationId, fromRecordingId, recordCount, streamId, channel);
     }
 
@@ -170,14 +165,12 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final int recordCount)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onListRecordings(correlationId, fromRecordingId, recordCount);
     }
 
     public void onListRecording(final long controlSessionId, final long correlationId, final long recordingId)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onListRecording(correlationId, recordingId);
     }
 
@@ -190,14 +183,12 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final SourceLocation sourceLocation)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onExtendRecording(correlationId, recordingId, channel, streamId, sourceLocation);
     }
 
     public void onGetRecordingPosition(final long controlSessionId, final long correlationId, final long recordingId)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onGetRecordingPosition(correlationId, recordingId);
     }
 
@@ -205,8 +196,13 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final long controlSessionId, final long correlationId, final long recordingId, final long position)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
-
         controlSession.onTruncateRecording(correlationId, recordingId, position);
+    }
+
+    public void onGetStopPosition(final long controlSessionId, final long correlationId, final long recordingId)
+    {
+        final ControlSession controlSession = getControlSession(controlSessionId);
+        controlSession.onGetStopPosition(correlationId, recordingId);
     }
 
     void removeControlSession(final ControlSession controlSession)
@@ -219,7 +215,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
         if (controlSession == null)
         {
-            throw new IllegalArgumentException("unknown controlSessionId: " + controlSessionId);
+            throw new ArchiveException("unknown controlSessionId: " + controlSessionId);
         }
 
         return controlSession;

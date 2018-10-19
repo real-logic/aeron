@@ -40,6 +40,7 @@ class ControlRequestAdapter implements FragmentHandler
         new TruncateRecordingRequestDecoder();
     private final StopRecordingSubscriptionRequestDecoder stopRecordingSubscriptionRequestDecoder =
         new StopRecordingSubscriptionRequestDecoder();
+    private final StopPositionRequestDecoder stopPositionRequestDecoder = new StopPositionRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -233,6 +234,19 @@ class ControlRequestAdapter implements FragmentHandler
                     stopRecordingSubscriptionRequestDecoder.controlSessionId(),
                     stopRecordingSubscriptionRequestDecoder.correlationId(),
                     stopRecordingSubscriptionRequestDecoder.subscriptionId());
+                break;
+
+            case StopPositionRequestDecoder.TEMPLATE_ID:
+                stopPositionRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onGetStopPosition(
+                    stopPositionRequestDecoder.controlSessionId(),
+                    stopPositionRequestDecoder.correlationId(),
+                    stopPositionRequestDecoder.recordingId());
                 break;
 
             default:

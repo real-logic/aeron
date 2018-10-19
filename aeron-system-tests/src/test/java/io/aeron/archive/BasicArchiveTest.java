@@ -159,12 +159,14 @@ public class BasicArchiveTest
             }
 
             assertThat(aeronArchive.getRecordingPosition(recordingIdFromCounter), is(stopPosition));
+            assertThat(aeronArchive.getStopPosition(recordingIdFromCounter), is((long)NULL_VALUE));
         }
 
         aeronArchive.stopRecording(subscriptionId);
 
         final long recordingId = queryRecordingId(stopPosition);
         assertEquals(recordingIdFromCounter, recordingId);
+        assertThat(aeronArchive.getStopPosition(recordingIdFromCounter), is(stopPosition));
 
         final long position = 0L;
         final long length = stopPosition - position;

@@ -525,6 +525,19 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         controlSession.sendOkResponse(correlationId, position, controlResponseProxy);
     }
 
+    void getStopPosition(final long correlationId, final ControlSession controlSession, final long recordingId)
+    {
+        if (catalog.hasRecording(recordingId))
+        {
+            controlSession.sendOkResponse(correlationId, catalog.stopPosition(recordingId), controlResponseProxy);
+        }
+        else
+        {
+            final String msg = "unknown recording " + recordingId;
+            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
+        }
+    }
+
     @SuppressWarnings("ResultOfMethodCallIgnored")
     void truncateRecording(
         final long correlationId, final ControlSession controlSession, final long recordingId, final long position)

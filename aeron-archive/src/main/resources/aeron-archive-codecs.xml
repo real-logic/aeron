@@ -167,6 +167,14 @@
         <field name="subscriptionId"       id="2" type="int64"/>
     </sbe:message>
 
+    <sbe:message name="StopPositionRequest"
+                 id="15"
+                 description="Request the stop position of a recording">
+        <field name="controlSessionId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="recordingId"          id="3" type="int64"/>
+    </sbe:message>
+
     <!-- Archive Catalog Metadata -->
 
     <sbe:message name="CatalogHeader"

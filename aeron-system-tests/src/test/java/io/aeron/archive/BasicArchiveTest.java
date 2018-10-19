@@ -17,7 +17,6 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -26,7 +25,6 @@ import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
@@ -37,7 +35,6 @@ import java.io.File;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -280,48 +277,6 @@ public class BasicArchiveTest
         }
 
         return counterId;
-    }
-
-    private long queryRecordingId(final long expectedPosition)
-    {
-        final MutableLong foundRecordingId = new MutableLong();
-
-        final RecordingDescriptorConsumer consumer =
-            (controlSessionId,
-            correlationId,
-            recordingId,
-            startTimestamp,
-            stopTimestamp,
-            startPosition,
-            stopPosition,
-            initialTermId,
-            segmentFileLength,
-            termBufferLength,
-            mtuLength,
-            sessionId,
-            streamId,
-            strippedChannel,
-            originalChannel,
-            sourceIdentity) ->
-            {
-                foundRecordingId.set(recordingId);
-
-                assertEquals(0L, startPosition);
-                assertEquals(expectedPosition, stopPosition);
-                assertEquals(RECORDING_STREAM_ID, streamId);
-                assertEquals(RECORDING_CHANNEL, originalChannel);
-            };
-
-        final int recordingsFound = aeronArchive.listRecordingsForUri(
-            0L,
-            10,
-            RECORDING_CHANNEL,
-            RECORDING_STREAM_ID,
-            consumer);
-
-        assertThat(recordingsFound, greaterThan(0));
-
-        return foundRecordingId.get();
     }
 
     private static void offer(final Publication publication, final int count, final String prefix)

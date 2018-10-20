@@ -206,28 +206,31 @@
     <sbe:message name="TimerEvent"
                  id="21"
                  description="Timer triggered event as the result of a deadline passing on a registered timer">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="timestamp"            id="2" type="time_t"/>
+        <field name="leadershipTermId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="timestamp"            id="3" type="time_t"/>
     </sbe:message>
 
     <sbe:message name="SessionOpenEvent"
                  id="22"
                  description="Event for the state machine to notify a session has been opened">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="clusterSessionId"     id="2" type="int64"/>
-        <field name="timestamp"            id="3" type="time_t"/>
-        <field name="responseStreamId"     id="4" type="int32"/>
-        <data  name="responseChannel"      id="5" type="varAsciiEncoding"/>
-        <data  name="encodedPrincipal"     id="6" type="varDataEncoding"/>
+        <field name="leadershipTermId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="clusterSessionId"     id="3" type="int64"/>
+        <field name="timestamp"            id="4" type="time_t"/>
+        <field name="responseStreamId"     id="6" type="int32"/>
+        <data  name="responseChannel"      id="7" type="varAsciiEncoding"/>
+        <data  name="encodedPrincipal"     id="8" type="varDataEncoding"/>
     </sbe:message>
 
     <sbe:message name="SessionCloseEvent"
                  id="23"
                  description="Event for the state machine to notify a session has been closed">
-        <field name="correlationId"        id="1" type="int64"/>
-        <field name="clusterSessionId"     id="2" type="int64"/>
-        <field name="timestamp"            id="3" type="time_t"/>
-        <field name="closeReason"          id="4" type="CloseReason"/>
+        <field name="leadershipTermId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="clusterSessionId"     id="3" type="int64"/>
+        <field name="timestamp"            id="4" type="time_t"/>
+        <field name="closeReason"          id="5" type="CloseReason"/>
     </sbe:message>
 
     <sbe:message name="ClusterActionRequest"

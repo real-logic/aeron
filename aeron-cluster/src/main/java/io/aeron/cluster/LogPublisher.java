@@ -139,7 +139,7 @@ class LogPublisher
         return false;
     }
 
-    long appendSessionOpen(final ClusterSession session, final long nowMs)
+    long appendSessionOpen(final ClusterSession session, final long leadershipTermId, final long nowMs)
     {
         long result;
         final byte[] encodedPrincipal = session.encodedPrincipal();
@@ -147,6 +147,7 @@ class LogPublisher
 
         sessionOpenEventEncoder
             .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
+            .leadershipTermId(leadershipTermId)
             .clusterSessionId(session.id())
             .correlationId(session.lastCorrelationId())
             .timestamp(nowMs)
@@ -172,7 +173,7 @@ class LogPublisher
         return result;
     }
 
-    boolean appendSessionClose(final ClusterSession session, final long nowMs)
+    boolean appendSessionClose(final ClusterSession session, final long leadershipTermId, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseEventEncoder.BLOCK_LENGTH;
 
@@ -184,6 +185,7 @@ class LogPublisher
             {
                 sessionCloseEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
                     .clusterSessionId(session.id())
                     .timestamp(nowMs)
                     .closeReason(session.closeReason());
@@ -200,7 +202,7 @@ class LogPublisher
         return false;
     }
 
-    boolean appendTimer(final long correlationId, final long nowMs)
+    boolean appendTimer(final long correlationId, final long leadershipTermId, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TimerEventEncoder.BLOCK_LENGTH;
 
@@ -212,6 +214,7 @@ class LogPublisher
             {
                 timerEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
                     .correlationId(correlationId)
                     .timestamp(nowMs);
 
@@ -240,8 +243,8 @@ class LogPublisher
             {
                 clusterActionRequestEncoder.wrapAndApplyHeader(
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
+                    .logPosition(logPosition)
                     .timestamp(nowMs)
                     .action(action);
 

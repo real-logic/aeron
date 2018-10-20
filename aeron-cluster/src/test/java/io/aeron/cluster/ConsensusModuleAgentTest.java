@@ -79,8 +79,8 @@ public class ConsensusModuleAgentTest
     {
         when(mockAeron.conductorAgentInvoker()).thenReturn(mock(AgentInvoker.class));
         when(mockEgressPublisher.sendEvent(any(), anyLong(), anyInt(), any(), any())).thenReturn(TRUE);
-        when(mockLogPublisher.appendSessionClose(any(), anyLong())).thenReturn(TRUE);
-        when(mockLogPublisher.appendSessionOpen(any(), anyLong())).thenReturn(128L);
+        when(mockLogPublisher.appendSessionClose(any(), anyLong(), anyLong())).thenReturn(TRUE);
+        when(mockLogPublisher.appendSessionOpen(any(), anyLong(), anyLong())).thenReturn(128L);
         when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), anyLong(), any(ClusterAction.class)))
             .thenReturn(TRUE);
         when(mockAeron.addExclusivePublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
@@ -108,7 +108,7 @@ public class ConsensusModuleAgentTest
         clock.update(1);
         agent.doWork();
 
-        verify(mockLogPublisher).appendSessionOpen(any(ClusterSession.class), anyLong());
+        verify(mockLogPublisher).appendSessionOpen(any(ClusterSession.class), anyLong(), anyLong());
 
         final long correlationIdTwo = 2L;
         agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO, new byte[0]);
@@ -138,7 +138,7 @@ public class ConsensusModuleAgentTest
 
         agent.doWork();
 
-        verify(mockLogPublisher).appendSessionOpen(any(ClusterSession.class), eq(startMs));
+        verify(mockLogPublisher).appendSessionOpen(any(ClusterSession.class), anyLong(), eq(startMs));
 
         final long timeMs = startMs + TimeUnit.NANOSECONDS.toMillis(ConsensusModule.Configuration.sessionTimeoutNs());
         clock.update(timeMs);
@@ -149,7 +149,7 @@ public class ConsensusModuleAgentTest
         agent.doWork();
 
         verify(mockTimedOutClientCounter).incrementOrdered();
-        verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), eq(timeoutMs));
+        verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), anyLong(), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(
             any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.ERROR), eq(SESSION_TIMEOUT_MSG));
     }

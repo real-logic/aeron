@@ -344,7 +344,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             session.close(CloseReason.CLIENT_ACTION);
 
-            if (logPublisher.appendSessionClose(session, clusterTimeMs))
+            if (logPublisher.appendSessionClose(session, leadershipTermId, clusterTimeMs))
             {
                 sessionByIdMap.remove(clusterSessionId);
             }
@@ -413,7 +413,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public boolean onTimerEvent(final long correlationId, final long nowMs)
     {
-        return Cluster.Role.LEADER != role || logPublisher.appendTimer(correlationId, nowMs);
+        return Cluster.Role.LEADER != role || logPublisher.appendTimer(correlationId, leadershipTermId, nowMs);
     }
 
     public void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
@@ -757,7 +757,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             session.close(CloseReason.SERVICE_ACTION);
 
-            if (Cluster.Role.LEADER == role && logPublisher.appendSessionClose(session, clusterTimeMs))
+            if (Cluster.Role.LEADER == role &&
+                logPublisher.appendSessionClose(session, leadershipTermId, clusterTimeMs))
             {
                 sessionByIdMap.remove(clusterSessionId);
             }
@@ -1823,7 +1824,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                         }
 
                         session.close(CloseReason.TIMEOUT);
-                        if (logPublisher.appendSessionClose(session, nowMs))
+                        if (logPublisher.appendSessionClose(session, leadershipTermId, nowMs))
                         {
                             i.remove();
                             ctx.timedOutClientCounter().incrementOrdered();
@@ -1831,7 +1832,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                         break;
 
                     case CLOSED:
-                        if (logPublisher.appendSessionClose(session, nowMs))
+                        if (logPublisher.appendSessionClose(session, leadershipTermId, nowMs))
                         {
                             i.remove();
                             if (session.closeReason() == CloseReason.TIMEOUT)
@@ -1873,7 +1874,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void appendSessionOpen(final ClusterSession session, final long nowMs)
     {
-        final long resultingPosition = logPublisher.appendSessionOpen(session, nowMs);
+        final long resultingPosition = logPublisher.appendSessionOpen(session, leadershipTermId, nowMs);
         if (resultingPosition > 0)
         {
             session.open(resultingPosition);

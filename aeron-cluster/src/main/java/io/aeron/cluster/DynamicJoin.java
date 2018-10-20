@@ -196,6 +196,7 @@ class DynamicJoin implements AutoCloseable
                         timeOfLastActivityMs = 0;
                         state(State.PASSIVE_FOLLOWER);
                     }
+
                     break;
                 }
             }
@@ -267,6 +268,7 @@ class DynamicJoin implements AutoCloseable
                 return 1;
             }
         }
+
         return 0;
     }
 
@@ -282,6 +284,7 @@ class DynamicJoin implements AutoCloseable
                 return 1;
             }
         }
+
         return 0;
     }
 
@@ -438,7 +441,7 @@ class DynamicJoin implements AutoCloseable
         return false;
     }
 
-    private static class SnapshotReader implements ControlledFragmentHandler
+    static class SnapshotReader implements ControlledFragmentHandler
     {
         private static final int FRAGMENT_LIMIT = 10;
 

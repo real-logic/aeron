@@ -96,12 +96,11 @@ public final class AeronCluster implements AutoCloseable
 
     private AeronCluster(final Context ctx)
     {
-        this.ctx = ctx;
-
         Subscription subscription = null;
 
         try
         {
+            this.ctx = ctx;
             ctx.conclude();
 
             this.aeron = ctx.aeron();
@@ -532,7 +531,7 @@ public final class AeronCluster implements AutoCloseable
                     return clusterSessionId;
                 }
 
-                checkDeadline(deadlineNs, "awaiting connection to cluster");
+                checkDeadline(deadlineNs, "awaiting connection to cluster", Aeron.NULL_VALUE);
                 idleStrategy.idle();
             }
         }
@@ -603,7 +602,7 @@ public final class AeronCluster implements AutoCloseable
     {
         while (!publication.isConnected())
         {
-            checkDeadline(deadlineNs, "awaiting connection to cluster");
+            checkDeadline(deadlineNs, "awaiting connection to cluster", Aeron.NULL_VALUE);
             idleStrategy.idle();
         }
     }
@@ -614,7 +613,7 @@ public final class AeronCluster implements AutoCloseable
 
         while (poller.poll() <= 0 && !poller.isPollComplete())
         {
-            checkDeadline(deadlineNs, "awaiting response for correlationId=" + correlationId);
+            checkDeadline(deadlineNs, "awaiting response", correlationId);
             idleStrategy.idle();
         }
     }
@@ -649,7 +648,7 @@ public final class AeronCluster implements AutoCloseable
                 throw new ClusterException("unexpected close from cluster");
             }
 
-            checkDeadline(deadlineNs, "failed to connect to cluster");
+            checkDeadline(deadlineNs, "failed to connect to cluster", lastCorrelationId);
             idleStrategy.idle();
         }
 
@@ -680,7 +679,7 @@ public final class AeronCluster implements AutoCloseable
             }
 
             checkResult(result);
-            checkDeadline(deadlineNs, "failed to connect to cluster");
+            checkDeadline(deadlineNs, "failed to connect to cluster", lastCorrelationId);
 
             idleStrategy.idle();
         }
@@ -688,7 +687,7 @@ public final class AeronCluster implements AutoCloseable
         return lastCorrelationId;
     }
 
-    private void checkDeadline(final long deadlineNs, final String errorMessage)
+    private void checkDeadline(final long deadlineNs, final String errorMessage, final long correlationId)
     {
         if (Thread.interrupted())
         {
@@ -697,7 +696,7 @@ public final class AeronCluster implements AutoCloseable
 
         if (nanoClock.nanoTime() > deadlineNs)
         {
-            throw new TimeoutException(errorMessage);
+            throw new TimeoutException(errorMessage + " - correlationId=" + correlationId);
         }
     }
 

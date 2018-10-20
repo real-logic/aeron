@@ -21,6 +21,7 @@ import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.*;
 
 import java.util.concurrent.TimeUnit;
@@ -935,12 +936,25 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    private void checkDeadline(final long deadlineNs, final String errorMessage, final long correlationId)
+    {
+        if (Thread.interrupted())
+        {
+            LangUtil.rethrowUnchecked(new InterruptedException());
+        }
+
+        if (nanoClock.nanoTime() > deadlineNs)
+        {
+            throw new TimeoutException(errorMessage + " - correlationId=" + correlationId);
+        }
+    }
+
     private long awaitSessionOpened(final long correlationId)
     {
         final long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
         final ControlResponsePoller poller = controlResponsePoller;
 
-        awaitConnection(deadlineNs, poller);
+        awaitConnection(deadlineNs, poller, correlationId);
 
         while (true)
         {
@@ -967,17 +981,13 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
-    private void awaitConnection(final long deadlineNs, final ControlResponsePoller poller)
+    private void awaitConnection(final long deadlineNs, final ControlResponsePoller poller, final long correlationId)
     {
         idleStrategy.reset();
 
         while (!poller.subscription().isConnected())
         {
-            if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("failed to establish response connection");
-            }
-
+            checkDeadline(deadlineNs, "failed to establish response connection", correlationId);
             idleStrategy.idle();
             invokeAeronClient();
         }
@@ -1041,11 +1051,7 @@ public class AeronArchive implements AutoCloseable
                 throw new ArchiveException("subscription to archive is not connected");
             }
 
-            if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("awaiting response for correlationId=" + correlationId);
-            }
-
+            checkDeadline(deadlineNs, "failed to establish response connection", correlationId);
             idleStrategy.idle();
             invokeAeronClient();
         }
@@ -1088,11 +1094,7 @@ public class AeronArchive implements AutoCloseable
                 throw new ArchiveException("subscription to archive is not connected");
             }
 
-            if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("awaiting recording descriptors: correlationId=" + correlationId);
-            }
-
+            checkDeadline(deadlineNs, "awaiting recording descriptors", correlationId);
             idleStrategy.idle();
         }
     }

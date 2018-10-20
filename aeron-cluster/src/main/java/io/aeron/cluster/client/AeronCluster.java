@@ -532,11 +532,7 @@ public final class AeronCluster implements AutoCloseable
                     return clusterSessionId;
                 }
 
-                if (nanoClock.nanoTime() > deadlineNs)
-                {
-                    throw new TimeoutException("awaiting connection to cluster");
-                }
-
+                checkDeadline(deadlineNs, "awaiting connection to cluster");
                 idleStrategy.idle();
             }
         }
@@ -607,11 +603,7 @@ public final class AeronCluster implements AutoCloseable
     {
         while (!publication.isConnected())
         {
-            if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("awaiting connection to cluster");
-            }
-
+            checkDeadline(deadlineNs, "awaiting connection to cluster");
             idleStrategy.idle();
         }
     }
@@ -622,11 +614,7 @@ public final class AeronCluster implements AutoCloseable
 
         while (poller.poll() <= 0 && !poller.isPollComplete())
         {
-            if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("awaiting response for correlationId=" + correlationId);
-            }
-
+            checkDeadline(deadlineNs, "awaiting response for correlationId=" + correlationId);
             idleStrategy.idle();
         }
     }
@@ -661,11 +649,7 @@ public final class AeronCluster implements AutoCloseable
                 throw new ClusterException("unexpected close from cluster");
             }
 
-            if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("failed to connect to cluster");
-            }
-
+            checkDeadline(deadlineNs, "failed to connect to cluster");
             idleStrategy.idle();
         }
 
@@ -696,16 +680,25 @@ public final class AeronCluster implements AutoCloseable
             }
 
             checkResult(result);
-
-            if (nanoClock.nanoTime() > deadlineNs)
-            {
-                throw new TimeoutException("failed to connect to cluster");
-            }
+            checkDeadline(deadlineNs, "failed to connect to cluster");
 
             idleStrategy.idle();
         }
 
         return lastCorrelationId;
+    }
+
+    private void checkDeadline(final long deadlineNs, final String errorMessage)
+    {
+        if (Thread.interrupted())
+        {
+            LangUtil.rethrowUnchecked(new InterruptedException());
+        }
+
+        if (nanoClock.nanoTime() > deadlineNs)
+        {
+            throw new TimeoutException(errorMessage);
+        }
     }
 
     private static void checkResult(final long result)

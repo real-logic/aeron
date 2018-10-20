@@ -66,7 +66,7 @@ final class SharedModeArchiveConductor extends ArchiveConductor
         CloseHelper.close(replayerAgentInvoker);
     }
 
-    private class SharedModeRecorder extends SessionWorker<RecordingSession>
+    class SharedModeRecorder extends SessionWorker<RecordingSession>
     {
         SharedModeRecorder(final ErrorHandler errorHandler)
         {
@@ -79,7 +79,7 @@ final class SharedModeArchiveConductor extends ArchiveConductor
         }
     }
 
-    private class SharedModeReplayer extends SessionWorker<ReplaySession>
+    class SharedModeReplayer extends SessionWorker<ReplaySession>
     {
         SharedModeReplayer(final ErrorHandler errorHandler)
         {

@@ -173,7 +173,7 @@ public class NetworkUtilTest
         assertThat(filteredBySubnet[2], sameInstance(ifc1));
     }
 
-    private static class NetworkInterfaceStub implements NetworkInterfaceShim
+    static class NetworkInterfaceStub implements NetworkInterfaceShim
     {
         private int counter = 0;
 

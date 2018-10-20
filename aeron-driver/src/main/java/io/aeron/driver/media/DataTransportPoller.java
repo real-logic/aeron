@@ -186,11 +186,11 @@ public class DataTransportPoller extends UdpTransportPoller
         return bytesReceived;
     }
 
-    private static class ChannelAndTransport
+    static class ChannelAndTransport
     {
-        private final ReceiveChannelEndpoint channelEndpoint;
-        private final UdpChannelTransport transport;
-        private final int transportIndex;
+        final ReceiveChannelEndpoint channelEndpoint;
+        final UdpChannelTransport transport;
+        final int transportIndex;
 
         ChannelAndTransport(
             final ReceiveChannelEndpoint channelEndpoint, final UdpChannelTransport transport, final int transportIndex)

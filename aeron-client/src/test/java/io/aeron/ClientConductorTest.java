@@ -545,7 +545,7 @@ public class ClientConductorTest
             .when(mockToClientReceiver).receive(any(MessageHandler.class));
     }
 
-    private class PrintError implements ErrorHandler
+    class PrintError implements ErrorHandler
     {
         public void onError(final Throwable throwable)
         {

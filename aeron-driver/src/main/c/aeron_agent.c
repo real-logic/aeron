@@ -191,7 +191,7 @@ int aeron_agent_init(
     {
         int err_code = errno;
 
-        aeron_set_err(err_code, "%s:%d: %s", __FILENAME__, __LINE__, strerror(err_code));
+        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, strerror(err_code));
         return -1;
     }
     memcpy((char *)runner->role_name, role_name, role_name_length);

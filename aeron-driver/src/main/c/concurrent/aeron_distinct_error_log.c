@@ -39,7 +39,7 @@ int aeron_distinct_error_log_init(
 {
     if (NULL == log || NULL == clock || NULL == linger)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILENAME__, __LINE__, strerror(EINVAL));
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
         return -1;
     }
 
@@ -47,7 +47,7 @@ int aeron_distinct_error_log_init(
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "%s:%d: %s", __FILENAME__, __LINE__, strerror(errcode));
+        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         return -1;
     }
 

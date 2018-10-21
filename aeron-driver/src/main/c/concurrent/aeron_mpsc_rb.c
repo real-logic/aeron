@@ -34,7 +34,7 @@ int aeron_mpsc_rb_init(volatile aeron_mpsc_rb_t *ring_buffer, void *buffer, size
     }
     else
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILENAME__, __LINE__, strerror(EINVAL));
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
     }
 
     return result;

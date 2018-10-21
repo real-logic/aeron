@@ -48,7 +48,7 @@ int aeron_counters_manager_init(
     }
     else
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILENAME__, __LINE__, strerror(EINVAL));
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
     }
 
     return result;
@@ -71,13 +71,13 @@ int32_t aeron_counters_manager_allocate(
 
     if ((counter_id * AERON_COUNTERS_MANAGER_VALUE_LENGTH) + AERON_COUNTERS_MANAGER_VALUE_LENGTH > manager->values_length)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILENAME__, __LINE__, strerror(EINVAL));
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
         return -1;
     }
 
     if ((counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH) + AERON_COUNTERS_MANAGER_METADATA_LENGTH > manager->metadata_length)
     {
-        aeron_set_err(EINVAL, "%s:%d: %s", __FILENAME__, __LINE__, strerror(EINVAL));
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
         return -1;
     }
 

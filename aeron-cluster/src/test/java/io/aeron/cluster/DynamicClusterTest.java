@@ -185,8 +185,7 @@ public class DynamicClusterTest
             startStaticNode(i, true);
         }
 
-        int leaderMemberId;
-        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        while (NULL_VALUE == findLeaderId(NULL_VALUE))
         {
             TestUtil.checkInterruptedStatus();
             Thread.sleep(1000);
@@ -217,8 +216,7 @@ public class DynamicClusterTest
             startStaticNode(i, true);
         }
 
-        int leaderMemberId;
-        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        while (NULL_VALUE == findLeaderId(NULL_VALUE))
         {
             TestUtil.checkInterruptedStatus();
             Thread.sleep(1000);
@@ -422,7 +420,6 @@ public class DynamicClusterTest
             TestUtil.checkInterruptedStatus();
             Thread.sleep(1000);
         }
-
 
         final ClusterTool.ClusterMembersInfo clusterMembersInfo = new ClusterTool.ClusterMembersInfo();
 
@@ -653,16 +650,11 @@ public class DynamicClusterTest
 
         for (int i = 0; i < MAX_MEMBER_COUNT; i++)
         {
-            final StringBuilder builder = new StringBuilder();
-
-            builder
-                .append("localhost:2011").append(i).append(',')
-                .append("localhost:2022").append(i).append(',')
-                .append("localhost:2033").append(i).append(',')
-                .append("localhost:2044").append(i).append(',')
-                .append("localhost:801").append(i);
-
-            clusterMembersEndpoints[i] = builder.toString();
+            clusterMembersEndpoints[i] = "localhost:2011" + i + ',' +
+                "localhost:2022" + i + ',' +
+                "localhost:2033" + i + ',' +
+                "localhost:2044" + i + ',' +
+                "localhost:801" + i;
         }
 
         return clusterMembersEndpoints;
@@ -826,8 +818,7 @@ public class DynamicClusterTest
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
 
-        return Cluster.Role.get(
-            (int)driver.consensusModule().context().clusterNodeCounter().get());
+        return Cluster.Role.get((int)driver.consensusModule().context().clusterNodeCounter().get());
     }
 
     private void takeSnapshot(final int index)

@@ -47,7 +47,6 @@ public final class AeronCluster implements AutoCloseable
     private static final int CONNECT_FRAGMENT_LIMIT = 1;
     private static final int SESSION_FRAGMENT_LIMIT = 10;
 
-    private long lastCorrelationId = Aeron.NULL_VALUE;
     private long leadershipTermId = Aeron.NULL_VALUE;
     private final long clusterSessionId;
     private int leaderMemberId = Aeron.NULL_VALUE;
@@ -197,29 +196,6 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
-     * Get the last correlation id generated for this session. Starts with {@link Aeron#NULL_VALUE}.
-     *
-     * @return the last correlation id generated for this session.
-     * @see #nextCorrelationId()
-     */
-    public long lastCorrelationId()
-    {
-        return lastCorrelationId;
-    }
-
-    /**
-     * Generate a new correlation id to be used for this session. This is not threadsafe. If you require a threadsafe
-     * correlation id generation then use {@link Aeron#nextCorrelationId()}.
-     *
-     * @return a new correlation id to be used for this session.
-     * @see #lastCorrelationId()
-     */
-    public long nextCorrelationId()
-    {
-        return ++lastCorrelationId;
-    }
-
-    /**
      * Get the raw {@link Publication} for sending to the cluster.
      * <p>
      * This can be wrapped with a {@link IngressSessionDecorator} for pre-pending the cluster session header to
@@ -250,17 +226,14 @@ public final class AeronCluster implements AutoCloseable
      * <p>
      * This version of the method will set the timestamp value in the header to zero.
      *
-     * @param correlationId to be used to identify the message to the cluster.
      * @param buffer        containing message.
      * @param offset        offset in the buffer at which the encoded message begins.
      * @param length        in bytes of the encoded message.
      * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
      */
-    public long offer(final long correlationId, final DirectBuffer buffer, final int offset, final int length)
+    public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        ingressMessageHeaderEncoder.correlationId(correlationId);
         messageVector.reset(buffer, offset, length);
-
         return publication.offer(vectors, null);
     }
 
@@ -282,8 +255,8 @@ public final class AeronCluster implements AutoCloseable
             {
                 sessionKeepAliveEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .clusterSessionId(clusterSessionId)
-                    .leadershipTermId(leadershipTermId);
+                    .leadershipTermId(leadershipTermId)
+                    .clusterSessionId(clusterSessionId);
 
                 bufferClaim.commit();
 
@@ -411,7 +384,6 @@ public final class AeronCluster implements AutoCloseable
             if (sessionId == clusterSessionId)
             {
                 egressListener.onMessage(
-                    egressMessageHeaderDecoder.correlationId(),
                     sessionId,
                     egressMessageHeaderDecoder.timestamp(),
                     buffer,
@@ -531,7 +503,7 @@ public final class AeronCluster implements AutoCloseable
                     return clusterSessionId;
                 }
 
-                checkDeadline(deadlineNs, "awaiting connection to cluster", Aeron.NULL_VALUE);
+                checkDeadline(deadlineNs, "awaiting connection to cluster");
                 idleStrategy.idle();
             }
         }
@@ -563,7 +535,7 @@ public final class AeronCluster implements AutoCloseable
 
         while (true)
         {
-            pollNextResponse(deadlineNs, correlationId, poller);
+            pollNextResponse(deadlineNs, poller);
 
             if (poller.correlationId() == correlationId)
             {
@@ -602,18 +574,18 @@ public final class AeronCluster implements AutoCloseable
     {
         while (!publication.isConnected())
         {
-            checkDeadline(deadlineNs, "awaiting connection to cluster", Aeron.NULL_VALUE);
+            checkDeadline(deadlineNs, "awaiting connection to cluster");
             idleStrategy.idle();
         }
     }
 
-    private void pollNextResponse(final long deadlineNs, final long correlationId, final EgressPoller poller)
+    private void pollNextResponse(final long deadlineNs, final EgressPoller poller)
     {
         idleStrategy.reset();
 
         while (poller.poll() <= 0 && !poller.isPollComplete())
         {
-            checkDeadline(deadlineNs, "awaiting response", correlationId);
+            checkDeadline(deadlineNs, "awaiting response");
             idleStrategy.idle();
         }
     }
@@ -621,14 +593,13 @@ public final class AeronCluster implements AutoCloseable
     private long sendConnectRequest(
         final Publication publication, final byte[] encodedCredentials, final long deadlineNs)
     {
-        lastCorrelationId = aeron.nextCorrelationId();
-
+        final long correlationId = aeron.nextCorrelationId();
         final SessionConnectRequestEncoder sessionConnectRequestEncoder = new SessionConnectRequestEncoder();
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
         sessionConnectRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(lastCorrelationId)
+            .correlationId(correlationId)
             .responseStreamId(ctx.egressStreamId())
             .responseChannel(ctx.egressChannel())
             .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
@@ -648,23 +619,22 @@ public final class AeronCluster implements AutoCloseable
                 throw new ClusterException("unexpected close from cluster");
             }
 
-            checkDeadline(deadlineNs, "failed to connect to cluster", lastCorrelationId);
+            checkDeadline(deadlineNs, "failed to connect to cluster");
             idleStrategy.idle();
         }
 
-        return lastCorrelationId;
+        return correlationId;
     }
 
     private long sendChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long deadlineNs)
     {
-        lastCorrelationId = aeron.nextCorrelationId();
-
+        final long correlationId = aeron.nextCorrelationId();
         final ChallengeResponseEncoder challengeResponseEncoder = new ChallengeResponseEncoder();
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
         challengeResponseEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(lastCorrelationId)
+            .correlationId(correlationId)
             .clusterSessionId(sessionId)
             .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
@@ -679,15 +649,15 @@ public final class AeronCluster implements AutoCloseable
             }
 
             checkResult(result);
-            checkDeadline(deadlineNs, "failed to connect to cluster", lastCorrelationId);
+            checkDeadline(deadlineNs, "failed to connect to cluster");
 
             idleStrategy.idle();
         }
 
-        return lastCorrelationId;
+        return correlationId;
     }
 
-    private void checkDeadline(final long deadlineNs, final String errorMessage, final long correlationId)
+    private void checkDeadline(final long deadlineNs, final String errorMessage)
     {
         if (Thread.interrupted())
         {
@@ -696,7 +666,7 @@ public final class AeronCluster implements AutoCloseable
 
         if (nanoClock.nanoTime() > deadlineNs)
         {
-            throw new TimeoutException(errorMessage + " - correlationId=" + correlationId);
+            throw new TimeoutException(errorMessage);
         }
     }
 
@@ -916,7 +886,7 @@ public final class AeronCluster implements AutoCloseable
             if (null == egressListener)
             {
                 egressListener =
-                    (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
+                    (clusterSessionId, timestamp, buffer, offset, length, header) ->
                     {
                         throw new ConfigurationException(
                             "egressListener must be specified on AeronCluster.Context");

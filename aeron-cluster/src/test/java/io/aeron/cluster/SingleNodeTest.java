@@ -59,7 +59,7 @@ public class SingleNodeTest
             harness.awaitServiceOnMessageCounter(count);
 
             verify(mockService, times(count))
-                .onSessionMessage(any(ClientSession.class), anyLong(), anyLong(), any(), anyInt(), eq(length), any());
+                .onSessionMessage(any(ClientSession.class), anyLong(), any(), anyInt(), eq(length), any());
         }
     }
 }

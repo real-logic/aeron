@@ -416,10 +416,9 @@ public class AuthenticationTest
 
     private void sendCountedMessageIntoCluster(final int value)
     {
-        final long msgCorrelationId = aeronCluster.nextCorrelationId();
         msgBuffer.putInt(0, value);
 
-        while (aeronCluster.offer(msgCorrelationId, msgBuffer, 0, SIZE_OF_INT) < 0)
+        while (aeronCluster.offer(msgBuffer, 0, SIZE_OF_INT) < 0)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
@@ -442,7 +441,6 @@ public class AuthenticationTest
 
                 public void onSessionMessage(
                     final ClientSession session,
-                    final long correlationId,
                     final long timestampMs,
                     final DirectBuffer buffer,
                     final int offset,

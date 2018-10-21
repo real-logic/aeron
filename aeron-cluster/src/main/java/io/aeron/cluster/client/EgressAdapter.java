@@ -74,7 +74,6 @@ public class EgressAdapter implements FragmentHandler
             if (sessionId == clusterSessionId)
             {
                 listener.onMessage(
-                    egressMessageHeaderDecoder.correlationId(),
                     sessionId,
                     egressMessageHeaderDecoder.timestamp(),
                     buffer,

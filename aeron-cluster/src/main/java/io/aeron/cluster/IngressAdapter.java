@@ -69,9 +69,8 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                 messageHeaderDecoder.version());
 
             return consensusModuleAgent.onIngressMessage(
-                ingressMessageHeaderDecoder.correlationId(),
-                ingressMessageHeaderDecoder.clusterSessionId(),
                 ingressMessageHeaderDecoder.leadershipTermId(),
+                ingressMessageHeaderDecoder.clusterSessionId(),
                 buffer,
                 offset + INGRESS_HEADER,
                 length - INGRESS_HEADER);

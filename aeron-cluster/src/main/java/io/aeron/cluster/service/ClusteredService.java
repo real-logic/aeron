@@ -54,17 +54,15 @@ public interface ClusteredService
     /**
      * A message has been received to be processed by a clustered service.
      *
-     * @param session       for the client which sent the message.
-     * @param correlationId to associate any response.
-     * @param timestampMs   for when the message was received.
-     * @param buffer        containing the message.
-     * @param offset        in the buffer at which the message is encoded.
-     * @param length        of the encoded message.
-     * @param header        aeron header for the incoming message.
+     * @param session     for the client which sent the message.
+     * @param timestampMs for when the message was received.
+     * @param buffer      containing the message.
+     * @param offset      in the buffer at which the message is encoded.
+     * @param length      of the encoded message.
+     * @param header      aeron header for the incoming message.
      */
     void onSessionMessage(
         ClientSession session,
-        long correlationId,
         long timestampMs,
         DirectBuffer buffer,
         int offset,

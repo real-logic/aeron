@@ -29,7 +29,6 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.collections.MutableLong;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -96,13 +95,11 @@ public class ClusterNodeTest
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 
-        final MutableLong msgCorrelationId = new MutableLong();
         final MutableInteger messageCount = new MutableInteger();
 
         final EgressListener listener =
-            (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
+            (clusterSessionId, timestamp, buffer, offset, length, header) ->
             {
-                assertThat(correlationId, is(msgCorrelationId.value));
                 assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
 
                 messageCount.value += 1;
@@ -111,9 +108,7 @@ public class ClusterNodeTest
         container = launchEchoService();
         aeronCluster = connectToCluster(listener);
 
-        msgCorrelationId.value = aeronCluster.nextCorrelationId();
-
-        while (aeronCluster.offer(msgCorrelationId.value, msgBuffer, 0, msg.length()) < 0)
+        while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
@@ -136,13 +131,11 @@ public class ClusterNodeTest
         final String msg = "Hello World!";
         msgBuffer.putStringWithoutLengthAscii(0, msg);
 
-        final MutableLong msgCorrelationId = new MutableLong();
         final MutableInteger messageCount = new MutableInteger();
 
         final EgressListener listener =
-            (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) ->
+            (clusterSessionId, timestamp, buffer, offset, length, header) ->
             {
-                assertThat(correlationId, is(msgCorrelationId.value));
                 assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg + "-scheduled"));
 
                 messageCount.value += 1;
@@ -151,9 +144,7 @@ public class ClusterNodeTest
         container = launchTimedService();
         aeronCluster = connectToCluster(listener);
 
-        msgCorrelationId.value = aeronCluster.nextCorrelationId();
-
-        while (aeronCluster.offer(msgCorrelationId.value, msgBuffer, 0, msg.length()) < 0)
+        while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
@@ -175,14 +166,13 @@ public class ClusterNodeTest
         {
             public void onSessionMessage(
                 final ClientSession session,
-                final long correlationId,
                 final long timestampMs,
                 final DirectBuffer buffer,
                 final int offset,
                 final int length,
                 final Header header)
             {
-                while (session.offer(correlationId, buffer, offset, length) < 0)
+                while (session.offer(buffer, offset, length) < 0)
                 {
                     TestUtil.checkInterruptedStatus();
                     Thread.yield();
@@ -201,23 +191,20 @@ public class ClusterNodeTest
         final ClusteredService timedService = new StubClusteredService()
         {
             long clusterSessionId;
-            long correlationId;
             String msg;
 
             public void onSessionMessage(
                 final ClientSession session,
-                final long correlationId,
                 final long timestampMs,
                 final DirectBuffer buffer,
                 final int offset,
                 final int length,
-                final Header header)
+                @SuppressWarnings("unused") final Header header)
             {
-                this.clusterSessionId = session.id();
-                this.correlationId = correlationId;
-                this.msg = buffer.getStringWithoutLengthAscii(offset, length);
+                clusterSessionId = session.id();
+                msg = buffer.getStringWithoutLengthAscii(offset, length);
 
-                while (!cluster.scheduleTimer(correlationId, timestampMs + 100))
+                while (!cluster.scheduleTimer(clusterSessionId, timestampMs + 100))
                 {
                     cluster.idle();
                 }
@@ -230,7 +217,7 @@ public class ClusterNodeTest
                 buffer.putStringWithoutLengthAscii(0, responseMsg);
                 final ClientSession clientSession = cluster.getClientSession(clusterSessionId);
 
-                while (clientSession.offer(correlationId, buffer, 0, responseMsg.length()) < 0)
+                while (clientSession.offer(buffer, 0, responseMsg.length()) < 0)
                 {
                     cluster.idle();
                 }

@@ -237,7 +237,6 @@ class ClusteredServiceAgent implements Agent, Cluster
     }
 
     public long offer(
-        final long correlationId,
         final long clusterSessionId,
         final Publication publication,
         final DirectBuffer buffer,
@@ -250,7 +249,6 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
 
         egressMessageHeaderEncoder
-            .correlationId(correlationId)
             .clusterSessionId(clusterSessionId)
             .timestamp(clusterTimeMs);
 
@@ -280,52 +278,34 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     void onSessionMessage(
         final long clusterSessionId,
-        final long correlationId,
         final long timestampMs,
         final DirectBuffer buffer,
         final int offset,
         final int length,
         final Header header)
     {
-        this.clusterTimeMs = timestampMs;
+        clusterTimeMs = timestampMs;
         final ClientSession clientSession = sessionByIdMap.get(clusterSessionId);
 
-        try
-        {
-            service.onSessionMessage(
-                clientSession,
-                correlationId,
-                timestampMs,
-                buffer,
-                offset,
-                length,
-                header);
-        }
-        finally
-        {
-            clientSession.lastCorrelationId(correlationId);
-        }
+        service.onSessionMessage(clientSession, timestampMs, buffer, offset, length, header);
     }
 
     void onTimerEvent(final long correlationId, final long timestampMs)
     {
-        this.clusterTimeMs = timestampMs;
-
+        clusterTimeMs = timestampMs;
         service.onTimerEvent(correlationId, timestampMs);
     }
 
     void onSessionOpen(
         final long clusterSessionId,
-        final long correlationId,
         final long timestampMs,
         final int responseStreamId,
         final String responseChannel,
         final byte[] encodedPrincipal)
     {
-        this.clusterTimeMs = timestampMs;
-
+        clusterTimeMs = timestampMs;
         final ClientSession session = new ClientSession(
-            clusterSessionId, correlationId, responseStreamId, responseChannel, encodedPrincipal, this);
+            clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this);
 
         if (Role.LEADER == role && ctx.isRespondingService())
         {
@@ -338,8 +318,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     void onSessionClose(final long clusterSessionId, final long timestampMs, final CloseReason closeReason)
     {
-        this.clusterTimeMs = timestampMs;
-
+        clusterTimeMs = timestampMs;
         final ClientSession session = sessionByIdMap.remove(clusterSessionId);
         session.disconnect();
         service.onSessionClose(session, timestampMs, closeReason);
@@ -348,8 +327,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     void onServiceAction(
         final long logPosition, final long leadershipTermId, final long timestampMs, final ClusterAction action)
     {
-        this.clusterTimeMs = timestampMs;
-
+        clusterTimeMs = timestampMs;
         executeAction(action, logPosition, leadershipTermId);
     }
 
@@ -361,7 +339,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         final int leaderMemberId,
         final int logSessionId)
     {
-        this.clusterTimeMs = timestampMs;
+        egressMessageHeaderEncoder.leadershipTermId(leadershipTermId);
+        clusterTimeMs = timestampMs;
     }
 
     @SuppressWarnings("unused")
@@ -375,7 +354,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final int memberId,
         final String clusterMembers)
     {
-        this.clusterTimeMs = timestampMs;
+        clusterTimeMs = timestampMs;
 
         if (memberId == this.memberId && eventType == ChangeType.LEAVE)
         {
@@ -386,13 +365,12 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     void addSession(
         final long clusterSessionId,
-        final long lastCorrelationId,
         final int responseStreamId,
         final String responseChannel,
         final byte[] encodedPrincipal)
     {
         sessionByIdMap.put(clusterSessionId, new ClientSession(
-            clusterSessionId, lastCorrelationId, responseStreamId, responseChannel, encodedPrincipal, this));
+            clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this));
     }
 
     private void role(final Role newRole)
@@ -406,8 +384,8 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
     {
-        final long leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
         clusterTimeMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
+        final long leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
 
         if (NULL_VALUE != leadershipTermId)
         {
@@ -498,6 +476,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
         heartbeatCounter.setOrdered(epochClock.time());
 
+        egressMessageHeaderEncoder.leadershipTermId(activeLogEvent.leadershipTermId);
         memberId = activeLogEvent.memberId;
         ctx.clusterMarkFile().memberId(memberId);
         logChannel = activeLogEvent.channel;

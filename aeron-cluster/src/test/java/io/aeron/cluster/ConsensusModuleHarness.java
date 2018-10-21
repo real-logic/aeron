@@ -434,14 +434,13 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
     public void onSessionMessage(
         final ClientSession session,
-        final long correlationId,
         final long timestampMs,
         final DirectBuffer buffer,
         final int offset,
         final int length,
         final Header header)
     {
-        service.onSessionMessage(session, correlationId, timestampMs, buffer, offset, length, header);
+        service.onSessionMessage(session, timestampMs, buffer, offset, length, header);
         serviceOnMessageCounter.getAndIncrement();
     }
 
@@ -513,14 +512,13 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
                 for (int i = 0; i < numMessages; i++)
                 {
-                    final long messageCorrelationId = aeronCluster.context().aeron().nextCorrelationId();
                     final int length = null == random ? maxMessageLength : random.nextInt(maxMessageLength);
                     msgBuffer.putInt(0, i);
 
                     while (true)
                     {
                         final long result = ingressSessionDecorator.offer(
-                            publication, messageCorrelationId, msgBuffer, 0, length);
+                            publication, msgBuffer, 0, length);
                         if (result > 0)
                         {
                             if (null != positionMap)
@@ -689,14 +687,14 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
             }
 
             public void onClusterMembersChange(
-                final long correaltionId,
+                final long correlationId,
                 final int leaderMemberId,
                 final String activeMembers,
                 final String passiveMembers)
             {
                 stream.format("onClusterMembersChange[%d] %d %d %s %s%n",
-                    index, correaltionId, leaderMemberId, activeMembers, passiveMembers);
-                nextListener.onClusterMembersChange(correaltionId, leaderMemberId, activeMembers, passiveMembers);
+                    index, correlationId, leaderMemberId, activeMembers, passiveMembers);
+                nextListener.onClusterMembersChange(correlationId, leaderMemberId, activeMembers, passiveMembers);
             }
 
             public void onSnapshotRecordingQuery(final long correlationId, final int requestMemberId)
@@ -756,10 +754,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         int onCommitPositionCounter = 0;
         int onCatchupPositionCounter = 0;
         int onStopCatchupCounter = 0;
-        int onRecoveryPlanQueryCounter = 0;
-        int onRecoveryPlanCounter = 0;
-        int onRecordingLogQueryCounter = 0;
-        int onRecordingLogCounter = 0;
     }
 
     private static void checkOfferResult(final long result)

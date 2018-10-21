@@ -217,8 +217,8 @@ public class EgressPoller implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                leadershipTermId = egressMessageHeaderDecoder.leadershipTermId();
                 clusterSessionId = egressMessageHeaderDecoder.clusterSessionId();
-                correlationId = egressMessageHeaderDecoder.correlationId();
                 break;
 
             case ChallengeDecoder.TEMPLATE_ID:

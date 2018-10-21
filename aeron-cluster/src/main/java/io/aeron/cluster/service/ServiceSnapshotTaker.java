@@ -47,7 +47,6 @@ class ServiceSnapshotTaker extends SnapshotTaker
                 clientSessionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
-                    .lastCorrelationId(session.lastCorrelationId())
                     .responseStreamId(session.responseStreamId())
                     .responseChannel(responseChannel)
                     .putEncodedPrincipal(encodedPrincipal, 0, encodedPrincipal.length);

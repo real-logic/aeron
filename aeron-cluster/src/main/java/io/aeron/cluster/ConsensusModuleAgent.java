@@ -352,9 +352,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     }
 
     public ControlledFragmentAssembler.Action onIngressMessage(
-        final long correlationId,
-        final long clusterSessionId,
         final long leadershipTermId,
+        final long clusterSessionId,
         final DirectBuffer buffer,
         final int offset,
         final int length)
@@ -371,9 +370,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         if (session.state() == OPEN &&
-            logPublisher.appendMessage(correlationId, clusterSessionId, clusterTimeMs, buffer, offset, length))
+            logPublisher.appendMessage(leadershipTermId, clusterSessionId, clusterTimeMs, buffer, offset, length))
         {
-            session.lastActivity(clusterTimeMs, correlationId);
+            session.timeOfLastActivityMs(clusterTimeMs);
             return ControlledFragmentHandler.Action.CONTINUE;
         }
 
@@ -873,7 +872,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     @SuppressWarnings("unused")
     void onReplaySessionMessage(
-        final long correlationId,
         final long clusterSessionId,
         final long timestamp,
         final DirectBuffer buffer,
@@ -882,7 +880,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final Header header)
     {
         clusterTimeMs(timestamp);
-        sessionByIdMap.get(clusterSessionId).lastActivity(timestamp, correlationId);
+        sessionByIdMap.get(clusterSessionId).timeOfLastActivityMs(timestamp);
     }
 
     void onReplayTimerEvent(final long correlationId, final long timestamp)

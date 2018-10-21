@@ -380,11 +380,9 @@ public class ClusterNodeRestartTest
     private static void sendBufferIntoCluster(
         final AeronCluster aeronCluster, final DirectBuffer buffer, final int length)
     {
-        final long msgCorrelationId = aeronCluster.nextCorrelationId();
-
         while (true)
         {
-            final long result = aeronCluster.offer(msgCorrelationId, buffer, 0, length);
+            final long result = aeronCluster.offer(buffer, 0, length);
             if (result > 0)
             {
                 break;
@@ -406,7 +404,6 @@ public class ClusterNodeRestartTest
 
                 public void onSessionMessage(
                     final ClientSession session,
-                    final long correlationId,
                     final long timestampMs,
                     final DirectBuffer buffer,
                     final int offset,

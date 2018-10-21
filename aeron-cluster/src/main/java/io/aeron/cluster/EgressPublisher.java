@@ -55,7 +55,7 @@ class EgressPublisher
                 sessionEventEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
-                    .correlationId(session.lastCorrelationId())
+                    .correlationId(session.correlationId())
                     .leadershipTermId(leadershipTermId)
                     .leaderMemberId(leaderMemberId)
                     .code(code)
@@ -82,7 +82,7 @@ class EgressPublisher
         challengeEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .clusterSessionId(session.id())
-            .correlationId(session.lastCorrelationId())
+            .correlationId(session.correlationId())
             .putEncodedChallenge(encodedChallenge, 0, encodedChallenge.length);
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + challengeEncoder.encodedLength();

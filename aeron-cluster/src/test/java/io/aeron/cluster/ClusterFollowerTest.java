@@ -80,7 +80,7 @@ public class ClusterFollowerTest
 
     private final MutableInteger responseCount = new MutableInteger();
     private final EgressListener egressMessageListener =
-        (correlationId, clusterSessionId, timestamp, buffer, offset, length, header) -> responseCount.value++;
+        (clusterSessionId, timestamp, buffer, offset, length, header) -> responseCount.value++;
 
     @Before
     public void before()
@@ -468,8 +468,7 @@ public class ClusterFollowerTest
     {
         for (int i = 0; i < MESSAGE_COUNT; i++)
         {
-            final long msgCorrelationId = client.nextCorrelationId();
-            while (client.offer(msgCorrelationId, msgBuffer, 0, MSG.length()) < 0)
+            while (client.offer(msgBuffer, 0, MSG.length()) < 0)
             {
                 TestUtil.checkInterruptedStatus();
                 client.pollEgress();
@@ -541,14 +540,13 @@ public class ClusterFollowerTest
 
         public void onSessionMessage(
             final ClientSession session,
-            final long correlationId,
             final long timestampMs,
             final DirectBuffer buffer,
             final int offset,
             final int length,
             final Header header)
         {
-            while (session.offer(correlationId, buffer, offset, length) < 0)
+            while (session.offer(buffer, offset, length) < 0)
             {
                 cluster.idle();
             }
@@ -595,9 +593,7 @@ public class ClusterFollowerTest
     private Cluster.Role roleOf(final int index)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
-
-        return Cluster.Role.get(
-            (int)driver.consensusModule().context().clusterNodeCounter().get());
+        return Cluster.Role.get((int)driver.consensusModule().context().clusterNodeCounter().get());
     }
 
     private long electionCounterOf(final int index)

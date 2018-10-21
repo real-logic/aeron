@@ -220,7 +220,7 @@ public class MultiNodeTest
             harness.awaitServiceOnMessageCounter(10);
 
             verify(mockService, times(10))
-                .onSessionMessage(any(ClientSession.class), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
+                .onSessionMessage(any(ClientSession.class), anyLong(), any(), anyInt(), eq(100), any());
 
             harness.awaitMemberStatusMessage(1, harness.onCommitPosition(1));
             harness.awaitMemberStatusMessage(2, harness.onCommitPosition(2));
@@ -272,7 +272,7 @@ public class MultiNodeTest
             harness.awaitServiceOnMessageCounter(10);
 
             verify(mockService, times(10))
-                .onSessionMessage(any(ClientSession.class), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
+                .onSessionMessage(any(ClientSession.class), anyLong(), any(), anyInt(), eq(100), any());
         }
     }
 
@@ -352,7 +352,7 @@ public class MultiNodeTest
             followerHarness.awaitServiceOnMessageCounter(10);
 
             verify(mockFollowerService, times(10))
-                .onSessionMessage(any(ClientSession.class), anyLong(), anyLong(), any(), anyInt(), eq(100), any());
+                .onSessionMessage(any(ClientSession.class), anyLong(), any(), anyInt(), eq(100), any());
 
             // wait until Leader sends commitPosition after election. This will only work while Leader waits for
             // all followers.

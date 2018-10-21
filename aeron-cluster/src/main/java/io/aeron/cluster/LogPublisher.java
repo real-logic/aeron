@@ -109,7 +109,7 @@ class LogPublisher
     }
 
     boolean appendMessage(
-        final long correlationId,
+        final long leadershipTermId,
         final long clusterSessionId,
         final long timestampMs,
         final DirectBuffer buffer,
@@ -117,7 +117,7 @@ class LogPublisher
         final int length)
     {
         sessionHeaderEncoder
-            .correlationId(correlationId)
+            .leadershipTermId(leadershipTermId)
             .clusterSessionId(clusterSessionId)
             .timestamp(timestampMs);
 
@@ -149,7 +149,7 @@ class LogPublisher
             .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
             .leadershipTermId(leadershipTermId)
             .clusterSessionId(session.id())
-            .correlationId(session.lastCorrelationId())
+            .correlationId(session.correlationId())
             .timestamp(nowMs)
             .responseStreamId(session.responseStreamId())
             .responseChannel(channel)

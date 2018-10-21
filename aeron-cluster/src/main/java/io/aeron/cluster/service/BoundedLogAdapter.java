@@ -92,7 +92,6 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 
             agent.onSessionMessage(
                 sessionHeaderDecoder.clusterSessionId(),
-                sessionHeaderDecoder.correlationId(),
                 sessionHeaderDecoder.timestamp(),
                 buffer,
                 offset + SESSION_HEADER_LENGTH,
@@ -127,7 +126,6 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 
                 agent.onSessionOpen(
                     openEventDecoder.clusterSessionId(),
-                    openEventDecoder.correlationId(),
                     openEventDecoder.timestamp(),
                     openEventDecoder.responseStreamId(),
                     responseChannel,

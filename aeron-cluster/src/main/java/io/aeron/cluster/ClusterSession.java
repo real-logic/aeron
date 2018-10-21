@@ -39,7 +39,7 @@ class ClusterSession
 
     private boolean hasNewLeaderEventPending = false;
     private long timeOfLastActivityMs;
-    private long lastCorrelationId;
+    private long correlationId;
     private long openedLogPosition = Aeron.NULL_VALUE;
     private final long id;
     private final int responseStreamId;
@@ -62,7 +62,7 @@ class ClusterSession
         final String responseChannel,
         final long openedLogPosition,
         final long timeOfLastActivityMs,
-        final long lastCorrelationId,
+        final long correlationId,
         final CloseReason closeReason)
     {
         this.id = sessionId;
@@ -70,7 +70,7 @@ class ClusterSession
         this.responseChannel = responseChannel;
         this.openedLogPosition = openedLogPosition;
         this.timeOfLastActivityMs = timeOfLastActivityMs;
-        this.lastCorrelationId = lastCorrelationId;
+        this.correlationId = correlationId;
         this.closeReason = closeReason;
 
         if (CloseReason.NULL_VAL != closeReason)
@@ -175,7 +175,7 @@ class ClusterSession
     void lastActivity(final long timeMs, final long correlationId)
     {
         timeOfLastActivityMs = timeMs;
-        lastCorrelationId = correlationId;
+        this.correlationId = correlationId;
     }
 
     long timeOfLastActivityMs()
@@ -188,9 +188,9 @@ class ClusterSession
         timeOfLastActivityMs = timeMs;
     }
 
-    long lastCorrelationId()
+    long correlationId()
     {
-        return lastCorrelationId;
+        return correlationId;
     }
 
     long openedLogPosition()
@@ -225,7 +225,7 @@ class ClusterSession
         return "ClusterSession{" +
             "id=" + id +
             ", timeOfLastActivityMs=" + timeOfLastActivityMs +
-            ", lastCorrelationId=" + lastCorrelationId +
+            ", correlationId=" + correlationId +
             ", openedLogPosition=" + openedLogPosition +
             ", hasNewLeaderEventPending=" + hasNewLeaderEventPending +
             ", responseStreamId=" + responseStreamId +

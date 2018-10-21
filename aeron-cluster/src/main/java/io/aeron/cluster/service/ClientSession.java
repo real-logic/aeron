@@ -31,7 +31,6 @@ public class ClientSession
     public static final long MOCKED_OFFER = 1;
 
     private final long id;
-    private long lastCorrelationId;
     private final int responseStreamId;
     private final String responseChannel;
     private final byte[] encodedPrincipal;
@@ -42,14 +41,12 @@ public class ClientSession
 
     ClientSession(
         final long sessionId,
-        final long correlationId,
         final int responseStreamId,
         final String responseChannel,
         final byte[] encodedPrincipal,
         final ClusteredServiceAgent cluster)
     {
         this.id = sessionId;
-        this.lastCorrelationId = correlationId;
         this.responseStreamId = responseStreamId;
         this.responseChannel = responseChannel;
         this.encodedPrincipal = encodedPrincipal;
@@ -107,28 +104,17 @@ public class ClientSession
     }
 
     /**
-     * Get the last correlation id processed on this session.
-     *
-     * @return the last correlation id processed on this session.
-     */
-    public long lastCorrelationId()
-    {
-        return lastCorrelationId;
-    }
-
-    /**
      * Non-blocking publish of a partial buffer containing a message to a cluster.
      *
-     * @param correlationId to be used to identify the message to the cluster.
-     * @param buffer        containing message.
-     * @param offset        offset in the buffer at which the encoded message begins.
-     * @param length        in bytes of the encoded message.
+     * @param buffer containing message.
+     * @param offset offset in the buffer at which the encoded message begins.
+     * @param length in bytes of the encoded message.
      * @return the same as {@link Publication#offer(DirectBuffer, int, int)} when in {@link Cluster.Role#LEADER}
      * otherwise {@link #MOCKED_OFFER}.
      */
-    public long offer(final long correlationId, final DirectBuffer buffer, final int offset, final int length)
+    public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        return cluster.offer(correlationId, id, responsePublication, buffer, offset, length);
+        return cluster.offer(id, responsePublication, buffer, offset, length);
     }
 
     void connect(final Aeron aeron)
@@ -153,10 +139,5 @@ public class ClientSession
     {
         CloseHelper.close(responsePublication);
         responsePublication = null;
-    }
-
-    void lastCorrelationId(final long correlationId)
-    {
-        lastCorrelationId = correlationId;
     }
 }

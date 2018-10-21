@@ -51,7 +51,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
                 clusterSessionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
-                    .lastCorrelationId(session.lastCorrelationId())
+                    .correlationId(session.correlationId())
                     .timeOfLastActivity(session.timeOfLastActivityMs())
                     .openedLogPosition(session.openedLogPosition())
                     .closeReason(session.closeReason())

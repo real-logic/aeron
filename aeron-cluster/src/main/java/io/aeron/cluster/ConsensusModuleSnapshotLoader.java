@@ -104,7 +104,7 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
 
                 consensusModuleAgent.onLoadSession(
                     clusterSessionDecoder.openedLogPosition(),
-                    clusterSessionDecoder.lastCorrelationId(),
+                    clusterSessionDecoder.correlationId(),
                     clusterSessionDecoder.clusterSessionId(),
                     clusterSessionDecoder.timeOfLastActivity(),
                     clusterSessionDecoder.closeReason(),

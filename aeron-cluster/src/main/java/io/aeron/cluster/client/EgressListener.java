@@ -28,7 +28,6 @@ public interface EgressListener
     /**
      * Message event returned from the clustered service.
      *
-     * @param correlationId    to associate with the ingress message to which it is correlated.
      * @param clusterSessionId to which the message belongs.
      * @param timestampMs      at which the correlated ingress was sequenced in the cluster.
      * @param buffer           containing the message.
@@ -37,7 +36,6 @@ public interface EgressListener
      * @param header           Aeron header associated with the message fragment.
      */
     void onMessage(
-        long correlationId,
         long clusterSessionId,
         long timestampMs,
         DirectBuffer buffer,
@@ -53,11 +51,9 @@ public interface EgressListener
         EventCode code,
         String detail)
     {
-
     }
 
     default void newLeader(long clusterSessionId, long leadershipTermId, int leaderMemberId, String memberEndpoints)
     {
-
     }
 }

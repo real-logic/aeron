@@ -105,7 +105,6 @@ class ServiceSnapshotLoader implements ControlledFragmentHandler
 
                 agent.addSession(
                     clientSessionDecoder.clusterSessionId(),
-                    clientSessionDecoder.lastCorrelationId(),
                     clientSessionDecoder.responseStreamId(),
                     responseChannel,
                     encodedPrincipal);

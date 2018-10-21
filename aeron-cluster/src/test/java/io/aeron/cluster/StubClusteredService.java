@@ -43,7 +43,6 @@ class StubClusteredService implements ClusteredService
 
     public void onSessionMessage(
         final ClientSession session,
-        final long correlationId,
         final long timestampMs,
         final DirectBuffer buffer,
         final int offset,

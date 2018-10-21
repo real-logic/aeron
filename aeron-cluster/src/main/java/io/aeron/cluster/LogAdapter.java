@@ -146,7 +146,6 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 consensusModuleAgent.onReplaySessionClose(
-                    sessionCloseEventDecoder.correlationId(),
                     sessionCloseEventDecoder.clusterSessionId(),
                     sessionCloseEventDecoder.timestamp(),
                     sessionCloseEventDecoder.closeReason());

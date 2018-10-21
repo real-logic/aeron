@@ -933,8 +933,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     }
 
     @SuppressWarnings("unused")
-    void onReplaySessionClose(
-        final long correlationId, final long clusterSessionId, final long timestamp, final CloseReason closeReason)
+    void onReplaySessionClose(final long clusterSessionId, final long timestamp, final CloseReason closeReason)
     {
         clusterTimeMs(timestamp);
         sessionByIdMap.remove(clusterSessionId).close();

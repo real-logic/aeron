@@ -387,7 +387,6 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessages)
     ASSERT_EQ(aeron_spsc_rb_init(&rb, spsc_buffer.data(), spsc_buffer.size()), 0);
 
     std::atomic<int> countDown(1);
-    std::atomic<int> publisherId(0);
 
     std::vector<std::thread> threads;
     size_t msgCount = 0;

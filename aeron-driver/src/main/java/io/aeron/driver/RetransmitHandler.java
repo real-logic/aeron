@@ -140,12 +140,12 @@ public class RetransmitHandler
         {
             for (final RetransmitAction action : retransmitActionPool)
             {
-                if (DELAYED == action.state && nowNs > action.expireNs)
+                if (DELAYED == action.state && (action.expireNs - nowNs < 0))
                 {
                     retransmitSender.resend(action.termId, action.termOffset, action.length);
                     action.linger(determineLingerTimeout(), nanoClock.nanoTime());
                 }
-                else if (LINGERING == action.state && nowNs > action.expireNs)
+                else if (LINGERING == action.state && (action.expireNs - nowNs < 0))
                 {
                     action.cancel();
                     activeRetransmitsMap.remove(action.termId, action.termOffset);

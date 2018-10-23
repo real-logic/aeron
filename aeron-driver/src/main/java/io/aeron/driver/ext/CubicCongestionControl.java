@@ -130,8 +130,8 @@ public class CubicCongestionControl implements CongestionControl
     {
         return RTT_MEASUREMENT &&
             outstandingRttMeasurements < MAX_OUTSTANDING_RTT_MEASUREMENTS &&
-            (nowNs > (lastRttTimestampNs + RTT_MAX_TIMEOUT_NS) ||
-                nowNs > (lastRttTimestampNs + RTT_MEASUREMENT_TIMEOUT_NS));
+            (((lastRttTimestampNs + RTT_MAX_TIMEOUT_NS) - nowNs < 0) ||
+                ((lastRttTimestampNs + RTT_MEASUREMENT_TIMEOUT_NS) - nowNs < 0));
     }
 
     public void onRttMeasurementSent(final long nowNs)
@@ -167,7 +167,7 @@ public class CubicCongestionControl implements CongestionControl
             lastLossTimestampNs = nowNs;
             forceStatusMessage = true;
         }
-        else if (cwnd < maxCwnd && nowNs > (lastUpdateTimestampNs + windowUpdateTimeoutNs))
+        else if (cwnd < maxCwnd && ((lastUpdateTimestampNs + windowUpdateTimeoutNs) - nowNs < 0))
         {
             // W_cubic = C(T - K)^3 + w_max
             final double durationSinceDecr = (double)(nowNs - lastLossTimestampNs) / (double)SECOND_IN_NS;

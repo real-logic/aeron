@@ -224,7 +224,7 @@ public class Receiver implements Agent
         {
             final PendingSetupMessageFromSource pending = pendingSetupMessages.get(i);
 
-            if (nowNs > (pending.timeOfStatusMessageNs() + PENDING_SETUPS_TIMEOUT_NS))
+            if ((pending.timeOfStatusMessageNs() + PENDING_SETUPS_TIMEOUT_NS) - nowNs < 0)
             {
                 if (!pending.isPeriodic())
                 {

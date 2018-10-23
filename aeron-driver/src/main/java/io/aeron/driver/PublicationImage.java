@@ -463,7 +463,7 @@ public class PublicationImage
         final long threshold = CongestionControlUtil.positionThreshold(window);
 
         if (CongestionControlUtil.shouldForceStatusMessage(ccOutcome) ||
-            (nowNs > (timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs)) ||
+            ((timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs) - nowNs < 0) ||
             (minSubscriberPosition > (nextSmPosition + threshold)))
         {
             scheduleStatusMessage(nowNs, minSubscriberPosition, window);
@@ -544,7 +544,7 @@ public class PublicationImage
     {
         boolean isActive = true;
 
-        if (nowNs > (lastPacketTimestampNs + imageLivenessTimeoutNs) ||
+        if (((lastPacketTimestampNs + imageLivenessTimeoutNs) - nowNs < 0) ||
             (isEndOfStream && rebuildPosition.getVolatile() >= hwmPosition.get()))
         {
             isActive = false;
@@ -702,7 +702,7 @@ public class PublicationImage
         switch (state)
         {
             case INACTIVE:
-                if (isDrained() || timeNs > (timeOfLastStateChangeNs + imageLivenessTimeoutNs))
+                if (isDrained() || ((timeOfLastStateChangeNs + imageLivenessTimeoutNs) - timeNs < 0))
                 {
                     state = State.LINGER;
                     timeOfLastStateChangeNs = timeNs;
@@ -712,7 +712,7 @@ public class PublicationImage
                 break;
 
             case LINGER:
-                if (timeNs > (timeOfLastStateChangeNs + imageLivenessTimeoutNs))
+                if ((timeOfLastStateChangeNs + imageLivenessTimeoutNs) - timeNs < 0)
                 {
                     state = State.DONE;
                     conductor.cleanupImage(this);

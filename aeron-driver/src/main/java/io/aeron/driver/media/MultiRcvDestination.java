@@ -120,8 +120,7 @@ public class MultiRcvDestination implements AutoCloseable
             if (null != controlAddress)
             {
                 final UdpChannelTransport transport = transports[i];
-
-                if (null != transport && nowNs < (controlAddress.timeOfLastFrameNs + destinationAddressTimeoutNs))
+                if (null != transport && ((controlAddress.timeOfLastFrameNs + destinationAddressTimeoutNs) - nowNs > 0))
                 {
                     buffer.position(position);
                     minBytesSent = Math.min(minBytesSent, sendTo(transport, buffer, controlAddress.address));

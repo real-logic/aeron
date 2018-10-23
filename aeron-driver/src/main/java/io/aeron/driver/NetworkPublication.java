@@ -280,7 +280,7 @@ public class NetworkPublication
             final boolean isEndOfStream = this.isEndOfStream;
             bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, isEndOfStream);
 
-            if (spiesSimulateConnection && nowNs > statusMessageDeadlineNs && hasSpies)
+            if (spiesSimulateConnection && (statusMessageDeadlineNs - nowNs < 0) && hasSpies)
             {
                 final long newSenderPosition = maxSpyPosition(senderPosition);
                 this.senderPosition.setOrdered(newSenderPosition);
@@ -494,7 +494,7 @@ public class NetworkPublication
 
     final void updateHasReceivers(final long timeNs)
     {
-        if (timeNs > statusMessageDeadlineNs && hasReceivers)
+        if ((statusMessageDeadlineNs - timeNs < 0) && hasReceivers)
         {
             hasReceivers = false;
         }
@@ -541,7 +541,7 @@ public class NetworkPublication
 
     private void setupMessageCheck(final long nowNs, final int activeTermId, final int termOffset)
     {
-        if (nowNs > (timeOfLastSetupNs + PUBLICATION_SETUP_TIMEOUT_NS))
+        if ((timeOfLastSetupNs + PUBLICATION_SETUP_TIMEOUT_NS) - nowNs < 0)
         {
             timeOfLastSetupNs = nowNs;
             timeOfLastSendOrHeartbeatNs = nowNs;
@@ -574,7 +574,7 @@ public class NetworkPublication
     {
         int bytesSent = 0;
 
-        if (nowNs > (timeOfLastSendOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
+        if ((timeOfLastSendOrHeartbeatNs + PUBLICATION_HEARTBEAT_TIMEOUT_NS) - nowNs < 0)
         {
             heartbeatBuffer.clear();
             heartbeatDataHeader
@@ -616,11 +616,11 @@ public class NetworkPublication
         }
     }
 
-    private void checkForBlockedPublisher(final long producerPosition, final long senderPosition, final long timeNs)
+    private void checkForBlockedPublisher(final long producerPosition, final long senderPosition, final long nowNs)
     {
         if (senderPosition == lastSenderPosition && isPossiblyBlocked(producerPosition, senderPosition))
         {
-            if (timeNs > (timeOfLastActivityNs + unblockTimeoutNs))
+            if ((timeOfLastActivityNs + unblockTimeoutNs) - nowNs < 0)
             {
                 if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition, termBufferLength))
                 {
@@ -630,7 +630,7 @@ public class NetworkPublication
         }
         else
         {
-            timeOfLastActivityNs = timeNs;
+            timeOfLastActivityNs = nowNs;
             lastSenderPosition = senderPosition;
         }
     }
@@ -738,7 +738,7 @@ public class NetworkPublication
             }
 
             case LINGER:
-                if (timeNs > (timeOfLastActivityNs + lingerTimeoutNs))
+                if ((timeOfLastActivityNs + lingerTimeoutNs) - timeNs < 0)
                 {
                     conductor.cleanupPublication(this);
                     state = State.CLOSING;

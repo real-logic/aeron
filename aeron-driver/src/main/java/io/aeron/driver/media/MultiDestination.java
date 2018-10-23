@@ -129,7 +129,7 @@ class DynamicMultiDestination extends MultiDestination
         {
             final Destination destination = destinations.get(i);
 
-            if (nowNs > (destination.timeOfLastActivityNs + destinationTimeoutNs))
+            if ((destination.timeOfLastActivityNs + destinationTimeoutNs) - nowNs < 0)
             {
                 ArrayListUtil.fastUnorderedRemove(destinations, i, lastIndex--);
             }

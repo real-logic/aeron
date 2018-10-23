@@ -78,7 +78,7 @@ public class UnicastFlowControl implements FlowControl
     {
         if (isEndOfStream && shouldLinger)
         {
-            if (lastPosition >= senderPosition || timeNs > (timeOfLastStatusMessage + RECEIVER_TIMEOUT_NS))
+            if (lastPosition >= senderPosition || ((timeOfLastStatusMessage + RECEIVER_TIMEOUT_NS) - timeNs < 0))
             {
                 shouldLinger = false;
             }

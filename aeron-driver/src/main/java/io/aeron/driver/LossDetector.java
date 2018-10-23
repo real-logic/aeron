@@ -153,7 +153,7 @@ public class LossDetector implements TermGapScanner.GapHandler
 
     private void checkTimerExpiry(final long nowNs)
     {
-        if (nowNs >= deadlineNs)
+        if (deadlineNs - nowNs <= 0)
         {
             lossHandler.onGapDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
             deadlineNs = nowNs + delayGenerator.generateDelay();

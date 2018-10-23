@@ -224,7 +224,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             }
 
             case LINGER:
-                if (timeNs > (timeOfLastStateChangeNs + lingerTimeoutNs))
+                if ((timeOfLastStateChangeNs + lingerTimeoutNs) - timeNs < 0)
                 {
                     reachedEndOfLife = true;
                     conductor.cleanupIpcPublication(this);
@@ -333,7 +333,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
         if (consumerPosition == lastConsumerPosition && isPossiblyBlocked(producerPosition, consumerPosition))
         {
-            if (timeNs > (timeOfLastConsumerPositionUpdateNs + unblockTimeoutNs))
+            if ((timeOfLastConsumerPositionUpdateNs + unblockTimeoutNs) - timeNs < 0)
             {
                 if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition, termBufferLength))
                 {

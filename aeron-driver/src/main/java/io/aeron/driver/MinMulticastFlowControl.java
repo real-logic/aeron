@@ -120,7 +120,7 @@ public class MinMulticastFlowControl implements FlowControl
         for (int lastIndex = receiverList.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final Receiver receiver = receiverList.get(i);
-            if (timeNs > (receiver.timeOfLastStatusMessageNs + RECEIVER_TIMEOUT))
+            if ((receiver.timeOfLastStatusMessageNs + RECEIVER_TIMEOUT) - timeNs < 0)
             {
                 ArrayListUtil.fastUnorderedRemove(receiverList, i, lastIndex--);
             }

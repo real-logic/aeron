@@ -72,7 +72,6 @@ public class LossDetectorTest
     public LossDetectorTest()
     {
         lossHandler = mock(LossHandler.class);
-
         lossDetector = new LossDetector(DELAY_GENERATOR, lossHandler);
         dataHeader.wrap(rcvBuffer);
     }

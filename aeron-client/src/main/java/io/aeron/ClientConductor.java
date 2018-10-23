@@ -776,7 +776,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 LangUtil.rethrowUnchecked(new InterruptedException());
             }
         }
-        while (nanoClock.nanoTime() < deadlineNs);
+        while (deadlineNs - nanoClock.nanoTime() > 0);
 
         throw new DriverTimeoutException("no response from MediaDriver within (ns): " + driverTimeoutNs);
     }
@@ -786,7 +786,7 @@ class ClientConductor implements Agent, DriverEventsListener
         int workCount = 0;
         final long nowNs = nanoClock.nanoTime();
 
-        if (nowNs > (timeOfLastServiceNs + IDLE_SLEEP_NS))
+        if ((timeOfLastServiceNs + IDLE_SLEEP_NS) - nowNs < 0)
         {
             checkServiceInterval(nowNs);
             timeOfLastServiceNs = nowNs;
@@ -800,7 +800,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private void checkServiceInterval(final long nowNs)
     {
-        if (nowNs > (timeOfLastServiceNs + interServiceTimeoutNs))
+        if ((timeOfLastServiceNs + interServiceTimeoutNs) - nowNs < 0)
         {
             final int lingeringResourcesSize = lingeringResources.size();
 
@@ -819,7 +819,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private int checkLiveness(final long nowNs)
     {
-        if (nowNs > (timeOfLastKeepAliveNs + keepAliveIntervalNs))
+        if ((timeOfLastKeepAliveNs + keepAliveIntervalNs) - nowNs < 0)
         {
             if (epochClock.time() > (driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs))
             {
@@ -845,7 +845,7 @@ class ClientConductor implements Agent, DriverEventsListener
         for (int lastIndex = lingeringResources.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final ManagedResource resource = lingeringResources.get(i);
-            if (nowNs > (resource.timeOfLastStateChange() + ctx.resourceLingerDurationNs()))
+            if ((resource.timeOfLastStateChange() + ctx.resourceLingerDurationNs()) - nowNs < 0)
             {
                 ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex--);
                 resource.delete();

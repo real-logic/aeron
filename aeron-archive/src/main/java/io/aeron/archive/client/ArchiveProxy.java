@@ -586,7 +586,7 @@ public class ArchiveProxy
                 throw new ArchiveException("offer failed due to max position being reached");
             }
 
-            if (nanoClock.nanoTime() > deadlineNs)
+            if (deadlineNs - nanoClock.nanoTime() < 0)
             {
                 return false;
             }

@@ -322,7 +322,7 @@ public class DriverConductorTest
         final long id = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         driverProxy.removePublication(id);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
+        doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2) - nanoClock.nanoTime() < 0);
 
         verify(senderProxy).removeNetworkPublication(any());
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
@@ -341,7 +341,7 @@ public class DriverConductorTest
         driverProxy.removePublication(id3);
         driverProxy.removePublication(id4);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> (PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
         verify(senderProxy, times(4)).removeNetworkPublication(any());
     }
@@ -484,7 +484,7 @@ public class DriverConductorTest
 
         final NetworkPublication publication = captor.getValue();
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> (PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
         verify(senderProxy).removeNetworkPublication(eq(publication));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
@@ -502,11 +502,11 @@ public class DriverConductorTest
 
         final NetworkPublication publication = captor.getValue();
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
+        doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS / 2) - nanoClock.nanoTime() <= 0);
 
         driverProxy.sendClientKeepalive();
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS + 1000) - nanoClock.nanoTime() <= 0);
 
         driverProxy.sendClientKeepalive();
 
@@ -935,7 +935,7 @@ public class DriverConductorTest
 
         driverProxy.removePublication(idAdd2);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+        doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
         ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID_1);
         assertNull(ipcPublication);
@@ -955,7 +955,7 @@ public class DriverConductorTest
 
         driverProxy.removePublication(idAdd2);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+        doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
         ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID_1);
         assertNull(ipcPublication);
@@ -971,7 +971,7 @@ public class DriverConductorTest
         IpcPublication ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID_1);
         assertNotNull(ipcPublication);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
         ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID_1);
         assertNull(ipcPublication);
@@ -987,11 +987,11 @@ public class DriverConductorTest
         IpcPublication ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID_1);
         assertNotNull(ipcPublication);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+        doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
         driverProxy.sendClientKeepalive();
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+        doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
         ipcPublication = driverConductor.getSharedIpcPublication(STREAM_ID_1);
         assertNotNull(ipcPublication);
@@ -1083,7 +1083,7 @@ public class DriverConductorTest
 
         assertTrue(publication.hasSpies());
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
         assertFalse(publication.hasSpies());
     }
@@ -1102,11 +1102,11 @@ public class DriverConductorTest
 
         assertTrue(publication.hasSpies());
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+        doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
         driverProxy.sendClientKeepalive();
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+        doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
         assertTrue(publication.hasSpies());
     }
@@ -1126,15 +1126,15 @@ public class DriverConductorTest
         verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
         final NetworkPublication publication = captor.getValue();
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
+        doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS / 2) - nanoClock.nanoTime() <= 0);
 
         spyDriverProxy.sendClientKeepalive();
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS + 1000) - nanoClock.nanoTime() <= 0);
 
         spyDriverProxy.sendClientKeepalive();
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
         verify(mockClientProxy).onUnavailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(subId), eq(STREAM_ID_1), anyString());
@@ -1151,7 +1151,7 @@ public class DriverConductorTest
         doWorkUntil(() ->
         {
             driverProxy.sendClientKeepalive();
-            return nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2;
+            return (PUBLICATION_LINGER_NS * 2) - nanoClock.nanoTime() <= 0;
         });
 
         verify(senderProxy, times(1)).closeSendChannelEndpoint(any());
@@ -1168,7 +1168,7 @@ public class DriverConductorTest
         doWorkUntil(() ->
         {
             driverProxy.sendClientKeepalive();
-            return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
+            return (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0;
         });
 
         verify(receiverProxy, times(1)).closeReceiveChannelEndpoint(any());
@@ -1279,7 +1279,7 @@ public class DriverConductorTest
 
         verify(mockClientProxy).onCounterReady(eq(registrationId), captor.capture());
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
         verify(spyCountersManager).free(captor.getValue());
     }
@@ -1305,7 +1305,7 @@ public class DriverConductorTest
         doWorkUntil(() ->
         {
             driverProxy.sendClientKeepalive();
-            return nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2;
+            return (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0;
         });
 
         verify(spyCountersManager, never()).free(captor.getValue());
@@ -1653,13 +1653,13 @@ public class DriverConductorTest
         driverProxy.removePublication(id1);
         driverProxy.removePublication(id2);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> (PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
         verify(senderProxy).closeSendChannelEndpoint(any());
     }
 
     @Test
-    public void shouldUseExistingChannelEndpointOnAddPublciationWithSameTagIdDifferentStreamId()
+    public void shouldUseExistingChannelEndpointOnAddPublicationWithSameTagIdDifferentStreamId()
     {
         final long id1 = driverProxy.addPublication(CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
         final long id2 = driverProxy.addPublication(CHANNEL_TAG_ID_1, STREAM_ID_2);
@@ -1673,7 +1673,7 @@ public class DriverConductorTest
         driverProxy.removePublication(id1);
         driverProxy.removePublication(id2);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> (PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
         verify(senderProxy).closeSendChannelEndpoint(any());
     }

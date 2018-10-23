@@ -922,7 +922,7 @@ public class DriverConductor implements Agent
         if (consumerPosition == lastConsumerCommandPosition)
         {
             if (toDriverCommands.producerPosition() > consumerPosition &&
-                nowNs > (timeOfLastToDriverPositionChangeNs + clientLivenessTimeoutNs))
+                ((timeOfLastToDriverPositionChangeNs + clientLivenessTimeoutNs) - nowNs < 0))
             {
                 if (toDriverCommands.unblock())
                 {
@@ -1557,7 +1557,7 @@ public class DriverConductor implements Agent
 
     private void updateClocks(final long nowNs)
     {
-        if (nowNs >= clockUpdateDeadlineNs)
+        if (clockUpdateDeadlineNs - nowNs < 0)
         {
             clockUpdateDeadlineNs = nowNs + CLOCK_UPDATE_DURATION_NS;
             cachedNanoClock.update(nowNs);
@@ -1569,7 +1569,7 @@ public class DriverConductor implements Agent
     {
         int workCount = 0;
 
-        if (nowNs > (timeOfLastTimerCheckNs + timerIntervalNs))
+        if ((timeOfLastTimerCheckNs + timerIntervalNs) - nowNs < 0)
         {
             heartbeatAndCheckTimers(nowNs);
             checkForBlockedToDriverCommands(nowNs);

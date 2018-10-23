@@ -235,8 +235,6 @@ public class SenderTest
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
         publication.onStatusMessage(msg, rcvAddress);
-//        publication.senderPositionLimit(
-//            flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -272,8 +270,6 @@ public class SenderTest
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
         publication.onStatusMessage(msg, rcvAddress);
-//        publication.senderPositionLimit(
-//            flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -305,8 +301,6 @@ public class SenderTest
         when(msg.receiverWindowLength()).thenReturn(2 * ALIGNED_FRAME_LENGTH);
 
         publication.onStatusMessage(msg, rcvAddress);
-//        publication.senderPositionLimit(
-//            flowControl.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -360,8 +354,6 @@ public class SenderTest
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
         publication.onStatusMessage(msg, rcvAddress);
-//        publication.senderPositionLimit(
-//            flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -391,8 +383,6 @@ public class SenderTest
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
         publication.onStatusMessage(msg, rcvAddress);
-//        publication.senderPositionLimit(
-//            flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
         sender.doWork();
 
@@ -424,8 +414,6 @@ public class SenderTest
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
         publication.onStatusMessage(msg, rcvAddress);
-//        publication.senderPositionLimit(
-//            flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -460,8 +448,6 @@ public class SenderTest
         when(msg.receiverWindowLength()).thenReturn(ALIGNED_FRAME_LENGTH);
 
         publication.onStatusMessage(msg, rcvAddress);
-//        publication.senderPositionLimit(
-//            flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);

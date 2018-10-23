@@ -943,7 +943,7 @@ public class AeronArchive implements AutoCloseable
             LangUtil.rethrowUnchecked(new InterruptedException());
         }
 
-        if (nanoClock.nanoTime() > deadlineNs)
+        if (deadlineNs - nanoClock.nanoTime() < 0)
         {
             throw new TimeoutException(errorMessage + " - correlationId=" + correlationId);
         }

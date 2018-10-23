@@ -209,6 +209,48 @@ public:
         return correlationId;
     }
 
+    std::int64_t addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& channel)
+    {
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            DestinationMessageFlyweight addMessage(buffer, 0);
+
+            addMessage.clientId(m_clientId);
+            addMessage.registrationId(subscriptionRegistrationId);
+            addMessage.correlationId(correlationId);
+            addMessage.channel(channel);
+
+            length = addMessage.length();
+
+            return ControlProtocolEvents::ADD_RCV_DESTINATION;
+        });
+
+        return correlationId;
+    }
+
+    std::int64_t removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& channel)
+    {
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            DestinationMessageFlyweight removeMessage(buffer, 0);
+
+            removeMessage.clientId(m_clientId);
+            removeMessage.registrationId(subscriptionRegistrationId);
+            removeMessage.correlationId(correlationId);
+            removeMessage.channel(channel);
+
+            length = removeMessage.length();
+
+            return ControlProtocolEvents::REMOVE_RCV_DESTINATION;
+        });
+
+        return correlationId;
+    }
+
     std::int64_t addCounter(std::int32_t typeId, const std::uint8_t *key, std::size_t keyLength, const std::string& label)
     {
         std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();

@@ -409,6 +409,20 @@ void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, 
     m_driverProxy.removeDestination(publicationRegistrationId, endpointChannel);
 }
 
+void ClientConductor::addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel)
+{
+    verifyDriverIsActive();
+
+    m_driverProxy.addRcvDestination(subscriptionRegistrationId, endpointChannel);
+}
+
+void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel)
+{
+    verifyDriverIsActive();
+
+    m_driverProxy.removeRcvDestination(subscriptionRegistrationId, endpointChannel);
+}
+
 void ClientConductor::onNewPublication(
     std::int32_t streamId,
     std::int32_t sessionId,

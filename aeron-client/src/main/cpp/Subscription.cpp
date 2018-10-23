@@ -41,6 +41,26 @@ Subscription::~Subscription()
     m_conductor.releaseSubscription(m_registrationId, std::atomic_load_explicit(&m_imageList, std::memory_order_acquire));
 }
 
+void Subscription::addDestination(const std::string& endpointChannel)
+{
+    if (isClosed())
+    {
+        throw util::IllegalStateException(std::string("Subscription is closed"), SOURCEINFO);
+    }
+
+    m_conductor.addRcvDestination(m_registrationId, endpointChannel);
+}
+
+void Subscription::removeDestination(const std::string& endpointChannel)
+{
+    if (isClosed())
+    {
+        throw util::IllegalStateException(std::string("Subscription is closed"), SOURCEINFO);
+    }
+
+    m_conductor.removeRcvDestination(m_registrationId, endpointChannel);
+}
+
 std::int64_t Subscription::channelStatus() const
 {
     if (isClosed())

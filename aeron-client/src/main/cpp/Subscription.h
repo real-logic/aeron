@@ -99,6 +99,20 @@ public:
     }
 
     /**
+     * Add a destination manually to a multi-destination Subscription.
+     *
+     * @param endpointChannel for the destination to add.
+     */
+    void addDestination(const std::string& endpointChannel);
+
+    /**
+     * Remove a previously added destination from a multi-destination Subscription.
+     *
+     * @param endpointChannel for the destination to remove.
+     */
+    void removeDestination(const std::string& endpointChannel);
+
+    /**
      * Poll the Image s under the subscription for having reached End of Stream.
      *
      * @param endOfStreamHandler callback for handling end of stream indication.

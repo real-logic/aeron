@@ -20,6 +20,7 @@
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
     -XX:BiasedLockingStartupDelay=0 ^
+    -Djava.net.preferIPv4Stack=true ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.term.buffer.sparse.file=false ^
     -Daeron.sample.messageLength=32 ^

@@ -18,7 +18,6 @@ package io.aeron;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.ExclusiveTermAppender;
-import io.aeron.logbuffer.FrameDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
@@ -72,8 +71,7 @@ public class ExclusivePublication extends Publication
             channelStatusId,
             logBuffers,
             originalRegistrationId,
-            registrationId,
-            FrameDescriptor.computeExclusiveMaxMessageLength(logBuffers.termLength()));
+            registrationId);
 
         final UnsafeBuffer[] buffers = logBuffers.duplicateTermBuffers();
         final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();

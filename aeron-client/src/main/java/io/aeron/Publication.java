@@ -101,12 +101,11 @@ public abstract class Publication implements AutoCloseable
         final int channelStatusId,
         final LogBuffers logBuffers,
         final long originalRegistrationId,
-        final long registrationId,
-        final int maxMessageLength)
+        final long registrationId)
     {
         final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
         this.termBufferLength = logBuffers.termLength();
-        this.maxMessageLength = maxMessageLength;
+        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(this.termBufferLength);
         this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
         this.maxPossiblePosition = termBufferLength * (1L << 31L);
         this.conductor = clientConductor;

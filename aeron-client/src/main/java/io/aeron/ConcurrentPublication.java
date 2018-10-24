@@ -59,8 +59,7 @@ public class ConcurrentPublication extends Publication
             channelStatusId,
             logBuffers,
             originalRegistrationId,
-            registrationId,
-            FrameDescriptor.computeMaxMessageLength(logBuffers.termLength()));
+            registrationId);
 
         final UnsafeBuffer[] buffers = logBuffers.duplicateTermBuffers();
 

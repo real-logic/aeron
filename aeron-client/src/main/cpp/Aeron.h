@@ -266,7 +266,7 @@ public:
     /**
      * Return the AgentInvoker for the client conductor.
      *
-     * @return AgenInvoker for the conductor.
+     * @return AgentInvoker for the conductor.
      */
     inline AgentInvoker<ClientConductor>& conductorAgentInvoker()
     {

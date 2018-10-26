@@ -23,9 +23,9 @@ matrix:
     script:
     - ./gradlew
 
-  - name: "Oracle Java 11"
+  - name: "OpenJDK 11"
     language: java
-    jdk: oraclejdk11
+    jdk: openjdk11
     os: linux
     script:
     - ./gradlew

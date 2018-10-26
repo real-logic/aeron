@@ -150,8 +150,16 @@ if(NOT DEFINED CMAKE_CXX_STANDARD)
    set(CMAKE_CXX_STANDARD 11)
 endif()
 
+if(NOT DEFINED CMAKE_CXX_EXTENSIONS)
+   set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
+
 if(NOT DEFINED CMAKE_C_STANDARD)
    set(CMAKE_C_STANDARD 11)
+endif()
+
+if(NOT DEFINED CMAKE_C_EXTENSIONS)
+   set(CMAKE_C_EXTENSIONS OFF)
 endif()
 
 # all UNIX-based platform compiler flags
@@ -200,7 +208,7 @@ elseif(CYGWIN)
     if(AERON_TESTS)
         add_definitions(-DGTEST_HAS_PTHREAD)
     endif()
-    string(REPLACE "-std=c++11" "-std=gnu++11" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    set(CMAKE_CXX_EXTENSIONS ON)
 elseif(MSVC)
     add_definitions(-DWIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)

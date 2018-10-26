@@ -38,6 +38,9 @@ option(AERON_TESTS "Enable tests" ${STANDALONE_BUILD})
 option(AERON_BUILD_SAMPLES "Enable building the sample projects" ${STANDALONE_BUILD})
 option(AERON_BUILD_DOCUMENTATION "Build Aeron documentation" ${STANDALONE_BUILD})
 option(AERON_INSTALL_TARGETS "Enable installation step" ${STANDALONE_BUILD})
+if (UNIX)
+   option(AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS "Enable Ofast for release builds" ${STANDALONE_BUILD})
+endif ()
 
 unset(STANDALONE_BUILD)
 
@@ -188,7 +191,9 @@ if(UNIX)
         SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     endif(COVERAGE_BUILD)
 
-    add_compile_options($<$<CONFIG:Release>:-Ofast>)
+    if (AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS)
+        add_compile_options($<$<CONFIG:Release>:-Ofast>)
+    endif ()
 endif()
 
 # platform specific flags

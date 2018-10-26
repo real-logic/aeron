@@ -426,7 +426,6 @@ TEST(OneToOneRingBufferConcurrentTest, shouldExchangeMessages)
     OneToOneRingBuffer ringBuffer(spscAb);
 
     std::atomic<int> countDown(1);
-    std::atomic<int> publisherId(0);
 
     std::vector<std::thread> threads;
 

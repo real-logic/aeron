@@ -77,6 +77,8 @@ target_link_libraries(PingPong
 
 add_dependencies(PingPong hdr_histogram)
 
-install(
-    TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong Throughput ErrorStat ExclusiveThroughput PingPong
-    DESTINATION bin)
+if (AERON_INSTALL_TARGETS)
+    install(
+        TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong Throughput ErrorStat ExclusiveThroughput PingPong
+        DESTINATION bin)
+endif()

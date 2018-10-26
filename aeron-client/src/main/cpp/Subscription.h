@@ -472,7 +472,7 @@ public:
     /// @endcond
 
     /**
-     * Get the status for the channel of this {@link Publication}
+     * Get the status for the channel of this {@link Subscription}
      *
      * @return status code for this channel
      */

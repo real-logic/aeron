@@ -164,20 +164,18 @@ endif()
 
 # all UNIX-based platform compiler flags
 if(UNIX)
+    add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fexceptions>)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -fexceptions -m64")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -m64")
-    else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -fexceptions")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter")
+        add_compile_options(-m64)
     endif()
 
     if(C_WARNINGS_AS_ERRORS)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+        add_compile_options($<$<COMPILE_LANGUAGE:C>:-Werror>)
     endif(C_WARNINGS_AS_ERRORS)
 
     if(CXX_WARNINGS_AS_ERRORS)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror>)
     endif(CXX_WARNINGS_AS_ERRORS)
 
     if(SANITISE_BUILD)
@@ -186,19 +184,16 @@ if(UNIX)
     endif(SANITISE_BUILD)
 
     if (COVERAGE_BUILD)
-        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -fno-inline --coverage -g")
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -fno-inline --coverage -g")
+        add_compile_options(-O0 -fno-inline --coverage -g)
         SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     endif(COVERAGE_BUILD)
 
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Ofast")
+    add_compile_options($<$<CONFIG:Release>:-Ofast>)
 endif()
 
 # platform specific flags
 if(APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-compare")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wsign-compare")
+    add_compile_options(-Wsign-compare)
     add_definitions(-DDarwin)
     add_definitions(-Wno-deprecated-register)
 elseif(CYGWIN)
@@ -216,11 +211,11 @@ elseif(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP")
 
     if(C_WARNINGS_AS_ERRORS)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
+        add_compile_options($<$<COMPILE_LANGUAGE:C>:/WX>)
     endif(C_WARNINGS_AS_ERRORS)
 
     if(CXX_WARNINGS_AS_ERRORS)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)
     endif(CXX_WARNINGS_AS_ERRORS)
 endif()
 

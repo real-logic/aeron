@@ -150,6 +150,10 @@ if(NOT DEFINED CMAKE_CXX_STANDARD)
    set(CMAKE_CXX_STANDARD 11)
 endif()
 
+if(NOT DEFINED CMAKE_C_STANDARD)
+   set(CMAKE_C_STANDARD 11)
+endif()
+
 # all UNIX-based platform compiler flags
 if(UNIX)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)

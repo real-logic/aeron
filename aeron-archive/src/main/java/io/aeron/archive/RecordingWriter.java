@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Counter;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BlockHandler;
 import org.agrona.CloseHelper;
@@ -46,11 +45,9 @@ import static io.aeron.archive.Archive.segmentFileName;
 class RecordingWriter implements BlockHandler
 {
     private final long recordingId;
-    private final long startPosition;
     private final int segmentFileLength;
     private final boolean forceWrites;
     private final boolean forceMetadata;
-    private final Counter recordedPosition;
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
 
@@ -66,12 +63,9 @@ class RecordingWriter implements BlockHandler
         final long joinPosition,
         final int termBufferLength,
         final Archive.Context context,
-        final FileChannel archiveDirChannel,
-        final Counter recordedPosition)
+        final FileChannel archiveDirChannel)
     {
         this.recordingId = recordingId;
-        this.startPosition = startPosition;
-        this.recordedPosition = recordedPosition;
         this.archiveDirChannel = archiveDirChannel;
 
         archiveDir = context.archiveDir();
@@ -110,7 +104,6 @@ class RecordingWriter implements BlockHandler
                 recordingFileChannel.force(forceMetadata);
             }
 
-            recordedPosition.getAndAddOrdered(length);
             segmentOffset += length;
         }
         catch (final ClosedByInterruptException ex)
@@ -125,11 +118,6 @@ class RecordingWriter implements BlockHandler
             close();
             LangUtil.rethrowUnchecked(ex);
         }
-    }
-
-    long startPosition()
-    {
-        return startPosition;
     }
 
     int segmentFileLength()

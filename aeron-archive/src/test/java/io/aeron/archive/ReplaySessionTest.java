@@ -344,8 +344,6 @@ public class ReplaySessionTest
 
         writer.init(INITIAL_TERM_OFFSET);
 
-        when(epochClock.time()).thenReturn(TIME);
-
         final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 
         final DataHeaderFlyweight headerFwt = new DataHeaderFlyweight();

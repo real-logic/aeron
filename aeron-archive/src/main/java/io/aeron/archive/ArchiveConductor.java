@@ -750,6 +750,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final RecordingSession session = new RecordingSession(
             recordingId,
             startPosition,
+            Math.max(ctx.segmentFileLength(), termBufferLength),
             originalChannel,
             recordingEventsProxy,
             image,
@@ -789,6 +790,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final RecordingSession session = new RecordingSession(
             recordingId,
             originalRecordingSummary.startPosition,
+            originalRecordingSummary.segmentFileLength,
             originalChannel,
             recordingEventsProxy,
             image,

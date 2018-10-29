@@ -45,7 +45,7 @@ public class RecordingSessionTest
     private static final int RECORDED_BLOCK_LENGTH = 100;
     private static final long RECORDING_ID = 12345;
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
-    private static final int SEGMENT_FILE_SIZE = TERM_BUFFER_LENGTH;
+    private static final int SEGMENT_LENGTH = TERM_BUFFER_LENGTH;
 
     private static final String CHANNEL = "channel";
     private static final String SOURCE_IDENTITY = "sourceIdentity";
@@ -99,7 +99,7 @@ public class RecordingSessionTest
             .frameLength(RECORDED_BLOCK_LENGTH);
 
         context = new Archive.Context()
-            .segmentFileLength(SEGMENT_FILE_SIZE)
+            .segmentFileLength(SEGMENT_LENGTH)
             .archiveDir(archiveDir)
             .catalog(mockCatalog)
             .epochClock(epochClock);
@@ -118,7 +118,15 @@ public class RecordingSessionTest
     public void shouldRecordFragmentsFromImage()
     {
         final RecordingSession session = new RecordingSession(
-            RECORDING_ID, START_POSITION, CHANNEL, recordingEventsProxy, image, mockPosition, ARCHIVE_CHANNEL, context);
+            RECORDING_ID,
+            START_POSITION,
+            SEGMENT_LENGTH,
+            CHANNEL,
+            recordingEventsProxy,
+            image,
+            mockPosition,
+            ARCHIVE_CHANNEL,
+            context);
 
         assertEquals(RECORDING_ID, session.sessionId());
 

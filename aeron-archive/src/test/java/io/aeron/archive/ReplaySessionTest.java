@@ -47,6 +47,7 @@ public class ReplaySessionTest
 {
     private static final int RECORDING_ID = 0;
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int SEGMENT_LENGTH = TERM_BUFFER_LENGTH;
     private static final int INITIAL_TERM_ID = 8231773;
     private static final int INITIAL_TERM_OFFSET = 1024;
     private static final long REPLAY_ID = 1;
@@ -82,6 +83,7 @@ public class ReplaySessionTest
         when(mockArchiveConductor.catalog()).thenReturn(mockCatalog);
 
         context = new Archive.Context()
+            .segmentFileLength(SEGMENT_LENGTH)
             .archiveDir(archiveDir)
             .epochClock(epochClock);
 

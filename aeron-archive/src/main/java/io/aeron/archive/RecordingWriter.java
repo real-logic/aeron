@@ -45,7 +45,7 @@ import static io.aeron.archive.Archive.segmentFileName;
 class RecordingWriter implements BlockHandler
 {
     private final long recordingId;
-    private final int segmentFileLength;
+    private final int segmentLength;
     private final boolean forceWrites;
     private final boolean forceMetadata;
     private final FileChannel archiveDirChannel;
@@ -61,19 +61,19 @@ class RecordingWriter implements BlockHandler
         final long recordingId,
         final long startPosition,
         final long joinPosition,
-        final int termBufferLength,
-        final Archive.Context context,
+        final int segmentLength,
+        final Archive.Context ctx,
         final FileChannel archiveDirChannel)
     {
         this.recordingId = recordingId;
         this.archiveDirChannel = archiveDirChannel;
 
-        archiveDir = context.archiveDir();
-        segmentFileLength = Math.max(context.segmentFileLength(), termBufferLength);
-        forceWrites = context.fileSyncLevel() > 0;
-        forceMetadata = context.fileSyncLevel() > 1;
+        archiveDir = ctx.archiveDir();
+        this.segmentLength = segmentLength;
+        forceWrites = ctx.fileSyncLevel() > 0;
+        forceMetadata = ctx.fileSyncLevel() > 1;
 
-        segmentIndex = segmentFileIndex(startPosition, joinPosition, segmentFileLength);
+        segmentIndex = segmentFileIndex(startPosition, joinPosition, segmentLength);
     }
 
     public void onBlock(
@@ -85,7 +85,7 @@ class RecordingWriter implements BlockHandler
     {
         try
         {
-            if (segmentFileLength == segmentOffset)
+            if (segmentLength == segmentOffset)
             {
                 onFileRollOver();
             }
@@ -122,7 +122,7 @@ class RecordingWriter implements BlockHandler
 
     int segmentFileLength()
     {
-        return segmentFileLength;
+        return segmentLength;
     }
 
     void close()
@@ -158,7 +158,7 @@ class RecordingWriter implements BlockHandler
         try
         {
             recordingFile = new RandomAccessFile(file, "rw");
-            recordingFile.setLength(segmentFileLength);
+            recordingFile.setLength(segmentLength);
             recordingFileChannel = recordingFile.getChannel();
             if (forceWrites && null != archiveDirChannel)
             {

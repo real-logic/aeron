@@ -99,8 +99,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
 
     void snapshot(final ConsensusModuleSnapshotTaker snapshotTaker)
     {
-        final Long2LongHashMap.EntryIterator iter =
-            (Long2LongHashMap.EntryIterator)timerIdByCorrelationIdMap.entrySet().iterator();
+        final Long2LongHashMap.EntryIterator iter = timerIdByCorrelationIdMap.entrySet().iterator();
 
         while (iter.hasNext())
         {

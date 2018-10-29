@@ -516,7 +516,7 @@
                  description="Serialized state of Cluster Members">
         <field name="memberId"              id="1" type="int32"/>
         <field name="highMemberId"          id="2" type="int32"/>
-        <data  name="clusterMembers"        id="1" type="varAsciiEncoding"/>
+        <data  name="clusterMembers"        id="3" type="varAsciiEncoding"/>
     </sbe:message>
 
 </sbe:messageSchema>

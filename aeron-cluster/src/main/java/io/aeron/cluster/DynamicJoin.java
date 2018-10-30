@@ -78,7 +78,7 @@ class DynamicJoin implements AutoCloseable
     private long correlationId = NULL_VALUE;
     private long snapshotRetrieveSubscriptionId = NULL_VALUE;
     private int memberId = NULL_VALUE;
-    private int clusterMembersStatusEndpointsCursor = 0;
+    private int clusterMembersStatusEndpointsCursor = -1;
     private int snapshotCursor = 0;
     private int snapshotReplaySessionId = NULL_VALUE;
 
@@ -102,12 +102,6 @@ class DynamicJoin implements AutoCloseable
         this.memberStatusEndpoint = thisMember.memberFacingEndpoint();
         this.transferEndpoint = thisMember.transferEndpoint();
         this.clusterMemberStatusEndpoints = clusterMemberStatusEndpoints.split(",");
-
-        final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
-        memberStatusUri.put(
-            ENDPOINT_PARAM_NAME, this.clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]);
-        clusterPublication = ctx.aeron().addExclusivePublication(
-            memberStatusUri.toString(), ctx.memberStatusStreamId());
     }
 
     public void close()
@@ -260,6 +254,16 @@ class DynamicJoin implements AutoCloseable
     {
         if (nowMs > (timeOfLastActivityMs + intervalMs))
         {
+            clusterMembersStatusEndpointsCursor = Math.min(
+                clusterMembersStatusEndpointsCursor + 1, clusterMemberStatusEndpoints.length - 1);
+
+            CloseHelper.close(clusterPublication);
+            final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+            memberStatusUri.put(
+                ENDPOINT_PARAM_NAME, this.clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]);
+            clusterPublication = ctx.aeron().addExclusivePublication(
+                memberStatusUri.toString(), ctx.memberStatusStreamId());
+
             correlationId = ctx.aeron().nextCorrelationId();
 
             if (memberStatusPublisher.addPassiveMember(clusterPublication, correlationId, memberEndpoints))

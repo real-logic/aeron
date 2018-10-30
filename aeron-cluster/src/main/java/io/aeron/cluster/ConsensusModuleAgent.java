@@ -2041,7 +2041,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 newClusterMembers = ClusterMember.removeMember(newClusterMembers, member.id());
                 clusterMemberByIdMap.remove(member.id());
-                passiveMembers = ClusterMember.addMember(passiveMembers, member);
+                clusterMemberByIdMap.compact();
+
+                CloseHelper.close(member.publication());
+                member.publication(null);
+
+                logPublisher.removePassiveFollower(member.logEndpoint());
                 pendingRemovals--;
             }
         }

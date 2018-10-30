@@ -118,17 +118,6 @@ public class FrameDescriptor
     }
 
     /**
-     * Compute the maximum supported message length for a buffer of given termLength when the publication is exclusive.
-     *
-     * @param termLength of the log buffer.
-     * @return the maximum supported length for a message.
-     */
-    public static int computeExclusiveMaxMessageLength(final int termLength)
-    {
-        return Math.min(termLength / 4, MAX_MESSAGE_LENGTH);
-    }
-
-    /**
      * The buffer offset at which the length field begins.
      *
      * @param termOffset at which the frame begins.

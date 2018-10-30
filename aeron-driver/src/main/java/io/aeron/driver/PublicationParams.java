@@ -37,7 +37,7 @@ final class PublicationParams
     boolean isReplay = false;
     boolean hasSessionId = false;
     boolean isSessionIdTagged = false;
-    boolean isSparse = false;
+    boolean isSparse;
 
     private PublicationParams(final MediaDriver.Context context, final boolean isIpc)
     {
@@ -131,12 +131,10 @@ final class PublicationParams
         }
     }
 
-    static void validateMtuForMaxMessage(final PublicationParams params, final boolean isExclusive)
+    static void validateMtuForMaxMessage(final PublicationParams params)
     {
         final int termLength = params.termLength;
-        final int maxMessageLength = isExclusive ?
-            FrameDescriptor.computeExclusiveMaxMessageLength(termLength) :
-            FrameDescriptor.computeMaxMessageLength(termLength);
+        final int maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
 
         if (params.mtuLength > maxMessageLength)
         {

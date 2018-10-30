@@ -1051,7 +1051,7 @@ public class AeronArchive implements AutoCloseable
                 throw new ArchiveException("subscription to archive is not connected");
             }
 
-            checkDeadline(deadlineNs, "failed to establish response connection", correlationId);
+            checkDeadline(deadlineNs, "awaiting response", correlationId);
             idleStrategy.idle();
             invokeAeronClient();
         }

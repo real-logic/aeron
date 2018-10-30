@@ -27,6 +27,8 @@ import org.agrona.concurrent.UnsafeBuffer;
  * Encapsulate applying a client message header for ingress to the cluster.
  * <p>
  * The client message header is applied by a vectored offer to the {@link Publication}.
+ * <p>
+ * <b>Note:</b> This class is NOT threadsafe. Each publisher thread requires its own instance.
  */
 public class IngressSessionDecorator
 {

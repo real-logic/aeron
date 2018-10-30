@@ -109,7 +109,7 @@ TEST_F(ExclusivePublicationTest, shouldReportInitialPosition)
 TEST_F(ExclusivePublicationTest, shouldReportMaxMessageLength)
 {
     createPub();
-    EXPECT_EQ(m_publication->maxMessageLength(), FrameDescriptor::computeExclusiveMaxMessageLength(TERM_LENGTH));
+    EXPECT_EQ(m_publication->maxMessageLength(), FrameDescriptor::computeMaxMessageLength(TERM_LENGTH));
 }
 
 TEST_F(ExclusivePublicationTest, shouldReportCorrectTermBufferLength)

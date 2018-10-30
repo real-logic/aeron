@@ -93,12 +93,7 @@ inline static util::index_t computeMaxMessageLength(util::index_t capacity)
     return std::min(capacity / 8, MAX_MESSAGE_LENGTH);
 }
 
-inline static util::index_t computeExclusiveMaxMessageLength(util::index_t capacity)
-{
-    return std::min(capacity / 4, MAX_MESSAGE_LENGTH);
-}
-
-    inline static util::index_t typeOffset(util::index_t frameOffset)
+inline static util::index_t typeOffset(util::index_t frameOffset)
 {
     return frameOffset + DataFrameHeader::TYPE_FIELD_OFFSET;
 }

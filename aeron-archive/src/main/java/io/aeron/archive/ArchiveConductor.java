@@ -96,13 +96,13 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
     private long nextControlSessionId = ThreadLocalRandom.current().nextInt();
 
-    ArchiveConductor(final Aeron aeron, final Archive.Context ctx)
+    ArchiveConductor(final Archive.Context ctx)
     {
         super("archive-conductor", ctx.countedErrorHandler());
 
-        this.aeron = aeron;
         this.ctx = ctx;
 
+        aeron = ctx.aeron();
         aeronAgentInvoker = aeron.conductorAgentInvoker();
         driverAgentInvoker = ctx.mediaDriverAgentInvoker();
         epochClock = ctx.epochClock();

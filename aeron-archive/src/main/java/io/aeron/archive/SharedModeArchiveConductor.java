@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Aeron;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AgentInvoker;
@@ -25,9 +24,9 @@ final class SharedModeArchiveConductor extends ArchiveConductor
     private AgentInvoker replayerAgentInvoker;
     private AgentInvoker recorderAgentInvoker;
 
-    SharedModeArchiveConductor(final Aeron aeron, final Archive.Context ctx)
+    SharedModeArchiveConductor(final Archive.Context ctx)
     {
-        super(aeron, ctx);
+        super(ctx);
     }
 
     public void onStart()

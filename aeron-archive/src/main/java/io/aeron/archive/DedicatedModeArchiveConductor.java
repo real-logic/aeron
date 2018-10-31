@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Aeron;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AgentRunner;
@@ -33,9 +32,9 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
     private AgentRunner replayerAgentRunner;
     private AgentRunner recorderAgentRunner;
 
-    DedicatedModeArchiveConductor(final Aeron aeron, final Archive.Context ctx)
+    DedicatedModeArchiveConductor(final Archive.Context ctx)
     {
-        super(aeron, ctx);
+        super(ctx);
 
         closeQueue = new ManyToOneConcurrentArrayQueue<>(ctx.maxConcurrentRecordings() + ctx.maxConcurrentReplays());
     }

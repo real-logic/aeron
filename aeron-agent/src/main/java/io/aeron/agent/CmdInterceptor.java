@@ -28,7 +28,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 class CmdInterceptor
 {
     @Advice.OnMethodEnter
-    public static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+    static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
     {
         switch (msgTypeId)
         {

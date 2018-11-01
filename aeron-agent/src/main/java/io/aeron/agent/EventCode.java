@@ -68,7 +68,7 @@ public enum EventCode
     private static final EventCode[] EVENT_CODE_BY_ID = new EventCode[MAX_ID];
 
     @FunctionalInterface
-    private interface DissectFunction
+    interface DissectFunction
     {
         void dissect(EventCode code, MutableDirectBuffer buffer, int offset, StringBuilder builder);
     }

@@ -30,7 +30,7 @@ class CleanupInterceptor
     static class CleanupImage
     {
         @Advice.OnMethodEnter
-        public static void cleanupImageInterceptor(final PublicationImage image)
+        static void cleanupImageInterceptor(final PublicationImage image)
         {
             LOGGER.logImageRemoval(image.channel(), image.sessionId(), image.streamId(), image.correlationId());
         }
@@ -39,7 +39,7 @@ class CleanupInterceptor
     static class CleanupPublication
     {
         @Advice.OnMethodEnter
-        public static void cleanupPublication(final NetworkPublication publication)
+        static void cleanupPublication(final NetworkPublication publication)
         {
             LOGGER.logPublicationRemoval(publication.channel(), publication.sessionId(), publication.streamId());
         }
@@ -48,7 +48,7 @@ class CleanupInterceptor
     static class CleanupSubscriptionLink
     {
         @Advice.OnMethodEnter
-        public static void cleanupSubscriptionLink(final SubscriptionLink link)
+        static void cleanupSubscriptionLink(final SubscriptionLink link)
         {
             LOGGER.logSubscriptionRemoval(link.channel(), link.streamId(), link.registrationId());
         }

@@ -55,7 +55,7 @@ public class EventLogAgent
     private static Instrumentation instrumentation;
     private static volatile ClassFileTransformer logTransformer;
 
-    private static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
+    static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
     {
         public void onDiscovery(
             final String typeName,

@@ -30,8 +30,8 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 class Header
 {
 public:
-    Header(std::int32_t initialTermId, util::index_t capacity) :
-        m_offset(0), m_initialTermId(initialTermId)
+    Header(std::int32_t initialTermId, util::index_t capacity, void *context) :
+        m_context(context), m_offset(0), m_initialTermId(initialTermId)
     {
         m_positionBitsToShift = util::BitUtil::numberOfTrailingZeroes(capacity);
     }
@@ -40,6 +40,7 @@ public:
 
     Header& operator=(Header& header)
     {
+        m_context = header.m_context;
         m_buffer.wrap(header.m_buffer);
         m_offset = header.m_offset;
         m_initialTermId = header.m_initialTermId;
@@ -191,7 +192,19 @@ public:
         return m_buffer.getInt64(m_offset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET);
     }
 
+    /**
+     * Get a pointer to the context associated with this message. Only valid during poll handling. Is normally a
+     * pointer to an Image instance.
+     *
+     * @return a pointer to the context associated with this message.
+     */
+    inline void* context() const
+    {
+        return m_context;
+    }
+
 private:
+    void *m_context;
     AtomicBuffer m_buffer;
     util::index_t m_offset;
     std::int32_t m_initialTermId;

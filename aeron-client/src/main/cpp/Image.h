@@ -88,7 +88,7 @@ public:
     typedef Image this_t;
 
     Image() :
-        m_header(0, 0),
+        m_header(0, 0, this),
         m_subscriberPosition(NULL_POSITION)
     {
     }
@@ -114,7 +114,8 @@ public:
         const exception_handler_t& exceptionHandler) :
         m_header(
             LogBufferDescriptor::initialTermId(logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
-            logBuffers->atomicBuffer(0).capacity()),
+            logBuffers->atomicBuffer(0).capacity(),
+            this),
         m_subscriberPosition(subscriberPosition),
         m_logBuffers(logBuffers),
         m_sourceIdentity(sourceIdentity),

@@ -20,8 +20,8 @@ buildscript {
 }
 
 plugins {
-    id 'java'
-    id 'com.github.johnrengelman.shadow' version '4.0.0' apply false
+    id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '4.0.1' apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -112,7 +112,6 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'java'
     apply plugin: 'java-library'
     apply plugin: 'maven'
     apply plugin: 'checkstyle'
@@ -725,6 +724,7 @@ project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
+        api "org.agrona:agrona:${agronaVersion}"
         api project(':aeron-client')
         api project(':aeron-driver')
         api project(':aeron-archive')
@@ -747,9 +747,9 @@ project(':aeron-all') {
 
     shadowJar {
         manifest.attributes(
-            'Implementation-Title' : 'Aeron',
-            'Implementation-Version' : "${aeronVersion}",
-            'Implementation-Vendor' : 'Real Logic Limited')
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited')
     }
 
     uploadArchives {
@@ -811,7 +811,6 @@ project(':aeron-all') {
     }
 
     shadowJar {
-        classifier = ''
         relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }
 

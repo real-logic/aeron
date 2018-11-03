@@ -20,8 +20,8 @@ buildscript {
 }
 
 plugins {
-    id 'java-library'
-    id 'com.github.johnrengelman.shadow' version '4.0.1' apply false
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '4.0.2' apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -126,9 +126,11 @@ subprojects {
     dependencies {
         checkstyle 'com.puppycrawl.tools:checkstyle:8.14'
 
-        testImplementation 'junit:junit:4.12'
-        testImplementation 'org.mockito:mockito-core:2.23.0'
-        testImplementation 'org.hamcrest:hamcrest-library:1.3'
+        compile "org.agrona:agrona:${agronaVersion}"
+
+        testCompile 'junit:junit:4.12'
+        testCompile 'org.mockito:mockito-core:2.23.0'
+        testCompile 'org.hamcrest:hamcrest-library:1.3'
     }
 
     checkstyle {
@@ -193,10 +195,6 @@ subprojects {
 project(':aeron-client') {
     apply plugin: 'osgi'
 
-    dependencies {
-        api "org.agrona:agrona:${agronaVersion}"
-    }
-
     uploadArchives {
         repositories {
             mavenDeployer {
@@ -240,7 +238,7 @@ project(':aeron-driver') {
     mainClassName = 'io.aeron.driver.MediaDriver'
 
     dependencies {
-        api project(':aeron-client')
+        compile project(':aeron-client')
     }
 
     test {
@@ -302,9 +300,9 @@ project(':aeron-agent') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        implementation project(':aeron-client')
-        implementation project(':aeron-driver')
-        implementation "net.bytebuddy:byte-buddy:1.9.0"
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile "net.bytebuddy:byte-buddy:1.9.0"
     }
 
     jar {
@@ -398,9 +396,9 @@ project(':aeron-archive') {
     }
 
     dependencies {
-        api project(':aeron-client')
-        api project(':aeron-driver')
-        api files('build/classes/java/generated')
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
     }
 
@@ -505,10 +503,10 @@ project(':aeron-cluster') {
     }
 
     dependencies {
-        api project(':aeron-client')
-        api project(':aeron-driver')
-        api project(':aeron-archive')
-        api files('build/classes/java/generated')
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile project(':aeron-archive')
+        compile files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
     }
 
@@ -611,10 +609,10 @@ project(':aeron-samples') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        api project(':aeron-client')
-        api project(':aeron-driver')
-        api project(':aeron-archive')
-        implementation 'org.hdrhistogram:HdrHistogram:2.1.10'
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile project(':aeron-archive')
+        compile 'org.hdrhistogram:HdrHistogram:2.1.10'
     }
 
     shadowJar {
@@ -664,24 +662,24 @@ project(':aeron-samples') {
 
 project(':aeron-system-tests') {
     dependencies {
-        implementation project(':aeron-client')
-        implementation project(':aeron-driver')
-        implementation project(':aeron-archive')
-        testImplementation project(path: ':aeron-client', configuration: 'tests')
-        testImplementation project(path: ':aeron-archive', configuration: 'tests')
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile project(':aeron-archive')
+        testCompile project(path: ':aeron-client', configuration: 'tests')
+        testCompile project(path: ':aeron-archive', configuration: 'tests')
     }
 
     test {
         systemProperties(
-        'aeron.shared.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-        'aeron.conductor.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-        'aeron.sender.idle.strategy' : 'org.agrona.concurrent.YieldingIdleStrategy',
-        'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-        'aeron.use.windows.high.res.timer': 'true',
-        'aeron.dir.delete.on.start': 'true',
-        'aeron.dir.warn.if.exists': 'false',
-        'aeron.term.buffer.sparse.file': 'true',
-        'aeron.perform.storage.checks': 'false')
+            'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.use.windows.high.res.timer': 'true',
+            'aeron.dir.delete.on.start': 'true',
+            'aeron.dir.warn.if.exists': 'false',
+            'aeron.term.buffer.sparse.file': 'true',
+            'aeron.perform.storage.checks': 'false')
     }
 
     uploadArchives {
@@ -724,14 +722,13 @@ project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        api "org.agrona:agrona:${agronaVersion}"
-        api project(':aeron-client')
-        api project(':aeron-driver')
-        api project(':aeron-archive')
-        api project(':aeron-cluster')
-        api project(':aeron-samples')
-        implementation "net.bytebuddy:byte-buddy:1.9.0"
-        implementation 'org.hdrhistogram:HdrHistogram:2.1.10'
+        compile project(':aeron-client')
+        compile project(':aeron-driver')
+        compile project(':aeron-archive')
+        compile project(':aeron-cluster')
+        compile project(':aeron-samples')
+        compile "net.bytebuddy:byte-buddy:1.9.0"
+        compile 'org.hdrhistogram:HdrHistogram:2.1.10'
     }
 
     javadoc {
@@ -811,6 +808,7 @@ project(':aeron-all') {
     }
 
     shadowJar {
+        classifier = ''
         relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }
 

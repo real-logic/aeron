@@ -112,7 +112,7 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'java-library'
+    apply plugin: 'java'
     apply plugin: 'maven'
     apply plugin: 'checkstyle'
     apply plugin: 'signing'

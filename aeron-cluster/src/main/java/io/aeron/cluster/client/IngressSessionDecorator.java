@@ -16,7 +16,6 @@
 package io.aeron.cluster.client;
 
 import io.aeron.Aeron;
-import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.IngressMessageHeaderEncoder;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
@@ -26,24 +25,24 @@ import org.agrona.concurrent.UnsafeBuffer;
 /**
  * Encapsulate applying a client message header for ingress to the cluster.
  * <p>
- * The client message header is applied by a vectored offer to the {@link Publication}.
+ * The client message header is applied to the {@link Publication} before the offered buffer.
  * <p>
- * <b>Note:</b> This class is NOT threadsafe. Each publisher thread requires its own instance.
+ * <b>Note:</b> This class is NOT threadsafe for updating {@link #clusterSessionId(long)} or
+ * {@link #leadershipTermId(long)}. Each publisher thread requires its own instance.
  */
 public class IngressSessionDecorator
 {
     /**
      * Length of the session header that will be prepended to the message.
      */
-    public static final int INGRESS_MESSAGE_HEADER_LENGTH =
+    public static final int HEADER_LENGTH =
         MessageHeaderEncoder.ENCODED_LENGTH + IngressMessageHeaderEncoder.BLOCK_LENGTH;
 
-    private final DirectBufferVector[] vectors = new DirectBufferVector[2];
-    private final DirectBufferVector messageVector = new DirectBufferVector();
     private final IngressMessageHeaderEncoder ingressMessageHeaderEncoder = new IngressMessageHeaderEncoder();
+    private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[HEADER_LENGTH]);
 
     /**
-     * Construct a new ingress session header wrapper that defaults all fields to the {@link Aeron#NULL_VALUE}.
+     * Construct a new ingress session header wrapper that defaults all fields to {@link Aeron#NULL_VALUE}.
      */
     public IngressSessionDecorator()
     {
@@ -53,20 +52,16 @@ public class IngressSessionDecorator
     /**
      * Construct a new session header wrapper.
      *
-     * @param clusterSessionId  that has been allocated by the cluster.
-     * @param leadershipTermId  of the current leader.
+     * @param clusterSessionId that has been allocated by the cluster.
+     * @param leadershipTermId of the current leader.
      */
     public IngressSessionDecorator(final long clusterSessionId, final long leadershipTermId)
     {
-        final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[INGRESS_MESSAGE_HEADER_LENGTH]);
         ingressMessageHeaderEncoder
             .wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder())
             .leadershipTermId(leadershipTermId)
             .clusterSessionId(clusterSessionId)
             .timestamp(Aeron.NULL_VALUE);
-
-        vectors[0] = new DirectBufferVector(headerBuffer, 0, INGRESS_MESSAGE_HEADER_LENGTH);
-        vectors[1] = messageVector;
     }
 
     /**
@@ -98,15 +93,14 @@ public class IngressSessionDecorator
      * <p>
      * This version of the method will set the timestamp value in the header to {@link Aeron#NULL_VALUE}.
      *
-     * @param publication   to be offer to.
-     * @param buffer        containing message.
-     * @param offset        offset in the buffer at which the encoded message begins.
-     * @param length        in bytes of the encoded message.
+     * @param publication to be offer to.
+     * @param buffer      containing message.
+     * @param offset      offset in the buffer at which the encoded message begins.
+     * @param length      in bytes of the encoded message.
      * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
      */
     public long offer(final Publication publication, final DirectBuffer buffer, final int offset, final int length)
     {
-        messageVector.reset(buffer, offset, length);
-        return publication.offer(vectors, null);
+        return publication.offer(headerBuffer, 0, HEADER_LENGTH, buffer, offset, length, null);
     }
 }

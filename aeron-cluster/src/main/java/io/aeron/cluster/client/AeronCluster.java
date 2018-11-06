@@ -30,7 +30,6 @@ import org.agrona.concurrent.*;
 
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.cluster.client.IngressSessionDecorator.INGRESS_MESSAGE_HEADER_LENGTH;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -43,6 +42,12 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  */
 public final class AeronCluster implements AutoCloseable
 {
+    public static final int INGRESS_HEADER_LENGTH =
+        MessageHeaderEncoder.ENCODED_LENGTH + IngressMessageHeaderEncoder.BLOCK_LENGTH;
+
+    public static final int EGRESS_HEADER_LENGTH =
+        MessageHeaderEncoder.ENCODED_LENGTH + EgressMessageHeaderEncoder.BLOCK_LENGTH;
+
     private static final int SEND_ATTEMPTS = 3;
     private static final int CONNECT_FRAGMENT_LIMIT = 1;
     private static final int SESSION_FRAGMENT_LIMIT = 10;
@@ -60,7 +65,7 @@ public final class AeronCluster implements AutoCloseable
 
     private Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap = new Int2ObjectHashMap<>();
     private final BufferClaim bufferClaim = new BufferClaim();
-    private final UnsafeBuffer msgHeaderBuffer = new UnsafeBuffer(new byte[INGRESS_MESSAGE_HEADER_LENGTH]);
+    private final UnsafeBuffer msgHeaderBuffer = new UnsafeBuffer(new byte[INGRESS_HEADER_LENGTH]);
     private final UnsafeBuffer keepaliveMsgBuffer;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final IngressMessageHeaderEncoder ingressMessageHeaderEncoder = new IngressMessageHeaderEncoder();
@@ -237,7 +242,7 @@ public final class AeronCluster implements AutoCloseable
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        return publication.offer(msgHeaderBuffer, 0, INGRESS_MESSAGE_HEADER_LENGTH, buffer, offset, length, null);
+        return publication.offer(msgHeaderBuffer, 0, INGRESS_HEADER_LENGTH, buffer, offset, length, null);
     }
 
     /**
@@ -383,8 +388,8 @@ public final class AeronCluster implements AutoCloseable
                     sessionId,
                     egressMessageHeaderDecoder.timestamp(),
                     buffer,
-                    offset + INGRESS_MESSAGE_HEADER_LENGTH,
-                    length - INGRESS_MESSAGE_HEADER_LENGTH,
+                    offset + EGRESS_HEADER_LENGTH,
+                    length - EGRESS_HEADER_LENGTH,
                     header);
             }
         }

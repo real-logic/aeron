@@ -94,6 +94,23 @@ public class ClientSession
     }
 
     /**
+     * Request the close of this {@link ClientSession} by sending the request to the consensus module.
+     *
+     * @return true if the event to close a session was sent or false if back pressure was applied.
+     */
+    public boolean close()
+    {
+        try
+        {
+            return cluster.closeSession(id);
+        }
+        catch (final IllegalArgumentException ignored)
+        {
+            return true;
+        }
+    }
+
+    /**
      * Indicates that a request to close this session has been made.
      *
      * @return whether a request to close this session has been made.

@@ -54,8 +54,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final IdleStrategy idleStrategy;
     private final EpochClock epochClock;
     private final ClusterMarkFile markFile;
-    private final DirectBufferVector[] vectors = new DirectBufferVector[2];
-    private final DirectBufferVector messageVector = new DirectBufferVector();
+    private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
     private final EgressMessageHeaderEncoder egressMessageHeaderEncoder = new EgressMessageHeaderEncoder();
 
     private long ackId = 0;
@@ -86,11 +85,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
         serviceAdapter = new ServiceAdapter(aeron.addSubscription(channel, ctx.serviceStreamId()), this);
 
-        final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
         egressMessageHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());
-
-        vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
-        vectors[1] = messageVector;
     }
 
     public void onStart()
@@ -252,9 +247,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             .clusterSessionId(clusterSessionId)
             .timestamp(clusterTimeMs);
 
-        messageVector.reset(buffer, offset, length);
-
-        return publication.offer(vectors, null);
+        return publication.offer(headerBuffer, 0, headerBuffer.capacity(), buffer, offset, length, null);
     }
 
     public void onJoinLog(

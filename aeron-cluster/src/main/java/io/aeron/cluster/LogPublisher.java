@@ -16,7 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.ChannelUriStringBuilder;
-import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
@@ -44,19 +43,15 @@ class LogPublisher
     private final ClusterActionRequestEncoder clusterActionRequestEncoder = new ClusterActionRequestEncoder();
     private final NewLeadershipTermEventEncoder newLeadershipTermEventEncoder = new NewLeadershipTermEventEncoder();
     private final ClusterChangeEventEncoder clusterChangeEventEncoder = new ClusterChangeEventEncoder();
+    private final UnsafeBuffer sessionHeaderBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
-    private final DirectBufferVector[] vectors = new DirectBufferVector[2];
-    private final DirectBufferVector messageVector = new DirectBufferVector();
+
     private Publication publication;
 
     LogPublisher()
     {
-        final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
-        sessionHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());
-
-        vectors[0] = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
-        vectors[1] = messageVector;
+        sessionHeaderEncoder.wrapAndApplyHeader(sessionHeaderBuffer, 0, new MessageHeaderEncoder());
     }
 
     void connect(final Publication publication)
@@ -121,12 +116,12 @@ class LogPublisher
             .clusterSessionId(clusterSessionId)
             .timestamp(timestampMs);
 
-        messageVector.reset(buffer, offset, length);
-
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.offer(vectors, null);
+            final long result = publication.offer(
+                sessionHeaderBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
+
             if (result > 0)
             {
                 return true;
@@ -160,7 +155,7 @@ class LogPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            result = publication.offer(expandableArrayBuffer, 0, length);
+            result = publication.offer(expandableArrayBuffer, 0, length, null);
             if (result > 0)
             {
                 return result;
@@ -335,7 +330,7 @@ class LogPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            result = publication.offer(expandableArrayBuffer, 0, length);
+            result = publication.offer(expandableArrayBuffer, 0, length, null);
             if (result > 0)
             {
                 return true;

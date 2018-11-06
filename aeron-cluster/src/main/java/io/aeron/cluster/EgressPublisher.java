@@ -90,7 +90,7 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.offer(buffer, 0, length);
+            final long result = publication.offer(buffer, 0, length, null);
             if (result > 0)
             {
                 return true;

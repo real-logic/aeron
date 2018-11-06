@@ -42,7 +42,7 @@ class MemberStatusPublisher
     private final SnapshotRecordingsEncoder snapshotRecordingsEncoder = new SnapshotRecordingsEncoder();
     private final JoinClusterEncoder joinClusterEncoder = new JoinClusterEncoder();
 
-    boolean canvassPosition(
+    void canvassPosition(
         final Publication publication,
         final long logLeadershipTermId,
         final long logPosition,
@@ -64,14 +64,12 @@ class MemberStatusPublisher
 
                 bufferClaim.commit();
 
-                return true;
+                return;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
-
-        return false;
     }
 
     boolean requestVote(
@@ -108,7 +106,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean placeVote(
+    void placeVote(
         final Publication publication,
         final long candidateTermId,
         final long logLeadershipTermId,
@@ -136,17 +134,15 @@ class MemberStatusPublisher
 
                 bufferClaim.commit();
 
-                return true;
+                return;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
-
-        return false;
     }
 
-    boolean newLeadershipTerm(
+    void newLeadershipTerm(
         final Publication publication,
         final long logLeadershipTermId,
         final long logPosition,
@@ -172,14 +168,12 @@ class MemberStatusPublisher
 
                 bufferClaim.commit();
 
-                return true;
+                return;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
-
-        return false;
     }
 
     boolean appendedPosition(
@@ -211,7 +205,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean commitPosition(
+    void commitPosition(
         final Publication publication, final long leadershipTermId, final long logPosition, final int leaderMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CommitPositionEncoder.BLOCK_LENGTH;
@@ -230,14 +224,12 @@ class MemberStatusPublisher
 
                 bufferClaim.commit();
 
-                return true;
+                return;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
-
-        return false;
     }
 
     boolean catchupPosition(
@@ -296,8 +288,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean addPassiveMember(
-        final Publication publication, final long correlctionId, final String memberEndpoints)
+    boolean addPassiveMember(final Publication publication, final long correlationId, final String memberEndpoints)
     {
         final int length =
             MessageHeaderEncoder.ENCODED_LENGTH +
@@ -313,7 +304,7 @@ class MemberStatusPublisher
             {
                 addPassiveMemberEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .correlationId(correlctionId)
+                    .correlationId(correlationId)
                     .memberEndpoints(memberEndpoints);
 
                 bufferClaim.commit();
@@ -368,10 +359,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean snapshotRecordingQuery(
-        final Publication publication,
-        final long correlationId,
-        final int requestMemberId)
+    boolean snapshotRecordingQuery(final Publication publication, final long correlationId, final int requestMemberId)
     {
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SnapshotRecordingQueryEncoder.BLOCK_LENGTH;
@@ -399,7 +387,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean snapshotRecording(
+    void snapshotRecording(
         final Publication publication,
         final long correlationId,
         final RecordingLog.RecoveryPlan recoveryPlan,
@@ -433,20 +421,15 @@ class MemberStatusPublisher
             final long result = publication.offer(buffer, 0, length);
             if (result > 0)
             {
-                return true;
+                return;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
-
-        return false;
     }
 
-    boolean joinCluster(
-        final Publication publication,
-        final long leadershipTermId,
-        final int memberId)
+    boolean joinCluster(final Publication publication, final long leadershipTermId, final int memberId)
     {
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinClusterEncoder.BLOCK_LENGTH;

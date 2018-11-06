@@ -60,15 +60,15 @@ public final class AeronCluster implements AutoCloseable
 
     private Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap = new Int2ObjectHashMap<>();
     private final BufferClaim bufferClaim = new BufferClaim();
+    private final UnsafeBuffer msgHeaderBuffer = new UnsafeBuffer(new byte[INGRESS_MESSAGE_HEADER_LENGTH]);
+    private final UnsafeBuffer keepaliveMsgBuffer;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final SessionKeepAliveEncoder sessionKeepAliveEncoder = new SessionKeepAliveEncoder();
     private final IngressMessageHeaderEncoder ingressMessageHeaderEncoder = new IngressMessageHeaderEncoder();
+    private final SessionKeepAliveEncoder sessionKeepAliveEncoder = new SessionKeepAliveEncoder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final EgressMessageHeaderDecoder egressMessageHeaderDecoder = new EgressMessageHeaderDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
-    private final DirectBufferVector[] vectors = new DirectBufferVector[2];
-    private final DirectBufferVector messageVector = new DirectBufferVector();
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment, 0, true);
     private final EgressListener egressListener;
 
@@ -113,14 +113,18 @@ public final class AeronCluster implements AutoCloseable
 
             clusterSessionId = connectToCluster();
 
-            final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[INGRESS_MESSAGE_HEADER_LENGTH]);
             ingressMessageHeaderEncoder
-                .wrapAndApplyHeader(headerBuffer, 0, messageHeaderEncoder)
+                .wrapAndApplyHeader(msgHeaderBuffer, 0, messageHeaderEncoder)
                 .clusterSessionId(clusterSessionId)
                 .leadershipTermId(leadershipTermId);
 
-            vectors[0] = new DirectBufferVector(headerBuffer, 0, INGRESS_MESSAGE_HEADER_LENGTH);
-            vectors[1] = messageVector;
+            keepaliveMsgBuffer = new UnsafeBuffer(new byte[
+                MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveEncoder.BLOCK_LENGTH]);
+
+            sessionKeepAliveEncoder
+                .wrapAndApplyHeader(keepaliveMsgBuffer, 0, messageHeaderEncoder)
+                .leadershipTermId(leadershipTermId)
+                .clusterSessionId(clusterSessionId);
         }
         catch (final Exception ex)
         {
@@ -233,8 +237,7 @@ public final class AeronCluster implements AutoCloseable
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        messageVector.reset(buffer, offset, length);
-        return publication.offer(vectors, null);
+        return publication.offer(msgHeaderBuffer, 0, INGRESS_MESSAGE_HEADER_LENGTH, buffer, offset, length, null);
     }
 
     /**
@@ -245,21 +248,13 @@ public final class AeronCluster implements AutoCloseable
     public boolean sendKeepAlive()
     {
         idleStrategy.reset();
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveEncoder.BLOCK_LENGTH;
         int attempts = SEND_ATTEMPTS;
 
         while (true)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = publication.offer(keepaliveMsgBuffer, 0, keepaliveMsgBuffer.capacity(), null);
             if (result > 0)
             {
-                sessionKeepAliveEncoder
-                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
-                    .leadershipTermId(leadershipTermId)
-                    .clusterSessionId(clusterSessionId);
-
-                bufferClaim.commit();
-
                 return true;
             }
 
@@ -313,6 +308,7 @@ public final class AeronCluster implements AutoCloseable
         this.leadershipTermId = leadershipTermId;
         this.leaderMemberId = leaderMemberId;
         ingressMessageHeaderEncoder.leadershipTermId(leadershipTermId);
+        sessionKeepAliveEncoder.leadershipTermId(leaderMemberId);
 
         if (isUnicast)
         {

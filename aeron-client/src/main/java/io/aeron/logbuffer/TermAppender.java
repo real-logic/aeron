@@ -104,11 +104,12 @@ public class TermAppender
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int termLength = termBuffer.capacity();
+
         final long rawTail = getAndAddRawTail(alignedLength);
         final int termId = termId(rawTail);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-        final UnsafeBuffer termBuffer = this.termBuffer;
-        final int termLength = termBuffer.capacity();
 
         checkTerm(activeTermId, termId);
 
@@ -131,28 +132,35 @@ public class TermAppender
      * Append an unfragmented message to the the term buffer.
      *
      * @param header                for writing the default header.
-     * @param srcBuffer             containing the message.
-     * @param srcOffset             at which the message begins.
-     * @param length                of the message in the source buffer.
+     * @param bufferOne             containing the first part of the message.
+     * @param offsetOne             at which the first part of the message begins.
+     * @param lengthOne             of the first part of the message.
+     * @param bufferTwo             containing the second part of the message.
+     * @param offsetTwo             at which the second part of the message begins.
+     * @param lengthTwo             of the second part of the message.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @param activeTermId          used for flow control.
      * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}
      */
     public int appendUnfragmentedMessage(
         final HeaderWriter header,
-        final DirectBuffer srcBuffer,
-        final int srcOffset,
-        final int length,
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo,
         final ReservedValueSupplier reservedValueSupplier,
         final int activeTermId)
     {
-        final int frameLength = length + HEADER_LENGTH;
+        final int frameLength = lengthOne + lengthTwo + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int termLength = termBuffer.capacity();
+
         final long rawTail = getAndAddRawTail(alignedLength);
         final int termId = termId(rawTail);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-        final UnsafeBuffer termBuffer = this.termBuffer;
-        final int termLength = termBuffer.capacity();
 
         checkTerm(activeTermId, termId);
 
@@ -165,7 +173,61 @@ public class TermAppender
         {
             final int frameOffset = (int)termOffset;
             header.write(termBuffer, frameOffset, frameLength, termId);
-            termBuffer.putBytes(frameOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
+            termBuffer.putBytes(frameOffset + HEADER_LENGTH, bufferOne, offsetOne, lengthOne);
+            termBuffer.putBytes(frameOffset + HEADER_LENGTH + lengthOne, bufferTwo, offsetTwo, lengthTwo);
+
+            if (null != reservedValueSupplier)
+            {
+                final long reservedValue = reservedValueSupplier.get(termBuffer, frameOffset, frameLength);
+                termBuffer.putLong(frameOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+            }
+
+            frameLengthOrdered(termBuffer, frameOffset, frameLength);
+        }
+
+        return (int)resultingOffset;
+    }
+
+    /**
+     * Append an unfragmented message to the the term buffer.
+     *
+     * @param header                for writing the default header.
+     * @param buffer                containing the message.
+     * @param offset                at which the message begins.
+     * @param length                of the message in the source buffer.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @param activeTermId          used for flow control.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}
+     */
+    public int appendUnfragmentedMessage(
+        final HeaderWriter header,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier,
+        final int activeTermId)
+    {
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int termLength = termBuffer.capacity();
+
+        final long rawTail = getAndAddRawTail(alignedLength);
+        final int termId = termId(rawTail);
+        final long termOffset = rawTail & 0xFFFF_FFFFL;
+
+        checkTerm(activeTermId, termId);
+
+        long resultingOffset = termOffset + alignedLength;
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
+        }
+        else
+        {
+            final int frameOffset = (int)termOffset;
+            header.write(termBuffer, frameOffset, frameLength, termId);
+            termBuffer.putBytes(frameOffset + HEADER_LENGTH, buffer, offset, length);
 
             if (null != reservedValueSupplier)
             {
@@ -198,11 +260,12 @@ public class TermAppender
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int termLength = termBuffer.capacity();
+
         final long rawTail = getAndAddRawTail(alignedLength);
         final int termId = termId(rawTail);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-        final UnsafeBuffer termBuffer = this.termBuffer;
-        final int termLength = termBuffer.capacity();
 
         checkTerm(activeTermId, termId);
 
@@ -240,8 +303,8 @@ public class TermAppender
      * The message will be split up into fragments of MTU length minus header.
      *
      * @param header                for writing the default header.
-     * @param srcBuffer             containing the message.
-     * @param srcOffset             at which the message begins.
+     * @param buffer                containing the message.
+     * @param offset                at which the message begins.
      * @param length                of the message in the source buffer.
      * @param maxPayloadLength      that the message will be fragmented into.
      * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
@@ -250,8 +313,8 @@ public class TermAppender
      */
     public int appendFragmentedMessage(
         final HeaderWriter header,
-        final DirectBuffer srcBuffer,
-        final int srcOffset,
+        final DirectBuffer buffer,
+        final int offset,
         final int length,
         final int maxPayloadLength,
         final ReservedValueSupplier reservedValueSupplier,
@@ -261,11 +324,12 @@ public class TermAppender
         final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
         final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int termLength = termBuffer.capacity();
+
         final long rawTail = getAndAddRawTail(requiredLength);
         final int termId = termId(rawTail);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-        final UnsafeBuffer termBuffer = this.termBuffer;
-        final int termLength = termBuffer.capacity();
 
         checkTerm(activeTermId, termId);
 
@@ -289,9 +353,123 @@ public class TermAppender
                 header.write(termBuffer, frameOffset, frameLength, termId);
                 termBuffer.putBytes(
                     frameOffset + HEADER_LENGTH,
-                    srcBuffer,
-                    srcOffset + (length - remaining),
+                    buffer,
+                    offset + (length - remaining),
                     bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= END_FRAG_FLAG;
+                }
+
+                frameFlags(termBuffer, frameOffset, flags);
+
+                if (null != reservedValueSupplier)
+                {
+                    final long reservedValue = reservedValueSupplier.get(termBuffer, frameOffset, frameLength);
+                    termBuffer.putLong(frameOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+                }
+
+                frameLengthOrdered(termBuffer, frameOffset, frameLength);
+
+                flags = 0;
+                frameOffset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return (int)resultingOffset;
+    }
+
+    /**
+     * Append a fragmented message to the the term buffer.
+     * The message will be split up into fragments of MTU length minus header.
+     *
+     * @param header                for writing the default header.
+     * @param bufferOne             containing the first part of the message.
+     * @param offsetOne             at which the first part of the message begins.
+     * @param lengthOne             of the first part of the message.
+     * @param bufferTwo             containing the second part of the message.
+     * @param offsetTwo             at which the second part of the message begins.
+     * @param lengthTwo             of the second part of the message.
+     * @param maxPayloadLength      that the message will be fragmented into.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @param activeTermId          used for flow control.
+     * @return the resulting offset of the term after the append on success otherwise  {@link #FAILED}.
+     */
+    public int appendFragmentedMessage(
+        final HeaderWriter header,
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo,
+        final int maxPayloadLength,
+        final ReservedValueSupplier reservedValueSupplier,
+        final int activeTermId)
+    {
+        final int length = lengthOne + lengthTwo;
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int termLength = termBuffer.capacity();
+
+        final long rawTail = getAndAddRawTail(requiredLength);
+        final int termId = termId(rawTail);
+        final long termOffset = rawTail & 0xFFFF_FFFFL;
+
+        checkTerm(activeTermId, termId);
+
+        long resultingOffset = termOffset + requiredLength;
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
+        }
+        else
+        {
+            int frameOffset = (int)termOffset;
+            byte flags = BEGIN_FRAG_FLAG;
+            int remaining = length;
+            int positionOne = 0;
+            int positionTwo = 0;
+
+            do
+            {
+                final int bytesToWrite = Math.min(remaining, maxPayloadLength);
+                final int frameLength = bytesToWrite + HEADER_LENGTH;
+                final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+
+                header.write(termBuffer, frameOffset, frameLength, termId);
+
+                int bytesWritten = 0;
+                int payloadOffset = frameOffset + HEADER_LENGTH;
+                do
+                {
+                    final int remainingOne = lengthOne - positionOne;
+                    if (remainingOne > 0)
+                    {
+                        final int numBytes = Math.min(bytesToWrite - bytesWritten, remainingOne);
+                        termBuffer.putBytes(payloadOffset, bufferOne, offsetOne + positionOne, numBytes);
+
+                        bytesWritten += numBytes;
+                        payloadOffset += numBytes;
+                        positionOne += numBytes;
+                    }
+                    else
+                    {
+                        final int numBytes = Math.min(bytesToWrite - bytesWritten, lengthTwo - positionTwo);
+                        termBuffer.putBytes(payloadOffset, bufferTwo, offsetTwo + positionTwo, numBytes);
+
+                        bytesWritten += numBytes;
+                        payloadOffset += numBytes;
+                        positionTwo += numBytes;
+                    }
+                }
+                while (bytesWritten < bytesToWrite);
 
                 if (remaining <= maxPayloadLength)
                 {
@@ -342,11 +520,12 @@ public class TermAppender
         final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
         final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int termLength = termBuffer.capacity();
+
         final long rawTail = getAndAddRawTail(requiredLength);
         final int termId = termId(rawTail);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-        final UnsafeBuffer termBuffer = this.termBuffer;
-        final int termLength = termBuffer.capacity();
 
         checkTerm(activeTermId, termId);
 
@@ -423,7 +602,7 @@ public class TermAppender
         if (termId != expectedTermId)
         {
             throw new AeronException(
-                "Action possibly delayed: expectedTermId=" + expectedTermId + " termId=" + termId);
+                "action possibly delayed: expectedTermId=" + expectedTermId + " termId=" + termId);
         }
     }
 

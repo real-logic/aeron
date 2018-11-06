@@ -106,6 +106,7 @@ public class ConcurrentPublication extends Publication
                 final int resultingOffset;
                 if (length <= maxPayloadLength)
                 {
+                    checkPositiveLength(length);
                     resultingOffset = termAppender.appendUnfragmentedMessage(
                         headerWriter, buffer, offset, length, reservedValueSupplier, termId);
                 }
@@ -114,6 +115,81 @@ public class ConcurrentPublication extends Publication
                     checkForMaxMessageLength(length);
                     resultingOffset = termAppender.appendFragmentedMessage(
                         headerWriter, buffer, offset, length, maxPayloadLength, reservedValueSupplier, termId);
+                }
+
+                newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
+            }
+            else
+            {
+                newPosition = backPressureStatus(position, length);
+            }
+        }
+
+        return newPosition;
+    }
+
+
+    /**
+     * Non-blocking publish of a message composed of two parts, e.g. a header and encapsulated payload.
+     *
+     * @param bufferOne             containing the first part of the message.
+     * @param offsetOne             at which the first part of the message begins.
+     * @param lengthOne             of the first part of the message.
+     * @param bufferTwo             containing the second part of the message.
+     * @param offsetTwo             at which the second part of the message begins.
+     * @param lengthTwo             of the second part of the message.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
+     */
+    public long offer(
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        long newPosition = CLOSED;
+        if (!isClosed)
+        {
+            final long limit = positionLimit.getVolatile();
+            final int termCount = activeTermCount(logMetaDataBuffer);
+            final TermAppender termAppender = termAppenders[indexByTermCount(termCount)];
+            final long rawTail = termAppender.rawTailVolatile();
+            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final int termId = termId(rawTail);
+            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
+
+            if (termCount != (termId - initialTermId))
+            {
+                return ADMIN_ACTION;
+            }
+
+            final int length = validateAndComputeLength(lengthOne, lengthTwo);
+            if (position < limit)
+            {
+                final int resultingOffset;
+                if (length <= maxPayloadLength)
+                {
+                    resultingOffset = termAppender.appendUnfragmentedMessage(
+                        headerWriter,
+                        bufferOne, offsetOne, lengthOne,
+                        bufferTwo, offsetTwo, lengthTwo,
+                        reservedValueSupplier,
+                        termId);
+                }
+                else
+                {
+                    checkForMaxMessageLength(length);
+                    resultingOffset = termAppender.appendFragmentedMessage(
+                        headerWriter,
+                        bufferOne, offsetOne, lengthOne,
+                        bufferTwo, offsetTwo, lengthTwo,
+                        maxPayloadLength,
+                        reservedValueSupplier,
+                        termId);
                 }
 
                 newPosition = newPosition(termCount, (int)termOffset, termId, position, resultingOffset);
@@ -218,7 +294,7 @@ public class ConcurrentPublication extends Publication
      */
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
-        checkForMaxPayloadLength(length);
+        checkPayloadLength(length);
         long newPosition = CLOSED;
 
         if (!isClosed)

@@ -391,6 +391,51 @@ public abstract class Publication implements AutoCloseable
         DirectBuffer buffer, int offset, int length, ReservedValueSupplier reservedValueSupplier);
 
     /**
+     * Non-blocking publish of a message composed of two parts, e.g. a header and encapsulated payload.
+     *
+     * @param bufferOne containing the first part of the message.
+     * @param offsetOne at which the first part of the message begins.
+     * @param lengthOne of the first part of the message.
+     * @param bufferTwo containing the second part of the message.
+     * @param offsetTwo at which the second part of the message begins.
+     * @param lengthTwo of the second part of the message.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
+     */
+    public final long offer(
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo)
+    {
+        return offer(bufferOne, offsetOne, lengthOne, bufferTwo, offsetTwo, lengthTwo, null);
+    }
+
+    /**
+     * Non-blocking publish of a message composed of two parts, e.g. a header and encapsulated payload.
+     *
+     * @param bufferOne             containing the first part of the message.
+     * @param offsetOne             at which the first part of the message begins.
+     * @param lengthOne             of the first part of the message.
+     * @param bufferTwo             containing the second part of the message.
+     * @param offsetTwo             at which the second part of the message begins.
+     * @param lengthTwo             of the second part of the message.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
+     */
+    public abstract long offer(
+        DirectBuffer bufferOne,
+        int offsetOne,
+        int lengthOne,
+        DirectBuffer bufferTwo,
+        int offsetTwo,
+        int lengthTwo,
+        ReservedValueSupplier reservedValueSupplier);
+
+    /**
      * Non-blocking publish by gathering buffer vectors into a message.
      *
      * @param vectors which make up the message.
@@ -504,8 +549,21 @@ public abstract class Publication implements AutoCloseable
         return NOT_CONNECTED;
     }
 
-    final void checkForMaxPayloadLength(final int length)
+    final void checkPositiveLength(final int length)
     {
+        if (length < 0)
+        {
+            throw new IllegalArgumentException("invalid length: " + length);
+        }
+    }
+
+    final void checkPayloadLength(final int length)
+    {
+        if (length < 0)
+        {
+            throw new IllegalArgumentException("invalid length: " + length);
+        }
+
         if (length > maxPayloadLength)
         {
             throw new IllegalArgumentException(
@@ -520,5 +578,26 @@ public abstract class Publication implements AutoCloseable
             throw new IllegalArgumentException(
                 "message exceeds maxMessageLength of " + maxMessageLength + ", length=" + length);
         }
+    }
+
+    static int validateAndComputeLength(final int lengthOne, final int lengthTwo)
+    {
+        if (lengthOne < 0)
+        {
+            throw new IllegalArgumentException("lengthOne < 0: " + lengthOne);
+        }
+
+        if (lengthTwo < 0)
+        {
+            throw new IllegalArgumentException("lengthTwo < 0: " + lengthTwo);
+        }
+
+        final int totalLength = lengthOne + lengthTwo;
+        if (totalLength < 0)
+        {
+            throw new IllegalArgumentException("overflow totalLength=" + totalLength);
+        }
+
+        return totalLength;
     }
 }

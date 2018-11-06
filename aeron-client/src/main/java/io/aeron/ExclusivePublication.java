@@ -119,6 +119,7 @@ public class ExclusivePublication extends Publication
                 final int result;
                 if (length <= maxPayloadLength)
                 {
+                    checkPositiveLength(length);
                     result = termAppender.appendUnfragmentedMessage(
                         termId, termOffset, headerWriter, buffer, offset, length, reservedValueSupplier);
                 }
@@ -132,6 +133,74 @@ public class ExclusivePublication extends Publication
                         buffer,
                         offset,
                         length,
+                        maxPayloadLength,
+                        reservedValueSupplier);
+                }
+
+                newPosition = newPosition(result);
+            }
+            else
+            {
+                newPosition = backPressureStatus(position, length);
+            }
+        }
+
+        return newPosition;
+    }
+
+    /**
+     * Non-blocking publish of a message composed of two parts, e.g. a header and encapsulated payload.
+     *
+     * @param bufferOne             containing the first part of the message.
+     * @param offsetOne             at which the first part of the message begins.
+     * @param lengthOne             of the first part of the message.
+     * @param bufferTwo             containing the second part of the message.
+     * @param offsetTwo             at which the second part of the message begins.
+     * @param lengthTwo             of the second part of the message.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
+     */
+    public long offer(
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        long newPosition = CLOSED;
+        if (!isClosed)
+        {
+            final long limit = positionLimit.getVolatile();
+            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
+            final long position = termBeginPosition + termOffset;
+            final int length = validateAndComputeLength(lengthOne, lengthTwo);
+
+            if (position < limit)
+            {
+                final int result;
+                if (length <= maxPayloadLength)
+                {
+                    checkPositiveLength(length);
+                    result = termAppender.appendUnfragmentedMessage(
+                        termId,
+                        termOffset,
+                        headerWriter,
+                        bufferOne, offsetOne, lengthOne,
+                        bufferTwo, offsetTwo, lengthTwo,
+                        reservedValueSupplier);
+                }
+                else
+                {
+                    checkForMaxMessageLength(length);
+                    result = termAppender.appendFragmentedMessage(
+                        termId,
+                        termOffset,
+                        headerWriter,
+                        bufferOne, offsetOne, lengthOne,
+                        bufferTwo, offsetTwo, lengthTwo,
                         maxPayloadLength,
                         reservedValueSupplier);
                 }
@@ -235,7 +304,7 @@ public class ExclusivePublication extends Publication
      */
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
-        checkForMaxPayloadLength(length);
+        checkPayloadLength(length);
         long newPosition = CLOSED;
 
         if (!isClosed)
@@ -279,6 +348,7 @@ public class ExclusivePublication extends Publication
 
             if (position < limit)
             {
+                checkPositiveLength(length);
                 final int result = termAppender.appendPadding(termId, termOffset, headerWriter, length);
                 newPosition = newPosition(result);
             }

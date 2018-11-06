@@ -198,6 +198,63 @@ public class ExclusiveTermAppender
     }
 
     /**
+     * Append an unfragmented message to the the term buffer.
+     *
+     * @param termId                for the current term.
+     * @param termOffset            in the term at which to append.
+     * @param header                for writing the default header.
+     * @param bufferOne             containing the first part of the message.
+     * @param offsetOne             at which the first part of the message begins.
+     * @param lengthOne             of the first part of the message.
+     * @param bufferTwo             containing the second part of the message.
+     * @param offsetTwo             at which the second part of the message begins.
+     * @param lengthTwo             of the second part of the message.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     */
+    public int appendUnfragmentedMessage(
+        final int termId,
+        final int termOffset,
+        final HeaderWriter header,
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int frameLength = lengthOne + lengthTwo + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int termLength = termBuffer.capacity();
+
+        int resultingOffset = termOffset + alignedLength;
+        putRawTailOrdered(termId, resultingOffset);
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
+        }
+        else
+        {
+            header.write(termBuffer, termOffset, frameLength, termId);
+            termBuffer.putBytes(termOffset + HEADER_LENGTH, bufferOne, offsetOne, lengthOne);
+            termBuffer.putBytes(termOffset + HEADER_LENGTH + lengthOne, bufferTwo, offsetTwo, lengthTwo);
+
+            if (null != reservedValueSupplier)
+            {
+                final long reservedValue = reservedValueSupplier.get(termBuffer, termOffset, frameLength);
+                termBuffer.putLong(termOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+            }
+
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    /**
      * Append an unfragmented message to the the term buffer as a gathering of vectors.
      *
      * @param termId                for the current term.
@@ -306,6 +363,118 @@ public class ExclusiveTermAppender
                     srcBuffer,
                     srcOffset + (length - remaining),
                     bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= END_FRAG_FLAG;
+                }
+
+                frameFlags(termBuffer, frameOffset, flags);
+
+                if (null != reservedValueSupplier)
+                {
+                    final long reservedValue = reservedValueSupplier.get(termBuffer, frameOffset, frameLength);
+                    termBuffer.putLong(frameOffset + RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
+                }
+
+                frameLengthOrdered(termBuffer, frameOffset, frameLength);
+
+                flags = 0;
+                frameOffset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return resultingOffset;
+    }
+
+    /**
+     * Append a fragmented message to the the term buffer.
+     * The message will be split up into fragments of MTU length minus header.
+     *
+     * @param termId                for the current term.
+     * @param termOffset            in the term at which to append.
+     * @param header                for writing the default header.
+     * @param bufferOne             containing the first part of the message.
+     * @param offsetOne             at which the first part of the message begins.
+     * @param lengthOne             of the first part of the message.
+     * @param bufferTwo             containing the second part of the message.
+     * @param offsetTwo             at which the second part of the message begins.
+     * @param lengthTwo             of the second part of the message.
+     * @param maxPayloadLength      that the message will be fragmented into.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @return the resulting offset of the term after the append on success otherwise {@link #FAILED}.
+     */
+    public int appendFragmentedMessage(
+        final int termId,
+        final int termOffset,
+        final HeaderWriter header,
+        final DirectBuffer bufferOne,
+        final int offsetOne,
+        final int lengthOne,
+        final DirectBuffer bufferTwo,
+        final int offsetTwo,
+        final int lengthTwo,
+        final int maxPayloadLength,
+        final ReservedValueSupplier reservedValueSupplier)
+    {
+        final int length = lengthOne + lengthTwo;
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int termLength = termBuffer.capacity();
+
+        int resultingOffset = termOffset + requiredLength;
+        putRawTailOrdered(termId, resultingOffset);
+
+        if (resultingOffset > termLength)
+        {
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
+        }
+        else
+        {
+            int frameOffset = termOffset;
+            byte flags = BEGIN_FRAG_FLAG;
+            int remaining = length;
+            int positionOne = 0;
+            int positionTwo = 0;
+
+            do
+            {
+                final int bytesToWrite = Math.min(remaining, maxPayloadLength);
+                final int frameLength = bytesToWrite + HEADER_LENGTH;
+                final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+
+                header.write(termBuffer, frameOffset, frameLength, termId);
+
+                int bytesWritten = 0;
+                int payloadOffset = frameOffset + HEADER_LENGTH;
+                do
+                {
+                    final int remainingOne = lengthOne - positionOne;
+                    if (remainingOne > 0)
+                    {
+                        final int numBytes = Math.min(bytesToWrite - bytesWritten, remainingOne);
+                        termBuffer.putBytes(payloadOffset, bufferOne, offsetOne + positionOne, numBytes);
+
+                        bytesWritten += numBytes;
+                        payloadOffset += numBytes;
+                        positionOne += numBytes;
+                    }
+                    else
+                    {
+                        final int numBytes = Math.min(bytesToWrite - bytesWritten, lengthTwo - positionTwo);
+                        termBuffer.putBytes(payloadOffset, bufferTwo, offsetTwo + positionTwo, numBytes);
+
+                        bytesWritten += numBytes;
+                        payloadOffset += numBytes;
+                        positionTwo += numBytes;
+                    }
+                }
+                while (bytesWritten < bytesToWrite);
 
                 if (remaining <= maxPayloadLength)
                 {

@@ -3,7 +3,7 @@
 Here you will find a collection of samples and tools for Aeron. The build process builds a complete
 jar of the samples and places it in this location
 
-     aeron-samples/build/libs/samples.jar
+     aeron-samples/build/libs/aeron-samples-<version>.jar
 
 Each of the Samples can be run with a simple script that can be found in:
 

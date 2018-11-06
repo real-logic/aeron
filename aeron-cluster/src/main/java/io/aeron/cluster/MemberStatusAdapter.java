@@ -64,6 +64,11 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
         return subscription.poll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
     }
 
+    public int poll(final int limit)
+    {
+        return subscription.poll(fragmentAssembler, limit);
+    }
+
     @SuppressWarnings("MethodLength")
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {

@@ -144,6 +144,17 @@ public class MultiNodeTest
             harness.memberStatusPublisher().newLeadershipTerm(
                 harness.memberStatusPublication(1), -1L, 0L, 0L, 1, publication.sessionId());
 
+            harness.awaitMemberStatusMessage(1, harness.onCatchupPosition(1));
+
+            verify(mockMemberStatusListeners[1]).onCatchupPosition(0L, 0L, 0);
+
+            final Publication replayPublication = harness.createReplayPublication(
+                "localhost:9040", null, 0L, true);
+
+            harness.awaitMemberStatusMessage(1, harness.onStopCatchup(1));
+
+            verify(mockMemberStatusListeners[1]).onStopCatchup(publication.sessionId(), 0);
+
             harness.awaitMemberStatusMessage(1, harness.onAppendedPositionCounter(1));
 
             verify(mockMemberStatusListeners[1]).onAppendedPosition(0L, 0L, 0);
@@ -263,6 +274,17 @@ public class MultiNodeTest
 
             harness.memberStatusPublisher().newLeadershipTerm(
                 harness.memberStatusPublication(1), 0L, position, 1L, 1, publication.sessionId());
+
+            harness.awaitMemberStatusMessage(1, harness.onCatchupPosition(1));
+
+            verify(mockMemberStatusListeners[1]).onCatchupPosition(1L, position, 0);
+
+            final Publication replayPublication = harness.createReplayPublication(
+                "localhost:9040", recordingExtent, position, false);
+
+            harness.awaitMemberStatusMessage(1, harness.onStopCatchup(1));
+
+            verify(mockMemberStatusListeners[1]).onStopCatchup(publication.sessionId(), 0);
 
             harness.awaitMemberStatusMessage(1, harness.onAppendedPositionCounter(1));
 

@@ -356,6 +356,7 @@ class Election implements AutoCloseable
             }
             else
             {
+                catchupLogPosition = logPosition;
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
         }

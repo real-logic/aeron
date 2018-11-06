@@ -316,11 +316,11 @@ class DynamicJoin implements AutoCloseable
                     snapshotRetrieveImage = null;
                     snapshotReader = null;
                     correlationId = NULL_VALUE;
+                    localArchive.stopRecording(snapshotRetrieveSubscriptionId);
                     snapshotReplaySessionId = NULL_VALUE;
 
                     if (++snapshotCursor >= leaderSnapshots.size())
                     {
-                        localArchive.stopRecording(snapshotRetrieveSubscriptionId);
                         state(State.SNAPSHOT_LOAD);
                         workCount++;
                     }

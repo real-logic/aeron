@@ -237,7 +237,13 @@ public class ElectionTest
 
         when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString()))
             .thenReturn(mock(Subscription.class));
+        when(memberStatusPublisher.catchupPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
+        when(consensusModuleAgent.hasAppendReachedLivePosition(any(), anyInt(), anyLong())).thenReturn(Boolean.TRUE);
+        when(consensusModuleAgent.hasAppendReachedPosition(any(), anyInt(), anyLong())).thenReturn(Boolean.TRUE);
+        when(memberStatusPublisher.stopCatchup(any(), anyInt(), anyInt())).thenReturn(Boolean.TRUE);
         final long t3 = 3;
+        election.doWork(t3);
+        election.doWork(t3);
         election.doWork(t3);
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.FOLLOWER_READY));

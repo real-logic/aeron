@@ -296,6 +296,16 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return () -> memberStatusCounters[index].onCommitPositionCounter;
     }
 
+    IntSupplier onCatchupPosition(final int index)
+    {
+        return () -> memberStatusCounters[index].onCatchupPositionCounter;
+    }
+
+    IntSupplier onStopCatchup(final int index)
+    {
+        return () -> memberStatusCounters[index].onStopCatchupCounter;
+    }
+
     int pollMemberStatusAdapter(final int index)
     {
         if (null != memberStatusAdapters[index])
@@ -309,7 +319,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     void awaitMemberStatusMessage(final int index)
     {
         idleStrategy.reset();
-        while (memberStatusAdapters[index].poll() == 0)
+        while (memberStatusAdapters[index].poll(1) == 0)
         {
             idleStrategy.idle();
         }
@@ -364,6 +374,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final long position,
         final boolean emptyLog)
     {
+        channelUri.put(TAGS_PARAM_NAME, ConsensusModule.Configuration.LOG_PUBLICATION_TAGS);
+
         if (!emptyLog)
         {
             channelUri.initialPosition(position, recordingExtent.initialTermId, recordingExtent.termBufferLength);
@@ -387,6 +399,32 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         }
 
         return publication;
+    }
+
+    Publication createReplayPublication(
+        final String transferEndpoint,
+        final RecordingExtent recordingExtent,
+        final long position,
+        final boolean emptyLog)
+    {
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+            .media(CommonContext.UDP_MEDIA)
+            .endpoint(transferEndpoint);
+
+        if (!emptyLog)
+        {
+            builder.initialPosition(position, recordingExtent.initialTermId, recordingExtent.termBufferLength);
+            builder.mtu(recordingExtent.mtuLength);
+        }
+
+        builder.isSessionIdTagged(true);
+        builder.sessionId(ConsensusModule.Configuration.LOG_PUBLICATION_SESSION_ID_TAG);
+
+        final String replayChannel = builder.build();
+
+        return aeron.addExclusivePublication(
+            replayChannel,
+            clusteredMediaDriver.consensusModule().context().logStreamId());
     }
 
     void awaitServiceOnStart()

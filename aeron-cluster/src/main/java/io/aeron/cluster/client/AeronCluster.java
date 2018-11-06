@@ -840,7 +840,7 @@ public final class AeronCluster implements AutoCloseable
         private Aeron aeron;
         private CredentialsSupplier credentialsSupplier;
         private boolean ownsAeronClient = false;
-        private boolean isIngressExclusive = true;
+        private boolean isIngressExclusive = false;
         private ErrorHandler errorHandler = Aeron.Configuration.DEFAULT_ERROR_HANDLER;
         private EgressListener egressListener;
 

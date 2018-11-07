@@ -94,19 +94,15 @@ public class ClientSession
     }
 
     /**
-     * Request the close of this {@link ClientSession} by sending the request to the consensus module.
-     *
-     * @return true if the event to close a session was sent or false if back pressure was applied.
+     * Close of this {@link ClientSession} by sending the request to the consensus module.
+     * <p>
+     * This method is idempotent.
      */
-    public boolean close()
+    public void close()
     {
-        try
+        if (null != cluster.getClientSession(id))
         {
-            return cluster.closeSession(id);
-        }
-        catch (final IllegalArgumentException ignored)
-        {
-            return true;
+            cluster.closeSession(id);
         }
     }
 

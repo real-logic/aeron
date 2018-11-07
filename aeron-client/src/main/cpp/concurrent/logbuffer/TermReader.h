@@ -80,7 +80,7 @@ inline void read(
 
     try
     {
-        do
+        while (outcome.fragmentsRead < fragmentsLimit && termOffset < capacity)
         {
             const std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(termBuffer, termOffset);
             if (frameLength <= 0)
@@ -95,13 +95,11 @@ inline void read(
             {
                 header.buffer(termBuffer);
                 header.offset(fragmentOffset);
-                handler(termBuffer, fragmentOffset + DataFrameHeader::LENGTH, frameLength - DataFrameHeader::LENGTH,
-                    header);
+                handler(termBuffer, fragmentOffset + DataFrameHeader::LENGTH, frameLength - DataFrameHeader::LENGTH, header);
 
                 ++outcome.fragmentsRead;
             }
         }
-        while (outcome.fragmentsRead < fragmentsLimit && termOffset < capacity);
     }
     catch (const std::exception& ex)
     {

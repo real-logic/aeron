@@ -23,7 +23,8 @@
     -Daeron.sample.messageLength=32 ^
     -Daeron.sample.messages=100000000 ^
     -Daeron.term.buffer.sparse.file=false ^
-    -Daeron.mtu.length=16384 ^
+    -Daeron.mtu.length=16k ^
+    -Daeron.archive.control.mtu.length=4k ^
     -Daeron.socket.so_sndbuf=2m ^
     -Daeron.socket.so_rcvbuf=2m ^
     -Daeron.rcv.initial.window.length=2m ^

@@ -610,7 +610,7 @@ private:
     {
         if (length > m_maxMessageLength)
         {
-            throw util::IllegalStateException(
+            throw util::IllegalArgumentException(
                 util::strPrintf("Encoded message exceeds maxMessageLength of %d, length=%d",
                     m_maxMessageLength, length), SOURCEINFO);
         }
@@ -620,7 +620,7 @@ private:
     {
         if (AERON_COND_EXPECT((length > m_maxPayloadLength), false))
         {
-            throw util::IllegalStateException(
+            throw util::IllegalArgumentException(
                 util::strPrintf("Encoded message exceeds maxPayloadLength of %d, length=%d",
                     m_maxPayloadLength, length), SOURCEINFO);
         }

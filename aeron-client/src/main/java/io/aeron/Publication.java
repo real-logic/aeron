@@ -571,7 +571,7 @@ public abstract class Publication implements AutoCloseable
         }
     }
 
-    final void checkForMaxMessageLength(final int length)
+    final void checkMaxMessageLength(final int length)
     {
         if (length > maxMessageLength)
         {

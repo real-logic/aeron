@@ -125,7 +125,7 @@ public class ExclusivePublication extends Publication
                 }
                 else
                 {
-                    checkForMaxMessageLength(length);
+                    checkMaxMessageLength(length);
                     result = termAppender.appendFragmentedMessage(
                         termId,
                         termOffset,
@@ -194,7 +194,7 @@ public class ExclusivePublication extends Publication
                 }
                 else
                 {
-                    checkForMaxMessageLength(length);
+                    checkMaxMessageLength(length);
                     result = termAppender.appendFragmentedMessage(
                         termId,
                         termOffset,
@@ -245,7 +245,7 @@ public class ExclusivePublication extends Publication
                 }
                 else
                 {
-                    checkForMaxMessageLength(length);
+                    checkMaxMessageLength(length);
                     result = termAppender.appendFragmentedMessage(
                         termId,
                         termOffset,
@@ -337,7 +337,7 @@ public class ExclusivePublication extends Publication
      */
     public long appendPadding(final int length)
     {
-        checkForMaxMessageLength(length);
+        checkMaxMessageLength(length);
         long newPosition = CLOSED;
 
         if (!isClosed)

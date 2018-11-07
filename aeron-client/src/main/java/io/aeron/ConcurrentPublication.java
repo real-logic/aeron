@@ -112,7 +112,7 @@ public class ConcurrentPublication extends Publication
                 }
                 else
                 {
-                    checkForMaxMessageLength(length);
+                    checkMaxMessageLength(length);
                     resultingOffset = termAppender.appendFragmentedMessage(
                         headerWriter, buffer, offset, length, maxPayloadLength, reservedValueSupplier, termId);
                 }
@@ -182,7 +182,7 @@ public class ConcurrentPublication extends Publication
                 }
                 else
                 {
-                    checkForMaxMessageLength(length);
+                    checkMaxMessageLength(length);
                     resultingOffset = termAppender.appendFragmentedMessage(
                         headerWriter,
                         bufferOne, offsetOne, lengthOne,
@@ -241,7 +241,7 @@ public class ConcurrentPublication extends Publication
                 }
                 else
                 {
-                    checkForMaxMessageLength(length);
+                    checkMaxMessageLength(length);
                     resultingOffset = termAppender.appendFragmentedMessage(
                         headerWriter, vectors, length, maxPayloadLength, reservedValueSupplier, termId);
                 }

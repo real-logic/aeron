@@ -28,7 +28,6 @@ import static io.aeron.logbuffer.ControlledFragmentHandler.Action.*;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.endOfStreamPosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.indexByPosition;
-import static io.aeron.logbuffer.TermReader.read;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -282,7 +281,7 @@ public class Image
 
         final long position = subscriberPosition.get();
 
-        return read(
+        return TermReader.read(
             activeTermBuffer(position),
             (int)position & termLengthMask,
             fragmentHandler,

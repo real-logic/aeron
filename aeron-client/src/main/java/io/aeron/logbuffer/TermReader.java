@@ -23,9 +23,7 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
- * A term buffer reader.
- * <p>
- * <b>Note:</b> Reading from the term is thread safe, but each thread needs its own instance of this class.
+ * Utility functions for reading a term within a log buffer.
  */
 public class TermReader
 {
@@ -62,7 +60,7 @@ public class TermReader
 
         try
         {
-            do
+            while (fragmentsRead < fragmentsLimit && offset < capacity)
             {
                 final int frameLength = frameLengthVolatile(termBuffer, offset);
                 if (frameLength <= 0)
@@ -76,13 +74,11 @@ public class TermReader
                 if (!isPaddingFrame(termBuffer, frameOffset))
                 {
                     header.offset(frameOffset);
-
                     handler.onFragment(termBuffer, frameOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
 
                     ++fragmentsRead;
                 }
             }
-            while (fragmentsRead < fragmentsLimit && offset < capacity);
         }
         catch (final Throwable t)
         {
@@ -102,9 +98,6 @@ public class TermReader
 
     /**
      * Reads data from a term in a log buffer.
-     * <p>
-     * If a fragmentsLimit of 0 or less is passed then at least one read will be attempted.
-     * Note: this method has users outside of Aeron
      *
      * @param termBuffer     to be read for fragments.
      * @param termOffset     within the buffer that the read should begin.
@@ -125,10 +118,11 @@ public class TermReader
         int fragmentsRead = 0;
         int offset = termOffset;
         final int capacity = termBuffer.capacity();
+        header.buffer(termBuffer);
 
         try
         {
-            do
+            while (fragmentsRead < fragmentsLimit && offset < capacity)
             {
                 final int frameLength = frameLengthVolatile(termBuffer, offset);
                 if (frameLength <= 0)
@@ -141,15 +135,12 @@ public class TermReader
 
                 if (!isPaddingFrame(termBuffer, frameOffset))
                 {
-                    header.buffer(termBuffer);
                     header.offset(frameOffset);
-
                     handler.onFragment(termBuffer, frameOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
 
                     ++fragmentsRead;
                 }
             }
-            while (fragmentsRead < fragmentsLimit && offset < capacity);
         }
         catch (final Throwable t)
         {

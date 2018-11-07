@@ -291,7 +291,7 @@ public:
                 }
                 else
                 {
-                    checkForMaxMessageLength(length);
+                    checkMaxMessageLength(length);
                     result = termAppender->appendFragmentedMessage(
                         m_termId,
                         m_termOffset,
@@ -392,7 +392,7 @@ public:
                 }
                 else
                 {
-                    checkForMaxMessageLength(length);
+                    checkMaxMessageLength(length);
                     result = termAppender->appendFragmentedMessage(
                         m_termId,
                         m_termOffset,
@@ -480,7 +480,7 @@ public:
      */
     inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
     {
-        checkForMaxPayloadLength(length);
+        checkPayloadLength(length);
         std::int64_t newPosition = PUBLICATION_CLOSED;
 
         if (AERON_COND_EXPECT((!isClosed()), true))
@@ -491,8 +491,8 @@ public:
 
             if (AERON_COND_EXPECT((position < limit), true))
             {
-                const std::int32_t result =
-                    termAppender->claim(m_termId, m_termOffset, m_headerWriter, length, bufferClaim);
+                const std::int32_t result = termAppender->claim(
+                    m_termId, m_termOffset, m_headerWriter, length, bufferClaim);
                 newPosition = ExclusivePublication::newPosition(result);
             }
             else
@@ -580,8 +580,8 @@ private:
         m_activePartitionIndex = nextIndex;
         m_termOffset = 0;
         m_termId = nextTermId;
-        m_termBeginPosition =
-            LogBufferDescriptor::computeTermBeginPosition(nextTermId, m_positionBitsToShift, m_initialTermId);
+        m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(
+            nextTermId, m_positionBitsToShift, m_initialTermId);
 
         const std::int32_t termCount = nextTermId - m_initialTermId;
 
@@ -606,7 +606,7 @@ private:
         return NOT_CONNECTED;
     }
 
-    inline void checkForMaxMessageLength(const util::index_t length) const
+    inline void checkMaxMessageLength(const util::index_t length) const
     {
         if (length > m_maxMessageLength)
         {
@@ -616,7 +616,7 @@ private:
         }
     }
 
-    inline void checkForMaxPayloadLength(const util::index_t length) const
+    inline void checkPayloadLength(const util::index_t length) const
     {
         if (AERON_COND_EXPECT((length > m_maxPayloadLength), false))
         {

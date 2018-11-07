@@ -280,9 +280,8 @@ public:
             const std::int64_t rawTail = termAppender->rawTailVolatile();
             const std::int64_t termOffset = rawTail & 0xFFFFFFFF;
             const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
-            const std::int64_t position =
-                LogBufferDescriptor::computeTermBeginPosition(
-                    termId, m_positionBitsToShift, m_initialTermId) + termOffset;
+            const std::int64_t position = LogBufferDescriptor::computeTermBeginPosition(
+                termId, m_positionBitsToShift, m_initialTermId) + termOffset;
 
             if (termCount != (termId - m_initialTermId))
             {
@@ -299,14 +298,13 @@ public:
                 }
                 else
                 {
-                    checkForMaxMessageLength(length);
+                    checkMaxMessageLength(length);
                     resultingOffset = termAppender->appendFragmentedMessage(
                         m_headerWriter, buffer, offset, length, m_maxPayloadLength, reservedValueSupplier, termId);
                 }
 
-                newPosition =
-                    Publication::newPosition(
-                        termCount, static_cast<std::int32_t>(termOffset), termId, position, resultingOffset);
+                newPosition = Publication::newPosition(
+                    termCount, static_cast<std::int32_t>(termOffset), termId, position, resultingOffset);
             }
             else
             {
@@ -382,9 +380,8 @@ public:
             const std::int64_t rawTail = termAppender->rawTailVolatile();
             const std::int64_t termOffset = rawTail & 0xFFFFFFFF;
             const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
-            const std::int64_t position =
-                LogBufferDescriptor::computeTermBeginPosition(
-                    termId, m_positionBitsToShift, m_initialTermId) + termOffset;
+            const std::int64_t position = LogBufferDescriptor::computeTermBeginPosition(
+                termId, m_positionBitsToShift, m_initialTermId) + termOffset;
 
             if (termCount != (termId - m_initialTermId))
             {
@@ -401,14 +398,13 @@ public:
                 }
                 else
                 {
-                    checkForMaxMessageLength(length);
+                    checkMaxMessageLength(length);
                     resultingOffset = termAppender->appendFragmentedMessage(
                         m_headerWriter, startBuffer, length, m_maxPayloadLength, reservedValueSupplier, termId);
                 }
 
-                newPosition =
-                    Publication::newPosition(
-                        termCount, static_cast<std::int32_t>(termOffset), termId, position, resultingOffset);
+                newPosition = Publication::newPosition(
+                    termCount, static_cast<std::int32_t>(termOffset), termId, position, resultingOffset);
             }
             else
             {
@@ -485,7 +481,7 @@ public:
      */
     inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
     {
-        checkForMaxPayloadLength(length);
+        checkPayloadLength(length);
         std::int64_t newPosition = PUBLICATION_CLOSED;
 
         if (!isClosed())
@@ -496,9 +492,8 @@ public:
             const std::int64_t rawTail = termAppender->rawTailVolatile();
             const std::int64_t termOffset = rawTail & 0xFFFFFFFF;
             const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
-            const std::int64_t position =
-                LogBufferDescriptor::computeTermBeginPosition(
-                    termId, m_positionBitsToShift, m_initialTermId) + termOffset;
+            const std::int64_t position = LogBufferDescriptor::computeTermBeginPosition(
+                termId, m_positionBitsToShift, m_initialTermId) + termOffset;
 
             if (termCount != (termId - m_initialTermId))
             {
@@ -508,9 +503,8 @@ public:
             if (position < limit)
             {
                 const std::int32_t resultingOffset = termAppender->claim(m_headerWriter, length, bufferClaim, termId);
-                newPosition =
-                    Publication::newPosition(
-                        termCount, static_cast<std::int32_t>(termOffset), termId, position, resultingOffset);
+                newPosition = Publication::newPosition(
+                    termCount, static_cast<std::int32_t>(termOffset), termId, position, resultingOffset);
             }
             else
             {
@@ -607,7 +601,7 @@ private:
         return NOT_CONNECTED;
     }
 
-    inline void checkForMaxMessageLength(const util::index_t length) const
+    inline void checkMaxMessageLength(const util::index_t length) const
     {
         if (length > m_maxMessageLength)
         {
@@ -617,7 +611,7 @@ private:
         }
     }
 
-    inline void checkForMaxPayloadLength(const util::index_t length) const
+    inline void checkPayloadLength(const util::index_t length) const
     {
         if (length > m_maxPayloadLength)
         {

@@ -161,7 +161,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         role(Cluster.Role.FOLLOWER);
 
         ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
-        thisMember = determineMemberAndCheckEndpoints(clusterMembers, ctx);
+        thisMember = determineMemberAndCheckEndpoints(clusterMembers);
         leaderMember = thisMember;
 
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
@@ -2357,32 +2357,28 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         clusterTimeMs = nowMs;
     }
 
-    private static ClusterMember determineMemberAndCheckEndpoints(
-        final ClusterMember[] clusterMembers, final ConsensusModule.Context context)
+    private ClusterMember determineMemberAndCheckEndpoints(final ClusterMember[] clusterMembers)
     {
-        ClusterMember thisMember = (NULL_VALUE != context.clusterMemberId()) ?
-            ClusterMember.findMember(clusterMembers, context.clusterMemberId()) : null;
+        final int memberId = ctx.clusterMemberId();
+        ClusterMember member = NULL_VALUE != memberId ? ClusterMember.findMember(clusterMembers, memberId) : null;
 
-        if (null == clusterMembers || 0 == clusterMembers.length)
+        if ((null == clusterMembers || 0 == clusterMembers.length) && null == member)
         {
-            thisMember = (null != thisMember) ?
-                thisMember : ClusterMember.parseEndpoints(NULL_VALUE, context.memberEndpoints());
+            member = ClusterMember.parseEndpoints(NULL_VALUE, ctx.memberEndpoints());
         }
         else
         {
-            if (null != thisMember)
+            if (null == member)
             {
-                if (!context.memberEndpoints().equals(""))
-                {
-                    ClusterMember.validateMemberEndpoints(thisMember, context.memberEndpoints());
-                }
+                throw new ClusterException("memberId=" + memberId + " not found in clusterMembers");
             }
-            else
+
+            if (!ctx.memberEndpoints().equals(""))
             {
-                throw new ClusterException("memberId=" + context.clusterMemberId() + " not found in clusterMembers");
+                ClusterMember.validateMemberEndpoints(member, ctx.memberEndpoints());
             }
         }
 
-        return thisMember;
+        return member;
     }
 }

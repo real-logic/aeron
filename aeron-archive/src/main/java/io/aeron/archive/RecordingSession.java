@@ -63,8 +63,7 @@ class RecordingSession implements Session
         this.image = image;
         this.position = position;
 
-        final int termBufferLength = image.termBufferLength();
-        blockLengthLimit = Math.min(termBufferLength, MAX_BLOCK_LENGTH);
+        blockLengthLimit = Math.min(image.termBufferLength(), MAX_BLOCK_LENGTH);
 
         recordingWriter = new RecordingWriter(
             recordingId, startPosition, image.joinPosition(), segmentLength, ctx, archiveDirChannel);
@@ -160,8 +159,9 @@ class RecordingSession implements Session
             workCount = image.blockPoll(recordingWriter, blockLengthLimit);
             if (workCount > 0)
             {
-                position.setOrdered(image.position());
-                recordingEventsProxy.progress(recordingId, image.joinPosition(), position.getWeak());
+                final long position = image.position();
+                this.position.setOrdered(position);
+                recordingEventsProxy.progress(recordingId, image.joinPosition(), position);
             }
             else if (image.isEndOfStream() || image.isClosed())
             {

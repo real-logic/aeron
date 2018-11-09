@@ -21,7 +21,10 @@ import io.aeron.CommonContext;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
+import io.aeron.driver.exceptions.InvalidChannelException;
+import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
@@ -127,17 +130,43 @@ class ClusterSession
         channelUri.put(CommonContext.TERM_LENGTH_PARAM_NAME, "64k");
         channelUri.put(CommonContext.SPARSE_PARAM_NAME, "true");
 
-        responsePublication = aeron.addExclusivePublication(channelUri.toString(), responseStreamId);
-    }
-
-    Publication responsePublication()
-    {
-        return responsePublication;
+        try
+        {
+            responsePublication = aeron.addExclusivePublication(channelUri.toString(), responseStreamId);
+        }
+        catch (final InvalidChannelException ex)
+        {
+            responsePublication = null;
+        }
     }
 
     boolean isResponsePublicationConnected()
     {
         return null != responsePublication && responsePublication.isConnected();
+    }
+
+    public long tryClaim(final int length, final BufferClaim bufferClaim)
+    {
+        if (null == responsePublication)
+        {
+            return Publication.NOT_CONNECTED;
+        }
+        else
+        {
+            return responsePublication.tryClaim(length, bufferClaim);
+        }
+    }
+
+    public long offer(final DirectBuffer buffer, final int offset, final int length)
+    {
+        if (null == responsePublication)
+        {
+            return Publication.NOT_CONNECTED;
+        }
+        else
+        {
+            return responsePublication.offer(buffer, offset, length);
+        }
     }
 
     State state()

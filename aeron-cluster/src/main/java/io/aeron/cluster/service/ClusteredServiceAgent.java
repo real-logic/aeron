@@ -243,6 +243,11 @@ class ClusteredServiceAgent implements Agent, Cluster
             return ClientSession.MOCKED_OFFER;
         }
 
+        if (null == publication)
+        {
+            return Publication.NOT_CONNECTED;
+        }
+
         egressMessageHeaderEncoder
             .clusterSessionId(clusterSessionId)
             .timestamp(clusterTimeMs);

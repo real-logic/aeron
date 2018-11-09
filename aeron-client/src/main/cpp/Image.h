@@ -729,19 +729,19 @@ private:
     void validatePosition(std::int64_t newPosition)
     {
         const std::int64_t currentPosition = m_subscriberPosition.get();
-        const std::int64_t limitPosition = currentPosition + termBufferLength();
+        const std::int64_t limitPosition = (currentPosition - (currentPosition & m_termLengthMask)) + m_termLengthMask + 1;
 
         if (newPosition < currentPosition || newPosition > limitPosition)
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("newPosition of %d out of range %d - %d", newPosition, currentPosition, limitPosition),
+                util::strPrintf("%d newPosition out of range %d - %d", newPosition, currentPosition, limitPosition),
                 SOURCEINFO);
         }
 
         if (0 != (newPosition & (FrameDescriptor::FRAME_ALIGNMENT - 1)))
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("newPosition of %d not aligned to FRAME_ALIGNMENT", newPosition),
+                util::strPrintf("%d newPosition not aligned to FRAME_ALIGNMENT", newPosition),
                 SOURCEINFO);
         }
     }

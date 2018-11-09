@@ -96,6 +96,31 @@ public class ImageTest
     }
 
     @Test
+    public void shouldAllowValidPosition()
+    {
+        final Image image = createImage();
+        final long expectedPosition = TERM_BUFFER_LENGTH - 32;
+
+        position.setOrdered(expectedPosition);
+        assertThat(image.position(), is(expectedPosition));
+
+        image.position(TERM_BUFFER_LENGTH);
+        assertThat(image.position(), is((long)TERM_BUFFER_LENGTH));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldNotAdvancePastEndOfTerm()
+    {
+        final Image image = createImage();
+        final long expectedPosition = TERM_BUFFER_LENGTH - 32;
+
+        position.setOrdered(expectedPosition);
+        assertThat(image.position(), is(expectedPosition));
+
+        image.position(TERM_BUFFER_LENGTH + 32);
+    }
+
+    @Test
     public void shouldReportCorrectPositionOnReception()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);

@@ -657,7 +657,7 @@ public class Image
     private void validatePosition(final long newPosition)
     {
         final long currentPosition = subscriberPosition.get();
-        final long limitPosition = currentPosition + termBufferLength();
+        final long limitPosition = (currentPosition - (currentPosition & termLengthMask)) + termLengthMask + 1;
         if (newPosition < currentPosition || newPosition > limitPosition)
         {
             throw new IllegalArgumentException(

@@ -247,6 +247,9 @@ public final class AeronCluster implements AutoCloseable
 
     /**
      * Send a keep alive message to the cluster to keep this session open.
+     * <p>
+     * <b>Note:</b> keep alives can fail during a leadership transition. The consumer should continue to call
+     * {@link #pollEgress()} to ensure a connection to the new leader is established.
      *
      * @return true if successfully sent otherwise false.
      */
@@ -263,7 +266,15 @@ public final class AeronCluster implements AutoCloseable
                 return true;
             }
 
-            checkResult(result);
+            if (result == Publication.NOT_CONNECTED || result == Publication.CLOSED)
+            {
+                return false;
+            }
+
+            if (result == Publication.MAX_POSITION_EXCEEDED)
+            {
+                throw new ClusterException("unexpected publication state: " + result);
+            }
 
             if (--attempts <= 0)
             {

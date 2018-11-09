@@ -70,7 +70,7 @@ public class DriverConductor implements Agent
     private long clockUpdateDeadlineNs;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
-    private final Context context;
+    private final Context ctx;
     private final RawLogFactory rawLogFactory;
     private final ReceiverProxy receiverProxy;
     private final SenderProxy senderProxy;
@@ -100,7 +100,7 @@ public class DriverConductor implements Agent
 
     public DriverConductor(final Context ctx)
     {
-        context = ctx;
+        this.ctx = ctx;
         timerIntervalNs = ctx.timerIntervalNs();
         imageLivenessTimeoutNs = ctx.imageLivenessTimeoutNs();
         clientLivenessTimeoutNs = ctx.clientLivenessTimeoutNs();
@@ -118,10 +118,10 @@ public class DriverConductor implements Agent
         clientProxy = ctx.clientProxy();
         tempBuffer = ctx.tempBuffer();
 
-        countersManager = context.countersManager();
+        countersManager = ctx.countersManager();
 
         clientCommandAdapter = new ClientCommandAdapter(
-            context.systemCounters().get(ERRORS),
+            ctx.systemCounters().get(ERRORS),
             ctx.errorHandler(),
             toDriverCommands,
             clientProxy,
@@ -205,7 +205,7 @@ public class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint)
     {
         Configuration.validateMtuLength(senderMtuLength);
-        Configuration.validateInitialWindowLength(context.initialWindowLength(), senderMtuLength);
+        Configuration.validateInitialWindowLength(ctx.initialWindowLength(), senderMtuLength);
 
         final long joinPosition = computePosition(
             activeTermId, initialTermOffset, LogBufferDescriptor.positionBitsToShift(termBufferLength), initialTermId);
@@ -228,7 +228,7 @@ public class DriverConductor implements Agent
                 udpChannel,
                 registrationId);
 
-            final CongestionControl congestionControl = context.congestionControlSupplier().newInstance(
+            final CongestionControl congestionControl = ctx.congestionControlSupplier().newInstance(
                 registrationId,
                 udpChannel,
                 streamId,
@@ -236,7 +236,7 @@ public class DriverConductor implements Agent
                 termBufferLength,
                 senderMtuLength,
                 cachedNanoClock,
-                context,
+                ctx,
                 countersManager);
 
             final PublicationImage image = new PublicationImage(
@@ -258,10 +258,10 @@ public class DriverConductor implements Agent
                 nanoClock,
                 cachedNanoClock,
                 cachedEpochClock,
-                context.systemCounters(),
+                ctx.systemCounters(),
                 sourceAddress,
                 congestionControl,
-                context.lossReport(),
+                ctx.lossReport(),
                 subscriberPositions.get(0).subscription().isReliable());
 
             publicationImages.add(image);
@@ -358,7 +358,7 @@ public class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final ChannelUri channelUri = udpChannel.channelUri();
-        final PublicationParams params = getPublicationParams(context, channelUri, this, isExclusive, false);
+        final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, false);
         validateMtuForMaxMessage(params);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
@@ -629,7 +629,7 @@ public class DriverConductor implements Agent
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), context);
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
 
         checkForClashingSubscription(params, udpChannel, streamId);
 
@@ -663,7 +663,7 @@ public class DriverConductor implements Agent
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel), context);
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel), ctx);
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
             registrationId, streamId, channel, getOrAddClient(clientId), params);
 
@@ -701,7 +701,7 @@ public class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), context);
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
             registrationId, udpChannel, streamId, client, params);
@@ -838,7 +838,6 @@ public class DriverConductor implements Agent
         if (null != client)
         {
             client.timeOfLastKeepaliveMs(0);
-
             clientProxy.operationSucceeded(correlationId);
         }
     }
@@ -868,7 +867,7 @@ public class DriverConductor implements Agent
         final UdpChannel destinationUdpChannel = UdpChannel.parse(destinationChannel);
 
         final ReceiveDestinationUdpTransport transport =
-            new ReceiveDestinationUdpTransport(destinationUdpChannel, context);
+            new ReceiveDestinationUdpTransport(destinationUdpChannel, ctx);
 
         receiverProxy.addDestination(receiveChannelEndpoint, transport);
         clientProxy.operationSucceeded(correlationId);
@@ -926,7 +925,7 @@ public class DriverConductor implements Agent
             {
                 if (toDriverCommands.unblock())
                 {
-                    context.systemCounters().get(UNBLOCKED_COMMANDS).incrementOrdered();
+                    ctx.systemCounters().get(UNBLOCKED_COMMANDS).incrementOrdered();
                 }
             }
         }
@@ -1011,13 +1010,13 @@ public class DriverConductor implements Agent
 
         final RetransmitHandler retransmitHandler = new RetransmitHandler(
             cachedNanoClock,
-            context.systemCounters(),
+            ctx.systemCounters(),
             RETRANSMIT_UNICAST_DELAY_GENERATOR,
             RETRANSMIT_UNICAST_LINGER_GENERATOR);
 
         final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
-            context.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
-            context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
+            ctx.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
+            ctx.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
 
         final NetworkPublication publication = new NetworkPublication(
             registrationId,
@@ -1033,15 +1032,15 @@ public class DriverConductor implements Agent
             streamId,
             initialTermId,
             params.mtuLength,
-            context.systemCounters(),
+            ctx.systemCounters(),
             flowControl,
             retransmitHandler,
             networkPublicationThreadLocals,
             publicationUnblockTimeoutNs,
-            context.publicationConnectionTimeoutNs(),
+            ctx.publicationConnectionTimeoutNs(),
             params.lingerTimeoutNs,
             isExclusive,
-            context.spiesSimulateConnection());
+            ctx.spiesSimulateConnection());
 
         channelEndpoint.incRef();
         networkPublications.add(publication);
@@ -1097,7 +1096,7 @@ public class DriverConductor implements Agent
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, params.mtuLength);
         termLength(logMetaData, rawLog.termLength());
-        pageSize(logMetaData, context.filePageSize());
+        pageSize(logMetaData, ctx.filePageSize());
         correlationId(logMetaData, registrationId);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
 
@@ -1151,7 +1150,7 @@ public class DriverConductor implements Agent
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, senderMtuLength);
         termLength(logMetaData, termBufferLength);
-        pageSize(logMetaData, context.filePageSize());
+        pageSize(logMetaData, ctx.filePageSize());
         correlationId(logMetaData, correlationId);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
 
@@ -1163,10 +1162,10 @@ public class DriverConductor implements Agent
         SendChannelEndpoint channelEndpoint = findExistingSendChannelEndpoint(udpChannel);
         if (null == channelEndpoint)
         {
-            channelEndpoint = context.sendChannelEndpointSupplier().newInstance(
+            channelEndpoint = ctx.sendChannelEndpointSupplier().newInstance(
                 udpChannel,
                 SendChannelStatus.allocate(tempBuffer, countersManager, udpChannel.originalUriString()),
-                context);
+                ctx);
 
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             senderProxy.registerSendChannelEndpoint(channelEndpoint);
@@ -1318,11 +1317,11 @@ public class DriverConductor implements Agent
         ReceiveChannelEndpoint channelEndpoint = findExistingReceiveChannelEndpoint(udpChannel);
         if (null == channelEndpoint)
         {
-            channelEndpoint = context.receiveChannelEndpointSupplier().newInstance(
+            channelEndpoint = ctx.receiveChannelEndpointSupplier().newInstance(
                 udpChannel,
-                new DataPacketDispatcher(context.driverConductorProxy(), receiverProxy.receiver()),
+                new DataPacketDispatcher(ctx.driverConductorProxy(), receiverProxy.receiver()),
                 ReceiveChannelStatus.allocate(tempBuffer, countersManager, udpChannel.originalUriString()),
-                context);
+                ctx);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);
@@ -1358,6 +1357,7 @@ public class DriverConductor implements Agent
                 clientId,
                 clientLivenessTimeoutNs,
                 cachedEpochClock.time(),
+                ctx.systemCounters().get(SystemCounterDescriptor.CLIENT_TIMEOUTS),
                 ClientHeartbeatStatus.allocate(tempBuffer, countersManager, clientId));
             clients.add(client);
         }
@@ -1370,7 +1370,7 @@ public class DriverConductor implements Agent
     {
         IpcPublication publication = null;
         final ChannelUri channelUri = ChannelUri.parse(channel);
-        final PublicationParams params = getPublicationParams(context, channelUri, this, isExclusive, true);
+        final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, true);
 
         if (!isExclusive)
         {
@@ -1417,7 +1417,7 @@ public class DriverConductor implements Agent
             publicationUnblockTimeoutNs,
             params.lingerTimeoutNs,
             cachedNanoClock.nanoTime(),
-            context.systemCounters(),
+            ctx.systemCounters(),
             isExclusive);
 
         ipcPublications.add(publication);
@@ -1496,10 +1496,10 @@ public class DriverConductor implements Agent
         {
             int sessionId = nextSessionId++;
 
-            if (context.publicationReservedSessionIdLow() <= sessionId &&
-                sessionId <= context.publicationReservedSessionIdHigh())
+            if (ctx.publicationReservedSessionIdLow() <= sessionId &&
+                sessionId <= ctx.publicationReservedSessionIdHigh())
             {
-                nextSessionId = context.publicationReservedSessionIdHigh() + 1;
+                nextSessionId = ctx.publicationReservedSessionIdHigh() + 1;
                 sessionId = nextSessionId++;
             }
 
@@ -1528,7 +1528,7 @@ public class DriverConductor implements Agent
                 }
                 else
                 {
-                    context.systemCounters().get(FREE_FAILS).incrementOrdered();
+                    ctx.systemCounters().get(FREE_FAILS).incrementOrdered();
                 }
             }
         }

@@ -46,7 +46,8 @@ public enum SystemCounterDescriptor
     UNBLOCKED_COMMANDS(20, "Unblocked Control Commands"),
     POSSIBLE_TTL_ASYMMETRY(21, "Possible TTL Asymmetry"),
     CONTROLLABLE_IDLE_STRATEGY(22, "ControllableIdleStrategy status"),
-    LOSS_GAP_FILLS(23, "Loss gap fills");
+    LOSS_GAP_FILLS(23, "Loss gap fills"),
+    CLIENT_TIMEOUTS(24, "Client timeouts");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.

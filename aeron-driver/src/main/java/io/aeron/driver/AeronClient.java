@@ -26,6 +26,7 @@ public class AeronClient implements DriverManagedResource
 {
     private final long clientId;
     private final long clientLivenessTimeoutMs;
+    private final AtomicCounter clientTimeouts;
     private final AtomicCounter heartbeatStatus;
     private long timeOfLastKeepaliveMs;
     private boolean reachedEndOfLife = false;
@@ -34,11 +35,13 @@ public class AeronClient implements DriverManagedResource
         final long clientId,
         final long clientLivenessTimeoutNs,
         final long nowMs,
+        final AtomicCounter clientTimeouts,
         final AtomicCounter heartbeatStatus)
     {
         this.clientId = clientId;
         this.clientLivenessTimeoutMs = Math.max(1, TimeUnit.NANOSECONDS.toMillis(clientLivenessTimeoutNs));
         this.timeOfLastKeepaliveMs = nowMs;
+        this.clientTimeouts = clientTimeouts;
         this.heartbeatStatus = heartbeatStatus;
 
         heartbeatStatus.setOrdered(nowMs);
@@ -73,6 +76,7 @@ public class AeronClient implements DriverManagedResource
         if (timeMs > (timeOfLastKeepaliveMs + clientLivenessTimeoutMs))
         {
             reachedEndOfLife = true;
+            clientTimeouts.incrementOrdered();
         }
     }
 

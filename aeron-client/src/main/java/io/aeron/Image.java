@@ -661,12 +661,12 @@ public class Image
         if (newPosition < currentPosition || newPosition > limitPosition)
         {
             throw new IllegalArgumentException(
-                "newPosition " + newPosition + " out of range " + currentPosition + "-" + limitPosition);
+                newPosition + " newPosition out of range " + currentPosition + "-" + limitPosition);
         }
 
         if (0 != (newPosition & (FRAME_ALIGNMENT - 1)))
         {
-            throw new IllegalArgumentException("newPosition " + newPosition + " not aligned to FRAME_ALIGNMENT");
+            throw new IllegalArgumentException(newPosition + " newPosition not aligned to FRAME_ALIGNMENT");
         }
     }
 

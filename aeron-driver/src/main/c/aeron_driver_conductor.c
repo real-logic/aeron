@@ -179,8 +179,10 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->spy_subscriptions.capacity = 0;
 
     conductor->errors_counter = aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_ERRORS);
-    conductor->unblocked_commands_counter =
-        aeron_counter_addr(&conductor->counters_manager, AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS);
+    conductor->unblocked_commands_counter = aeron_counter_addr(
+        &conductor->counters_manager, AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS);
+    conductor->client_timeouts_counter = aeron_counter_addr(
+        &conductor->counters_manager, AERON_SYSTEM_COUNTER_CLIENT_TIMEOUTS);
 
     int64_t now_ns = context->nano_clock();
 
@@ -192,6 +194,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
     conductor->context = context;
+
     return 0;
 }
 
@@ -271,6 +274,7 @@ void aeron_client_on_time_event(
     if (now_ms > (client->time_of_last_keepalive_ms + client->client_liveness_timeout_ms))
     {
         client->reached_end_of_life = true;
+        aeron_counter_ordered_increment(conductor->client_timeouts_counter, 1);
     }
 }
 
@@ -883,8 +887,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
                     conductor->network_publications.array[conductor->network_publications.length++].publication = publication;
 
-                    publication->conductor_fields.managed_resource.time_of_last_status_change =
-                        conductor->nano_clock();
+                    publication->conductor_fields.managed_resource.time_of_last_status_change = conductor->nano_clock();
                 }
             }
         }
@@ -958,9 +961,8 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
 aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_channel_endpoint(
     aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel)
 {
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_str_to_ptr_hash_map_get(
-            &conductor->receive_channel_endpoint_by_channel_map, channel->canonical_form, channel->canonical_length);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_str_to_ptr_hash_map_get(
+        &conductor->receive_channel_endpoint_by_channel_map, channel->canonical_form, channel->canonical_length);
 
     if (NULL == endpoint)
     {

@@ -504,8 +504,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
             size_t padding = 0;
             size_t max_length = remaining_bytes < publication->mtu_length ? remaining_bytes : publication->mtu_length;
 
-            size_t available =
-                aeron_term_scanner_scan_for_availability(ptr, term_length_left, max_length, &padding);
+            size_t available = aeron_term_scanner_scan_for_availability(ptr, term_length_left, max_length, &padding);
             if (available <= 0)
             {
                 break;

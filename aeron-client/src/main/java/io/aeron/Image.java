@@ -103,6 +103,16 @@ public class Image
     }
 
     /**
+     * Number of bits to right shift a position to get a term count for how far the stream has progressed.
+     *
+     * @return of bits to right shift a position to get a term count for how far the stream has progressed.
+     */
+    public int positionBitsToShift()
+    {
+        return positionBitsToShift;
+    }
+
+    /**
      * Get the length in bytes for each term partition in the log buffer.
      *
      * @return the length in bytes for each term partition in the log buffer.

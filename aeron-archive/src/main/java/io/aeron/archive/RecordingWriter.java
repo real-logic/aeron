@@ -28,9 +28,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
-import static io.aeron.archive.Archive.segmentFileIndex;
-import static io.aeron.archive.Archive.segmentFileName;
-
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
  * written into the archive folder.
@@ -73,7 +70,7 @@ class RecordingWriter implements BlockHandler
         forceWrites = ctx.fileSyncLevel() > 0;
         forceMetadata = ctx.fileSyncLevel() > 1;
 
-        segmentIndex = segmentFileIndex(startPosition, joinPosition, segmentLength);
+        segmentIndex = Archive.segmentFileIndex(startPosition, joinPosition, segmentLength);
     }
 
     public void onBlock(
@@ -152,7 +149,7 @@ class RecordingWriter implements BlockHandler
 
     private void openRecordingSegmentFile()
     {
-        final File file = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
+        final File file = new File(archiveDir, Archive.segmentFileName(recordingId, segmentIndex));
 
         RandomAccessFile recordingFile = null;
         try

@@ -105,7 +105,7 @@ public abstract class Publication implements AutoCloseable
     {
         final UnsafeBuffer logMetaDataBuffer = logBuffers.metaDataBuffer();
         this.termBufferLength = logBuffers.termLength();
-        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(this.termBufferLength);
+        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termBufferLength);
         this.maxPayloadLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
         this.maxPossiblePosition = termBufferLength * (1L << 31L);
         this.conductor = clientConductor;
@@ -121,6 +121,16 @@ public abstract class Publication implements AutoCloseable
         this.logBuffers = logBuffers;
         this.positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termBufferLength);
         this.headerWriter = HeaderWriter.newInstance(defaultFrameHeader(logMetaDataBuffer));
+    }
+
+    /**
+     * Number of bits to right shift a position to get a term count for how far the stream has progressed.
+     *
+     * @return of bits to right shift a position to get a term count for how far the stream has progressed.
+     */
+    public int positionBitsToShift()
+    {
+        return positionBitsToShift;
     }
 
     /**

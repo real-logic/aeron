@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
@@ -40,7 +39,6 @@ class EgressPublisher
         final EventCode code,
         final String detail)
     {
-        final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             SessionEventEncoder.BLOCK_LENGTH +
             SessionEventEncoder.detailHeaderLength() +
@@ -49,7 +47,7 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = session.tryClaim(length, bufferClaim);
             if (result > 0)
             {
                 sessionEventEncoder
@@ -73,8 +71,7 @@ class EgressPublisher
 
     boolean sendChallenge(final ClusterSession session, final byte[] encodedChallenge)
     {
-        final Publication publication = session.responsePublication();
-        if (!publication.isConnected())
+        if (!session.isResponsePublicationConnected())
         {
             return false;
         }
@@ -90,7 +87,7 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.offer(buffer, 0, length, null);
+            final long result = session.offer(buffer, 0, length);
             if (result > 0)
             {
                 return true;
@@ -107,7 +104,6 @@ class EgressPublisher
         final int leaderMemberId,
         final String memberEndpoints)
     {
-        final Publication publication = session.responsePublication();
         final int length = MessageHeaderEncoder.ENCODED_LENGTH +
             NewLeaderEventEncoder.BLOCK_LENGTH +
             NewLeaderEventEncoder.memberEndpointsHeaderLength() +
@@ -116,7 +112,7 @@ class EgressPublisher
         int attempts = SEND_ATTEMPTS;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            final long result = session.tryClaim(length, bufferClaim);
             if (result > 0)
             {
                 newLeaderEventEncoder

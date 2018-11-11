@@ -62,15 +62,7 @@ class RecordingSession implements Session
         this.position = position;
 
         blockLengthLimit = Math.min(image.termBufferLength(), MAX_BLOCK_LENGTH);
-
-        recordingWriter = new RecordingWriter(
-            recordingId,
-            startPosition,
-            image.joinPosition(),
-            image.termBufferLength(),
-            segmentLength,
-            ctx,
-            archiveDirChannel);
+        recordingWriter = new RecordingWriter(recordingId, startPosition, segmentLength, image, ctx, archiveDirChannel);
     }
 
     public long sessionId()

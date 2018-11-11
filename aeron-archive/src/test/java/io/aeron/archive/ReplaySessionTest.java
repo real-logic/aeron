@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
+import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.logbuffer.ExclusiveBufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -61,6 +62,7 @@ public class ReplaySessionTest
     private static final int STREAM_ID = 1;
     private static final FileChannel ARCHIVE_DIR_CHANNEL = null;
 
+    private final Image mockImage = mock(Image.class);
     private final ExclusivePublication mockReplayPub = mock(ExclusivePublication.class);
     private final ControlSession mockControlSession = mock(ControlSession.class);
     private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
@@ -81,6 +83,8 @@ public class ReplaySessionTest
     {
         when(recordingPositionCounter.get()).then((invocation) -> recordingPosition);
         when(mockArchiveConductor.catalog()).thenReturn(mockCatalog);
+        when(mockImage.termBufferLength()).thenReturn(TERM_BUFFER_LENGTH);
+        when(mockImage.joinPosition()).thenReturn(JOIN_POSITION);
 
         context = new Archive.Context()
             .segmentFileLength(SEGMENT_LENGTH)
@@ -97,13 +101,7 @@ public class ReplaySessionTest
         recordingSummary.sessionId = SESSION_ID;
 
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID,
-            START_POSITION,
-            JOIN_POSITION,
-            TERM_BUFFER_LENGTH,
-            SEGMENT_LENGTH,
-            context,
-            ARCHIVE_DIR_CHANNEL);
+            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL);
 
         writer.init();
 
@@ -338,13 +336,7 @@ public class ReplaySessionTest
         recordingPosition = START_POSITION;
 
         final RecordingWriter writer = new RecordingWriter(
-            recordingId,
-            START_POSITION,
-            JOIN_POSITION,
-            TERM_BUFFER_LENGTH,
-            SEGMENT_LENGTH,
-            context,
-            ARCHIVE_DIR_CHANNEL);
+            recordingId, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL);
 
         writer.init();
 

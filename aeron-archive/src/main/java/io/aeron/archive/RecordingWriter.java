@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Image;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BlockHandler;
 import org.agrona.CloseHelper;
@@ -57,21 +58,21 @@ class RecordingWriter implements BlockHandler
     RecordingWriter(
         final long recordingId,
         final long startPosition,
-        final long joinPosition,
-        final int termBufferLength,
         final int segmentLength,
+        final Image image,
         final Archive.Context ctx,
         final FileChannel archiveDirChannel)
     {
         this.recordingId = recordingId;
         this.archiveDirChannel = archiveDirChannel;
+        this.segmentLength = segmentLength;
 
         archiveDir = ctx.archiveDir();
-        this.segmentLength = segmentLength;
         forceWrites = ctx.fileSyncLevel() > 0;
         forceMetadata = ctx.fileSyncLevel() > 1;
 
-        final long startTermBasePosition = startPosition - (startPosition & (termBufferLength - 1));
+        final long joinPosition = image.joinPosition();
+        final long startTermBasePosition = startPosition - (startPosition & (image.termBufferLength() - 1));
         segmentOffset = (int)(joinPosition - startTermBasePosition) & (segmentLength - 1);
         segmentIndex = Archive.segmentFileIndex(startPosition, joinPosition, segmentLength);
     }

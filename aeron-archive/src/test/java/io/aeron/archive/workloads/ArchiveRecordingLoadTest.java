@@ -43,7 +43,6 @@ import java.util.function.BooleanSupplier;
 
 import static io.aeron.archive.TestUtil.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
-import static io.aeron.logbuffer.LogBufferDescriptor.computeTermOffsetFromPosition;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -263,7 +262,7 @@ public class ArchiveRecordingLoadTest
         final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         final int initialTermId = publication.initialTermId();
         final long startPosition = publication.position();
-        final int startTermOffset = computeTermOffsetFromPosition(startPosition, positionBitsToShift);
+        final int startTermOffset = (int)startPosition & (termLength - 1);
         final int startTermId = computeTermIdFromPosition(startPosition, positionBitsToShift, initialTermId);
 
         for (int i = 0; i < MESSAGE_COUNT; i++)
@@ -274,7 +273,7 @@ public class ArchiveRecordingLoadTest
         }
 
         final long position = publication.position();
-        final int lastTermOffset = computeTermOffsetFromPosition(position, positionBitsToShift);
+        final int lastTermOffset = (int)position & (termLength - 1);
         final int lastTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
         expectedRecordingLength = ((lastTermId - startTermId) * (long)termLength) + (lastTermOffset - startTermOffset);
 

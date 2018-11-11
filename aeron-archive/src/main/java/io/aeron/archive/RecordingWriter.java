@@ -82,11 +82,6 @@ class RecordingWriter implements BlockHandler
     {
         try
         {
-            if (segmentLength == segmentOffset)
-            {
-                onFileRollOver();
-            }
-
             final ByteBuffer byteBuffer = termBuffer.byteBuffer();
             byteBuffer.limit(termOffset + length).position(termOffset);
 
@@ -102,6 +97,10 @@ class RecordingWriter implements BlockHandler
             }
 
             segmentOffset += length;
+            if (segmentLength == segmentOffset)
+            {
+                onFileRollOver();
+            }
         }
         catch (final ClosedByInterruptException ex)
         {

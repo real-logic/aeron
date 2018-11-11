@@ -108,8 +108,7 @@ class RecordingSession implements Session
         if (State.INACTIVE == state)
         {
             state = State.STOPPED;
-            final long stopPosition = position.getWeak();
-            recordingEventsProxy.stopped(recordingId, image.joinPosition(), stopPosition);
+            recordingEventsProxy.stopped(recordingId, image.joinPosition(), image.position());
             recordingWriter.close();
             workDone += 1;
         }
@@ -119,8 +118,6 @@ class RecordingSession implements Session
 
     private int init()
     {
-        final long joinPosition = image.joinPosition();
-
         try
         {
             recordingWriter.init();
@@ -134,7 +131,7 @@ class RecordingSession implements Session
 
         recordingEventsProxy.started(
             recordingId,
-            joinPosition,
+            image.joinPosition(),
             image.sessionId(),
             image.subscription().streamId(),
             originalChannel,

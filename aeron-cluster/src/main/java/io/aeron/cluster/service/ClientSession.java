@@ -139,9 +139,8 @@ public class ClientSession
             {
                 responsePublication = aeron.addExclusivePublication(responseChannel, responseStreamId);
             }
-            catch (final InvalidChannelException ex)
+            catch (final InvalidChannelException ignore)
             {
-                // responsePublication stays null
             }
         }
     }

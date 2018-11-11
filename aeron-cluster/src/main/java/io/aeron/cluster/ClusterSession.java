@@ -134,9 +134,8 @@ class ClusterSession
         {
             responsePublication = aeron.addExclusivePublication(channelUri.toString(), responseStreamId);
         }
-        catch (final InvalidChannelException ex)
+        catch (final InvalidChannelException ignore)
         {
-            responsePublication = null;
         }
     }
 

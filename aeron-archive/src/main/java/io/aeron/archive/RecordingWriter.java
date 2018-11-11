@@ -103,7 +103,7 @@ class RecordingWriter implements BlockHandler
             }
 
             segmentOffset += length;
-            if (segmentLength == segmentOffset)
+            if (segmentOffset >= segmentLength)
             {
                 onFileRollOver();
             }

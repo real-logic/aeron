@@ -101,10 +101,11 @@ public class ReplaySessionTest
             START_POSITION,
             JOIN_POSITION,
             TERM_BUFFER_LENGTH,
+            SEGMENT_LENGTH,
             context,
             ARCHIVE_DIR_CHANNEL);
 
-        writer.init(INITIAL_TERM_OFFSET);
+        writer.init();
 
         final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 
@@ -341,10 +342,11 @@ public class ReplaySessionTest
             START_POSITION,
             JOIN_POSITION,
             TERM_BUFFER_LENGTH,
+            SEGMENT_LENGTH,
             context,
             ARCHIVE_DIR_CHANNEL);
 
-        writer.init(INITIAL_TERM_OFFSET);
+        writer.init();
 
         final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(TERM_BUFFER_LENGTH, 64));
 

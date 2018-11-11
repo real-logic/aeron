@@ -58,6 +58,7 @@ class RecordingWriter implements BlockHandler
         final long recordingId,
         final long startPosition,
         final long joinPosition,
+        final int termBufferLength,
         final int segmentLength,
         final Archive.Context ctx,
         final FileChannel archiveDirChannel)
@@ -70,15 +71,13 @@ class RecordingWriter implements BlockHandler
         forceWrites = ctx.fileSyncLevel() > 0;
         forceMetadata = ctx.fileSyncLevel() > 1;
 
+        final long startTermBasePosition = startPosition - (startPosition & (termBufferLength - 1));
+        segmentOffset = (int)(joinPosition - startTermBasePosition) & (segmentLength - 1);
         segmentIndex = Archive.segmentFileIndex(startPosition, joinPosition, segmentLength);
     }
 
     public void onBlock(
-        final DirectBuffer termBuffer,
-        final int termOffset,
-        final int length,
-        final int sessionId,
-        final int termId)
+        final DirectBuffer termBuffer, final int termOffset, final int length, final int sessionId, final int termId)
     {
         try
         {
@@ -117,11 +116,6 @@ class RecordingWriter implements BlockHandler
         }
     }
 
-    int segmentFileLength()
-    {
-        return segmentLength;
-    }
-
     void close()
     {
         if (!isClosed)
@@ -131,9 +125,8 @@ class RecordingWriter implements BlockHandler
         }
     }
 
-    void init(final int segmentOffset) throws IOException
+    void init() throws IOException
     {
-        this.segmentOffset = segmentOffset;
         openRecordingSegmentFile();
 
         if (segmentOffset != 0)

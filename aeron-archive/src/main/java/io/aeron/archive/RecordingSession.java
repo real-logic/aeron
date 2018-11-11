@@ -36,7 +36,6 @@ class RecordingSession implements Session
     }
 
     private final long recordingId;
-    private final long startPosition;
     private final int blockLengthLimit;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Image image;
@@ -57,7 +56,6 @@ class RecordingSession implements Session
         final Archive.Context ctx)
     {
         this.recordingId = recordingId;
-        this.startPosition = startPosition;
         this.originalChannel = originalChannel;
         this.recordingEventsProxy = recordingEventsProxy;
         this.image = image;
@@ -66,7 +64,13 @@ class RecordingSession implements Session
         blockLengthLimit = Math.min(image.termBufferLength(), MAX_BLOCK_LENGTH);
 
         recordingWriter = new RecordingWriter(
-            recordingId, startPosition, image.joinPosition(), segmentLength, ctx, archiveDirChannel);
+            recordingId,
+            startPosition,
+            image.joinPosition(),
+            image.termBufferLength(),
+            segmentLength,
+            ctx,
+            archiveDirChannel);
     }
 
     public long sessionId()
@@ -124,12 +128,10 @@ class RecordingSession implements Session
     private int init()
     {
         final long joinPosition = image.joinPosition();
-        final long startTermBasePosition = startPosition - (startPosition & (image.termBufferLength() - 1));
-        final long segmentOffset = (joinPosition - startTermBasePosition) & (recordingWriter.segmentFileLength() - 1);
 
         try
         {
-            recordingWriter.init((int)segmentOffset);
+            recordingWriter.init();
         }
         catch (final IOException ex)
         {

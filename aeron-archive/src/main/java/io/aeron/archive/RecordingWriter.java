@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.Image;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BlockHandler;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
@@ -28,6 +29,9 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
+
+import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
+import static io.aeron.logbuffer.FrameDescriptor.typeOffset;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -82,8 +86,10 @@ class RecordingWriter implements BlockHandler
     {
         try
         {
+            final boolean isPaddingFrame = termBuffer.getShort(typeOffset(termOffset)) == PADDING_FRAME_TYPE;
+            final int dataLength = isPaddingFrame ? DataHeaderFlyweight.HEADER_LENGTH : length;
             final ByteBuffer byteBuffer = termBuffer.byteBuffer();
-            byteBuffer.limit(termOffset + length).position(termOffset);
+            byteBuffer.limit(termOffset + dataLength).position(termOffset);
 
             do
             {
@@ -100,6 +106,10 @@ class RecordingWriter implements BlockHandler
             if (segmentLength == segmentOffset)
             {
                 onFileRollOver();
+            }
+            else if (isPaddingFrame)
+            {
+                recordingFileChannel.position(segmentOffset);
             }
         }
         catch (final ClosedByInterruptException ex)

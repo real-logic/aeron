@@ -569,6 +569,13 @@ public class Image
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
      * will be delivered to the {@link BlockHandler} up to a limited number of bytes.
+     * <p>
+     * A scan will terminate if a padding frame is encountered. If first frame in a scan is padding then a block
+     * for the padding is notified. If the padding comes after the first frame in a scan then the scan terminates
+     * at the offset the padding frame begins. Padding frames are delivered singularly in a block.
+     * <p>
+     * Padding frames may be for a greater range than the limit offset but only the header needs to be valid so
+     * relevant length of the frame is {@link io.aeron.protocol.DataHeaderFlyweight#HEADER_LENGTH}.
      *
      * @param handler          to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
@@ -584,17 +591,16 @@ public class Image
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
         final UnsafeBuffer termBuffer = activeTermBuffer(position);
-        final int limit = Math.min(termOffset + blockLengthLimit, termBuffer.capacity());
+        final int limitOffset = Math.min(termOffset + blockLengthLimit, termBuffer.capacity());
+        final int resultingOffset = TermBlockScanner.scan(termBuffer, termOffset, limitOffset);
+        final int length = resultingOffset - termOffset;
 
-        final int resultingOffset = TermBlockScanner.scan(termBuffer, termOffset, limit);
-
-        final int bytesConsumed = resultingOffset - termOffset;
         if (resultingOffset > termOffset)
         {
             try
             {
                 final int termId = termBuffer.getInt(termOffset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
-                handler.onBlock(termBuffer, termOffset, bytesConsumed, sessionId, termId);
+                handler.onBlock(termBuffer, termOffset, length, sessionId, termId);
             }
             catch (final Throwable t)
             {
@@ -602,11 +608,11 @@ public class Image
             }
             finally
             {
-                subscriberPosition.setOrdered(position + bytesConsumed);
+                subscriberPosition.setOrdered(position + length);
             }
         }
 
-        return bytesConsumed;
+        return length;
     }
 
     /**
@@ -614,6 +620,13 @@ public class Image
      * will be delivered to the {@link RawBlockHandler} up to a limited number of bytes.
      * <p>
      * This method is useful for operations like bulk archiving a stream to file.
+     * <p>
+     * A scan will terminate if a padding frame is encountered. If first frame in a scan is padding then a block
+     * for the padding is notified. If the padding comes after the first frame in a scan then the scan terminates
+     * at the offset the padding frame begins. Padding frames are delivered singularly in a block.
+     * <p>
+     * Padding frames may be for a greater range than the limit offset but only the header needs to be valid so
+     * relevant length of the frame is {@link io.aeron.protocol.DataHeaderFlyweight#HEADER_LENGTH}.
      *
      * @param handler          to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
@@ -631,9 +644,8 @@ public class Image
         final int activeIndex = indexByPosition(position, positionBitsToShift);
         final UnsafeBuffer termBuffer = termBuffers[activeIndex];
         final int capacity = termBuffer.capacity();
-        final int limit = Math.min(termOffset + blockLengthLimit, capacity);
-
-        final int resultingOffset = TermBlockScanner.scan(termBuffer, termOffset, limit);
+        final int limitOffset = Math.min(termOffset + blockLengthLimit, capacity);
+        final int resultingOffset = TermBlockScanner.scan(termBuffer, termOffset, limitOffset);
         final int length = resultingOffset - termOffset;
 
         if (resultingOffset > termOffset)

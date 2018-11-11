@@ -31,6 +31,7 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -206,6 +207,7 @@ public class ChannelEndpointStatusTest
         assertThat(errorCounter.get(), greaterThan(0));
 
         assertThat(publicationB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
+        assertTrue(publicationB.isClosed());
         assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
@@ -231,8 +233,9 @@ public class ChannelEndpointStatusTest
         }
 
         verify(errorHandlerClientC, timeout(5000)).onError(any(ChannelEndpointException.class));
-        assertThat(subscriptionC.channelStatus(), is(ChannelEndpointStatus.ERRORED));
         assertThat(errorCounter.get(), greaterThan(0));
+        assertThat(subscriptionC.channelStatus(), is(ChannelEndpointStatus.ERRORED));
+        assertTrue(subscriptionC.isClosed());
 
         assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
         assertThat(subscriptionB.channelStatus(), is(ChannelEndpointStatus.ACTIVE));

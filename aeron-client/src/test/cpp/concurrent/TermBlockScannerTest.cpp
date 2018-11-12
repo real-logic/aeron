@@ -53,12 +53,12 @@ protected:
 TEST_F(TermBlockScannerTest, shouldScanEmptyBuffer)
 {
     const std::int32_t offset = 0;
-    const std::int32_t limit = m_log.capacity();
+    const std::int32_t limitOffset = m_log.capacity();
 
-    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(0)))
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(offset)))
         .WillOnce(testing::Return(0));
 
-    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limit);
+    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limitOffset);
 
     EXPECT_EQ(newOffset, offset);
 }
@@ -66,99 +66,120 @@ TEST_F(TermBlockScannerTest, shouldScanEmptyBuffer)
 TEST_F(TermBlockScannerTest, shouldReadFirstMessage)
 {
     const std::int32_t offset = 0;
-    const std::int32_t limit = m_log.capacity();
+    const std::int32_t limitOffset = m_log.capacity();
     const std::int32_t messageLength = 50;
-    const std::int32_t alignedMessagelength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t alignedMessageLength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
 
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(offset)))
         .Times(1)
         .WillOnce(testing::Return(messageLength));
-    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessagelength)))
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(offset)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessageLength)))
         .WillOnce(testing::Return(0));
 
-    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limit);
+    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limitOffset);
 
-    EXPECT_EQ(newOffset, alignedMessagelength);
+    EXPECT_EQ(newOffset, alignedMessageLength);
 }
 
 TEST_F(TermBlockScannerTest, shouldReadBlockOfTwoMessages)
 {
     const std::int32_t offset = 0;
-    const std::int32_t limit = m_log.capacity();
+    const std::int32_t limitOffset = m_log.capacity();
     const std::int32_t messageLength = 50;
-    const std::int32_t alignedMessagelength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t alignedMessageLength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
 
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(offset)))
         .Times(1)
         .WillOnce(testing::Return(messageLength));
-    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessagelength)))
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(offset)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessageLength)))
         .Times(1)
         .WillOnce(testing::Return(messageLength));
-    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessagelength * 2)))
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(alignedMessageLength)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessageLength * 2)))
         .WillOnce(testing::Return(0));
 
-    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limit);
+    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limitOffset);
 
-    EXPECT_EQ(newOffset, alignedMessagelength * 2);
+    EXPECT_EQ(newOffset, alignedMessageLength * 2);
 }
 
 TEST_F(TermBlockScannerTest, shouldReadBlockOfThreeMessagesThatFillBuffer)
 {
     const std::int32_t offset = 0;
-    const std::int32_t limit = m_log.capacity();
+    const std::int32_t limitOffset = m_log.capacity();
     const std::int32_t messageLength = 50;
-    const std::int32_t alignedMessagelength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
-    const std::int32_t thirdMessageLength = limit - (2 * alignedMessagelength);
+    const std::int32_t alignedMessageLength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t thirdMessageLength = limitOffset - (2 * alignedMessageLength);
 
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(offset)))
         .Times(1)
         .WillOnce(testing::Return(messageLength));
-    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessagelength)))
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(offset)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessageLength)))
         .Times(1)
         .WillOnce(testing::Return(messageLength));
-    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessagelength * 2)))
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(alignedMessageLength)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessageLength * 2)))
         .Times(1)
         .WillOnce(testing::Return(thirdMessageLength));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(alignedMessageLength * 2)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
 
-    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limit);
+    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limitOffset);
 
-    EXPECT_EQ(newOffset, limit);
+    EXPECT_EQ(newOffset, limitOffset);
 }
 
 TEST_F(TermBlockScannerTest, shouldReadBlockOfTwoMessagesBecauseOfLimit)
 {
     const std::int32_t offset = 0;
     const std::int32_t messageLength = 50;
-    const std::int32_t alignedMessagelength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
-    const std::int32_t limit = (2 * alignedMessagelength) + 1;
+    const std::int32_t alignedMessageLength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t limitOffset = (2 * alignedMessageLength) + 1;
 
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(offset)))
         .Times(1)
         .WillOnce(testing::Return(messageLength));
-    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessagelength)))
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(offset)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessageLength)))
         .Times(1)
         .WillOnce(testing::Return(messageLength));
-    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessagelength * 2)))
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(alignedMessageLength)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessageLength * 2)))
         .Times(1)
         .WillOnce(testing::Return(messageLength));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(alignedMessageLength * 2)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
 
-    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limit);
+    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limitOffset);
 
-    EXPECT_EQ(newOffset, alignedMessagelength * 2);
+    EXPECT_EQ(newOffset, alignedMessageLength * 2);
 }
 
 TEST_F(TermBlockScannerTest, shouldFailToReadFirstMessageBecauseOfLimit)
 {
     const std::int32_t offset = 0;
     const std::int32_t messageLength = 50;
-    const std::int32_t alignedMessagelength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
-    const std::int32_t limit = alignedMessagelength - 1;
+    const std::int32_t alignedMessageLength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t limitOffset = alignedMessageLength - 1;
 
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(offset)))
         .Times(1)
         .WillOnce(testing::Return(messageLength));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(offset)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
 
-    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limit);
+    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limitOffset);
 
     EXPECT_EQ(newOffset, offset);
 }
@@ -167,14 +188,45 @@ TEST_F(TermBlockScannerTest, shouldReadOneMessageOnLimit)
 {
     const std::int32_t offset = 0;
     const std::int32_t messageLength = 50;
-    const std::int32_t alignedMessagelength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
-    const std::int32_t limit = alignedMessagelength;
+    const std::int32_t alignedMessageLength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t limitOffset = alignedMessageLength;
 
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(offset)))
         .Times(1)
         .WillOnce(testing::Return(messageLength));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(offset)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
 
-    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limit);
+    const std::int32_t newOffset = TermBlockScanner::scan(m_log, offset, limitOffset);
 
-    EXPECT_EQ(newOffset, alignedMessagelength);
+    EXPECT_EQ(newOffset, alignedMessageLength);
+}
+
+TEST_F(TermBlockScannerTest, shouldReadBlockOfOneMessageThenPadding)
+{
+    const std::int32_t offset = 0;
+    const std::int32_t messageLength = 50;
+    const std::int32_t alignedMessageLength = util::BitUtil::align(messageLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t limitOffset = m_log.capacity();
+
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(offset)))
+        .Times(1)
+        .WillOnce(testing::Return(messageLength));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(offset)))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedMessageLength)))
+        .Times(2)
+        .WillOnce(testing::Return(messageLength))
+        .WillOnce(testing::Return(messageLength));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(alignedMessageLength)))
+        .Times(2)
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_PAD))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_PAD));
+
+    const std::int32_t offsetOne = TermBlockScanner::scan(m_log, offset, limitOffset);
+    EXPECT_EQ(offsetOne, alignedMessageLength);
+
+    const std::int32_t offsetTwo = TermBlockScanner::scan(m_log, offsetOne, limitOffset);
+    EXPECT_EQ(offsetTwo, alignedMessageLength * 2);
 }

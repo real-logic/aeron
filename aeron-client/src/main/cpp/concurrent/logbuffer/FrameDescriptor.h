@@ -118,7 +118,7 @@ inline static void frameType(AtomicBuffer& logBuffer, util::index_t frameOffset,
     logBuffer.putUInt16(typeOffset(frameOffset), type);
 }
 
-inline static std::uint16_t frameType(AtomicBuffer& logBuffer, util::index_t frameOffset)
+inline static std::uint16_t frameType(const AtomicBuffer& logBuffer, util::index_t frameOffset)
 {
     return logBuffer.getUInt16(frameOffset);
 }
@@ -133,12 +133,12 @@ inline static void frameTermOffset(AtomicBuffer& logBuffer, util::index_t frameO
     logBuffer.putInt32(termOffsetOffset(frameOffset), termOffset);
 }
 
-inline static bool isPaddingFrame(AtomicBuffer& logBuffer, util::index_t frameOffset)
+inline static bool isPaddingFrame(const AtomicBuffer& logBuffer, util::index_t frameOffset)
 {
     return logBuffer.getUInt16(typeOffset(frameOffset)) == DataFrameHeader::HDR_TYPE_PAD;
 }
 
-inline static std::int32_t frameLengthVolatile(AtomicBuffer& logBuffer, util::index_t frameOffset)
+inline static std::int32_t frameLengthVolatile(const AtomicBuffer& logBuffer, util::index_t frameOffset)
 {
     // TODO: need to byte order to LITTLE_ENDIAN
     return logBuffer.getInt32Volatile(lengthOffset(frameOffset));
@@ -150,7 +150,7 @@ inline static void frameLengthOrdered(AtomicBuffer& logBuffer, util::index_t fra
     logBuffer.putInt32Ordered(lengthOffset(frameOffset), frameLength);
 }
 
-inline static std::uint8_t frameVersion(AtomicBuffer& logBuffer, util::index_t frameOffset)
+inline static std::uint8_t frameVersion(const AtomicBuffer& logBuffer, util::index_t frameOffset)
 {
     return logBuffer.getUInt8(frameOffset);
 }

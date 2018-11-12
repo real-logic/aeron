@@ -656,6 +656,13 @@ public:
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
      * will be delivered via the block_handler_t up to a limited number of bytes.
      *
+     * A scan will terminate if a padding frame is encountered. If first frame in a scan is padding then a block
+     * for the padding is notified. If the padding comes after the first frame in a scan then the scan terminates
+     * at the offset the padding frame begins. Padding frames are delivered singularly in a block.
+     *
+     * Padding frames may be for a greater range than the limit offset but only the header needs to be valid so
+     * relevant length of the frame is sizeof DataHeaderDefn.
+     *
      * @param blockHandler     to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.

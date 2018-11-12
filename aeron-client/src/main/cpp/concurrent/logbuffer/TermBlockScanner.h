@@ -43,9 +43,11 @@ typedef std::function<void(
 
 namespace TermBlockScanner {
 
-inline std::int32_t scan(AtomicBuffer& termBuffer, std::int32_t offset, std::int32_t limit)
+inline std::int32_t scan(const AtomicBuffer& termBuffer, const std::int32_t termOffset, const std::int32_t limitOffset)
 {
-    do
+    std::int32_t offset = termOffset;
+
+    while (offset < limitOffset)
     {
         const std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(termBuffer, offset);
         if (frameLength <= 0)
@@ -54,19 +56,24 @@ inline std::int32_t scan(AtomicBuffer& termBuffer, std::int32_t offset, std::int
         }
 
         const std::int32_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
-        offset += alignedFrameLength;
 
-        if (offset >= limit)
+        if (FrameDescriptor::isPaddingFrame(termBuffer, offset))
         {
-            if (offset > limit)
+            if (termOffset == offset)
             {
-                offset -= alignedFrameLength;
+                offset += alignedFrameLength;
             }
 
             break;
         }
+
+        if (offset + alignedFrameLength > limitOffset)
+        {
+            break;
+        }
+
+        offset += alignedFrameLength;
     }
-    while (true);
 
     return offset;
 }

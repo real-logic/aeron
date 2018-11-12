@@ -60,7 +60,7 @@ public class TermBlockScanner
             {
                 if (termOffset == offset)
                 {
-                    offset += align(frameLength, FRAME_ALIGNMENT);
+                    offset += alignedFrameLength;
                 }
 
                 break;

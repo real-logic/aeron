@@ -200,6 +200,16 @@ public:
     }
 
     /**
+     * Number of bits to right shift a position to get a term count for how far the stream has progressed.
+     *
+     * @return of bits to right shift a position to get a term count for how far the stream has progressed.
+     */
+    inline std::int32_t positionBitsToShift() const
+    {
+        return m_positionBitsToShift;
+    }
+
+    /**
      * The sessionId for the steam of messages.
      *
      * @return the sessionId for the steam of messages.
@@ -485,7 +495,7 @@ public:
             std::int32_t resultingOffset = initialOffset;
             const std::int64_t capacity = termBuffer.capacity();
             const std::int32_t endOffset =
-                static_cast<std::int32_t>(std::min(capacity, maxPosition - initialPosition + initialOffset));
+                static_cast<std::int32_t>(std::min(capacity, (maxPosition - initialPosition) + initialOffset));
 
             m_header.buffer(termBuffer);
 
@@ -663,28 +673,26 @@ public:
             const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
             AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
                 position, m_positionBitsToShift)];
-            const std::int32_t limit = std::min(termOffset + blockLengthLimit, termBuffer.capacity());
-
-            const std::int32_t resultingOffset = TermBlockScanner::scan(termBuffer, termOffset, limit);
-
-            const std::int32_t bytesConsumed = resultingOffset - termOffset;
+            const std::int32_t limitOffset = std::min(termOffset + blockLengthLimit, termBuffer.capacity());
+            const std::int32_t resultingOffset = TermBlockScanner::scan(termBuffer, termOffset, limitOffset);
+            const std::int32_t length = resultingOffset - termOffset;
 
             if (resultingOffset > termOffset)
             {
                 try
                 {
                     const std::int32_t termId = termBuffer.getInt32(termOffset + DataFrameHeader::TERM_ID_FIELD_OFFSET);
-                    blockHandler(termBuffer, termOffset, bytesConsumed, m_sessionId, termId);
+                    blockHandler(termBuffer, termOffset, length, m_sessionId, termId);
                 }
                 catch (const std::exception& ex)
                 {
                     m_exceptionHandler(ex);
                 }
 
-                m_subscriberPosition.setOrdered(position + bytesConsumed);
+                m_subscriberPosition.setOrdered(position + length);
             }
 
-            result = bytesConsumed;
+            result = length;
         }
 
         return result;

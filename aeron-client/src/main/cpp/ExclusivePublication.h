@@ -172,6 +172,16 @@ public:
     }
 
     /**
+     * Number of bits to right shift a position to get a term count for how far the stream has progressed.
+     *
+     * @return of bits to right shift a position to get a term count for how far the stream has progressed.
+     */
+    inline std::int32_t positionBitsToShift() const
+    {
+        return m_positionBitsToShift;
+    }
+
+    /**
      * Has this Publication seen an active subscriber recently?
      *
      * @return true if this Publication has seen an active subscriber recently.

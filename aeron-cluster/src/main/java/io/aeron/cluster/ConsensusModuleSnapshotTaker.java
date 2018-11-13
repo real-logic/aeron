@@ -111,7 +111,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
 
     void clusterMembers(final int memberId, final int highMemberId, final ClusterMember[] members)
     {
-        final String clusterMembers = ClusterMember.membersString(members);
+        final String clusterMembers = ClusterMember.encodeAsString(members);
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterMembersEncoder.BLOCK_LENGTH +
             ClusterMembersEncoder.clusterMembersHeaderLength() + clusterMembers.length();
 

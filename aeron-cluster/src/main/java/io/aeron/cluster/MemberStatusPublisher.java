@@ -361,7 +361,6 @@ class MemberStatusPublisher
 
     boolean snapshotRecordingQuery(final Publication publication, final long correlationId, final int requestMemberId)
     {
-
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SnapshotRecordingQueryEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
@@ -431,7 +430,6 @@ class MemberStatusPublisher
 
     boolean joinCluster(final Publication publication, final long leadershipTermId, final int memberId)
     {
-
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinClusterEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;

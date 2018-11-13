@@ -141,33 +141,67 @@ public final class ClusterMember
         return isBallotSent;
     }
 
+    /**
+     * Set if this member requested to join the cluster.
+     *
+     * @param hasRequestedJoin the cluster.
+     * @return this for a fluent API.
+     */
     public ClusterMember hasRequestedJoin(final boolean hasRequestedJoin)
     {
         this.hasRequestedJoin = hasRequestedJoin;
         return this;
     }
 
+    /**
+     * Has this member requested to join the cluster?
+     *
+     * @return has this member requested to join the cluster?
+     */
     public boolean hasRequestedJoin()
     {
         return hasRequestedJoin;
     }
 
+    /**
+     * Set the log position as of appending the event to be removed from the cluster.
+     *
+     * @param removalPosition as of appending the event to be removed from the cluster.
+     * @return this for a fluent API.
+     */
     public ClusterMember removalPosition(final long removalPosition)
     {
         this.removalPosition = removalPosition;
         return this;
     }
 
-    public boolean hasRequestedRemove()
-    {
-        return removalPosition != NULL_POSITION;
-    }
-
+    /**
+     * The log position as of appending the event to be removed from the cluster.
+     *
+     * @return the log position as of appending the event to be removed from the cluster,
+     * or {@link io.aeron.archive.client.AeronArchive#NULL_POSITION} if not requested remove.
+     */
     public long removalPosition()
     {
         return removalPosition;
     }
 
+    /**
+     * Has this member requested to be removed from the cluster.
+     *
+     * @return true if this member requested to be removed from the cluster, otherwise false.
+     */
+    public boolean hasRequestedRemove()
+    {
+        return removalPosition != NULL_POSITION;
+    }
+
+    /**
+     * Set the unique id for this member of the cluster.
+     *
+     * @param id for this member of the cluster.
+     * @return this for a fluent API.
+     */
     public ClusterMember id(final int id)
     {
         this.id = id;
@@ -274,24 +308,46 @@ public final class ClusterMember
         return candidateTermId;
     }
 
+    /**
+     * The session id for the replay when catching up to the leader.
+     *
+     * @param replaySessionId for the replay when catching up to the leader.
+     * @return this for a fluent API.
+     */
     public ClusterMember catchupReplaySessionId(final long replaySessionId)
     {
         this.catchupReplaySessionId = replaySessionId;
         return this;
     }
 
+    /**
+     * The session id for the replay when catching up to the leader.
+     *
+     * @return the session id for the replay when catching up to the leader.
+     */
     public long catchupReplaySessionId()
     {
         return catchupReplaySessionId;
     }
 
-    public ClusterMember changeCorrelationId(final long correlationId)
+    /**
+     * Correlation id assigned to the current action undertaken by the cluster member.
+     *
+     * @param correlationId assigned to the current action undertaken by the cluster member.
+     * @return this for a fluent API.
+     */
+    public ClusterMember correlationId(final long correlationId)
     {
         this.changeCorrelationId = correlationId;
         return this;
     }
 
-    public long changeCorrelationId()
+    /**
+     * Correlation id assigned to the current action undertaken by the cluster member.
+     *
+     * @return correlation id assigned to the current action undertaken by the cluster member.
+     */
+    public long correlationId()
     {
         return changeCorrelationId;
     }
@@ -479,12 +535,12 @@ public final class ClusterMember
     }
 
     /**
-     * Fill a string with member details from a cluster members array.
+     * Encode member details from a cluster members array to a string.
      *
      * @param clusterMembers to fill the details from
      * @return String representation suitable for use with {@link ClusterMember#parse}
      */
-    public static String membersString(final ClusterMember[] clusterMembers)
+    public static String encodeAsString(final ClusterMember[] clusterMembers)
     {
         final StringBuilder builder = new StringBuilder();
 
@@ -664,11 +720,11 @@ public final class ClusterMember
     /**
      * Reset the state of all cluster members.
      *
-     * @param clusterMembers to reset.
+     * @param members to reset.
      */
-    public static void reset(final ClusterMember[] clusterMembers)
+    public static void reset(final ClusterMember[] members)
     {
-        for (final ClusterMember member : clusterMembers)
+        for (final ClusterMember member : members)
         {
             member.reset();
         }
@@ -677,14 +733,14 @@ public final class ClusterMember
     /**
      * Become a candidate by voting for yourself and resetting the other votes to {@link Aeron#NULL_VALUE}.
      *
-     * @param clusterMembers    to reset the votes for.
+     * @param members    to reset the votes for.
      * @param candidateTermId   for the candidacy.
      * @param candidateMemberId for the election.
      */
     public static void becomeCandidate(
-        final ClusterMember[] clusterMembers, final long candidateTermId, final int candidateMemberId)
+        final ClusterMember[] members, final long candidateTermId, final int candidateMemberId)
     {
-        for (final ClusterMember member : clusterMembers)
+        for (final ClusterMember member : members)
         {
             if (member.id == candidateMemberId)
             {
@@ -704,15 +760,15 @@ public final class ClusterMember
     /**
      * Has the candidate got unanimous support of the cluster?
      *
-     * @param clusterMembers  to check for votes.
+     * @param members  to check for votes.
      * @param candidateTermId for the vote.
      * @return false if any member has not voted for the candidate.
      */
-    public static boolean hasWonVoteOnFullCount(final ClusterMember[] clusterMembers, final long candidateTermId)
+    public static boolean hasWonVoteOnFullCount(final ClusterMember[] members, final long candidateTermId)
     {
         int votes = 0;
 
-        for (final ClusterMember member : clusterMembers)
+        for (final ClusterMember member : members)
         {
             if (null == member.vote || member.candidateTermId != candidateTermId)
             {
@@ -722,21 +778,20 @@ public final class ClusterMember
             votes += member.vote ? 1 : 0;
         }
 
-        return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
+        return votes >= ClusterMember.quorumThreshold(members.length);
     }
 
     /**
      * Has sufficient votes being counted for a majority for all members observed during {@link Election.State#CANVASS}?
      *
-     * @param clusterMembers  to check for votes.
+     * @param members  to check for votes.
      * @param candidateTermId for the vote.
      * @return false if any member has not voted for the candidate.
      */
-    public static boolean hasMajorityVoteWithCanvassMembers(
-        final ClusterMember[] clusterMembers, final long candidateTermId)
+    public static boolean hasMajorityVoteWithCanvassMembers(final ClusterMember[] members, final long candidateTermId)
     {
         int votes = 0;
-        for (final ClusterMember member : clusterMembers)
+        for (final ClusterMember member : members)
         {
             if (NULL_POSITION != member.logPosition && null == member.vote)
             {
@@ -749,7 +804,7 @@ public final class ClusterMember
             }
         }
 
-        return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
+        return votes >= ClusterMember.quorumThreshold(members.length);
     }
 
     /**
@@ -915,24 +970,28 @@ public final class ClusterMember
      * The result is positive if lhs has the more recent log, zero if logs are equal, and negative if rhs has the more
      * recent log.
      *
-     * @param lhsMember to compare.
-     * @param rhsMember to compare.
+     * @param lhs member to compare.
+     * @param rhs member to compare.
      * @return positive if lhs has the more recent log, zero if logs are equal, and negative if rhs has the more
      *         recent log.
      */
-    public static int compareLog(final ClusterMember lhsMember, final ClusterMember rhsMember)
+    public static int compareLog(final ClusterMember lhs, final ClusterMember rhs)
     {
-        return compareLog(
-            lhsMember.leadershipTermId, lhsMember.logPosition, rhsMember.leadershipTermId, rhsMember.logPosition);
+        return compareLog(lhs.leadershipTermId, lhs.logPosition, rhs.leadershipTermId, rhs.logPosition);
     }
 
-    public static boolean isNotDuplicateMember(final ClusterMember[] passiveMembers, final String memberEndpoints)
+    /**
+     * Is the string of member endpoints not duplicated in the members.
+     *
+     * @param members         to check if the provided endpoints have a duplicate.
+     * @param memberEndpoints to check for duplicates.
+     * @return true if no duplicate is found otherwise false.
+     */
+    public static boolean isNotDuplicateEndpoints(final ClusterMember[] members, final String memberEndpoints)
     {
-        final int length = passiveMembers.length;
-
-        for (int i = 0; i < length; i++)
+        for (final ClusterMember member : members)
         {
-            if (passiveMembers[i].endpointsDetail().equals(memberEndpoints))
+            if (member.endpointsDetail().equals(memberEndpoints))
             {
                 return false;
             }
@@ -941,6 +1000,13 @@ public final class ClusterMember
         return true;
     }
 
+    /**
+     * Find the index at which a member id is present.
+     *
+     * @param clusterMembers to be searched.
+     * @param memberId       to search for.
+     * @return the index at which the member id is found otherwise {@link ArrayUtil#UNKNOWN_INDEX}.
+     */
     public static int findMemberIndex(final ClusterMember[] clusterMembers, final int memberId)
     {
         final int length = clusterMembers.length;
@@ -957,30 +1023,63 @@ public final class ClusterMember
         return index;
     }
 
+    /**
+     * Find a {@link ClusterMember} with a given id.
+     *
+     * @param clusterMembers to search.
+     * @param memberId       to search for.
+     * @return the {@link ClusterMember} if found otherwise null.
+     */
     public static ClusterMember findMember(final ClusterMember[] clusterMembers, final int memberId)
     {
-        final int index = findMemberIndex(clusterMembers, memberId);
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member.id() == memberId)
+            {
+                return member;
+            }
+        }
 
-        return (ArrayUtil.UNKNOWN_INDEX == index) ? null : clusterMembers[findMemberIndex(clusterMembers, memberId)];
+        return null;
     }
 
+    /**
+     * Add a new member to an array of {@link ClusterMember}s.
+     *
+     * @param oldMembers to add to.
+     * @param newMember  to add.
+     * @return a new array containing the old members plus the new member.
+     */
     public static ClusterMember[] addMember(final ClusterMember[] oldMembers, final ClusterMember newMember)
     {
         return ArrayUtil.add(oldMembers, newMember);
     }
 
+    /**
+     * Remove a member from an array if found, otherwise return the array unmodified.
+     *
+     * @param oldMembers to remove a member from.
+     * @param memberId   of the member to remove.
+     * @return a new array with the member removed or the existing array if not found.
+     */
     public static ClusterMember[] removeMember(final ClusterMember[] oldMembers, final int memberId)
     {
         return ArrayUtil.remove(oldMembers, findMemberIndex(oldMembers, memberId));
     }
 
+    /**
+     * Find the highest member id in an array of members.
+     *
+     * @param clusterMembers to search for the highest id.
+     * @return the highest id otherwise {@link Aeron#NULL_VALUE} if empty.
+     */
     public static int highMemberId(final ClusterMember[] clusterMembers)
     {
         int highId = Aeron.NULL_VALUE;
 
-        for (int i = 0, length = clusterMembers.length; i < length; i++)
+        for (final ClusterMember member : clusterMembers)
         {
-            highId = Math.max(highId, clusterMembers[i].id());
+            highId = Math.max(highId, member.id());
         }
 
         return highId;
@@ -997,7 +1096,7 @@ public final class ClusterMember
             ", logPosition=" + logPosition +
             ", candidateTermId=" + candidateTermId +
             ", catchupReplaySessionId=" + catchupReplaySessionId +
-            ", changeCorrelationId=" + changeCorrelationId +
+            ", correlationId=" + changeCorrelationId +
             ", removalPosition=" + removalPosition +
             ", clientFacingEndpoint='" + clientFacingEndpoint + '\'' +
             ", memberFacingEndpoint='" + memberFacingEndpoint + '\'' +

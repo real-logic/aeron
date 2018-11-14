@@ -25,6 +25,7 @@
 #include <concurrent/logbuffer/TermBlockScanner.h>
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cassert>
 #include "LogBuffers.h"
@@ -147,11 +148,7 @@ public:
         m_isClosed(image.isClosed()),
         m_exceptionHandler(image.m_exceptionHandler)
     {
-        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
-        {
-            m_termBuffers[i].wrap(image.m_termBuffers[i]);
-        }
-
+        m_termBuffers = image.m_termBuffers;
         m_subscriberPosition.wrap(image.m_subscriberPosition);
         m_logBuffers = image.m_logBuffers;
         m_correlationId = image.m_correlationId;
@@ -166,11 +163,7 @@ public:
 
     Image& operator=(const Image& image)
     {
-        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
-        {
-            m_termBuffers[i].wrap(image.m_termBuffers[i]);
-        }
-
+        m_termBuffers = image.m_termBuffers;
         m_header = image.m_header;
         m_subscriberPosition.wrap(image.m_subscriberPosition);
         m_logBuffers = image.m_logBuffers;
@@ -729,7 +722,7 @@ public:
     /// @endcond
 
 private:
-    AtomicBuffer m_termBuffers[LogBufferDescriptor::PARTITION_COUNT];
+    std::array<AtomicBuffer, LogBufferDescriptor::PARTITION_COUNT> m_termBuffers;
     Header m_header;
     Position<UnsafeBufferPosition> m_subscriberPosition;
     std::shared_ptr<LogBuffers> m_logBuffers;

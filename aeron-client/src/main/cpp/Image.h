@@ -142,23 +142,23 @@ public:
     }
 
     Image(const Image& image) :
+        m_termBuffers(image.m_termBuffers),
         m_header(image.m_header),
         m_subscriberPosition(image.m_subscriberPosition),
+        m_logBuffers(image.m_logBuffers),
         m_sourceIdentity(image.m_sourceIdentity),
         m_isClosed(image.isClosed()),
-        m_exceptionHandler(image.m_exceptionHandler)
+        m_exceptionHandler(image.m_exceptionHandler),
+        m_correlationId(image.m_correlationId),
+        m_subscriptionRegistrationId(image.m_subscriptionRegistrationId),
+        m_joinPosition(image.m_joinPosition),
+        m_finalPosition(image.m_finalPosition),
+        m_sessionId(image.m_sessionId),
+        m_termLengthMask(image.m_termLengthMask),
+        m_positionBitsToShift(image.m_positionBitsToShift),
+        m_isEos(image.m_isEos)
     {
-        m_termBuffers = image.m_termBuffers;
         m_subscriberPosition.wrap(image.m_subscriberPosition);
-        m_logBuffers = image.m_logBuffers;
-        m_correlationId = image.m_correlationId;
-        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
-        m_joinPosition = image.m_joinPosition;
-        m_finalPosition = image.m_finalPosition;
-        m_sessionId = image.m_sessionId;
-        m_termLengthMask = image.m_termLengthMask;
-        m_positionBitsToShift = image.m_positionBitsToShift;
-        m_isEos = image.m_isEos;
     }
 
     Image& operator=(const Image& image)

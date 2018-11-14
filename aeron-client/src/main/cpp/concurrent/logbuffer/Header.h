@@ -38,7 +38,7 @@ public:
 
     Header(const Header& header) = default;
 
-    Header& operator=(Header& header)
+    Header& operator=(const Header& header)
     {
         m_context = header.m_context;
         m_buffer.wrap(header.m_buffer);

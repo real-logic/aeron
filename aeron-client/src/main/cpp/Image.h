@@ -164,7 +164,7 @@ public:
         m_isEos = image.m_isEos;
     }
 
-    Image& operator=(Image& image)
+    Image& operator=(const Image& image)
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {

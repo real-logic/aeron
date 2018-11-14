@@ -270,7 +270,7 @@ inline static int indexByTermCount(std::int64_t termCount) AERON_NOEXCEPT
 
 inline static int indexByPosition(std::int64_t position, std::int32_t positionBitsToShift) AERON_NOEXCEPT
 {
-    return (int)((std::uint64_t)position >> positionBitsToShift) % PARTITION_COUNT;
+    return static_cast<int>(((std::uint64_t)position >> positionBitsToShift) % PARTITION_COUNT);
 }
 
 inline static std::int64_t computePosition(

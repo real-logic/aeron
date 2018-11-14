@@ -26,6 +26,7 @@
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include "LogBuffers.h"
 
 namespace aeron {
@@ -355,8 +356,9 @@ public:
         {
             const std::int64_t position = m_subscriberPosition.get();
             const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
-                position, m_positionBitsToShift)];
+            const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
+            assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
+            AtomicBuffer &termBuffer = m_termBuffers[index];
             TermReader::ReadOutcome readOutcome;
 
             TermReader::read(readOutcome, termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
@@ -395,8 +397,9 @@ public:
             int fragmentsRead = 0;
             std::int64_t initialPosition = m_subscriberPosition.get();
             std::int32_t initialOffset = (std::int32_t) initialPosition & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
-                initialPosition, m_positionBitsToShift)];
+            const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
+            assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
+            AtomicBuffer &termBuffer = m_termBuffers[index];
             std::int32_t resultingOffset = initialOffset;
             const util::index_t capacity = termBuffer.capacity();
 
@@ -489,8 +492,9 @@ public:
             int fragmentsRead = 0;
             std::int64_t initialPosition = m_subscriberPosition.get();
             std::int32_t initialOffset = (std::int32_t) initialPosition & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
-                initialPosition, m_positionBitsToShift)];
+            const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
+            assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
+            AtomicBuffer &termBuffer = m_termBuffers[index];
             std::int32_t resultingOffset = initialOffset;
             const std::int64_t capacity = termBuffer.capacity();
             const std::int32_t endOffset =
@@ -587,8 +591,9 @@ public:
             std::int32_t initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
             std::int32_t offset = initialOffset;
             std::int64_t position = initialPosition;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
-                initialPosition, m_positionBitsToShift)];
+            const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
+            assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
+            AtomicBuffer &termBuffer = m_termBuffers[index];
             const util::index_t capacity = termBuffer.capacity();
 
             m_header.buffer(termBuffer);
@@ -677,8 +682,9 @@ public:
         {
             const std::int64_t position = m_subscriberPosition.get();
             const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
-                position, m_positionBitsToShift)];
+            const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
+            assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
+            AtomicBuffer &termBuffer = m_termBuffers[index];
             const std::int32_t limitOffset = std::min(termOffset + blockLengthLimit, termBuffer.capacity());
             const std::int32_t resultingOffset = TermBlockScanner::scan(termBuffer, termOffset, limitOffset);
             const std::int32_t length = resultingOffset - termOffset;

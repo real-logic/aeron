@@ -29,18 +29,18 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 
 namespace LogBufferDescriptor {
 
-static const std::int32_t TERM_MIN_LENGTH = 64 * 1024;
-static const std::int32_t TERM_MAX_LENGTH = 1024 * 1024 * 1024;
-static const std::int32_t PAGE_MIN_SIZE = 4 * 1024;
-static const std::int32_t PAGE_MAX_SIZE = 1024 * 1024 * 1024;
+const std::int32_t TERM_MIN_LENGTH = 64 * 1024;
+const std::int32_t TERM_MAX_LENGTH = 1024 * 1024 * 1024;
+const std::int32_t PAGE_MIN_SIZE = 4 * 1024;
+const std::int32_t PAGE_MAX_SIZE = 1024 * 1024 * 1024;
 
 #if defined(__GNUC__) || _MSC_VER >= 1900
-constexpr static const int PARTITION_COUNT = 3;
+constexpr const int PARTITION_COUNT = 3;
 #else
 // Visual Studio 2013 doesn't like constexpr without an update
 // https://msdn.microsoft.com/en-us/library/vstudio/hh567368.aspx
 // https://www.microsoft.com/en-us/download/details.aspx?id=41151
-static const int PARTITION_COUNT = 3;
+const int PARTITION_COUNT = 3;
 #endif
 
 /*
@@ -60,7 +60,7 @@ static const int PARTITION_COUNT = 3;
  * </pre>
  */
 
-static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
+const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
 
 /**
  * <pre>
@@ -111,7 +111,7 @@ static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
  * </pre>
  */
 
-static const util::index_t LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 2;
+const util::index_t LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 2;
 
 #pragma pack(push)
 #pragma pack(4)
@@ -133,18 +133,18 @@ struct LogMetaDataDefn
 };
 #pragma pack(pop)
 
-static const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, termTailCounters);
+const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, termTailCounters);
 
-static const util::index_t LOG_ACTIVE_TERM_COUNT_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, activeTermCount);
-static const util::index_t LOG_END_OF_STREAM_POSITION_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, endOfStreamPosition);
-static const util::index_t LOG_IS_CONNECTED_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, isConnected);
-static const util::index_t LOG_INITIAL_TERM_ID_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, initialTermId);
-static const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
-static const util::index_t LOG_MTU_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, mtuLength);
-static const util::index_t LOG_TERM_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, termLength);
-static const util::index_t LOG_PAGE_SIZE_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, pageSize);
-static const util::index_t LOG_DEFAULT_FRAME_HEADER_OFFSET = (util::index_t)sizeof(LogMetaDataDefn);
-static const util::index_t LOG_META_DATA_LENGTH = 4 * 1024;
+const util::index_t LOG_ACTIVE_TERM_COUNT_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, activeTermCount);
+const util::index_t LOG_END_OF_STREAM_POSITION_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, endOfStreamPosition);
+const util::index_t LOG_IS_CONNECTED_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, isConnected);
+const util::index_t LOG_INITIAL_TERM_ID_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, initialTermId);
+const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
+const util::index_t LOG_MTU_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, mtuLength);
+const util::index_t LOG_TERM_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, termLength);
+const util::index_t LOG_PAGE_SIZE_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, pageSize);
+const util::index_t LOG_DEFAULT_FRAME_HEADER_OFFSET = (util::index_t)sizeof(LogMetaDataDefn);
+const util::index_t LOG_META_DATA_LENGTH = 4 * 1024;
 
 inline void checkTermLength(std::int32_t termLength)
 {

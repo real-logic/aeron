@@ -158,14 +158,13 @@ public:
         m_positionBitsToShift(image.m_positionBitsToShift),
         m_isEos(image.m_isEos)
     {
-        m_subscriberPosition.wrap(image.m_subscriberPosition);
     }
 
     Image& operator=(const Image& image)
     {
         m_termBuffers = image.m_termBuffers;
         m_header = image.m_header;
-        m_subscriberPosition.wrap(image.m_subscriberPosition);
+        m_subscriberPosition = image.m_subscriberPosition;
         m_logBuffers = image.m_logBuffers;
         m_sourceIdentity = image.m_sourceIdentity;
         m_isClosed = image.isClosed();

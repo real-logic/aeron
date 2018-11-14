@@ -336,7 +336,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Default property for member endpoints.
          */
-        public static final String MEMBER_ENDPOINTSL_DEFAULT = "";
+        public static final String MEMBER_ENDPOINTS_DEFAULT = "";
 
         /**
          * Stream id within a channel for the clustered log.
@@ -647,13 +647,13 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The value {@link #MEMBER_ENDPOINTSL_DEFAULT} or system property {@link #MEMBER_ENDPOINTS_PROP_NAME} if set.
+         * The value {@link #MEMBER_ENDPOINTS_DEFAULT} or system property {@link #MEMBER_ENDPOINTS_PROP_NAME} if set.
          *
-         * @return {@link #MEMBER_ENDPOINTSL_DEFAULT} or system property {@link #MEMBER_ENDPOINTS_PROP_NAME} if set.
+         * @return {@link #MEMBER_ENDPOINTS_DEFAULT} or system property {@link #MEMBER_ENDPOINTS_PROP_NAME} if set.
          */
         public static String memberEndpoints()
         {
-            return System.getProperty(MEMBER_ENDPOINTS_PROP_NAME, MEMBER_ENDPOINTSL_DEFAULT);
+            return System.getProperty(MEMBER_ENDPOINTS_PROP_NAME, MEMBER_ENDPOINTS_DEFAULT);
         }
 
         /**

@@ -530,19 +530,6 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Compute the current position in absolute number of bytes.
-     *
-     * @param termCount           of terms since the initial term.
-     * @param termOffset          in the term.
-     * @param positionBitsToShift number of times to left shift the term count
-     * @return the absolute position in bytes
-     */
-    public static long computePosition(final int termCount, final int termOffset, final int positionBitsToShift)
-    {
-        return (termCount << positionBitsToShift) + termOffset;
-    }
-
-    /**
      * Compute the current position in absolute number of bytes for the beginning of a term.
      *
      * @param activeTermId        active term id.

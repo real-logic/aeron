@@ -33,7 +33,7 @@ public class TermRebuilder
      * @param termBuffer into which the packet should be inserted.
      * @param termOffset in the term at which the packet should be inserted.
      * @param packet     containing a sequence of frames.
-     * @param length     of the sequence of frames in bytes.
+     * @param length     of the packet of frames in bytes.
      */
     public static void insert(
         final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int length)

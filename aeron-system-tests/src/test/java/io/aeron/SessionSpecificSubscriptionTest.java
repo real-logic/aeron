@@ -26,12 +26,15 @@ import org.junit.Test;
 
 import java.nio.ByteBuffer;
 
+import static io.aeron.CommonContext.UDP_MEDIA;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 
 public class SessionSpecificSubscriptionTest
 {
+    private static final String ENDPOINT = "localhost:54325";
     private static final int SESSION_ID_1 = 1077;
     private static final int SESSION_ID_2 = 1078;
     private static final int STREAM_ID = 7;
@@ -43,11 +46,11 @@ public class SessionSpecificSubscriptionTest
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
 
     private final String channelUriWithoutSessionId = new ChannelUriStringBuilder()
-        .endpoint("localhost:54325").media("udp").build();
+        .endpoint(ENDPOINT).media(UDP_MEDIA).build();
     private final String channelUriWithSessionId1 = new ChannelUriStringBuilder()
-        .endpoint("localhost:54325").media("udp").sessionId(SESSION_ID_1).build();
+        .endpoint(ENDPOINT).media(UDP_MEDIA).sessionId(SESSION_ID_1).build();
     private final String channelUriWithSessionId2 = new ChannelUriStringBuilder()
-        .endpoint("localhost:54325").media("udp").sessionId(SESSION_ID_2).build();
+        .endpoint(ENDPOINT).media(UDP_MEDIA).sessionId(SESSION_ID_2).build();
 
     private final FragmentHandler handlerSessionId1 =
         (buffer, offset, length, header) -> assertThat(header.sessionId(), is(SESSION_ID_1));
@@ -74,10 +77,18 @@ public class SessionSpecificSubscriptionTest
         try (Subscription subscription1 = aeron.addSubscription(channelUriWithSessionId1, STREAM_ID);
             Subscription subscription2 = aeron.addSubscription(channelUriWithSessionId2, STREAM_ID);
             Subscription subscriptionWildcard = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
-            ExclusivePublication publication1 = aeron.addExclusivePublication(channelUriWithSessionId1, STREAM_ID);
-            ExclusivePublication publication2 = aeron.addExclusivePublication(channelUriWithSessionId2, STREAM_ID))
+            Publication publication1 = aeron.addExclusivePublication(channelUriWithSessionId1, STREAM_ID);
+            Publication publication2 = aeron.addExclusivePublication(channelUriWithSessionId2, STREAM_ID))
         {
             while (!publication1.isConnected() || !publication2.isConnected())
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            while (subscription1.imageCount() != 1 ||
+                    subscription2.imageCount() != 1 ||
+                    subscriptionWildcard.imageCount() != 2)
             {
                 SystemTest.checkInterruptedStatus();
                 Thread.yield();
@@ -112,6 +123,40 @@ public class SessionSpecificSubscriptionTest
                 numFragments += subscriptionWildcard.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
             }
             while (numFragments < (EXPECTED_NUMBER_OF_MESSAGES * 2));
+        }
+    }
+
+    @Test
+    public void shouldNotSubscribeWithoutSpecificSession()
+    {
+        try (Subscription subscription = aeron.addSubscription(channelUriWithSessionId1, STREAM_ID);
+            Publication publication = aeron.addExclusivePublication(channelUriWithSessionId1, STREAM_ID);
+            Publication publicationWildcard = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID);
+            Publication publicationWrongSession = aeron.addExclusivePublication(channelUriWithSessionId2, STREAM_ID))
+        {
+            while (!publication.isConnected())
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            assertThat(subscription.imageCount(), is(1));
+
+            for (int i = 0; i < EXPECTED_NUMBER_OF_MESSAGES; i++)
+            {
+                publishMessage(srcBuffer, publication);
+            }
+
+            int numFragments = 0;
+            do
+            {
+                SystemTest.checkInterruptedStatus();
+                numFragments += subscription.poll(handlerSessionId1, FRAGMENT_COUNT_LIMIT);
+            }
+            while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
+
+            assertFalse(publicationWildcard.isConnected());
+            assertFalse(publicationWrongSession.isConnected());
         }
     }
 

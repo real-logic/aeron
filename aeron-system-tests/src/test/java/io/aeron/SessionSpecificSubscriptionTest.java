@@ -47,18 +47,19 @@ public class SessionSpecificSubscriptionTest
 
     private final String channelUriWithoutSessionId = new ChannelUriStringBuilder()
         .endpoint(ENDPOINT).media(UDP_MEDIA).build();
-    private final String channelUriWithSessionId1 = new ChannelUriStringBuilder()
+    private final String channelUriWithSessionIdOne = new ChannelUriStringBuilder()
         .endpoint(ENDPOINT).media(UDP_MEDIA).sessionId(SESSION_ID_1).build();
-    private final String channelUriWithSessionId2 = new ChannelUriStringBuilder()
+    private final String channelUriWithSessionIdTwo = new ChannelUriStringBuilder()
         .endpoint(ENDPOINT).media(UDP_MEDIA).sessionId(SESSION_ID_2).build();
 
-    private final FragmentHandler handlerSessionId1 =
+    private final FragmentHandler handlerSessionIdOne =
         (buffer, offset, length, header) -> assertThat(header.sessionId(), is(SESSION_ID_1));
-    private final FragmentHandler handlerSessionId2 =
+    private final FragmentHandler handlerSessionIdTwo =
         (buffer, offset, length, header) -> assertThat(header.sessionId(), is(SESSION_ID_2));
 
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
+        .publicationTermBufferLength(64 * 1024)
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect();
@@ -74,21 +75,15 @@ public class SessionSpecificSubscriptionTest
     @Test(timeout = 10_000)
     public void shouldSubscribeToSpecificSessionIdsAndWildcard()
     {
-        try (Subscription subscription1 = aeron.addSubscription(channelUriWithSessionId1, STREAM_ID);
-            Subscription subscription2 = aeron.addSubscription(channelUriWithSessionId2, STREAM_ID);
+        try (Subscription subscriptionOne = aeron.addSubscription(channelUriWithSessionIdOne, STREAM_ID);
+            Subscription subscriptionTwo = aeron.addSubscription(channelUriWithSessionIdTwo, STREAM_ID);
             Subscription subscriptionWildcard = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
-            Publication publication1 = aeron.addExclusivePublication(channelUriWithSessionId1, STREAM_ID);
-            Publication publication2 = aeron.addExclusivePublication(channelUriWithSessionId2, STREAM_ID))
+            Publication publicationOne = aeron.addExclusivePublication(channelUriWithSessionIdOne, STREAM_ID);
+            Publication publicationTwo = aeron.addExclusivePublication(channelUriWithSessionIdTwo, STREAM_ID))
         {
-            while (!publication1.isConnected() || !publication2.isConnected())
-            {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
-            }
-
-            while (subscription1.imageCount() != 1 ||
-                    subscription2.imageCount() != 1 ||
-                    subscriptionWildcard.imageCount() != 2)
+            while (subscriptionOne.imageCount() != 1 ||
+                subscriptionTwo.imageCount() != 1 ||
+                subscriptionWildcard.imageCount() != 2)
             {
                 SystemTest.checkInterruptedStatus();
                 Thread.yield();
@@ -96,15 +91,15 @@ public class SessionSpecificSubscriptionTest
 
             for (int i = 0; i < EXPECTED_NUMBER_OF_MESSAGES; i++)
             {
-                publishMessage(srcBuffer, publication1);
-                publishMessage(srcBuffer, publication2);
+                publishMessage(srcBuffer, publicationOne);
+                publishMessage(srcBuffer, publicationTwo);
             }
 
             int numFragments = 0;
             do
             {
                 SystemTest.checkInterruptedStatus();
-                numFragments += subscription1.poll(handlerSessionId1, FRAGMENT_COUNT_LIMIT);
+                numFragments += subscriptionOne.poll(handlerSessionIdOne, FRAGMENT_COUNT_LIMIT);
             }
             while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
 
@@ -112,7 +107,7 @@ public class SessionSpecificSubscriptionTest
             do
             {
                 SystemTest.checkInterruptedStatus();
-                numFragments += subscription2.poll(handlerSessionId2, FRAGMENT_COUNT_LIMIT);
+                numFragments += subscriptionTwo.poll(handlerSessionIdTwo, FRAGMENT_COUNT_LIMIT);
             }
             while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
 
@@ -129,10 +124,10 @@ public class SessionSpecificSubscriptionTest
     @Test
     public void shouldNotSubscribeWithoutSpecificSession()
     {
-        try (Subscription subscription = aeron.addSubscription(channelUriWithSessionId1, STREAM_ID);
-            Publication publication = aeron.addExclusivePublication(channelUriWithSessionId1, STREAM_ID);
+        try (Subscription subscription = aeron.addSubscription(channelUriWithSessionIdOne, STREAM_ID);
+            Publication publication = aeron.addExclusivePublication(channelUriWithSessionIdOne, STREAM_ID);
             Publication publicationWildcard = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID);
-            Publication publicationWrongSession = aeron.addExclusivePublication(channelUriWithSessionId2, STREAM_ID))
+            Publication publicationWrongSession = aeron.addExclusivePublication(channelUriWithSessionIdTwo, STREAM_ID))
         {
             while (!publication.isConnected())
             {
@@ -151,7 +146,7 @@ public class SessionSpecificSubscriptionTest
             do
             {
                 SystemTest.checkInterruptedStatus();
-                numFragments += subscription.poll(handlerSessionId1, FRAGMENT_COUNT_LIMIT);
+                numFragments += subscription.poll(handlerSessionIdOne, FRAGMENT_COUNT_LIMIT);
             }
             while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
 

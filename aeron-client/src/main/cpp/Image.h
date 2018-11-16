@@ -311,13 +311,11 @@ public:
      */
     inline void position(std::int64_t newPosition)
     {
-        if (isClosed())
+        if (!isClosed())
         {
-            throw util::IllegalStateException("Image is closed", SOURCEINFO);
+            validatePosition(newPosition);
+            m_subscriberPosition.setOrdered(newPosition);
         }
-
-        validatePosition(newPosition);
-        m_subscriberPosition.setOrdered(newPosition);
     }
 
     /**

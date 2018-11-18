@@ -11,8 +11,8 @@ Each of the Samples can be run with a simple script that can be found in:
 
 Before running any of the samples below the media driver needs to be launched by running one of:
 
-    aeron-samples/scripts/media-driver
-    aeron-samples/scripts/low-latency-media-driver
+    aeron-samples/scripts/media-driver <optional properties file>
+    aeron-samples/scripts/low-latency-media-driver <optional properties file>
     
 Here is a brief list of the samples and what each tries to do:
 

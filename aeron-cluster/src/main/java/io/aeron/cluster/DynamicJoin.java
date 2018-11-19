@@ -170,7 +170,6 @@ class DynamicJoin implements AutoCloseable
                 if (memberStatusEndpoint.equals(follower.memberFacingEndpoint()))
                 {
                     memberId = follower.id();
-
                     clusterMembers = ClusterMember.parse(activeMembers);
                     leaderMember = ClusterMember.findMember(clusterMembers, leaderMemberId);
 
@@ -231,10 +230,8 @@ class DynamicJoin implements AutoCloseable
             }
             else
             {
-                final ChannelUri leaderArchiveUri = ChannelUri.parse(
-                    ctx.archiveContext().controlRequestChannel());
-                final ChannelUri localArchiveUri = ChannelUri.parse(
-                    ctx.archiveContext().controlResponseChannel());
+                final ChannelUri leaderArchiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
+                final ChannelUri localArchiveUri = ChannelUri.parse(ctx.archiveContext().controlResponseChannel());
                 leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
 
                 final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
@@ -259,8 +256,7 @@ class DynamicJoin implements AutoCloseable
 
             CloseHelper.close(clusterPublication);
             final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
-            memberStatusUri.put(
-                ENDPOINT_PARAM_NAME, this.clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]);
+            memberStatusUri.put(ENDPOINT_PARAM_NAME, clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]);
             clusterPublication = ctx.aeron().addExclusivePublication(
                 memberStatusUri.toString(), ctx.memberStatusStreamId());
 
@@ -311,12 +307,12 @@ class DynamicJoin implements AutoCloseable
                     consensusModuleAgent.retrievedSnapshot(
                         snapshotReader.recordingId(), leaderSnapshots.get(snapshotCursor));
 
-                    snapshotRetrieveSubscription.close();
+                    CloseHelper.close(snapshotRetrieveSubscription);
+                    localArchive.stopRecording(snapshotRetrieveSubscriptionId);
                     snapshotRetrieveSubscription = null;
                     snapshotRetrieveImage = null;
                     snapshotReader = null;
                     correlationId = NULL_VALUE;
-                    localArchive.stopRecording(snapshotRetrieveSubscriptionId);
                     snapshotReplaySessionId = NULL_VALUE;
 
                     if (++snapshotCursor >= leaderSnapshots.size())
@@ -325,7 +321,7 @@ class DynamicJoin implements AutoCloseable
                         workCount++;
                     }
                 }
-                else if (snapshotRetrieveImage.isClosed())
+                else if (null != snapshotRetrieveImage && snapshotRetrieveImage.isClosed())
                 {
                     throw new ClusterException("retrieval of snapshot image ended unexpectedly");
                 }
@@ -429,8 +425,7 @@ class DynamicJoin implements AutoCloseable
 
         if (poller.poll() > 0 && poller.isPollComplete())
         {
-            if (poller.controlSessionId() == archive.controlSessionId() &&
-                poller.correlationId() == correlationId)
+            if (poller.controlSessionId() == archive.controlSessionId() && poller.correlationId() == correlationId)
             {
                 if (poller.code() == ControlResponseCode.ERROR)
                 {

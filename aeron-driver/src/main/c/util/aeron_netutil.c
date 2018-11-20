@@ -488,6 +488,15 @@ size_t aeron_ipv4_netmask_to_prefixlen(struct in_addr *netmask)
     return __builtin_popcount(netmask->s_addr);
 }
 
+void aeron_set_ipv4_wildcard_host_and_port(struct sockaddr_storage *sockaddr)
+{
+    struct sockaddr_in *addr = (struct sockaddr_in *)sockaddr;
+
+    sockaddr->ss_family = AF_INET;
+    addr->sin_addr.s_addr = INADDR_ANY;
+    addr->sin_port = htons(0);
+}
+
 union _aeron_128b_as_64b
 {
     __uint128_t value;

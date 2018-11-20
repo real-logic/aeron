@@ -220,9 +220,15 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
         if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.endpoint_key, &endpoint_addr) < 0)
         {
             aeron_set_err(
-                aeron_errcode(), "could not resolve endpoint address=(%s): %s", _channel->uri.params.udp.endpoint_key, aeron_errmsg());
+                aeron_errcode(),
+                "could not resolve endpoint address=(%s): %s",
+                _channel->uri.params.udp.endpoint_key, aeron_errmsg());
             goto error_cleanup;
         }
+    }
+    else
+    {
+        aeron_set_ipv4_wildcard_host_and_port(&endpoint_addr);
     }
 
     if (NULL != _channel->uri.params.udp.control_key)
@@ -230,7 +236,9 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
         if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.control_key, &explicit_control_addr) < 0)
         {
             aeron_set_err(
-                aeron_errcode(), "could not resolve control address=(%s): %s", _channel->uri.params.udp.control_key, aeron_errmsg());
+                aeron_errcode(),
+                "could not resolve control address=(%s): %s",
+                _channel->uri.params.udp.control_key, aeron_errmsg());
             goto error_cleanup;
         }
     }
@@ -247,7 +255,9 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
             endpoint_addr.ss_family, _channel->uri.params.udp.interface_key, &interface_addr, &interface_index) < 0)
         {
             aeron_set_err(
-                aeron_errcode(), "could not find interface=(%s): %s", _channel->uri.params.udp.interface_key, aeron_errmsg());
+                aeron_errcode(),
+                "could not find interface=(%s): %s",
+                _channel->uri.params.udp.interface_key, aeron_errmsg());
             goto error_cleanup;
         }
 

@@ -56,6 +56,7 @@ bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
             return false;
         }
     }
+
     return true;
 }
 
@@ -203,13 +204,19 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, size_t offset, size_t length)
 void MemoryMappedFile::cleanUp()
 {
     if (m_file)
+    {
         CloseHandle(m_file);
+    }
 
     if (m_memory)
+    {
         UnmapViewOfFile(m_memory);
+    }
 
     if (m_mapping)
+    {
         CloseHandle(m_mapping);
+    }
 }
 
 MemoryMappedFile::~MemoryMappedFile()

@@ -33,7 +33,6 @@ Subscription::Subscription(
     m_imageList(new struct ImageList(new Image[0], 0)),
     m_isClosed(false)
 {
-
 }
 
 Subscription::~Subscription()

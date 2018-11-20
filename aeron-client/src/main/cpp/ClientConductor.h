@@ -188,7 +188,7 @@ public:
         return m_countersReader;
     }
 
-    inline std::int64_t channelStatus(std::int32_t counterId)
+    inline std::int64_t channelStatus(std::int32_t counterId) const
     {
         switch (counterId)
         {

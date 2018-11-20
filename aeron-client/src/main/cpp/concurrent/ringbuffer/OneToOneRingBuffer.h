@@ -56,8 +56,7 @@ public:
         return m_capacity;
     }
 
-    bool write(std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex,
-        util::index_t length)
+    bool write(std::int32_t msgTypeId, concurrent::AtomicBuffer &srcBuffer, util::index_t srcIndex, util::index_t length)
     {
         RecordDescriptor::checkMsgTypeId(msgTypeId);
         checkMsgLength(length);
@@ -83,17 +82,17 @@ public:
         }
 
         util::index_t padding = 0;
-        util::index_t recordIndex = (util::index_t) tail & mask;
+        util::index_t recordIndex = static_cast<util::index_t>(tail & mask);
         const util::index_t toBufferEndLength = m_capacity - recordIndex;
 
         if (requiredCapacity > toBufferEndLength)
         {
-            std::int32_t headIndex = (std::int32_t) head & mask;
+            std::int32_t headIndex = static_cast<std::int32_t>(head & mask);
 
             if (requiredCapacity > headIndex)
             {
                 head = m_buffer.getInt64Volatile(m_headPositionIndex);
-                headIndex = (std::int32_t) head & mask;
+                headIndex = static_cast<std::int32_t>(head & mask);
 
                 if (requiredCapacity > headIndex)
                 {
@@ -108,8 +107,8 @@ public:
 
         if (0 != padding)
         {
-            m_buffer.putInt64Ordered(recordIndex,
-                RecordDescriptor::makeHeader(padding, RecordDescriptor::PADDING_MSG_TYPE_ID));
+            m_buffer.putInt64Ordered(
+                recordIndex, RecordDescriptor::makeHeader(padding, RecordDescriptor::PADDING_MSG_TYPE_ID));
             recordIndex = 0;
         }
 
@@ -123,7 +122,7 @@ public:
     int read(const handler_t &handler, int messageCountLimit)
     {
         const std::int64_t head = m_buffer.getInt64(m_headPositionIndex);
-        const std::int32_t headIndex = (std::int32_t) head & (m_capacity - 1);
+        const std::int32_t headIndex = static_cast<std::int32_t>(head & (m_capacity - 1));
         const std::int32_t contiguousBlockLength = m_capacity - headIndex;
         int messagesRead = 0;
         int bytesRead = 0;
@@ -171,7 +170,7 @@ public:
         return read(handler, INT_MAX);
     }
 
-    inline util::index_t maxMsgLength()
+    inline util::index_t maxMsgLength() const
     {
         return m_maxMsgLength;
     }
@@ -215,7 +214,7 @@ public:
         }
         while (headAfter != headBefore);
 
-        return (std::int32_t)(tail - headAfter);
+        return static_cast<std::int32_t>(tail - headAfter);
     }
 
     bool unblock()

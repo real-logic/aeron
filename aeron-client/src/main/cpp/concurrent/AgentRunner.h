@@ -118,7 +118,6 @@ public:
         {
             m_exceptionHandler(exception);
         }
-
     }
 
     /**

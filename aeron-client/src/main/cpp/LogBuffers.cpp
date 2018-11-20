@@ -33,10 +33,10 @@ LogBuffers::LogBuffers(const char *filename)
         .wrap(basePtr + (logLength - LogBufferDescriptor::LOG_META_DATA_LENGTH),
             LogBufferDescriptor::LOG_META_DATA_LENGTH);
 
-    const std::int32_t termLength =
-        LogBufferDescriptor::termLength(m_buffers[LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX]);
-    const std::int32_t pageSize =
-        LogBufferDescriptor::pageSize(m_buffers[LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX]);
+    const std::int32_t termLength = LogBufferDescriptor::termLength(
+        m_buffers[LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX]);
+    const std::int32_t pageSize = LogBufferDescriptor::pageSize(
+        m_buffers[LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX]);
 
     LogBufferDescriptor::checkTermLength(termLength);
     LogBufferDescriptor::checkPageSize(pageSize);

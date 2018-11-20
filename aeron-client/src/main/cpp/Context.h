@@ -40,7 +40,7 @@ class Image;
  *
  * The Image passed may not be the image used internally, but may be copied or moved freely.
  *
- * @param image           that has become available.
+ * @param image that has become available.
  */
 typedef std::function<void(Image& image)> on_available_image_t;
 
@@ -49,7 +49,7 @@ typedef std::function<void(Image& image)> on_available_image_t;
  *
  * The Image passed is not guaranteed to be valid after the callback.
  *
- * @param image     that has become unavailable
+ * @param image that has become unavailable
  */
 typedef std::function<void(Image& image)> on_unavailable_image_t;
 

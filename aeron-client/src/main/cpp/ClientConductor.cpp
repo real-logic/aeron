@@ -264,8 +264,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     {
         if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
         {
-            throw DriverTimeoutException(
-                strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
+            throw DriverTimeoutException(strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
         }
     }
     else if (!sub && RegistrationStatus::ERRORED_MEDIA_DRIVER == state.m_status)
@@ -361,8 +360,7 @@ std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationI
     {
         if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
         {
-            throw DriverTimeoutException(
-                strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
+            throw DriverTimeoutException(strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
         }
     }
     else if (!counter && RegistrationStatus::ERRORED_MEDIA_DRIVER == state.m_status)
@@ -504,9 +502,8 @@ void ClientConductor::onSubscriptionReady(
         SubscriptionStateDefn& state = (*subIt);
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
-        state.m_subscriptionCache =
-            std::make_shared<Subscription>(
-                *this, state.m_registrationId, state.m_channel, state.m_streamId, channelStatusId);
+        state.m_subscriptionCache = std::make_shared<Subscription>(
+            *this, state.m_registrationId, state.m_channel, state.m_streamId, channelStatusId);
         state.m_subscription = std::weak_ptr<Subscription>(state.m_subscriptionCache);
         m_onNewSubscriptionHandler(state.m_channel, state.m_streamId, registrationId);
         return;
@@ -531,8 +528,7 @@ void ClientConductor::onAvailableCounter(
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_counterId = counterId;
-        state.m_counterCache =
-            std::make_shared<Counter>(this, m_counterValuesBuffer, state.m_registrationId, counterId);
+        state.m_counterCache = std::make_shared<Counter>(this, m_counterValuesBuffer, state.m_registrationId, counterId);
         state.m_counter = std::weak_ptr<Counter>(state.m_counterCache);
     }
 
@@ -551,7 +547,6 @@ void ClientConductor::onUnavailableCounter(
 void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
 }
 
 void ClientConductor::onErrorResponse(

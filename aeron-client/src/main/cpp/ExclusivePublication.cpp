@@ -65,8 +65,7 @@ ExclusivePublication::ExclusivePublication(
     const std::int64_t rawTail = m_appenders[m_activePartitionIndex]->rawTail();
     m_termId = LogBufferDescriptor::termId(rawTail);
     m_termOffset = LogBufferDescriptor::termOffset(rawTail, buffers->atomicBuffer(0).capacity());
-    m_termBeginPosition =
-        LogBufferDescriptor::computeTermBeginPosition(m_termId, m_positionBitsToShift, m_initialTermId);
+    m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(m_termId, m_positionBitsToShift, m_initialTermId);
 }
 
 ExclusivePublication::~ExclusivePublication()

@@ -89,7 +89,7 @@ public:
         return *this;
     }
 
-    inline std::int32_t termOffset()
+    inline std::int32_t termOffset() const
     {
         return m_struct.termOffset;
     }

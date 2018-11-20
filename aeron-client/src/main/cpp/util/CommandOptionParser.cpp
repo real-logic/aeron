@@ -42,9 +42,13 @@ void CommandOptionParser::parse (int argc, char** argv)
                 // is this a valid option ?
                 auto opt = m_options.find(currentOption);
                 if (m_options.end() == opt)
+                {
                     throw CommandOptionException(std::string ("-") + currentOption + " is not a valid command option.", SOURCEINFO);
+                }
                 else
+                {
                     opt->second.setPresent();
+                }
             }
         }
         else
@@ -84,7 +88,9 @@ void CommandOptionParser::displayOptionsHelp (std::ostream& out) const
     for (auto i = m_options.begin(); i != m_options.end(); ++i)
     {
         if (i->first != CommandOption::UNNAMED)
+        {
             out << "    -" << i->first << " " << i->second.getHelpText() << std::endl;
+        }
     }
 }
 

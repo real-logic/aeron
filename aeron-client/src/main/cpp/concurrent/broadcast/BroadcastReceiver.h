@@ -43,27 +43,27 @@ public:
         BroadcastBufferDescriptor::checkCapacity(m_capacity);
     }
 
-    inline util::index_t capacity()
+    inline util::index_t capacity() const
     {
         return m_capacity;
     }
 
-    inline long lappedCount()
+    inline long lappedCount() const
     {
         return m_lappedCount;
     }
 
-    inline std::int32_t typeId()
+    inline std::int32_t typeId() const
     {
         return m_buffer.getInt32(RecordDescriptor::typeOffset(m_recordOffset));
     }
 
-    inline util::index_t offset()
+    inline util::index_t offset() const
     {
         return RecordDescriptor::msgOffset(m_recordOffset);
     }
 
-    inline std::int32_t length()
+    inline std::int32_t length() const
     {
         return m_buffer.getInt32(RecordDescriptor::lengthOffset(m_recordOffset)) - RecordDescriptor::HEADER_LENGTH;
     }
@@ -91,19 +91,15 @@ public:
             }
 
             m_cursor = cursor;
-            m_nextRecord = cursor +
-                util::BitUtil::align(
-                    m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)),
-                    RecordDescriptor::RECORD_ALIGNMENT);
+            m_nextRecord = cursor + util::BitUtil::align(
+                m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
 
             if (RecordDescriptor::PADDING_MSG_TYPE_ID == m_buffer.getInt32(RecordDescriptor::typeOffset(recordOffset)))
             {
                 recordOffset = 0;
                 m_cursor = m_nextRecord;
-                m_nextRecord +=
-                    util::BitUtil::align(
-                        m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)),
-                        RecordDescriptor::RECORD_ALIGNMENT);
+                m_nextRecord += util::BitUtil::align(
+                    m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
             }
 
             m_recordOffset = recordOffset;
@@ -113,9 +109,8 @@ public:
         return isAvailable;
     }
 
-    inline bool validate()
+    inline bool validate() const
     {
-        // load fence = acquire()
         atomic::acquire();
 
         return validate(m_cursor);
@@ -134,7 +129,7 @@ private:
     std::int64_t m_nextRecord;
     std::atomic<long> m_lappedCount;
 
-    inline bool validate(std::int64_t cursor)
+    inline bool validate(std::int64_t cursor) const
     {
         return (cursor + m_capacity) > m_buffer.getInt64Volatile(m_tailIntentCounterIndex);
     }

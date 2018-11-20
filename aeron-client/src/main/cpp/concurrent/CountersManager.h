@@ -72,8 +72,7 @@ public:
         const util::index_t recordOffset = metadataOffset(counterId);
         checkMetaDataCapacity(recordOffset);
 
-        CounterMetaDataDefn& record =
-            m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
+        CounterMetaDataDefn& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
 
         record.typeId = typeId;
 
@@ -106,8 +105,7 @@ public:
         const util::index_t recordOffset = metadataOffset(counterId);
         checkMetaDataCapacity(recordOffset);
 
-        CounterMetaDataDefn& record =
-            m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
+        CounterMetaDataDefn& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(recordOffset);
 
         record.typeId = typeId;
         record.freeToReuseDeadline = NOT_FREE_TO_REUSE;
@@ -157,9 +155,7 @@ private:
         auto it = std::find_if(m_freeList.begin(), m_freeList.end(),
             [&](std::int32_t counterId)
             {
-                return
-                    nowMs >=
-                        m_metadataBuffer.getInt64Volatile(metadataOffset(counterId) + FREE_TO_REUSE_DEADLINE_OFFSET);
+                return nowMs >= m_metadataBuffer.getInt64Volatile(metadataOffset(counterId) + FREE_TO_REUSE_DEADLINE_OFFSET);
             });
 
         if (it != m_freeList.end())

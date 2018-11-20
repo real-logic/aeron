@@ -53,9 +53,13 @@ valueType parse (const std::string& input)
     valueType value;
 
     if (std::is_integral<valueType>::value && input.length() > 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X'))
+    {
         stream >> std::hex >> value;
+    }
     else
+    {
         stream >> value;
+    }
 
     // if we failed extract an valid value or we didnt use up all the chars then throw an error
     if (stream.fail() || !stream.eof())

@@ -30,7 +30,9 @@ typedef std::int32_t index_t;
 inline static index_t convertSizeToIndex(size_t size)
 {
     if (size > std::numeric_limits<index_t>::max())
+    {
         return std::numeric_limits<index_t>::max();
+    }
 
     return static_cast<index_t>(size);
 }

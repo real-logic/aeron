@@ -62,7 +62,9 @@ namespace BitUtil
         static_assert (std::is_integral<value_t>::value, "next only available on integer types");
         value_t next = current + 1;
         if (next == max)
+        {
             next = 0;
+        }
 
         return next;
     }
@@ -72,7 +74,9 @@ namespace BitUtil
     {
         static_assert (std::is_integral<value_t>::value, "previous only available on integer types");
         if (0 == current)
+        {
             return max - 1;
+        }
 
         return current - 1;
     }
@@ -90,7 +94,9 @@ namespace BitUtil
         unsigned long r;
 
         if (_BitScanReverse(&r, (unsigned long)value))
+        {
             return 31 - (int)r;
+        }
 
         return 32;
 #else
@@ -108,18 +114,22 @@ namespace BitUtil
         unsigned long r;
 
         if (_BitScanForward(&r, (unsigned long)value))
+        {
             return r;
+        }
 
         return 32;
 #else
         static_assert(std::is_integral<value_t>::value, "numberOfTrailingZeroes only available on integral types");
         static_assert(sizeof(value_t) <= 4, "numberOfTrailingZeroes only available on up to 32-bit integral types");
 
-        static char table[32] = {
+        static char table[32] =
+        {
             0, 1, 2, 24, 3, 19, 6, 25,
             22, 4, 20, 10, 16, 7, 12, 26,
             31, 23, 18, 5, 21, 9, 15, 11,
-            30, 17, 8, 14, 29, 13, 28, 27};
+            30, 17, 8, 14, 29, 13, 28, 27
+        };
 
         if (value == 0)
         {
@@ -145,7 +155,9 @@ namespace BitUtil
 
         // Set all bits below the leading one using binary expansion http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
         for (size_t i = 1; i < sizeof(value) * 8; i = i * 2)
+        {
             value |= (value >> i);
+        }
 
         return value + 1;
     }
@@ -159,14 +171,18 @@ namespace BitUtil
     {
         static_assert(std::is_integral<value_t>::value, "fastMod3 only available on integral types");
 
-        static char table[62] = {0,1,2, 0,1,2, 0,1,2, 0,1,2,
+        static char table[62] =
+        {
+            0,1,2, 0,1,2, 0,1,2, 0,1,2,
             0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2,
             0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2,
-            0,1,2, 0,1,2, 0,1};
+            0,1,2, 0,1,2, 0,1
+        };
 
         value = (value >> 16) + (value & 0xFFFF); // Max 0x1FFFE.
         value = (value >> 8) + (value & 0x00FF); // Max 0x2FD.
         value = (value >> 4) + (value & 0x000F); // Max 0x3D.
+
         return table[value];
     }
 }

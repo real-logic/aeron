@@ -44,7 +44,7 @@ public:
      *
      * @return has the Agent been started?
      */
-    inline bool isStarted()
+    inline bool isStarted() const
     {
         return m_isStarted;
     }
@@ -54,7 +54,7 @@ public:
      *
      * @return is the Agent been started successfully and not closed?
      */
-    inline bool isRunning()
+    inline bool isRunning() const
     {
         return m_isRunning;
     }
@@ -64,7 +64,7 @@ public:
      *
      * @return has the Agent been closed?
      */
-    inline bool isClosed()
+    inline bool isClosed() const
     {
         return m_isClosed;
     }

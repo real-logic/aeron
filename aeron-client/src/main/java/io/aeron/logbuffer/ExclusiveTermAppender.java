@@ -43,7 +43,7 @@ import static org.agrona.BitUtil.align;
  * A message of type {@link FrameDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed
  * space is not sufficiently large to accommodate the message about to be written.
  */
-public class ExclusiveTermAppender
+public final class ExclusiveTermAppender
 {
     /**
      * The append operation tripped the end of the buffer and needs to rotate.
@@ -51,7 +51,6 @@ public class ExclusiveTermAppender
     public static final int FAILED = -1;
 
     private final long tailAddressOffset;
-    private final byte[] tailBuffer;
     private final UnsafeBuffer termBuffer;
 
     /**
@@ -68,7 +67,6 @@ public class ExclusiveTermAppender
         metaDataBuffer.boundsCheck(tailCounterOffset, SIZE_OF_LONG);
 
         this.termBuffer = termBuffer;
-        tailBuffer = metaDataBuffer.byteArray();
         tailAddressOffset = metaDataBuffer.addressOffset() + tailCounterOffset;
     }
 
@@ -621,6 +619,6 @@ public class ExclusiveTermAppender
 
     private void putRawTailOrdered(final int termId, final int termOffset)
     {
-        UnsafeAccess.UNSAFE.putOrderedLong(tailBuffer, tailAddressOffset, packTail(termId, termOffset));
+        UnsafeAccess.UNSAFE.putOrderedLong(null, tailAddressOffset, packTail(termId, termOffset));
     }
 }

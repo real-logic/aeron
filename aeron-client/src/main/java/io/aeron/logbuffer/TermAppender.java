@@ -49,7 +49,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * A message of type {@link FrameDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed
  * space is not sufficiently large to accommodate the message about to be written.
  */
-public class TermAppender
+public final class TermAppender
 {
     /**
      * The append operation failed because it was past the end of the buffer.
@@ -57,7 +57,6 @@ public class TermAppender
     public static final int FAILED = -2;
 
     private final long tailAddressOffset;
-    private final byte[] tailBuffer;
     private final UnsafeBuffer termBuffer;
 
     /**
@@ -73,7 +72,6 @@ public class TermAppender
         metaDataBuffer.boundsCheck(tailCounterOffset, SIZE_OF_LONG);
 
         this.termBuffer = termBuffer;
-        tailBuffer = metaDataBuffer.byteArray();
         tailAddressOffset = metaDataBuffer.addressOffset() + tailCounterOffset;
     }
 
@@ -84,7 +82,7 @@ public class TermAppender
      */
     public long rawTailVolatile()
     {
-        return UnsafeAccess.UNSAFE.getLongVolatile(tailBuffer, tailAddressOffset);
+        return UnsafeAccess.UNSAFE.getLongVolatile(null, tailAddressOffset);
     }
 
     /**
@@ -627,6 +625,6 @@ public class TermAppender
 
     private long getAndAddRawTail(final int alignedLength)
     {
-        return UnsafeAccess.UNSAFE.getAndAddLong(tailBuffer, tailAddressOffset, alignedLength);
+        return UnsafeAccess.UNSAFE.getAndAddLong(null, tailAddressOffset, alignedLength);
     }
 }

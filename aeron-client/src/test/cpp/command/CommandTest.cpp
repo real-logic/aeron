@@ -42,32 +42,32 @@ TEST (commandTests, testInstantiateFlyweights)
 {
     clearBuffer();
     AtomicBuffer ab (&testBuffer[0], testBuffer.size());
-    const index_t BASEOFFSET = 256;
+    const index_t BASE_OFFSET = 256;
 
     std::string channelData = "channelData";
 
     ASSERT_NO_THROW({
-        ImageMessageFlyweight cmd(ab, BASEOFFSET);
+        ImageMessageFlyweight cmd(ab, BASE_OFFSET);
     });
 
     ASSERT_NO_THROW({
-        ImageBuffersReadyFlyweight cmd(ab, BASEOFFSET);
+        ImageBuffersReadyFlyweight cmd(ab, BASE_OFFSET);
     });
 
     ASSERT_NO_THROW({
-        RemoveMessageFlyweight cmd(ab, BASEOFFSET);
+        RemoveMessageFlyweight cmd(ab, BASE_OFFSET);
     });
 
     ASSERT_NO_THROW({
-        SubscriptionMessageFlyweight cmd(ab, BASEOFFSET);
+        SubscriptionMessageFlyweight cmd(ab, BASE_OFFSET);
     });
 
     ASSERT_NO_THROW({
-        PublicationMessageFlyweight cmd(ab, BASEOFFSET);
+        PublicationMessageFlyweight cmd(ab, BASE_OFFSET);
     });
 
     ASSERT_NO_THROW({
-        PublicationBuffersReadyFlyweight cmd(ab, BASEOFFSET);
+        PublicationBuffersReadyFlyweight cmd(ab, BASE_OFFSET);
     });
 }
 
@@ -75,18 +75,18 @@ TEST (commandTests, testImageMessageFlyweight)
 {
     clearBuffer();
     AtomicBuffer ab (&testBuffer[0], testBuffer.size());
-    const index_t BASEOFFSET = 256;
+    const index_t BASE_OFFSET = 256;
 
     std::string channelData = "channelData";
 
     ASSERT_NO_THROW({
-        ImageMessageFlyweight cmd (ab, BASEOFFSET);
+        ImageMessageFlyweight cmd (ab, BASE_OFFSET);
         cmd.correlationId(1).subscriptionRegistrationId(2).streamId(3).channel(channelData);
 
-        ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), 1);
-        ASSERT_EQ(ab.getInt64(BASEOFFSET + 8), 2);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 3);
-        ASSERT_EQ(ab.getString(BASEOFFSET + 20), channelData);
+        ASSERT_EQ(ab.getInt64(BASE_OFFSET + 0), 1);
+        ASSERT_EQ(ab.getInt64(BASE_OFFSET + 8), 2);
+        ASSERT_EQ(ab.getInt32(BASE_OFFSET + 16), 3);
+        ASSERT_EQ(ab.getString(BASE_OFFSET + 20), channelData);
 
         ASSERT_EQ(cmd.correlationId(), 1);
         ASSERT_EQ(cmd.streamId(), 3);
@@ -101,25 +101,25 @@ TEST (commandTests, testPublicationReadyFlyweight)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
-    const index_t BASEOFFSET = 256;
+    const index_t BASE_OFFSET = 256;
 
     std::string logFileNameData = "logfilenamedata";
 
     ASSERT_NO_THROW({
-        PublicationBuffersReadyFlyweight cmd(ab, BASEOFFSET);
+        PublicationBuffersReadyFlyweight cmd(ab, BASE_OFFSET);
 
         cmd.correlationId(-1).registrationId(1).streamId(0x01010101).sessionId(0x02020202).positionLimitCounterId(10);
         cmd.channelStatusIndicatorId(11);
         cmd.logFileName(logFileNameData);
 
-        ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), -1);
-        ASSERT_EQ(ab.getInt64(BASEOFFSET + 8), 1);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 0x02020202);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 20), 0x01010101);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), 10);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 28), 11);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 32), static_cast<int>(logFileNameData.length()));
-        ASSERT_EQ(ab.getString(BASEOFFSET + 32), logFileNameData);
+        ASSERT_EQ(ab.getInt64(BASE_OFFSET + 0), -1);
+        ASSERT_EQ(ab.getInt64(BASE_OFFSET + 8), 1);
+        ASSERT_EQ(ab.getInt32(BASE_OFFSET + 16), 0x02020202);
+        ASSERT_EQ(ab.getInt32(BASE_OFFSET + 20), 0x01010101);
+        ASSERT_EQ(ab.getInt32(BASE_OFFSET + 24), 10);
+        ASSERT_EQ(ab.getInt32(BASE_OFFSET + 28), 11);
+        ASSERT_EQ(ab.getInt32(BASE_OFFSET + 32), static_cast<int>(logFileNameData.length()));
+        ASSERT_EQ(ab.getString(BASE_OFFSET + 32), logFileNameData);
 
         ASSERT_EQ(cmd.correlationId(), -1);
         ASSERT_EQ(cmd.registrationId(), 1);
@@ -136,13 +136,13 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
-    const index_t BASEOFFSET = 0;
+    const index_t BASE_OFFSET = 0;
 
     std::string logFileNameData = "logfilenamedata";
     std::string sourceInfoData = "sourceinfodata";
 
     ASSERT_NO_THROW({
-        ImageBuffersReadyFlyweight cmd(ab, BASEOFFSET);
+        ImageBuffersReadyFlyweight cmd(ab, BASE_OFFSET);
 
         cmd.correlationId(-1);
 
@@ -153,14 +153,14 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
             .logFileName(logFileNameData)
             .sourceIdentity(sourceInfoData);
 
-        ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), -1);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 8), 0x02020202);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 12), 0x01010101);
+        ASSERT_EQ(ab.getInt64(BASE_OFFSET + 0), -1);
+        ASSERT_EQ(ab.getInt32(BASE_OFFSET + 8), 0x02020202);
+        ASSERT_EQ(ab.getInt32(BASE_OFFSET + 12), 0x01010101);
 
-        ASSERT_EQ(ab.getInt64(BASEOFFSET + 16), 2);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), 1);
+        ASSERT_EQ(ab.getInt64(BASE_OFFSET + 16), 2);
+        ASSERT_EQ(ab.getInt32(BASE_OFFSET + 24), 1);
 
-        const index_t startOfLogFileName = BASEOFFSET + 28;
+        const index_t startOfLogFileName = BASE_OFFSET + 28;
         ASSERT_EQ(ab.getStringLength(startOfLogFileName), static_cast<int>(logFileNameData.length()));
         ASSERT_EQ(ab.getString(startOfLogFileName), logFileNameData);
 

@@ -158,8 +158,8 @@ TEST_F(ImageTest, shouldReportCorrectInitialTermId)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -173,8 +173,8 @@ TEST_F(ImageTest, shouldReportCorrectTermBufferLength)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -188,8 +188,8 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReception)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -214,8 +214,8 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInIni
 {
     const std::int32_t messageIndex = 5;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -241,8 +241,8 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNon
     const std::int32_t activeTermId = INITIAL_TERM_ID + 1;
     const std::int32_t messageIndex = 5;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -267,8 +267,8 @@ TEST_F(ImageTest, shouldEnsureImageIsOpenBeforeReadingPosition)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -283,8 +283,8 @@ TEST_F(ImageTest, shouldEnsureImageIsOpenBeforePoll)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -299,8 +299,8 @@ TEST_F(ImageTest, shouldPollNoFragmentsToControlledFragmentHandler)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -323,8 +323,8 @@ TEST_F(ImageTest, shouldPollOneFragmentToControlledFragmentHandlerOnContinue)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -350,8 +350,8 @@ TEST_F(ImageTest, shouldNotPollOneFragmentToControlledFragmentHandlerOnAbort)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -377,8 +377,8 @@ TEST_F(ImageTest, shouldPollOneFragmentToControlledFragmentHandlerOnBreak)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -405,8 +405,8 @@ TEST_F(ImageTest, shouldPollFragmentsToControlledFragmentHandlerOnCommit)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -438,8 +438,8 @@ TEST_F(ImageTest, shouldPollFragmentsToControlledFragmentHandlerOnContinue)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
     Image image(
@@ -471,8 +471,8 @@ TEST_F(ImageTest, shouldPollNoFragmentsToBoundedControlledFragmentHandlerWithMax
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
     const std::int64_t maxPosition = initialPosition - DataFrameHeader::LENGTH;
 
     m_subscriberPosition.set(initialPosition);
@@ -500,8 +500,8 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithIniti
 {
     const std::int32_t messageIndex = 1;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
     const std::int64_t maxPosition = initialPosition + ALIGNED_FRAME_LENGTH;
 
     m_subscriberPosition.set(initialPosition);
@@ -530,8 +530,8 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPo
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
     const std::int64_t maxPosition = initialPosition + ALIGNED_FRAME_LENGTH;
 
     m_subscriberPosition.set(initialPosition);
@@ -559,8 +559,8 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPo
 TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionAfterEndOfTerm)
 {
     const std::int32_t initialOffset = TERM_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
     const std::int64_t maxPosition = initialPosition + TERM_LENGTH;
 
     m_subscriberPosition.set(initialPosition);
@@ -588,8 +588,8 @@ TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPo
 TEST_F(ImageTest, shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionAboveIntMaxValue)
 {
     const std::int32_t initialOffset = TERM_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
-    const std::int64_t initialPosition =
-        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    const std::int64_t initialPosition = LogBufferDescriptor::computePosition(
+        INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
     const std::int64_t maxPosition = static_cast<std::int64_t>(INT32_MAX) + 1000;
 
     m_subscriberPosition.set(initialPosition);

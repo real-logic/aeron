@@ -514,7 +514,6 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldProvideCcorrelationIds)
         }));
     }
 
-    // wait for all threads to finish
     for (std::thread &thr: threads)
     {
         thr.join();
@@ -576,7 +575,8 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
             counts[i] = 0;
         }
 
-        while (msgCount < (NUM_MESSAGES_PER_PUBLISHER * NUM_PUBLISHERS)) {
+        while (msgCount < (NUM_MESSAGES_PER_PUBLISHER * NUM_PUBLISHERS))
+        {
             const int readCount = ringBuffer.read([&counts](
                 std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t index, util::index_t length)
                 {
@@ -590,15 +590,16 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
                     counts[id]++;
                 });
 
-            if (0 == readCount) {
+            if (0 == readCount)
+            {
                 std::this_thread::yield();
             }
 
             msgCount += readCount;
         }
 
-        // wait for all threads to finish
-        for (std::thread &thr: threads) {
+        for (std::thread &thr: threads)
+        {
             thr.join();
         }
     }

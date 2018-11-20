@@ -121,8 +121,8 @@ TEST_F(TermAppenderTest, shouldAppendFrameToEmptyLog)
         .Times(1)
         .InSequence(sequence);
 
-    const std::int32_t resultingOffset =
-        m_termAppender.appendUnfragmentedMessage(m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
+    const std::int32_t resultingOffset = m_termAppender.appendUnfragmentedMessage(
+        m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
     EXPECT_EQ(resultingOffset, alignedFrameLength);
 }
 
@@ -153,8 +153,8 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
         .Times(1)
         .InSequence(sequence1);
 
-    std::int32_t resultingOffset =
-        m_termAppender.appendUnfragmentedMessage(m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
+    std::int32_t resultingOffset = m_termAppender.appendUnfragmentedMessage(
+        m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
     EXPECT_EQ(resultingOffset, alignedFrameLength);
 
     tail = alignedFrameLength;
@@ -172,8 +172,8 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
         .Times(1)
         .InSequence(sequence2);
 
-    resultingOffset =
-        m_termAppender.appendUnfragmentedMessage(m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
+    resultingOffset = m_termAppender.appendUnfragmentedMessage(
+     m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
     EXPECT_EQ(resultingOffset, alignedFrameLength * 2);
 }
 
@@ -199,8 +199,8 @@ TEST_F(TermAppenderTest, shouldPadLogWhenAppendingWithInsufficientRemainingCapac
         .Times(1)
         .InSequence(sequence);
 
-    const std::int32_t resultingOffset =
-        m_termAppender.appendUnfragmentedMessage(m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
+    const std::int32_t resultingOffset = m_termAppender.appendUnfragmentedMessage(
+        m_headerWriter, m_src, 0, msgLength, reservedValueSupplier, TERM_ID);
     EXPECT_EQ(resultingOffset, TERM_APPENDER_FAILED);
 }
 
@@ -252,9 +252,8 @@ TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)
         .Times(1)
         .InSequence(sequence);
 
-    const std::int32_t resultingOffset =
-        m_termAppender.appendFragmentedMessage(
-            m_headerWriter, m_src, 0, msgLength, MAX_PAYLOAD_LENGTH, reservedValueSupplier, TERM_ID);
+    const std::int32_t resultingOffset = m_termAppender.appendFragmentedMessage(
+        m_headerWriter, m_src, 0, msgLength, MAX_PAYLOAD_LENGTH, reservedValueSupplier, TERM_ID);
     EXPECT_EQ(resultingOffset, requiredCapacity);
 }
 
@@ -276,8 +275,7 @@ TEST_F(TermAppenderTest, shouldClaimRegionForZeroCopyEncoding)
         .Times(1)
         .InSequence(sequence);
 
-    const std::int32_t resultingOffset =
-        m_termAppender.claim(m_headerWriter, msgLength, bufferClaim, TERM_ID);
+    const std::int32_t resultingOffset = m_termAppender.claim(m_headerWriter, msgLength, bufferClaim, TERM_ID);
     EXPECT_EQ(resultingOffset, alignedFrameLength);
 
     EXPECT_EQ(bufferClaim.offset(), (tail + DataFrameHeader::LENGTH));

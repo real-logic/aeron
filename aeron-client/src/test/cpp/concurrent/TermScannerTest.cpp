@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 #include <gtest/gtest.h>
 
 #include <thread>
@@ -137,7 +136,6 @@ static std::int32_t expectScanTwoMessages(
     return alignedLengthOne + alignedLengthTwo;
 }
 
-
 TEST_F(TermScannerTest, shouldScanTwoMessagesThatFitInSingleMtu)
 {
     const std::int32_t msgLength = 100;
@@ -170,8 +168,8 @@ TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtMtuBoundary)
 
 TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtSecondThatSpansMtu)
 {
-    const std::int32_t frameTwoLength =
-        util::BitUtil::align(DataFrameHeader::LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t frameTwoLength = util::BitUtil::align(
+        DataFrameHeader::LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t frameOneLength = MTU_LENGTH - (frameTwoLength / 2);
     const std::int32_t frameOffset = 0;
 
@@ -186,8 +184,8 @@ TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtSecondThatSpansMtu)
 
 TEST_F(TermScannerTest, shouldScanLastFrameInBuffer)
 {
-    const std::int32_t alignedFrameLength =
-        util::BitUtil::align(DataFrameHeader::LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t alignedFrameLength = util::BitUtil::align(
+        DataFrameHeader::LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t frameOffset = TERM_BUFFER_CAPACITY - alignedFrameLength;
 
     EXPECT_CALL(m_termBuffer, getInt32Volatile(frameOffset))
@@ -203,10 +201,10 @@ TEST_F(TermScannerTest, shouldScanLastFrameInBuffer)
 
 TEST_F(TermScannerTest, shouldScanLastMessageInBufferPlusPadding)
 {
-    const std::int32_t alignedFrameLength =
-        util::BitUtil::align(DataFrameHeader::LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
-    const std::int32_t paddingFrameLength =
-        util::BitUtil::align(DataFrameHeader::LENGTH * 3, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t alignedFrameLength = util::BitUtil::align(
+        DataFrameHeader::LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t paddingFrameLength = util::BitUtil::align(
+        DataFrameHeader::LENGTH * 3, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t frameOffset = TERM_BUFFER_CAPACITY - (alignedFrameLength + paddingFrameLength);
 
     expectScanTwoMessages(
@@ -221,11 +219,10 @@ TEST_F(TermScannerTest, shouldScanLastMessageInBufferPlusPadding)
 
 TEST_F(TermScannerTest, shouldScanLastMessageInBufferMinusPaddingLimitedByMtu)
 {
-    const std::int32_t alignedFrameLength =
-        util::BitUtil::align(DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-    const std::int32_t frameOffset =
-        TERM_BUFFER_CAPACITY - util::BitUtil::align(
-            DataFrameHeader::LENGTH * 3, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t alignedFrameLength = util::BitUtil::align(
+        DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t frameOffset = TERM_BUFFER_CAPACITY - util::BitUtil::align(
+        DataFrameHeader::LENGTH * 3, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t mtu = alignedFrameLength + 8;
 
     expectScanTwoMessages(

@@ -48,10 +48,10 @@ public:
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
-        MemoryMappedFile::ptr_t logbuffer1 =
-            MemoryMappedFile::createNew(m_logFileName.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
-        MemoryMappedFile::ptr_t logbuffer2 =
-            MemoryMappedFile::createNew(m_logFileName2.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
+        MemoryMappedFile::ptr_t logbuffer1 = MemoryMappedFile::createNew(
+            m_logFileName.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
+        MemoryMappedFile::ptr_t logbuffer2 = MemoryMappedFile::createNew(
+            m_logFileName2.c_str(), 0, static_cast<size_t>(LOG_FILE_LENGTH));
         m_manyToOneRingBuffer.consumerHeartbeatTime(m_currentTime);
 
         AtomicBuffer logMetaDataBuffer;
@@ -712,13 +712,12 @@ TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
-    m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
     m_conductor.onUnavailableImage(STREAM_ID, correlationId, id);
     EXPECT_FALSE(sub->hasImage(correlationId));
 }
 
-TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfNoOperationSuccess)
+TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfNoOperationSuccess)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
@@ -731,12 +730,11 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfNoOperationSuccess)
         .Times(0);
 
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
     m_conductor.onUnavailableImage(STREAM_ID, correlationId, id);
 }
 
-TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUninterestingConnectionCorrelationId)
+TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfUninterestingConnectionCorrelationId)
 {
     std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
@@ -753,8 +751,7 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUninterestingConnec
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
-    m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
     m_conductor.onUnavailableImage(STREAM_ID, correlationId + 1, id);
     EXPECT_TRUE(sub->hasImage(correlationId));
 
@@ -778,8 +775,7 @@ TEST_F(ClientConductorTest, shouldCallUnavailableImageIfSubscriptionReleased)
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
-    m_conductor.onAvailableImage(
-        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
     EXPECT_TRUE(sub->hasImage(correlationId));
 }
 
@@ -879,7 +875,6 @@ TEST_F(ClientConductorTest, shouldRemoveImageOnInterServiceTimeout)
     EXPECT_TRUE(sub->isClosed());
     EXPECT_TRUE(image == nullptr);
 }
-
 
 TEST_F(ClientConductorTest, shouldReturnNullForUnknownCounter)
 {

@@ -409,7 +409,6 @@ TEST(OneToOneRingBufferConcurrentTest, shouldProvideCcorrelationIds)
         }));
     }
 
-    // wait for all threads to finish
     for (std::thread &thr: threads)
     {
         thr.join();
@@ -478,7 +477,6 @@ TEST(OneToOneRingBufferConcurrentTest, shouldExchangeMessages)
             msgCount += readCount;
         }
 
-        // wait for all threads to finish
         for (std::thread &thr: threads)
         {
             thr.join();

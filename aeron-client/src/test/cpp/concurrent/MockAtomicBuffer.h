@@ -49,8 +49,7 @@ public:
     MOCK_METHOD2(putInt64Ordered, void(util::index_t, std::int64_t v));
     MOCK_CONST_METHOD1(getInt64Volatile, std::int64_t(util::index_t));
 
-    MOCK_METHOD2(putStringWithoutLength, std::int32_t(util::index_t,
-        const std::string&));
+    MOCK_METHOD2(putStringWithoutLength, std::int32_t(util::index_t, const std::string&));
 
     void useAsSpy()
     {

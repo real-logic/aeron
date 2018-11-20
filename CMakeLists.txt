@@ -16,8 +16,8 @@
 cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
 cmake_policy(VERSION 3.0.2)
 
-file(STRINGS version.txt VERSION_TXT LIMIT_COUNT 1 REGEX "^[0-9]+(\\.[0-9]+)+")
-string(REGEX REPLACE "^([0-9]+(\\.[0-9]+)+).*$" "\\1" VERSION_FROM_FILE "${VERSION_TXT}")
+file(STRINGS version.txt AEROBN_VERSION_TXT LIMIT_COUNT 1 REGEX "^[0-9]+(\\.[0-9]+)+")
+string(REGEX REPLACE "^([0-9]+(\\.[0-9]+)+).*$" "\\1" AERON_VERSION_FROM_FILE "${AERON_VERSION_TXT}")
 
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
     message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory)"
@@ -43,7 +43,7 @@ unset(STANDALONE_BUILD)
 
 include(ExternalProject)
 
-project("aeron" VERSION "${VERSION_FROM_FILE}")
+project("aeron" VERSION "${AERON_VERSION_FROM_FILE}")
 
 if(AERON_TESTS)
     enable_testing()

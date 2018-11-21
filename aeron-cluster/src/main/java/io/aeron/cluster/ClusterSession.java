@@ -41,10 +41,10 @@ class ClusterSession
     }
 
     private boolean hasNewLeaderEventPending = false;
-    private long timeOfLastActivityMs;
+    private final long id;
     private long correlationId;
     private long openedLogPosition = Aeron.NULL_VALUE;
-    private final long id;
+    private long timeOfLastActivityMs;
     private final int responseStreamId;
     private final String responseChannel;
     private Publication responsePublication;
@@ -61,11 +61,11 @@ class ClusterSession
 
     ClusterSession(
         final long sessionId,
-        final int responseStreamId,
-        final String responseChannel,
+        final long correlationId,
         final long openedLogPosition,
         final long timeOfLastActivityMs,
-        final long correlationId,
+        final int responseStreamId,
+        final String responseChannel,
         final CloseReason closeReason)
     {
         this.id = sessionId;
@@ -252,14 +252,14 @@ class ClusterSession
     {
         return "ClusterSession{" +
             "id=" + id +
-            ", timeOfLastActivityMs=" + timeOfLastActivityMs +
             ", correlationId=" + correlationId +
             ", openedLogPosition=" + openedLogPosition +
-            ", hasNewLeaderEventPending=" + hasNewLeaderEventPending +
+            ", timeOfLastActivityMs=" + timeOfLastActivityMs +
             ", responseStreamId=" + responseStreamId +
             ", responseChannel='" + responseChannel + '\'' +
-            ", state=" + state +
             ", closeReason=" + closeReason +
+            ", state=" + state +
+            ", hasNewLeaderEventPending=" + hasNewLeaderEventPending +
             ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
             '}';
     }

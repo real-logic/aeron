@@ -892,16 +892,22 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     }
 
     void onLoadSession(
-        final long logPosition,
-        final long correlationId,
         final long clusterSessionId,
-        final long timestamp,
+        final long correlationId,
+        final long openedPosition,
+        final long timeOfLastActivity,
         final CloseReason closeReason,
         final int responseStreamId,
         final String responseChannel)
     {
         sessionByIdMap.put(clusterSessionId, new ClusterSession(
-            clusterSessionId, responseStreamId, responseChannel, logPosition, timestamp, correlationId, closeReason));
+            clusterSessionId,
+            correlationId,
+            openedPosition,
+            timeOfLastActivity,
+            responseStreamId,
+            responseChannel,
+            closeReason));
 
         if (clusterSessionId >= nextSessionId)
         {

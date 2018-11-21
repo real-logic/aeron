@@ -52,8 +52,8 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .clusterSessionId(session.id())
                     .correlationId(session.correlationId())
-                    .timeOfLastActivity(session.timeOfLastActivityMs())
                     .openedLogPosition(session.openedLogPosition())
+                    .timeOfLastActivity(session.timeOfLastActivityMs())
                     .closeReason(session.closeReason())
                     .responseStreamId(session.responseStreamId())
                     .responseChannel(responseChannel);

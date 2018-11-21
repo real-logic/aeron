@@ -34,11 +34,13 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
+import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
@@ -188,6 +190,9 @@ public class Archive implements AutoCloseable
         public static final String MAX_CATALOG_ENTRIES_PROP_NAME = "aeron.archive.max.catalog.entries";
         public static final long MAX_CATALOG_ENTRIES_DEFAULT = Catalog.DEFAULT_MAX_ENTRIES;
 
+        public static final String CONNECT_TIMEOUT_PROP_NAME = "aeron.archive.connect.timeout";
+        public static final long CONNECT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
         static final String CATALOG_FILE_NAME = "archive.catalog";
         static final String RECORDING_SEGMENT_POSTFIX = ".rec";
 
@@ -308,6 +313,17 @@ public class Archive implements AutoCloseable
         {
             return Long.getLong(MAX_CATALOG_ENTRIES_PROP_NAME, MAX_CATALOG_ENTRIES_DEFAULT);
         }
+
+        /**
+         * The timeout in nanoseconds to wait for a connection.
+         *
+         * @return timeout in nanoseconds to wait for a connection.
+         * @see #CONNECT_TIMEOUT_PROP_NAME
+         */
+        public static long connectTimeoutNs()
+        {
+            return getDurationInNanos(CONNECT_TIMEOUT_PROP_NAME, CONNECT_TIMEOUT_DEFAULT_NS);
+        }
     }
 
     /**
@@ -335,6 +351,7 @@ public class Archive implements AutoCloseable
         private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
         private int recordingEventsStreamId = AeronArchive.Configuration.recordingEventsStreamId();
 
+        private long connectTimeoutNs = Configuration.connectTimeoutNs();
         private long maxCatalogEntries = Configuration.maxCatalogEntries();
         private int segmentFileLength = Configuration.segmentFileLength();
         private int fileSyncLevel = Configuration.fileSyncLevel();
@@ -764,6 +781,30 @@ public class Archive implements AutoCloseable
         {
             this.recordingEventsStreamId = recordingEventsStreamId;
             return this;
+        }
+
+        /**
+         * The timeout in nanoseconds to wait for connection to be established.
+         *
+         * @param connectTimeoutNs to wait for a connection to be established.
+         * @return this for a fluent API.
+         * @see Configuration#CONNECT_TIMEOUT_PROP_NAME
+         */
+        public Context connectTimeoutNs(final long connectTimeoutNs)
+        {
+            this.connectTimeoutNs = connectTimeoutNs;
+            return this;
+        }
+
+        /**
+         * The timeout in nanoseconds to wait for connection to be established.
+         *
+         * @return the message timeout in nanoseconds to wait for a connection to be established.
+         * @see Configuration#CONNECT_TIMEOUT_PROP_NAME
+         */
+        public long connectTimeoutNs()
+        {
+            return connectTimeoutNs;
         }
 
         /**

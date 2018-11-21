@@ -1113,7 +1113,7 @@ public class AeronArchive implements AutoCloseable
     public static class Configuration
     {
         /**
-         * Timeout when waiting on a message to be sent or received.
+         * Timeout in nanoseconds when waiting on a message to be sent or received.
          */
         public static final String MESSAGE_TIMEOUT_PROP_NAME = "aeron.archive.message.timeout";
 

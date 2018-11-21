@@ -35,9 +35,9 @@ import java.io.File;
  * The session will:
  * <ul>
  * <li>Validate request parameters and respond with appropriate error if unable to replay.</li>
- * <li>Wait for replay subscription to connect to the requested replay publication. If no subscription appears within
- * {@link #CONNECT_TIMEOUT_MS} the session will terminate and respond will error.</li>
- * <li>Once the replay publication is connected send an OK response to control client.</li>
+ * <li>Wait for replay publication to connect to the subscriber. If no subscriber appears within
+ * {@link Archive.Configuration#CONNECT_TIMEOUT_PROP_NAME} the session will terminate and respond with an error.</li>
+ * <li>Once the replay publication is connected an OK response to control client will be sent.</li>
  * <li>Stream recorded data into the replayPublication {@link ExclusivePublication}.</li>
  * <li>If the replay is aborted part way through, send a ReplayAborted message and terminate.</li>
  * </ul>
@@ -48,11 +48,6 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
     {
         INIT, REPLAY, INACTIVE
     }
-
-    /**
-     * Timeout within which a replay connection needs to be established.
-     */
-    static final long CONNECT_TIMEOUT_MS = 5000;
 
     private static final int REPLAY_FRAGMENT_LIMIT = Archive.Configuration.replayFragmentLimit();
 
@@ -73,6 +68,7 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
         final long replayPosition,
         final long replayLength,
         final long replaySessionId,
+        final long connectTimeoutMs,
         final Catalog catalog,
         final ControlSession controlSession,
         final File archiveDir,
@@ -111,7 +107,7 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
         this.cursor = cursor;
 
         controlSession.sendOkResponse(correlationId, replaySessionId, controlResponseProxy);
-        connectDeadlineMs = epochClock.time() + CONNECT_TIMEOUT_MS;
+        connectDeadlineMs = epochClock.time() + connectTimeoutMs;
     }
 
     public void close()

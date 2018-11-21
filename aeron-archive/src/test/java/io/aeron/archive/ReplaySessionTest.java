@@ -34,6 +34,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -55,8 +56,9 @@ public class ReplaySessionTest
     private static final long START_POSITION = INITIAL_TERM_OFFSET;
     private static final long JOIN_POSITION = START_POSITION;
     private static final long RECORDING_POSITION = INITIAL_TERM_OFFSET;
-    private static final int MTU_LENGTH = 4096;
     private static final long TIME = 0;
+    private static final long CONNECT_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
+    private static final int MTU_LENGTH = 4096;
     private static final int FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
     private static final int STREAM_ID = 1;
@@ -245,6 +247,7 @@ public class ReplaySessionTest
             RECORDING_POSITION + 1,
             FRAME_LENGTH,
             REPLAY_ID,
+            CONNECT_TIMEOUT_MS,
             mockCatalog,
             mockControlSession,
             archiveDir,
@@ -317,7 +320,7 @@ public class ReplaySessionTest
 
             replaySession.doWork();
 
-            when(epochClock.time()).thenReturn(ReplaySession.CONNECT_TIMEOUT_MS + TIME + 1L);
+            when(epochClock.time()).thenReturn(CONNECT_TIMEOUT_MS + TIME + 1L);
             replaySession.doWork();
             assertTrue(replaySession.isDone());
         }
@@ -468,6 +471,7 @@ public class ReplaySessionTest
             recordingPosition,
             length,
             REPLAY_ID,
+            CONNECT_TIMEOUT_MS,
             mockCatalog,
             control,
             archiveDir,

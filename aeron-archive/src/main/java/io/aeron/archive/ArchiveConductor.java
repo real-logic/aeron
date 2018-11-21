@@ -42,6 +42,7 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.ChannelUriStringBuilder.integerValueOf;
 import static io.aeron.CommonContext.SPY_PREFIX;
@@ -82,6 +83,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final FileChannel archiveDirChannel;
     private final Subscription controlSubscription;
     private final Subscription localControlSubscription;
+    private final long connectTimeoutMs;
 
     private final Catalog catalog;
     private final ArchiveMarkFile markFile;
@@ -110,6 +112,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         archiveDirChannel = ctx.archiveDirChannel();
         maxConcurrentRecordings = ctx.maxConcurrentRecordings();
         maxConcurrentReplays = ctx.maxConcurrentReplays();
+        connectTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.connectTimeoutNs());
 
         final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
         controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
@@ -434,6 +437,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             replayPosition,
             length,
             replaySessionId,
+            connectTimeoutMs,
             catalog,
             controlSession,
             archiveDir,
@@ -648,6 +652,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final ControlSession controlSession = new ControlSession(
             nextControlSessionId++,
             correlationId,
+            connectTimeoutMs,
             demuxer,
             aeron.addExclusivePublication(controlChannel, streamId),
             this,

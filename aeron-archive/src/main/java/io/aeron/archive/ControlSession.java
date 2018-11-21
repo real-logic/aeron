@@ -41,23 +41,23 @@ class ControlSession implements Session
         INIT, ACTIVE, INACTIVE, CLOSED
     }
 
-    static final long TIMEOUT_MS = 5000L;
-
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
     private final ArrayDeque<BooleanSupplier> queuedResponses = new ArrayDeque<>(8);
     private final ControlResponseProxy controlResponseProxy;
     private final long controlSessionId;
     private final long correlationId;
+    private final long connectTimeoutMs;
+    private long activityDeadlineMs = -1;
     private final ControlSessionDemuxer demuxer;
     private final Publication controlPublication;
     private State state = State.INIT;
-    private long activityDeadlineMs = -1;
     private AbstractListRecordingsSession activeListRecordingsSession;
 
     ControlSession(
         final long controlSessionId,
         final long correlationId,
+        final long connectTimeoutMs,
         final ControlSessionDemuxer demuxer,
         final Publication controlPublication,
         final ArchiveConductor conductor,
@@ -66,6 +66,7 @@ class ControlSession implements Session
     {
         this.controlSessionId = controlSessionId;
         this.correlationId = correlationId;
+        this.connectTimeoutMs = connectTimeoutMs;
         this.demuxer = demuxer;
         this.controlPublication = controlPublication;
         this.conductor = conductor;
@@ -339,7 +340,7 @@ class ControlSession implements Session
                 }
                 else if (activityDeadlineMs == Aeron.NULL_VALUE)
                 {
-                    activityDeadlineMs = epochClock.time() + TIMEOUT_MS;
+                    activityDeadlineMs = epochClock.time() + connectTimeoutMs;
                 }
                 else if (hasGoneInactive())
                 {
@@ -361,7 +362,7 @@ class ControlSession implements Session
         int workCount = 0;
         if (activityDeadlineMs == Aeron.NULL_VALUE)
         {
-            activityDeadlineMs = epochClock.time() + TIMEOUT_MS;
+            activityDeadlineMs = epochClock.time() + connectTimeoutMs;
         }
         else if (controlPublication.isConnected())
         {

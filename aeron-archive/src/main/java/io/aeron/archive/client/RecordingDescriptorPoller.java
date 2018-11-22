@@ -36,7 +36,7 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final long controlSessionId;
 
-    private long expectedCorrelationId;
+    private long correlationId;
     private int remainingRecordCount;
     private RecordingDescriptorConsumer consumer;
     private boolean isDispatchComplete = false;
@@ -111,16 +111,13 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
     /**
      * Reset the poller to dispatch the descriptors returned from a query.
      *
-     * @param expectedCorrelationId for the response.
-     * @param recordCount           of descriptors to expect.
-     * @param consumer              to which the recording descriptors are to be dispatched.
+     * @param correlationId for the response.
+     * @param recordCount   of descriptors to expect.
+     * @param consumer      to which the recording descriptors are to be dispatched.
      */
-    public void reset(
-        final long expectedCorrelationId,
-        final int recordCount,
-        final RecordingDescriptorConsumer consumer)
+    public void reset(final long correlationId, final int recordCount, final RecordingDescriptorConsumer consumer)
     {
-        this.expectedCorrelationId = expectedCorrelationId;
+        this.correlationId = correlationId;
         this.consumer = consumer;
         this.remainingRecordCount = recordCount;
         isDispatchComplete = false;
@@ -140,13 +137,13 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                if (controlResponseDecoder.controlSessionId() != controlSessionId)
+                if (controlResponseDecoder.controlSessionId() != controlSessionId ||
+                    controlResponseDecoder.correlationId() != correlationId)
                 {
                     break;
                 }
 
                 final ControlResponseCode code = controlResponseDecoder.code();
-
                 if (ControlResponseCode.RECORDING_UNKNOWN == code)
                 {
                     isDispatchComplete = true;
@@ -155,8 +152,9 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
 
                 if (ControlResponseCode.ERROR == code)
                 {
-                    throw new ArchiveException("response for expectedCorrelationId=" + expectedCorrelationId +
-                        ", error: " + controlResponseDecoder.errorMessage());
+                    throw new ArchiveException("response for correlationId=" + correlationId +
+                        ", error: " + controlResponseDecoder.errorMessage(),
+                        (int)controlResponseDecoder.relevantId());
                 }
                 break;
 
@@ -168,8 +166,8 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
                     messageHeaderDecoder.version());
 
                 final long correlationId = recordingDescriptorDecoder.correlationId();
-                if (controlSessionId != recordingDescriptorDecoder.controlSessionId() ||
-                    correlationId != expectedCorrelationId)
+                if (recordingDescriptorDecoder.controlSessionId() != controlSessionId ||
+                    correlationId != this.correlationId)
                 {
                     break;
                 }

@@ -1003,6 +1003,7 @@ public class AeronArchive implements AutoCloseable
             pollNextResponse(correlationId, deadlineNs, poller);
 
             if (poller.controlSessionId() != controlSessionId ||
+                poller.correlationId() != correlationId ||
                 poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
             {
                 invokeAeronClient();
@@ -1021,10 +1022,7 @@ public class AeronArchive implements AutoCloseable
                 throw new ArchiveException("unexpected response code: " + code);
             }
 
-            if (poller.correlationId() == correlationId)
-            {
-                return poller.relevantId();
-            }
+            return poller.relevantId();
         }
     }
 

@@ -420,11 +420,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             replayPosition = position;
         }
 
-        if (!hasInitialSegmentFile(recordingSummary, archiveDir, replayPosition))
+        if (!hasInitialSegmentFile(controlSession, archiveDir, replayPosition, recordingId, correlationId))
         {
-            final String msg = "initial segment file does not exist for replay recording id " + recordingId;
-            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-
             return;
         }
 
@@ -562,77 +559,89 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     void truncateRecording(
         final long correlationId, final ControlSession controlSession, final long recordingId, final long position)
     {
         final RecordingSummary summary = validateFramePosition(correlationId, controlSession, recordingId, position);
         if (null != summary)
         {
+            final long startPosition = summary.startPosition;
+            if (position < startPosition)
+            {
+                final String msg = "position " + position + " before start position " + startPosition;
+                controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
+
+                return;
+            }
+
             final long stopPosition = summary.stopPosition;
             if (stopPosition == position)
             {
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
+
                 return;
             }
 
-            final long startPosition = summary.startPosition;
             final int segmentLength = summary.segmentFileLength;
             final int segmentIndex = segmentFileIndex(startPosition, position, segmentLength);
             final File file = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
 
-            if (position >= startPosition)
+            final long segmentOffset = position & (segmentLength - 1);
+            final int termLength = summary.termBufferLength;
+            final int termOffset = (int)(position & (termLength - 1));
+
+            if (termOffset > 0)
             {
-                final long segmentOffset = position & (segmentLength - 1);
-                final int termLength = summary.termBufferLength;
-                final int termOffset = (int)(position & (termLength - 1));
-
-                if (termOffset > 0)
+                try (FileChannel fileChannel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
                 {
-                    try (FileChannel fileChannel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
+                    byteBuffer.clear();
+                    if (DataHeaderFlyweight.HEADER_LENGTH != fileChannel.read(byteBuffer, segmentOffset))
                     {
-                        byteBuffer.clear();
-                        if (DataHeaderFlyweight.HEADER_LENGTH != fileChannel.read(byteBuffer, segmentOffset))
-                        {
-                            throw new ArchiveException("failed to read fragment header");
-                        }
-
-                        final long termCount = position >> LogBufferDescriptor.positionBitsToShift(termLength);
-                        final int termId = summary.initialTermId + (int)termCount;
-
-                        if (dataHeaderFlyweight.termOffset() != termOffset ||
-                            dataHeaderFlyweight.termId() != termId ||
-                            dataHeaderFlyweight.streamId() != summary.streamId)
-                        {
-                            final String msg = position + " position does not match header " + dataHeaderFlyweight;
-                            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-                            return;
-                        }
-
-                        catalog.recordingStopped(recordingId, position);
-
-                        fileChannel.truncate(segmentOffset);
-                        byteBuffer.put(0, (byte)0).limit(1).position(0);
-                        fileChannel.write(byteBuffer, segmentLength - 1);
+                        throw new ArchiveException("failed to read fragment header");
                     }
-                    catch (final IOException ex)
+
+                    final long termCount = position >> LogBufferDescriptor.positionBitsToShift(termLength);
+                    final int termId = summary.initialTermId + (int)termCount;
+
+                    if (dataHeaderFlyweight.termOffset() != termOffset ||
+                        dataHeaderFlyweight.termId() != termId ||
+                        dataHeaderFlyweight.streamId() != summary.streamId)
                     {
-                        controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
-                        LangUtil.rethrowUnchecked(ex);
-                    }
-                }
-                else
-                {
-                    catalog.recordingStopped(recordingId, position);
-                    file.delete();
-                }
+                        final String msg = position + " position does not match header " + dataHeaderFlyweight;
+                        controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
 
-                for (int i = segmentIndex + 1; (i * (long)segmentLength) <= stopPosition; i++)
+                        return;
+                    }
+
+                    fileChannel.truncate(segmentOffset);
+                    byteBuffer.put(0, (byte)0).limit(1).position(0);
+                    fileChannel.write(byteBuffer, segmentLength - 1);
+                }
+                catch (final IOException ex)
                 {
-                    new File(archiveDir, segmentFileName(recordingId, i)).delete();
+                    controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
+                    LangUtil.rethrowUnchecked(ex);
+                }
+            }
+            else if (!file.delete())
+            {
+                final String msg = "failed to delete " + file;
+                controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
+                throw new ArchiveException(msg);
+            }
+
+            for (int i = segmentIndex + 1; (i * (long)segmentLength) <= stopPosition; i++)
+            {
+                final File f = new File(archiveDir, segmentFileName(recordingId, i));
+                if (!f.delete())
+                {
+                    final String msg = "failed to delete " + file;
+                    controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
+                    throw new ArchiveException(msg);
                 }
             }
 
+            catalog.recordingStopped(recordingId, position);
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
     }
@@ -789,7 +798,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             image.sourceIdentity());
 
         position.setOrdered(image.joinPosition());
-
         catalog.extendRecording(recordingId);
 
         final RecordingSession session = new RecordingSession(
@@ -973,14 +981,26 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         return true;
     }
 
-    private static boolean hasInitialSegmentFile(
-        final RecordingSummary recording, final File archiveDir, final long position)
+    private boolean hasInitialSegmentFile(
+        final ControlSession controlSession,
+        final File archiveDir,
+        final long position,
+        final long recordingId,
+        final long correlationId)
     {
-        final long fromPosition = position == NULL_POSITION ? recording.startPosition : position;
+        final long fromPosition = position == NULL_POSITION ? recordingSummary.startPosition : position;
         final int segmentFileIndex = segmentFileIndex(
-            recording.startPosition, fromPosition, recording.segmentFileLength);
-        final File segmentFile = new File(archiveDir, segmentFileName(recording.recordingId, segmentFileIndex));
+            recordingSummary.startPosition, fromPosition, recordingSummary.segmentFileLength);
+        final File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFileIndex));
 
-        return segmentFile.exists();
+        if (!segmentFile.exists())
+        {
+            final String msg = "initial segment file does not exist for replay recording id " + recordingId;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+
+            return false;
+        }
+
+        return true;
     }
 }

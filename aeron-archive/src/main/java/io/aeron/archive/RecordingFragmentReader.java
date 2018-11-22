@@ -188,17 +188,6 @@ class RecordingFragmentReader implements AutoCloseable
         return fragments;
     }
 
-    static boolean hasInitialSegmentFile(
-        final RecordingSummary recordingSummary, final File archiveDir, final long position)
-    {
-        final long fromPosition = position == NULL_POSITION ? recordingSummary.startPosition : position;
-        final int segmentFileIndex = segmentFileIndex(
-            recordingSummary.startPosition, fromPosition, recordingSummary.segmentFileLength);
-        final File segmentFile = new File(archiveDir, segmentFileName(recordingSummary.recordingId, segmentFileIndex));
-
-        return segmentFile.exists();
-    }
-
     private boolean noAvailableLiveData()
     {
         return recordingPosition != null &&

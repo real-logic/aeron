@@ -63,7 +63,6 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
     private String errorMessage = null;
     private volatile boolean isAborted;
 
-    @SuppressWarnings("ConstantConditions")
     ReplaySession(
         final long replayPosition,
         final long replayLength,

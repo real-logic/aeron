@@ -420,7 +420,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             replayPosition = position;
         }
 
-        if (!RecordingFragmentReader.hasInitialSegmentFile(recordingSummary, archiveDir, replayPosition))
+        if (!hasInitialSegmentFile(recordingSummary, archiveDir, replayPosition))
         {
             final String msg = "initial segment file does not exist for replay recording id " + recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
@@ -971,5 +971,16 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
 
         return true;
+    }
+
+    private static boolean hasInitialSegmentFile(
+        final RecordingSummary recording, final File archiveDir, final long position)
+    {
+        final long fromPosition = position == NULL_POSITION ? recording.startPosition : position;
+        final int segmentFileIndex = segmentFileIndex(
+            recording.startPosition, fromPosition, recording.segmentFileLength);
+        final File segmentFile = new File(archiveDir, segmentFileName(recording.recordingId, segmentFileIndex));
+
+        return segmentFile.exists();
     }
 }

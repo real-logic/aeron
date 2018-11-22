@@ -111,10 +111,9 @@ class RecordingFragmentReader implements AutoCloseable
         termBaseSegmentOffset = segmentOffset - termOffset;
         termBuffer = new UnsafeBuffer(mappedSegmentBuffer, termBaseSegmentOffset, termLength);
 
-        if (fromPosition > startPosition && fromPosition != stopPosition &&
-            (DataHeaderFlyweight.termOffset(termBuffer, termOffset) != termOffset ||
-            DataHeaderFlyweight.termId(termBuffer, termOffset) != termId ||
-            DataHeaderFlyweight.streamId(termBuffer, termOffset) != recordingSummary.streamId))
+        if (fromPosition > startPosition &&
+            fromPosition != stopPosition &&
+            isFragmentAligned(termBuffer, recordingSummary.streamId, termId, termOffset))
         {
             close();
             throw new IllegalArgumentException(fromPosition + " position not aligned to valid fragment");
@@ -260,5 +259,14 @@ class RecordingFragmentReader implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    private static boolean isFragmentAligned(
+        final UnsafeBuffer buffer, final int streamId, final int termId, final int termOffset)
+    {
+        return
+            DataHeaderFlyweight.termOffset(buffer, termOffset) != termOffset ||
+            DataHeaderFlyweight.termId(buffer, termOffset) != termId ||
+            DataHeaderFlyweight.streamId(buffer, termOffset) != streamId;
     }
 }

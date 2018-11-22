@@ -142,7 +142,7 @@ class RecordingFragmentReader implements AutoCloseable
     {
         int fragments = 0;
 
-        if (noAvailableLiveData())
+        if (recordingPosition != null && replayPosition == stopPosition && noNewData(replayPosition, stopPosition))
         {
             return fragments;
         }
@@ -187,14 +187,7 @@ class RecordingFragmentReader implements AutoCloseable
         return fragments;
     }
 
-    private boolean noAvailableLiveData()
-    {
-        return recordingPosition != null &&
-            replayPosition == stopPosition &&
-            !refreshStopPositionAndLimit(replayPosition, stopPosition);
-    }
-
-    private boolean refreshStopPositionAndLimit(final long replayPosition, final long oldStopPosition)
+    private boolean noNewData(final long replayPosition, final long oldStopPosition)
     {
         final long currentRecodingPosition = recordingPosition.get();
         final boolean hasRecordingStopped = recordingPosition.isClosed();
@@ -208,16 +201,14 @@ class RecordingFragmentReader implements AutoCloseable
         if (replayPosition >= replayLimit)
         {
             isDone = true;
+        }
+        else if (newStopPosition != oldStopPosition)
+        {
+            stopPosition = newStopPosition;
             return false;
         }
 
-        if (newStopPosition != oldStopPosition)
-        {
-            stopPosition = newStopPosition;
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     private void nextTerm()

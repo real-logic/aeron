@@ -147,17 +147,15 @@ class RecordingFragmentReader implements AutoCloseable
             return fragments;
         }
 
-        final UnsafeBuffer termBuffer = this.termBuffer;
         while (replayPosition < stopPosition && fragments < fragmentLimit)
         {
-            final int frameOffset = termOffset;
-            if (frameOffset == termLength)
+            if (termOffset == termLength)
             {
-                termOffset = 0;
                 nextTerm();
-                break;
             }
 
+            final int frameOffset = termOffset;
+            final UnsafeBuffer termBuffer = this.termBuffer;
             final int frameLength = FrameDescriptor.frameLength(termBuffer, frameOffset);
             final int frameType = FrameDescriptor.frameType(termBuffer, frameOffset);
             final byte flags = FrameDescriptor.frameFlags(termBuffer, frameOffset);
@@ -213,6 +211,7 @@ class RecordingFragmentReader implements AutoCloseable
 
     private void nextTerm()
     {
+        termOffset = 0;
         termBaseSegmentOffset += termLength;
 
         if (termBaseSegmentOffset == segmentLength)

@@ -200,7 +200,7 @@ class RecordingFragmentReader implements AutoCloseable
         {
             isDone = true;
         }
-        else if (newStopPosition != oldStopPosition)
+        else if (newStopPosition > oldStopPosition)
         {
             stopPosition = newStopPosition;
             return false;

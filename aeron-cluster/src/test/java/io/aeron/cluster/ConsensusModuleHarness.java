@@ -592,12 +592,11 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final Random random,
         final ConsensusModule.Context context)
     {
-        final Long2LongHashMap positionMap = new Long2LongHashMap(-1);
+        final Long2LongHashMap positionByMessageIndexMap = new Long2LongHashMap(-1);
         final File harnessDir = harnessDirectory(context.clusterMemberId());
 
-        makeRecordingLog(totalMessageCount, maxMessageLength, random, positionMap, context);
-
-        final long truncatePosition = positionMap.get(truncateAtMessageCount);
+        makeRecordingLog(totalMessageCount, maxMessageLength, random, positionByMessageIndexMap, context);
+        final long truncatePosition = positionByMessageIndexMap.get(truncateAtMessageCount);
 
         return truncateRecordingLog(harnessDir, 0, truncatePosition);
     }

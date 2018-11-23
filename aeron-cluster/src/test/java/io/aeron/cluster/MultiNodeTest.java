@@ -33,7 +33,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@Ignore
 public class MultiNodeTest
 {
     private static final String THREE_NODE_MEMBERS =

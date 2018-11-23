@@ -79,7 +79,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final AtomicInteger serviceOnMessageCounter = new AtomicInteger(0);
     private final IdleStrategy idleStrategy = new SleepingMillisIdleStrategy(1);
     private final ClusterMember[] members;
-    private final Subscription[] memberStatusSubscriptions;
     private final MemberStatusAdapter[] memberStatusAdapters;
     private final Publication[] memberStatusPublications;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
@@ -189,7 +188,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         this.aeronArchiveContext = aeronArchiveContext.clone();
         aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(mediaDriverPath));
 
-        memberStatusSubscriptions = new Subscription[members.length];
+        final Subscription[] memberStatusSubscriptions = new Subscription[members.length];
         memberStatusAdapters = new MemberStatusAdapter[members.length];
         memberStatusPublications = new Publication[members.length];
         memberStatusCounters = new MemberStatusCounters[members.length];
@@ -555,8 +554,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
                     while (true)
                     {
-                        final long result = ingressSessionDecorator.offer(
-                            publication, msgBuffer, 0, length);
+                        final long result = ingressSessionDecorator.offer(publication, msgBuffer, 0, length);
                         if (result > 0)
                         {
                             if (null != positionMap)
@@ -577,7 +575,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 harness.awaitServiceOnMessageCounter(numMessages);
 
                 // must account for additional events in the log
-                return publication.position() + 64;
+                return publication.position() + 64 + 96;
             }
         }
     }

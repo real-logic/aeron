@@ -320,7 +320,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     public void onSessionClose(final long clusterSessionId)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session && Cluster.Role.LEADER != role)
+        if (null != session && Cluster.Role.LEADER == role)
         {
             session.close(CloseReason.CLIENT_ACTION);
 

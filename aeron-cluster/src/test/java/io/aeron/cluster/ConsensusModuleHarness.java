@@ -586,8 +586,8 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     }
 
     static long makeTruncatedRecordingLog(
-        final int numTotalMessages,
-        final int truncateAtNumMessage,
+        final int totalMessageCount,
+        final int truncateAtMessageCount,
         final int maxMessageLength,
         final Random random,
         final ConsensusModule.Context context)
@@ -595,9 +595,9 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final Long2LongHashMap positionMap = new Long2LongHashMap(-1);
         final File harnessDir = harnessDirectory(context.clusterMemberId());
 
-        makeRecordingLog(numTotalMessages, maxMessageLength, random, positionMap, context);
+        makeRecordingLog(totalMessageCount, maxMessageLength, random, positionMap, context);
 
-        final long truncatePosition = positionMap.get(truncateAtNumMessage);
+        final long truncatePosition = positionMap.get(truncateAtMessageCount);
 
         return truncateRecordingLog(harnessDir, 0, truncatePosition);
     }

@@ -64,11 +64,11 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private static final long MAX_CATALOG_ENTRIES = 1024;
 
     private static final PrintStream NULL_PRINT_STREAM = new PrintStream(new OutputStream()
+    {
+        public void write(final int b)
         {
-            public void write(final int b)
-            {
-            }
-        });
+        }
+    });
 
     private final ClusteredMediaDriver clusteredMediaDriver;
     private final ClusteredServiceContainer clusteredServiceContainer;
@@ -209,11 +209,9 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
                 final int statusStreamId = consensusModuleContext.memberStatusStreamId();
 
-                memberStatusSubscriptions[i] =
-                    aeron.addSubscription(memberStatusUri.toString(), statusStreamId);
+                memberStatusSubscriptions[i] = aeron.addSubscription(memberStatusUri.toString(), statusStreamId);
 
-                memberStatusAdapters[i] = new MemberStatusAdapter(
-                    memberStatusSubscriptions[i], listener);
+                memberStatusAdapters[i] = new MemberStatusAdapter(memberStatusSubscriptions[i], listener);
                 memberStatusPublications[i] = aeron.addExclusivePublication(
                     consensusModuleContext.memberStatusChannel(), consensusModuleContext.memberStatusStreamId());
 
@@ -522,16 +520,21 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         final int numMessages,
         final int maxMessageLength,
         final Random random,
-        final Long2LongHashMap positionMap,
+        final Long2LongHashMap positionByMessageIndexMap,
         final ConsensusModule.Context context)
     {
+        final AtomicBoolean sessionClosed = new AtomicBoolean();
+        final ClusteredService service = new StubClusteredService()
+        {
+            public void onSessionClose(
+                final ClientSession session, final long timestampMs, final CloseReason closeReason)
+            {
+                sessionClosed.set(true);
+            }
+        };
+
         try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context,
-            new StubClusteredService(),
-            null,
-            true,
-            false,
-            false))
+            context, service, null, true, false, false))
         {
             harness.awaitServiceOnStart();
 
@@ -557,9 +560,9 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                         final long result = ingressSessionDecorator.offer(publication, msgBuffer, 0, length);
                         if (result > 0)
                         {
-                            if (null != positionMap)
+                            if (null != positionByMessageIndexMap)
                             {
-                                positionMap.put(i, result);
+                                positionByMessageIndexMap.put(i, result);
                             }
 
                             break;
@@ -567,16 +570,18 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
                         checkOfferResult(result);
                         TestUtil.checkInterruptedStatus();
-
                         Thread.yield();
                     }
                 }
-
-                harness.awaitServiceOnMessageCounter(numMessages);
-
-                // must account for additional events in the log
-                return publication.position() + 64 + 96;
             }
+
+            while (!sessionClosed.get())
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            return harness.clusteredMediaDriver.consensusModule().context().commitPositionCounter().get();
         }
     }
 

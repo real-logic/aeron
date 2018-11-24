@@ -50,6 +50,7 @@ public:
     {
         m_func();
     }
+
 private:
     func_t m_func;
 };

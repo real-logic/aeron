@@ -52,7 +52,9 @@ valueType parse (const std::string& input)
     std::istringstream stream (str);
     valueType value;
 
-    if (std::is_integral<valueType>::value && input.length() > 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X'))
+    if (std::is_integral<valueType>::value && input.length() > 2 &&
+        input[0] == '0' &&
+        (input[1] == 'x' || input[1] == 'X'))
     {
         stream >> std::hex >> value;
     }

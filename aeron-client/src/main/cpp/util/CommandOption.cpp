@@ -19,25 +19,23 @@
 
 namespace aeron { namespace util {
 
-CommandOption::CommandOption()
-        : m_optionChar('-'),
-          m_minParams(0),
-          m_maxParams(0),
-          m_helpText(""),
-          m_isPresent(false)
+CommandOption::CommandOption() :
+    m_optionChar('-'),
+    m_minParams(0),
+    m_maxParams(0),
+    m_helpText(""),
+    m_isPresent(false)
 {
 }
 
-
-CommandOption::CommandOption(char optionChar, size_t minParams, size_t maxParams, std::string helpText)
-        : m_optionChar(optionChar),
-          m_minParams(minParams),
-          m_maxParams(maxParams),
-          m_helpText(helpText),
-          m_isPresent(false)
+CommandOption::CommandOption(char optionChar, size_t minParams, size_t maxParams, std::string helpText) :
+    m_optionChar(optionChar),
+    m_minParams(minParams),
+    m_maxParams(maxParams),
+    m_helpText(helpText),
+    m_isPresent(false)
 {
 }
-
 
 void CommandOption::checkIndex(size_t index) const
 {
@@ -98,7 +96,6 @@ long CommandOption::getParamAsLong(size_t index) const
 
 int CommandOption::getParamAsInt(size_t index, int minValue, int maxValue, int defaultValue) const
 {
-    // if this option was not present on the command line then return the default value.
     if (!isPresent())
     {
         return defaultValue;
@@ -116,7 +113,6 @@ int CommandOption::getParamAsInt(size_t index, int minValue, int maxValue, int d
 
 long CommandOption::getParamAsLong(size_t index, long minValue, long maxValue, long defaultValue) const
 {
-    // if this option was not present on the command line then return the default value.
     if (!isPresent())
     {
         return defaultValue;

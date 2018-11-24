@@ -32,11 +32,11 @@ class CommandOptionParser
     public:
         CommandOptionParser ();
 
-        void parse (int argc, char** argv);
-        void addOption (const CommandOption& option);
-        CommandOption& getOption (char optionChar);
+        void parse(int argc, char** argv);
+        void addOption(const CommandOption& option);
+        CommandOption& getOption(char optionChar);
 
-        void displayOptionsHelp (std::ostream& out) const;
+        void displayOptionsHelp(std::ostream& out) const;
 };
 
 }}

@@ -60,7 +60,6 @@ public class ExclusiveBufferClaim extends BufferClaim
     public ExclusiveBufferClaim flags(final byte flags)
     {
         buffer.putByte(FLAGS_FIELD_OFFSET, flags);
-
         return this;
     }
 
@@ -74,7 +73,6 @@ public class ExclusiveBufferClaim extends BufferClaim
     public ExclusiveBufferClaim headerType(final int type)
     {
         buffer.putShort(TYPE_FIELD_OFFSET, (short)type, LITTLE_ENDIAN);
-
         return this;
     }
 }

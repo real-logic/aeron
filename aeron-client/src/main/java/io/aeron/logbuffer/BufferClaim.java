@@ -113,7 +113,6 @@ public class BufferClaim
     public BufferClaim flags(final byte flags)
     {
         buffer.putByte(FLAGS_FIELD_OFFSET, flags);
-
         return this;
     }
 
@@ -127,7 +126,6 @@ public class BufferClaim
     public BufferClaim headerType(final int type)
     {
         buffer.putShort(TYPE_FIELD_OFFSET, (short)type, LITTLE_ENDIAN);
-
         return this;
     }
 
@@ -171,7 +169,6 @@ public class BufferClaim
     public final BufferClaim putBytes(final DirectBuffer srcBuffer, final int srcIndex, final int length)
     {
         buffer.putBytes(HEADER_LENGTH, srcBuffer, srcIndex, length);
-
         return this;
     }
 

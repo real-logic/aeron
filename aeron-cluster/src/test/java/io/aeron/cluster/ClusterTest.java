@@ -206,7 +206,7 @@ public class ClusterTest
         while (NULL_VALUE == (newLeaderMemberId = findLeaderId(leaderMemberId)))
         {
             TestUtil.checkInterruptedStatus();
-            Thread.sleep(1000);
+            Thread.sleep(100);
         }
 
         assertThat(newLeaderMemberId, not(leaderMemberId));

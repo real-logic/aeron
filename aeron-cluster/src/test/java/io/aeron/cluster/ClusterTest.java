@@ -232,8 +232,8 @@ public class ClusterTest
         {
             while (client.offer(msgBuffer, 0, MSG.length()) < 0)
             {
-                TestUtil.checkInterruptedStatus();
                 client.pollEgress();
+                TestUtil.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -331,21 +331,16 @@ public class ClusterTest
     {
         int leaderMemberId = NULL_VALUE;
 
-        for (int i = 0; i < 3; i++)
+        for (final ClusteredMediaDriver clusteredMediaDriver : clusteredMediaDrivers)
         {
-            if (i == skipMemberId)
+            final ConsensusModule.Context context = clusteredMediaDriver.consensusModule().context();
+            final int memberId = context.clusterMemberId();
+
+            if (memberId != skipMemberId &&
+                Cluster.Role.LEADER == Cluster.Role.get((int)context.clusterNodeCounter().get()))
             {
-                continue;
-            }
-
-            final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
-
-            final Cluster.Role role = Cluster.Role.get(
-                (int)driver.consensusModule().context().clusterNodeCounter().get());
-
-            if (Cluster.Role.LEADER == role)
-            {
-                leaderMemberId = driver.consensusModule().context().clusterMemberId();
+                leaderMemberId = memberId;
+                break;
             }
         }
 

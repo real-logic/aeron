@@ -85,7 +85,7 @@ public class HeaderFlyweight extends UnsafeBuffer
     public static final int VERSION_FIELD_OFFSET = 4;
     public static final int FLAGS_FIELD_OFFSET = 5;
     public static final int TYPE_FIELD_OFFSET = 6;
-    public static final int HEADER_LENGTH = TYPE_FIELD_OFFSET + SIZE_OF_SHORT;
+    public static final int MIN_HEADER_LENGTH = TYPE_FIELD_OFFSET + SIZE_OF_SHORT;
 
     public HeaderFlyweight()
     {

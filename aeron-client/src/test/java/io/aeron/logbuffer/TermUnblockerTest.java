@@ -31,7 +31,7 @@ import static io.aeron.logbuffer.TermUnblocker.Status.NO_ACTION;
 import static io.aeron.logbuffer.TermUnblocker.Status.UNBLOCKED;
 import static io.aeron.logbuffer.TermUnblocker.Status.UNBLOCKED_TO_END;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
-import static io.aeron.protocol.HeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 public class TermUnblockerTest
 {

@@ -268,7 +268,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
             isFrameValid = false;
             invalidPackets.increment();
         }
-        else if (length < HeaderFlyweight.HEADER_LENGTH)
+        else if (length < HeaderFlyweight.MIN_HEADER_LENGTH)
         {
             isFrameValid = false;
             invalidPackets.increment();

@@ -15,19 +15,15 @@
  */
 package io.aeron.logbuffer;
 
-import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static io.aeron.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
-import static io.aeron.protocol.HeaderFlyweight.TYPE_FIELD_OFFSET;
 
 /**
  * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
@@ -91,7 +87,7 @@ public class BufferClaim
      * Note: The value is in {@link ByteOrder#LITTLE_ENDIAN} format.
      *
      * @return the value stored in the reserve space at the end of a data frame header.
-     * @see DataHeaderFlyweight
+     * @see io.aeron.protocol.DataHeaderFlyweight
      */
     public final long reservedValue()
     {
@@ -105,11 +101,27 @@ public class BufferClaim
      *
      * @param value to be stored in the reserve space at the end of a data frame header.
      * @return this for fluent API semantics.
-     * @see DataHeaderFlyweight
+     * @see io.aeron.protocol.DataHeaderFlyweight
      */
     public BufferClaim reservedValue(final long value)
     {
         buffer.putLong(RESERVED_VALUE_OFFSET, value, LITTLE_ENDIAN);
+        return this;
+    }
+
+    /**
+     * Put bytes into the claimed buffer space for a message. To write multiple parts then use {@link #buffer()}
+     * and {@link #offset()}.
+     *
+     * @param srcBuffer to copy into the claimed space.
+     * @param srcIndex  in the source buffer from which to copy.
+     * @param length    of the source buffer to copy.
+     * @return this for a fluent API.
+     */
+    public BufferClaim putBytes(final DirectBuffer srcBuffer, final int srcIndex, final int length)
+    {
+        buffer.putBytes(HEADER_LENGTH, srcBuffer, srcIndex, length);
+
         return this;
     }
 

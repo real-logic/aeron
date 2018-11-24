@@ -15,12 +15,11 @@
  */
 package io.aeron.logbuffer;
 
-import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.DirectBuffer;
 
 import java.nio.ByteOrder;
 
-import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
-import static io.aeron.protocol.HeaderFlyweight.*;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
@@ -46,7 +45,7 @@ public final class ExclusiveBufferClaim extends BufferClaim
      *
      * @param value to be stored in the reserve space at the end of a data frame header.
      * @return this for fluent API semantics.
-     * @see DataHeaderFlyweight
+     * @see io.aeron.protocol.DataHeaderFlyweight
      */
     public ExclusiveBufferClaim reservedValue(final long value)
     {
@@ -58,7 +57,7 @@ public final class ExclusiveBufferClaim extends BufferClaim
      * Get the value of the flags field.
      *
      * @return the value of the header flags field.
-     * @see DataHeaderFlyweight
+     * @see io.aeron.protocol.DataHeaderFlyweight
      */
     public byte flags()
     {
@@ -70,7 +69,7 @@ public final class ExclusiveBufferClaim extends BufferClaim
      *
      * @param flags value to be set in the header.
      * @return this for a fluent API.
-     * @see DataHeaderFlyweight
+     * @see io.aeron.protocol.DataHeaderFlyweight
      */
     public ExclusiveBufferClaim flags(final byte flags)
     {
@@ -83,7 +82,7 @@ public final class ExclusiveBufferClaim extends BufferClaim
      * Get the value of the header type field. The lower 16 bits are valid.
      *
      * @return the value of the header type field.
-     * @see DataHeaderFlyweight
+     * @see io.aeron.protocol.DataHeaderFlyweight
      */
     public int headerType()
     {
@@ -95,11 +94,27 @@ public final class ExclusiveBufferClaim extends BufferClaim
      *
      * @param type value to be set in the header.
      * @return this for a fluent API.
-     * @see DataHeaderFlyweight
+     * @see io.aeron.protocol.DataHeaderFlyweight
      */
     public ExclusiveBufferClaim headerType(final int type)
     {
         buffer.putShort(TYPE_FIELD_OFFSET, (short)type, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * Put bytes into the claimed buffer space for a message. To write multiple parts then use {@link #buffer()}
+     * and {@link #offset()}.
+     *
+     * @param srcBuffer to copy into the claimed space.
+     * @param srcIndex  in the source buffer from which to copy.
+     * @param length    of the source buffer to copy.
+     * @return this for a fluent API.
+     */
+    public ExclusiveBufferClaim putBytes(final DirectBuffer srcBuffer, final int srcIndex, final int length)
+    {
+        buffer.putBytes(HEADER_LENGTH, srcBuffer, srcIndex, length);
 
         return this;
     }

@@ -56,7 +56,7 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
     private final long sessionId;
     private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
     private final ExclusivePublication replayPublication;
-    private final RecordingFragmentReader cursor;
+    private final RecordingFragmentReader reader;
     private final ControlSession controlSession;
     private final EpochClock epochClock;
     private State state = State.INIT;
@@ -84,10 +84,10 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
         this.epochClock = epochClock;
         this.replayPublication = replayPublication;
 
-        RecordingFragmentReader cursor = null;
+        RecordingFragmentReader reader = null;
         try
         {
-            cursor = new RecordingFragmentReader(
+            reader = new RecordingFragmentReader(
                 catalog,
                 recordingSummary,
                 archiveDir,
@@ -103,7 +103,7 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
             LangUtil.rethrowUnchecked(ex);
         }
 
-        this.cursor = cursor;
+        this.reader = reader;
 
         controlSession.sendOkResponse(correlationId, replaySessionId, controlResponseProxy);
         connectDeadlineMs = epochClock.time() + connectTimeoutMs;
@@ -113,9 +113,9 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
     {
         CloseHelper.close(replayPublication);
 
-        if (null != cursor)
+        if (null != reader)
         {
-            cursor.close();
+            reader.close();
         }
     }
 
@@ -133,14 +133,13 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
             state = State.INACTIVE;
         }
 
-        if (State.INIT == state)
-        {
-            workCount += init();
-        }
-
         if (State.REPLAY == state)
         {
             workCount += replay();
+        }
+        else if (State.INIT == state)
+        {
+            workCount += init();
         }
 
         return workCount;
@@ -174,7 +173,7 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
                 bufferClaim
                     .flags(flags)
                     .reservedValue(reservedValue)
-                    .buffer().putBytes(bufferClaim.offset(), buffer, offset, length);
+                    .putBytes(buffer, offset, length);
 
                 bufferClaim.commit();
                 return true;
@@ -199,7 +198,7 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
 
     long recordingId()
     {
-        return cursor.recordingId();
+        return reader.recordingId();
     }
 
     State state()
@@ -237,8 +236,8 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
         int workDone = 0;
         try
         {
-            workDone = cursor.controlledPoll(this, REPLAY_FRAGMENT_LIMIT);
-            if (cursor.isDone())
+            workDone = reader.controlledPoll(this, REPLAY_FRAGMENT_LIMIT);
+            if (reader.isDone())
             {
                 state = State.INACTIVE;
             }

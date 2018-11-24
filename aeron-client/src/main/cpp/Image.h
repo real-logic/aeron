@@ -184,6 +184,7 @@ public:
         m_termLengthMask = image.m_termLengthMask;
         m_positionBitsToShift = image.m_positionBitsToShift;
         m_isEos = image.m_isEos;
+
         return *this;
     }
 

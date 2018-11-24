@@ -67,7 +67,7 @@ public:
         std::int32_t sessionId,
         UnsafeBufferPosition& publicationLimit,
         std::int32_t channelStatusId,
-        std::shared_ptr<LogBuffers> buffers);
+        std::shared_ptr<LogBuffers> logBuffers);
     /// @endcond
 
     virtual ~Publication();
@@ -570,7 +570,7 @@ private:
     std::int32_t m_channelStatusId;
     std::atomic<bool> m_isClosed = { false };
 
-    std::shared_ptr<LogBuffers> m_logbuffers;
+    std::shared_ptr<LogBuffers> m_logBuffers;
     std::unique_ptr<TermAppender> m_appenders[3];
     HeaderWriter m_headerWriter;
 

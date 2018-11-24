@@ -18,7 +18,7 @@ package io.aeron.archive;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
-import io.aeron.logbuffer.ExclusiveBufferClaim;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
@@ -54,7 +54,7 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
     private long connectDeadlineMs;
     private final long correlationId;
     private final long sessionId;
-    private final ExclusiveBufferClaim bufferClaim = new ExclusiveBufferClaim();
+    private final BufferClaim bufferClaim = new BufferClaim();
     private final ExclusivePublication replayPublication;
     private final RecordingFragmentReader reader;
     private final ControlSession controlSession;
@@ -166,7 +166,7 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
         long result = 0;
         if (frameType == HeaderFlyweight.HDR_TYPE_DATA)
         {
-            final ExclusiveBufferClaim bufferClaim = this.bufferClaim;
+            final BufferClaim bufferClaim = this.bufferClaim;
             result = replayPublication.tryClaim(length, bufferClaim);
             if (result > 0)
             {

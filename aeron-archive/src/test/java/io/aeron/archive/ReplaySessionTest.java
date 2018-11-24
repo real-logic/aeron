@@ -19,10 +19,7 @@ import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.logbuffer.ExclusiveBufferClaim;
-import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.logbuffer.Header;
-import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -437,11 +434,11 @@ public class ReplaySessionTest
 
     private void mockPublication(final ExclusivePublication replay, final UnsafeBuffer termBuffer)
     {
-        when(replay.tryClaim(anyInt(), any(ExclusiveBufferClaim.class))).then(
+        when(replay.tryClaim(anyInt(), any(BufferClaim.class))).then(
             (invocation) ->
             {
                 final int claimedSize = invocation.getArgument(0);
-                final ExclusiveBufferClaim buffer = invocation.getArgument(1);
+                final BufferClaim buffer = invocation.getArgument(1);
                 buffer.wrap(termBuffer, messageCounter * FRAME_LENGTH, claimedSize + HEADER_LENGTH);
                 messageCounter++;
 

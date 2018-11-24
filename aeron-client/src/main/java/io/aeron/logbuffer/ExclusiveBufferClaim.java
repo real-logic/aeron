@@ -15,8 +15,6 @@
  */
 package io.aeron.logbuffer;
 
-import org.agrona.DirectBuffer;
-
 import java.nio.ByteOrder;
 
 import static io.aeron.protocol.DataHeaderFlyweight.*;
@@ -25,9 +23,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 /**
  * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
  * <p>
- * {@link ExclusiveBufferClaim}s offer additional functionality over standard {@link BufferClaim}s in that the header
- * can be manipulated for setting flags and type. This allows the user to implement things such as their own
- * fragmentation policy.
+ * {@link ExclusiveBufferClaim} use should be replaced with {@link BufferClaim}.
  * <p>
  * The claimed space is in {@link #buffer()} between {@link #offset()} and {@link #offset()} + {@link #length()}.
  * When the buffer is filled with message data, use {@link #commit()} to make it available to subscribers.
@@ -36,7 +32,8 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <p>
  * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-frame">Data Frame</a>
  */
-public final class ExclusiveBufferClaim extends BufferClaim
+@Deprecated
+public class ExclusiveBufferClaim extends BufferClaim
 {
     /**
      * Write the provided value into the reserved space at the end of the data frame header.
@@ -54,17 +51,6 @@ public final class ExclusiveBufferClaim extends BufferClaim
     }
 
     /**
-     * Get the value of the flags field.
-     *
-     * @return the value of the header flags field.
-     * @see io.aeron.protocol.DataHeaderFlyweight
-     */
-    public byte flags()
-    {
-        return buffer.getByte(FLAGS_FIELD_OFFSET);
-    }
-
-    /**
      * Set the value of the header flags field.
      *
      * @param flags value to be set in the header.
@@ -79,17 +65,6 @@ public final class ExclusiveBufferClaim extends BufferClaim
     }
 
     /**
-     * Get the value of the header type field. The lower 16 bits are valid.
-     *
-     * @return the value of the header type field.
-     * @see io.aeron.protocol.DataHeaderFlyweight
-     */
-    public int headerType()
-    {
-        return buffer.getShort(TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
-    }
-
-    /**
      * Set the value of the header type field. The lower 16 bits are valid.
      *
      * @param type value to be set in the header.
@@ -99,22 +74,6 @@ public final class ExclusiveBufferClaim extends BufferClaim
     public ExclusiveBufferClaim headerType(final int type)
     {
         buffer.putShort(TYPE_FIELD_OFFSET, (short)type, LITTLE_ENDIAN);
-
-        return this;
-    }
-
-    /**
-     * Put bytes into the claimed buffer space for a message. To write multiple parts then use {@link #buffer()}
-     * and {@link #offset()}.
-     *
-     * @param srcBuffer to copy into the claimed space.
-     * @param srcIndex  in the source buffer from which to copy.
-     * @param length    of the source buffer to copy.
-     * @return this for a fluent API.
-     */
-    public ExclusiveBufferClaim putBytes(final DirectBuffer srcBuffer, final int srcIndex, final int length)
-    {
-        buffer.putBytes(HEADER_LENGTH, srcBuffer, srcIndex, length);
 
         return this;
     }

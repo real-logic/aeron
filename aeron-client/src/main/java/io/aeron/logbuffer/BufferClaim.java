@@ -82,6 +82,56 @@ public class BufferClaim
     }
 
     /**
+     * Get the value of the header type field. The lower 16 bits are valid.
+     *
+     * @return the value of the header type field.
+     * @see io.aeron.protocol.DataHeaderFlyweight
+     */
+    public final int headerType()
+    {
+        return buffer.getShort(TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
+    }
+
+    /**
+     * Get the value of the flags field.
+     *
+     * @return the value of the header flags field.
+     * @see io.aeron.protocol.DataHeaderFlyweight
+     */
+    public final byte flags()
+    {
+        return buffer.getByte(FLAGS_FIELD_OFFSET);
+    }
+
+    /**
+     * Set the value of the header flags field.
+     *
+     * @param flags value to be set in the header.
+     * @return this for a fluent API.
+     * @see io.aeron.protocol.DataHeaderFlyweight
+     */
+    public BufferClaim flags(final byte flags)
+    {
+        buffer.putByte(FLAGS_FIELD_OFFSET, flags);
+
+        return this;
+    }
+
+    /**
+     * Set the value of the header type field. The lower 16 bits are valid.
+     *
+     * @param type value to be set in the header.
+     * @return this for a fluent API.
+     * @see io.aeron.protocol.DataHeaderFlyweight
+     */
+    public BufferClaim headerType(final int type)
+    {
+        buffer.putShort(TYPE_FIELD_OFFSET, (short)type, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
      * Get the value stored in the reserve space at the end of a data frame header.
      * <p>
      * Note: The value is in {@link ByteOrder#LITTLE_ENDIAN} format.
@@ -118,7 +168,7 @@ public class BufferClaim
      * @param length    of the source buffer to copy.
      * @return this for a fluent API.
      */
-    public BufferClaim putBytes(final DirectBuffer srcBuffer, final int srcIndex, final int length)
+    public final BufferClaim putBytes(final DirectBuffer srcBuffer, final int srcIndex, final int length)
     {
         buffer.putBytes(HEADER_LENGTH, srcBuffer, srcIndex, length);
 

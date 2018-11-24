@@ -37,7 +37,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * <p>
  * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-frame">Data Frame</a>
  */
-public class ExclusiveBufferClaim extends BufferClaim
+public final class ExclusiveBufferClaim extends BufferClaim
 {
     /**
      * Write the provided value into the reserved space at the end of the data frame header.
@@ -60,7 +60,7 @@ public class ExclusiveBufferClaim extends BufferClaim
      * @return the value of the header flags field.
      * @see DataHeaderFlyweight
      */
-    public final byte flags()
+    public byte flags()
     {
         return buffer.getByte(FLAGS_FIELD_OFFSET);
     }
@@ -85,7 +85,7 @@ public class ExclusiveBufferClaim extends BufferClaim
      * @return the value of the header type field.
      * @see DataHeaderFlyweight
      */
-    public final int headerType()
+    public int headerType()
     {
         return buffer.getShort(TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
     }

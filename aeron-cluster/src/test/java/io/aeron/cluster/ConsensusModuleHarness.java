@@ -21,7 +21,6 @@ import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
-import io.aeron.cluster.client.IngressSessionDecorator;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.SnapshotRecordingsDecoder;
 import io.aeron.cluster.service.ClientSession;
@@ -543,11 +542,6 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
             try (AeronCluster aeronCluster = AeronCluster.connect(clusterContext))
             {
-                final IngressSessionDecorator ingressSessionDecorator = new IngressSessionDecorator()
-                    .clusterSessionId(aeronCluster.clusterSessionId())
-                    .leadershipTermId(aeronCluster.leadershipTermId());
-
-                final Publication publication = aeronCluster.ingressPublication();
                 final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer(maxMessageLength);
 
                 for (int i = 0; i < numMessages; i++)
@@ -557,7 +551,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
 
                     while (true)
                     {
-                        final long result = ingressSessionDecorator.offer(publication, msgBuffer, 0, length);
+                        final long result = aeronCluster.offer(msgBuffer, 0, length);
                         if (result > 0)
                         {
                             if (null != positionByMessageIndexMap)

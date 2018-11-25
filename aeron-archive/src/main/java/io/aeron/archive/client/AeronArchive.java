@@ -21,6 +21,7 @@ import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.*;
 
@@ -105,7 +106,8 @@ public class AeronArchive implements AutoCloseable
             }
 
             controlSessionId = awaitSessionOpened(correlationId);
-            recordingDescriptorPoller = new RecordingDescriptorPoller(subscription, FRAGMENT_LIMIT, controlSessionId);
+            recordingDescriptorPoller = new RecordingDescriptorPoller(
+                subscription, ctx.errorHandler(), controlSessionId, FRAGMENT_LIMIT);
         }
         catch (final Exception ex)
         {
@@ -303,7 +305,8 @@ public class AeronArchive implements AutoCloseable
         {
             if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
-                if (controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
+                if (controlResponsePoller.controlSessionId() == controlSessionId &&
+                    controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
                     controlResponsePoller.code() == ControlResponseCode.ERROR)
                 {
                     return controlResponsePoller.errorMessage();
@@ -319,7 +322,9 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Check if an error has been returned for the control session and throw a {@link ArchiveException} if necessary.
+     * Check if an error has been returned for the control session and throw a {@link ArchiveException} if
+     * {@link Context#errorHandler(ErrorHandler)} is not set.
+     * <p>
      * To check for an error response without raising an exception then try {@link #pollForErrorResponse()}.
      *
      * @see #pollForErrorResponse()
@@ -331,11 +336,21 @@ public class AeronArchive implements AutoCloseable
         {
             if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
-                if (controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
+                if (controlResponsePoller.controlSessionId() == controlSessionId &&
+                    controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
                     controlResponsePoller.code() == ControlResponseCode.ERROR)
                 {
-                    throw new ArchiveException(
+                    final ArchiveException ex = new ArchiveException(
                         controlResponsePoller.errorMessage(), (int)controlResponsePoller.relevantId());
+
+                    if (null != context.errorHandler())
+                    {
+                        context.errorHandler().onError(ex);
+                    }
+                    else
+                    {
+                        throw ex;
+                    }
                 }
             }
         }
@@ -1003,7 +1018,6 @@ public class AeronArchive implements AutoCloseable
             pollNextResponse(correlationId, deadlineNs, poller);
 
             if (poller.controlSessionId() != controlSessionId ||
-                poller.correlationId() != correlationId ||
                 poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
             {
                 invokeAeronClient();
@@ -1013,8 +1027,17 @@ public class AeronArchive implements AutoCloseable
             final ControlResponseCode code = poller.code();
             if (ControlResponseCode.ERROR == code)
             {
-                throw new ArchiveException("response for correlationId=" + correlationId +
+                final ArchiveException ex = new ArchiveException("response for correlationId=" + correlationId +
                     ", error: " + poller.errorMessage(), (int)poller.relevantId());
+
+                if (poller.correlationId() == correlationId)
+                {
+                    throw ex;
+                }
+                else if (context.errorHandler() != null)
+                {
+                    context.errorHandler().onError(ex);
+                }
             }
 
             if (ControlResponseCode.OK != code)
@@ -1394,6 +1417,7 @@ public class AeronArchive implements AutoCloseable
         private Lock lock;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
+        private ErrorHandler errorHandler;
         private boolean ownsAeronClient = false;
 
         /**
@@ -1803,6 +1827,28 @@ public class AeronArchive implements AutoCloseable
         }
 
         /**
+         * Handle errors returned asynchronously from the archive for a control session.
+         *
+         * @param errorHandler method to handle objects of type Throwable.
+         * @return this for a fluent API.
+         */
+        public Context errorHandler(final ErrorHandler errorHandler)
+        {
+            this.errorHandler = errorHandler;
+            return this;
+        }
+
+        /**
+         * Get the error handler that will be called for asynchronous errors.
+         *
+         * @return the error handler that will be called for asynchronous errors.
+         */
+        public ErrorHandler errorHandler()
+        {
+            return errorHandler;
+        }
+
+        /**
          * Close the context and free applicable resources.
          * <p>
          * If {@link #ownsAeronClient()} is true then the {@link #aeron()} client will be closed.
@@ -1915,7 +1961,7 @@ public class AeronArchive implements AutoCloseable
                     ctx,
                     controlResponsePoller,
                     archiveProxy,
-                    new RecordingDescriptorPoller(subscription, FRAGMENT_LIMIT, controlSessionId),
+                    new RecordingDescriptorPoller(subscription, ctx.errorHandler(), controlSessionId, FRAGMENT_LIMIT),
                     controlSessionId);
             }
 

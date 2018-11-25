@@ -21,6 +21,7 @@ import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 
 /**
  * Encapsulate the polling, decoding, dispatching of recording descriptors from an archive.
@@ -31,27 +32,33 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
 
+    private final long controlSessionId;
     private final int fragmentLimit;
     private final Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
-    private final long controlSessionId;
+    private final ErrorHandler errorHandler;
 
     private long correlationId;
     private int remainingRecordCount;
-    private RecordingDescriptorConsumer consumer;
     private boolean isDispatchComplete = false;
+    private RecordingDescriptorConsumer consumer;
 
     /**
      * Create a poller for a given subscription to an archive for control response messages.
      *
      * @param subscription     to poll for new events.
-     * @param fragmentLimit    to apply for each polling operation.
+     * @param errorHandler     to call for asynchronous errors.
      * @param controlSessionId to filter the responses.
+     * @param fragmentLimit    to apply for each polling operation.
      */
     public RecordingDescriptorPoller(
-        final Subscription subscription, final int fragmentLimit, final long controlSessionId)
+        final Subscription subscription,
+        final ErrorHandler errorHandler,
+        final long controlSessionId,
+        final int fragmentLimit)
     {
         this.subscription = subscription;
+        this.errorHandler = errorHandler;
         this.fragmentLimit = fragmentLimit;
         this.controlSessionId = controlSessionId;
     }
@@ -137,24 +144,33 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                if (controlResponseDecoder.controlSessionId() != controlSessionId ||
-                    controlResponseDecoder.correlationId() != correlationId)
+                if (controlResponseDecoder.controlSessionId() == controlSessionId)
                 {
-                    break;
-                }
+                    final ControlResponseCode code = controlResponseDecoder.code();
+                    final long correlationId = controlResponseDecoder.correlationId();
 
-                final ControlResponseCode code = controlResponseDecoder.code();
-                if (ControlResponseCode.RECORDING_UNKNOWN == code)
-                {
-                    isDispatchComplete = true;
-                    return Action.BREAK;
-                }
+                    if (ControlResponseCode.RECORDING_UNKNOWN == code && correlationId == this.correlationId)
+                    {
+                        isDispatchComplete = true;
+                        return Action.BREAK;
+                    }
 
-                if (ControlResponseCode.ERROR == code)
-                {
-                    throw new ArchiveException("response for correlationId=" + correlationId +
-                        ", error: " + controlResponseDecoder.errorMessage(),
-                        (int)controlResponseDecoder.relevantId());
+                    if (ControlResponseCode.ERROR == code)
+                    {
+                        final ArchiveException ex = new ArchiveException(
+                            "response for correlationId=" + this.correlationId +
+                            ", error: " + controlResponseDecoder.errorMessage(),
+                            (int)controlResponseDecoder.relevantId());
+
+                        if (correlationId == this.correlationId)
+                        {
+                            throw ex;
+                        }
+                        else if (null != errorHandler)
+                        {
+                            errorHandler.onError(ex);
+                        }
+                    }
                 }
                 break;
 
@@ -166,34 +182,32 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
                     messageHeaderDecoder.version());
 
                 final long correlationId = recordingDescriptorDecoder.correlationId();
-                if (recordingDescriptorDecoder.controlSessionId() != controlSessionId ||
-                    correlationId != this.correlationId)
+                if (recordingDescriptorDecoder.controlSessionId() == controlSessionId &&
+                    correlationId == this.correlationId)
                 {
-                    break;
-                }
+                    consumer.onRecordingDescriptor(
+                        controlSessionId,
+                        correlationId,
+                        recordingDescriptorDecoder.recordingId(),
+                        recordingDescriptorDecoder.startTimestamp(),
+                        recordingDescriptorDecoder.stopTimestamp(),
+                        recordingDescriptorDecoder.startPosition(),
+                        recordingDescriptorDecoder.stopPosition(),
+                        recordingDescriptorDecoder.initialTermId(),
+                        recordingDescriptorDecoder.segmentFileLength(),
+                        recordingDescriptorDecoder.termBufferLength(),
+                        recordingDescriptorDecoder.mtuLength(),
+                        recordingDescriptorDecoder.sessionId(),
+                        recordingDescriptorDecoder.streamId(),
+                        recordingDescriptorDecoder.strippedChannel(),
+                        recordingDescriptorDecoder.originalChannel(),
+                        recordingDescriptorDecoder.sourceIdentity());
 
-                consumer.onRecordingDescriptor(
-                    controlSessionId,
-                    correlationId,
-                    recordingDescriptorDecoder.recordingId(),
-                    recordingDescriptorDecoder.startTimestamp(),
-                    recordingDescriptorDecoder.stopTimestamp(),
-                    recordingDescriptorDecoder.startPosition(),
-                    recordingDescriptorDecoder.stopPosition(),
-                    recordingDescriptorDecoder.initialTermId(),
-                    recordingDescriptorDecoder.segmentFileLength(),
-                    recordingDescriptorDecoder.termBufferLength(),
-                    recordingDescriptorDecoder.mtuLength(),
-                    recordingDescriptorDecoder.sessionId(),
-                    recordingDescriptorDecoder.streamId(),
-                    recordingDescriptorDecoder.strippedChannel(),
-                    recordingDescriptorDecoder.originalChannel(),
-                    recordingDescriptorDecoder.sourceIdentity());
-
-                if (0 == --remainingRecordCount)
-                {
-                    isDispatchComplete = true;
-                    return Action.BREAK;
+                    if (0 == --remainingRecordCount)
+                    {
+                        isDispatchComplete = true;
+                        return Action.BREAK;
+                    }
                 }
                 break;
 

@@ -1097,6 +1097,7 @@ public class ConsensusModule implements AutoCloseable
 
             archiveContext
                 .aeron(aeron)
+                .errorHandler(countedErrorHandler)
                 .ownsAeronClient(false)
                 .lock(new NoOpLock());
 

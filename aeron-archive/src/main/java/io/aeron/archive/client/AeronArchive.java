@@ -1040,12 +1040,15 @@ public class AeronArchive implements AutoCloseable
                 }
             }
 
-            if (ControlResponseCode.OK != code)
+            if (poller.correlationId() == correlationId)
             {
-                throw new ArchiveException("unexpected response code: " + code);
-            }
+                if (ControlResponseCode.OK != code)
+                {
+                    throw new ArchiveException("unexpected response code: " + code);
+                }
 
-            return poller.relevantId();
+                return poller.relevantId();
+            }
         }
     }
 

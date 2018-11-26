@@ -320,6 +320,19 @@ public:
     }
 
     /**
+     * Get the amount of time, in milliseconds, that this client will wait until it determines the
+     * Media Driver is unavailable. When this happens a
+     * DriverTimeoutException will be generated for the error handler.
+     *
+     * @return value in number of milliseconds.
+     * @see errorHandler
+     */
+    long mediaDriverTimeout() const
+    {
+        return m_mediaDriverTimeout;
+    }
+
+    /**
      * Set the amount of time, in milliseconds, that this client will to linger inactive connections and internal
      * arrays before they are free'd.
      *

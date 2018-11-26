@@ -172,16 +172,6 @@ public:
     /// @cond HIDDEN_SYMBOLS
     this_t& conclude()
     {
-        if (NULL_TIMEOUT == m_mediaDriverTimeout)
-        {
-            m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
-        }
-
-        if (NULL_TIMEOUT == m_resourceLingerTimeout)
-        {
-            m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
-        }
-
         if (!m_isOnNewExclusivePublicationHandlerSet)
         {
             m_onNewExclusivePublicationHandler = m_onNewPublicationHandler;
@@ -420,8 +410,8 @@ private:
     on_unavailable_image_t m_onUnavailableImageHandler = defaultOnUnavailableImageHandler;
     on_available_counter_t m_onAvailableCounterHandler = defaultOnAvailableCounterHandler;
     on_unavailable_counter_t m_onUnavailableCounterHandler = defaultOnUnavailableCounterHandler;
-    long m_mediaDriverTimeout = NULL_TIMEOUT;
-    long m_resourceLingerTimeout = NULL_TIMEOUT;
+    long m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
+    long m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
     bool m_useConductorAgentInvoker = false;
     bool m_isOnNewExclusivePublicationHandlerSet = false;
 };

@@ -15,13 +15,13 @@
  */
 package io.aeron.protocol;
 
-import io.aeron.logbuffer.FrameDescriptor;
 import org.agrona.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 /**
  * HeaderFlyweight for Data Frame header of a message fragment.
@@ -262,8 +262,8 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public static UnsafeBuffer createDefaultHeader(final int sessionId, final int streamId, final int termId)
     {
-        final UnsafeBuffer buffer =
-            new UnsafeBuffer(BufferUtil.allocateDirectAligned(HEADER_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
+        final UnsafeBuffer buffer = new UnsafeBuffer(
+            BufferUtil.allocateDirectAligned(HEADER_LENGTH, CACHE_LINE_LENGTH));
 
         buffer.putByte(VERSION_FIELD_OFFSET, CURRENT_VERSION);
         buffer.putByte(FLAGS_FIELD_OFFSET, (byte)BEGIN_AND_END_FLAGS);

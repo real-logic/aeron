@@ -27,6 +27,7 @@ import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
@@ -97,6 +98,7 @@ public class DriverConductor implements Agent
     private final CountersManager countersManager;
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final MutableDirectBuffer tempBuffer;
+    private final DataHeaderFlyweight defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
 
     public DriverConductor(final Context ctx)
     {
@@ -1091,7 +1093,9 @@ public class DriverConductor implements Agent
         final RawLog rawLog)
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
-        storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
+
+        defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId);
+        storeDefaultFrameHeader(logMetaData, defaultDataHeader);
 
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, params.mtuLength);
@@ -1146,7 +1150,10 @@ public class DriverConductor implements Agent
             udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength, isSparse);
 
         final UnsafeBuffer logMetaData = rawLog.metaData();
-        storeDefaultFrameHeader(logMetaData, createDefaultHeader(sessionId, streamId, initialTermId));
+
+        defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId);
+        storeDefaultFrameHeader(logMetaData, defaultDataHeader);
+
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, senderMtuLength);
         termLength(logMetaData, termBufferLength);

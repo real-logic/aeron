@@ -17,7 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
-import io.aeron.driver.exceptions.InvalidChannelException;
+import io.aeron.exceptions.RegistrationException;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
@@ -139,7 +139,7 @@ public class ClientSession
             {
                 responsePublication = aeron.addExclusivePublication(responseChannel, responseStreamId);
             }
-            catch (final InvalidChannelException ignore)
+            catch (final RegistrationException ignore)
             {
             }
         }

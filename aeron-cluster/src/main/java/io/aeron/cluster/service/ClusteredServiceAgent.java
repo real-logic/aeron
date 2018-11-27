@@ -423,6 +423,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             serviceAdapter.poll();
             checkInterruptedStatus();
+            heartbeatCounter.setOrdered(epochClock.time());
             idleStrategy.idle();
         }
     }

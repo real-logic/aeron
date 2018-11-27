@@ -29,4 +29,5 @@
     -Daeron.socket.so_rcvbuf=2m ^
     -Daeron.rcv.initial.window.length=2m ^
     -Daeron.archive.file.sync.level=0 ^
+    -Daeron.sample.channel=aeron:ipc ^
     %JVM_OPTS% io.aeron.samples.archive.EmbeddedRecordingThroughput %*

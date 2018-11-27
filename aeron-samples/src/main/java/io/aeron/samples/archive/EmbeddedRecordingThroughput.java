@@ -35,8 +35,8 @@ import org.agrona.console.ContinueBarrier;
 import java.io.File;
 
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DEFAULT;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.samples.archive.TestUtil.MEGABYTE;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
@@ -54,7 +54,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     private final ArchivingMediaDriver archivingMediaDriver;
     private final Aeron aeron;
     private final AeronArchive aeronArchive;
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, FRAME_ALIGNMENT));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, CACHE_LINE_LENGTH));
     private final Thread recordingEventsThread;
     private volatile long recordingStartTimeMs;
     private volatile long stopPosition;

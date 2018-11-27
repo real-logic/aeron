@@ -35,9 +35,9 @@ import org.agrona.console.ContinueBarrier;
 import java.io.File;
 
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DEFAULT;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.samples.archive.TestUtil.MEGABYTE;
 import static io.aeron.samples.archive.TestUtil.NOOP_FRAGMENT_HANDLER;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
@@ -47,7 +47,7 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
 public class EmbeddedReplayThroughput implements AutoCloseable
 {
     private static final int REPLAY_STREAM_ID = 101;
-    private static final String REPLAY_URI = "aeron:udp?endpoint=127.0.0.1:54326";
+    private static final String REPLAY_URI = "aeron:ipc";
 
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
@@ -58,7 +58,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     private ArchivingMediaDriver archivingMediaDriver;
     private Aeron aeron;
     private AeronArchive aeronArchive;
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, FRAME_ALIGNMENT));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, CACHE_LINE_LENGTH));
     private FragmentHandler fragmentHandler = new FragmentAssembler(this::onMessage);
     private int messageCount;
     private int publicationSessionId;

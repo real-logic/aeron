@@ -324,7 +324,7 @@ public final class AeronCluster implements AutoCloseable
         this.leadershipTermId = leadershipTermId;
         this.leaderMemberId = leaderMemberId;
         ingressMessageHeaderEncoder.leadershipTermId(leadershipTermId);
-        sessionKeepAliveEncoder.leadershipTermId(leaderMemberId);
+        sessionKeepAliveEncoder.leadershipTermId(leadershipTermId);
 
         if (isUnicast)
         {

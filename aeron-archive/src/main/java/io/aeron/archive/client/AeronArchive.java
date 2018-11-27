@@ -1039,8 +1039,7 @@ public class AeronArchive implements AutoCloseable
                     context.errorHandler().onError(ex);
                 }
             }
-
-            if (poller.correlationId() == correlationId)
+            else if (poller.correlationId() == correlationId)
             {
                 if (ControlResponseCode.OK != code)
                 {

@@ -36,7 +36,7 @@ public class SubscriptionTest
     private static final int STREAM_ID_1 = 2;
     private static final long SUBSCRIPTION_CORRELATION_ID = 100;
     private static final int READ_BUFFER_CAPACITY = 1024;
-    private static final byte FLAGS = (byte)FrameDescriptor.UNFRAGMENTED;
+    private static final byte FLAGS = FrameDescriptor.UNFRAGMENTED;
     private static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
     private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 

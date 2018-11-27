@@ -147,12 +147,12 @@ public class NetworkUtil
 
     private static int prefixLengthToIpV4Mask(final int subnetPrefix)
     {
-        return 0 == subnetPrefix ? 0 : ~((1 << 32 - subnetPrefix) - 1);
+        return 0 == subnetPrefix ? 0 : -(1 << 32 - subnetPrefix);
     }
 
     private static long prefixLengthToIpV6Mask(final int subnetPrefix)
     {
-        return 0 == subnetPrefix ? 0 : ~((1L << 64 - subnetPrefix) - 1);
+        return 0 == subnetPrefix ? 0 : -(1L << 64 - subnetPrefix);
     }
 
     private static int toInt(final byte[] b)

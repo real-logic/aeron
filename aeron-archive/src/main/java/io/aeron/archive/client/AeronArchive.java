@@ -1230,33 +1230,33 @@ public class AeronArchive implements AutoCloseable
         /**
          * Sparse term buffer indicator for control streams.
          */
-        private static final String CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME = "aeron.archive.control.term.buffer.sparse";
+        public static final String CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME = "aeron.archive.control.term.buffer.sparse";
 
         /**
          * Overrides {@link io.aeron.driver.Configuration#TERM_BUFFER_SPARSE_FILE_PROP_NAME} for if term buffer files
          * are sparse on the control channel.
          */
-        private static final boolean CONTROL_TERM_BUFFER_SPARSE_DEFAULT = true;
+        public static final boolean CONTROL_TERM_BUFFER_SPARSE_DEFAULT = true;
 
         /**
          * Term length for control streams.
          */
-        private static final String CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME = "aeron.archive.control.term.buffer.length";
+        public static final String CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME = "aeron.archive.control.term.buffer.length";
 
         /**
          * Low term length for control channel reflects expected low bandwidth usage.
          */
-        private static final int CONTROL_TERM_BUFFER_LENGTH_DEFAULT = 64 * 1024;
+        public static final int CONTROL_TERM_BUFFER_LENGTH_DEFAULT = 64 * 1024;
 
         /**
          * MTU length for control streams.
          */
-        private static final String CONTROL_MTU_LENGTH_PARAM_NAME = "aeron.archive.control.mtu.length";
+        public static final String CONTROL_MTU_LENGTH_PARAM_NAME = "aeron.archive.control.mtu.length";
 
         /**
          * MTU to reflect default for the control streams.
          */
-        private static final int CONTROL_MTU_LENGTH_DEFAULT = io.aeron.driver.Configuration.MTU_LENGTH;
+        public static final int CONTROL_MTU_LENGTH_DEFAULT = io.aeron.driver.Configuration.MTU_LENGTH;
 
         /**
          * The timeout in nanoseconds to wait for a message.

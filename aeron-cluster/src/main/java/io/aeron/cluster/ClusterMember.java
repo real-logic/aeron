@@ -19,7 +19,6 @@ import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
-import org.agrona.AsciiEncoding;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -502,38 +501,6 @@ public final class ClusterMember
             endpointsDetail);
     }
 
-    public static ClusterMember[] parseAsStatusEndpoints(final String statusEndpoints)
-    {
-        final String[] memberEndpoints = statusEndpoints.split(",");
-        final int length = memberEndpoints.length;
-        final ClusterMember[] members = new ClusterMember[length];
-
-        for (int i = 0; i < length; i++)
-        {
-            final String endpoint = memberEndpoints[i];
-            final int index = endpoint.indexOf('=');
-            if (-1 == index)
-            {
-                throw new ClusterException(
-                    "invalid format - endpoint missing '=' separator: " + statusEndpoints);
-            }
-
-            final int memberId = AsciiEncoding.parseIntAscii(endpoint, 0, index);
-            final String memberStatusEndpoint = endpoint.substring(index + 1);
-
-            members[i] = new ClusterMember(
-                memberId,
-                null,
-                memberStatusEndpoint,
-                null,
-                null,
-                null,
-                null);
-        }
-
-        return members;
-    }
-
     /**
      * Encode member details from a cluster members array to a string.
      *
@@ -733,7 +700,7 @@ public final class ClusterMember
     /**
      * Become a candidate by voting for yourself and resetting the other votes to {@link Aeron#NULL_VALUE}.
      *
-     * @param members    to reset the votes for.
+     * @param members           to reset the votes for.
      * @param candidateTermId   for the candidacy.
      * @param candidateMemberId for the election.
      */
@@ -853,10 +820,10 @@ public final class ClusterMember
     /**
      * Check the member with the memberEndpoints
      *
-     * @param member to check memberEndpoints against
+     * @param member    to check memberEndpoints against
      * @param memberEndpoints to check member against
-     * @see ConsensusModule.Context#memberEndpoints
-     * @see ConsensusModule.Context#clusterMembers
+     * @see ConsensusModule.Context#memberEndpoints()
+     * @see ConsensusModule.Context#clusterMembers()
      */
     public static void validateMemberEndpoints(final ClusterMember member, final String memberEndpoints)
     {

@@ -40,32 +40,31 @@ public class PreferredMulticastFlowControl implements FlowControl
     /**
      * Property name to set timeout, in nanoseconds, for a receiver to be tracked.
      */
-    private static final String RECEIVER_TIMEOUT_PROP_NAME = "aeron.PreferredMulticastFlowControl.receiverTimeout";
+    public static final String RECEIVER_TIMEOUT_PROP_NAME = "aeron.PreferredMulticastFlowControl.receiverTimeout";
 
     /**
      * Default timeout, in nanoseconds, until a receiver is no longer tracked and considered for minimum.
      */
-    private static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
+    public static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
 
-    private static final long RECEIVER_TIMEOUT = getDurationInNanos(
+    public static final long RECEIVER_TIMEOUT = getDurationInNanos(
         RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
 
     /**
      * Property name used to set Application Specific Feedback (ASF) in Status Messages to identify preferred receivers.
      */
-    private static final String PREFERRED_ASF_PROP_NAME = "aeron.PreferredMulticastFlowControl.asf";
+    public static final String PREFERRED_ASF_PROP_NAME = "aeron.PreferredMulticastFlowControl.asf";
 
     /**
      * Default Application Specific Feedback (ASF) value
      */
-    private static final String PREFERRED_ASF_DEFAULT = "FFFFFFFF";
+    public static final String PREFERRED_ASF_DEFAULT = "FFFFFFFF";
 
     public static final String PREFERRED_ASF = getProperty(PREFERRED_ASF_PROP_NAME, PREFERRED_ASF_DEFAULT);
     public static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 
     private final ArrayList<Receiver> receiverList = new ArrayList<>();
     private final byte[] smAsf = new byte[64];
-
     private volatile boolean shouldLinger = true;
 
     /**
@@ -168,13 +167,13 @@ public class PreferredMulticastFlowControl implements FlowControl
         return shouldLinger;
     }
 
-    public boolean isFromPreferred(final StatusMessageFlyweight sm)
+    public boolean isFromPreferred(final StatusMessageFlyweight statusMessageFlyweight)
     {
-        final int asfLength = sm.applicationSpecificFeedback(smAsf);
+        final int asfLength = statusMessageFlyweight.applicationSpecificFeedback(smAsf);
         boolean result = false;
 
         // default ASF is 4 bytes
-        if (asfLength > 0 && asfLength >= 4)
+        if (asfLength >= 4)
         {
             if (smAsf[0] == PREFERRED_ASF_BYTES[0] &&
                 smAsf[1] == PREFERRED_ASF_BYTES[1] &&

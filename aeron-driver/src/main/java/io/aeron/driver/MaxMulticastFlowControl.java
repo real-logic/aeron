@@ -37,7 +37,6 @@ public class MaxMulticastFlowControl implements FlowControl
 
     private long lastPosition = 0;
     private long timeOfLastStatusMessage = 0;
-
     private volatile boolean shouldLinger = true;
 
     /**

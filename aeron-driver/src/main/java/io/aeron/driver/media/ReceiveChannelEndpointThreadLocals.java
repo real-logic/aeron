@@ -25,6 +25,7 @@ import org.agrona.BitUtil;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 /**
@@ -51,20 +52,20 @@ public class ReceiveChannelEndpointThreadLocals
             BitUtil.align(RttMeasurementFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
 
         final UUID uuid = UUID.randomUUID();
-        receiverId = (uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits());
+        receiverId = uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits();
 
-        final ByteBuffer byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(bufferLength, CACHE_LINE_LENGTH);
+        final ByteBuffer byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(bufferLength, CACHE_LINE_LENGTH * 2);
 
         byteBuffer.limit(smLength);
         smBuffer = byteBuffer.slice();
         statusMessageFlyweight = new StatusMessageFlyweight(smBuffer);
 
-        final int nakMessageOffset = BitUtil.align(smLength, 32);
+        final int nakMessageOffset = BitUtil.align(smLength, FRAME_ALIGNMENT);
         byteBuffer.limit(nakMessageOffset + NakFlyweight.HEADER_LENGTH).position(nakMessageOffset);
         nakBuffer = byteBuffer.slice();
         nakFlyweight = new NakFlyweight(nakBuffer);
 
-        final int rttMeasurementOffset = nakMessageOffset + BitUtil.align(NakFlyweight.HEADER_LENGTH, 32);
+        final int rttMeasurementOffset = nakMessageOffset + BitUtil.align(NakFlyweight.HEADER_LENGTH, FRAME_ALIGNMENT);
         byteBuffer.limit(rttMeasurementOffset + RttMeasurementFlyweight.HEADER_LENGTH).position(rttMeasurementOffset);
         rttMeasurementBuffer = byteBuffer.slice();
         rttMeasurementFlyweight = new RttMeasurementFlyweight(rttMeasurementBuffer);

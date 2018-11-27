@@ -30,8 +30,6 @@ public class TermReader
     /**
      * Reads data from a term in a log buffer and updates a passed {@link Position} so progress is not lost in the
      * event of an exception.
-     * <p>
-     * If a fragmentsLimit of 0 or less is passed then at least one read will be attempted.
      *
      * @param termBuffer         to be read for fragments.
      * @param termOffset         within the buffer that the read should begin.

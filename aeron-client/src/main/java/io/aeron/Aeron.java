@@ -649,7 +649,7 @@ public class Aeron implements AutoCloseable
          * Set the {@link EpochClock} to be used for tracking wall clock time when interacting with the driver.
          *
          * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the driver.
-         * @return this Aeron.Context for method chaining
+         * @return this for a fluent API.
          */
         public Context epochClock(final EpochClock clock)
         {
@@ -671,7 +671,7 @@ public class Aeron implements AutoCloseable
          * Set the {@link NanoClock} to be used for tracking high resolution time.
          *
          * @param clock {@link NanoClock} to be used for tracking high resolution time.
-         * @return this Aeron.Context for method chaining
+         * @return this for a fluent API.
          */
         public Context nanoClock(final NanoClock clock)
         {
@@ -809,7 +809,7 @@ public class Aeron implements AutoCloseable
          * {@link CountedErrorHandler}.
          *
          * @param errorHandler Method to handle objects of type Throwable.
-         * @return this for a fluent API
+         * @return this for a fluent API.
          * @see io.aeron.exceptions.DriverTimeoutException
          * @see io.aeron.exceptions.RegistrationException
          */
@@ -877,7 +877,7 @@ public class Aeron implements AutoCloseable
          * Setup a callback for when a counter is available.
          *
          * @param handler to be called for handling available counter notifications.
-         * @return this Aeron.Context for fluent API.
+         * @return this for a fluent API.
          */
         public Context availableCounterHandler(final AvailableCounterHandler handler)
         {
@@ -899,7 +899,7 @@ public class Aeron implements AutoCloseable
          * Setup a callback for when a counter is unavailable.
          *
          * @param handler to be called for handling unavailable counter notifications.
-         * @return this Aeron.Context for fluent API.
+         * @return this for a fluent API.
          */
         public Context unavailableCounterHandler(final UnavailableCounterHandler handler)
         {

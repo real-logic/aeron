@@ -44,7 +44,7 @@ public class EmbeddedExclusiveSpiedThroughput
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
-    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(
+    private static final UnsafeBuffer OFFER_BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     private static final BusySpinIdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
@@ -84,10 +84,10 @@ public class EmbeddedExclusiveSpiedThroughput
                 long backPressureCount = 0;
                 for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
-                    ATOMIC_BUFFER.putLong(0, i);
+                    OFFER_BUFFER.putLong(0, i);
 
                     OFFER_IDLE_STRATEGY.reset();
-                    while (publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()) < 0)
+                    while (publication.offer(OFFER_BUFFER, 0, OFFER_BUFFER.capacity()) < 0)
                     {
                         OFFER_IDLE_STRATEGY.idle();
                         backPressureCount++;

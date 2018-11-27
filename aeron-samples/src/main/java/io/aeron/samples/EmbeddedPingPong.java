@@ -54,7 +54,7 @@ public class EmbeddedPingPong
     private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
 
-    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(
+    private static final UnsafeBuffer OFFER_BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch PONG_IMAGE_LATCH = new CountDownLatch(1);
@@ -176,9 +176,9 @@ public class EmbeddedPingPong
 
             do
             {
-                ATOMIC_BUFFER.putLong(0, System.nanoTime());
+                OFFER_BUFFER.putLong(0, System.nanoTime());
             }
-            while ((offeredPosition = pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH)) < 0L);
+            while ((offeredPosition = pingPublication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH)) < 0L);
 
             PONG_HANDLER_IDLE_STRATEGY.reset();
             do
@@ -192,6 +192,7 @@ public class EmbeddedPingPong
         }
     }
 
+    @SuppressWarnings("unused")
     private static void pongHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final long pingTimestamp = buffer.getLong(offset);

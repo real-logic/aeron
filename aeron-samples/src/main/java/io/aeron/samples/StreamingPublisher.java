@@ -45,7 +45,7 @@ public class StreamingPublisher
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
     private static final boolean RANDOM_MESSAGE_LENGTH = SampleConfiguration.RANDOM_MESSAGE_LENGTH;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
-    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(
+    private static final UnsafeBuffer OFFER_BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     private static final BusySpinIdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
     private static final IntSupplier LENGTH_GENERATOR = composeLengthGenerator(RANDOM_MESSAGE_LENGTH, MESSAGE_LENGTH);
@@ -98,9 +98,9 @@ public class StreamingPublisher
                 {
                     final int length = LENGTH_GENERATOR.getAsInt();
 
-                    ATOMIC_BUFFER.putLong(0, i);
+                    OFFER_BUFFER.putLong(0, i);
                     OFFER_IDLE_STRATEGY.reset();
-                    while (publication.offer(ATOMIC_BUFFER, 0, length) < 0L)
+                    while (publication.offer(OFFER_BUFFER, 0, length) < 0L)
                     {
                         // The offer failed, which is usually due to the publication
                         // being temporarily blocked.  Retry the offer after a short

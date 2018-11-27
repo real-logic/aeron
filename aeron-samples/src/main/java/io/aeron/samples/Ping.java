@@ -51,7 +51,7 @@ public class Ping
     private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
 
-    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(
+    private static final UnsafeBuffer OFFER_BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch LATCH = new CountDownLatch(1);
@@ -127,9 +127,9 @@ public class Ping
 
             do
             {
-                ATOMIC_BUFFER.putLong(0, System.nanoTime());
+                OFFER_BUFFER.putLong(0, System.nanoTime());
             }
-            while ((offeredPosition = publication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH)) < 0L);
+            while ((offeredPosition = publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH)) < 0L);
 
             POLLING_IDLE_STRATEGY.reset();
 

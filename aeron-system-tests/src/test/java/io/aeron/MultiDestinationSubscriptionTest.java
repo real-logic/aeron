@@ -69,8 +69,8 @@ public class MultiDestinationSubscriptionTest
     private Publication publicationB;
     private Subscription subscription;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private FragmentHandler fragmentHandler = mock(FragmentHandler.class);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+    private final FragmentHandler fragmentHandler = mock(FragmentHandler.class);
 
     private void launch()
     {

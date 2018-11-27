@@ -65,8 +65,8 @@ public class RecordingSessionTest
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
-    private EpochClock epochClock = mock(EpochClock.class);
-    private Catalog mockCatalog = mock(Catalog.class);
+    private final EpochClock epochClock = mock(EpochClock.class);
+    private final Catalog mockCatalog = mock(Catalog.class);
     private Archive.Context context;
     private long positionLong;
 

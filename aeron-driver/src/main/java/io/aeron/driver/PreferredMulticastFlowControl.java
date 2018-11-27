@@ -193,8 +193,8 @@ public class PreferredMulticastFlowControl implements FlowControl
         long lastPosition;
         long lastPositionPlusWindow;
         long timeOfLastStatusMessageNs;
-        long receiverId;
-        InetSocketAddress address;
+        final long receiverId;
+        final InetSocketAddress address;
 
         Receiver(
             final long lastPosition,

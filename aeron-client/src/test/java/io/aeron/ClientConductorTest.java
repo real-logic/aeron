@@ -94,12 +94,12 @@ public class ClientConductorTest
 
     private final ErrorHandler mockClientErrorHandler = spy(new PrintError());
 
-    private DriverProxy driverProxy = mock(DriverProxy.class);
     private ClientConductor conductor;
-    private AvailableImageHandler mockAvailableImageHandler = mock(AvailableImageHandler.class);
-    private UnavailableImageHandler mockUnavailableImageHandler = mock(UnavailableImageHandler.class);
-    private LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
-    private Lock mockClientLock = mock(Lock.class);
+    private final DriverProxy driverProxy = mock(DriverProxy.class);
+    private final AvailableImageHandler mockAvailableImageHandler = mock(AvailableImageHandler.class);
+    private final UnavailableImageHandler mockUnavailableImageHandler = mock(UnavailableImageHandler.class);
+    private final LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
+    private final Lock mockClientLock = mock(Lock.class);
     private boolean suppressPrintError = false;
 
     @Before

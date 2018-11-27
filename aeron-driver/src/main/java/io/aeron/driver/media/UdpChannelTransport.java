@@ -43,11 +43,10 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected final AtomicCounter invalidPackets;
     protected final DistinctErrorLog errorLog;
     protected UdpTransportPoller transportPoller;
-
     protected SelectionKey selectionKey;
-    protected InetSocketAddress bindAddress;
-    protected InetSocketAddress endPointAddress;
-    protected InetSocketAddress connectAddress;
+    protected final InetSocketAddress bindAddress;
+    protected final InetSocketAddress endPointAddress;
+    protected final InetSocketAddress connectAddress;
     protected DatagramChannel sendDatagramChannel;
     protected DatagramChannel receiveDatagramChannel;
     protected int multicastTtl = 0;

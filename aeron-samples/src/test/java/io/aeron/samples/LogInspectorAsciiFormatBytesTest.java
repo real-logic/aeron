@@ -31,8 +31,8 @@ public class LogInspectorAsciiFormatBytesTest
 {
     private String originalDataFormatProperty;
 
-    private byte buffer;
-    private char expected;
+    private final byte buffer;
+    private final char expected;
 
     public LogInspectorAsciiFormatBytesTest(final int buffer, final int expected)
     {

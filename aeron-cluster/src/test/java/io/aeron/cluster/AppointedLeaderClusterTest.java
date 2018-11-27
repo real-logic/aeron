@@ -59,8 +59,8 @@ public class AppointedLeaderClusterTest
 
     private final CountDownLatch latch = new CountDownLatch(MEMBER_COUNT);
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
-    private ClusteredMediaDriver[] drivers = new ClusteredMediaDriver[MEMBER_COUNT];
-    private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
+    private final ClusteredMediaDriver[] drivers = new ClusteredMediaDriver[MEMBER_COUNT];
+    private final ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
 

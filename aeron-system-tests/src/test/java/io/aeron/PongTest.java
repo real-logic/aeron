@@ -54,8 +54,8 @@ public class PongTest
     private Publication pingPublication;
     private Publication pongPublication;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private FragmentHandler pongHandler = mock(FragmentHandler.class);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
+    private final FragmentHandler pongHandler = mock(FragmentHandler.class);
 
     @Before
     public void before()

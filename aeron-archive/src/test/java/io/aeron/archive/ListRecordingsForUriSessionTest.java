@@ -24,7 +24,7 @@ public class ListRecordingsForUriSessionTest
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private long[] matchingRecordingIds = new long[3];
+    private final long[] matchingRecordingIds = new long[3];
     private final File archiveDir = TestUtil.makeTestDirectory();
     private final EpochClock clock = mock(EpochClock.class);
 

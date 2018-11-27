@@ -99,9 +99,9 @@ public class DriverConductorTest
     private final DriverConductorProxy driverConductorProxy = mock(DriverConductorProxy.class);
 
     private long currentTimeMs;
-    private EpochClock epochClock = () -> currentTimeMs;
+    private final EpochClock epochClock = () -> currentTimeMs;
     private long currentTimeNs;
-    private NanoClock nanoClock = () -> currentTimeNs;
+    private final NanoClock nanoClock = () -> currentTimeNs;
 
     private CountersManager spyCountersManager;
 
@@ -111,7 +111,7 @@ public class DriverConductorTest
 
     private final Answer<Void> closeChannelEndpointAnswer = (invocation) ->
     {
-        final Object args[] = invocation.getArguments();
+        final Object[] args = invocation.getArguments();
         final ReceiveChannelEndpoint channelEndpoint = (ReceiveChannelEndpoint)args[0];
         channelEndpoint.close();
 

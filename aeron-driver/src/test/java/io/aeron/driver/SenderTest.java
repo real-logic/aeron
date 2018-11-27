@@ -91,10 +91,10 @@ public class SenderTest
 
     private final HeaderWriter headerWriter = HeaderWriter.newInstance(HEADER);
 
-    private Answer<Integer> saveByteBufferAnswer =
+    private final Answer<Integer> saveByteBufferAnswer =
         (invocation) ->
         {
-            final Object args[] = invocation.getArguments();
+            final Object[] args = invocation.getArguments();
             final ByteBuffer buffer = (ByteBuffer)args[0];
 
             final int length = buffer.limit() - buffer.position();

@@ -60,9 +60,9 @@ public class FlowControlStrategiesTest
     private Subscription subscriptionA;
     private Subscription subscriptionB;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
-    private FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+    private final FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
+    private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
 
     private void launch()
     {

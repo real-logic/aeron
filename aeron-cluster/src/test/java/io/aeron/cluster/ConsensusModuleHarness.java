@@ -87,7 +87,7 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     private final MemberStatusCounters[] memberStatusCounters;
     private final AeronArchive.Context aeronArchiveContext;
 
-    private int thisMemberIndex;
+    private final int thisMemberIndex;
 
     ConsensusModuleHarness(
         final ConsensusModule.Context consensusModuleContext,

@@ -67,10 +67,10 @@ public class MultiDestinationCastTest
     private Subscription subscriptionB;
     private Subscription subscriptionC;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
-    private FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
-    private FragmentHandler fragmentHandlerC = mock(FragmentHandler.class);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
+    private final FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
+    private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
+    private final FragmentHandler fragmentHandlerC = mock(FragmentHandler.class);
 
     private void launch()
     {

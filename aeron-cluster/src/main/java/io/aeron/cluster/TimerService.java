@@ -29,8 +29,8 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
 
     private final ConsensusModuleAgent consensusModuleAgent;
     private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(MILLISECONDS, 0, 1, 128);
-    private Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
-    private Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
+    private final Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
+    private final Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
 
     TimerService(final ConsensusModuleAgent consensusModuleAgent)
     {

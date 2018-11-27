@@ -20,7 +20,7 @@ import java.net.InetSocketAddress;
 public class DestinationImageControlAddress
 {
     public long timeOfLastFrameNs;
-    public InetSocketAddress address;
+    public final InetSocketAddress address;
 
     public DestinationImageControlAddress(final long timeOfLastFrameNs, final InetSocketAddress address)
     {

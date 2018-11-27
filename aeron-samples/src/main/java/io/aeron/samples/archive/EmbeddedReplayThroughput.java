@@ -55,11 +55,11 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
-    private ArchivingMediaDriver archivingMediaDriver;
-    private Aeron aeron;
-    private AeronArchive aeronArchive;
+    private final ArchivingMediaDriver archivingMediaDriver;
+    private final Aeron aeron;
+    private final AeronArchive aeronArchive;
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, CACHE_LINE_LENGTH));
-    private FragmentHandler fragmentHandler = new FragmentAssembler(this::onMessage);
+    private final FragmentHandler fragmentHandler = new FragmentAssembler(this::onMessage);
     private int messageCount;
     private int publicationSessionId;
 

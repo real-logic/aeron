@@ -51,7 +51,7 @@ class ReplaySession implements Session, SimpleFragmentHandler, AutoCloseable
 
     private static final int REPLAY_FRAGMENT_LIMIT = Archive.Configuration.replayFragmentLimit();
 
-    private long connectDeadlineMs;
+    private final long connectDeadlineMs;
     private final long correlationId;
     private final long sessionId;
     private final BufferClaim bufferClaim = new BufferClaim();

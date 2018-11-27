@@ -55,7 +55,7 @@ public class IpcPublicationTest
     private DriverConductor driverConductor;
 
     private long currentTime = 0;
-    private NanoClock nanoClock = () -> currentTime;
+    private final NanoClock nanoClock = () -> currentTime;
 
     @SuppressWarnings("unchecked")
     @Before

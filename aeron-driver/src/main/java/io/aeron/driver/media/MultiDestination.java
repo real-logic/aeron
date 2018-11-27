@@ -155,9 +155,9 @@ class DynamicMultiDestination extends MultiDestination
     static final class Destination
     {
         long timeOfLastActivityNs;
-        long receiverId;
-        int port;
-        InetSocketAddress address;
+        final long receiverId;
+        final int port;
+        final InetSocketAddress address;
 
         Destination(final long now, final long receiverId, final InetSocketAddress address)
         {

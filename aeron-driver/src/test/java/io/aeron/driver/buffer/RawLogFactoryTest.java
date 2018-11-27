@@ -43,7 +43,7 @@ public class RawLogFactoryTest
     private static final boolean PRE_ZERO_LOG = false;
     private static final boolean PERFORM_STORAGE_CHECKS = false;
     private RawLogFactory rawLogFactory;
-    private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
+    private final UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
 
     @Before
     public void createDataDir()

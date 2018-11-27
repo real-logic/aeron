@@ -89,14 +89,14 @@ public class ReceiverTest
     private UnsafeBuffer[] termBuffers;
     private DatagramChannel senderChannel;
 
-    private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
+    private final InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
     private final ManyToOneConcurrentArrayQueue<Runnable> toConductorQueue =
         new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
 
     private ReceiveChannelEndpoint receiveChannelEndpoint;
-    private CongestionControl congestionControl = mock(CongestionControl.class);
+    private final CongestionControl congestionControl = mock(CongestionControl.class);
 
     // TODO rework test to use proxies rather than the command queues.
 

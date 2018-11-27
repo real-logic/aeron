@@ -69,8 +69,8 @@ public class ClusterTest
     private final CountDownLatch latchTwo = new CountDownLatch(MEMBER_COUNT - 1);
 
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
-    private ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MEMBER_COUNT];
-    private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
+    private final ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MEMBER_COUNT];
+    private final ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
 

@@ -47,7 +47,6 @@ public final class UdpChannel
     private final boolean hasExplicitControl;
     private final boolean isMulticast;
     private final boolean hasTag;
-    private final boolean hasNoDistinguishingCharacteristic;
     private final long tag;
     private final int multicastTtl;
     private final InetSocketAddress remoteData;
@@ -65,7 +64,6 @@ public final class UdpChannel
         hasExplicitControl = context.hasExplicitControl;
         isMulticast = context.isMulticast;
         hasTag = context.hasTagId;
-        hasNoDistinguishingCharacteristic = context.hasNoDistinguishingCharacteristic;
         tag = context.tagId;
         multicastTtl = context.multicastTtl;
         remoteData = context.remoteData;
@@ -171,7 +169,7 @@ public final class UdpChannel
                     resolveToAddressOfInterface(findInterface(searchAddress), searchAddress);
 
                 final String uniqueCanonicalFormSuffix = hasNoDistinguishingCharacteristic ?
-                    ("-" + Integer.toString(UNIQUE_CANONICAL_FORM_VALUE.getAndAdd(1))) : "";
+                    ("-" + UNIQUE_CANONICAL_FORM_VALUE.getAndAdd(1)) : "";
 
                 context
                     .remoteControlAddress(endpointAddress)

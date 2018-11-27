@@ -66,7 +66,7 @@ public class CubicCongestionControl implements CongestionControl
     private long lastLossTimestampNs;
     private long lastUpdateTimestampNs;
     private long lastRttTimestampNs = 0;
-    private long windowUpdateTimeoutNs;
+    private final long windowUpdateTimeoutNs;
     private long rttInNs;
     private double k;
     private int cwnd;
@@ -74,8 +74,8 @@ public class CubicCongestionControl implements CongestionControl
 
     private int outstandingRttMeasurements = 0;
 
-    private AtomicCounter rttIndicator;
-    private AtomicCounter windowIndicator;
+    private final AtomicCounter rttIndicator;
+    private final AtomicCounter windowIndicator;
 
     CubicCongestionControl(
         final long registrationId,

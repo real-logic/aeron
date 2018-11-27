@@ -69,13 +69,13 @@ public class ReplaySessionTest
 
     private int messageCounter = 0;
 
+    private final RecordingSummary recordingSummary = new RecordingSummary();
     private final File archiveDir = TestUtil.makeTestDirectory();
-    private ControlResponseProxy proxy = mock(ControlResponseProxy.class);
-    private EpochClock epochClock = mock(EpochClock.class);
-    private Catalog mockCatalog = mock(Catalog.class);
+    private final ControlResponseProxy proxy = mock(ControlResponseProxy.class);
+    private final EpochClock epochClock = mock(EpochClock.class);
+    private final Catalog mockCatalog = mock(Catalog.class);
     private Archive.Context context;
     private long recordingPosition;
-    private RecordingSummary recordingSummary = new RecordingSummary();
 
     @Before
     public void before() throws IOException

@@ -28,7 +28,7 @@ public class OptimalMulticastDelayGeneratorTest
     private static final long GROUP_SIZE = 10;
     private static final long GRTT = 10;
 
-    private OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(
+    private final OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(
         MAX_BACKOFF, GROUP_SIZE, GRTT);
 
     @Test

@@ -63,7 +63,7 @@ public class RetransmitHandlerTest
     private final TermAppender termAppender = new TermAppender(termBuffer, metaDataBuffer, 0);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private long currentTime = 0;
 

@@ -83,8 +83,8 @@ public class DynamicClusterTest
     private final AtomicBoolean[] terminationExpected = new AtomicBoolean[MAX_MEMBER_COUNT];
     private final AtomicBoolean[] serviceWasTerminated = new AtomicBoolean[MAX_MEMBER_COUNT];
     private final AtomicBoolean[] memberWasTerminated = new AtomicBoolean[MAX_MEMBER_COUNT];
-    private ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MAX_MEMBER_COUNT];
-    private ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MAX_MEMBER_COUNT];
+    private final ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MAX_MEMBER_COUNT];
+    private final ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MAX_MEMBER_COUNT];
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
 
@@ -679,8 +679,8 @@ public class DynamicClusterTest
         private volatile int messageCount = 0;
         private volatile boolean wasSnapshotTaken = false;
         private volatile boolean wasSnapshotLoaded = false;
-        private AtomicReference<String> messageCountString = new AtomicReference<>("no snapshot loaded");
         private final int index;
+        private final AtomicReference<String> messageCountString = new AtomicReference<>("no snapshot loaded");
         private final CountDownLatch latchOne;
         private final CountDownLatch latchTwo;
 

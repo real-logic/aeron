@@ -99,7 +99,7 @@ public class ArchiveReplayLoadTest
     private long receivedPosition = 0;
     private long remaining;
     private int fragmentCount;
-    private FragmentHandler validatingFragmentHandler = this::validateFragment;
+    private final FragmentHandler validatingFragmentHandler = this::validateFragment;
 
     @Before
     public void before()

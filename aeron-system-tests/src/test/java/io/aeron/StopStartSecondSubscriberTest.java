@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -197,8 +198,11 @@ public class StopStartSecondSubscriberTest
 
         final MutableInteger fragmentsReadOne = new MutableInteger();
         final MutableInteger fragmentsReadTwo = new MutableInteger();
+        final BooleanSupplier fragmentsReadCondition =
+            () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages;
+
         SystemTest.executeUntil(
-            () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages,
+            fragmentsReadCondition,
             (i) ->
             {
                 fragmentsReadOne.value += subscriptionOne.poll(fragmentHandlerOne, 1);
@@ -219,7 +223,7 @@ public class StopStartSecondSubscriberTest
         subscriptionTwo = subscriberTwo.addSubscription(channelTwo, streamTwo);
 
         SystemTest.executeUntil(
-            () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages,
+            fragmentsReadCondition,
             (i) ->
             {
                 fragmentsReadOne.value += subscriptionOne.poll(fragmentHandlerOne, 1);

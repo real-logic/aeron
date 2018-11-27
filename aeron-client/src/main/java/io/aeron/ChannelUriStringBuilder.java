@@ -33,7 +33,7 @@ public class ChannelUriStringBuilder
 {
     public static final String TAG_PREFIX = "tag:";
 
-    private StringBuilder sb = new StringBuilder(64);
+    private final StringBuilder sb = new StringBuilder(64);
 
     private String prefix;
     private String media;

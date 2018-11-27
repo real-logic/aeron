@@ -64,7 +64,7 @@ public class ImageTest
     private final ErrorHandler errorHandler = mock(ErrorHandler.class);
     private final Subscription subscription = mock(Subscription.class);
 
-    private UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
+    private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
 
     @Before
     public void setUp()

@@ -41,9 +41,9 @@ public class CounterTest
     private Aeron clientB;
     private MediaDriver driver;
 
-    private AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
+    private final AvailableCounterHandler availableCounterHandlerClientA = mock(AvailableCounterHandler.class);
+    private final UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
     private AvailableCounterHandler availableCounterHandlerClientB = mock(AvailableCounterHandler.class);
-    private UnavailableCounterHandler unavailableCounterHandlerClientA = mock(UnavailableCounterHandler.class);
     private UnavailableCounterHandler unavailableCounterHandlerClientB = mock(UnavailableCounterHandler.class);
 
     private volatile ReadableCounter readableCounter;

@@ -80,7 +80,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private int highMemberId;
     private int pendingMemberRemovals = 0;
     private ReadableCounter appendedPosition;
-    private Counter commitPosition;
+    private final Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
     private Cluster.Role role;
     private ClusterMember[] clusterMembers;

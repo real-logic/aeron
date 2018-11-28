@@ -573,7 +573,8 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the tags for a channel, and/or publication or subscription.
+     * Set the tags for a channel used by a publication or subscription. Tags can be used to identify or tag a
+     * channel so that a configuration can be referenced and reused.
      *
      * @param tags for the channel, publication or subscription.
      * @return this for a fluent API.
@@ -586,7 +587,8 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Get the tags for a channel, and/or publication or subscription.
+     * Get the tags for a channel used by a publication or subscription. Tags can be used to identify or tag a
+     * channel so that a configuration can be referenced and reused.
      *
      * @return the tags for a channel, publication or subscription.
      * @see CommonContext#TAGS_PARAM_NAME

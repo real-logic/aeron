@@ -139,7 +139,7 @@ TEST_F(MpscQueueTest, shouldDrainFullQueue)
     EXPECT_EQ(aeron_mpsc_concurrent_array_queue_size(&m_q), 0u);
 }
 
-TEST_F(MpscQueueTest, shouldDraingFullQueueWithLimit)
+TEST_F(MpscQueueTest, shouldDrainFullQueueWithLimit)
 {
     uint64_t limit = CAPACITY / 2;
     fillQueue();
@@ -195,37 +195,36 @@ TEST(MpscQueueConcurrentTest, shouldExchangeMessages)
 
     for (int i = 0; i < NUM_PUBLISHERS; i++)
     {
-        threads.push_back(
-            std::thread(
-                [&]()
+        threads.push_back(std::thread(
+            [&]()
+            {
+                uint32_t id = publisherId.fetch_add(1);
+
+                countDown--;
+                while (countDown > 0)
                 {
-                    uint32_t id = publisherId.fetch_add(1);
+                    std::this_thread::yield();
+                }
 
-                    countDown--;
-                    while (countDown > 0)
+                for (uint32_t m = 0; m < NUM_MESSAGES_PER_PUBLISHER; m++)
+                {
+                    mpsc_concurrent_test_data_t *data = new mpsc_concurrent_test_data_t;
+
+                    data->id = id;
+                    data->num = m;
+
+                    while (AERON_OFFER_SUCCESS != aeron_mpsc_concurrent_array_queue_offer(&q, data))
                     {
-                        std::this_thread::yield(); // spin until we is ready
+                        std::this_thread::yield();
                     }
-
-                    for (uint32_t m = 0; m < NUM_MESSAGES_PER_PUBLISHER; m++)
-                    {
-                        mpsc_concurrent_test_data_t *data = new mpsc_concurrent_test_data_t;
-
-                        data->id = id;
-                        data->num = m;
-
-                        while (AERON_OFFER_SUCCESS != aeron_mpsc_concurrent_array_queue_offer(&q, data))
-                        {
-                            std::this_thread::yield();
-                        }
-                    }
-                }));
+                }
+            }));
     }
 
     while (msgCount < (NUM_MESSAGES_PER_PUBLISHER * NUM_PUBLISHERS))
     {
-        const uint64_t drainCount =
-            aeron_mpsc_concurrent_array_queue_drain(&q, mpsc_queue_concurrent_handler, counts, CAPACITY);
+        const uint64_t drainCount = aeron_mpsc_concurrent_array_queue_drain(
+            &q, mpsc_queue_concurrent_handler, counts, CAPACITY);
 
         if (0 == drainCount)
         {
@@ -235,7 +234,6 @@ TEST(MpscQueueConcurrentTest, shouldExchangeMessages)
         msgCount += drainCount;
     }
 
-    // wait for all threads to finish
     for (std::thread &thr: threads)
     {
         thr.join();

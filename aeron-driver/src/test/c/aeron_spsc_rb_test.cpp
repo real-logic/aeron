@@ -348,7 +348,7 @@ TEST(SpscRbConcurrentTest, shouldProvideCcorrelationIds)
             countDown--;
             while (countDown > 0)
             {
-                std::this_thread::yield(); // spin until we is ready
+                std::this_thread::yield();
             }
 
             for (int m = 0; m < NUM_IDS_PER_THREAD; m++)
@@ -358,7 +358,6 @@ TEST(SpscRbConcurrentTest, shouldProvideCcorrelationIds)
         }));
     }
 
-    // wait for all threads to finish
     for (std::thread &thr: threads)
     {
         thr.join();
@@ -400,7 +399,7 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessages)
         countDown--;
         while (countDown > 0)
         {
-            std::this_thread::yield(); // spin until we is ready
+            std::this_thread::yield();
         }
 
         for (int m = 0; m < NUM_MESSAGES; m++)
@@ -417,8 +416,8 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessages)
 
     while (msgCount < NUM_MESSAGES)
     {
-        const size_t readCount =
-            aeron_spsc_rb_read(&rb, spsc_rb_concurrent_handler, &counts, std::numeric_limits<size_t>::max());
+        const size_t readCount = aeron_spsc_rb_read(
+            &rb, spsc_rb_concurrent_handler, &counts, std::numeric_limits<size_t>::max());
 
         if (0 == readCount)
         {
@@ -428,7 +427,6 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessages)
         msgCount += readCount;
     }
 
-    // wait for all threads to finish
     for (std::thread &thr: threads)
     {
         thr.join();

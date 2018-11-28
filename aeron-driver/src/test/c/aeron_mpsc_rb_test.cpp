@@ -394,7 +394,7 @@ TEST_F(MpscRbTest, shouldUnblockGapWithZeros)
 #define NUM_IDS_PER_THREAD (10 * 1000 * 1000)
 #define NUM_PUBLISHERS (2)
 
-TEST(MpscRbConcurrentTest, shouldProvideCcorrelationIds)
+TEST(MpscRbConcurrentTest, shouldProvideCorrelationIds)
 {
     AERON_DECL_ALIGNED(buffer_t buffer, 16);
     buffer.fill(0);
@@ -413,7 +413,7 @@ TEST(MpscRbConcurrentTest, shouldProvideCcorrelationIds)
             countDown--;
             while (countDown > 0)
             {
-                std::this_thread::yield(); // spin until we is ready
+                std::this_thread::yield();
             }
 
             for (int m = 0; m < NUM_IDS_PER_THREAD; m++)
@@ -423,7 +423,6 @@ TEST(MpscRbConcurrentTest, shouldProvideCcorrelationIds)
         }));
     }
 
-    // wait for all threads to finish
     for (std::thread &thr: threads)
     {
         thr.join();
@@ -484,7 +483,7 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
                     countDown--;
                     while (countDown > 0)
                     {
-                        std::this_thread::yield(); // spin until we is ready
+                        std::this_thread::yield();
                     }
 
                     mpsc_concurrent_test_data_t *data = (mpsc_concurrent_test_data_t *)(buffer.data());
@@ -494,9 +493,8 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
                         data->id = id;
                         data->num = m;
 
-                        while (
-                            AERON_RB_SUCCESS !=
-                            aeron_mpsc_rb_write(&rb, MSG_TYPE_ID, buffer.data(), sizeof(mpsc_concurrent_test_data_t)))
+                        while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
+                            &rb, MSG_TYPE_ID, buffer.data(), sizeof(mpsc_concurrent_test_data_t)))
                         {
                             std::this_thread::yield();
                         }
@@ -506,8 +504,8 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
 
     while (msgCount < (NUM_MESSAGES_PER_PUBLISHER * NUM_PUBLISHERS))
     {
-        const size_t readCount =
-            aeron_mpsc_rb_read(&rb, mpsc_rb_concurrent_handler, counts, std::numeric_limits<size_t>::max());
+        const size_t readCount = aeron_mpsc_rb_read(
+            &rb, mpsc_rb_concurrent_handler, counts, std::numeric_limits<size_t>::max());
 
         if (0 == readCount)
         {
@@ -517,7 +515,6 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
         msgCount += readCount;
     }
 
-    // wait for all threads to finish
     for (std::thread &thr: threads)
     {
         thr.join();

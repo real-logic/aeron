@@ -33,13 +33,13 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublication)
 
     doWork();
 
-    aeron_send_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_send_channel_endpoint_t *endpoint = aeron_driver_conductor_find_send_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     ASSERT_NE(endpoint, (aeron_send_channel_endpoint_t *)NULL);
 
-    aeron_network_publication_t *publication =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id);
+    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id);
 
     ASSERT_NE(publication, (aeron_network_publication_t *)NULL);
 
@@ -91,8 +91,8 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkSubscription)
 
     doWork();
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
 
@@ -148,20 +148,20 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkPublications)
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, CHANNEL_1, STREAM_ID_4, false), 0);
     doWork();
 
-    aeron_send_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_send_channel_endpoint_t *endpoint = aeron_driver_conductor_find_send_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     ASSERT_NE(endpoint, (aeron_send_channel_endpoint_t *)NULL);
     ASSERT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 1u);
 
-    aeron_network_publication_t *publication_1 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
-    aeron_network_publication_t *publication_2 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_2);
-    aeron_network_publication_t *publication_3 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_3);
-    aeron_network_publication_t *publication_4 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_4);
+    aeron_network_publication_t *publication_1 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *publication_2 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_2);
+    aeron_network_publication_t *publication_3 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_3);
+    aeron_network_publication_t *publication_4 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_4);
 
     ASSERT_NE(publication_1, (aeron_network_publication_t *)NULL);
     ASSERT_NE(publication_2, (aeron_network_publication_t *)NULL);
@@ -185,14 +185,14 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkPublicationsD
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, CHANNEL_4, STREAM_ID_1, false), 0);
     doWork();
 
-    aeron_send_channel_endpoint_t *endpoint_1 =
-        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
-    aeron_send_channel_endpoint_t *endpoint_2 =
-        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_2);
-    aeron_send_channel_endpoint_t *endpoint_3 =
-        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_3);
-    aeron_send_channel_endpoint_t *endpoint_4 =
-        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_4);
+    aeron_send_channel_endpoint_t *endpoint_1 = aeron_driver_conductor_find_send_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
+    aeron_send_channel_endpoint_t *endpoint_2 = aeron_driver_conductor_find_send_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_2);
+    aeron_send_channel_endpoint_t *endpoint_3 = aeron_driver_conductor_find_send_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_3);
+    aeron_send_channel_endpoint_t *endpoint_4 = aeron_driver_conductor_find_send_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_4);
 
     ASSERT_NE(endpoint_1, (aeron_send_channel_endpoint_t *)NULL);
     ASSERT_NE(endpoint_2, (aeron_send_channel_endpoint_t *)NULL);
@@ -200,14 +200,14 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkPublicationsD
     ASSERT_NE(endpoint_4, (aeron_send_channel_endpoint_t *)NULL);
     ASSERT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 4u);
 
-    aeron_network_publication_t *publication_1 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
-    aeron_network_publication_t *publication_2 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_2);
-    aeron_network_publication_t *publication_3 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_3);
-    aeron_network_publication_t *publication_4 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_4);
+    aeron_network_publication_t *publication_1 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *publication_2 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_2);
+    aeron_network_publication_t *publication_3 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_3);
+    aeron_network_publication_t *publication_4 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_4);
 
     ASSERT_NE(publication_1, (aeron_network_publication_t *)NULL);
     ASSERT_NE(publication_2, (aeron_network_publication_t *)NULL);
@@ -233,8 +233,8 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveMultipleNetworkPubl
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 
-    aeron_network_publication_t *publication =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_1);
 
     ASSERT_NE(publication, (aeron_network_publication_t *)NULL);
     ASSERT_EQ(publication->conductor_fields.refcnt, 4);
@@ -272,20 +272,20 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleExclusiveNetworkPubl
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, CHANNEL_1, STREAM_ID_1, true), 0);
     doWork();
 
-    aeron_send_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_send_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_send_channel_endpoint_t *endpoint = aeron_driver_conductor_find_send_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     ASSERT_NE(endpoint, (aeron_send_channel_endpoint_t *)NULL);
     ASSERT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 1u);
 
-    aeron_network_publication_t *publication_1 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
-    aeron_network_publication_t *publication_2 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_2);
-    aeron_network_publication_t *publication_3 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_3);
-    aeron_network_publication_t *publication_4 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_4);
+    aeron_network_publication_t *publication_1 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *publication_2 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_2);
+    aeron_network_publication_t *publication_3 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_3);
+    aeron_network_publication_t *publication_4 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_4);
 
     ASSERT_NE(publication_1, (aeron_network_publication_t *)NULL);
     ASSERT_NE(publication_2, (aeron_network_publication_t *)NULL);
@@ -310,8 +310,8 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptions
 
     doWork();
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
     ASSERT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 1u);
@@ -335,14 +335,14 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleNetworkSubscriptions
 
     doWork();
 
-    aeron_receive_channel_endpoint_t *endpoint_1 =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
-    aeron_receive_channel_endpoint_t *endpoint_2 =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_2);
-    aeron_receive_channel_endpoint_t *endpoint_3 =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_3);
-    aeron_receive_channel_endpoint_t *endpoint_4 =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_4);
+    aeron_receive_channel_endpoint_t *endpoint_1 = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint_2 = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_2);
+    aeron_receive_channel_endpoint_t *endpoint_3 = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_3);
+    aeron_receive_channel_endpoint_t *endpoint_4 = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_4);
 
     ASSERT_NE(endpoint_1, (aeron_receive_channel_endpoint_t *)NULL);
     ASSERT_NE(endpoint_2, (aeron_receive_channel_endpoint_t *)NULL);
@@ -379,8 +379,8 @@ TEST_F(DriverConductorNetworkTest, shouldKeepSubscriptionMediaEndpointUponRemova
 
     doWork();
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     ASSERT_NE(endpoint, (aeron_receive_channel_endpoint_t *)NULL);
     ASSERT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 1u);
@@ -479,8 +479,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutNetworkPublication)
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
     doWorkUntilTimeNs(
-        m_context.m_context->publication_linger_timeout_ns +
-            (m_context.m_context->client_liveness_timeout_ns * 2));
+        m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_send_channel_endpoints(&m_conductor.m_conductor), 0u);
@@ -497,8 +496,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToNotTimeoutNetworkPublicationOnK
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
     int64_t timeout =
-        m_context.m_context->publication_linger_timeout_ns +
-            (m_context.m_context->client_liveness_timeout_ns * 2);
+        m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
     doWorkUntilTimeNs(
         timeout,
@@ -524,8 +522,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutNetworkSubscription)
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
     doWorkUntilTimeNs(
-        m_context.m_context->publication_linger_timeout_ns +
-            (m_context.m_context->client_liveness_timeout_ns * 2));
+        m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_receive_channel_endpoints(&m_conductor.m_conductor), 0u);
@@ -542,8 +539,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToNotTimeoutNetworkSubscriptionOn
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
     int64_t timeout =
-        m_context.m_context->publication_linger_timeout_ns +
-            (m_context.m_context->client_liveness_timeout_ns * 2);
+        m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
     doWorkUntilTimeNs(
         timeout,
@@ -571,8 +567,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutSendChannelEndpointWithC
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
 
     int64_t timeout =
-        m_context.m_context->publication_linger_timeout_ns +
-            (m_context.m_context->client_liveness_timeout_ns * 2);
+        m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
     doWorkUntilTimeNs(
         timeout,
@@ -624,15 +619,15 @@ TEST_F(DriverConductorNetworkTest, shouldCreatePublicationImageForActiveNetworkS
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     createPublicationImage(endpoint, STREAM_ID_1, 1000);
 
     EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 1u);
 
-    aeron_publication_image_t *image =
-        aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
+    aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
+        &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
     EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 1u);
@@ -664,8 +659,8 @@ TEST_F(DriverConductorNetworkTest, shouldNotCreatePublicationImageForNonActiveNe
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     createPublicationImage(endpoint, STREAM_ID_2, 1000);
 
@@ -683,8 +678,8 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionFromImageWhenRemoveSu
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     createPublicationImage(endpoint, STREAM_ID_1, 1000);
 
@@ -715,15 +710,15 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     createPublicationImage(endpoint, STREAM_ID_1, 1000);
 
     EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 1u);
 
-    aeron_publication_image_t *image =
-        aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
+    aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
+        &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
     EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 1u);
@@ -731,9 +726,7 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
 
     int64_t image_correlation_id = image->conductor_fields.managed_resource.registration_id;
 
-    int64_t timeout =
-        m_context.m_context->image_liveness_timeout_ns +
-            (m_context.m_context->client_liveness_timeout_ns * 2);
+    int64_t timeout = m_context.m_context->image_liveness_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
     doWorkUntilTimeNs(
         timeout,
@@ -769,14 +762,12 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeout)
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
     doWork();
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     createPublicationImage(endpoint, STREAM_ID_1, 1000);
 
-    int64_t timeout =
-        m_context.m_context->image_liveness_timeout_ns +
-            (m_context.m_context->client_liveness_timeout_ns * 2);
+    int64_t timeout = m_context.m_context->image_liveness_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
     doWorkUntilTimeNs(
         timeout,
@@ -788,8 +779,7 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeout)
 
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 3u);
     EXPECT_EQ(aeron_driver_conductor_num_images(&m_conductor.m_conductor), 0u);
-    EXPECT_EQ(
-        aeron_driver_conductor_num_active_network_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 0u);
+    EXPECT_EQ(aeron_driver_conductor_num_active_network_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 0u);
     ASSERT_EQ(removeSubscription(client_id, remove_correlation_id, sub_id), 0);
     doWork();
     doWork();
@@ -807,13 +797,13 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForMultipleSubscripti
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     createPublicationImage(endpoint, STREAM_ID_1, 1000);
 
-    aeron_publication_image_t *image =
-        aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
+    aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
+        &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
     EXPECT_EQ(aeron_publication_image_num_subscriptions(image), 2u);
@@ -827,8 +817,7 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForMultipleSubscripti
         EXPECT_EQ(response.sessionId(), SESSION_ID);
         EXPECT_EQ(response.streamId(), STREAM_ID_1);
         EXPECT_EQ(response.correlationId(), aeron_publication_image_registration_id(image));
-        EXPECT_TRUE(
-            response.subscriberRegistrationId() == sub_id_1 || response.subscriberRegistrationId() == sub_id_2);
+        EXPECT_TRUE(response.subscriberRegistrationId() == sub_id_1 || response.subscriberRegistrationId() == sub_id_2);
         EXPECT_EQ(std::string(aeron_publication_image_log_file_name(image)), response.logFileName());
         EXPECT_EQ(SOURCE_IDENTITY, response.sourceIdentity());
     };
@@ -845,13 +834,13 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForSecondSubscription
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
     doWork();
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     createPublicationImage(endpoint, STREAM_ID_1, 1000);
 
-    aeron_publication_image_t *image =
-        aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
+    aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
+        &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
 
@@ -910,7 +899,7 @@ TEST_F(DriverConductorNetworkTest, shouldSendAvailableImageForSecondSubscription
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 4u);
 }
 
-TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhenNoAcitvityForMultipleSubscriptions)
+TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhenNoActivityForMultipleSubscriptions)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id_1 = nextCorrelationId();
@@ -919,13 +908,13 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
     ASSERT_EQ(addNetworkSubscription(client_id, sub_id_1, CHANNEL_1, STREAM_ID_1, -1), 0);
     doWork();
 
-    aeron_receive_channel_endpoint_t *endpoint =
-        aeron_driver_conductor_find_receive_channel_endpoint(&m_conductor.m_conductor, CHANNEL_1);
+    aeron_receive_channel_endpoint_t *endpoint = aeron_driver_conductor_find_receive_channel_endpoint(
+        &m_conductor.m_conductor, CHANNEL_1);
 
     createPublicationImage(endpoint, STREAM_ID_1, 1000);
 
-    aeron_publication_image_t *image =
-        aeron_driver_conductor_find_publication_image(&m_conductor.m_conductor, endpoint, STREAM_ID_1);
+    aeron_publication_image_t *image = aeron_driver_conductor_find_publication_image(
+        &m_conductor.m_conductor, endpoint, STREAM_ID_1);
 
     EXPECT_NE(image, (aeron_publication_image_t *)NULL);
 
@@ -933,9 +922,7 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
     doWork();
 
     int64_t image_correlation_id = aeron_publication_image_registration_id(image);
-    int64_t timeout =
-        m_context.m_context->image_liveness_timeout_ns +
-            (m_context.m_context->client_liveness_timeout_ns * 2);
+    int64_t timeout = m_context.m_context->image_liveness_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
     doWorkUntilTimeNs(
         timeout,

@@ -126,17 +126,16 @@ TEST_F(LossReporterTest, shouldUpdateEntry)
     const char *channel = "aeron:udp://stuff";
     const char *source = "127.0.0.1:8888";
 
-    aeron_loss_reporter_entry_offset_t offset =
-        aeron_loss_reporter_create_entry(
-            &m_reporter,
-            initial_bytes_lost,
-            timestamp_ms,
-            SESSION_ID,
-            STREAM_ID,
-            channel,
-            strlen(channel),
-            source,
-            strlen(source));
+    aeron_loss_reporter_entry_offset_t offset = aeron_loss_reporter_create_entry(
+        &m_reporter,
+        initial_bytes_lost,
+        timestamp_ms,
+        SESSION_ID,
+        STREAM_ID,
+        channel,
+        strlen(channel),
+        source,
+        strlen(source));
 
     EXPECT_EQ(offset, 0);
 
@@ -182,17 +181,16 @@ TEST_F(LossReporterTest, shouldReadOneEntry)
     const char *channel = "aeron:udp://stuff";
     const char *source = "127.0.0.1:8888";
 
-    aeron_loss_reporter_entry_offset_t offset =
-        aeron_loss_reporter_create_entry(
-            &m_reporter,
-            initial_bytes_lost,
-            timestamp_ms,
-            SESSION_ID,
-            STREAM_ID,
-            channel,
-            strlen(channel),
-            source,
-            strlen(source));
+    aeron_loss_reporter_entry_offset_t offset = aeron_loss_reporter_create_entry(
+        &m_reporter,
+        initial_bytes_lost,
+        timestamp_ms,
+        SESSION_ID,
+        STREAM_ID,
+        channel,
+        strlen(channel),
+        source,
+        strlen(source));
 
     EXPECT_EQ(offset, 0);
 
@@ -242,29 +240,27 @@ TEST_F(LossReporterTest, shouldReadTwoEntries)
     const char *channel_2 = "aeron:udp://stuff2";
     const char *source_2 = "127.0.0.1:9999";
 
-    aeron_loss_reporter_entry_offset_t offset_1 =
-        aeron_loss_reporter_create_entry(
-            &m_reporter,
-            initial_bytes_lost_1,
-            timestamp_ms_1,
-            session_id_1,
-            stream_id_1,
-            channel_1,
-            strlen(channel_1),
-            source_1,
-            strlen(source_1));
+    aeron_loss_reporter_entry_offset_t offset_1 = aeron_loss_reporter_create_entry(
+        &m_reporter,
+        initial_bytes_lost_1,
+        timestamp_ms_1,
+        session_id_1,
+        stream_id_1,
+        channel_1,
+        strlen(channel_1),
+        source_1,
+        strlen(source_1));
 
-    aeron_loss_reporter_entry_offset_t offset_2 =
-        aeron_loss_reporter_create_entry(
-            &m_reporter,
-            initial_bytes_lost_2,
-            timestamp_ms_2,
-            session_id_2,
-            stream_id_2,
-            channel_2,
-            strlen(channel_2),
-            source_2,
-            strlen(source_2));
+    aeron_loss_reporter_entry_offset_t offset_2 = aeron_loss_reporter_create_entry(
+        &m_reporter,
+        initial_bytes_lost_2,
+        timestamp_ms_2,
+        session_id_2,
+        stream_id_2,
+        channel_2,
+        strlen(channel_2),
+        source_2,
+        strlen(source_2));
 
     EXPECT_EQ(offset_1, 0);
     EXPECT_GT(offset_2, 0);

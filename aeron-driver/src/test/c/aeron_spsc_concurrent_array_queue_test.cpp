@@ -181,7 +181,7 @@ TEST(SpscQueueConcurrentTest, shouldExchangeMessages)
         countDown--;
         while (countDown > 0)
         {
-            std::this_thread::yield(); // spin until we is ready
+            std::this_thread::yield();
         }
 
         for (uint64_t m = 1; m <= NUM_MESSAGES; m++)
@@ -195,7 +195,8 @@ TEST(SpscQueueConcurrentTest, shouldExchangeMessages)
 
     while (msgCount < NUM_MESSAGES)
     {
-        const uint64_t drainCount = aeron_spsc_concurrent_array_queue_drain_all(&q, spsc_queue_concurrent_handler, &counts);
+        const uint64_t drainCount = aeron_spsc_concurrent_array_queue_drain_all(
+            &q, spsc_queue_concurrent_handler, &counts);
 
         if (0 == drainCount)
         {
@@ -205,7 +206,6 @@ TEST(SpscQueueConcurrentTest, shouldExchangeMessages)
         msgCount += drainCount;
     }
 
-    // wait for all threads to finish
     for (std::thread &thr: threads)
     {
         thr.join();

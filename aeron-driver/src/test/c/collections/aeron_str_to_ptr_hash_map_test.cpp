@@ -39,14 +39,14 @@ protected:
         t->m_for_each(key, key_len, value);
     }
 
-    void for_each(const std::function<void(const char*,size_t ,void*)>& func)
+    void for_each(const std::function<void(const char *, size_t, void *)>& func)
     {
         m_for_each = func;
         aeron_str_to_ptr_hash_map_for_each(&m_map, StrToPtrHashMapTest::for_each, this);
     }
 
     aeron_str_to_ptr_hash_map_t m_map;
-    std::function<void(const char*,size_t,void*)> m_for_each;
+    std::function<void(const char *, size_t, void*)> m_for_each;
 };
 
 TEST_F(StrToPtrHashMapTest, shouldDoPutAndThenGetOnEmptyMap)

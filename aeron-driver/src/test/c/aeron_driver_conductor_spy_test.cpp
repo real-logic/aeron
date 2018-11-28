@@ -121,8 +121,8 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddSingleP
     ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
 
-    aeron_network_publication_t *publication =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id);
+    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id);
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 1u);
 
@@ -181,8 +181,8 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSinglePublicationThenAddSingleSu
     ASSERT_EQ(addSpySubscription(client_id, sub_id, CHANNEL_1, STREAM_ID_1, -1), 0);
     doWork();
 
-    aeron_network_publication_t *publication =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id);
+    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id);
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 1u);
 
@@ -242,8 +242,8 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionWithSameStre
     ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
 
-    aeron_network_publication_t *publication =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id);
+    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id);
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 2u);
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 2u);
 
@@ -287,8 +287,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionWithSameStre
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_TRUE(
-                response.subscriberRegistrationId() == sub_id_1 || response.subscriberRegistrationId() == sub_id_2);
+            EXPECT_TRUE(response.subscriberRegistrationId() == sub_id_1 || response.subscriberRegistrationId() == sub_id_2);
 
             EXPECT_EQ(log_file_name, response.logFileName());
             EXPECT_EQ(CHANNEL_1, response.sourceIdentity());
@@ -312,11 +311,11 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddMultipl
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, true), 0);
     doWork();
 
-    aeron_network_publication_t *publication_1 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *publication_1 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_1);
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication_1), 1u);
-    aeron_network_publication_t *publication_2 =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_2);
+    aeron_network_publication_t *publication_2 = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_2);
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication_2), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 2u);
 
@@ -402,8 +401,8 @@ TEST_F(DriverConductorSpyTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
     ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1, STREAM_ID_1, false), 0);
     doWork();
 
-    aeron_network_publication_t *publication =
-        aeron_driver_conductor_find_network_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
+        &m_conductor.m_conductor, pub_id_1);
     EXPECT_EQ(aeron_network_publication_num_spy_subscribers(publication), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_active_spy_subscriptions(&m_conductor.m_conductor, CHANNEL_1, STREAM_ID_1), 1u);
 
@@ -472,8 +471,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToTimeoutSubscription)
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
     doWorkUntilTimeNs(
-        m_context.m_context->publication_linger_timeout_ns +
-            (m_context.m_context->client_liveness_timeout_ns * 2));
+        m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 0u);
 }
@@ -488,9 +486,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToNotTimeoutSubscriptionOnKeepalive)
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    int64_t timeout =
-        m_context.m_context->publication_linger_timeout_ns +
-            (m_context.m_context->client_liveness_timeout_ns * 2);
+    int64_t timeout = m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
     doWorkUntilTimeNs(
         timeout,

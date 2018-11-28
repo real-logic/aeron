@@ -442,8 +442,7 @@ public:
         cmd.session_id = SESSION_ID;
         cmd.stream_id = stream_id;
         cmd.term_offset = 0;
-        cmd.active_term_id =
-            aeron_logbuffer_compute_term_id_from_position(position, position_bits_to_shift, INITIAL_TERM_ID);
+        cmd.active_term_id = aeron_logbuffer_compute_term_id_from_position(position, position_bits_to_shift, INITIAL_TERM_ID);
         cmd.initial_term_id = INITIAL_TERM_ID;
         cmd.mtu_length = (int32_t)m_context.m_context->mtu_length;
         cmd.term_length = TERM_LENGTH;

@@ -60,8 +60,7 @@ protected:
 TEST_F(TermGapScannerTest, shouldReportGapAtBeginningOfBuffer)
 {
     const int32_t frame_offset = AERON_ALIGN((HEADER_LENGTH * 3), AERON_LOGBUFFER_FRAME_ALIGNMENT);
-    const int32_t high_water_mark =
-        frame_offset + AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t high_water_mark = frame_offset + AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
     aeron_frame_header_t *hdr = (aeron_frame_header_t *)(m_ptr + frame_offset);
 
     hdr->frame_length = HEADER_LENGTH;
@@ -234,6 +233,7 @@ TEST_F(LossDetectorTest, shouldNotSendNakWhenBufferIsEmpty)
         &m_detector, &loss_found, m_ptr, rebuild_position, hwm_position, m_time, MASK, POSITION_BITS_TO_SHIFT, TERM_ID),
         hwm_position);
     EXPECT_FALSE(loss_found);
+
     m_time = 100 * 1000 * 1000L;
     ASSERT_EQ(aeron_loss_detector_scan(
         &m_detector, &loss_found, m_ptr, rebuild_position, hwm_position, m_time, MASK, POSITION_BITS_TO_SHIFT, TERM_ID),
@@ -260,6 +260,7 @@ TEST_F(LossDetectorTest, shouldNotNakIfNoMissingData)
         &m_detector, &loss_found, m_ptr, rebuild_position, hwm_position, m_time, MASK, POSITION_BITS_TO_SHIFT, TERM_ID),
         hwm_position);
     EXPECT_FALSE(loss_found);
+
     m_time = 40 * 1000 * 1000L;
     ASSERT_EQ(aeron_loss_detector_scan(
         &m_detector, &loss_found, m_ptr, rebuild_position, hwm_position, m_time, MASK, POSITION_BITS_TO_SHIFT, TERM_ID),
@@ -293,6 +294,7 @@ TEST_F(LossDetectorTest, shouldNakMissingData)
         offset_of_message(1));
     EXPECT_EQ(called, 0);
     EXPECT_TRUE(loss_found);
+
     m_time = 40 * 1000 * 1000L;
     ASSERT_EQ(aeron_loss_detector_scan(
         &m_detector, &loss_found, m_ptr, rebuild_position, hwm_position, m_time, MASK, POSITION_BITS_TO_SHIFT, TERM_ID),
@@ -327,12 +329,14 @@ TEST_F(LossDetectorTest, shouldRetransmitNakForMissingData)
         offset_of_message(1));
     EXPECT_EQ(called, 0);
     EXPECT_TRUE(loss_found);
+
     m_time = 30 * 1000 * 1000L;
     ASSERT_EQ(aeron_loss_detector_scan(
         &m_detector, &loss_found, m_ptr, rebuild_position, hwm_position, m_time, MASK, POSITION_BITS_TO_SHIFT, TERM_ID),
         offset_of_message(1));
     EXPECT_EQ(called, 1);
     EXPECT_FALSE(loss_found);
+
     m_time = 60 * 1000 * 1000L;
     ASSERT_EQ(aeron_loss_detector_scan(
         &m_detector, &loss_found, m_ptr, rebuild_position, hwm_position, m_time, MASK, POSITION_BITS_TO_SHIFT, TERM_ID),

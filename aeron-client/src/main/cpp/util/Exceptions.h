@@ -19,24 +19,30 @@
 #include <cstdint>
 #include <string>
 #include <stdexcept>
+#include <sstream>
 #include "MacroUtil.h"
-
-// ==========================================================================================================================
-// macro to create a const char* with the details of current source line in the format:
-//    [Class::Method : d:\projects\file.cpp : 127]
-// ==========================================================================================================================
 
 namespace aeron { namespace util {
 
+
+static constexpr const char* past_prefix(const char * const prefix, const char * const filename)
+{
+    return
+        *prefix == *filename ? past_prefix(prefix + 1, filename + 1) :
+            *filename == '/' ? filename + 1 : filename;
+}
+
+#define __SHORT_FILE__ aeron::util::past_prefix(__CMAKE_SOURCE_DIR__,__FILE__)
+
 #ifdef _MSC_VER
-    #define SOURCEINFO __FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
+    #define SOURCEINFO __FUNCTION__,  __SHORT_FILE__, __LINE__
     #if _MSC_VER >= 1900
         #define AERON_NOEXCEPT noexcept
     #else
         #define AERON_NOEXCEPT throw()
     #endif
 #else
-    #define SOURCEINFO  __PRETTY_FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
+    #define SOURCEINFO  __PRETTY_FUNCTION__,  __SHORT_FILE__, __LINE__
     #define AERON_NOEXCEPT noexcept
 #endif
 
@@ -47,8 +53,8 @@ private:
     std::string m_what;
 
 public:
-    SourcedException(const std::string &what, const std::string& function, const std::string& where) :
-        m_where(function + where),
+    SourcedException(const std::string &what, const std::string& function, const std::string& file, const int line) :
+        m_where(static_cast<std::ostringstream&>(std::ostringstream() << function << " : " << file  << " : " << line).str()),
         m_what(what)
     {
     }
@@ -68,8 +74,8 @@ public:
             class exceptionName : public aeron::util::SourcedException                      \
             {                                                                               \
                 public:                                                                     \
-                    exceptionName (const std::string &what, const std::string& function, const std::string& where)   \
-                            : SourcedException (what, function, where)                      \
+                    exceptionName (const std::string &what, const std::string& function, const std::string& file, const int line) \
+                            : SourcedException (what, function, file, line)                 \
                         {}                                                                  \
             }                                                                               \
 
@@ -91,8 +97,8 @@ private:
 
 public:
     RegistrationException(
-        std::int32_t errorCode, const std::string &what, const std::string& function, const std::string& where) :
-        SourcedException(what, function, where),
+        std::int32_t errorCode, const std::string &what, const std::string& function, const std::string& file, const int line) :
+        SourcedException(what, function, file, line),
         m_errorCode(errorCode)
     {
     }

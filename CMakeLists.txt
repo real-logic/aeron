@@ -55,6 +55,9 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
+# relative file paths for use in exceptions
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__CMAKE_SOURCE_DIR__='\"${CMAKE_SOURCE_DIR}\"'")
+
 set(AERON_THIRDPARTY_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/thirdparty")
 
 ##########################################################

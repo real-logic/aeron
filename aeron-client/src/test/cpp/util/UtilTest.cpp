@@ -19,9 +19,10 @@
 #include <util/ScopeUtils.h>
 #include <util/StringUtil.h>
 #include <util/BitUtil.h>
+#include "TestUtils.h"
 
 #include <gtest/gtest.h>
-
+#include <gmock/gmock.h>
 
 using namespace aeron::util;
 
@@ -103,4 +104,27 @@ TEST(utilTests, numberOfTrailingZeroes)
     EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x0000FFFF), 0);
     EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0xFFFF0000), 16);
     EXPECT_EQ(BitUtil::numberOfTrailingZeroes<std::uint32_t>(0x00000001), 0);
+}
+
+void throwIllegalArgumentException()
+{
+    aeron::test::throwIllegalArgumentException();
+}
+
+TEST(utilTests, sourcedException)
+{
+    EXPECT_THROW({
+        try
+        {
+            aeron::test::throwIllegalArgumentException();
+        }
+        catch(const SourcedException& e)
+        {
+            // Path must be relative and not have a prefix
+            EXPECT_THAT(e.where(), ::testing::HasSubstr(" aeron-client/"));
+            // The exception should point to the code before it was inlined
+            EXPECT_THAT(e.where(), ::testing::HasSubstr("TestUtils.h"));
+            throw;
+        }
+    }, SourcedException);
 }

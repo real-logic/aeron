@@ -478,7 +478,7 @@ public class ChannelUri
                         tags[tagIndex++] = tagsValue.substring(tagStartPosition, i);
                         tagStartPosition = i + 1;
 
-                        if (tagIndex == (tagCount - 1))
+                        if (tagIndex >= (tagCount - 1))
                         {
                             tags[tagIndex] = tagsValue.substring(tagStartPosition, length);
                         }

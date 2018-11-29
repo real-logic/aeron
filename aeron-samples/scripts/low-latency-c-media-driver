@@ -27,4 +27,4 @@ export AERON_CONDUCTOR_IDLE_STRATEGY="noop"
 export AERON_SENDER_IDLE_STRATEGY="noop"
 export AERON_RECEIVER_IDLE_STRATEGY="noop"
 
-$AERON_BUILD_DIR/binaries/aeronmd
+${AERON_BUILD_DIR}/binaries/aeronmd

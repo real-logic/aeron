@@ -23,11 +23,11 @@ export AERON_DEBUG_RECEIVE_DATA_LOSS_RATE="0.2"
 case "`uname`" in
   Darwin* )
     export DYLD_FORCE_FLAT_NAMESPACE=1
-    export DYLD_INSERT_LIBRARIES=$AERON_BUILD_DIR/lib/libaeron_driver_agent.dylib
+    export DYLD_INSERT_LIBRARIES=${AERON_BUILD_DIR}/lib/libaeron_driver_agent.dylib
     ;;
   Linux*)
-    export LD_PRELOAD=$AERON_BUILD_DIR/lib/libaeron_driver_agent.so
+    export LD_PRELOAD=${AERON_BUILD_DIR}/lib/libaeron_driver_agent.so
     ;;
 esac
 
-$AERON_BUILD_DIR/binaries/aeronmd
+${AERON_BUILD_DIR}/binaries/aeronmd

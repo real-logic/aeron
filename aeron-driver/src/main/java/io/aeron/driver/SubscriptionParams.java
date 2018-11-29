@@ -32,7 +32,6 @@ class SubscriptionParams
     boolean isReliable = true;
     boolean isSparse = true;
 
-    @SuppressWarnings("ConstantConditions")
     static SubscriptionParams getSubscriptionParams(final ChannelUri channelUri, final MediaDriver.Context context)
     {
         final SubscriptionParams params = new SubscriptionParams();

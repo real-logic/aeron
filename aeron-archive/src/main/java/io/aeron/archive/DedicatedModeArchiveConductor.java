@@ -65,7 +65,6 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         return super.preWork() + processCloseQueue();
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     protected void closeSessionWorkers()
     {
         try

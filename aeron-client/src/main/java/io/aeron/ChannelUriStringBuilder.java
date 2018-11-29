@@ -579,6 +579,7 @@ public class ChannelUriStringBuilder
      * @param tags for the channel, publication or subscription.
      * @return this for a fluent API.
      * @see CommonContext#TAGS_PARAM_NAME
+     * @see CommonContext#TAG_PREFIX
      */
     public ChannelUriStringBuilder tags(final String tags)
     {
@@ -592,6 +593,7 @@ public class ChannelUriStringBuilder
      *
      * @return the tags for a channel, publication or subscription.
      * @see CommonContext#TAGS_PARAM_NAME
+     * @see CommonContext#TAG_PREFIX
      */
     public String tags()
     {
@@ -603,6 +605,8 @@ public class ChannelUriStringBuilder
      *
      * @param isSessionIdTagged for session id
      * @return this for a fluent API.
+     * @see CommonContext#TAGS_PARAM_NAME
+     * @see CommonContext#TAG_PREFIX
      */
     public ChannelUriStringBuilder isSessionIdTagged(final boolean isSessionIdTagged)
     {
@@ -614,6 +618,8 @@ public class ChannelUriStringBuilder
      * Is the value for {@link #sessionId()} a tagged.
      *
      * @return whether the value for {@link #sessionId()} a tag reference or not.
+     * @see CommonContext#TAGS_PARAM_NAME
+     * @see CommonContext#TAG_PREFIX
      */
     public boolean isSessionIdTagged()
     {

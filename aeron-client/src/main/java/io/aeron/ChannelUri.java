@@ -54,11 +54,6 @@ public class ChannelUri
      */
     public static final String SPY_QUALIFIER = "aeron-spy";
 
-    /**
-     * Qualifier for a value which is a tag for reference.
-     */
-    public static final String TAG_PREFIX = "tag:";
-
     public static final long INVALID_TAG = Aeron.NULL_VALUE;
 
     private static final int CHANNEL_TAG_INDEX = 0;
@@ -218,6 +213,8 @@ public class ChannelUri
      * Get the channel tag, if it exists, that refers to an another channel.
      *
      * @return channel tag if it exists or null if not in this URI.
+     * @see CommonContext#TAGS_PARAM_NAME
+     * @see CommonContext#TAG_PREFIX
      */
     public String channelTag()
     {
@@ -228,6 +225,8 @@ public class ChannelUri
      * Get the entity tag, if it exists, that refers to an entity such as subscription or publication.
      *
      * @return entity tag if it exists or null if not in this URI.
+     * @see CommonContext#TAGS_PARAM_NAME
+     * @see CommonContext#TAG_PREFIX
      */
     public String entityTag()
     {
@@ -414,10 +413,12 @@ public class ChannelUri
     }
 
     /**
-     * Is the param tagged? (starts with the "tag:" prefix)
+     * Is the param value tagged? (starts with the "tag:" prefix)
      *
      * @param paramValue to check if tagged.
      * @return true if tagged or false if not.
+     * @see CommonContext#TAGS_PARAM_NAME
+     * @see CommonContext#TAG_PREFIX
      */
     public static boolean isTagged(final String paramValue)
     {
@@ -425,10 +426,12 @@ public class ChannelUri
     }
 
     /**
-     * Get the value of the tag from a given parameter.
+     * Get the value of the tag from a given parameter value.
      *
      * @param paramValue to extract the tag value from.
      * @return the value of the tag or {@link #INVALID_TAG} if not tagged.
+     * @see CommonContext#TAGS_PARAM_NAME
+     * @see CommonContext#TAG_PREFIX
      */
     public static long getTag(final String paramValue)
     {

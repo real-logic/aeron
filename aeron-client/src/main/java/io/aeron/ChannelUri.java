@@ -245,7 +245,6 @@ public class ChannelUri
         if (prefix == null || "".equals(prefix))
         {
             sb = new StringBuilder((params.size() * 20) + 10);
-
         }
         else
         {

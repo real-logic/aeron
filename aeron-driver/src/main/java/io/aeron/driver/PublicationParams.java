@@ -198,7 +198,6 @@ final class PublicationParams
         }
     }
 
-    @SuppressWarnings("ConstantConditions")
     static PublicationParams getPublicationParams(
         final MediaDriver.Context context,
         final ChannelUri channelUri,

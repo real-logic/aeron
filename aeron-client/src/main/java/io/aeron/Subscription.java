@@ -154,25 +154,26 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Poll the {@link Image}s under the subscription for having reached End of Stream.
+     * Poll the {@link Image}s under the subscription for having reached End of Stream (EOS). This method will miss
+     * {@link Image}s that have gone unavailable between calls unless using the {@link Aeron#conductorAgentInvoker()}.
      *
      * @param endOfStreamHandler callback for handling end of stream indication.
      * @return number of {@link Image} that have reached End of Stream.
      */
     public int pollEndOfStreams(final EndOfStreamHandler endOfStreamHandler)
     {
-        int numEndOfStreams = 0;
+        int eosCount = 0;
 
         for (final Image image : images)
         {
             if (image.isEndOfStream())
             {
-                numEndOfStreams++;
+                eosCount++;
                 endOfStreamHandler.onEndOfStream(image);
             }
         }
 
-        return numEndOfStreams;
+        return eosCount;
     }
 
     /**
@@ -502,7 +503,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         if (null != removedImage)
         {
             images = ArrayUtil.remove(oldArray, i);
-            conductor.releaseLogBuffers(removedImage.logBuffers(), removedImage.correlationId());
+            conductor.releaseLogBuffers(removedImage.logBuffers(), correlationId);
         }
 
         return removedImage;

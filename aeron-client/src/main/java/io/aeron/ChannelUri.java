@@ -54,6 +54,11 @@ public class ChannelUri
      */
     public static final String SPY_QUALIFIER = "aeron-spy";
 
+    /**
+     * Qualifier for a value which is a tag for reference.
+     */
+    public static final String TAG_PREFIX = "tag:";
+
     public static final long INVALID_TAG = Aeron.NULL_VALUE;
 
     private static final int CHANNEL_TAG_INDEX = 0;
@@ -78,7 +83,6 @@ public class ChannelUri
         this.prefix = prefix;
         this.media = media;
         this.params = params;
-
         this.tags = splitTags(params.get(TAGS_PARAM_NAME));
     }
 
@@ -217,7 +221,7 @@ public class ChannelUri
      */
     public String channelTag()
     {
-        return (tags.length > CHANNEL_TAG_INDEX) ? tags[CHANNEL_TAG_INDEX] : null;
+        return tags.length > CHANNEL_TAG_INDEX ? tags[CHANNEL_TAG_INDEX] : null;
     }
 
     /**
@@ -227,7 +231,7 @@ public class ChannelUri
      */
     public String entityTag()
     {
-        return (tags.length > ENTITY_TAG_INDEX) ? tags[ENTITY_TAG_INDEX] : null;
+        return tags.length > ENTITY_TAG_INDEX ? tags[ENTITY_TAG_INDEX] : null;
     }
 
     /**
@@ -299,7 +303,7 @@ public class ChannelUri
     {
         int position = 0;
         final String prefix;
-        if (startsWith(cs, SPY_PREFIX))
+        if (startsWith(cs, 0, SPY_PREFIX))
         {
             prefix = SPY_QUALIFIER;
             position = SPY_PREFIX.length();
@@ -418,7 +422,7 @@ public class ChannelUri
      */
     public static boolean isTagged(final String paramValue)
     {
-        return startsWith(paramValue, "tag:");
+        return startsWith(paramValue, 0, TAG_PREFIX);
     }
 
     /**
@@ -451,47 +455,54 @@ public class ChannelUri
         return true;
     }
 
-    private static boolean startsWith(final CharSequence input, final CharSequence prefix)
+    private static String[] splitTags(final String tagsValue)
     {
-        return startsWith(input, 0, prefix);
-    }
+        String[] tags = ArrayUtil.EMPTY_STRING_ARRAY;
 
-    private static String[] splitTags(final CharSequence tags)
-    {
-        String[] stringArray = ArrayUtil.EMPTY_STRING_ARRAY;
-
-        if (null != tags)
+        if (null != tagsValue)
         {
-            int currentStartIndex = 0;
-            int tagIndex = 0;
-            stringArray = new String[2];
-            final int length = tags.length();
-
-            for (int i = 0; i < length; i++)
+            final int tagCount = countTags(tagsValue);
+            if (tagCount == 1)
             {
-                if (tags.charAt(i) == ',')
-                {
-                    String tag = null;
-
-                    if ((i - currentStartIndex) > 0)
-                    {
-                        tag = tags.subSequence(currentStartIndex, i).toString();
-                        currentStartIndex = i + 1;
-                    }
-
-                    stringArray = ArrayUtil.ensureCapacity(stringArray, tagIndex + 1);
-                    stringArray[tagIndex] = tag;
-                    tagIndex++;
-                }
+                tags = new String[]{ tagsValue };
             }
-
-            if ((length - currentStartIndex) > 0)
+            else
             {
-                stringArray = ArrayUtil.ensureCapacity(stringArray, tagIndex + 1);
-                stringArray[tagIndex] = tags.subSequence(currentStartIndex, length).toString();
+                int tagStartPosition = 0;
+                int tagIndex = 0;
+                tags = new String[tagCount];
+
+                for (int i = 0, length = tagsValue.length(); i < length; i++)
+                {
+                    if (tagsValue.charAt(i) == ',')
+                    {
+                        tags[tagIndex++] = tagsValue.substring(tagStartPosition, i);
+                        tagStartPosition = i + 1;
+
+                        if (tagIndex == (tagCount - 1))
+                        {
+                            tags[tagIndex] = tagsValue.substring(tagStartPosition, length);
+                        }
+                    }
+                }
             }
         }
 
-        return stringArray;
+        return tags;
+    }
+
+    private static int countTags(final String tags)
+    {
+        int count = 1;
+
+        for (int i = 0, length = tags.length(); i < length; i++)
+        {
+            if (tags.charAt(i) == ',')
+            {
+                ++count;
+            }
+        }
+
+        return count;
     }
 }

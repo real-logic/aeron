@@ -162,6 +162,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
             CloseHelper.close(localControlSubscription);
             CloseHelper.close(controlSubscription);
+            CloseHelper.close(recordingEventsProxy);
         }
     }
 

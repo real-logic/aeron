@@ -19,8 +19,9 @@ import io.aeron.Publication;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
+import org.agrona.CloseHelper;
 
-class RecordingEventsProxy
+class RecordingEventsProxy implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;
 
@@ -34,6 +35,11 @@ class RecordingEventsProxy
     RecordingEventsProxy(final Publication publication)
     {
         this.publication = publication;
+    }
+
+    public void close()
+    {
+        CloseHelper.close(publication);
     }
 
     void started(

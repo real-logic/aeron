@@ -215,23 +215,23 @@ public class ChannelUri
     }
 
     /**
-     * Get the channel tag.
+     * Get the channel tag, if it exists, that refers to an another channel.
      *
-     * @return channel tag.
+     * @return channel tag if it exists or null if not in this URI.
      */
     public String channelTag()
     {
-        return tags.length > CHANNEL_TAG_INDEX ? tags[CHANNEL_TAG_INDEX] : null;
+        return (null != tags && tags.length > CHANNEL_TAG_INDEX) ? tags[CHANNEL_TAG_INDEX] : null;
     }
 
     /**
-     * Get the entity tag.
+     * Get the entity tag, if it exists, that refers to an entity such as subscription or publication.
      *
-     * @return entity tag.
+     * @return entity tag if it exists or null if not in this URI.
      */
     public String entityTag()
     {
-        return tags.length > ENTITY_TAG_INDEX ? tags[ENTITY_TAG_INDEX] : null;
+        return (null != tags && tags.length > ENTITY_TAG_INDEX) ? tags[ENTITY_TAG_INDEX] : null;
     }
 
     /**

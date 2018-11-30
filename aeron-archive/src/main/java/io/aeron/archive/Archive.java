@@ -193,6 +193,10 @@ public class Archive implements AutoCloseable
         public static final String CONNECT_TIMEOUT_PROP_NAME = "aeron.archive.connect.timeout";
         public static final long CONNECT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
+        public static final String REPLAY_LINGER_TIMEOUT_PROP_NAME = "aeron.archive.replay.linger.timeout";
+        public static final long REPLAY_LINGER_TIMEOUT_DEFAULT_NS =
+            io.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
+
         static final String CATALOG_FILE_NAME = "archive.catalog";
         static final String RECORDING_SEGMENT_POSTFIX = ".rec";
 
@@ -324,6 +328,18 @@ public class Archive implements AutoCloseable
         {
             return getDurationInNanos(CONNECT_TIMEOUT_PROP_NAME, CONNECT_TIMEOUT_DEFAULT_NS);
         }
+
+        /**
+         * The timeout in nanoseconds to for a replay network publication to linger after draining.
+         *
+         * @return timeout in nanoseconds for a replay network publication to wait in linger.
+         * @see #REPLAY_LINGER_TIMEOUT_PROP_NAME
+         * @see io.aeron.driver.Configuration#PUBLICATION_LINGER_PROP_NAME
+         */
+        public static long replayLingerTimeoutNs()
+        {
+            return getDurationInNanos(REPLAY_LINGER_TIMEOUT_PROP_NAME, REPLAY_LINGER_TIMEOUT_DEFAULT_NS);
+        }
     }
 
     /**
@@ -352,6 +368,7 @@ public class Archive implements AutoCloseable
         private int recordingEventsStreamId = AeronArchive.Configuration.recordingEventsStreamId();
 
         private long connectTimeoutNs = Configuration.connectTimeoutNs();
+        private long replayLingerTimeoutNs = Configuration.replayLingerTimeoutNs();
         private long maxCatalogEntries = Configuration.maxCatalogEntries();
         private int segmentFileLength = Configuration.segmentFileLength();
         private int fileSyncLevel = Configuration.fileSyncLevel();
@@ -805,6 +822,32 @@ public class Archive implements AutoCloseable
         public long connectTimeoutNs()
         {
             return connectTimeoutNs;
+        }
+
+        /**
+         * The timeout in nanoseconds for or a replay publication to linger after draining.
+         *
+         * @param replayLingerTimeoutNs in nanoseconds for a replay publication to linger after draining.
+         * @return this for a fluent API.
+         * @see Configuration#REPLAY_LINGER_TIMEOUT_PROP_NAME
+         * @see io.aeron.driver.Configuration#PUBLICATION_LINGER_PROP_NAME
+         */
+        public Context replayLingerTimeoutNs(final long replayLingerTimeoutNs)
+        {
+            this.replayLingerTimeoutNs = replayLingerTimeoutNs;
+            return this;
+        }
+
+        /**
+         * The timeout in nanoseconds for a replay publication to linger after draining.
+         *
+         * @return the timeout in nanoseconds for a replay publication to linger after draining.
+         * @see Configuration#REPLAY_LINGER_TIMEOUT_PROP_NAME
+         * @see io.aeron.driver.Configuration#PUBLICATION_LINGER_PROP_NAME
+         */
+        public long replayLingerTimeoutNs()
+        {
+            return replayLingerTimeoutNs;
         }
 
         /**

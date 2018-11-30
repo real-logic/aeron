@@ -51,7 +51,7 @@ public class ChannelUriStringBuilder
     private Integer termId;
     private Integer termOffset;
     private Integer sessionId;
-    private Integer linger;
+    private Long linger;
     private boolean isSessionIdTagged;
 
     /**
@@ -542,14 +542,14 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the time a publication will linger in nanoseconds after being drained. This time is so that tail loss
+     * Set the time a network publication will linger in nanoseconds after being drained. This time is so that tail loss
      * can be recovered.
      *
      * @param lingerNs time for the publication after it is drained.
      * @return this for a fluent API.
      * @see CommonContext#LINGER_PARAM_NAME
      */
-    public ChannelUriStringBuilder linger(final Integer lingerNs)
+    public ChannelUriStringBuilder linger(final Long lingerNs)
     {
         if (null != lingerNs && lingerNs < 0)
         {
@@ -561,13 +561,13 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Get the time a publication will linger in nanoseconds after being drained. This time is so that tail loss
+     * Get the time a network publication will linger in nanoseconds after being drained. This time is so that tail loss
      * can be recovered.
      *
      * @return the linger time in nanoseconds a publication will wait around after being drained.
      * @see CommonContext#LINGER_PARAM_NAME
      */
-    public Integer linger()
+    public Long linger()
     {
         return linger;
     }

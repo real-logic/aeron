@@ -824,14 +824,17 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long position,
         final RecordingSummary recording)
     {
-        final String channel = strippedChannelBuilder(ChannelUri.parse(replayChannel))
+        final ChannelUri channelUri = ChannelUri.parse(replayChannel);
+        final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
             .initialPosition(position, recording.initialTermId, recording.termBufferLength)
-            .mtu(recording.mtuLength)
-            .build();
+            .mtu(recording.mtuLength);
+
+        final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);
+        channelBuilder.linger(null != lingerValue ? Long.parseLong(lingerValue) : ctx.replayLingerTimeoutNs());
 
         try
         {
-            return aeron.addExclusivePublication(channel, replayStreamId);
+            return aeron.addExclusivePublication(channelBuilder.build(), replayStreamId);
         }
         catch (final Exception ex)
         {

@@ -512,10 +512,10 @@ public class PublicationImage
         {
             if (isHeartbeat)
             {
-                if (!isEndOfStream && DataHeaderFlyweight.isEndOfStream(buffer))
+                if (DataHeaderFlyweight.isEndOfStream(buffer) && !isEndOfStream)
                 {
+                    LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), proposedPosition);
                     isEndOfStream = true;
-                    LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), packetPosition);
                 }
 
                 heartbeatsReceived.incrementOrdered();

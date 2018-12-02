@@ -510,9 +510,11 @@ public class PublicationImage
 
         if (!isFlowControlUnderRun(packetPosition) && !isFlowControlOverRun(proposedPosition))
         {
+            updateControlAddress(transportIndex, srcAddress, lastPacketTimestampNs);
+
             if (isHeartbeat)
             {
-                if (DataHeaderFlyweight.isEndOfStream(buffer) && !isEndOfStream)
+                if (DataHeaderFlyweight.isEndOfStream(buffer) && !isEndOfStream && allEos(transportIndex))
                 {
                     LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), proposedPosition);
                     isEndOfStream = true;
@@ -528,7 +530,6 @@ public class PublicationImage
 
             lastPacketTimestampNs = cachedNanoClock.nanoTime();
             hwmPosition.proposeMaxOrdered(proposedPosition);
-            updateControlAddress(transportIndex, srcAddress, lastPacketTimestampNs);
         }
 
         return length;
@@ -793,5 +794,20 @@ public class PublicationImage
         }
 
         controlAddress.timeOfLastFrameNs = nowNs;
+    }
+
+    private boolean allEos(final int eosTransportIndex)
+    {
+        controlAddresses[eosTransportIndex].isEos = true;
+
+        for (final DestinationImageControlAddress destinationImageControlAddress : controlAddresses)
+        {
+            if (!destinationImageControlAddress.isEos)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

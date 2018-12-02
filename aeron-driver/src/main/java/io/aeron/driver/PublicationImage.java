@@ -702,7 +702,7 @@ public class PublicationImage
         switch (state)
         {
             case INACTIVE:
-                if (isDrained() || ((timeOfLastStateChangeNs + imageLivenessTimeoutNs) - timeNs < 0))
+                if (isDrained())
                 {
                     state = State.LINGER;
                     timeOfLastStateChangeNs = timeNs;

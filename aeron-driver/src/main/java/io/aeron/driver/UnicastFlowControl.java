@@ -73,10 +73,9 @@ public class UnicastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public long onIdle(
-        final long timeNs, final long senderLimit, final long senderPosition, final boolean isEndOfStream)
+    public long onIdle(final long timeNs, final long senderLimit, final long senderPosition, final boolean isEos)
     {
-        if (isEndOfStream && shouldLinger)
+        if (isEos && shouldLinger)
         {
             if (lastPosition >= senderPosition || ((timeOfLastStatusMessage + RECEIVER_TIMEOUT_NS) - timeNs < 0))
             {

@@ -377,13 +377,13 @@ public class PublicationImage
 
         if (transport.isMulticast())
         {
-            controlAddresses[transportIndex] =
-                new DestinationImageControlAddress(nanoClock.nanoTime(), transport.udpChannel().remoteControl());
+            controlAddresses[transportIndex] = new DestinationImageControlAddress(
+                nanoClock.nanoTime(), transport.udpChannel().remoteControl());
         }
         else if (transport.hasExplicitControl())
         {
-            controlAddresses[transportIndex] =
-                new DestinationImageControlAddress(nanoClock.nanoTime(), transport.explicitControlAddress());
+            controlAddresses[transportIndex] = new DestinationImageControlAddress(
+                nanoClock.nanoTime(), transport.explicitControlAddress());
         }
     }
 
@@ -571,7 +571,7 @@ public class PublicationImage
                 final long smPosition = nextSmPosition;
                 final int receiverWindowLength = nextSmReceiverWindowLength;
 
-                UNSAFE.loadFence(); // LoadLoad required so previous loads don't move past version check below.
+                UNSAFE.loadFence();
 
                 if (changeNumber == beginSmChange)
                 {
@@ -611,7 +611,7 @@ public class PublicationImage
             final int termOffset = lossTermOffset;
             final int length = lossLength;
 
-            UNSAFE.loadFence(); // LoadLoad required so previous loads don't move past version check below.
+            UNSAFE.loadFence();
 
             if (changeNumber == beginLossChange)
             {
@@ -664,12 +664,14 @@ public class PublicationImage
     /**
      * Called from the {@link Receiver} upon receiving an RTT Measurement that is a reply.
      *
-     * @param header         of the measurement
+     * @param header         of the measurement message.
      * @param transportIndex that the RTT Measurement came in on.
-     * @param srcAddress     from the sender of the measurement
+     * @param srcAddress     from the sender requesting the measurement
      */
     void onRttMeasurement(
-        final RttMeasurementFlyweight header, final int transportIndex, final InetSocketAddress srcAddress)
+        final RttMeasurementFlyweight header,
+        @SuppressWarnings("unused") final int transportIndex,
+        final InetSocketAddress srcAddress)
     {
         final long nowNs = nanoClock.nanoTime();
         final long rttInNs = nowNs - header.echoTimestampNs() - header.receptionDelta();

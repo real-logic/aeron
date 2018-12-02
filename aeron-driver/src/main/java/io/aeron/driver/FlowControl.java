@@ -57,10 +57,10 @@ public interface FlowControl
      * @param timeNs         current time in nanoseconds.
      * @param senderLimit    for the current sender position.
      * @param senderPosition for the current
-     * @param isEndOfStream  for the current sender.
+     * @param isEos          is this end-of-stream for the sender.
      * @return the position limit to be employed by the sender.
      */
-    long onIdle(long timeNs, long senderLimit, long senderPosition, boolean isEndOfStream);
+    long onIdle(long timeNs, long senderLimit, long senderPosition, boolean isEos);
 
     /**
      * Called from the {@link DriverConductor} to check should the {@link NetworkPublication} linger or not.

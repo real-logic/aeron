@@ -109,8 +109,7 @@ public class MinMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public long onIdle(
-        final long timeNs, final long senderLimit, final long senderPosition, final boolean isEndOfStream)
+    public long onIdle(final long timeNs, final long senderLimit, final long senderPosition, final boolean isEos)
     {
         long minPosition = Long.MAX_VALUE;
         long minLimitPosition = Long.MAX_VALUE;
@@ -130,7 +129,7 @@ public class MinMulticastFlowControl implements FlowControl
             }
         }
 
-        if (isEndOfStream && shouldLinger)
+        if (isEos && shouldLinger)
         {
             if (0 == receiverList.size() || minPosition >= senderPosition)
             {

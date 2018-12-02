@@ -52,7 +52,7 @@ std::string makeTempFileName()
 #endif
 }
 
-void throwIllegalArgumentException()
+inline void throwIllegalArgumentException()
 {
     throw util::IllegalArgumentException("Intentional IllegalArgumentException", SOURCEINFO);
 }

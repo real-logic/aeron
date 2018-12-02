@@ -24,6 +24,7 @@ import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -114,6 +115,7 @@ public class FlowControlStrategiesTest
         }
     }
 
+    @Ignore
     @Test(timeout = 10_000)
     public void shouldTimeoutImageWhenBehindForTooLongWithMaxMulticastFlowControlStrategy() throws Exception
     {

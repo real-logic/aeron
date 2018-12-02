@@ -16,6 +16,7 @@
 #ifndef AERON_UTIL_BIT_UTIL_H
 #define AERON_UTIL_BIT_UTIL_H
 
+#include <cassert>
 #include <cstdint>
 #include <type_traits>
 #include <util/Exceptions.h>
@@ -88,6 +89,7 @@ namespace BitUtil
     inline int numberOfLeadingZeroes(value_t value) AERON_NOEXCEPT
     {
 #if defined(__GNUC__)
+        assert(value != 0);
         return __builtin_clz(value);
 #elif defined(_MSC_VER)
         unsigned long r;
@@ -108,6 +110,7 @@ namespace BitUtil
     inline int numberOfTrailingZeroes(value_t value) AERON_NOEXCEPT
     {
 #if defined(__GNUC__)
+        assert(value != 0);
         return __builtin_ctz(value);
 #elif defined(_MSC_VER)
         unsigned long r;

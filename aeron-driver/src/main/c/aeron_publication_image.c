@@ -158,22 +158,21 @@ int aeron_publication_image_create(
     memcpy(&_image->control_address, control_address, sizeof(_image->control_address));
     memcpy(&_image->source_address, source_address, sizeof(_image->source_address));
 
-    _image->heartbeats_received_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_HEARTBEATS_RECEIVED);
-    _image->flow_control_under_runs_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_FLOW_CONTROL_UNDER_RUNS);
-    _image->flow_control_over_runs_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_FLOW_CONTROL_OVER_RUNS);
-    _image->status_messages_sent_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_STATUS_MESSAGES_SENT);
-    _image->nak_messages_sent_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_NAK_MESSAGES_SENT);
-    _image->loss_gap_fills_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_LOSS_GAP_FILLS);
+    _image->heartbeats_received_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_HEARTBEATS_RECEIVED);
+    _image->flow_control_under_runs_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_FLOW_CONTROL_UNDER_RUNS);
+    _image->flow_control_over_runs_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_FLOW_CONTROL_OVER_RUNS);
+    _image->status_messages_sent_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_STATUS_MESSAGES_SENT);
+    _image->nak_messages_sent_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_NAK_MESSAGES_SENT);
+    _image->loss_gap_fills_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_LOSS_GAP_FILLS);
 
-    const int64_t initial_position =
-        aeron_logbuffer_compute_position(
-            active_term_id, initial_term_offset, _image->position_bits_to_shift, initial_term_id);
+    const int64_t initial_position = aeron_logbuffer_compute_position(
+        active_term_id, initial_term_offset, _image->position_bits_to_shift, initial_term_id);
 
     _image->begin_loss_change = -1;
     _image->end_loss_change = -1;
@@ -184,8 +183,8 @@ int aeron_publication_image_create(
     _image->begin_sm_change = -1;
     _image->end_sm_change = -1;
     _image->next_sm_position = initial_position;
-    _image->next_sm_receiver_window_length =
-        _image->congestion_control->initial_window_length(_image->congestion_control->state);
+    _image->next_sm_receiver_window_length = _image->congestion_control->initial_window_length(
+        _image->congestion_control->state);
     _image->last_sm_position = initial_position;
     _image->last_sm_position_window_limit = initial_position + _image->next_sm_receiver_window_length;
     _image->last_packet_timestamp_ns = now_ns;
@@ -409,7 +408,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
             const int64_t sm_position = image->next_sm_position;
             const int32_t receiver_window_length = image->next_sm_receiver_window_length;
 
-            aeron_acquire(); /* loadFence */
+            aeron_acquire();
 
             if (change_number == image->begin_sm_change)
             {
@@ -455,7 +454,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
             const int32_t term_offset = image->loss_term_offset;
             const int32_t length = (int32_t) image->loss_length;
 
-            aeron_acquire(); /* loadFence */
+            aeron_acquire();
 
             if (change_number == image->begin_loss_change)
             {
@@ -547,8 +546,7 @@ void aeron_publication_image_on_time_event(
 
         case AERON_PUBLICATION_IMAGE_STATUS_INACTIVE:
         {
-            if (aeron_publication_image_is_drained(image) ||
-                now_ns > (image->conductor_fields.time_of_last_status_change_ns + image->conductor_fields.liveness_timeout_ns))
+            if (aeron_publication_image_is_drained(image))
             {
                 image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_LINGER;
                 image->conductor_fields.time_of_last_status_change_ns = now_ns;
@@ -560,7 +558,8 @@ void aeron_publication_image_on_time_event(
 
         case AERON_PUBLICATION_IMAGE_STATUS_LINGER:
         {
-            if (now_ns > (image->conductor_fields.time_of_last_status_change_ns + image->conductor_fields.liveness_timeout_ns))
+            if (now_ns >
+                (image->conductor_fields.time_of_last_status_change_ns + image->conductor_fields.liveness_timeout_ns))
             {
                 image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_DONE;
             }

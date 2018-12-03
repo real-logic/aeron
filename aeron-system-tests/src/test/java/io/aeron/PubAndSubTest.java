@@ -785,8 +785,7 @@ public class PubAndSubTest
         final int numMessagesToSend = 2;
         final int numFramesToExpect = numMessagesToSend * numFragmentsPerMessage;
 
-        context.publicationTermBufferLength(termBufferLength)
-            .mtuLength(mtuLength);
+        context.publicationTermBufferLength(termBufferLength);
 
         launch(channel);
 

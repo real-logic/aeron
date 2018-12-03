@@ -41,7 +41,6 @@ public class GapFillLossTest
     private static final int STREAM_ID = 1;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MSG_LENGTH = 1024;
-    private static final int TERM_BUFFER_LENGTH = 1024 * 64;
     private static final int NUM_MESSAGES = 10_000;
 
     private static final AtomicLong FINAL_POSITION = new AtomicLong(Long.MAX_VALUE);
@@ -55,7 +54,7 @@ public class GapFillLossTest
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED)
-            .publicationTermBufferLength(TERM_BUFFER_LENGTH);
+            .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH);
 
         final LossReport lossReport = mock(LossReport.class);
         ctx.lossReport(lossReport);

@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.junit.After;
@@ -49,6 +50,7 @@ public class PublicationUnblockTest
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
         .threadingMode(ThreadingMode.SHARED)
         .errorHandler(Throwable::printStackTrace)
+        .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
         .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(100)));
 

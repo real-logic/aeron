@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.junit.After;
@@ -53,6 +54,7 @@ public class FragmentedMessageTest
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
 
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+        .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .errorHandler(Throwable::printStackTrace)
         .threadingMode(ThreadingMode.SHARED));
 

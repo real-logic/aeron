@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -41,7 +42,7 @@ public class FlowControlStrategiesTest
 
     private static final int STREAM_ID = 1;
 
-    private static final int TERM_BUFFER_LENGTH = 64 * 1024;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int NUM_MESSAGES_PER_TERM = 64;
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
@@ -72,11 +73,13 @@ public class FlowControlStrategiesTest
 
         driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
             .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED);
 
         driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
             .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED);
 

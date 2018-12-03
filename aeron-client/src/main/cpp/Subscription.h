@@ -128,25 +128,23 @@ public:
     template <typename F>
     inline int poll(F&& fragmentHandler, int fragmentLimit)
     {
-        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList->m_length;
-        Image *images = imageList->m_images;
+        auto& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
         int fragmentsRead = 0;
 
         std::size_t startingIndex = m_roundRobinIndex++;
-        if (startingIndex >= length)
+        if (startingIndex >= imageList.size())
         {
             m_roundRobinIndex = startingIndex = 0;
         }
 
-        for (std::size_t i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
+        for (std::size_t i = startingIndex; i < imageList.size() && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageList[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         for (std::size_t i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageList[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
@@ -170,25 +168,23 @@ public:
     template <typename F>
     inline int controlledPoll(F&& fragmentHandler, int fragmentLimit)
     {
-        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList->m_length;
-        Image *images = imageList->m_images;
+        auto& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
         int fragmentsRead = 0;
 
         std::size_t startingIndex = m_roundRobinIndex++;
-        if (startingIndex >= length)
+        if (startingIndex >= imageList.size())
         {
             m_roundRobinIndex = startingIndex = 0;
         }
 
-        for (std::size_t i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
+        for (std::size_t i = startingIndex; i < imageList.size() && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageList[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         for (std::size_t i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageList[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
@@ -204,14 +200,12 @@ public:
     template <typename F>
     inline long blockPoll(F&& blockHandler, int blockLengthLimit)
     {
-        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList->m_length;
-        Image *images = imageList->m_images;
+        auto& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
         long bytesConsumed = 0;
 
-        for (std::size_t i = 0; i < length; i++)
+        for (auto& image : imageList)
         {
-            bytesConsumed += images[i].blockPoll(blockHandler, blockLengthLimit);
+            bytesConsumed += image.blockPoll(blockHandler, blockLengthLimit);
         }
 
         return bytesConsumed;
@@ -224,13 +218,11 @@ public:
      */
     inline bool isConnected() const
     {
-        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList->m_length;
-        Image *images = imageList->m_images;
+        auto& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
 
-        for (std::size_t i = 0; i < length; i++)
+        for (auto& image : imageList)
         {
-            if (!images[i].isClosed())
+            if (!image.isClosed())
             {
                 return true;
             }
@@ -246,7 +238,7 @@ public:
      */
     inline int imageCount() const
     {
-        return static_cast<int>(std::atomic_load_explicit(&m_imageList, std::memory_order_acquire)->m_length);
+        return static_cast<int>(std::atomic_load_explicit(&m_imageList, std::memory_order_acquire)->size());
     }
 
     /**
@@ -260,21 +252,17 @@ public:
      */
     inline std::shared_ptr<Image> imageBySessionId(std::int32_t sessionId) const
     {
-        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList->m_length;
-        Image* images = imageList->m_images;
-        int index = -1;
+        auto& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
 
-        for (int i = 0; i < static_cast<int>(length); i++)
+        for (auto& image : imageList)
         {
-            if (images[i].sessionId() == sessionId)
+            if (image.sessionId() == sessionId)
             {
-                index = i;
-                break;
+                return std::make_shared<Image>(image);
             }
         }
 
-        return index != -1 ? std::make_shared<Image>(images[index]) : std::shared_ptr<Image>();
+        return nullptr;
     }
 
     /**
@@ -287,15 +275,14 @@ public:
      */
     inline Image& imageAtIndex(size_t index)
     {
-        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        Image *images = imageList->m_images;
+        auto& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
 
-        if (index >= imageList->m_length)
+        if (index >= imageList.size())
         {
             throw std::out_of_range("image index out of range");
         }
 
-        return images[index];
+        return imageList[index];
     }
 
     /**
@@ -305,13 +292,13 @@ public:
      */
     inline std::shared_ptr<std::vector<Image>> images() const
     {
+        auto& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
         std::shared_ptr<std::vector<Image>> result(new std::vector<Image>());
 
-        forEachImage(
-            [&](Image& image)
-            {
-                result->push_back(Image(image));
-            });
+        for (auto& image : imageList)
+        {
+            result->push_back(image);
+        }
 
         return result;
     }
@@ -324,16 +311,14 @@ public:
     template <typename F>
     inline int forEachImage(F&& func) const
     {
-        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList->m_length;
-        Image* images = imageList->m_images;
+        auto& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
 
-        for (std::size_t i = 0; i < length; i++)
+        for (auto& image : imageList)
         {
-            func(images[i]);
+            func(image);
         }
 
-        return static_cast<int>(length);
+        return static_cast<int>(imageList.size());
     }
 
     /**
@@ -349,96 +334,68 @@ public:
     /// @cond HIDDEN_SYMBOLS
     bool hasImage(std::int64_t correlationId) const
     {
-        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList->m_length;
-        Image *images = imageList->m_images;
-        bool isConnected = false;
+        auto& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
 
-        for (std::size_t i = 0; i < length; i++)
+        for (auto& image : imageList)
         {
-            if (images[i].correlationId() == correlationId)
+            if (image.correlationId() == correlationId)
             {
-                isConnected = true;
-                break;
+                return true;
             }
         }
 
-        return isConnected;
+        return false;
     }
 
-    struct ImageList *addImage(Image &image)
+    ImageList *addImage(Image &image)
     {
-        struct ImageList *oldImageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        Image *oldArray = oldImageList->m_images;
-        std::size_t length = oldImageList->m_length;
-        auto newArray = new Image[length + 1];
+        auto& oldImageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
+        auto& newImageList = *new ImageList;
+        newImageList.reserve(oldImageList.size() + 1);
+        std::copy(oldImageList.begin(), oldImageList.end(), std::back_inserter(newImageList));
+        newImageList.push_back(image);
+        std::atomic_store_explicit(&m_imageList, &newImageList, std::memory_order_release);
 
-        for (std::size_t i = 0; i < length; i++)
-        {
-            newArray[i] = oldArray[i];
-        }
-
-        newArray[length] = image; // copy-assign
-
-        auto newImageList = new struct ImageList(newArray, length + 1);
-        std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
-
-        return oldImageList;
+        return &oldImageList;
     }
 
-    std::pair<struct ImageList *, int> removeImage(std::int64_t correlationId)
+    std::pair<ImageList *, int> removeImage(std::int64_t correlationId)
     {
-        struct ImageList *oldImageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        Image * oldArray = oldImageList->m_images;
-        auto length = static_cast<int>(oldImageList->m_length);
-        int index = -1;
+        auto& oldImageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
 
-        for (int i = 0; i < length; i++)
+        for (auto it = oldImageList.begin(); it != oldImageList.end(); ++it)
         {
-            if (oldArray[i].correlationId() == correlationId)
+            auto& image = *it;
+            if (image.correlationId() == correlationId)
             {
-                oldArray[i].close();
-                index = i;
-                break;
+                image.close();
+                auto& newImageList = *new ImageList;
+                newImageList.reserve(oldImageList.size() - 1);
+                std::copy(oldImageList.begin(), it, std::back_inserter(newImageList));
+                std::copy(it + 1, oldImageList.end(), std::back_inserter(newImageList));
+                std::atomic_store_explicit(&m_imageList, &newImageList, std::memory_order_release);
+                return {&oldImageList, static_cast<int>(std::distance(oldImageList.begin(), it))};
             }
         }
 
-        if (-1 != index)
-        {
-            auto newArray = new Image[length - 1];
-
-            for (int i = 0, j = 0; i < length; i++)
-            {
-                if (i != index)
-                {
-                    newArray[j++] = oldArray[i];
-                }
-            }
-
-            auto newImageList = new struct ImageList(newArray, static_cast<size_t>(length - 1));
-            std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
-        }
-
-        return std::pair<struct ImageList *, int>(-1 != index ? oldImageList : nullptr, index);
+        return {nullptr, -1};
     }
 
-    struct ImageList *removeAndCloseAllImages()
+    ImageList *removeAndCloseAllImages()
     {
-        struct ImageList *oldImageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        Image *oldArray = oldImageList->m_images;
-        std::size_t length = oldImageList->m_length;
+        auto& oldImageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
 
-        for (std::size_t i = 0; i < length; i++)
+        for (auto& image : oldImageList)
         {
-            oldArray[i].close();
+            image.close();
         }
 
-        auto newImageList = new struct ImageList(new Image[0], 0);
+        auto newImageList = new ImageList;
 
         std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
         std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
 
-        return oldImageList;
+        return &oldImageList;
     }
     /// @endcond
 
@@ -457,7 +414,7 @@ private:
     std::int64_t m_registrationId;
     std::int32_t m_streamId;
 
-    std::atomic<struct ImageList*> m_imageList;
+    std::atomic<ImageList*> m_imageList;
     std::atomic<bool> m_isClosed;
 };
 

@@ -30,7 +30,7 @@ Subscription::Subscription(
     m_channelStatusId(channelStatusId),
     m_registrationId(registrationId),
     m_streamId(streamId),
-    m_imageList(new struct ImageList(new Image[0], 0)),
+    m_imageList(new ImageList),
     m_isClosed(false)
 {
 }

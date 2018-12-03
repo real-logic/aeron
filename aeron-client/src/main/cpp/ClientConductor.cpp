@@ -32,7 +32,6 @@ ClientConductor::~ClientConductor()
     std::for_each(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
         [](ImageListLingerDefn &entry)
         {
-            delete[] entry.m_imageList->m_images;
             delete entry.m_imageList;
             entry.m_imageList = nullptr;
         });
@@ -293,7 +292,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     return sub;
 }
 
-void ClientConductor::releaseSubscription(std::int64_t registrationId, struct ImageList *imageList)
+void ClientConductor::releaseSubscription(std::int64_t registrationId, ImageList *imageList)
 {
     verifyDriverIsActiveViaErrorHandler();
 
@@ -309,9 +308,9 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
     {
         m_driverProxy.removeSubscription((*it).m_registrationId);
 
-        for (std::size_t i = 0; i < imageList->m_length; i++)
+        for (auto& image : *imageList)
         {
-            (*it).m_onUnavailableImageHandler(imageList->m_images[i]);
+            (*it).m_onUnavailableImageHandler(image);
         }
 
         m_subscriptions.erase(it);
@@ -320,7 +319,6 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
     }
     else if (nullptr != imageList)
     {
-        delete[] imageList->m_images;
         delete imageList;
     }
 }
@@ -661,7 +659,7 @@ void ClientConductor::onAvailableImage(
 
                     entry.m_onAvailableImageHandler(image);
 
-                    struct ImageList *oldImageList = subscription->addImage(image);
+                    ImageList *oldImageList = subscription->addImage(image);
 
                     if (nullptr != oldImageList)
                     {
@@ -686,17 +684,15 @@ void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_
 
                 if (nullptr != subscription)
                 {
-                    std::pair<struct ImageList *, int> result = subscription->removeImage(correlationId);
-                    struct ImageList *oldImageList = result.first;
+                    std::pair<ImageList *, int> result = subscription->removeImage(correlationId);
+                    ImageList *oldImageList = result.first;
                     const int index = result.second;
 
                     if (nullptr != oldImageList)
                     {
-                        Image *oldArray = oldImageList->m_images;
-
-                        lingerResource(now, oldArray[index].logBuffers());
+                        lingerResource(now, (*oldImageList)[index].logBuffers());
                         lingerResource(now, oldImageList);
-                        entry.m_onUnavailableImageHandler(oldArray[index]);
+                        entry.m_onUnavailableImageHandler((*oldImageList)[index]);
                     }
                 }
             }
@@ -781,7 +777,6 @@ void ClientConductor::onCheckManagedResources(long long now)
         {
             if (now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs))
             {
-                delete[] entry.m_imageList->m_images;
                 delete entry.m_imageList;
                 entry.m_imageList = nullptr;
                 return true;
@@ -793,7 +788,7 @@ void ClientConductor::onCheckManagedResources(long long now)
     m_lingeringImageLists.erase(arrayIt, m_lingeringImageLists.end());
 }
 
-void ClientConductor::lingerResource(long long now, struct ImageList *imageList)
+void ClientConductor::lingerResource(long long now, ImageList *imageList)
 {
     m_lingeringImageLists.emplace_back(now, imageList);
 }
@@ -803,13 +798,13 @@ void ClientConductor::lingerResource(long long now, std::shared_ptr<LogBuffers> 
     m_lingeringLogBuffers.emplace_back(now, logBuffers);
 }
 
-void ClientConductor::lingerAllResources(long long now, struct ImageList *imageList)
+void ClientConductor::lingerAllResources(long long now, ImageList *imageList)
 {
     if (nullptr != imageList)
     {
-        for (std::size_t i = 0; i < imageList->m_length; i++)
+        for (auto& image : *imageList)
         {
-            lingerResource(now, imageList->m_images[i].logBuffers());
+            lingerResource(now, image.logBuffers());
         }
 
         lingerResource(now, imageList);

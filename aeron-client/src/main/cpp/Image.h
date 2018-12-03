@@ -798,17 +798,7 @@ private:
     }
 };
 
-struct ImageList
-{
-    Image *m_images;
-    std::size_t m_length;
-
-    ImageList(Image *images, std::size_t length) :
-        m_images(images),
-        m_length(length)
-    {
-    }
-};
+using ImageList = std::vector<Image>;
 
 }
 

@@ -89,12 +89,6 @@ class Image
 public:
     typedef Image this_t;
 
-    Image() :
-        m_header(0, 0, this),
-        m_subscriberPosition(NULL_UNSAFE_BUFFER_POSITION)
-    {
-    }
-
     /**
      * Construct a new image over a log to represent a stream of messages from a {@link Publication}.
      *

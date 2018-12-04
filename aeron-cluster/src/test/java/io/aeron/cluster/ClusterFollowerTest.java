@@ -690,7 +690,7 @@ public class ClusterFollowerTest
         return counters.getCounterValue(SystemCounterDescriptor.ERRORS.id());
     }
 
-    private void startMessageThread(final ExpandableArrayBuffer msgBuffer, long intervalNs)
+    private void startMessageThread(final ExpandableArrayBuffer msgBuffer, final long intervalNs)
     {
         executor.submit(() ->
         {

@@ -311,7 +311,7 @@ public:
      * @param index in the array
      * @return image at given index or exception if out of range.
      */
-    inline Image& imageAtIndex(size_t index) const
+    inline Image& imageAtIndex(size_t index)
     {
         const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
         Image *images = imageList->m_images;

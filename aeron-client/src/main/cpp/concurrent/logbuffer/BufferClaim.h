@@ -84,6 +84,52 @@ public:
     }
 
     /**
+ * Get the value of the flags field.
+ *
+ * @return the value of the header flags field.
+ */
+    inline std::uint8_t flags() const
+    {
+        return m_buffer.getUInt8(DataFrameHeader::FLAGS_FIELD_OFFSET);
+    }
+
+    /**
+     * Set the value of the header flags field.
+     *
+     * @param flags value to be set in the header.
+     * @return this for a fluent API.
+     */
+    inline this_t& flags(const std::uint8_t flags)
+    {
+        m_buffer.putUInt8(DataFrameHeader::FLAGS_FIELD_OFFSET, flags);
+
+        return *this;
+    }
+
+    /**
+     * Get the value of the header type field.
+     *
+     * @return the value of the header type field.
+     */
+    inline std::uint16_t headerType() const
+    {
+        return m_buffer.getUInt16(DataFrameHeader::TYPE_FIELD_OFFSET);
+    }
+
+    /**
+     * Set the value of the header type field.
+     *
+     * @param type value to be set in the header.
+     * @return this for a fluent API.
+     */
+    inline this_t& headerType(const std::uint16_t type)
+    {
+        m_buffer.putUInt16(DataFrameHeader::TYPE_FIELD_OFFSET, type);
+
+        return *this;
+    }
+
+    /**
      * Get the value stored in the reserve space at the end of a data frame header.
      *
      * @return the value stored in the reserve space at the end of a data frame header.

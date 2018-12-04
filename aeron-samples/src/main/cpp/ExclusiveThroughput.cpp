@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 
         do
         {
-            ExclusiveBufferClaim bufferClaim;
+            BufferClaim bufferClaim;
             std::uint64_t backPressureCount = 0;
 
             printingActive = true;

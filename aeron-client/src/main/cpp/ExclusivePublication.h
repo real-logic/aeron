@@ -46,7 +46,7 @@ using namespace aeron::concurrent::status;
  * <b>Note:</b> ExclusivePublication instances are NOT threadsafe for offer and try claim methods but are for others.
  *
  * @see Aeron#addExclusivePublication(String, int)
- * @see ExclusiveBufferClaim
+ * @see BufferClaim
  */
 class ExclusivePublication
 {
@@ -487,6 +487,7 @@ public:
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
      * @see BufferClaim::commit
+     * @see BufferClaim::abort
      */
     inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
     {

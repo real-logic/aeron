@@ -149,7 +149,7 @@ TEST_F(ExclusivePublicationTest, shouldEnsureThePublicationIsOpenBeforeOffer)
 
 TEST_F(ExclusivePublicationTest, shouldEnsureThePublicationIsOpenBeforeClaim)
 {
-    ExclusiveBufferClaim bufferClaim;
+    BufferClaim bufferClaim;
 
     createPub();
     m_publication->close();
@@ -218,7 +218,7 @@ TEST_F(ExclusivePublicationTest, shouldRotateWhenClaimTrips)
 
     createPub();
 
-    ExclusiveBufferClaim bufferClaim;
+    BufferClaim bufferClaim;
     EXPECT_EQ(m_publication->position(), initialPosition);
     EXPECT_EQ(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), ADMIN_ACTION);
 

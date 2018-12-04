@@ -497,9 +497,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             return;
         }
 
-        final RecordingSummary originalRecordingSummary = new RecordingSummary();
-        catalog.recordingSummary(recordingId, originalRecordingSummary);
-
         try
         {
             final ChannelUri channelUri = ChannelUri.parse(originalChannel);
@@ -518,7 +515,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                     recordingId,
                     strippedChannel,
                     originalChannel,
-                    originalRecordingSummary,
                     image));
 
                 final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
@@ -783,11 +779,19 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long recordingId,
         final String strippedChannel,
         final String originalChannel,
-        final RecordingSummary originalRecordingSummary,
         final Image image)
     {
+        if (recordingSessionByIdMap.containsKey(recordingId))
+        {
+            final String msg = "cannot extend active recording for " + recordingId;
+            controlSession.attemptErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
+            throw new ArchiveException(msg);
+        }
+
         validateMaxConcurrentRecordings(controlSession, correlationId, originalChannel, image);
-        validateImageForExtendRecording(correlationId, controlSession, image, originalRecordingSummary);
+
+        catalog.recordingSummary(recordingId, recordingSummary);
+        validateImageForExtendRecording(correlationId, controlSession, image, recordingSummary);
 
         final Counter position = RecordingPos.allocate(
             aeron,
@@ -803,8 +807,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         final RecordingSession session = new RecordingSession(
             recordingId,
-            originalRecordingSummary.startPosition,
-            originalRecordingSummary.segmentFileLength,
+            recordingSummary.startPosition,
+            recordingSummary.segmentFileLength,
             originalChannel,
             recordingEventsProxy,
             image,

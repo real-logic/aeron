@@ -117,6 +117,7 @@ public:
      *
      * @param endOfStreamHandler callback for handling end of stream indication.
      * @return number of Image s that have reached End of Stream.
+     * @deprecated
      */
     template <typename F>
     inline int pollEndOfStreams(F&& endOfStreamHandler) const

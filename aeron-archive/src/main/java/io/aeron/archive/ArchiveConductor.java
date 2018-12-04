@@ -510,12 +510,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
                 final AvailableImageHandler handler = (image) -> taskQueue.addLast(() -> extendRecordingSession(
-                    controlSession,
-                    correlationId,
-                    recordingId,
-                    strippedChannel,
-                    originalChannel,
-                    image));
+                    controlSession, correlationId, recordingId, strippedChannel, originalChannel, image));
 
                 final Subscription subscription = aeron.addSubscription(channel, streamId, handler, null);
 

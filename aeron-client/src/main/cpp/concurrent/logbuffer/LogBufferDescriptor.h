@@ -295,7 +295,7 @@ inline static std::int64_t rawTailVolatile(const AtomicBuffer& logMetaDataBuffer
     return logMetaDataBuffer.getInt64Volatile(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));
 }
 
-inline static std::int64_t rawTail(AtomicBuffer& logMetaDataBuffer)
+inline static std::int64_t rawTail(const AtomicBuffer& logMetaDataBuffer)
 {
     const std::int32_t partitionIndex = indexByTermCount(activeTermCount(logMetaDataBuffer));
     return logMetaDataBuffer.getInt64(TERM_TAIL_COUNTER_OFFSET + (partitionIndex * sizeof(std::int64_t)));

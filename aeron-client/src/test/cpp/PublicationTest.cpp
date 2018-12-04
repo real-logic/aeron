@@ -42,7 +42,7 @@ static const std::int32_t TERM_ID_1 = 1;
 
 inline std::int64_t rawTailValue(std::int32_t termId, std::int64_t position)
 {
-    return (static_cast<std::int64_t>(termId) << 32) | position;
+    return (termId * ((int64_t(1) << 32))) | position;
 }
 
 inline util::index_t termTailCounterOffset(const int index)

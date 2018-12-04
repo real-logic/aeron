@@ -26,7 +26,7 @@ using namespace aeron;
 #define LOG_META_DATA_LENGTH (LogBufferDescriptor::LOG_META_DATA_LENGTH)
 #define SRC_BUFFER_LENGTH 1024
 
-static_assert(LogBufferDescriptor::PARTITION_COUNT==3, "partition count assumed to be 3 for these test");
+static_assert(LogBufferDescriptor::PARTITION_COUNT == 3, "partition count assumed to be 3 for these test");
 
 typedef std::array<std::uint8_t, ((TERM_LENGTH * 3) + LOG_META_DATA_LENGTH)> term_buffer_t;
 typedef std::array<std::uint8_t, SRC_BUFFER_LENGTH> src_buffer_t;
@@ -41,7 +41,7 @@ static const std::int32_t TERM_ID_1 = 1;
 
 inline std::int64_t rawTailValue(std::int32_t termId, std::int64_t position)
 {
-    return (static_cast<std::int64_t>(termId) << 32) | position;
+    return (termId * ((int64_t(1) << 32))) | position;
 }
 
 inline util::index_t termTailCounterOffset(const int index)

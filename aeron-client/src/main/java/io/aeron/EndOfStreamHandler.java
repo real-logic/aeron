@@ -18,6 +18,7 @@ package io.aeron;
 /**
  * Interface for delivery of End of Stream image notification to a {@link Subscription}.
  */
+@Deprecated
 @FunctionalInterface
 public interface EndOfStreamHandler
 {

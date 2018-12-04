@@ -160,6 +160,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      * @param endOfStreamHandler callback for handling end of stream indication.
      * @return number of {@link Image} that have reached End of Stream.
      */
+    @Deprecated
     public int pollEndOfStreams(final EndOfStreamHandler endOfStreamHandler)
     {
         int eosCount = 0;

@@ -25,7 +25,9 @@
 #include <concurrent/logbuffer/TermBlockScanner.h>
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include <algorithm>
+#include <array>
 #include <atomic>
+#include <cassert>
 #include "LogBuffers.h"
 
 namespace aeron {
@@ -140,38 +142,29 @@ public:
     }
 
     Image(const Image& image) :
+        m_termBuffers(image.m_termBuffers),
         m_header(image.m_header),
         m_subscriberPosition(image.m_subscriberPosition),
+        m_logBuffers(image.m_logBuffers),
         m_sourceIdentity(image.m_sourceIdentity),
         m_isClosed(image.isClosed()),
-        m_exceptionHandler(image.m_exceptionHandler)
+        m_exceptionHandler(image.m_exceptionHandler),
+        m_correlationId(image.m_correlationId),
+        m_subscriptionRegistrationId(image.m_subscriptionRegistrationId),
+        m_joinPosition(image.m_joinPosition),
+        m_finalPosition(image.m_finalPosition),
+        m_sessionId(image.m_sessionId),
+        m_termLengthMask(image.m_termLengthMask),
+        m_positionBitsToShift(image.m_positionBitsToShift),
+        m_isEos(image.m_isEos)
     {
-        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
-        {
-            m_termBuffers[i].wrap(image.m_termBuffers[i]);
-        }
-
-        m_subscriberPosition.wrap(image.m_subscriberPosition);
-        m_logBuffers = image.m_logBuffers;
-        m_correlationId = image.m_correlationId;
-        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
-        m_joinPosition = image.m_joinPosition;
-        m_finalPosition = image.m_finalPosition;
-        m_sessionId = image.m_sessionId;
-        m_termLengthMask = image.m_termLengthMask;
-        m_positionBitsToShift = image.m_positionBitsToShift;
-        m_isEos = image.m_isEos;
     }
 
-    Image& operator=(Image& image)
+    Image& operator=(const Image& image)
     {
-        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
-        {
-            m_termBuffers[i].wrap(image.m_termBuffers[i]);
-        }
-
+        m_termBuffers = image.m_termBuffers;
         m_header = image.m_header;
-        m_subscriberPosition.wrap(image.m_subscriberPosition);
+        m_subscriberPosition = image.m_subscriberPosition;
         m_logBuffers = image.m_logBuffers;
         m_sourceIdentity = image.m_sourceIdentity;
         m_isClosed = image.isClosed();
@@ -355,8 +348,9 @@ public:
         {
             const std::int64_t position = m_subscriberPosition.get();
             const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
-                position, m_positionBitsToShift)];
+            const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
+            assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
+            AtomicBuffer &termBuffer = m_termBuffers[index];
             TermReader::ReadOutcome readOutcome;
 
             TermReader::read(readOutcome, termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
@@ -395,8 +389,9 @@ public:
             int fragmentsRead = 0;
             std::int64_t initialPosition = m_subscriberPosition.get();
             std::int32_t initialOffset = (std::int32_t) initialPosition & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
-                initialPosition, m_positionBitsToShift)];
+            const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
+            assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
+            AtomicBuffer &termBuffer = m_termBuffers[index];
             std::int32_t resultingOffset = initialOffset;
             const util::index_t capacity = termBuffer.capacity();
 
@@ -489,8 +484,9 @@ public:
             int fragmentsRead = 0;
             std::int64_t initialPosition = m_subscriberPosition.get();
             std::int32_t initialOffset = (std::int32_t) initialPosition & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
-                initialPosition, m_positionBitsToShift)];
+            const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
+            assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
+            AtomicBuffer &termBuffer = m_termBuffers[index];
             std::int32_t resultingOffset = initialOffset;
             const std::int64_t capacity = termBuffer.capacity();
             const std::int32_t endOffset =
@@ -587,8 +583,9 @@ public:
             std::int32_t initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
             std::int32_t offset = initialOffset;
             std::int64_t position = initialPosition;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
-                initialPosition, m_positionBitsToShift)];
+            const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
+            assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
+            AtomicBuffer &termBuffer = m_termBuffers[index];
             const util::index_t capacity = termBuffer.capacity();
 
             m_header.buffer(termBuffer);
@@ -677,8 +674,9 @@ public:
         {
             const std::int64_t position = m_subscriberPosition.get();
             const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
-            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(
-                position, m_positionBitsToShift)];
+            const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
+            assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
+            AtomicBuffer &termBuffer = m_termBuffers[index];
             const std::int32_t limitOffset = std::min(termOffset + blockLengthLimit, termBuffer.capacity());
             const std::int32_t resultingOffset = TermBlockScanner::scan(termBuffer, termOffset, limitOffset);
             const std::int32_t length = resultingOffset - termOffset;
@@ -723,7 +721,7 @@ public:
     /// @endcond
 
 private:
-    AtomicBuffer m_termBuffers[LogBufferDescriptor::PARTITION_COUNT];
+    std::array<AtomicBuffer, LogBufferDescriptor::PARTITION_COUNT> m_termBuffers;
     Header m_header;
     Position<UnsafeBufferPosition> m_subscriberPosition;
     std::shared_ptr<LogBuffers> m_logBuffers;

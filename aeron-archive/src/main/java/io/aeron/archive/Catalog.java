@@ -436,7 +436,7 @@ class Catalog implements AutoCloseable
 
                 if (sessionId == descriptorDecoder.sessionId() &&
                     streamId == descriptorDecoder.streamId() &&
-                    descriptorDecoder.strippedChannel().contains(channel))
+                    descriptorDecoder.originalChannel().contains(channel))
                 {
                     return recordingId;
                 }

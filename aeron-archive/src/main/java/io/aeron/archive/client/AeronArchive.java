@@ -776,7 +776,7 @@ public class AeronArchive implements AutoCloseable
      *
      * @param fromRecordingId at which to begin the listing.
      * @param recordCount     to limit for each query.
-     * @param channel         for a contains match on the stripped channel stored with the archive descriptor
+     * @param channel         for a contains match on the original channel stored with the archive descriptor.
      * @param streamId        to match.
      * @param consumer        to which the descriptors are dispatched.
      * @return the number of descriptors found and consumed.
@@ -897,7 +897,7 @@ public class AeronArchive implements AutoCloseable
      * Find the last recording that matches the given criteria.
      *
      * @param minRecordingId to search back to.
-     * @param channel        for a contains match on the stripped channel stored with the archive descriptor
+     * @param channel        for a contains match on the original channel stored with the archive descriptor.
      * @param streamId       of the recording to match.
      * @param sessionId      of the recording to match.
      * @return the recordingId if found otherwise {@link Aeron#NULL_VALUE} if not found.

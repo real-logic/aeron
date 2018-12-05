@@ -333,7 +333,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 correlationId,
                 fromRecordingId,
                 count,
-                strippedChannelBuilder(ChannelUri.parse(channel)).build(),
+                channel,
                 streamId,
                 catalog,
                 controlResponseProxy,

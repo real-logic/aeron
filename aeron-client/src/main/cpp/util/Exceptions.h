@@ -54,7 +54,7 @@ private:
 
 public:
     SourcedException(const std::string &what, const std::string& function, const std::string& file, const int line) :
-        m_where(static_cast<std::ostringstream&>(std::ostringstream() << function << " : " << file  << " : " << line).str()),
+        m_where(reinterpret_cast<std::ostringstream&>(std::ostringstream() << function << " : " << file  << " : " << line).str()),
         m_what(what)
     {
     }

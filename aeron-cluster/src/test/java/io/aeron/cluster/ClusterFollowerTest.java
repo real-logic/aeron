@@ -113,6 +113,11 @@ public class ClusterFollowerTest
         for (final ClusteredServiceContainer container : containers)
         {
             CloseHelper.close(container);
+
+            if (null != container)
+            {
+                container.context().deleteDirectory();
+            }
         }
 
         for (final ClusteredMediaDriver driver : clusteredMediaDrivers)
@@ -492,6 +497,7 @@ public class ClusterFollowerTest
         containers[index].close();
         containers[index] = null;
         clusteredMediaDrivers[index].close();
+        clusteredMediaDrivers[index].mediaDriver().context().deleteAeronDirectory();
         clusteredMediaDrivers[index] = null;
     }
 
@@ -694,6 +700,8 @@ public class ClusterFollowerTest
     {
         executor.submit(() ->
         {
+            //final IdleStrategy idleStrategy = new YieldingIdleStrategy();
+
             while (true)
             {
                 while (client.offer(msgBuffer, 0, MSG.length()) < 0)
@@ -706,7 +714,9 @@ public class ClusterFollowerTest
                     client.pollEgress();
                     LockSupport.parkNanos(intervalNs);
                 }
+
                 client.pollEgress();
+                //idleStrategy.idle();
             }
         });
     }

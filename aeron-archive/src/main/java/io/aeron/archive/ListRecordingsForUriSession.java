@@ -21,18 +21,18 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 class ListRecordingsForUriSession extends AbstractListRecordingsSession
 {
-    private final RecordingDescriptorDecoder decoder;
-    private final int count;
-    private final String channel;
-    private final int streamId;
-    private int sent = 0;
     private long recordingId;
+    private int sent = 0;
+    private final int count;
+    private final int streamId;
+    private final String channelFragment;
+    private final RecordingDescriptorDecoder decoder;
 
     ListRecordingsForUriSession(
         final long correlationId,
         final long fromRecordingId,
         final int count,
-        final String channel,
+        final String channelFragment,
         final int streamId,
         final Catalog catalog,
         final ControlResponseProxy proxy,
@@ -44,8 +44,8 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 
         this.recordingId = fromRecordingId;
         this.count = count;
-        this.channel = channel;
         this.streamId = streamId;
+        this.channelFragment = channelFragment;
         this.decoder = recordingDescriptorDecoder;
     }
 
@@ -72,7 +72,7 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
 
             if (Catalog.isValidDescriptor(descriptorBuffer) &&
                 decoder.streamId() == streamId &&
-                decoder.originalChannel().contains(channel))
+                Catalog.originalChannelContains(decoder, channelFragment))
             {
                 final int bytesSent = controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy);
                 if (bytesSent == 0)

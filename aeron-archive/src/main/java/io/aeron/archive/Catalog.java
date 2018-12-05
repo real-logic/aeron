@@ -436,7 +436,7 @@ class Catalog implements AutoCloseable
 
                 if (sessionId == descriptorDecoder.sessionId() &&
                     streamId == descriptorDecoder.streamId() &&
-                    descriptorDecoder.originalChannel().contains(channel))
+                    originalChannelContains(descriptorDecoder, channel))
                 {
                     return recordingId;
                 }
@@ -450,6 +450,16 @@ class Catalog implements AutoCloseable
     // Methods for access specific record fields by recordingId.
     // Note: These methods are thread safe.
     /////////////////////////////////////////////////////////////
+
+    public static boolean originalChannelContains(
+        final RecordingDescriptorDecoder descriptorDecoder, final String channelFragment)
+    {
+        descriptorDecoder.limit(descriptorDecoder.limit() +
+            RecordingDescriptorDecoder.strippedChannelHeaderLength() +
+            descriptorDecoder.strippedChannelLength());
+
+        return descriptorDecoder.originalChannel().contains(channelFragment);
+    }
 
     public void recordingStopped(final long recordingId, final long position, final long timestamp)
     {

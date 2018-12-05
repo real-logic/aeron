@@ -42,6 +42,7 @@ public class ChannelUriStringBuilder
     private String controlEndpoint;
     private String controlMode;
     private String tags;
+    private String alias;
     private Boolean reliable;
     private Boolean sparse;
     private Integer ttl;
@@ -68,6 +69,7 @@ public class ChannelUriStringBuilder
         controlEndpoint = null;
         controlMode = null;
         tags = null;
+        alias = null;
         reliable = null;
         ttl = null;
         mtu = null;
@@ -627,6 +629,30 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set the alias for a URI. Alias's are not interpreted by Aeron and are to be used by the application
+     *
+     * @param alias for the URI.
+     * @return this for a fluent API.
+     * @see CommonContext#ALIAS_PARAM_NAME
+     */
+    public ChannelUriStringBuilder alias(final String alias)
+    {
+        this.alias = alias;
+        return this;
+    }
+
+    /**
+     * Get the alias present in the URI.
+     *
+     * @return alias for the URI.
+     * @see CommonContext#ALIAS_PARAM_NAME
+     */
+    public String alias()
+    {
+        return alias;
+    }
+
+    /**
      * Initialise a channel for restarting a publication at a given position.
      *
      * @param position      at which the publication should be started.
@@ -735,6 +761,11 @@ public class ChannelUriStringBuilder
         if (null != linger)
         {
             sb.append(LINGER_PARAM_NAME).append('=').append(linger.intValue()).append('|');
+        }
+
+        if (null != alias)
+        {
+            sb.append(ALIAS_PARAM_NAME).append('=').append(alias).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

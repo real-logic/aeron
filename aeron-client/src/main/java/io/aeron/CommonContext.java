@@ -195,6 +195,11 @@ public class CommonContext implements AutoCloseable, Cloneable
      */
     public static final String SPARSE_PARAM_NAME = "sparse";
 
+    /**
+     * Parameter name for channel URI param to indicate an alias for the given URI. Value not interpreted by Aeron.
+     */
+    public static final String ALIAS_PARAM_NAME = "alias";
+
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName = getAeronDirectoryName();
     private File aeronDirectory;

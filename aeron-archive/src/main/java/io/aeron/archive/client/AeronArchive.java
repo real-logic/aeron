@@ -770,13 +770,14 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * List recording descriptors from a recording id with a limit of record count for a given channel and stream id.
+     * List recording descriptors from a recording id with a limit of record count for a given channelFragment and
+     * stream id.
      * <p>
      * If the recording id is greater than the largest known id then nothing is returned.
      *
      * @param fromRecordingId at which to begin the listing.
      * @param recordCount     to limit for each query.
-     * @param channel         for a contains match on the original channel stored with the archive descriptor.
+     * @param channelFragment for a contains match on the original channel stored with the archive descriptor.
      * @param streamId        to match.
      * @param consumer        to which the descriptors are dispatched.
      * @return the number of descriptors found and consumed.
@@ -784,7 +785,7 @@ public class AeronArchive implements AutoCloseable
     public int listRecordingsForUri(
         final long fromRecordingId,
         final int recordCount,
-        final String channel,
+        final String channelFragment,
         final int streamId,
         final RecordingDescriptorConsumer consumer)
     {
@@ -796,7 +797,7 @@ public class AeronArchive implements AutoCloseable
             if (!archiveProxy.listRecordingsForUri(
                 fromRecordingId,
                 recordCount,
-                channel,
+                channelFragment,
                 streamId,
                 correlationId,
                 controlSessionId))
@@ -896,14 +897,14 @@ public class AeronArchive implements AutoCloseable
     /**
      * Find the last recording that matches the given criteria.
      *
-     * @param minRecordingId to search back to.
-     * @param channel        for a contains match on the original channel stored with the archive descriptor.
-     * @param streamId       of the recording to match.
-     * @param sessionId      of the recording to match.
+     * @param minRecordingId  to search back to.
+     * @param channelFragment for a contains match on the original channel stored with the archive descriptor.
+     * @param streamId        of the recording to match.
+     * @param sessionId       of the recording to match.
      * @return the recordingId if found otherwise {@link Aeron#NULL_VALUE} if not found.
      */
     public long findLastMatchingRecording(
-        final long minRecordingId, final String channel, final int streamId, final int sessionId)
+        final long minRecordingId, final String channelFragment, final int streamId, final int sessionId)
     {
         lock.lock();
         try
@@ -911,7 +912,7 @@ public class AeronArchive implements AutoCloseable
             final long correlationId = aeron.nextCorrelationId();
 
             if (!archiveProxy.findLastMatchingRecording(
-                minRecordingId, channel, streamId, sessionId, correlationId, controlSessionId))
+                minRecordingId, channelFragment, streamId, sessionId, correlationId, controlSessionId))
             {
                 throw new ArchiveException("failed to send find last matching request");
             }

@@ -458,13 +458,12 @@ class Catalog implements AutoCloseable
             RecordingDescriptorDecoder.strippedChannelHeaderLength() +
             descriptorDecoder.strippedChannelLength());
 
-        return descriptorDecoder.originalChannel().contains(channelFragment);
+        return descriptorDecoder.originalChannel().indexOf(channelFragment, 0) > -1;
     }
 
     public void recordingStopped(final long recordingId, final long position, final long timestamp)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
-
         final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
 
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), timestamp, BYTE_ORDER);

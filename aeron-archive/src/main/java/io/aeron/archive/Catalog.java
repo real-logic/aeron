@@ -454,11 +454,21 @@ class Catalog implements AutoCloseable
     public static boolean originalChannelContains(
         final RecordingDescriptorDecoder descriptorDecoder, final String channelFragment)
     {
-        descriptorDecoder.limit(descriptorDecoder.limit() +
+        if (channelFragment.isEmpty())
+        {
+            return true;
+        }
+
+        final int limit = descriptorDecoder.limit();
+
+        descriptorDecoder.limit(limit +
             RecordingDescriptorDecoder.strippedChannelHeaderLength() +
             descriptorDecoder.strippedChannelLength());
 
-        return descriptorDecoder.originalChannel().indexOf(channelFragment, 0) > -1;
+        final String originalChannel = descriptorDecoder.originalChannel();
+        descriptorDecoder.limit(limit);
+
+        return originalChannel.indexOf(channelFragment, 0) > -1;
     }
 
     public void recordingStopped(final long recordingId, final long position, final long timestamp)

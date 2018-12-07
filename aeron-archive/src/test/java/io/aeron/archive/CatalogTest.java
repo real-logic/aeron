@@ -380,6 +380,40 @@ public class CatalogTest
         catalog.close();
     }
 
+    @Test
+    public void shouldContainChannelFragment()
+    {
+        try (Catalog catalog = new Catalog(archiveDir, clock))
+        {
+            final String originalChannel = "aeron:udp?endpoint=localhost:7777|tags=777|alias=TestString";
+            final String strippedChannel = "strippedChannelString";
+            final long recordingId = catalog.addNewRecording(
+                0L,
+                0L,
+                0,
+                SEGMENT_LENGTH,
+                TERM_LENGTH,
+                MTU_LENGTH,
+                6,
+                1,
+                strippedChannel,
+                originalChannel,
+                "sourceA");
+
+            assertTrue(catalog.wrapDescriptor(recordingId, unsafeBuffer));
+
+            recordingDescriptorDecoder.wrap(
+                unsafeBuffer,
+                RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.BLOCK_LENGTH,
+                RecordingDescriptorDecoder.SCHEMA_VERSION);
+
+            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, ""));
+            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, "tags=777"));
+            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, "TestString"));
+        }
+    }
+
     private void createSegmentFile(final long newRecordingId) throws IOException
     {
         final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 0));

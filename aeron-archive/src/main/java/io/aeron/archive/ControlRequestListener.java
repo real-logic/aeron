@@ -52,7 +52,7 @@ interface ControlRequestListener
         long fromRecordingId,
         int recordCount,
         int streamId,
-        String channelFragment);
+        byte[] channelFragment);
 
     void onListRecording(long controlSessionId, long correlationId, long recordingId);
 
@@ -80,5 +80,5 @@ interface ControlRequestListener
         long minRecordingId,
         int sessionId,
         int streamId,
-        String channelFragment);
+        byte[] channelFragment);
 }

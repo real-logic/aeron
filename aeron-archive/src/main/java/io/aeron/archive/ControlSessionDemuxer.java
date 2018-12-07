@@ -152,7 +152,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final long fromRecordingId,
         final int recordCount,
         final int streamId,
-        final String channelFragment)
+        final byte[] channelFragment)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
         controlSession.onListRecordingsForUri(correlationId, fromRecordingId, recordCount, streamId, channelFragment);
@@ -211,7 +211,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final long minRecordingId,
         final int sessionId,
         final int streamId,
-        final String channelFragment)
+        final byte[] channelFragment)
     {
         final ControlSession controlSession = getControlSession(controlSessionId);
         controlSession.onFindLastMatchingRecording(correlationId, minRecordingId, sessionId, streamId, channelFragment);

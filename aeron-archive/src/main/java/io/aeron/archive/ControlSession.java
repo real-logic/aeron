@@ -144,7 +144,7 @@ class ControlSession implements Session
         final long fromRecordingId,
         final int recordCount,
         final int streamId,
-        final String channelFragment)
+        final byte[] channelFragment)
     {
         conductor.newListRecordingsForUriSession(
             correlationId,
@@ -170,7 +170,7 @@ class ControlSession implements Session
         final long minRecordingId,
         final int sessionId,
         final int streamId,
-        final String channelFragment)
+        final byte[] channelFragment)
     {
         conductor.findLastMatchingRecording(
             correlationId,

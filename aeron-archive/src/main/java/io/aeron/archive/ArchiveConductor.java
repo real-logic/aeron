@@ -319,7 +319,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long fromRecordingId,
         final int count,
         final int streamId,
-        final String channelFragment,
+        final byte[] channelFragment,
         final ControlSession controlSession)
     {
         if (controlSession.activeListRecordingsSession() != null)
@@ -368,7 +368,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long minRecordingId,
         final int sessionId,
         final int streamId,
-        final String channelFragment,
+        final byte[] channelFragment,
         final ControlSession controlSession)
     {
         if (minRecordingId < 0 || minRecordingId >= catalog.countEntries())

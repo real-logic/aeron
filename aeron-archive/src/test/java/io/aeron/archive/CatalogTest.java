@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -408,9 +409,14 @@ public class CatalogTest
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, ""));
-            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, "tags=777"));
-            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, "TestString"));
+            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, new byte[0]));
+
+
+            final byte[] tagsBytes = "tags=777".getBytes(StandardCharsets.US_ASCII);
+            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, tagsBytes));
+
+            final byte[] testBytes = "TestString".getBytes(StandardCharsets.US_ASCII);
+            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, testBytes));
         }
     }
 

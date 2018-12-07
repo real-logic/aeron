@@ -416,7 +416,8 @@ class Catalog implements AutoCloseable
         return false;
     }
 
-    public long findLast(final long minRecordingId, final int sessionId, final int streamId, final String channel)
+    public long findLast(
+        final long minRecordingId, final int sessionId, final int streamId, final byte[] channelFragment)
     {
         long recordingId = nextRecordingId;
         while (--recordingId >= minRecordingId)
@@ -433,7 +434,7 @@ class Catalog implements AutoCloseable
 
                 if (sessionId == descriptorDecoder.sessionId() &&
                     streamId == descriptorDecoder.streamId() &&
-                    originalChannelContains(descriptorDecoder, channel))
+                    originalChannelContains(descriptorDecoder, channelFragment))
                 {
                     return recordingId;
                 }
@@ -449,9 +450,9 @@ class Catalog implements AutoCloseable
     /////////////////////////////////////////////////////////////
 
     public static boolean originalChannelContains(
-        final RecordingDescriptorDecoder descriptorDecoder, final String channelFragment)
+        final RecordingDescriptorDecoder descriptorDecoder, final byte[] channelFragment)
     {
-        final int fragmentLength = channelFragment.length();
+        final int fragmentLength = channelFragment.length;
         if (fragmentLength == 0)
         {
             return true;
@@ -479,7 +480,7 @@ class Catalog implements AutoCloseable
             int j = 0;
             for (; j < fragmentLength; j++)
             {
-                final byte a = (byte)channelFragment.charAt(j);
+                final byte a = channelFragment[j];
                 final byte b = buffer.getByte(offset + i + j);
                 if (a != b)
                 {

@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -22,6 +23,7 @@ public class ListRecordingsForUriSessionTest
 {
     private static final long MAX_ENTRIES = 1024;
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
+    public static final byte[] LOCALHOST_BYTES = "localhost".getBytes(StandardCharsets.US_ASCII);
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final long[] matchingRecordingIds = new long[3];
@@ -63,7 +65,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             0,
             3,
-            "localhost",
+            LOCALHOST_BYTES,
             1,
             catalog,
             controlResponseProxy,
@@ -87,7 +89,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             fromRecordingId,
             2,
-            "localhost",
+            LOCALHOST_BYTES,
             1,
             catalog,
             controlResponseProxy,
@@ -111,7 +113,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             fromRecordingId,
             1,
-            "localhost",
+            LOCALHOST_BYTES,
             1,
             catalog,
             controlResponseProxy,
@@ -138,7 +140,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             1,
             5,
-            "localhost",
+            LOCALHOST_BYTES,
             1,
             catalog,
             controlResponseProxy,
@@ -163,7 +165,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             1,
             3,
-            "notChannel",
+            "notChannel".getBytes(StandardCharsets.US_ASCII),
             1,
             catalog,
             controlResponseProxy,
@@ -186,7 +188,7 @@ public class ListRecordingsForUriSessionTest
             correlationId,
             5,
             3,
-            "localhost",
+            LOCALHOST_BYTES,
             1,
             catalog,
             controlResponseProxy,

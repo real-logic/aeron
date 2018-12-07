@@ -25,14 +25,14 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
     private int sent = 0;
     private final int count;
     private final int streamId;
-    private final String channelFragment;
+    private final byte[] channelFragment;
     private final RecordingDescriptorDecoder decoder;
 
     ListRecordingsForUriSession(
         final long correlationId,
         final long fromRecordingId,
         final int count,
-        final String channelFragment,
+        final byte[] channelFragment,
         final int streamId,
         final Catalog catalog,
         final ControlResponseProxy proxy,

@@ -1451,9 +1451,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (pollImageAndLogAdapter(subscription, logSessionId))
         {
             final long appendPosition = appendedPosition.get();
-            final int termBufferLength = logAdapter.image().termBufferLength();
+            final long window = logAdapter.image().termBufferLength() * 2;
 
-            result = (appendPosition >= (position - (termBufferLength / 2)));
+            result = (appendPosition >= (position - window));
         }
 
         return result;

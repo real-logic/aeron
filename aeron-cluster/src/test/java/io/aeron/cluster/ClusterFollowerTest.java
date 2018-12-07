@@ -65,7 +65,7 @@ public class ClusterFollowerTest
 
     private static final String CLUSTER_MEMBERS = clusterMembersString();
     private static final String LOG_CHANNEL =
-        "aeron:udp?term-length=64k|control-mode=manual|control=localhost:55550";
+        "aeron:udp?term-length=256k|control-mode=manual|control=localhost:55550";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8010";
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =

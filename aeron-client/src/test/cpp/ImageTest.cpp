@@ -26,7 +26,7 @@ using namespace aeron;
 using namespace std::placeholders;
 
 #define TERM_LENGTH (LogBufferDescriptor::TERM_MIN_LENGTH)
-#define PAGE_SIZE (LogBufferDescriptor::PAGE_MIN_SIZE)
+#define PAGE_SIZE (LogBufferDescriptor::AERON_PAGE_MIN_SIZE)
 #define LOG_META_DATA_LENGTH (LogBufferDescriptor::LOG_META_DATA_LENGTH)
 #define SRC_BUFFER_LENGTH 1024
 

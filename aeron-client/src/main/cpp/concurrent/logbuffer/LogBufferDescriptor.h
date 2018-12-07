@@ -31,8 +31,8 @@ namespace LogBufferDescriptor {
 
 const std::int32_t TERM_MIN_LENGTH = 64 * 1024;
 const std::int32_t TERM_MAX_LENGTH = 1024 * 1024 * 1024;
-const std::int32_t PAGE_MIN_SIZE = 4 * 1024;
-const std::int32_t PAGE_MAX_SIZE = 1024 * 1024 * 1024;
+const std::int32_t AERON_PAGE_MIN_SIZE = 4 * 1024;
+const std::int32_t AERON_PAGE_MAX_SIZE = 1024 * 1024 * 1024;
 
 #if defined(__GNUC__) || _MSC_VER >= 1900
 constexpr const int PARTITION_COUNT = 3;
@@ -171,18 +171,18 @@ inline void checkTermLength(std::int32_t termLength)
 
 inline void checkPageSize(std::int32_t pageSize)
 {
-    if (pageSize < PAGE_MIN_SIZE)
+    if (pageSize < AERON_PAGE_MIN_SIZE)
     {
         throw util::IllegalStateException(
             util::strPrintf("Page size less than min size of %d, size=%d",
-                PAGE_MIN_SIZE, pageSize), SOURCEINFO);
+                AERON_PAGE_MIN_SIZE, pageSize), SOURCEINFO);
     }
 
-    if (pageSize > PAGE_MAX_SIZE)
+    if (pageSize > AERON_PAGE_MAX_SIZE)
     {
         throw util::IllegalStateException(
             util::strPrintf("Page Size greater than max size of %d, size=%d",
-                PAGE_MAX_SIZE, pageSize), SOURCEINFO);
+                AERON_PAGE_MAX_SIZE, pageSize), SOURCEINFO);
     }
 
     if (!util::BitUtil::isPowerOfTwo(pageSize))

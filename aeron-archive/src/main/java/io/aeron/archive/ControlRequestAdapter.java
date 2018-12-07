@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.ArrayUtil;
 
 class ControlRequestAdapter implements FragmentHandler
 {
@@ -175,7 +176,8 @@ class ControlRequestAdapter implements FragmentHandler
                     headerDecoder.blockLength(),
                     headerDecoder.version());
 
-                final byte[] bytes = new byte[listRecordingsForUriRequestDecoder.channelLength()];
+                final int channelLength = listRecordingsForUriRequestDecoder.channelLength();
+                final byte[] bytes = 0 == channelLength ? ArrayUtil.EMPTY_BYTE_ARRAY : new byte[channelLength];
                 listRecordingsForUriRequestDecoder.getChannel(bytes, 0, bytes.length);
 
                 listener.onListRecordingsForUri(
@@ -290,7 +292,8 @@ class ControlRequestAdapter implements FragmentHandler
                     headerDecoder.blockLength(),
                     headerDecoder.version());
 
-                final byte[] bytes = new byte[findLastMatchingRecordingRequestDecoder.channelLength()];
+                final int channelLength = findLastMatchingRecordingRequestDecoder.channelLength();
+                final byte[] bytes = 0 == channelLength ? ArrayUtil.EMPTY_BYTE_ARRAY : new byte[channelLength];
                 findLastMatchingRecordingRequestDecoder.getChannel(bytes, 0, bytes.length);
 
                 listener.onFindLastMatchingRecording(

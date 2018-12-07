@@ -19,6 +19,7 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -409,14 +410,16 @@ public class CatalogTest
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
 
-            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, new byte[0]));
-
+            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, ArrayUtil.EMPTY_BYTE_ARRAY));
 
             final byte[] tagsBytes = "tags=777".getBytes(StandardCharsets.US_ASCII);
             assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, tagsBytes));
 
             final byte[] testBytes = "TestString".getBytes(StandardCharsets.US_ASCII);
             assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, testBytes));
+
+            final byte[] originalChannelBytes = originalChannel.getBytes(StandardCharsets.US_ASCII);
+            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, originalChannelBytes));
         }
     }
 

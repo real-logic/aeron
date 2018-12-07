@@ -420,6 +420,9 @@ public class CatalogTest
 
             final byte[] originalChannelBytes = originalChannel.getBytes(StandardCharsets.US_ASCII);
             assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, originalChannelBytes));
+
+            final byte[] wrongBytes = "wrong".getBytes(StandardCharsets.US_ASCII);
+            assertFalse(Catalog.originalChannelContains(recordingDescriptorDecoder, wrongBytes));
         }
     }
 

@@ -386,7 +386,7 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             final String originalChannel = "aeron:udp?endpoint=localhost:7777|tags=777|alias=TestString";
-            final String strippedChannel = "strippedChannelString";
+            final String strippedChannel = "strippedChannelUri";
             final long recordingId = catalog.addNewRecording(
                 0L,
                 0L,

@@ -19,10 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.AsciiEncoding;
-import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
+import org.agrona.*;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -454,21 +451,50 @@ class Catalog implements AutoCloseable
     public static boolean originalChannelContains(
         final RecordingDescriptorDecoder descriptorDecoder, final String channelFragment)
     {
-        if (channelFragment.isEmpty())
+        final int fragmentLength = channelFragment.length();
+        if (fragmentLength == 0)
         {
             return true;
         }
 
         final int limit = descriptorDecoder.limit();
-
-        descriptorDecoder.limit(limit +
+        final int strippedChannelLength = descriptorDecoder.strippedChannelLength();
+        final int originalChannelOffset = limit +
             RecordingDescriptorDecoder.strippedChannelHeaderLength() +
-            descriptorDecoder.strippedChannelLength());
+            strippedChannelLength;
+        descriptorDecoder.limit(originalChannelOffset);
 
-        final String originalChannel = descriptorDecoder.originalChannel();
+        final int length = descriptorDecoder.originalChannelLength();
         descriptorDecoder.limit(limit);
 
-        return originalChannel.indexOf(channelFragment, 0) > -1;
+        final DirectBuffer buffer = descriptorDecoder.buffer();
+        final int offset = descriptorDecoder.offset() +
+            descriptorDecoder.sbeBlockLength() +
+            RecordingDescriptorDecoder.strippedChannelHeaderLength() +
+            strippedChannelLength +
+            RecordingDescriptorDecoder.originalChannelHeaderLength();
+
+        for (int i = 0; i < length; i++)
+        {
+            int j = 0;
+            for (; j < fragmentLength; j++)
+            {
+                final byte a = (byte)channelFragment.charAt(j);
+                final byte b = buffer.getByte(offset + i + j);
+                if (a != b)
+                {
+                    break;
+                }
+            }
+
+            if (fragmentLength == j)
+            {
+                return true;
+            }
+        }
+
+
+        return false;
     }
 
     public void recordingStopped(final long recordingId, final long position, final long timestamp)

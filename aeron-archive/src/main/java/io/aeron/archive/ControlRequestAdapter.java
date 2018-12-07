@@ -178,7 +178,7 @@ class ControlRequestAdapter implements FragmentHandler
 
                 final int channelLength = listRecordingsForUriRequestDecoder.channelLength();
                 final byte[] bytes = 0 == channelLength ? ArrayUtil.EMPTY_BYTE_ARRAY : new byte[channelLength];
-                listRecordingsForUriRequestDecoder.getChannel(bytes, 0, bytes.length);
+                listRecordingsForUriRequestDecoder.getChannel(bytes, 0, channelLength);
 
                 listener.onListRecordingsForUri(
                     listRecordingsForUriRequestDecoder.controlSessionId(),
@@ -294,7 +294,7 @@ class ControlRequestAdapter implements FragmentHandler
 
                 final int channelLength = findLastMatchingRecordingRequestDecoder.channelLength();
                 final byte[] bytes = 0 == channelLength ? ArrayUtil.EMPTY_BYTE_ARRAY : new byte[channelLength];
-                findLastMatchingRecordingRequestDecoder.getChannel(bytes, 0, bytes.length);
+                findLastMatchingRecordingRequestDecoder.getChannel(bytes, 0, channelLength);
 
                 listener.onFindLastMatchingRecording(
                     findLastMatchingRecordingRequestDecoder.controlSessionId(),

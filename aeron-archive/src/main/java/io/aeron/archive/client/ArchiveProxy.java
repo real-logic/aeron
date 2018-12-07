@@ -351,11 +351,11 @@ public class ArchiveProxy
     }
 
     /**
-     * List a range of recording descriptors which match a channel and stream id.
+     * List a range of recording descriptors which match a channel URI fragment and stream id.
      *
      * @param fromRecordingId  at which to begin listing.
      * @param recordCount      for the number of descriptors to be listed.
-     * @param channel          to match recordings on.
+     * @param channelFragment  to match recordings on from the original channel URI in the archive descriptor.
      * @param streamId         to match recordings on.
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
@@ -364,7 +364,7 @@ public class ArchiveProxy
     public boolean listRecordingsForUri(
         final long fromRecordingId,
         final int recordCount,
-        final String channel,
+        final String channelFragment,
         final int streamId,
         final long correlationId,
         final long controlSessionId)
@@ -376,7 +376,7 @@ public class ArchiveProxy
             .fromRecordingId(fromRecordingId)
             .recordCount(recordCount)
             .streamId(streamId)
-            .channel(channel);
+            .channel(channelFragment);
 
         return offer(listRecordingsForUriRequestEncoder.encodedLength());
     }
@@ -499,7 +499,7 @@ public class ArchiveProxy
      * Find the last recording that matches the given criteria.
      *
      * @param minRecordingId   to search back to.
-     * @param channel          for a contains match on the stripped channel stored with the archive descriptor.
+     * @param channelFragment  for a contains match on the original channel stored with the archive descriptor.
      * @param streamId         of the recording to match.
      * @param sessionId        of the recording to match.
      * @param correlationId    for this request.
@@ -508,7 +508,7 @@ public class ArchiveProxy
      */
     public boolean findLastMatchingRecording(
         final long minRecordingId,
-        final String channel,
+        final String channelFragment,
         final int streamId,
         final int sessionId,
         final long correlationId,
@@ -521,7 +521,7 @@ public class ArchiveProxy
             .minRecordingId(minRecordingId)
             .sessionId(sessionId)
             .streamId(streamId)
-            .channel(channel);
+            .channel(channelFragment);
 
         return offer(findLastMatchingRecordingRequestEncoder.encodedLength());
     }

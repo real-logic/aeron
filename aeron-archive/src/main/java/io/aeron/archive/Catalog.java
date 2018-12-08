@@ -469,20 +469,18 @@ class Catalog implements AutoCloseable
         descriptorDecoder.limit(limit);
 
         final DirectBuffer buffer = descriptorDecoder.buffer();
-        final int offset = descriptorDecoder.offset() +
+        int offset = descriptorDecoder.offset() +
             descriptorDecoder.sbeBlockLength() +
             RecordingDescriptorDecoder.strippedChannelHeaderLength() +
             strippedChannelLength +
             RecordingDescriptorDecoder.originalChannelHeaderLength();
 
-        for (int i = 0; i < length; i++)
+        for (int end = offset + length; offset < end; offset++)
         {
             int j = 0;
             for (; j < fragmentLength; j++)
             {
-                final byte a = channelFragment[j];
-                final byte b = buffer.getByte(offset + i + j);
-                if (a != b)
+                if (channelFragment[j] != buffer.getByte(offset + j))
                 {
                     break;
                 }
@@ -493,7 +491,6 @@ class Catalog implements AutoCloseable
                 return true;
             }
         }
-
 
         return false;
     }

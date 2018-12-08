@@ -468,10 +468,8 @@ class Catalog implements AutoCloseable
         descriptorDecoder.limit(limit);
 
         final DirectBuffer buffer = descriptorDecoder.buffer();
-        int offset = descriptorDecoder.offset() +
-            descriptorDecoder.sbeBlockLength() +
-            RecordingDescriptorDecoder.strippedChannelHeaderLength() +
-            strippedChannelLength +
+        int offset = descriptorDecoder.offset() + descriptorDecoder.sbeBlockLength() +
+            RecordingDescriptorDecoder.strippedChannelHeaderLength() + strippedChannelLength +
             RecordingDescriptorDecoder.originalChannelHeaderLength();
 
         nextChar:

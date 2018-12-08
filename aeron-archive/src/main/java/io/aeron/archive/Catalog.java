@@ -465,7 +465,7 @@ class Catalog implements AutoCloseable
             strippedChannelLength;
         descriptorDecoder.limit(originalChannelOffset);
 
-        final int length = descriptorDecoder.originalChannelLength();
+        final int channelLength = descriptorDecoder.originalChannelLength();
         descriptorDecoder.limit(limit);
 
         final DirectBuffer buffer = descriptorDecoder.buffer();
@@ -475,21 +475,18 @@ class Catalog implements AutoCloseable
             strippedChannelLength +
             RecordingDescriptorDecoder.originalChannelHeaderLength();
 
-        for (int end = offset + length; offset < end; offset++)
+        nextChar:
+        for (int end = offset + (channelLength - fragmentLength); offset <= end; offset++)
         {
-            int j = 0;
-            for (; j < fragmentLength; j++)
+            for (int i = 0; i < fragmentLength; i++)
             {
-                if (channelFragment[j] != buffer.getByte(offset + j))
+                if (buffer.getByte(offset + i) != channelFragment[i])
                 {
-                    break;
+                    continue nextChar;
                 }
             }
 
-            if (fragmentLength == j)
-            {
-                return true;
-            }
+            return true;
         }
 
         return false;

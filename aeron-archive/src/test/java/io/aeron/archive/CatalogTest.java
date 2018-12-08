@@ -412,14 +412,14 @@ public class CatalogTest
 
             assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, ArrayUtil.EMPTY_BYTE_ARRAY));
 
+            final byte[] originalChannelBytes = originalChannel.getBytes(StandardCharsets.US_ASCII);
+            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, originalChannelBytes));
+
             final byte[] tagsBytes = "tags=777".getBytes(StandardCharsets.US_ASCII);
             assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, tagsBytes));
 
             final byte[] testBytes = "TestString".getBytes(StandardCharsets.US_ASCII);
             assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, testBytes));
-
-            final byte[] originalChannelBytes = originalChannel.getBytes(StandardCharsets.US_ASCII);
-            assertTrue(Catalog.originalChannelContains(recordingDescriptorDecoder, originalChannelBytes));
 
             final byte[] wrongBytes = "wrong".getBytes(StandardCharsets.US_ASCII);
             assertFalse(Catalog.originalChannelContains(recordingDescriptorDecoder, wrongBytes));

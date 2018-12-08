@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <string>
 #include <stdexcept>
-#include <sstream>
 #include "MacroUtil.h"
 
 namespace aeron { namespace util {
@@ -54,17 +53,17 @@ private:
 
 public:
     SourcedException(const std::string &what, const std::string& function, const std::string& file, const int line) :
-        m_where(reinterpret_cast<std::ostringstream&>(std::ostringstream() << function << " : " << file  << " : " << line).str()),
+        m_where(function + " : " + file + " : " + std::to_string(line)),
         m_what(what)
     {
     }
 
-    virtual const char *what() const AERON_NOEXCEPT
+    virtual const char * what() const AERON_NOEXCEPT
     {
         return m_what.c_str();
     }
 
-    const char *where() const AERON_NOEXCEPT
+    const char * where() const AERON_NOEXCEPT
     {
         return m_where.c_str();
     }

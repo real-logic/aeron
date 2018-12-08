@@ -132,7 +132,6 @@ class Election implements AutoCloseable
     private State state = State.INIT;
     private Counter stateCounter;
     private Subscription logSubscription;
-    private String replayDestination;
     private String liveLogDestination;
     private LogReplay logReplay = null;
 
@@ -170,12 +169,6 @@ class Election implements AutoCloseable
     public void close()
     {
         CloseHelper.close(stateCounter);
-
-        if (null != logSubscription && null != replayDestination)
-        {
-            logSubscription.removeDestination(replayDestination);
-            replayDestination = null;
-        }
     }
 
     int doWork(final long nowMs)
@@ -396,6 +389,7 @@ class Election implements AutoCloseable
             follower
                 .logPosition(logPosition)
                 .leadershipTermId(leadershipTermId);
+            consensusModuleAgent.checkCatchupStop(follower);
         }
     }
 
@@ -740,12 +734,13 @@ class Election implements AutoCloseable
             logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
             consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
 
-            replayDestination = new ChannelUriStringBuilder()
+            final String replayDestination = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
                 .endpoint(thisMember.transferEndpoint())
                 .build();
 
             logSubscription.addDestination(replayDestination);
+            consensusModuleAgent.replayLogDestination(replayDestination);
         }
 
         if (catchupPosition(leadershipTermId, logPosition))
@@ -816,12 +811,6 @@ class Election implements AutoCloseable
         {
             if (consensusModuleAgent.electionComplete(nowMs))
             {
-                if (null != replayDestination)
-                {
-                    logSubscription.removeDestination(replayDestination);
-                    replayDestination = null;
-                }
-
                 consensusModuleAgent.updateMemberDetails(this);
                 close();
             }

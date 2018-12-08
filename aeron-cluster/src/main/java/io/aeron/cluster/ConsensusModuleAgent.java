@@ -125,6 +125,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private DynamicJoin dynamicJoin;
     private String logRecordingChannel;
     private String liveLogDestination;
+    private String replayLogDestination;
     private String clientFacingEndpoints;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
@@ -482,6 +483,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             if (null != follower)
             {
                 follower.logPosition(logPosition);
+                checkCatchupStop(follower);
             }
         }
     }
@@ -530,12 +532,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onStopCatchup(final int replaySessionId, final int followerMemberId)
     {
-        final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-
-        if (null != follower && follower.catchupReplaySessionId() != Aeron.NULL_VALUE)
+        if (null != logAdapter && null != replayLogDestination)
         {
-            archive.stopReplay(follower.catchupReplaySessionId());
-            follower.catchupReplaySessionId(Aeron.NULL_VALUE);
+            logAdapter.removeDestination(replayLogDestination);
+            replayLogDestination = null;
         }
     }
 
@@ -694,6 +694,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             archive.stopRecording(logRecordingChannel, ctx.logStreamId());
             logRecordingChannel = null;
+        }
+
+        if (null != logAdapter && null != replayLogDestination)
+        {
+            logAdapter.removeDestination(replayLogDestination);
+            replayLogDestination = null;
         }
 
         if (null != logAdapter && null != liveLogDestination)
@@ -1131,6 +1137,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.liveLogDestination = liveLogDestination;
     }
 
+    void replayLogDestination(final String replayLogDestination)
+    {
+        this.replayLogDestination = replayLogDestination;
+    }
+
     Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel)
     {
         closeExistingLog();
@@ -1314,6 +1325,21 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         archive.truncateRecording(recordingId, logPosition);
         recordingLog.commitLogPosition(leadershipTermId, logPosition);
+    }
+
+    public void checkCatchupStop(final ClusterMember member)
+    {
+        if (null != member && Aeron.NULL_VALUE != member.catchupReplaySessionId())
+        {
+            if (member.logPosition() >= logPublisher.position())
+            {
+                archive.stopReplay(member.catchupReplaySessionId());
+                if (memberStatusPublisher.stopCatchup(member.publication(), 0, memberId))
+                {
+                    member.catchupReplaySessionId(Aeron.NULL_VALUE);
+                }
+            }
+        }
     }
 
     boolean electionComplete(final long nowMs)

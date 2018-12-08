@@ -1467,7 +1467,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     boolean hasAppendReachedPosition(final Subscription subscription, final int logSessionId, final long position)
     {
-        return pollImageAndLogAdapter(subscription, logSessionId) && (appendedPosition.get() >= position);
+        return pollImageAndLogAdapter(subscription, logSessionId) && appendedPosition.get() >= position;
     }
 
     boolean hasAppendReachedLivePosition(final Subscription subscription, final int logSessionId, final long position)
@@ -1477,9 +1477,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (pollImageAndLogAdapter(subscription, logSessionId))
         {
             final long appendPosition = appendedPosition.get();
-            final long window = logAdapter.image().termBufferLength() * 2;
+            final long window = logAdapter.image().termBufferLength() * 2L;
 
-            result = (appendPosition >= (position - window));
+            result = appendPosition >= (position - window);
         }
 
         return result;

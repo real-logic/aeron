@@ -461,10 +461,9 @@ class Catalog implements AutoCloseable
         final int limit = descriptorDecoder.limit();
         final int strippedChannelLength = descriptorDecoder.strippedChannelLength();
         final int originalChannelOffset = limit +
-            RecordingDescriptorDecoder.strippedChannelHeaderLength() +
-            strippedChannelLength;
-        descriptorDecoder.limit(originalChannelOffset);
+            RecordingDescriptorDecoder.strippedChannelHeaderLength() + strippedChannelLength;
 
+        descriptorDecoder.limit(originalChannelOffset);
         final int channelLength = descriptorDecoder.originalChannelLength();
         descriptorDecoder.limit(limit);
 

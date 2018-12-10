@@ -33,7 +33,52 @@
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
     </types>
 
-    <!-- Archive Control Protocol -->
+    <!--
+        Archive Control Protocol
+        ========================
+
+        Control Protocol:
+            -> connect, [*start-recording | *stop-recording | *stop-recording-subscription |
+                         *replay | *stop-replay |
+                         *list-recordings | *list-recordings-by-uri | *list-recording | *find-last-matching-recording |
+                         *extend-recording | *truncate-recording |
+                         *recording-position | *stop-position],
+               close
+                      \
+                      *control-response | *recording-descriptor
+
+        Recording Events:
+            -> *[recording-started, *recording-progress, recording-stopped]
+
+
+       1. Connect
+         - Connect to an archive providing response channel and stream id.
+         - Connection can be local or remote. Local can be optimised for IPC.
+         - If successful a control session will be created with control responses provided.
+         - If a response stream cannot be created within timeout then the session is automatically closed.
+
+       2. Recording
+         - A recording can be started for a given channel and stream id. Channel can be restricted to session specific.
+         - Each matching Image will get its own recording and assigned a unique id which can be used for replay.
+         - Each Image recording can be tracked with recording-events or locally via a RecordingPos counter.
+         - Recordings can be stopped by URI and stream-id or subscription registration id.
+         - Existing recordings can be extended or truncated.
+
+       3. Replay
+         - Recordings can be replayed to a provided channel and stream id which is different to the control stream.
+         - Replays will start when the replay stream is connected and will automatically close at the end or if the
+           replay stream is not connected.
+         - Replays will likely have a different session if from the original recording.
+         - A replay can be for a live recording which will follow a live recording in an open ended fashion if requested
+           length is -1 or greater than current recorded position.
+         - A replay may be stopped early by closing the replay subscription or calling stop-replay.
+
+       4. Queries
+         - Existing recordings can be listed by recording id range and filtered by uri and stream-id.
+         - Current recorded position for a active recording can be requested.
+         - The stop position for an inactive recording can be requested.
+
+    -->
 
     <sbe:message name="ControlResponse"
                  id="1"
@@ -175,7 +220,7 @@
         <field name="recordingId"          id="3" type="int64"/>
     </sbe:message>
 
-    <sbe:message name="findLastMatchingRecordingRequest"
+    <sbe:message name="FindLastMatchingRecordingRequest"
                  id="16"
                  description="find the last recording id after minRecordingId which matches criteria">
         <field name="controlSessionId"     id="1" type="int64"/>

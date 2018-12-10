@@ -63,7 +63,7 @@
         Cluster Session Protocol
         ========================
 
-        Protocol is:
+        Session Protocol:
             -> session-connect, [*ingress-message | *session-keep-alive], session-close
                       \
             <-          *session-event, [*egress-message | *session-event | *new-leader-event]

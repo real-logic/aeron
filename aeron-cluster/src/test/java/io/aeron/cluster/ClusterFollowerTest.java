@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.CommonContext;
+import io.aeron.Counter;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
@@ -34,6 +35,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
@@ -53,7 +55,9 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.service.CommitPos.COMMIT_POSITION_TYPE_ID;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @Ignore
 public class ClusterFollowerTest
@@ -159,6 +163,49 @@ public class ClusterFollowerTest
         Thread.sleep(1000);
 
         assertThat(roleOf(followerMemberId), is(Cluster.Role.FOLLOWER));
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldStopAleaderAndFollowerSAndRestartAllWithSnapshot() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        takeSnapshot(leaderMemberId);
+        awaitsSnapshotCounter(leaderMemberId, 1);
+        awaitsSnapshotCounter(followerMemberIdA, 1);
+        awaitsSnapshotCounter(followerMemberIdB, 1);
+
+        stopNode(leaderMemberId);
+        stopNode(followerMemberIdA);
+        stopNode(followerMemberIdB);
+
+        Thread.sleep(1000);
+
+        startNode(leaderMemberId, false);
+        startNode(followerMemberIdA, false);
+        startNode(followerMemberIdB, false);
+
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        Thread.sleep(1000);
+
+        assertThat(roleOf(followerMemberIdA), is(Cluster.Role.FOLLOWER));
+        assertThat(roleOf(followerMemberIdB), is(Cluster.Role.FOLLOWER));
     }
 
     @Test(timeout = 30_000)
@@ -719,5 +766,27 @@ public class ClusterFollowerTest
                 //idleStrategy.idle();
             }
         });
+    }
+
+    private void takeSnapshot(final int index)
+    {
+        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+
+        final CountersReader countersReader = driver.consensusModule().context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader);
+        assertNotNull(controlToggle);
+        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+    }
+
+    private void awaitsSnapshotCounter(final int index, final long value)
+    {
+        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+        final Counter snapshotCounter = driver.consensusModule().context().snapshotCounter();
+
+        while (snapshotCounter.getWeak() != value)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
     }
 }

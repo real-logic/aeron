@@ -707,9 +707,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
 
         if (null != sessionIdStr && ChannelUri.isTagged(sessionIdStr))
         {
-            channelBuilder
-                .isSessionIdTagged(true)
-                .sessionId((int)ChannelUri.getTag(sessionIdStr));
+            channelBuilder.isSessionIdTagged(true).sessionId((int)ChannelUri.getTag(sessionIdStr));
         }
         else
         {

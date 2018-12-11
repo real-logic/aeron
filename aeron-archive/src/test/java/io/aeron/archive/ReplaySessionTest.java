@@ -236,11 +236,11 @@ public class ReplaySessionTest
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldNotReplayPartialUnalignedDataFromFile()
     {
         final long correlationId = 1L;
-        new ReplaySession(
+        final ReplaySession replaySession = new ReplaySession(
             RECORDING_POSITION + 1,
             FRAME_LENGTH,
             REPLAY_ID,
@@ -254,6 +254,13 @@ public class ReplaySessionTest
             mockReplayPub,
             recordingSummary,
             recordingPositionCounter);
+
+        replaySession.doWork();
+        assertEquals(ReplaySession.State.DONE, replaySession.state());
+
+        final ControlResponseProxy proxy = mock(ControlResponseProxy.class);
+        replaySession.sendPendingError(proxy);
+        verify(mockControlSession).attemptErrorResponse(eq(correlationId), anyString(), eq(proxy));
     }
 
     @Test
@@ -455,7 +462,6 @@ public class ReplaySessionTest
             });
     }
 
-    @SuppressWarnings("SameParameterValue")
     private ReplaySession replaySession(
         final long recordingPosition,
         final long length,
@@ -480,7 +486,7 @@ public class ReplaySessionTest
             recordingPositionCounter);
     }
 
-    private static void validateFrame(final UnsafeBuffer buffer, final int message, final byte flags)
+    static void validateFrame(final UnsafeBuffer buffer, final int message, final byte flags)
     {
         final int offset = message * FRAME_LENGTH;
 

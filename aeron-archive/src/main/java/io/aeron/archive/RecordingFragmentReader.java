@@ -79,11 +79,12 @@ class RecordingFragmentReader implements AutoCloseable
         this.termLength = recordingSummary.termBufferLength;
         this.segmentLength = recordingSummary.segmentFileLength;
         this.recordingId = recordingSummary.recordingId;
+        this.stopPosition = null == recordingPosition ? recordingSummary.stopPosition : recordingPosition.get();
 
         final long startPosition = recordingSummary.startPosition;
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
-        stopPosition = null == recordingPosition ? recordingSummary.stopPosition : recordingPosition.get();
         final long maxLength = null == recordingPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
+
         final long replayLength = length == AeronArchive.NULL_LENGTH ? maxLength : Math.min(length, maxLength);
         if (replayLength < 0)
         {
@@ -99,21 +100,20 @@ class RecordingFragmentReader implements AutoCloseable
             }
         }
 
-        segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentLength);
-        openRecordingSegment();
-
         final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
         final int segmentOffset = (int)(fromPosition - startTermBasePosition) & (segmentLength - 1);
         final int termId = ((int)(fromPosition >> positionBitsToShift) + recordingSummary.initialTermId);
 
+        segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentLength);
+        openRecordingSegment();
+
         termOffset = (int)(fromPosition & (termLength - 1));
         termBaseSegmentOffset = segmentOffset - termOffset;
         termBuffer = new UnsafeBuffer(mappedSegmentBuffer, termBaseSegmentOffset, termLength);
 
-        if (fromPosition > startPosition &&
-            fromPosition != stopPosition &&
-            isFragmentAligned(termBuffer, recordingSummary.streamId, termId, termOffset))
+        if (fromPosition > startPosition && fromPosition != stopPosition &&
+            ReplaySession.isFragmentAligned(termBuffer, recordingSummary.streamId, termId, termOffset))
         {
             close();
             throw new IllegalArgumentException(fromPosition + " position not aligned to valid fragment");
@@ -249,14 +249,5 @@ class RecordingFragmentReader implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
-    }
-
-    private static boolean isFragmentAligned(
-        final UnsafeBuffer buffer, final int streamId, final int termId, final int termOffset)
-    {
-        return
-            DataHeaderFlyweight.termOffset(buffer, termOffset) != termOffset ||
-            DataHeaderFlyweight.termId(buffer, termOffset) != termId ||
-            DataHeaderFlyweight.streamId(buffer, termOffset) != streamId;
     }
 }

@@ -41,7 +41,8 @@ public:
     }
 
     AtomicBuffer(std::uint8_t *buffer, size_t length) :
-        m_buffer(buffer), m_length(static_cast<util::index_t>(length))
+        m_buffer(buffer),
+        m_length(static_cast<util::index_t>(length))
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
         if (AERON_COND_EXPECT(length > std::numeric_limits<util::index_t>::max(), true))
@@ -54,7 +55,8 @@ public:
     }
 
     AtomicBuffer(std::uint8_t *buffer, size_t length, std::uint8_t initialValue) :
-        m_buffer(buffer), m_length(static_cast<util::index_t>(length))
+        m_buffer(buffer),
+        m_length(static_cast<util::index_t>(length))
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
         if (AERON_COND_EXPECT(length > std::numeric_limits<util::index_t>::max(), true))
@@ -84,7 +86,8 @@ public:
     AtomicBuffer(const AtomicBuffer& buffer) = default;
 
     AtomicBuffer(AtomicBuffer&& buffer) :
-        m_buffer(buffer.m_buffer), m_length(buffer.m_length)
+        m_buffer(buffer.m_buffer),
+        m_length(buffer.m_length)
     {
     }
 
@@ -383,11 +386,13 @@ public:
     inline void boundsCheck(util::index_t index, std::uint64_t length) const
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        // This check disallows negative indices and makes sure the
-        if (AERON_COND_EXPECT(index < 0 || (std::uint64_t)m_length - index < length, false))
+        // This check disallows negative indices
+        if (AERON_COND_EXPECT(index < 0 || (static_cast<std::uint64_t>(m_length) - index) < length, false))
         {
             throw aeron::util::OutOfBoundsException(
-                aeron::util::strPrintf("Index Out of Bounds[%p]. Index: %d + %d Capacity: %d", this, index, length, m_length),
+                aeron::util::strPrintf(
+                    "Index Out of Bounds[%p]. Index: %lld + %lld Capacity: %lld",
+                    this, static_cast<long long>(index), length, static_cast<long long>(m_length)),
                 SOURCEINFO);
         }
 #endif

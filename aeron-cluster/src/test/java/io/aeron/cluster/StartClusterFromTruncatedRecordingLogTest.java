@@ -164,8 +164,8 @@ public class StartClusterFromTruncatedRecordingLogTest
             Thread.sleep(1000);
         }
 
-        int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
-        int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+        final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
 
         takeSnapshot(leaderMemberId);
         awaitsSnapshotCounter(leaderMemberId, 1);
@@ -233,14 +233,14 @@ public class StartClusterFromTruncatedRecordingLogTest
         deleteFile(tmpRecordingFile);
         deleteFile(new File(archiveDataDir, ArchiveMarkFile.FILENAME));
         deleteFile(new File(consensusModuleDataDir, ClusterMarkFile.FILENAME));
-        try (final RecordingLog existingRecordingLog = new RecordingLog(consensusModuleDataDir))
+        try (RecordingLog existingRecordingLog = new RecordingLog(consensusModuleDataDir))
         {
-            try (final RecordingLog newRecordingLog = new RecordingLog(new File(baseDirName)))
+            try (RecordingLog newRecordingLog = new RecordingLog(new File(baseDirName)))
             {
-                final RecordingLog.Entry latestTermEntry = existingRecordingLog.entries().stream().
-                    filter(e -> e.type == RecordingLog.ENTRY_TYPE_TERM).
-                    max(Comparator.comparingLong(e -> e.logPosition)).
-                    orElseThrow(() -> new IllegalStateException("No term entry in recording log"));
+                final RecordingLog.Entry latestTermEntry = existingRecordingLog.entries().stream()
+                    .filter(e -> e.type == RecordingLog.ENTRY_TYPE_TERM)
+                    .max(Comparator.comparingLong(e -> e.logPosition))
+                    .orElseThrow(() -> new IllegalStateException("No term entry in recording log"));
 
                 newRecordingLog.appendTerm(latestTermEntry.recordingId, latestTermEntry.leadershipTermId,
                     latestTermEntry.termBaseLogPosition, latestTermEntry.timestamp);
@@ -255,12 +255,12 @@ public class StartClusterFromTruncatedRecordingLogTest
             consensusModuleDataDir.toPath().resolve(RECORDING_LOG_FILE_NAME),
             StandardCopyOption.REPLACE_EXISTING);
 
-        try (final RecordingLog copiedRecordingLog = new RecordingLog(consensusModuleDataDir))
+        try (RecordingLog copiedRecordingLog = new RecordingLog(consensusModuleDataDir))
         {
             final LongHashSet recordingIds = new LongHashSet();
             copiedRecordingLog.entries().stream().mapToLong(e -> e.recordingId).forEach(recordingIds::add);
-            try (final Stream<Path> segments = Files.list(archiveDataDir.toPath()).
-                filter(p -> p.getFileName().toString().endsWith(".rec")))
+            try (Stream<Path> segments = Files.list(archiveDataDir.toPath())
+                .filter(p -> p.getFileName().toString().endsWith(".rec")))
             {
                 segments.filter(p ->
                 {
@@ -269,10 +269,13 @@ public class StartClusterFromTruncatedRecordingLogTest
                     return !recordingIds.contains(recording);
                 }).map(Path::toFile).forEach(this::deleteFile);
             }
+
+            // assert that recording log is not growing
+            assertTrue(copiedRecordingLog.entries().size() <= 3);
         }
     }
 
-    private void deleteFile(File file)
+    private void deleteFile(final File file)
     {
         if (file.exists())
         {
@@ -280,7 +283,7 @@ public class StartClusterFromTruncatedRecordingLogTest
             {
                 Files.delete(file.toPath());
             }
-            catch (IOException e)
+            catch (final IOException e)
             {
                 Assert.fail("Failed to delete file: " + file);
             }
@@ -291,7 +294,8 @@ public class StartClusterFromTruncatedRecordingLogTest
         }
     }
 
-    private void appendServiceSnapshot(RecordingLog existingRecordingLog, RecordingLog newRecordingLog, int serviceId)
+    private void appendServiceSnapshot(
+        final RecordingLog existingRecordingLog, final RecordingLog newRecordingLog, final int serviceId)
     {
         final RecordingLog.Entry snapshot = existingRecordingLog.getLatestSnapshot(serviceId);
         newRecordingLog.appendSnapshot(snapshot.recordingId, snapshot.leadershipTermId,
@@ -558,7 +562,7 @@ public class StartClusterFromTruncatedRecordingLogTest
 
     private void awaitNeutralCounter(final int index)
     {
-        AtomicCounter controlToggle = getControlToggle(index);
+        final AtomicCounter controlToggle = getControlToggle(index);
         while (ClusterControl.ToggleState.get(controlToggle) != ClusterControl.ToggleState.NEUTRAL)
         {
             TestUtil.checkInterruptedStatus();

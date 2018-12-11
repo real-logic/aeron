@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -38,6 +39,13 @@ import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class BasicArchiveTest
 {
@@ -180,7 +188,42 @@ public class BasicArchiveTest
             assertEquals(stopPosition, subscription.imageAtIndex(0).position());
         }
 
+        checkRecordingsCount(recordingId, 1);
+
         aeronArchive.truncateRecording(recordingId, position);
+
+        checkRecordingsCount(recordingId, 0);
+    }
+
+    private void checkRecordingsCount(final long recordingId, final int count)
+    {
+        final RecordingDescriptorConsumer descriptorConsumer = mock(RecordingDescriptorConsumer.class);
+
+        aeronArchive.listRecordingsForUri(
+            0,
+            Integer.MAX_VALUE,
+            RECORDING_CHANNEL,
+            RECORDING_STREAM_ID,
+            descriptorConsumer
+        );
+
+        verify(descriptorConsumer, times(count)).onRecordingDescriptor(
+            anyLong(),
+            anyLong(),
+            eq(recordingId),
+            anyLong(),
+            anyLong(),
+            anyLong(),
+            anyLong(),
+            anyInt(),
+            anyInt(),
+            anyInt(),
+            anyInt(),
+            anyInt(),
+            anyInt(),
+            anyString(),
+            eq(RECORDING_CHANNEL),
+            anyString());
     }
 
     @Test(timeout = 10_000)

@@ -254,7 +254,7 @@ class ReplaySession implements Session, AutoCloseable
 
             if (replayPosition > startPosition &&
                 replayPosition != stopPosition &&
-                isFragmentAligned(termBuffer, streamId, termId, termOffset))
+                isInvalidHeader(termBuffer, streamId, termId, termOffset))
             {
                 onError("replay recording " + recordingId + " - " +
                     replayPosition + " position not aligned to valid fragment");
@@ -421,7 +421,7 @@ class ReplaySession implements Session, AutoCloseable
         }
     }
 
-    static boolean isFragmentAligned(final UnsafeBuffer buffer, final int streamId, final int termId, final int offset)
+    static boolean isInvalidHeader(final UnsafeBuffer buffer, final int streamId, final int termId, final int offset)
     {
         return
             DataHeaderFlyweight.termOffset(buffer, offset) != offset ||

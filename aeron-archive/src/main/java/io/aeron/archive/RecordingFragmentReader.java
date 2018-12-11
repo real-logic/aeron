@@ -113,7 +113,7 @@ class RecordingFragmentReader implements AutoCloseable
         termBuffer = new UnsafeBuffer(mappedSegmentBuffer, termBaseSegmentOffset, termLength);
 
         if (fromPosition > startPosition && fromPosition != stopPosition &&
-            ReplaySession.isFragmentAligned(termBuffer, recordingSummary.streamId, termId, termOffset))
+            ReplaySession.isInvalidHeader(termBuffer, recordingSummary.streamId, termId, termOffset))
         {
             close();
             throw new IllegalArgumentException(fromPosition + " position not aligned to valid fragment");

@@ -408,7 +408,9 @@ class ReplaySession implements Session, AutoCloseable
 
         if (!segmentFile.exists())
         {
-            throw new IllegalArgumentException("failed to open recording segment file " + segmentFileName);
+            final String msg = "failed to open recording segment file " + segmentFileName;
+            onError(msg);
+            throw new IllegalArgumentException(msg);
         }
 
         try (FileChannel channel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
@@ -417,6 +419,8 @@ class ReplaySession implements Session, AutoCloseable
         }
         catch (final IOException ex)
         {
+            final String msg = "failed to open recording segment file " + segmentFileName + " - " + ex.getMessage();
+            onError(msg);
             LangUtil.rethrowUnchecked(ex);
         }
     }

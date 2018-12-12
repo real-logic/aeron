@@ -112,9 +112,7 @@ matrix:
       compiler: gcc
       os: osx
       sudo: true
-      script:
-        - sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.4"
-        - cppbuild/cppbuild -b
+      script: cppbuild/cppbuild -b
       before_install: eval "${MATRIX_EVAL}"
 
 before_cache:

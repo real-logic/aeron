@@ -126,7 +126,7 @@ public class BasicArchiveTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldRecordAndReplay()
+    public void shouldRecordThenReplayThenTruncate()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -181,6 +181,27 @@ public class BasicArchiveTest
         }
 
         aeronArchive.truncateRecording(recordingId, position);
+
+        final int count = aeronArchive.listRecording(
+            recordingId,
+            (controlSessionId,
+            correlationId,
+            recordingId1,
+            startTimestamp,
+            stopTimestamp,
+            startPosition,
+            newStopPosition,
+            initialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
+            sessionId1,
+            streamId,
+            strippedChannel,
+            originalChannel,
+            sourceIdentity) -> assertEquals(startPosition, newStopPosition));
+
+        assertEquals(1, count);
     }
 
     @Test(timeout = 10_000)

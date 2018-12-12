@@ -107,7 +107,7 @@ matrix:
       os: osx
       script: cppbuild/cppbuild -b
 
-    - env: MATRIX_EVAL="brew install gcc@8 libc6-dev && CC=gcc-8 && CXX=g++-8"
+    - env: MATRIX_EVAL="brew install gcc@8 && CC=gcc-8 && CXX=g++-8"
       language: c++
       compiler: gcc
       os: osx

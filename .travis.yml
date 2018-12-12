@@ -71,14 +71,6 @@ matrix:
   - env: COMPILER=clang++-6.0
     compiler: clang
     os: osx
-    addons:
-      apt:
-        packages:
-          - clang-6.0
-          - libstdc++-7-dev
-        sources:
-          - ubuntu-toolchain-r-test
-          - llvm-toolchain-trusty-6.0
     script:
       - cppbuild/cppbuild -b
 
@@ -118,15 +110,9 @@ matrix:
   - env: COMPILER=g++-8
     compiler: gcc
     os: osx
-    addons:
-      apt:
-        packages:
-          - g++-8
-        sources:
-          - ubuntu-toolchain-r-test
     script:
       - cppbuild/cppbuild -b
-      -
+
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/

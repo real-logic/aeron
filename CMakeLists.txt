@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
-cmake_policy(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.1.3 FATAL_ERROR)
+cmake_policy(VERSION 3.1.3)
 
 file(STRINGS version.txt AERON_VERSION_TXT LIMIT_COUNT 1 REGEX "^[0-9]+(\\.[0-9]+)+")
 string(REGEX REPLACE "^([0-9]+(\\.[0-9]+)+).*$" "\\1" AERON_VERSION_FROM_FILE "${AERON_VERSION_TXT}")
@@ -38,6 +38,9 @@ option(AERON_TESTS "Enable tests" ${STANDALONE_BUILD})
 option(AERON_BUILD_SAMPLES "Enable building the sample projects" ${STANDALONE_BUILD})
 option(AERON_BUILD_DOCUMENTATION "Build Aeron documentation" ${STANDALONE_BUILD})
 option(AERON_INSTALL_TARGETS "Enable installation step" ${STANDALONE_BUILD})
+if (UNIX)
+   option(AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS "Enable Ofast for release builds" ${STANDALONE_BUILD})
+endif ()
 
 unset(STANDALONE_BUILD)
 
@@ -56,7 +59,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 # relative file paths for use in exceptions
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__CMAKE_SOURCE_DIR__='\"${CMAKE_SOURCE_DIR}\"'")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__PROJECT_SOURCE_DIR__='\"${PROJECT_SOURCE_DIR}\"'")
 
 set(AERON_THIRDPARTY_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/thirdparty")
 
@@ -69,6 +72,7 @@ if(AERON_TESTS)
        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/googletest-release-1.8.0.zip
        URL_MD5 adfafc8512ab65fd3cf7955ef0100ff5
        PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/gmock"
+       CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
        BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/gmock/src/gmock-build/googlemock/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX};${AERON_THIRDPARTY_BINARY_DIR}/gmock/src/gmock-build/googlemock/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock_main${CMAKE_STATIC_LIBRARY_SUFFIX}"
        INSTALL_COMMAND ""
    )
@@ -92,6 +96,7 @@ if(AERON_BUILD_SAMPLES)
         hdr_histogram
         URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c.zip
         URL_MD5 8d1d6c6df1ee8342c180529a89568081
+        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram"
         BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram/src/hdr_histogram-build/src/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}"
         INSTALL_COMMAND ""
@@ -115,7 +120,8 @@ if(AERON_TESTS)
         google_benchmark
         URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-1.4.0.tar.gz
         URL_MD5 ccfaf2cd93ae20191b94f730b945423e
-        CMAKE_ARGS -DBENCHMARK_ENABLE_GTEST_TESTS=OFF;-DBENCHMARK_ENABLE_ASSEMBLY_TESTS=OFF
+        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};
+            -DBENCHMARK_ENABLE_GTEST_TESTS=OFF;-DBENCHMARK_ENABLE_ASSEMBLY_TESTS=OFF
         PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/google_benchmark"
         BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/google_benchmark/src/google_benchmark-build/src/${CMAKE_STATIC_LIBRARY_PREFIX}benchmark${CMAKE_STATIC_LIBRARY_SUFFIX}"
         INSTALL_COMMAND ""
@@ -150,22 +156,28 @@ if(NOT DEFINED CMAKE_CXX_STANDARD)
    set(CMAKE_CXX_STANDARD 11)
 endif()
 
+if(NOT DEFINED CMAKE_CXX_EXTENSIONS)
+   set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
+
+if(NOT DEFINED CMAKE_C_STANDARD)
+   set(CMAKE_C_STANDARD 11)
+endif()
+
+if(NOT DEFINED CMAKE_C_EXTENSIONS)
+   set(CMAKE_C_EXTENSIONS OFF)
+endif()
+
 # all UNIX-based platform compiler flags
 if(UNIX)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -std=c++11 -fexceptions -g -m64")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -std=c11 -g -m64")
-    else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -std=c++11 -fexceptions -g")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wpedantic -Wextra -Wno-unused-parameter -std=c11 -g")
-    endif()
+    add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter)
 
     if(C_WARNINGS_AS_ERRORS)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+        add_compile_options($<$<COMPILE_LANGUAGE:C>:-Werror>)
     endif(C_WARNINGS_AS_ERRORS)
 
     if(CXX_WARNINGS_AS_ERRORS)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror>)
     endif(CXX_WARNINGS_AS_ERRORS)
 
     if(SANITISE_BUILD)
@@ -174,29 +186,26 @@ if(UNIX)
     endif(SANITISE_BUILD)
 
     if (COVERAGE_BUILD)
-        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -fno-inline --coverage -g")
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -fno-inline --coverage -g")
+        add_compile_options(-O0 -fno-inline --coverage -g)
         SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     endif(COVERAGE_BUILD)
 
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Ofast")
+    if (AERON_ENABLE_NONSTANDARD_OPTIMIZATIONS)
+        add_compile_options($<$<CONFIG:Release>:-Ofast>)
+    endif ()
 endif()
 
 # platform specific flags
 if(APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-compare")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wsign-compare")
+    add_compile_options(-Wsign-compare)
     add_definitions(-DDarwin)
-    add_definitions(-Wno-deprecated-register)
+    add_compile_options(-Wno-deprecated-register)
 elseif(CYGWIN)
     add_definitions(-DWIN32)
     if(AERON_TESTS)
         add_definitions(-DGTEST_HAS_PTHREAD)
     endif()
-    string(REPLACE "-std=c++11" "-std=gnu++11" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    set(CMAKE_CXX_EXTENSIONS ON)
 elseif(MSVC)
     add_definitions(-DWIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -206,11 +215,11 @@ elseif(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP")
 
     if(C_WARNINGS_AS_ERRORS)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
+        add_compile_options($<$<COMPILE_LANGUAGE:C>:/WX>)
     endif(C_WARNINGS_AS_ERRORS)
 
     if(CXX_WARNINGS_AS_ERRORS)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)
     endif(CXX_WARNINGS_AS_ERRORS)
 endif()
 

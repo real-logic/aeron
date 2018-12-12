@@ -101,7 +101,7 @@ matrix:
             - ubuntu-toolchain-r-test
       script: cppbuild/cppbuild -b
 
-    - env: MATRIX_EVAL="brew install --with-toolchain llvm@6 && CC=clang-6.0 && CXX=clang++-6.0"
+    - env: COMPILER=g++
       language: c++
       compiler: clang
       os: osx

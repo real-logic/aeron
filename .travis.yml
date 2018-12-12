@@ -107,14 +107,6 @@ matrix:
       os: osx
       script: cppbuild/cppbuild -b
 
-    - env: MATRIX_EVAL="brew install gcc@8 && CC=gcc-8 && CXX=g++-8"
-      language: c++
-      compiler: gcc
-      os: osx
-      sudo: true
-      script: cppbuild/cppbuild -b
-      before_install: eval "${MATRIX_EVAL}"
-
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/

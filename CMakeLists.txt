@@ -171,7 +171,6 @@ endif()
 # all UNIX-based platform compiler flags
 if(UNIX)
     add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fexceptions>)
 
     if(C_WARNINGS_AS_ERRORS)
         add_compile_options($<$<COMPILE_LANGUAGE:C>:-Werror>)

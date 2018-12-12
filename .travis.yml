@@ -101,7 +101,7 @@ matrix:
             - ubuntu-toolchain-r-test
       script: cppbuild/cppbuild -b
 
-    - env: COMPILER=g++
+    - env: COMPILER=clang++
       language: c++
       compiler: clang
       os: osx

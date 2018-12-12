@@ -112,9 +112,7 @@ matrix:
       compiler: gcc
       os: osx
       script: cppbuild/cppbuild -b
-
-before_install:
-  - eval "${MATRIX_EVAL}"
+      before_install: eval "${MATRIX_EVAL}"
 
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock

@@ -1,6 +1,3 @@
-language: java
-
-os: linux
 
 before_script:
   - export CXX=$COMPILER
@@ -28,6 +25,7 @@ matrix:
       script: ./gradlew
 
     - env: COMPILER=clang++-4.0
+      language: c++
       compiler: clang
       addons:
         apt:
@@ -40,7 +38,9 @@ matrix:
       script: cppbuild/cppbuild -b
 
     - env: COMPILER=clang++-5.0
+      language: c++
       compiler: clang
+      os: linux
       addons:
         apt:
           packages:
@@ -52,7 +52,9 @@ matrix:
       script: cppbuild/cppbuild -b
 
     - env: COMPILER=clang++-6.0
+      language: c++
       compiler: clang
+      os: linux
       addons:
         apt:
           packages:
@@ -64,7 +66,9 @@ matrix:
       script: cppbuild/cppbuild -b
 
     - env: COMPILER=g++-6
+      language: c++
       compiler: gcc
+      os: linux
       addons:
         apt:
           packages:
@@ -74,7 +78,9 @@ matrix:
       script: cppbuild/cppbuild -b
 
     - env: COMPILER=g++-7
+      language: c++
       compiler: gcc
+      os: linux
       addons:
         apt:
           packages:
@@ -84,7 +90,9 @@ matrix:
       script: cppbuild/cppbuild -b
 
     - env: COMPILER=g++-8
+      language: c++
       compiler: gcc
+      os: linux
       addons:
         apt:
           packages:
@@ -93,7 +101,14 @@ matrix:
             - ubuntu-toolchain-r-test
       script: cppbuild/cppbuild -b
 
-    - env: MATRIX_EVAL="brew install gcc && CC=gcc-8 && CXX=g++-8"
+    - env: MATRIX_EVAL="brew install --with-toolchain llvm@6 && CC=clang-6.0 && CXX=clang++-6.0"
+      language: c++
+      compiler: clang
+      os: osx
+      script: cppbuild/cppbuild -b
+
+    - env: MATRIX_EVAL="brew install gcc8 && CC=gcc-8 && CXX=g++-8"
+      language: c++
       compiler: gcc
       os: osx
       script: cppbuild/cppbuild -b

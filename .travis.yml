@@ -1,7 +1,6 @@
 language: java
 
-os:
-- linux
+os: linux
 
 before_script:
 - export CXX=$COMPILER
@@ -30,7 +29,6 @@ matrix:
     script:
     - ./gradlew
 
-  # clang-4
   - env: COMPILER=clang++-4.0
     compiler: clang
     addons:
@@ -44,7 +42,6 @@ matrix:
     script:
     - cppbuild/cppbuild -b
 
-  # clang-5
   - env: COMPILER=clang++-5.0
     compiler: clang
     addons:
@@ -58,7 +55,6 @@ matrix:
     script:
     - cppbuild/cppbuild -b
 
-  # clang-6
   - env: COMPILER=clang++-6.0
     compiler: clang
     addons:
@@ -72,7 +68,20 @@ matrix:
     script:
     - cppbuild/cppbuild -b
 
-  # gcc-6
+  - env: COMPILER=clang++-6.0
+    compiler: clang
+    os: osx
+    addons:
+      apt:
+        packages:
+          - clang-6.0
+          - libstdc++-7-dev
+        sources:
+          - ubuntu-toolchain-r-test
+          - llvm-toolchain-trusty-6.0
+    script:
+      - cppbuild/cppbuild -b
+
   - env: COMPILER=g++-6
     compiler: gcc
     addons:
@@ -84,7 +93,6 @@ matrix:
     script:
     - cppbuild/cppbuild -b
 
-  # gcc-7
   - env: COMPILER=g++-7
     compiler: gcc
     addons:
@@ -96,7 +104,6 @@ matrix:
     script:
     - cppbuild/cppbuild -b
 
-  # gcc-8
   - env: COMPILER=g++-8
     compiler: gcc
     addons:
@@ -108,6 +115,18 @@ matrix:
     script:
     - cppbuild/cppbuild -b
 
+  - env: COMPILER=g++-8
+    compiler: gcc
+    os: osx
+    addons:
+      apt:
+        packages:
+          - g++-8
+        sources:
+          - ubuntu-toolchain-r-test
+    script:
+      - cppbuild/cppbuild -b
+      -
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/

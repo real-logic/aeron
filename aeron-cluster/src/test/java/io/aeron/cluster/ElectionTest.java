@@ -171,6 +171,7 @@ public class ElectionTest
             leadershipTermId,
             logPosition,
             candidateTermId,
+            logPosition,
             candidateMember.id(),
             logSessionId);
         verify(memberStatusPublisher).newLeadershipTerm(
@@ -178,6 +179,7 @@ public class ElectionTest
             leadershipTermId,
             logPosition,
             candidateTermId,
+            logPosition,
             candidateMember.id(),
             logSessionId);
         assertThat(election.state(), is(Election.State.LEADER_READY));
@@ -230,7 +232,8 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
 
         final int logSessionId = -7;
-        election.onNewLeadershipTerm(leadershipTermId, logPosition, candidateTermId, candidateId, logSessionId);
+        election.onNewLeadershipTerm(
+            leadershipTermId, logPosition, candidateTermId, logPosition, candidateId, logSessionId);
         assertThat(election.state(), is(Election.State.FOLLOWER_REPLAY));
 
         when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString()))

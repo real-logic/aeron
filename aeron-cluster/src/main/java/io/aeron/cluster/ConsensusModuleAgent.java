@@ -416,6 +416,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     this.leadershipTermId,
                     position,
                     this.leadershipTermId,
+                    this.logPosition(),
                     thisMember.id(),
                     logPublisher.sessionId());
             }
@@ -455,13 +456,14 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final long logLeadershipTermId,
         final long logPosition,
         final long leadershipTermId,
+        final long maxLogPosition,
         final int leaderMemberId,
         final int logSessionId)
     {
         if (null != election)
         {
             election.onNewLeadershipTerm(
-                logLeadershipTermId, logPosition, leadershipTermId, leaderMemberId, logSessionId);
+                logLeadershipTermId, logPosition, leadershipTermId, maxLogPosition, leaderMemberId, logSessionId);
         }
         else if (leadershipTermId > this.leadershipTermId)
         {

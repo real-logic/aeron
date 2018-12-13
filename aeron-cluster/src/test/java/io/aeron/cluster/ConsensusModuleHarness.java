@@ -670,14 +670,21 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 final long logLeadershipTermId,
                 final long logPosition,
                 final long leadershipTermId,
+                final long maxLogPosition,
                 final int leaderMemberId,
                 final int logSessionId)
             {
                 counters.onNewLeadershipTermCounter++;
-                stream.format("onNewLeadershipTerm[%d] %d %d %d %d %d%n",
-                    index, logLeadershipTermId, logPosition, leadershipTermId, leaderMemberId, logSessionId);
+                stream.format("onNewLeadershipTerm[%d] %d %d %d %d %d %d%n",
+                    index,
+                    logLeadershipTermId,
+                    logPosition,
+                    leadershipTermId,
+                    maxLogPosition,
+                    leaderMemberId,
+                    logSessionId);
                 nextListener.onNewLeadershipTerm(
-                    logLeadershipTermId, logPosition, leadershipTermId, leaderMemberId, logSessionId);
+                    logLeadershipTermId, logPosition, leadershipTermId, maxLogPosition, leaderMemberId, logSessionId);
             }
 
             public void onAppendedPosition(

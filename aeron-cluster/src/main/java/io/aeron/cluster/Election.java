@@ -256,6 +256,7 @@ class Election implements AutoCloseable
                     logLeadershipTermId,
                     consensusModuleAgent.logStopPosition(logLeadershipTermId),
                     logLeadershipTermId + 1,
+                    this.logPosition,
                     thisMember.id(),
                     logSessionId);
             }
@@ -314,10 +315,12 @@ class Election implements AutoCloseable
         }
     }
 
+    @SuppressWarnings("unused")
     void onNewLeadershipTerm(
         final long logLeadershipTermId,
         final long logPosition,
         final long leadershipTermId,
+        final long maxLogPosition,
         final int leaderMemberId,
         final int logSessionId)
     {
@@ -851,6 +854,7 @@ class Election implements AutoCloseable
             logLeadershipTermId,
             logPosition,
             leadershipTermId,
+            logPosition,
             thisMember.id(),
             logSessionId);
     }

@@ -185,13 +185,12 @@ class Catalog implements AutoCloseable
             else
             {
                 forceWrites(archiveDirChannel, forceWrites, forceMetadata);
+                recordLength = DEFAULT_RECORD_LENGTH;
 
                 new CatalogHeaderEncoder()
                     .wrap(catalogBuffer, 0)
                     .entryLength(DEFAULT_RECORD_LENGTH)
                     .version(CatalogHeaderEncoder.SCHEMA_VERSION);
-
-                recordLength = DEFAULT_RECORD_LENGTH;
             }
 
             maxDescriptorStringsCombinedLength =

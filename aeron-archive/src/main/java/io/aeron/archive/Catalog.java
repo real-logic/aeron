@@ -169,13 +169,8 @@ class Catalog implements AutoCloseable
             catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
             fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
 
-            final UnsafeBuffer catalogHeaderBuffer = new UnsafeBuffer(catalogByteBuffer);
-
             catalogHeaderDecoder.wrap(
-                catalogHeaderBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
-
-            final CatalogHeaderEncoder catalogHeaderEncoder = new CatalogHeaderEncoder();
-            catalogHeaderEncoder.wrap(catalogHeaderBuffer, 0);
+                catalogBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
 
             if (catalogPreExists)
             {
@@ -191,8 +186,10 @@ class Catalog implements AutoCloseable
             {
                 forceWrites(archiveDirChannel, forceWrites, forceMetadata);
 
-                catalogHeaderEncoder.entryLength(DEFAULT_RECORD_LENGTH);
-                catalogHeaderEncoder.version(CatalogHeaderEncoder.SCHEMA_VERSION);
+                new CatalogHeaderEncoder()
+                    .wrap(catalogBuffer, 0)
+                    .entryLength(DEFAULT_RECORD_LENGTH)
+                    .version(CatalogHeaderEncoder.SCHEMA_VERSION);
 
                 recordLength = DEFAULT_RECORD_LENGTH;
             }
@@ -238,10 +235,8 @@ class Catalog implements AutoCloseable
             catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
             fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
 
-            final UnsafeBuffer catalogHeaderBuffer = new UnsafeBuffer(catalogByteBuffer);
-
             catalogHeaderDecoder.wrap(
-                catalogHeaderBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
+                catalogBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
 
             if (catalogHeaderDecoder.version() != CatalogHeaderDecoder.SCHEMA_VERSION)
             {

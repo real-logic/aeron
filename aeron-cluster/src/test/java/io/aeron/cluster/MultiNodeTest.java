@@ -147,7 +147,7 @@ public class MultiNodeTest
             harness.createReplayPublication("localhost:9040", null, 0L, true);
 
             harness.memberStatusPublisher().stopCatchup(
-                harness.memberStatusPublication(1), 0L, 0L, 1);
+                harness.memberStatusPublication(1), 0L, 0L, 0);
 
             harness.awaitMemberStatusMessage(1, harness.onAppendedPositionCounter(1));
 
@@ -276,9 +276,10 @@ public class MultiNodeTest
             harness.createReplayPublication("localhost:9040", recordingExtent, position, false);
 
             harness.memberStatusPublisher().stopCatchup(
-                harness.memberStatusPublication(1), 0L, position, 1);
+                harness.memberStatusPublication(1), 1L, position, 0);
 
-            harness.awaitMemberStatusMessage(1, harness.onAppendedPositionCounter(1));
+            harness.awaitEndOfElection();
+            harness.awaitAllMemberStatusMessages(1);
 
             verify(mockMemberStatusListeners[1], atLeastOnce()).onAppendedPosition(1L, position, 0);
 

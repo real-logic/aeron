@@ -35,6 +35,7 @@ import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.*;
 import static java.util.stream.Collectors.toList;
 
@@ -312,22 +314,23 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
         return 0;
     }
 
-    void awaitMemberStatusMessage(final int index)
+    void awaitMemberStatusMessage(final int index, final IntSupplier counterValue, final int initialCounterValue)
     {
         idleStrategy.reset();
-        while (memberStatusAdapters[index].poll(1) == 0)
+
+        while (counterValue.getAsInt() <= initialCounterValue)
         {
-            idleStrategy.idle();
+            idleStrategy.idle(memberStatusAdapters[index].poll());
         }
     }
 
-    void awaitMemberStatusMessage(final int index, final IntSupplier counterValue, final int initialCounterValue)
+    void awaitAllMemberStatusMessages(final int index)
     {
-        do
+        idleStrategy.reset();
+
+        while (memberStatusAdapters[index].poll() > 0)
         {
-            awaitMemberStatusMessage(index);
         }
-        while (counterValue.getAsInt() == initialCounterValue);
     }
 
     void awaitMemberStatusMessage(final int index, final IntSupplier counterValue)
@@ -362,6 +365,33 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     MemberStatusPublisher memberStatusPublisher()
     {
         return memberStatusPublisher;
+    }
+
+    long electionState()
+    {
+        final CountersReader counters = clusteredMediaDriver.mediaDriver().context().countersManager();
+
+        final long[] electionState = {NULL_VALUE};
+
+        counters.forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                if (typeId == Election.ELECTION_STATE_TYPE_ID)
+                {
+                    electionState[0] = counters.getCounterValue(counterId);
+                }
+            });
+
+        return electionState[0];
+    }
+
+    void awaitEndOfElection()
+    {
+        idleStrategy.reset();
+        while (electionState() != (long)NULL_VALUE)
+        {
+            idleStrategy.idle();
+        }
     }
 
     Publication createLogPublication(

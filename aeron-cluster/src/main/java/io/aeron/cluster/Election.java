@@ -766,11 +766,8 @@ class Election implements AutoCloseable
         if (consensusModuleAgent.hasAppendReachedPosition(logSubscription, logSessionId, catchupLogPosition))
         {
             logPosition = catchupLogPosition;
-            if (memberStatusPublisher.stopCatchup(leaderMember.publication(), logSessionId, thisMember.id()))
-            {
-                state(State.FOLLOWER_TRANSITION, nowMs);
-                workCount += 1;
-            }
+            state(State.FOLLOWER_TRANSITION, nowMs);
+            workCount += 1;
         }
 
         return workCount;

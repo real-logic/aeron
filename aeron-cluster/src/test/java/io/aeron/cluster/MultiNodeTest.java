@@ -147,9 +147,8 @@ public class MultiNodeTest
             final Publication replayPublication = harness.createReplayPublication(
                 "localhost:9040", null, 0L, true);
 
-            harness.awaitMemberStatusMessage(1, harness.onStopCatchup(1));
-
-            verify(mockMemberStatusListeners[1]).onStopCatchup(publication.sessionId(), 0);
+            harness.memberStatusPublisher().stopCatchup(
+                harness.memberStatusPublication(1), 0L, 0L, 1);
 
             harness.awaitMemberStatusMessage(1, harness.onAppendedPositionCounter(1));
 
@@ -278,9 +277,8 @@ public class MultiNodeTest
             final Publication replayPublication = harness.createReplayPublication(
                 "localhost:9040", recordingExtent, position, false);
 
-            harness.awaitMemberStatusMessage(1, harness.onStopCatchup(1));
-
-            verify(mockMemberStatusListeners[1]).onStopCatchup(publication.sessionId(), 0);
+            harness.memberStatusPublisher().stopCatchup(
+                harness.memberStatusPublication(1), 0L, position, 1);
 
             harness.awaitMemberStatusMessage(1, harness.onAppendedPositionCounter(1));
 

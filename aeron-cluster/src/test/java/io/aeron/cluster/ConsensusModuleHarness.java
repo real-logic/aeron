@@ -706,12 +706,12 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
                 nextListener.onCatchupPosition(leadershipTermId, logPosition, followerMemberId);
             }
 
-            public void onStopCatchup(final int replaySessionId, final int followerMemberId)
+            public void onStopCatchup(final long leadershipTermId, final long logPosition, final int followerMemberId)
             {
                 counters.onStopCatchupCounter++;
-                stream.format("onStopCatchup[%d] %d %d%n",
-                    index, replaySessionId, followerMemberId);
-                nextListener.onStopCatchup(replaySessionId, followerMemberId);
+                stream.format("onStopCatchup[%d] %d %d %d%n",
+                    index, leadershipTermId, logPosition, followerMemberId);
+                nextListener.onStopCatchup(leadershipTermId, logPosition, followerMemberId);
             }
 
             public void onAddPassiveMember(final long correlationId, final String memberEndpoints)

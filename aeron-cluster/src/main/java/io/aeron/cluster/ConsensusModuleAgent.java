@@ -529,9 +529,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    public void onStopCatchup(final int replaySessionId, final int followerMemberId)
+    public void onStopCatchup(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
-        if (null != logAdapter && null != replayLogDestination)
+        if (null != logAdapter && null != replayLogDestination && followerMemberId == memberId)
         {
             logAdapter.removeDestination(replayLogDestination);
             replayLogDestination = null;
@@ -1327,7 +1327,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             if (member.logPosition() >= logPublisher.position())
             {
                 archive.stopReplay(member.catchupReplaySessionId());
-                if (memberStatusPublisher.stopCatchup(member.publication(), 0, memberId))
+                if (memberStatusPublisher.stopCatchup(
+                    member.publication(), leadershipTermId, logPublisher.position(), member.id()))
                 {
                     member.catchupReplaySessionId(Aeron.NULL_VALUE);
                 }

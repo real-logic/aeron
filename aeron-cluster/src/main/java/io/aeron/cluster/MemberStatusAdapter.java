@@ -182,7 +182,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 memberStatusListener.onStopCatchup(
-                    stopCatchupDecoder.replaySessionId(),
+                    stopCatchupDecoder.leadershipTermId(),
+                    stopCatchupDecoder.logPosition(),
                     stopCatchupDecoder.followerMemberId());
                 break;
 

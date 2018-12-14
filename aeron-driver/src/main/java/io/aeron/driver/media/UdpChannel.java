@@ -23,6 +23,7 @@ import io.aeron.driver.exceptions.InvalidChannelException;
 import org.agrona.BitUtil;
 
 import java.net.*;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.driver.media.NetworkUtil.*;
@@ -321,7 +322,7 @@ public final class UdpChannel
 
         final UdpChannel that = (UdpChannel)o;
 
-        return !(canonicalForm != null ? !canonicalForm.equals(that.canonicalForm) : that.canonicalForm != null);
+        return Objects.equals(canonicalForm, that.canonicalForm);
     }
 
     public int hashCode()

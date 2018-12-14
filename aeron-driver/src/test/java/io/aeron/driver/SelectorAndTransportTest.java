@@ -100,11 +100,8 @@ public class SelectorAndTransportTest
                 processLoop(dataTransportPoller, 5);
             }
 
-            if (null != dataTransportPoller)
-            {
-                dataTransportPoller.close();
-                controlTransportPoller.close();
-            }
+            dataTransportPoller.close();
+            controlTransportPoller.close();
         }
         catch (final Exception ex)
         {

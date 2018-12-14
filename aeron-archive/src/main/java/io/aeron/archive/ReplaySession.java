@@ -282,7 +282,7 @@ class ReplaySession implements Session, AutoCloseable
     {
         int fragments = 0;
 
-        if (recordingPosition != null && replayPosition == stopPosition && noNewData(replayPosition, stopPosition))
+        if (recordingPosition != null && replayPosition >= stopPosition && noNewData(replayPosition, stopPosition))
         {
             return fragments;
         }

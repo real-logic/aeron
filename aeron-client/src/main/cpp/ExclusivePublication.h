@@ -248,6 +248,24 @@ public:
     }
 
     /**
+     * Available window for offering into a publication before the {@link #positionLimit()} is reached.
+     *
+     * @return  window for offering into a publication before the {@link #positionLimit()} is reached. If
+     * the publication is closed then {@link #CLOSED} will be returned.
+     */
+    inline std::int64_t availableWindow() const
+    {
+        std::int64_t result = PUBLICATION_CLOSED;
+
+        if (!isClosed())
+        {
+            result = m_publicationLimit.getVolatile() - position();
+        }
+
+        return result;
+    }
+
+    /**
      * Get the counter id used to represent the channel status.
      *
      * @return the counter id used to represent the channel status.

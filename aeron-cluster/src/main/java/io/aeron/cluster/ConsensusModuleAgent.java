@@ -841,7 +841,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     clusterTimeMs,
                     thisMember.id(),
                     clusterMembers.length,
-                    ChangeType.LEAVE,
+                    ChangeType.QUIT,
                     memberId,
                     newClusterMembersString))
                 {
@@ -1014,7 +1014,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 clusterMemberJoined(memberId, newMembers);
             }
         }
-        else if (ChangeType.LEAVE == eventType)
+        else if (ChangeType.QUIT == eventType)
         {
             if (memberId == this.memberId)
             {

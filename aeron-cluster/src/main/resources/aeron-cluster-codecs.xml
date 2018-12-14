@@ -54,7 +54,7 @@
         </enum>
         <enum name="ChangeType" encodingType="int32" description="Type of Cluster Change Event">
             <validValue name="JOIN">0</validValue>
-            <validValue name="LEAVE">1</validValue>
+            <validValue name="QUIT">1</validValue>
         </enum>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
     </types>

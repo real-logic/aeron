@@ -354,7 +354,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         clusterTimeMs = timestampMs;
 
-        if (memberId == this.memberId && eventType == ChangeType.LEAVE)
+        if (memberId == this.memberId && eventType == ChangeType.QUIT)
         {
             consensusModuleProxy.ack(logPosition, ackId++, serviceId);
             ctx.terminationHook().run();

@@ -1025,7 +1025,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 final boolean wasLeader = leaderMemberId == memberId;
 
-                clusterMemberLeft(memberId);
+                clusterMemberQuit(memberId);
 
                 if (wasLeader)
                 {
@@ -2356,11 +2356,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         rankedPositions = new long[this.clusterMembers.length];
     }
 
-    private void clusterMemberLeft(final int memberId)
+    private void clusterMemberQuit(final int memberId)
     {
-        this.clusterMembers = ClusterMember.removeMember(this.clusterMembers, memberId);
+        clusterMembers = ClusterMember.removeMember(clusterMembers, memberId);
         clusterMemberByIdMap.remove(memberId);
-        rankedPositions = new long[this.clusterMembers.length];
+        rankedPositions = new long[clusterMembers.length];
     }
 
     private void closeExistingLog()

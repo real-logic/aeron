@@ -212,11 +212,7 @@ public:
 
         if (!isClosed())
         {
-            const std::int64_t rawTail = LogBufferDescriptor::rawTailVolatile(m_logMetaDataBuffer);
-            const std::int32_t termOffset = LogBufferDescriptor::termOffset(rawTail, termBufferLength());
-
-            result = LogBufferDescriptor::computePosition(
-                LogBufferDescriptor::termId(rawTail), termOffset, m_positionBitsToShift, m_initialTermId);
+            result = m_termBeginPosition + m_termOffset;
         }
 
         return result;

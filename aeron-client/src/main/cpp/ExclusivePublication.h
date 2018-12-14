@@ -580,7 +580,8 @@ private:
             return m_termBeginPosition + resultingOffset;
         }
 
-        if ((m_termBeginPosition + termBufferLength()) >= m_maxPossiblePosition)
+        const std::int32_t termLength = termBufferLength();
+        if ((m_termBeginPosition + termLength) >= m_maxPossiblePosition)
         {
             return MAX_POSITION_EXCEEDED;
         }
@@ -591,8 +592,7 @@ private:
         m_activePartitionIndex = nextIndex;
         m_termOffset = 0;
         m_termId = nextTermId;
-        m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(
-            nextTermId, m_positionBitsToShift, m_initialTermId);
+        m_termBeginPosition += termLength;
 
         const std::int32_t termCount = nextTermId - m_initialTermId;
 

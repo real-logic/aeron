@@ -252,17 +252,17 @@
         <field name="logSessionId"         id="5" type="int32"/>
     </sbe:message>
 
-    <sbe:message name="ClusterChangeEvent"
+    <sbe:message name="MembershipChangeEvent"
                  id="26"
-                 description="Event for the change of the cluster list that affects the size">
+                 description="Event for the change of the cluster membership that affects the cluster size">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="logPosition"          id="2" type="int64"/>
         <field name="timestamp"            id="3" type="time_t"/>
         <field name="leaderMemberId"       id="4" type="int32"/>
         <field name="clusterSize"          id="5" type="int32"/>
-        <field name="eventType"            id="6" type="ChangeType"/>
+        <field name="changeType"           id="6" type="ChangeType"/>
         <field name="memberId"             id="7" type="int32"/>
-        <data name="clusterMembers"        id="8" type="varAsciiEncoding"/>
+        <data  name="clusterMembers"        id="8" type="varAsciiEncoding"/>
     </sbe:message>
 
     <!-- Messages for service control between clustered services and the Consensus Module -->

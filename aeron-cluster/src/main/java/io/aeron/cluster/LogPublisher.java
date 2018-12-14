@@ -42,7 +42,7 @@ class LogPublisher
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();
     private final ClusterActionRequestEncoder clusterActionRequestEncoder = new ClusterActionRequestEncoder();
     private final NewLeadershipTermEventEncoder newLeadershipTermEventEncoder = new NewLeadershipTermEventEncoder();
-    private final ClusterChangeEventEncoder clusterChangeEventEncoder = new ClusterChangeEventEncoder();
+    private final MembershipChangeEventEncoder membershipChangeEventEncoder = new MembershipChangeEventEncoder();
     private final UnsafeBuffer sessionHeaderBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
@@ -290,42 +290,42 @@ class LogPublisher
         return false;
     }
 
-    long calculatePositionForClusterChangeEvent(final String clusterMembers)
+    long calculatePositionForMembershipChangeEvent(final String clusterMembers)
     {
         final int length =
             DataHeaderFlyweight.HEADER_LENGTH +
             MessageHeaderEncoder.ENCODED_LENGTH +
-            ClusterChangeEventEncoder.BLOCK_LENGTH +
-            ClusterChangeEventEncoder.clusterMembersHeaderLength() +
+            MembershipChangeEventEncoder.BLOCK_LENGTH +
+            MembershipChangeEventEncoder.clusterMembersHeaderLength() +
             clusterMembers.length();
 
         return position() + BitUtil.align(length, FRAME_ALIGNMENT);
     }
 
-    boolean appendClusterChangeEvent(
+    boolean appendMembershipChangeEvent(
         final long leadershipTermId,
         final long logPosition,
         final long nowMs,
         final int leaderMemberId,
         final int clusterSize,
-        final ChangeType eventType,
+        final ChangeType changeType,
         final int memberId,
         final String clusterMembers)
     {
         long result;
 
-        clusterChangeEventEncoder
+        membershipChangeEventEncoder
             .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
             .leadershipTermId(leadershipTermId)
             .logPosition(logPosition)
             .timestamp(nowMs)
             .leaderMemberId(leaderMemberId)
             .clusterSize(clusterSize)
-            .eventType(eventType)
+            .changeType(changeType)
             .memberId(memberId)
             .clusterMembers(clusterMembers);
 
-        final int length = clusterChangeEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
+        final int length = membershipChangeEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do

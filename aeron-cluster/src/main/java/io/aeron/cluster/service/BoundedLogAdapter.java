@@ -43,7 +43,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder actionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
-    private final ClusterChangeEventDecoder clusterChangeEventDecoder = new ClusterChangeEventDecoder();
+    private final MembershipChangeEventDecoder membershipChangeEventDecoder = new MembershipChangeEventDecoder();
 
     private final Image image;
     private final ReadableCounter upperBound;
@@ -174,22 +174,22 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     newLeadershipTermEventDecoder.logSessionId());
                 break;
 
-            case ClusterChangeEventDecoder.TEMPLATE_ID:
-                clusterChangeEventDecoder.wrap(
+            case MembershipChangeEventDecoder.TEMPLATE_ID:
+                membershipChangeEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                agent.onClusterChange(
-                    clusterChangeEventDecoder.leadershipTermId(),
-                    clusterChangeEventDecoder.logPosition(),
-                    clusterChangeEventDecoder.timestamp(),
-                    clusterChangeEventDecoder.leaderMemberId(),
-                    clusterChangeEventDecoder.clusterSize(),
-                    clusterChangeEventDecoder.eventType(),
-                    clusterChangeEventDecoder.memberId(),
-                    clusterChangeEventDecoder.clusterMembers());
+                agent.onMembershipChange(
+                    membershipChangeEventDecoder.leadershipTermId(),
+                    membershipChangeEventDecoder.logPosition(),
+                    membershipChangeEventDecoder.timestamp(),
+                    membershipChangeEventDecoder.leaderMemberId(),
+                    membershipChangeEventDecoder.clusterSize(),
+                    membershipChangeEventDecoder.changeType(),
+                    membershipChangeEventDecoder.memberId(),
+                    membershipChangeEventDecoder.clusterMembers());
                 break;
         }
 

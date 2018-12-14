@@ -42,7 +42,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder clusterActionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
-    private final ClusterChangeEventDecoder clusterChangeEventDecoder = new ClusterChangeEventDecoder();
+    private final MembershipChangeEventDecoder membershipChangeEventDecoder = new MembershipChangeEventDecoder();
 
     LogAdapter(final Image image, final ConsensusModuleAgent consensusModuleAgent)
     {
@@ -166,22 +166,22 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     newLeadershipTermEventDecoder.logSessionId());
                 break;
 
-            case ClusterChangeEventDecoder.TEMPLATE_ID:
-                clusterChangeEventDecoder.wrap(
+            case MembershipChangeEventDecoder.TEMPLATE_ID:
+                membershipChangeEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onReplayClusterChange(
-                    clusterChangeEventDecoder.leadershipTermId(),
-                    clusterChangeEventDecoder.logPosition(),
-                    clusterChangeEventDecoder.timestamp(),
-                    clusterChangeEventDecoder.leaderMemberId(),
-                    clusterChangeEventDecoder.clusterSize(),
-                    clusterChangeEventDecoder.eventType(),
-                    clusterChangeEventDecoder.memberId(),
-                    clusterChangeEventDecoder.clusterMembers());
+                consensusModuleAgent.onMembershipClusterChange(
+                    membershipChangeEventDecoder.leadershipTermId(),
+                    membershipChangeEventDecoder.logPosition(),
+                    membershipChangeEventDecoder.timestamp(),
+                    membershipChangeEventDecoder.leaderMemberId(),
+                    membershipChangeEventDecoder.clusterSize(),
+                    membershipChangeEventDecoder.changeType(),
+                    membershipChangeEventDecoder.memberId(),
+                    membershipChangeEventDecoder.clusterMembers());
                 break;
 
             case ClusterActionRequestDecoder.TEMPLATE_ID:

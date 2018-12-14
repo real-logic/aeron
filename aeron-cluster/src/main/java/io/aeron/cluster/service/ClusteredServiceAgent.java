@@ -342,19 +342,19 @@ class ClusteredServiceAgent implements Agent, Cluster
     }
 
     @SuppressWarnings("unused")
-    void onClusterChange(
+    void onMembershipChange(
         final long leadershipTermId,
         final long logPosition,
         final long timestampMs,
         final int leaderMemberId,
         final int clusterSize,
-        final ChangeType eventType,
+        final ChangeType changeType,
         final int memberId,
         final String clusterMembers)
     {
         clusterTimeMs = timestampMs;
 
-        if (memberId == this.memberId && eventType == ChangeType.QUIT)
+        if (memberId == this.memberId && changeType == ChangeType.QUIT)
         {
             consensusModuleProxy.ack(logPosition, ackId++, serviceId);
             ctx.terminationHook().run();

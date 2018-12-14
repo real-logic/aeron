@@ -833,9 +833,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 final ClusterMember[] newClusterMembers = ClusterMember.removeMember(clusterMembers, memberId);
                 final String newClusterMembersString = ClusterMember.encodeAsString(newClusterMembers);
-                final long position = logPublisher.calculatePositionForClusterChangeEvent(newClusterMembersString);
+                final long position = logPublisher.calculatePositionForMembershipChangeEvent(newClusterMembersString);
 
-                if (logPublisher.appendClusterChangeEvent(
+                if (logPublisher.appendMembershipChangeEvent(
                     leadershipTermId,
                     position,
                     clusterTimeMs,
@@ -976,13 +976,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     }
 
     @SuppressWarnings("unused")
-    void onReplayClusterChange(
+    void onMembershipClusterChange(
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
         final int leaderMemberId,
         final int clusterSize,
-        final ChangeType eventType,
+        final ChangeType changeType,
         final int memberId,
         final String clusterMembers)
     {
@@ -991,7 +991,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         final ClusterMember[] newMembers = ClusterMember.parse(clusterMembers);
 
-        if (ChangeType.JOIN == eventType)
+        if (ChangeType.JOIN == changeType)
         {
             if (memberId == this.memberId)
             {
@@ -1014,7 +1014,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 clusterMemberJoined(memberId, newMembers);
             }
         }
-        else if (ChangeType.QUIT == eventType)
+        else if (ChangeType.QUIT == changeType)
         {
             if (memberId == this.memberId)
             {
@@ -1807,7 +1807,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 final ClusterMember[] newMembers = ClusterMember.addMember(clusterMembers, member);
 
-                if (logPublisher.appendClusterChangeEvent(
+                if (logPublisher.appendMembershipChangeEvent(
                     this.leadershipTermId,
                     logPublisher.position(),
                     clusterTimeMs,

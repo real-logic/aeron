@@ -21,7 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 interface SimpleFragmentHandler
 {
     /**
-     * Called by the {@link RecordingFragmentReader}. Implementors need to process DATA and PADDING fragments.
+     * Called by the {@link RecordingReader}. Implementors need to process DATA and PADDING fragments.
      *
      * @param buffer        containing the fragment.
      * @param offset        the data begins at.
@@ -29,7 +29,6 @@ interface SimpleFragmentHandler
      * @param frameType     to distinguish between DATA and PADDING fragments.
      * @param flags         flags for the frame.
      * @param reservedValue stored for the frame.
-     * @return true if fragment processed, false to abort.
      */
-    boolean onFragment(UnsafeBuffer buffer, int offset, int length, int frameType, byte flags, long reservedValue);
+    void onFragment(UnsafeBuffer buffer, int offset, int length, int frameType, byte flags, long reservedValue);
 }

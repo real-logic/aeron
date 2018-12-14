@@ -128,7 +128,7 @@ public class ReplaySessionTest
     @Test
     public void verifyRecordingFile()
     {
-        try (RecordingFragmentReader reader = new RecordingFragmentReader(
+        try (RecordingReader reader = new RecordingReader(
             mockCatalog,
             recordingSummary,
             archiveDir,
@@ -136,7 +136,7 @@ public class ReplaySessionTest
             AeronArchive.NULL_LENGTH,
             null))
         {
-            int fragments = reader.controlledPoll(
+            int fragments = reader.poll(
                 (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
@@ -144,14 +144,12 @@ public class ReplaySessionTest
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
                     assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
                     assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.UNFRAGMENTED);
-
-                    return true;
                 },
                 1);
 
             assertEquals(1, fragments);
 
-            fragments = reader.controlledPoll(
+            fragments = reader.poll(
                 (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
@@ -159,14 +157,12 @@ public class ReplaySessionTest
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
                     assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
                     assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.BEGIN_FRAG_FLAG);
-
-                    return true;
                 },
                 1);
 
             assertEquals(1, fragments);
 
-            fragments = reader.controlledPoll(
+            fragments = reader.poll(
                 (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
@@ -174,14 +170,12 @@ public class ReplaySessionTest
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
                     assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_DATA);
                     assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.END_FRAG_FLAG);
-
-                    return true;
                 },
                 1);
 
             assertEquals(1, fragments);
 
-            fragments = reader.controlledPoll(
+            fragments = reader.poll(
                 (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
@@ -189,8 +183,6 @@ public class ReplaySessionTest
                     assertEquals(length, FRAME_LENGTH - HEADER_LENGTH);
                     assertEquals(FrameDescriptor.frameType(buffer, frameOffset), HDR_TYPE_PAD);
                     assertEquals(FrameDescriptor.frameFlags(buffer, frameOffset), FrameDescriptor.UNFRAGMENTED);
-
-                    return true;
                 },
                 1);
 
@@ -204,7 +196,6 @@ public class ReplaySessionTest
         final long correlationId = 1L;
 
         try (ReplaySession replaySession = replaySession(
-            RECORDING_POSITION,
             FRAME_LENGTH,
             correlationId,
             mockReplayPub,
@@ -270,7 +261,6 @@ public class ReplaySessionTest
         final long correlationId = 1L;
 
         try (ReplaySession replaySession = replaySession(
-            RECORDING_POSITION,
             length,
             correlationId,
             mockReplayPub,
@@ -312,7 +302,6 @@ public class ReplaySessionTest
         final long length = 1024L;
         final long correlationId = 1L;
         try (ReplaySession replaySession = replaySession(
-            RECORDING_POSITION,
             length,
             correlationId,
             mockReplayPub,
@@ -360,7 +349,6 @@ public class ReplaySessionTest
         final long correlationId = 1L;
 
         try (ReplaySession replaySession = replaySession(
-            RECORDING_POSITION,
             length,
             correlationId,
             mockReplayPub,
@@ -463,7 +451,6 @@ public class ReplaySessionTest
     }
 
     private ReplaySession replaySession(
-        final long recordingPosition,
         final long length,
         final long correlationId,
         final ExclusivePublication replay,
@@ -471,7 +458,7 @@ public class ReplaySessionTest
         final Counter recordingPositionCounter)
     {
         return new ReplaySession(
-            recordingPosition,
+            RECORDING_POSITION,
             length,
             REPLAY_ID,
             CONNECT_TIMEOUT_MS,

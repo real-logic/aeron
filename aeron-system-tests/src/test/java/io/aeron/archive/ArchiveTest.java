@@ -622,7 +622,7 @@ public class ArchiveTest
             Thread.yield();
         }
 
-        try (RecordingFragmentReader archiveDataFileReader = new RecordingFragmentReader(
+        try (RecordingReader recordingReader = new RecordingReader(
             catalog,
             catalog.recordingSummary(recordingId, new RecordingSummary()),
             archiveDir,
@@ -630,9 +630,9 @@ public class ArchiveTest
             AeronArchive.NULL_LENGTH,
             null))
         {
-            while (!archiveDataFileReader.isDone())
+            while (!recordingReader.isDone())
             {
-                archiveDataFileReader.controlledPoll(this::validateReplayFragment, messageCount);
+                recordingReader.poll(this::validateRecordingFragment, messageCount);
                 SystemTest.checkInterruptedStatus();
             }
         }
@@ -641,14 +641,13 @@ public class ArchiveTest
         assertThat(this.messageCount, is(messageCount));
     }
 
-    @SuppressWarnings("unused")
-    private boolean validateReplayFragment(
+    private void validateRecordingFragment(
         final UnsafeBuffer buffer,
         final int offset,
         final int length,
-        final int frameType,
-        final byte flags,
-        final long reservedValue)
+        @SuppressWarnings("unused") final int frameType,
+        @SuppressWarnings("unused") final byte flags,
+        @SuppressWarnings("unused") final long reservedValue)
     {
         if (!FrameDescriptor.isPaddingFrame(buffer, offset - HEADER_LENGTH))
         {
@@ -664,8 +663,6 @@ public class ArchiveTest
             remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
             messageCount++;
         }
-
-        return true;
     }
 
     @SuppressWarnings("unused")

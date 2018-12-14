@@ -166,7 +166,7 @@ public class RecordingSessionTest
         recordingSummary.sessionId = SESSION_ID;
         recordingSummary.stopPosition = START_POSITION + RECORDED_BLOCK_LENGTH;
 
-        try (RecordingFragmentReader reader = new RecordingFragmentReader(
+        try (RecordingReader reader = new RecordingReader(
             mockCatalog,
             recordingSummary,
             archiveDir,
@@ -174,14 +174,13 @@ public class RecordingSessionTest
             AeronArchive.NULL_LENGTH,
             null))
         {
-            final int fragments = reader.controlledPoll(
+            final int fragments = reader.poll(
                 (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
                     final int frameOffset = offset - DataHeaderFlyweight.HEADER_LENGTH;
                     assertEquals(TERM_OFFSET, frameOffset);
                     assertEquals(RECORDED_BLOCK_LENGTH, FrameDescriptor.frameLength(buffer, frameOffset));
                     assertEquals(RECORDED_BLOCK_LENGTH - DataHeaderFlyweight.HEADER_LENGTH, length);
-                    return true;
                 },
                 1);
 

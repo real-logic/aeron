@@ -328,6 +328,11 @@ public class ConsensusModuleHarness implements AutoCloseable, ClusteredService
     {
         idleStrategy.reset();
 
+        while (memberStatusAdapters[index].poll() == 0)
+        {
+            idleStrategy.idle();
+        }
+
         while (memberStatusAdapters[index].poll() > 0)
         {
         }

@@ -802,7 +802,7 @@ public class PublicationImage
 
         for (final DestinationImageControlAddress destinationImageControlAddress : controlAddresses)
         {
-            if (!destinationImageControlAddress.isEos)
+            if (null != destinationImageControlAddress && !destinationImageControlAddress.isEos)
             {
                 return false;
             }

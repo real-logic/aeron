@@ -82,6 +82,10 @@ public class ReplaySessionTest
     {
         when(recordingPositionCounter.get()).then((invocation) -> recordingPosition);
         when(mockArchiveConductor.catalog()).thenReturn(mockCatalog);
+        when(mockReplayPub.termBufferLength()).thenReturn(TERM_BUFFER_LENGTH);
+        when(mockReplayPub.positionBitsToShift())
+            .thenReturn(LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH));
+        when(mockReplayPub.initialTermId()).thenReturn(INITIAL_TERM_ID);
         when(mockImage.termBufferLength()).thenReturn(TERM_BUFFER_LENGTH);
         when(mockImage.joinPosition()).thenReturn(JOIN_POSITION);
 

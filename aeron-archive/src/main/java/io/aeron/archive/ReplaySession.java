@@ -21,7 +21,6 @@ import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.BitUtil;
@@ -85,7 +84,6 @@ class ReplaySession implements Session, AutoCloseable
     private int termOffset;
     private int termBaseSegmentOffset;
     private int segmentFileIndex;
-    private final int initialTermId;
     private final int streamId;
 
     private final BufferClaim bufferClaim = new BufferClaim();
@@ -128,7 +126,6 @@ class ReplaySession implements Session, AutoCloseable
         this.recordingId = recordingSummary.recordingId;
         this.segmentLength = recordingSummary.segmentFileLength;
         this.termLength = recordingSummary.termBufferLength;
-        this.initialTermId = recordingSummary.initialTermId;
         this.streamId = recordingSummary.streamId;
         this.epochClock = epochClock;
         this.archiveDir = archiveDir;
@@ -241,10 +238,10 @@ class ReplaySession implements Session, AutoCloseable
     {
         if (null == mappedSegmentBuffer)
         {
-            final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
+            final int positionBitsToShift = replayPublication.positionBitsToShift();
             final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
             final int segmentOffset = (int)(replayPosition - startTermBasePosition) & (segmentLength - 1);
-            final int termId = ((int)(replayPosition >> positionBitsToShift) + initialTermId);
+            final int termId = ((int)(replayPosition >> positionBitsToShift) + replayPublication.initialTermId());
 
             openRecordingSegment();
 

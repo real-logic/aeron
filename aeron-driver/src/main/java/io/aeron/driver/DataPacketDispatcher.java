@@ -322,7 +322,7 @@ public class DataPacketDispatcher
                 }
                 else if (null != sessionInterest.image)
                 {
-                    sessionInterest.image.addControlAddressIfUnknown(transportIndex, srcAddress);
+                    sessionInterest.image.addDestinationEndpointIfUnknown(transportIndex, srcAddress);
                 }
             }
             else if (streamInterest.isForAllSessions || streamInterest.subscribedSessionIds.contains(sessionId))

@@ -29,7 +29,7 @@ public class MultiRcvDestination implements AutoCloseable
 {
     private static final ReceiveDestinationUdpTransport[] EMPTY_TRANSPORTS = new ReceiveDestinationUdpTransport[0];
 
-    private final long destinationAddressTimeoutNs;
+    private final long destinationEndpointTimeoutNs;
     private final NanoClock nanoClock;
     private ReceiveDestinationUdpTransport[] transports = EMPTY_TRANSPORTS;
     private int numDestinations = 0;
@@ -37,7 +37,7 @@ public class MultiRcvDestination implements AutoCloseable
     public MultiRcvDestination(final NanoClock nanoClock, final long timeoutNs)
     {
         this.nanoClock = nanoClock;
-        this.destinationAddressTimeoutNs = timeoutNs;
+        this.destinationEndpointTimeoutNs = timeoutNs;
     }
 
     public void close()
@@ -76,7 +76,7 @@ public class MultiRcvDestination implements AutoCloseable
 
     public boolean hasDestination(final int transportIndex)
     {
-        return (numDestinations > transportIndex && null != transports[transportIndex]);
+        return numDestinations > transportIndex && null != transports[transportIndex];
     }
 
     public ReceiveDestinationUdpTransport transport(final int transportIndex)
@@ -104,7 +104,7 @@ public class MultiRcvDestination implements AutoCloseable
     }
 
     public int sendToAll(
-        final DestinationImageControlAddress[] controlAddresses,
+        final DestinationEndpoint[] destinationEndpoints,
         final ByteBuffer buffer,
         final int position,
         final int bytesToSend)
@@ -113,17 +113,17 @@ public class MultiRcvDestination implements AutoCloseable
         final long nowNs = nanoClock.nanoTime();
         int minBytesSent = bytesToSend;
 
-        for (int lastIndex = controlAddresses.length - 1, i = lastIndex; i >= 0; i--)
+        for (int lastIndex = destinationEndpoints.length - 1, i = lastIndex; i >= 0; i--)
         {
-            final DestinationImageControlAddress controlAddress = controlAddresses[i];
+            final DestinationEndpoint endpoint = destinationEndpoints[i];
 
-            if (null != controlAddress)
+            if (null != endpoint)
             {
                 final UdpChannelTransport transport = transports[i];
-                if (null != transport && ((controlAddress.timeOfLastFrameNs + destinationAddressTimeoutNs) - nowNs > 0))
+                if (null != transport && ((endpoint.timeOfLastFrameNs + destinationEndpointTimeoutNs) - nowNs > 0))
                 {
                     buffer.position(position);
-                    minBytesSent = Math.min(minBytesSent, sendTo(transport, buffer, controlAddress.address));
+                    minBytesSent = Math.min(minBytesSent, sendTo(transport, buffer, endpoint.controlAddress));
                 }
             }
         }

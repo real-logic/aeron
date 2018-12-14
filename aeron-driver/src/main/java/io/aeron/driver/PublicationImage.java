@@ -17,7 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.Aeron;
 import io.aeron.driver.buffer.RawLog;
-import io.aeron.driver.media.DestinationImageControlAddress;
+import io.aeron.driver.media.DestinationEndpoint;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationUdpTransport;
 import io.aeron.driver.reports.LossReport;
@@ -69,7 +69,7 @@ class PublicationImageReceiverFields extends PublicationImagePadding2
 {
     protected boolean isEndOfStream = false;
     protected long lastPacketTimestampNs;
-    protected DestinationImageControlAddress[] controlAddresses = new DestinationImageControlAddress[1];
+    protected DestinationEndpoint[] destinationEndpoints = new DestinationEndpoint[1];
 }
 
 class PublicationImagePadding3 extends PublicationImageReceiverFields
@@ -193,8 +193,8 @@ public class PublicationImage
         timeOfLastStateChangeNs = nowNs;
         lastPacketTimestampNs = nowNs;
 
-        controlAddresses = ArrayUtil.ensureCapacity(controlAddresses, transportIndex + 1);
-        controlAddresses[transportIndex] = new DestinationImageControlAddress(nowNs, controlAddress);
+        destinationEndpoints = ArrayUtil.ensureCapacity(destinationEndpoints, transportIndex + 1);
+        destinationEndpoints[transportIndex] = new DestinationEndpoint(nowNs, controlAddress);
 
         termBuffers = rawLog.termBuffers();
         lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
@@ -373,28 +373,28 @@ public class PublicationImage
 
     void addDestination(final int transportIndex, final ReceiveDestinationUdpTransport transport)
     {
-        controlAddresses = ArrayUtil.ensureCapacity(controlAddresses, transportIndex + 1);
+        destinationEndpoints = ArrayUtil.ensureCapacity(destinationEndpoints, transportIndex + 1);
 
         if (transport.isMulticast())
         {
-            controlAddresses[transportIndex] = new DestinationImageControlAddress(
+            destinationEndpoints[transportIndex] = new DestinationEndpoint(
                 nanoClock.nanoTime(), transport.udpChannel().remoteControl());
         }
         else if (transport.hasExplicitControl())
         {
-            controlAddresses[transportIndex] = new DestinationImageControlAddress(
+            destinationEndpoints[transportIndex] = new DestinationEndpoint(
                 nanoClock.nanoTime(), transport.explicitControlAddress());
         }
     }
 
     void removeDestination(final int transportIndex)
     {
-        controlAddresses[transportIndex] = null;
+        destinationEndpoints[transportIndex] = null;
     }
 
-    void addControlAddressIfUnknown(final int transportIndex, final InetSocketAddress remoteAddress)
+    void addDestinationEndpointIfUnknown(final int transportIndex, final InetSocketAddress remoteAddress)
     {
-        updateControlAddress(transportIndex, remoteAddress, nanoClock.nanoTime());
+        trackEndpoint(transportIndex, remoteAddress, nanoClock.nanoTime());
     }
 
     private void state(final State state)
@@ -510,7 +510,7 @@ public class PublicationImage
 
         if (!isFlowControlUnderRun(packetPosition) && !isFlowControlOverRun(proposedPosition))
         {
-            updateControlAddress(transportIndex, srcAddress, lastPacketTimestampNs);
+            trackEndpoint(transportIndex, srcAddress, lastPacketTimestampNs);
 
             if (isHeartbeat)
             {
@@ -580,7 +580,7 @@ public class PublicationImage
                     final int termOffset = (int)smPosition & termLengthMask;
 
                     channelEndpoint.sendStatusMessage(
-                        controlAddresses, sessionId, streamId, termId, termOffset, receiverWindowLength, (byte)0);
+                        destinationEndpoints, sessionId, streamId, termId, termOffset, receiverWindowLength, (byte)0);
 
                     statusMessagesSent.incrementOrdered();
 
@@ -618,7 +618,8 @@ public class PublicationImage
             {
                 if (isReliable)
                 {
-                    channelEndpoint.sendNakMessage(controlAddresses, sessionId, streamId, termId, termOffset, length);
+                    channelEndpoint.sendNakMessage(
+                        destinationEndpoints, sessionId, streamId, termId, termOffset, length);
                     nakMessagesSent.incrementOrdered();
                 }
                 else
@@ -653,7 +654,7 @@ public class PublicationImage
         {
             final long preciseTimeNs = nanoClock.nanoTime();
 
-            channelEndpoint.sendRttMeasurement(controlAddresses, sessionId, streamId, preciseTimeNs, 0, true);
+            channelEndpoint.sendRttMeasurement(destinationEndpoints, sessionId, streamId, preciseTimeNs, 0, true);
             congestionControl.onRttMeasurementSent(preciseTimeNs);
 
             workCount = 1;
@@ -783,26 +784,26 @@ public class PublicationImage
         }
     }
 
-    private void updateControlAddress(final int transportIndex, final InetSocketAddress srcAddress, final long nowNs)
+    private void trackEndpoint(final int transportIndex, final InetSocketAddress srcAddress, final long nowNs)
     {
-        DestinationImageControlAddress controlAddress = controlAddresses[transportIndex];
+        DestinationEndpoint destinationEndpoint = destinationEndpoints[transportIndex];
 
-        if (null == controlAddress)
+        if (null == destinationEndpoint)
         {
-            controlAddress = new DestinationImageControlAddress(nowNs, srcAddress);
-            controlAddresses[transportIndex] = controlAddress;
+            destinationEndpoint = new DestinationEndpoint(nowNs, srcAddress);
+            destinationEndpoints[transportIndex] = destinationEndpoint;
         }
 
-        controlAddress.timeOfLastFrameNs = nowNs;
+        destinationEndpoint.timeOfLastFrameNs = nowNs;
     }
 
-    private boolean allEos(final int eosTransportIndex)
+    private boolean allEos(final int transportIndex)
     {
-        controlAddresses[eosTransportIndex].isEos = true;
+        destinationEndpoints[transportIndex].isEos = true;
 
-        for (final DestinationImageControlAddress destinationImageControlAddress : controlAddresses)
+        for (final DestinationEndpoint destinationEndpoint : destinationEndpoints)
         {
-            if (null != destinationImageControlAddress && !destinationImageControlAddress.isEos)
+            if (null != destinationEndpoint && !destinationEndpoint.isEos)
             {
                 return false;
             }

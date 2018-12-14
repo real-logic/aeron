@@ -89,6 +89,16 @@ public class ExclusivePublication extends Publication
         termBeginPosition = computeTermBeginPosition(termId, positionBitsToShift, initialTermId);
     }
 
+    public long position()
+    {
+        if (isClosed)
+        {
+            return CLOSED;
+        }
+
+        return termBeginPosition + termOffset;
+    }
+
     /**
      * Non-blocking publish of a partial buffer containing a message.
      *
@@ -379,7 +389,7 @@ public class ExclusivePublication extends Publication
         activePartitionIndex = nextIndex;
         termOffset = 0;
         termId = nextTermId;
-        termBeginPosition = computeTermBeginPosition(nextTermId, positionBitsToShift, initialTermId);
+        termBeginPosition += termBufferLength;
 
         final int termCount = nextTermId - initialTermId;
 

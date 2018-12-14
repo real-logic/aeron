@@ -7,7 +7,7 @@ COVERAGE_BUILD=0
 
 for option in "$@"
 do
-  case $option in
+  case ${option} in
     --c-warnings-as-errors)
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DC_WARNINGS_AS_ERRORS=ON"
       echo "Enabling warnings as errors for c"
@@ -63,21 +63,21 @@ esac
 
 echo "Will make with \"-j $ncpus\"."
 
-if [ -d "$BUILD_DIR" ] ; then
+if [[ -d "$BUILD_DIR" ]] ; then
   echo "Build directory ($BUILD_DIR) exists, removing."
-  rm -rf $BUILD_DIR
+  rm -rf ${BUILD_DIR}
 fi
 
-mkdir -p $BUILD_DIR
+mkdir -p ${BUILD_DIR}
 
-if [ "$COVERAGE_BUILD" -eq 1 ] ; then
-  cd $BUILD_DIR
-  cmake -G "Unix Makefiles" $EXTRA_CMAKE_ARGS $SOURCE_DIR && make clean && make -j "$ncpus" all && ctest -C Release -j "$ncpus"
+if [[ "$COVERAGE_BUILD" -eq 1 ]] ; then
+  cd ${BUILD_DIR}
+  cmake -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all && ctest -C Release -j "$ncpus"
   rm -rf coverage
   mkdir -p coverage
   lcov --directory . --base-directory . --capture -o coverage/cov.info
   lcov -o coverage/cov.stripped.info --remove coverage/cov.info "/usr/include/*" "*/googletest/*" "*/test/cpp/*" "*/googlemock/*"
   genhtml coverage/cov.stripped.info --demangle-cpp -o coverage
 else
-  (cd $BUILD_DIR && cmake -G "CodeBlocks - Unix Makefiles" $EXTRA_CMAKE_ARGS $SOURCE_DIR && make clean && make -j "$ncpus" all && ctest -C Release -j "$ncpus")
+  (cd ${BUILD_DIR} && cmake -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all && ctest -C Release -j "$ncpus")
 fi

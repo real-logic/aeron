@@ -724,7 +724,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final String originalChannel,
         final Image image)
     {
-        validateMaxConcurrentRecordings(controlSession, correlationId, originalChannel, image);
+        validateMaxConcurrentRecordings(correlationId, controlSession, originalChannel, image);
 
         final int sessionId = image.sessionId();
         final int streamId = image.subscription().streamId();
@@ -781,7 +781,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             throw new ArchiveException(msg);
         }
 
-        validateMaxConcurrentRecordings(controlSession, correlationId, originalChannel, image);
+        validateMaxConcurrentRecordings(correlationId, controlSession, originalChannel, image);
 
         catalog.recordingSummary(recordingId, recordingSummary);
         validateImageForExtendRecording(correlationId, controlSession, image, recordingSummary);
@@ -842,8 +842,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     }
 
     private void validateMaxConcurrentRecordings(
-        final ControlSession controlSession,
         final long correlationId,
+        final ControlSession controlSession,
         final String originalChannel,
         final Image image)
     {
@@ -861,33 +861,33 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final long correlationId,
         final ControlSession controlSession,
         final Image image,
-        final RecordingSummary originalRecordingSummary)
+        final RecordingSummary recordingSummary)
     {
-        if (image.joinPosition() != originalRecordingSummary.stopPosition)
+        if (image.joinPosition() != recordingSummary.stopPosition)
         {
-            final String msg = "cannot extend recording " + originalRecordingSummary.recordingId +
+            final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image joinPosition " + image.joinPosition() +
-                " not equal to recording stopPosition " + originalRecordingSummary.stopPosition;
+                " not equal to recording stopPosition " + recordingSummary.stopPosition;
 
             controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
 
-        if (image.termBufferLength() != originalRecordingSummary.termBufferLength)
+        if (image.termBufferLength() != recordingSummary.termBufferLength)
         {
-            final String msg = "cannot extend recording " + originalRecordingSummary.recordingId +
+            final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image termBufferLength " + image.termBufferLength() +
-                " not equal to recording termBufferLength " + originalRecordingSummary.termBufferLength;
+                " not equal to recording termBufferLength " + recordingSummary.termBufferLength;
 
             controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
 
-        if (image.mtuLength() != originalRecordingSummary.mtuLength)
+        if (image.mtuLength() != recordingSummary.mtuLength)
         {
-            final String msg = "cannot extend recording " + originalRecordingSummary.recordingId +
+            final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image mtuLength " + image.mtuLength() +
-                " not equal to recording mtuLength " + originalRecordingSummary.mtuLength;
+                " not equal to recording mtuLength " + recordingSummary.mtuLength;
 
             controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
             throw new ArchiveException(msg);

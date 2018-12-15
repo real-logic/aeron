@@ -431,7 +431,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     public void sendStatusMessage(
-        final DestinationEndpoint[] controlAddresses,
+        final ImageConnection[] controlAddresses,
         final int sessionId,
         final int streamId,
         final int termId,
@@ -455,7 +455,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     public void sendNakMessage(
-        final DestinationEndpoint[] controlAddresses,
+        final ImageConnection[] controlAddresses,
         final int sessionId,
         final int streamId,
         final int termId,
@@ -477,7 +477,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     public void sendRttMeasurement(
-        final DestinationEndpoint[] controlAddresses,
+        final ImageConnection[] controlAddresses,
         final int sessionId,
         final int streamId,
         final long echoTimestampNs,
@@ -543,18 +543,17 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return dispatcher.shouldElicitSetupMessage();
     }
 
-    protected void send(
-        final ByteBuffer buffer, final int bytesToSend, final DestinationEndpoint[] destinationEndpoints)
+    protected void send(final ByteBuffer buffer, final int bytesToSend, final ImageConnection[] imageConnections)
     {
         final int bytesSent;
 
         if (null == multiRcvDestination)
         {
-            bytesSent = sendTo(buffer, destinationEndpoints[0].controlAddress);
+            bytesSent = sendTo(buffer, imageConnections[0].controlAddress);
         }
         else
         {
-            bytesSent = multiRcvDestination.sendToAll(destinationEndpoints, buffer, 0, bytesToSend);
+            bytesSent = multiRcvDestination.sendToAll(imageConnections, buffer, 0, bytesToSend);
         }
 
         if (bytesToSend != bytesSent)

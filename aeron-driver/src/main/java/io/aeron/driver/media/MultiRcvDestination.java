@@ -104,7 +104,7 @@ public class MultiRcvDestination implements AutoCloseable
     }
 
     public int sendToAll(
-        final DestinationEndpoint[] destinationEndpoints,
+        final ImageConnection[] imageConnections,
         final ByteBuffer buffer,
         final int position,
         final int bytesToSend)
@@ -113,17 +113,17 @@ public class MultiRcvDestination implements AutoCloseable
         final long nowNs = nanoClock.nanoTime();
         int minBytesSent = bytesToSend;
 
-        for (int lastIndex = destinationEndpoints.length - 1, i = lastIndex; i >= 0; i--)
+        for (int lastIndex = imageConnections.length - 1, i = lastIndex; i >= 0; i--)
         {
-            final DestinationEndpoint endpoint = destinationEndpoints[i];
+            final ImageConnection connection = imageConnections[i];
 
-            if (null != endpoint)
+            if (null != connection)
             {
                 final UdpChannelTransport transport = transports[i];
-                if (null != transport && ((endpoint.timeOfLastFrameNs + destinationEndpointTimeoutNs) - nowNs > 0))
+                if (null != transport && ((connection.timeOfLastFrameNs + destinationEndpointTimeoutNs) - nowNs > 0))
                 {
                     buffer.position(position);
-                    minBytesSent = Math.min(minBytesSent, sendTo(transport, buffer, endpoint.controlAddress));
+                    minBytesSent = Math.min(minBytesSent, sendTo(transport, buffer, connection.controlAddress));
                 }
             }
         }

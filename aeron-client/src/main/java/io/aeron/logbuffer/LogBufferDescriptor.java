@@ -75,52 +75,52 @@ public class LogBufferDescriptor
     // *******************************
 
     /**
-     * Offset within the meta data where the tail values are stored.
+     * Offset within the metadata where the tail values are stored.
      */
     public static final int TERM_TAIL_COUNTERS_OFFSET;
 
     /**
-     * Offset within the log meta data where the active partition index is stored.
+     * Offset within the log metadata where the active partition index is stored.
      */
     public static final int LOG_ACTIVE_TERM_COUNT_OFFSET;
 
     /**
-     * Offset within the log meta data where the position of the End of Stream is stored.
+     * Offset within the log metadata where the position of the End of Stream is stored.
      */
     public static final int LOG_END_OF_STREAM_POSITION_OFFSET;
 
     /**
-     * Offset within the log meta data where whether the log is connected or not is stored.
+     * Offset within the log metadata where whether the log is connected or not is stored.
      */
     public static final int LOG_IS_CONNECTED_OFFSET;
 
     /**
-     * Offset within the log meta data where the active term id is stored.
+     * Offset within the log metadata where the active term id is stored.
      */
     public static final int LOG_INITIAL_TERM_ID_OFFSET;
 
     /**
-     * Offset within the log meta data which the length field for the frame header is stored.
+     * Offset within the log metadata which the length field for the frame header is stored.
      */
     public static final int LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET;
 
     /**
-     * Offset within the log meta data which the MTU length is stored.
+     * Offset within the log metadata which the MTU length is stored.
      */
     public static final int LOG_MTU_LENGTH_OFFSET;
 
     /**
-     * Offset within the log meta data which the correlation id is stored.
+     * Offset within the log metadata which the correlation id is stored.
      */
     public static final int LOG_CORRELATION_ID_OFFSET;
 
     /**
-     * Offset within the log meta data which the term length is stored.
+     * Offset within the log metadata which the term length is stored.
      */
     public static final int LOG_TERM_LENGTH_OFFSET;
 
     /**
-     * Offset within the log meta data which the page size is stored.
+     * Offset within the log metadata which the page size is stored.
      */
     public static final int LOG_PAGE_SIZE_OFFSET;
 
@@ -135,7 +135,7 @@ public class LogBufferDescriptor
     public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH * 2;
 
     /**
-     * Total length of the log meta data buffer in bytes.
+     * Total length of the log metadata buffer in bytes.
      * <pre>
      *   0                   1                   2                   3
      *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -266,204 +266,204 @@ public class LogBufferDescriptor
     /**
      * Get the value of the initial Term id used for this log.
      *
-     * @param logMetaDataBuffer containing the meta data.
+     * @param metadataBuffer containing the meta data.
      * @return the value of the initial Term id used for this log.
      */
-    public static int initialTermId(final UnsafeBuffer logMetaDataBuffer)
+    public static int initialTermId(final UnsafeBuffer metadataBuffer)
     {
-        return logMetaDataBuffer.getInt(LOG_INITIAL_TERM_ID_OFFSET);
+        return metadataBuffer.getInt(LOG_INITIAL_TERM_ID_OFFSET);
     }
 
     /**
      * Set the initial term at which this log begins. Initial should be randomised so that stream does not get
      * reused accidentally.
      *
-     * @param logMetaDataBuffer containing the meta data.
-     * @param initialTermId     value to be set.
+     * @param metadataBuffer containing the meta data.
+     * @param initialTermId  value to be set.
      */
-    public static void initialTermId(final UnsafeBuffer logMetaDataBuffer, final int initialTermId)
+    public static void initialTermId(final UnsafeBuffer metadataBuffer, final int initialTermId)
     {
-        logMetaDataBuffer.putInt(LOG_INITIAL_TERM_ID_OFFSET, initialTermId);
+        metadataBuffer.putInt(LOG_INITIAL_TERM_ID_OFFSET, initialTermId);
     }
 
     /**
      * Get the value of the MTU length used for this log.
      *
-     * @param logMetaDataBuffer containing the meta data.
+     * @param metadataBuffer containing the meta data.
      * @return the value of the MTU length used for this log.
      */
-    public static int mtuLength(final UnsafeBuffer logMetaDataBuffer)
+    public static int mtuLength(final UnsafeBuffer metadataBuffer)
     {
-        return logMetaDataBuffer.getInt(LOG_MTU_LENGTH_OFFSET);
+        return metadataBuffer.getInt(LOG_MTU_LENGTH_OFFSET);
     }
 
     /**
      * Set the MTU length used for this log.
      *
-     * @param logMetaDataBuffer containing the meta data.
-     * @param mtuLength         value to be set.
+     * @param metadataBuffer containing the meta data.
+     * @param mtuLength      value to be set.
      */
-    public static void mtuLength(final UnsafeBuffer logMetaDataBuffer, final int mtuLength)
+    public static void mtuLength(final UnsafeBuffer metadataBuffer, final int mtuLength)
     {
-        logMetaDataBuffer.putInt(LOG_MTU_LENGTH_OFFSET, mtuLength);
+        metadataBuffer.putInt(LOG_MTU_LENGTH_OFFSET, mtuLength);
     }
 
     /**
      * Get the value of the Term Length used for this log.
      *
-     * @param logMetaDataBuffer containing the meta data.
+     * @param metadataBuffer containing the meta data.
      * @return the value of the term length used for this log.
      */
-    public static int termLength(final UnsafeBuffer logMetaDataBuffer)
+    public static int termLength(final UnsafeBuffer metadataBuffer)
     {
-        return logMetaDataBuffer.getInt(LOG_TERM_LENGTH_OFFSET);
+        return metadataBuffer.getInt(LOG_TERM_LENGTH_OFFSET);
     }
 
     /**
      * Set the term length used for this log.
      *
-     * @param logMetaDataBuffer containing the meta data.
-     * @param termLength        value to be set.
+     * @param metadataBuffer containing the meta data.
+     * @param termLength     value to be set.
      */
-    public static void termLength(final UnsafeBuffer logMetaDataBuffer, final int termLength)
+    public static void termLength(final UnsafeBuffer metadataBuffer, final int termLength)
     {
-        logMetaDataBuffer.putInt(LOG_TERM_LENGTH_OFFSET, termLength);
+        metadataBuffer.putInt(LOG_TERM_LENGTH_OFFSET, termLength);
     }
 
     /**
      * Get the value of the page size used for this log.
      *
-     * @param logMetaDataBuffer containing the meta data.
+     * @param metadataBuffer containing the meta data.
      * @return the value of the page size used for this log.
      */
-    public static int pageSize(final UnsafeBuffer logMetaDataBuffer)
+    public static int pageSize(final UnsafeBuffer metadataBuffer)
     {
-        return logMetaDataBuffer.getInt(LOG_PAGE_SIZE_OFFSET);
+        return metadataBuffer.getInt(LOG_PAGE_SIZE_OFFSET);
     }
 
     /**
      * Set the page size used for this log.
      *
-     * @param logMetaDataBuffer containing the meta data.
-     * @param pageSize          value to be set.
+     * @param metadataBuffer containing the meta data.
+     * @param pageSize       value to be set.
      */
-    public static void pageSize(final UnsafeBuffer logMetaDataBuffer, final int pageSize)
+    public static void pageSize(final UnsafeBuffer metadataBuffer, final int pageSize)
     {
-        logMetaDataBuffer.putInt(LOG_PAGE_SIZE_OFFSET, pageSize);
+        metadataBuffer.putInt(LOG_PAGE_SIZE_OFFSET, pageSize);
     }
 
     /**
      * Get the value of the correlation ID for this log relating to the command which created it.
      *
-     * @param logMetaDataBuffer containing the meta data.
+     * @param metadataBuffer containing the meta data.
      * @return the value of the correlation ID used for this log.
      */
-    public static long correlationId(final UnsafeBuffer logMetaDataBuffer)
+    public static long correlationId(final UnsafeBuffer metadataBuffer)
     {
-        return logMetaDataBuffer.getLong(LOG_CORRELATION_ID_OFFSET);
+        return metadataBuffer.getLong(LOG_CORRELATION_ID_OFFSET);
     }
 
     /**
      * Set the correlation ID used for this log relating to the command which created it.
      *
-     * @param logMetaDataBuffer containing the meta data.
-     * @param id                value to be set.
+     * @param metadataBuffer containing the meta data.
+     * @param id             value to be set.
      */
-    public static void correlationId(final UnsafeBuffer logMetaDataBuffer, final long id)
+    public static void correlationId(final UnsafeBuffer metadataBuffer, final long id)
     {
-        logMetaDataBuffer.putLong(LOG_CORRELATION_ID_OFFSET, id);
+        metadataBuffer.putLong(LOG_CORRELATION_ID_OFFSET, id);
     }
 
     /**
      * Get whether the log is considered connected or not by the driver.
      *
-     * @param logMetaDataBuffer containing the meta data.
+     * @param metadataBuffer containing the meta data.
      * @return whether the log is considered connected or not by the driver.
      */
-    public static boolean isConnected(final UnsafeBuffer logMetaDataBuffer)
+    public static boolean isConnected(final UnsafeBuffer metadataBuffer)
     {
-        return logMetaDataBuffer.getIntVolatile(LOG_IS_CONNECTED_OFFSET) == 1;
+        return metadataBuffer.getIntVolatile(LOG_IS_CONNECTED_OFFSET) == 1;
     }
 
     /**
      * Set whether the log is considered connected or not by the driver.
      *
-     * @param logMetaDataBuffer containing the meta data.
-     * @param isConnected       or not
+     * @param metadataBuffer containing the meta data.
+     * @param isConnected    or not
      */
-    public static void isConnected(final UnsafeBuffer logMetaDataBuffer, final boolean isConnected)
+    public static void isConnected(final UnsafeBuffer metadataBuffer, final boolean isConnected)
     {
-        logMetaDataBuffer.putIntOrdered(LOG_IS_CONNECTED_OFFSET, isConnected ? 1 : 0);
+        metadataBuffer.putIntOrdered(LOG_IS_CONNECTED_OFFSET, isConnected ? 1 : 0);
     }
 
     /**
      * Get the value of the end of stream position.
      *
-     * @param logMetaDataBuffer containing the meta data.
+     * @param metadataBuffer containing the meta data.
      * @return the value of end of stream position
      */
-    public static long endOfStreamPosition(final UnsafeBuffer logMetaDataBuffer)
+    public static long endOfStreamPosition(final UnsafeBuffer metadataBuffer)
     {
-        return logMetaDataBuffer.getLongVolatile(LOG_END_OF_STREAM_POSITION_OFFSET);
+        return metadataBuffer.getLongVolatile(LOG_END_OF_STREAM_POSITION_OFFSET);
     }
 
     /**
      * Set the value of the end of stream position.
      *
-     * @param logMetaDataBuffer containing the meta data.
-     * @param position          value of the end of stream position
+     * @param metadataBuffer containing the meta data.
+     * @param position       value of the end of stream position
      */
-    public static void endOfStreamPosition(final UnsafeBuffer logMetaDataBuffer, final long position)
+    public static void endOfStreamPosition(final UnsafeBuffer metadataBuffer, final long position)
     {
-        logMetaDataBuffer.putLongOrdered(LOG_END_OF_STREAM_POSITION_OFFSET, position);
+        metadataBuffer.putLongOrdered(LOG_END_OF_STREAM_POSITION_OFFSET, position);
     }
 
     /**
      * Get the value of the active term count used by the producer of this log. Consumers may have a different
      * active term count if they are running behind. The read is done with volatile semantics.
      *
-     * @param logMetaDataBuffer containing the meta data.
+     * @param metadataBuffer containing the meta data.
      * @return the value of the active term count used by the producer of this log.
      */
-    public static int activeTermCount(final UnsafeBuffer logMetaDataBuffer)
+    public static int activeTermCount(final UnsafeBuffer metadataBuffer)
     {
-        return logMetaDataBuffer.getIntVolatile(LOG_ACTIVE_TERM_COUNT_OFFSET);
+        return metadataBuffer.getIntVolatile(LOG_ACTIVE_TERM_COUNT_OFFSET);
     }
 
     /**
      * Set the value of the current active term count for the producer using memory ordered semantics.
      *
-     * @param logMetaDataBuffer containing the meta data.
-     * @param termCount         value of the active term count used by the producer of this log.
+     * @param metadataBuffer containing the meta data.
+     * @param termCount      value of the active term count used by the producer of this log.
      */
-    public static void activeTermCountOrdered(final UnsafeBuffer logMetaDataBuffer, final int termCount)
+    public static void activeTermCountOrdered(final UnsafeBuffer metadataBuffer, final int termCount)
     {
-        logMetaDataBuffer.putIntOrdered(LOG_ACTIVE_TERM_COUNT_OFFSET, termCount);
+        metadataBuffer.putIntOrdered(LOG_ACTIVE_TERM_COUNT_OFFSET, termCount);
     }
 
     /**
      * Compare and set the value of the current active term count.
      *
-     * @param logMetaDataBuffer containing the meta data.
+     * @param metadataBuffer    containing the meta data.
      * @param expectedTermCount value of the active term count expected in the log
      * @param updateTermCount   value of the active term count to be updated in the log
      * @return true if successful otherwise false.
      */
     public static boolean casActiveTermCount(
-        final UnsafeBuffer logMetaDataBuffer, final int expectedTermCount, final int updateTermCount)
+        final UnsafeBuffer metadataBuffer, final int expectedTermCount, final int updateTermCount)
     {
-        return logMetaDataBuffer.compareAndSetInt(LOG_ACTIVE_TERM_COUNT_OFFSET, expectedTermCount, updateTermCount);
+        return metadataBuffer.compareAndSetInt(LOG_ACTIVE_TERM_COUNT_OFFSET, expectedTermCount, updateTermCount);
     }
 
     /**
      * Set the value of the current active partition index for the producer.
      *
-     * @param logMetaDataBuffer containing the meta data.
-     * @param termCount         value of the active term count used by the producer of this log.
+     * @param metadataBuffer containing the meta data.
+     * @param termCount      value of the active term count used by the producer of this log.
      */
-    public static void activeTermCount(final UnsafeBuffer logMetaDataBuffer, final int termCount)
+    public static void activeTermCount(final UnsafeBuffer metadataBuffer, final int termCount)
     {
-        logMetaDataBuffer.putInt(LOG_ACTIVE_TERM_COUNT_OFFSET, termCount);
+        metadataBuffer.putInt(LOG_ACTIVE_TERM_COUNT_OFFSET, termCount);
     }
 
     /**
@@ -581,11 +581,11 @@ public class LogBufferDescriptor
     /**
      * Store the default frame header to the log meta data buffer.
      *
-     * @param logMetaDataBuffer into which the default headers should be stored.
-     * @param defaultHeader     to be stored.
-     * @throws IllegalArgumentException if the defaultHeader is larger than {@link #LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH}
+     * @param metadataBuffer into which the default headers should be stored.
+     * @param defaultHeader  to be stored.
+     * @throws IllegalArgumentException if the defaultHeader larger than {@link #LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH}
      */
-    public static void storeDefaultFrameHeader(final UnsafeBuffer logMetaDataBuffer, final DirectBuffer defaultHeader)
+    public static void storeDefaultFrameHeader(final UnsafeBuffer metadataBuffer, final DirectBuffer defaultHeader)
     {
         if (defaultHeader.capacity() != HEADER_LENGTH)
         {
@@ -593,32 +593,32 @@ public class LogBufferDescriptor
                 "Default header length not equal to HEADER_LENGTH: length=" + defaultHeader.capacity());
         }
 
-        logMetaDataBuffer.putInt(LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET, HEADER_LENGTH);
-        logMetaDataBuffer.putBytes(LOG_DEFAULT_FRAME_HEADER_OFFSET, defaultHeader, 0, HEADER_LENGTH);
+        metadataBuffer.putInt(LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET, HEADER_LENGTH);
+        metadataBuffer.putBytes(LOG_DEFAULT_FRAME_HEADER_OFFSET, defaultHeader, 0, HEADER_LENGTH);
     }
 
     /**
      * Get a wrapper around the default frame header from the log meta data.
      *
-     * @param logMetaDataBuffer containing the raw bytes for the default frame header.
+     * @param metadataBuffer containing the raw bytes for the default frame header.
      * @return a buffer wrapping the raw bytes.
      */
-    public static UnsafeBuffer defaultFrameHeader(final UnsafeBuffer logMetaDataBuffer)
+    public static UnsafeBuffer defaultFrameHeader(final UnsafeBuffer metadataBuffer)
     {
-        return new UnsafeBuffer(logMetaDataBuffer, LOG_DEFAULT_FRAME_HEADER_OFFSET, HEADER_LENGTH);
+        return new UnsafeBuffer(metadataBuffer, LOG_DEFAULT_FRAME_HEADER_OFFSET, HEADER_LENGTH);
     }
 
     /**
      * Apply the default header for a message in a term.
      *
-     * @param logMetaDataBuffer containing the default headers.
-     * @param termBuffer        to which the default header should be applied.
-     * @param termOffset        at which the default should be applied.
+     * @param metadataBuffer containing the default headers.
+     * @param termBuffer     to which the default header should be applied.
+     * @param termOffset     at which the default should be applied.
      */
     public static void applyDefaultHeader(
-        final UnsafeBuffer logMetaDataBuffer, final UnsafeBuffer termBuffer, final int termOffset)
+        final UnsafeBuffer metadataBuffer, final UnsafeBuffer termBuffer, final int termOffset)
     {
-        termBuffer.putBytes(termOffset, logMetaDataBuffer, LOG_DEFAULT_FRAME_HEADER_OFFSET, HEADER_LENGTH);
+        termBuffer.putBytes(termOffset, metadataBuffer, LOG_DEFAULT_FRAME_HEADER_OFFSET, HEADER_LENGTH);
     }
 
     /**
@@ -626,44 +626,43 @@ public class LogBufferDescriptor
      *
      * This method is safe for concurrent use.
      *
-     * @param logMetaDataBuffer for the meta data.
-     * @param currentTermCount  from which to rotate.
-     * @param currentTermId     to be used in the default headers.
+     * @param metadataBuffer for the log.
+     * @param termCount      from which to rotate.
+     * @param termId         to be used in the default headers.
      * @return true if log was rotated.
      */
-    public static boolean rotateLog(
-        final UnsafeBuffer logMetaDataBuffer, final int currentTermCount, final int currentTermId)
+    public static boolean rotateLog(final UnsafeBuffer metadataBuffer, final int termCount, final int termId)
     {
-        final int nextTermId = currentTermId + 1;
-        final int nextTermCount = currentTermCount + 1;
+        final int nextTermId = termId + 1;
+        final int nextTermCount = termCount + 1;
         final int nextIndex = indexByTermCount(nextTermCount);
         final int expectedTermId = nextTermId - PARTITION_COUNT;
 
         long rawTail;
         do
         {
-            rawTail = rawTail(logMetaDataBuffer, nextIndex);
+            rawTail = rawTail(metadataBuffer, nextIndex);
             if (expectedTermId != termId(rawTail))
             {
                 break;
             }
         }
-        while (!casRawTail(logMetaDataBuffer, nextIndex, rawTail, packTail(nextTermId, 0)));
+        while (!casRawTail(metadataBuffer, nextIndex, rawTail, packTail(nextTermId, 0)));
 
-        return casActiveTermCount(logMetaDataBuffer, currentTermCount, nextTermCount);
+        return casActiveTermCount(metadataBuffer, termCount, nextTermCount);
     }
 
     /**
      * Set the initial value for the termId in the upper bits of the tail counter.
      *
-     * @param logMetaData    contain the tail counter.
+     * @param metadataBuffer contain the tail counter.
      * @param partitionIndex to be initialised.
      * @param termId         to be set.
      */
     public static void initialiseTailWithTermId(
-        final UnsafeBuffer logMetaData, final int partitionIndex, final int termId)
+        final UnsafeBuffer metadataBuffer, final int partitionIndex, final int termId)
     {
-        logMetaData.putLong(TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG), packTail(termId, 0));
+        metadataBuffer.putLong(TERM_TAIL_COUNTERS_OFFSET + (partitionIndex * SIZE_OF_LONG), packTail(termId, 0));
     }
 
     /**
@@ -717,82 +716,81 @@ public class LogBufferDescriptor
     /**
      * Set the raw value of the tail for the given partition.
      *
-     * @param logMetaDataBuffer containing the tail counters.
-     * @param partitionIndex    for the tail counter.
-     * @param rawTail           to be stored
+     * @param metadataBuffer containing the tail counters.
+     * @param partitionIndex for the tail counter.
+     * @param rawTail        to be stored
      */
-    public static void rawTail(
-        final UnsafeBuffer logMetaDataBuffer, final int partitionIndex, final long rawTail)
+    public static void rawTail(final UnsafeBuffer metadataBuffer, final int partitionIndex, final long rawTail)
     {
-        logMetaDataBuffer.putLong(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex), rawTail);
+        metadataBuffer.putLong(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex), rawTail);
     }
 
     /**
      * Get the raw value of the tail for the given partition.
      *
-     * @param logMetaDataBuffer containing the tail counters.
-     * @param partitionIndex    for the tail counter.
+     * @param metadataBuffer containing the tail counters.
+     * @param partitionIndex for the tail counter.
      * @return the raw value of the tail for the current active partition.
      */
-    public static long rawTail(final UnsafeBuffer logMetaDataBuffer, final int partitionIndex)
+    public static long rawTail(final UnsafeBuffer metadataBuffer, final int partitionIndex)
     {
-        return logMetaDataBuffer.getLong(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
+        return metadataBuffer.getLong(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
     }
 
     /**
      * Set the raw value of the tail for the given partition.
      *
-     * @param logMetaDataBuffer containing the tail counters.
-     * @param partitionIndex    for the tail counter.
-     * @param rawTail           to be stored
+     * @param metadataBuffer containing the tail counters.
+     * @param partitionIndex for the tail counter.
+     * @param rawTail        to be stored
      */
     public static void rawTailVolatile(
-        final UnsafeBuffer logMetaDataBuffer, final int partitionIndex, final long rawTail)
+        final UnsafeBuffer metadataBuffer, final int partitionIndex, final long rawTail)
     {
-        logMetaDataBuffer.putLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex), rawTail);
+        metadataBuffer.putLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex), rawTail);
     }
 
     /**
      * Get the raw value of the tail for the given partition.
      *
-     * @param logMetaDataBuffer containing the tail counters.
-     * @param partitionIndex    for the tail counter.
+     * @param metadataBuffer containing the tail counters.
+     * @param partitionIndex for the tail counter.
      * @return the raw value of the tail for the current active partition.
      */
-    public static long rawTailVolatile(final UnsafeBuffer logMetaDataBuffer, final int partitionIndex)
+    public static long rawTailVolatile(final UnsafeBuffer metadataBuffer, final int partitionIndex)
     {
-        return logMetaDataBuffer.getLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
+        return metadataBuffer.getLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
     }
 
     /**
      * Get the raw value of the tail for the current active partition.
      *
-     * @param logMetaDataBuffer containing the tail counters.
+     * @param metadataBuffer containing the tail counters.
      * @return the raw value of the tail for the current active partition.
      */
-    public static long rawTailVolatile(final UnsafeBuffer logMetaDataBuffer)
+    public static long rawTailVolatile(final UnsafeBuffer metadataBuffer)
     {
-        final int partitionIndex = indexByTermCount(activeTermCount(logMetaDataBuffer));
-        return logMetaDataBuffer.getLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
+        final int partitionIndex = indexByTermCount(activeTermCount(metadataBuffer));
+        return metadataBuffer.getLongVolatile(TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex));
     }
 
     /**
      * Compare and set the raw value of the tail for the given partition.
      *
-     * @param logMetaDataBuffer containing the tail counters.
-     * @param partitionIndex    for the tail counter.
-     * @param expectedRawTail   expected current value.
-     * @param updateRawTail     to be applied.
+     * @param metadataBuffer  containing the tail counters.
+     * @param partitionIndex  for the tail counter.
+     * @param expectedRawTail expected current value.
+     * @param updateRawTail   to be applied.
      * @return true if the update was successful otherwise false.
      */
     public static boolean casRawTail(
-        final UnsafeBuffer logMetaDataBuffer,
+        final UnsafeBuffer metadataBuffer,
         final int partitionIndex,
         final long expectedRawTail,
         final long updateRawTail)
     {
         final int index = TERM_TAIL_COUNTERS_OFFSET + (SIZE_OF_LONG * partitionIndex);
-        return logMetaDataBuffer.compareAndSetLong(index, expectedRawTail, updateRawTail);
+        return metadataBuffer.compareAndSetLong(index, expectedRawTail, updateRawTail);
     }
 
     /**
@@ -805,35 +803,50 @@ public class LogBufferDescriptor
     {
         switch (termBufferLength)
         {
-            case 64 * 1024: return 16;
+            case 64 * 1024:
+                return 16;
 
-            case 128 * 1024: return 17;
+            case 128 * 1024:
+                return 17;
 
-            case 256 * 1024: return 18;
+            case 256 * 1024:
+                return 18;
 
-            case 512 * 1024: return 19;
+            case 512 * 1024:
+                return 19;
 
-            case 1024 * 1024: return 20;
+            case 1024 * 1024:
+                return 20;
 
-            case 2 * 1024 * 1024: return 21;
+            case 2 * 1024 * 1024:
+                return 21;
 
-            case 4 * 1024 * 1024: return 22;
+            case 4 * 1024 * 1024:
+                return 22;
 
-            case 8 * 1024 * 1024: return 23;
+            case 8 * 1024 * 1024:
+                return 23;
 
-            case 16 * 1024 * 1024: return 24;
+            case 16 * 1024 * 1024:
+                return 24;
 
-            case 32 * 1024 * 1024: return 25;
+            case 32 * 1024 * 1024:
+                return 25;
 
-            case 64 * 1024 * 1024: return 26;
+            case 64 * 1024 * 1024:
+                return 26;
 
-            case 128 * 1024 * 1024: return 27;
+            case 128 * 1024 * 1024:
+                return 27;
 
-            case 256 * 1024 * 1024: return 28;
+            case 256 * 1024 * 1024:
+                return 28;
 
-            case 512 * 1024 * 1024: return 29;
+            case 512 * 1024 * 1024:
+                return 29;
 
-            case 1024 * 1024 * 1024: return 30;
+            case 1024 * 1024 * 1024:
+                return 30;
         }
 
         throw new IllegalArgumentException("Invalid term buffer length: " + termBufferLength);

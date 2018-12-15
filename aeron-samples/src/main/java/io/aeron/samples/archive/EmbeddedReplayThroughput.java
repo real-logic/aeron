@@ -28,6 +28,8 @@ import io.aeron.samples.SampleConfiguration;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.console.ContinueBarrier;
@@ -74,8 +76,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             Thread.sleep(10);
 
             System.out.println("Finding the recording...");
-            final long recordingId =
-                test.findRecordingId(ChannelUri.addSessionId(CHANNEL, test.publicationSessionId), STREAM_ID);
+            final long recordingId = test.findRecordingId(ChannelUri.addSessionId(CHANNEL, test.publicationSessionId));
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
             do
@@ -172,7 +173,10 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                 final long position = publication.position();
                 while (image.position() < position)
                 {
-                    image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                    if (0 == image.poll(NOOP_FRAGMENT_HANDLER, 10))
+                    {
+                        Thread.yield();
+                    }
                 }
 
                 awaitRecordingComplete(position);
@@ -208,6 +212,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             }
 
             messageCount = 0;
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(10, 10, 1000, 1000);
 
             while (messageCount < NUMBER_OF_MESSAGES)
             {
@@ -216,17 +221,17 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                 {
                     if (!subscription.isConnected())
                     {
-                        System.out.println("Unexpected end of stream at message count: " + messageCount);
+                        System.out.println("unexpected end of stream at message count: " + messageCount);
                         break;
                     }
-
-                    Thread.yield();
                 }
+
+                idleStrategy.idle(fragments);
             }
         }
     }
 
-    private long findRecordingId(final String expectedChannel, final int expectedStreamId)
+    private long findRecordingId(final String expectedChannel)
     {
         final MutableLong foundRecordingId = new MutableLong();
 
@@ -249,7 +254,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             sourceIdentity) -> foundRecordingId.set(recordingId);
 
         final int recordingsFound = aeronArchive.listRecordingsForUri(
-            0L, 10, expectedChannel, expectedStreamId, consumer);
+            0L, 10, expectedChannel, STREAM_ID, consumer);
 
         if (1 != recordingsFound)
         {

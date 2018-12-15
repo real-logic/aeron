@@ -17,19 +17,16 @@ package io.aeron.samples.archive;
 
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
-import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingEventsAdapter;
-import io.aeron.archive.client.RecordingEventsListener;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.samples.SampleConfiguration;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 import org.agrona.console.ContinueBarrier;
 
 import java.io.File;
@@ -43,11 +40,10 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
 /**
  * Tests the throughput when recording a stream of messages.
  */
-public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEventsListener
+public class EmbeddedRecordingThroughput implements AutoCloseable
 {
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
-    private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
@@ -55,13 +51,8 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
     private final Aeron aeron;
     private final AeronArchive aeronArchive;
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, CACHE_LINE_LENGTH));
-    private final Thread recordingEventsThread;
-    private volatile long recordingStartTimeMs;
-    private volatile long stopPosition;
-    private volatile boolean isRunning = true;
-    private volatile boolean isRecording;
 
-    public static void main(final String[] args) throws Exception
+    public static void main(final String[] args)
     {
         loadPropertiesFiles(args);
 
@@ -75,8 +66,6 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
                 test.streamMessagesForRecording();
             }
             while (barrier.await());
-
-            test.stop();
         }
     }
 
@@ -99,10 +88,6 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         aeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
                 .aeron(aeron));
-
-        recordingEventsThread = new Thread(this::runRecordingEventPoller);
-        recordingEventsThread.setName("recording-events-poller");
-        recordingEventsThread.start();
     }
 
     public void close()
@@ -115,48 +100,16 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
         archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
-    public void onStart(
-        final long recordingId,
-        final long startPosition,
-        final int sessionId,
-        final int streamId,
-        final String channel,
-        final String sourceIdentity)
-    {
-        System.out.println("Recording started for id: " + recordingId);
-    }
-
-    public void onProgress(final long recordingId, final long startPosition, final long position)
-    {
-        if (position >= stopPosition)
-        {
-            final long durationMs = System.currentTimeMillis() - recordingStartTimeMs;
-            final long recordingLength = position - startPosition;
-            final double dataRate = (recordingLength * 1000.0d / durationMs) / MEGABYTE;
-            final double recordingMb = recordingLength / MEGABYTE;
-            final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;
-
-            System.out.printf(
-                "Recorded %.02f MB @ %.02f MB/s - %,d msg/sec - %d byte payload + 32 byte header%n",
-                recordingMb, dataRate, msgRate, MESSAGE_LENGTH);
-
-            isRecording = false;
-        }
-    }
-
-    public void onStop(final long recordingId, final long startPosition, final long stopPosition)
-    {
-        isRecording = false;
-        //System.out.println("Recording stopped for id: " + recordingId + " @ " + stopPosition);
-    }
-
-    public void streamMessagesForRecording() throws Exception
+    public void streamMessagesForRecording()
     {
         try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
-            isRecording = true;
-            stopPosition = Long.MAX_VALUE;
-            recordingStartTimeMs = System.currentTimeMillis();
+            while (!publication.isConnected())
+            {
+                Thread.yield();
+            }
+
+            final long recordingStartTimeMs = System.currentTimeMillis();
 
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
@@ -167,40 +120,28 @@ public class EmbeddedRecordingThroughput implements AutoCloseable, RecordingEven
                 }
             }
 
-            stopPosition = publication.position();
-        }
+            final long stopPosition = publication.position();
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
 
-        while (isRecording)
-        {
-            Thread.sleep(1);
-        }
-    }
+            while (counters.getCounterValue(counterId) < stopPosition)
+            {
+                Thread.yield();
+            }
 
-    public void stop() throws InterruptedException
-    {
-        isRunning = false;
-        recordingEventsThread.join();
+            final long durationMs = System.currentTimeMillis() - recordingStartTimeMs;
+            final double dataRate = (stopPosition * 1000.0d / durationMs) / MEGABYTE;
+            final double recordingMb = stopPosition / MEGABYTE;
+            final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;
+
+            System.out.printf(
+                "Recorded %.02f MB @ %.02f MB/s - %,d msg/sec - %d byte payload + 32 byte header%n",
+                recordingMb, dataRate, msgRate, MESSAGE_LENGTH);
+        }
     }
 
     public void startRecording()
     {
         aeronArchive.startRecording(CHANNEL, STREAM_ID, SourceLocation.LOCAL);
-    }
-
-    private void runRecordingEventPoller()
-    {
-        try (Subscription subscription = aeron.addSubscription(
-            AeronArchive.Configuration.recordingEventsChannel(),
-            AeronArchive.Configuration.recordingEventsStreamId()))
-        {
-            final IdleStrategy idleStrategy = new BackoffIdleStrategy(10, 100, 1, 1);
-            final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
-                this, subscription, FRAGMENT_COUNT_LIMIT);
-
-            while (isRunning)
-            {
-                idleStrategy.idle(recordingEventsAdapter.poll());
-            }
-        }
     }
 }

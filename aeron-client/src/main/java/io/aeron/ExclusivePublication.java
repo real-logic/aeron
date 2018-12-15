@@ -99,6 +99,16 @@ public class ExclusivePublication extends Publication
         return termBeginPosition + termOffset;
     }
 
+    public long availableWindow()
+    {
+        if (isClosed)
+        {
+            return CLOSED;
+        }
+
+        return positionLimit.getVolatile() - termBeginPosition - termOffset;
+    }
+
     /**
      * Non-blocking publish of a partial buffer containing a message.
      *

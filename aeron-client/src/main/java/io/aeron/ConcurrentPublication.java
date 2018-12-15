@@ -69,6 +69,16 @@ public class ConcurrentPublication extends Publication
         }
     }
 
+    public long availableWindow()
+    {
+        if (isClosed)
+        {
+            return CLOSED;
+        }
+
+        return positionLimit.getVolatile() - position();
+    }
+
     /**
      * Non-blocking publish of a partial buffer containing a message.
      *

@@ -30,8 +30,8 @@ def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 def aeronJavaVersion = '1.8'
 
-def agronaVersion = '0.9.27'
-def sbeVersion = '1.10.0'
+def agronaVersion = '0.9.28'
+def sbeVersion = '1.10.1'
 
 group = aeronGroup
 version = aeronVersion

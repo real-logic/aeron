@@ -106,7 +106,7 @@ public class ExclusivePublication extends Publication
             return CLOSED;
         }
 
-        return positionLimit.getVolatile() - termBeginPosition - termOffset;
+        return positionLimit.getVolatile() - (termBeginPosition + termOffset);
     }
 
     /**

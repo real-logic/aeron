@@ -184,9 +184,6 @@ public class Archive implements AutoCloseable
         public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archive.max.concurrent.replays";
         public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 128;
 
-        public static final String REPLAY_FRAGMENT_LIMIT_PROP_NAME = "aeron.archive.replay.fragment.limit";
-        public static final int REPLAY_FRAGMENT_LIMIT_DEFAULT = 64;
-
         public static final String MAX_CATALOG_ENTRIES_PROP_NAME = "aeron.archive.max.catalog.entries";
         public static final long MAX_CATALOG_ENTRIES_DEFAULT = Catalog.DEFAULT_MAX_ENTRIES;
 
@@ -296,16 +293,6 @@ public class Archive implements AutoCloseable
         public static int maxConcurrentReplays()
         {
             return Integer.getInteger(MAX_CONCURRENT_REPLAYS_PROP_NAME, MAX_CONCURRENT_REPLAYS_DEFAULT);
-        }
-
-        /**
-         * Limit for the number of fragments to be replayed per duty cycle on a replay.
-         *
-         * @return the limit for the number of fragments to be replayed per duty cycle on a replay.
-         */
-        public static int replayFragmentLimit()
-        {
-            return Integer.getInteger(REPLAY_FRAGMENT_LIMIT_PROP_NAME, REPLAY_FRAGMENT_LIMIT_DEFAULT);
         }
 
         /**

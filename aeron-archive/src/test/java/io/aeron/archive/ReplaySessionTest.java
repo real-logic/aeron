@@ -66,6 +66,8 @@ public class ReplaySessionTest
     private final ControlSession mockControlSession = mock(ControlSession.class);
     private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
     private final Counter recordingPositionCounter = mock(Counter.class);
+    private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
+        allocateDirectAligned(ReplaySession.REPLAY_BLOCK_LENGTH, 128));
 
     private int messageCounter = 0;
 
@@ -86,6 +88,7 @@ public class ReplaySessionTest
         when(mockReplayPub.positionBitsToShift())
             .thenReturn(LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH));
         when(mockReplayPub.initialTermId()).thenReturn(INITIAL_TERM_ID);
+        when(mockReplayPub.availableWindow()).thenReturn((long)TERM_BUFFER_LENGTH / 2);
         when(mockImage.termBufferLength()).thenReturn(TERM_BUFFER_LENGTH);
         when(mockImage.joinPosition()).thenReturn(JOIN_POSITION);
 
@@ -217,7 +220,6 @@ public class ReplaySessionTest
 
             replaySession.doWork();
             assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
-
             verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
 
             final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
@@ -226,7 +228,6 @@ public class ReplaySessionTest
             assertThat(messageCounter, is(1));
 
             validateFrame(termBuffer, 0, FrameDescriptor.UNFRAGMENTED);
-
             assertTrue(replaySession.isDone());
         }
     }
@@ -243,8 +244,10 @@ public class ReplaySessionTest
             correlationId,
             mockControlSession,
             proxy,
+            replayBuffer,
             mockCatalog,
             archiveDir,
+            null,
             epochClock,
             mockReplayPub,
             recordingSummary,
@@ -275,14 +278,12 @@ public class ReplaySessionTest
             when(mockReplayPub.isConnected()).thenReturn(false);
 
             replaySession.doWork();
-
             assertEquals(replaySession.state(), ReplaySession.State.INIT);
 
             when(mockReplayPub.isConnected()).thenReturn(true);
 
             replaySession.doWork();
             assertEquals(replaySession.state(), ReplaySession.State.REPLAY);
-
             verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
 
             final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
@@ -469,8 +470,10 @@ public class ReplaySessionTest
             correlationId,
             controlSession,
             proxy,
+            replayBuffer,
             mockCatalog,
             archiveDir,
+            null,
             epochClock,
             replay,
             recordingSummary,

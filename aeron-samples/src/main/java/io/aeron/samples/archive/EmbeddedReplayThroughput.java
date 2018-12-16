@@ -62,7 +62,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     private final AeronArchive aeronArchive;
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, CACHE_LINE_LENGTH));
     private final FragmentHandler fragmentHandler = new FragmentAssembler(this::onMessage);
-    private int messageCount;
+    private long messageCount;
     private int publicationSessionId;
 
     public static void main(final String[] args) throws Exception
@@ -132,7 +132,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     @SuppressWarnings("unused")
     public void onMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        final int count = buffer.getInt(offset);
+        final long count = buffer.getLong(offset);
         if (count != messageCount)
         {
             throw new IllegalStateException("invalid message count=" + count + " @ " + messageCount);
@@ -157,10 +157,10 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
                 final Image image = subscription.imageAtIndex(0);
 
-                int i = 0;
+                long i = 0;
                 while (i < NUMBER_OF_MESSAGES)
                 {
-                    buffer.putInt(0, i);
+                    buffer.putLong(0, i);
 
                     if (publication.offer(buffer, 0, MESSAGE_LENGTH) > 0)
                     {

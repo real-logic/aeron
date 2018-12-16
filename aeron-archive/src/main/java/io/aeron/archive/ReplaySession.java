@@ -19,20 +19,20 @@ import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.MappedByteBuffer;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -44,7 +44,6 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.nio.file.StandardOpenOption.READ;
 
 /**
@@ -58,7 +57,7 @@ import static java.nio.file.StandardOpenOption.READ;
  * <li>Wait for replay publication to connect to the subscriber. If no subscriber appears within
  * {@link Archive.Configuration#CONNECT_TIMEOUT_PROP_NAME} the session will terminate and respond with an error.</li>
  * <li>Once the replay publication is connected an OK response to control client will be sent.</li>
- * <li>Stream recorded data into the replayPublication {@link ExclusivePublication}.</li>
+ * <li>Stream recorded data into the publication {@link ExclusivePublication}.</li>
  * <li>If the replay is aborted part way through, send a ReplayAborted message and terminate.</li>
  * </ul>
  */
@@ -69,38 +68,35 @@ class ReplaySession implements Session, AutoCloseable
         INIT, REPLAY, INACTIVE, DONE
     }
 
+    static final int REPLAY_BLOCK_LENGTH = 2 * 1024 * 1024;
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
-    private static final int REPLAY_FRAGMENT_LIMIT = Archive.Configuration.replayFragmentLimit();
 
     private final long connectDeadlineMs;
     private final long correlationId;
     private final long sessionId;
-
+    private final long recordingId;
     private final long startPosition;
-    private long stopPosition;
     private long replayPosition;
+    private long stopPosition;
     private long replayLimit;
     private int termOffset;
     private int termBaseSegmentOffset;
     private int segmentFileIndex;
     private final int streamId;
+    private final int termLength;
+    private final int segmentLength;
 
     private final BufferClaim bufferClaim = new BufferClaim();
-    private final ExclusivePublication replayPublication;
+    private final ExclusivePublication publication;
     private final ControlSession controlSession;
     private final EpochClock epochClock;
-
     private final File archiveDir;
-    private final long recordingId;
-    private final int segmentLength;
-    private final int termLength;
-
     private final Catalog catalog;
     private final Counter recordingPosition;
-    private final UnsafeBuffer termBuffer = new UnsafeBuffer();
-    private MappedByteBuffer mappedSegmentBuffer;
-
+    private final UnsafeBuffer replayBuffer;
+    private FileChannel fileChannel;
+    private File segmentFile;
     private State state = State.INIT;
     private String errorMessage = null;
     private volatile boolean isAborted;
@@ -113,10 +109,12 @@ class ReplaySession implements Session, AutoCloseable
         final long correlationId,
         final ControlSession controlSession,
         final ControlResponseProxy controlResponseProxy,
+        final UnsafeBuffer replayBuffer,
         final Catalog catalog,
         final File archiveDir,
+        final File initialSegmentFile,
         final EpochClock epochClock,
-        final ExclusivePublication replayPublication,
+        final ExclusivePublication publication,
         final RecordingSummary recordingSummary,
         final Counter recordingPosition)
     {
@@ -129,8 +127,10 @@ class ReplaySession implements Session, AutoCloseable
         this.streamId = recordingSummary.streamId;
         this.epochClock = epochClock;
         this.archiveDir = archiveDir;
-        this.replayPublication = replayPublication;
+        this.segmentFile = initialSegmentFile;
+        this.publication = publication;
         this.recordingPosition = recordingPosition;
+        this.replayBuffer = replayBuffer;
         this.catalog = catalog;
         this.startPosition = recordingSummary.startPosition;
         this.stopPosition = null == recordingPosition ? recordingSummary.stopPosition : recordingPosition.get();
@@ -143,7 +143,7 @@ class ReplaySession implements Session, AutoCloseable
             close();
             final String msg = "replay recording " + recordingId + " - " + "length must be positive: " + replayLength;
             controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
-            throw new IllegalArgumentException(msg);
+            throw new ArchiveException(msg);
         }
 
         if (null != recordingPosition)
@@ -155,7 +155,7 @@ class ReplaySession implements Session, AutoCloseable
                 final String msg = "replay recording " + recordingId + " - " +
                     fromPosition + " after current position of " + currentPosition;
                 controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
-                throw new IllegalArgumentException(msg);
+                throw new ArchiveException(msg);
             }
         }
 
@@ -169,8 +169,8 @@ class ReplaySession implements Session, AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(replayPublication);
         closeRecordingSegment();
+        CloseHelper.close(publication);
     }
 
     public long sessionId()
@@ -187,14 +187,22 @@ class ReplaySession implements Session, AutoCloseable
             state = State.INACTIVE;
         }
 
-        if (State.INIT == state)
+        try
         {
-            workCount += init();
-        }
+            if (State.INIT == state)
+            {
+                workCount += init();
+            }
 
-        if (State.REPLAY == state)
+            if (State.REPLAY == state)
+            {
+                workCount += replay();
+            }
+        }
+        catch (final IOException ex)
         {
-            workCount += replay();
+            onError("IOException - " + ex.getMessage() + " - " + segmentFile.getName());
+            LangUtil.rethrowUnchecked(ex);
         }
 
         if (State.INACTIVE == state)
@@ -234,33 +242,31 @@ class ReplaySession implements Session, AutoCloseable
         }
     }
 
-    private int init()
+    private int init() throws IOException
     {
-        if (null == mappedSegmentBuffer)
+        if (null == fileChannel)
         {
-            final int positionBitsToShift = replayPublication.positionBitsToShift();
+            final int positionBitsToShift = publication.positionBitsToShift();
             final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
             final int segmentOffset = (int)(replayPosition - startTermBasePosition) & (segmentLength - 1);
-            final int termId = ((int)(replayPosition >> positionBitsToShift) + replayPublication.initialTermId());
+            final int termId = ((int)(replayPosition >> positionBitsToShift) + publication.initialTermId());
 
             openRecordingSegment();
 
             termOffset = (int)(replayPosition & (termLength - 1));
             termBaseSegmentOffset = segmentOffset - termOffset;
-            termBuffer.wrap(mappedSegmentBuffer, termBaseSegmentOffset, termLength);
 
-            if (replayPosition > startPosition &&
-                replayPosition != stopPosition &&
-                isInvalidHeader(termBuffer, streamId, termId, termOffset))
+            if (replayPosition > startPosition && replayPosition != stopPosition)
             {
-                onError("replay recording " + recordingId + " - " +
-                    replayPosition + " position not aligned to valid fragment");
-
-                return 0;
+                if (notHeaderAligned(fileChannel, replayBuffer, segmentOffset, termOffset, termId, streamId))
+                {
+                    onError(replayPosition + " position not aligned to data header");
+                    return 0;
+                }
             }
         }
 
-        if (!replayPublication.isConnected())
+        if (!publication.isConnected())
         {
             if (epochClock.time() > connectDeadlineMs)
             {
@@ -275,7 +281,7 @@ class ReplaySession implements Session, AutoCloseable
         return 1;
     }
 
-    private int replay()
+    private int replay() throws IOException
     {
         int fragments = 0;
 
@@ -284,18 +290,18 @@ class ReplaySession implements Session, AutoCloseable
             return fragments;
         }
 
-        while (replayPosition < stopPosition && fragments < REPLAY_FRAGMENT_LIMIT)
+        if (termOffset == termLength)
         {
-            if (termOffset == termLength)
-            {
-                nextTerm();
-            }
+            nextTerm();
+        }
 
-            final int frameOffset = termOffset;
-            final UnsafeBuffer termBuffer = this.termBuffer;
-            final int frameLength = FrameDescriptor.frameLength(termBuffer, frameOffset);
-            final int frameType = FrameDescriptor.frameType(termBuffer, frameOffset);
+        int frameOffset = 0;
+        final int bytesRead = readRecording(stopPosition - replayPosition);
 
+        while (frameOffset < bytesRead)
+        {
+            final int frameLength = FrameDescriptor.frameLength(replayBuffer, frameOffset);
+            final int frameType = FrameDescriptor.frameType(replayBuffer, frameOffset);
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
             final int dataOffset = frameOffset + DataHeaderFlyweight.HEADER_LENGTH;
             final int dataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
@@ -303,28 +309,32 @@ class ReplaySession implements Session, AutoCloseable
             long result = 0;
             if (frameType == HeaderFlyweight.HDR_TYPE_DATA)
             {
-                final BufferClaim bufferClaim = this.bufferClaim;
-                result = replayPublication.tryClaim(dataLength, bufferClaim);
+                if (frameOffset + alignedLength > bytesRead)
+                {
+                    break;
+                }
+
+                result = publication.tryClaim(dataLength, bufferClaim);
                 if (result > 0)
                 {
                     bufferClaim
-                        .flags(FrameDescriptor.frameFlags(termBuffer, frameOffset))
-                        .reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
-                        .putBytes(termBuffer, dataOffset, dataLength);
-
-                    bufferClaim.commit();
+                        .flags(FrameDescriptor.frameFlags(replayBuffer, frameOffset))
+                        .reservedValue(replayBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
+                        .putBytes(replayBuffer, dataOffset, dataLength)
+                        .commit();
                 }
             }
             else if (frameType == HeaderFlyweight.HDR_TYPE_PAD)
             {
-                result = replayPublication.appendPadding(dataLength);
+                result = publication.appendPadding(dataLength);
             }
 
             if (result > 0)
             {
-                replayPosition += alignedLength;
-                termOffset += alignedLength;
                 fragments++;
+                frameOffset += alignedLength;
+                termOffset += alignedLength;
+                replayPosition += alignedLength;
 
                 if (replayPosition >= replayLimit)
                 {
@@ -344,6 +354,31 @@ class ReplaySession implements Session, AutoCloseable
         }
 
         return fragments;
+    }
+
+    private int readRecording(final long availableReplay) throws IOException
+    {
+        if (publication.availableWindow() > 0)
+        {
+            final int limit = Math.min((int)Math.min(availableReplay, REPLAY_BLOCK_LENGTH), termLength - termOffset);
+            final ByteBuffer byteBuffer = replayBuffer.byteBuffer();
+            byteBuffer.clear().limit(limit);
+
+            int position = termBaseSegmentOffset + termOffset;
+            do
+            {
+                position += fileChannel.read(byteBuffer, position);
+            }
+            while (byteBuffer.remaining() > 0);
+
+            return byteBuffer.limit();
+        }
+        else if (!publication.isConnected())
+        {
+            state = State.INACTIVE;
+        }
+
+        return 0;
     }
 
     private void onError(final String errorMessage)
@@ -376,7 +411,7 @@ class ReplaySession implements Session, AutoCloseable
         return true;
     }
 
-    private void nextTerm()
+    private void nextTerm() throws IOException
     {
         termOffset = 0;
         termBaseSegmentOffset += termLength;
@@ -388,45 +423,57 @@ class ReplaySession implements Session, AutoCloseable
             openRecordingSegment();
             termBaseSegmentOffset = 0;
         }
-
-        termBuffer.wrap(mappedSegmentBuffer, termBaseSegmentOffset, termLength);
     }
 
     private void closeRecordingSegment()
     {
-        IoUtil.unmap(mappedSegmentBuffer);
-        mappedSegmentBuffer = null;
+        CloseHelper.close(fileChannel);
+        fileChannel = null;
+        segmentFile = null;
     }
 
-    private void openRecordingSegment()
+    private void openRecordingSegment() throws IOException
     {
-        final String segmentFileName = segmentFileName(recordingId, segmentFileIndex);
-        final File segmentFile = new File(archiveDir, segmentFileName);
+        if (null == segmentFile)
+        {
+            final String segmentFileName = segmentFileName(recordingId, segmentFileIndex);
+            segmentFile = new File(archiveDir, segmentFileName);
 
-        if (!segmentFile.exists())
-        {
-            final String msg = "failed to open recording segment file " + segmentFileName;
-            onError(msg);
-            throw new IllegalArgumentException(msg);
+            if (!segmentFile.exists())
+            {
+                final String msg = "recording segment not found " + segmentFileName;
+                onError(msg);
+                throw new ArchiveException(msg);
+            }
         }
 
-        try (FileChannel channel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
-        {
-            mappedSegmentBuffer = channel.map(READ_ONLY, 0, segmentLength);
-        }
-        catch (final IOException ex)
-        {
-            final String msg = "failed to open recording segment file " + segmentFileName + " - " + ex.getMessage();
-            onError(msg);
-            LangUtil.rethrowUnchecked(ex);
-        }
+        fileChannel = FileChannel.open(segmentFile.toPath(), FILE_OPTIONS, NO_ATTRIBUTES);
     }
 
-    static boolean isInvalidHeader(final UnsafeBuffer buffer, final int streamId, final int termId, final int offset)
+    static boolean notHeaderAligned(
+        final FileChannel channel,
+        final UnsafeBuffer buffer,
+        final int segmentOffset,
+        final int termOffset,
+        final int termId,
+        final int streamId) throws IOException
+    {
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
+        byteBuffer.clear().limit(DataHeaderFlyweight.HEADER_LENGTH);
+        if (DataHeaderFlyweight.HEADER_LENGTH != channel.read(byteBuffer, segmentOffset))
+        {
+            throw new ArchiveException("failed to read fragment header");
+        }
+
+        return isInvalidHeader(buffer, streamId, termId, termOffset);
+    }
+
+    static boolean isInvalidHeader(
+        final UnsafeBuffer buffer, final int streamId, final int termId, final int termOffset)
     {
         return
-            DataHeaderFlyweight.termOffset(buffer, offset) != offset ||
-            DataHeaderFlyweight.termId(buffer, offset) != termId ||
-            DataHeaderFlyweight.streamId(buffer, offset) != streamId;
+            DataHeaderFlyweight.termOffset(buffer, 0) != termOffset ||
+            DataHeaderFlyweight.termId(buffer, 0) != termId ||
+            DataHeaderFlyweight.streamId(buffer, 0) != streamId;
     }
 }

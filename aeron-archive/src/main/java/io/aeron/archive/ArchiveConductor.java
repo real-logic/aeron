@@ -33,7 +33,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -54,6 +53,7 @@ import static io.aeron.archive.client.ArchiveException.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 abstract class ArchiveConductor extends SessionWorker<Session> implements AvailableImageHandler
@@ -66,13 +66,15 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
     private final Object2ObjectHashMap<String, Subscription> recordingSubscriptionMap = new Object2ObjectHashMap<>();
+    private final RecordingSummary recordingSummary = new RecordingSummary();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final RecordingSummary recordingSummary = new RecordingSummary();
-    private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
-    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-    private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight(byteBuffer);
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
+    private final UnsafeBuffer tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+    private final UnsafeBuffer dataHeaderBuffer = new UnsafeBuffer(
+        allocateDirectAligned(DataHeaderFlyweight.HEADER_LENGTH, 128));
+    private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
+        allocateDirectAligned(ReplaySession.REPLAY_BLOCK_LENGTH, 128));
 
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
@@ -421,7 +423,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             replayPosition = position;
         }
 
-        if (!hasInitialSegmentFile(controlSession, archiveDir, replayPosition, recordingId, correlationId))
+        final File segmentFile = segmentFile(controlSession, archiveDir, replayPosition, recordingId, correlationId);
+        if (null == segmentFile)
         {
             return;
         }
@@ -439,8 +442,10 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             correlationId,
             controlSession,
             controlResponseProxy,
+            replayBuffer,
             catalog,
             archiveDir,
+            segmentFile,
             cachedEpochClock,
             replayPublication,
             recordingSummary,
@@ -578,36 +583,29 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             final int segmentIndex = segmentFileIndex(startPosition, position, segmentLength);
             final File file = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
 
-            final long segmentOffset = position & (segmentLength - 1);
+            final int segmentOffset = (int)(position & (segmentLength - 1));
             final int termLength = summary.termBufferLength;
             final int termOffset = (int)(position & (termLength - 1));
 
             if (termOffset > 0)
             {
-                try (FileChannel fileChannel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
+                try (FileChannel channel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
                 {
-                    byteBuffer.clear();
-                    if (DataHeaderFlyweight.HEADER_LENGTH != fileChannel.read(byteBuffer, segmentOffset))
-                    {
-                        throw new ArchiveException("failed to read fragment header");
-                    }
+                    final int termCount = (int)(position >> LogBufferDescriptor.positionBitsToShift(termLength));
+                    final int termId = summary.initialTermId + termCount;
 
-                    final long termCount = position >> LogBufferDescriptor.positionBitsToShift(termLength);
-                    final int termId = summary.initialTermId + (int)termCount;
-
-                    if (dataHeaderFlyweight.termOffset() != termOffset ||
-                        dataHeaderFlyweight.termId() != termId ||
-                        dataHeaderFlyweight.streamId() != summary.streamId)
+                    if (ReplaySession.notHeaderAligned(
+                        channel, dataHeaderBuffer, segmentOffset, termOffset, termId, summary.streamId))
                     {
-                        final String msg = position + " position does not match header " + dataHeaderFlyweight;
+                        final String msg = position + " position not aligned to data header";
                         controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
 
                         return;
                     }
 
-                    fileChannel.truncate(segmentOffset);
-                    byteBuffer.put(0, (byte)0).limit(1).position(0);
-                    fileChannel.write(byteBuffer, segmentLength - 1);
+                    channel.truncate(segmentOffset);
+                    dataHeaderBuffer.byteBuffer().put(0, (byte)0).limit(1).position(0);
+                    channel.write(dataHeaderBuffer.byteBuffer(), segmentLength - 1);
                 }
                 catch (final IOException ex)
                 {
@@ -982,7 +980,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         return true;
     }
 
-    private boolean hasInitialSegmentFile(
+    private File segmentFile(
         final ControlSession controlSession,
         final File archiveDir,
         final long position,
@@ -999,9 +997,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             final String msg = "initial segment file does not exist for replay recording id " + recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
 
-            return false;
+            return null;
         }
 
-        return true;
+        return segmentFile;
     }
 }

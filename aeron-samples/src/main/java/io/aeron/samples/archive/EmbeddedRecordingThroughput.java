@@ -109,11 +109,11 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
                 Thread.yield();
             }
 
-            final long recordingStartTimeMs = System.currentTimeMillis();
+            final long startMs = System.currentTimeMillis();
 
-            for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
+            for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
-                buffer.putInt(0, i);
+                buffer.putLong(0, i);
                 while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0)
                 {
                     Thread.yield();
@@ -129,7 +129,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
                 Thread.yield();
             }
 
-            final long durationMs = System.currentTimeMillis() - recordingStartTimeMs;
+            final long durationMs = System.currentTimeMillis() - startMs;
             final double dataRate = (stopPosition * 1000.0d / durationMs) / MEGABYTE;
             final double recordingMb = stopPosition / MEGABYTE;
             final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;

@@ -14,13 +14,12 @@
 # limitations under the License.
 
 include_directories(${AERON_DRIVER_SOURCE_PATH})
-include_directories(${AERON_CLIENT_SOURCE_PATH})
 
 set(TEST_HEADERS aeron_driver_conductor_test.h)
 
 function(aeron_driver_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
-    target_link_libraries(${name} aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(${name} aeron_client aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     add_dependencies(${name} gmock)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()

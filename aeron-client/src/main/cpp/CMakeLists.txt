@@ -127,6 +127,11 @@ target_include_directories(aeron_client
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+# relative file paths for use in exceptions
+target_compile_definitions(aeron_client
+    PUBLIC "__PROJECT_SOURCE_DIR__=\"${PROJECT_SOURCE_DIR}\""
+)
+
 if (NOT WIN32)
 	set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 	set(THREADS_PREFER_PTHREAD_FLAG TRUE)

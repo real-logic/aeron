@@ -41,7 +41,7 @@ public:
     Header& operator=(const Header& header)
     {
         m_context = header.m_context;
-        m_buffer.wrap(header.m_buffer);
+        m_buffer = header.m_buffer;
         m_offset = header.m_offset;
         m_initialTermId = header.m_initialTermId;
         m_positionBitsToShift = header.m_positionBitsToShift;

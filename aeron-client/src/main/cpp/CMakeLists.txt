@@ -134,8 +134,8 @@ target_compile_definitions(aeron_client
 )
 
 if (NOT WIN32)
-	set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-	set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+    set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+    set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 endif()
 
 target_link_libraries(aeron_client

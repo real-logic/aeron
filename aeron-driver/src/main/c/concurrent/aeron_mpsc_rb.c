@@ -251,7 +251,7 @@ bool aeron_mpsc_rb_unblock(volatile aeron_mpsc_rb_t *ring_buffer)
     consumer_index = (int32_t)head & mask;
     producer_index = (int32_t)tail & mask;
 
-    if (producer_index == consumer_index)
+    if (head == tail)
     {
         return false;
     }

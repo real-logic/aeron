@@ -40,6 +40,8 @@ namespace aeron { namespace concurrent { namespace ringbuffer {
 * </pre>
 */
 
+#include <string>
+
 namespace RecordDescriptor {
 
     static const util::index_t HEADER_LENGTH = sizeof(std::int32_t) * 2;
@@ -81,7 +83,7 @@ namespace RecordDescriptor {
         if (msgTypeId < 1)
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("Message type id must be greater than zero, msgTypeId=%d", msgTypeId), SOURCEINFO);
+                "Message type id must be greater than zero, msgTypeId=" + std::to_string(msgTypeId), SOURCEINFO);
         }
     }
 }

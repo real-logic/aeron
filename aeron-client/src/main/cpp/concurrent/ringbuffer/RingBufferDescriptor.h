@@ -46,7 +46,8 @@ namespace RingBufferDescriptor {
         if (!util::BitUtil::isPowerOfTwo(capacity))
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("Capacity must be a positive power of 2 + TRAILER_LENGTH: capacity=%d", capacity), SOURCEINFO);
+                "Capacity must be a positive power of 2 + TRAILER_LENGTH: capacity=" + std::to_string(capacity),
+                SOURCEINFO);
         }
     }
 }

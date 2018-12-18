@@ -237,7 +237,8 @@ private:
         if (length > m_maxMsgLength)
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("encoded message exceeds maxMsgLength of %d, length=%d", m_maxMsgLength, length),
+                "encoded message exceeds maxMsgLength of " + std::to_string(m_maxMsgLength) +
+                " length=" + std::to_string(length),
                 SOURCEINFO);
         }
     }

@@ -951,8 +951,10 @@ public class RecordingLog implements AutoCloseable
     }
 
     static void addSnapshots(
-        final ArrayList<Snapshot> snapshots, final ArrayList<Entry> entries,
-        final int serviceCount, final int snapshotIndex)
+        final ArrayList<Snapshot> snapshots,
+        final ArrayList<Entry> entries,
+        final int serviceCount,
+        final int snapshotIndex)
     {
         final Entry snapshot = entries.get(snapshotIndex);
         snapshots.add(new Snapshot(

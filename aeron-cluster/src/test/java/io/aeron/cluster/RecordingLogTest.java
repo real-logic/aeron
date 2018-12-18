@@ -150,10 +150,12 @@ public class RecordingLogTest
     }
 
     private static void addRecordingLogEntry(
-        final ArrayList<RecordingLog.Entry> entries, final int serviceId,
-        final int recordingId, final int entryType)
+        final ArrayList<RecordingLog.Entry> entries,
+        final int serviceId,
+        final int recordingId,
+        final int entryType)
     {
-        entries.add(new RecordingLog.Entry(recordingId, 1, 1440, 2880,
-            0L, serviceId, entryType, entries.size()));
+        entries.add(new RecordingLog.Entry(
+            recordingId, 1, 1440, 2880, 0L, serviceId, entryType, entries.size()));
     }
 }

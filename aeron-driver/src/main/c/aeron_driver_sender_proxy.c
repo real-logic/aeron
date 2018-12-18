@@ -154,8 +154,7 @@ void aeron_driver_sender_proxy_on_add_destination(
     {
         aeron_command_destination_t cmd =
             {
-                .base.func = aeron_driver_sender_on_add_destination,
-                .base.item = NULL,
+                .base = { aeron_driver_sender_on_add_destination, NULL },
                 .endpoint = endpoint
             };
         memcpy(&cmd.control_address, addr, sizeof(cmd.control_address));
@@ -188,8 +187,7 @@ void aeron_driver_sender_proxy_on_remove_destination(
     {
         aeron_command_destination_t cmd =
             {
-                .base.func = aeron_driver_sender_on_remove_destination,
-                .base.item = NULL,
+                .base = { aeron_driver_sender_on_remove_destination, NULL },
                 .endpoint = endpoint
             };
         memcpy(&cmd.control_address, addr, sizeof(cmd.control_address));

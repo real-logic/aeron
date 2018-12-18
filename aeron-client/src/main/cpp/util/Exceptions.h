@@ -31,7 +31,11 @@ static constexpr const char* past_prefix(const char * const prefix, const char *
             *filename == '/' ? filename + 1 : filename;
 }
 
-#define __SHORT_FILE__ aeron::util::past_prefix(__PROJECT_SOURCE_DIR__,__FILE__)
+#ifdef __PROJECT_SOURCE_DIR__
+    #define __SHORT_FILE__ aeron::util::past_prefix(__PROJECT_SOURCE_DIR__,__FILE__)
+#else
+    #define __SHORT_FILE__ __FILE__
+#endif
 
 #ifdef _MSC_VER
     #define SOURCEINFO __FUNCTION__,  __SHORT_FILE__, __LINE__

@@ -746,14 +746,15 @@ private:
         if (newPosition < currentPosition || newPosition > limitPosition)
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("%d newPosition out of range %d - %d", newPosition, currentPosition, limitPosition),
+                std::to_string(newPosition) + " newPosition out of range " +
+                std::to_string(currentPosition) + " - " + std::to_string(limitPosition),
                 SOURCEINFO);
         }
 
         if (0 != (newPosition & (FrameDescriptor::FRAME_ALIGNMENT - 1)))
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("%d newPosition not aligned to FRAME_ALIGNMENT", newPosition),
+                std::to_string(newPosition) + " newPosition not aligned to FRAME_ALIGNMENT",
                 SOURCEINFO);
         }
     }

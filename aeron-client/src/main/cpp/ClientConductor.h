@@ -120,7 +120,10 @@ public:
     void releaseSubscription(std::int64_t registrationId, struct ImageList *imageList);
 
     std::int64_t addCounter(
-        std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, const std::string& label);
+        std::int32_t typeId,
+        const std::uint8_t *keyBuffer,
+        std::size_t keyLength,
+        const std::string& label);
     std::shared_ptr<Counter> findCounter(std::int64_t registrationId);
     void releaseCounter(std::int64_t registrationId);
 
@@ -378,7 +381,7 @@ private:
             onInterServiceTimeout(now);
 
             ConductorServiceTimeoutException exception(
-                strPrintf("Timeout between service calls over %d ms", m_interServiceTimeoutMs), SOURCEINFO);
+                "Timeout between service calls over " + std::to_string(m_interServiceTimeoutMs) + " ms", SOURCEINFO);
             m_errorHandler(exception);
         }
 
@@ -393,7 +396,7 @@ private:
                 m_driverActive = false;
 
                 DriverTimeoutException exception(
-                    strPrintf("Driver has been inactive for over %d ms", m_driverTimeoutMs), SOURCEINFO);
+                    "Driver has been inactive for over " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
                 m_errorHandler(exception);
             }
 

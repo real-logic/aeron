@@ -925,37 +925,7 @@ public class RecordingLog implements AutoCloseable
 
         if (-1 != snapshotIndex)
         {
-            final Entry snapshot = entries.get(snapshotIndex);
-            snapshots.add(new Snapshot(
-                snapshot.recordingId,
-                snapshot.leadershipTermId,
-                snapshot.termBaseLogPosition,
-                snapshot.logPosition,
-                snapshot.timestamp,
-                snapshot.serviceId));
-
-            for (int i = 1; i <= serviceCount; i++)
-            {
-                if ((snapshotIndex - i) < 0)
-                {
-                    throw new ClusterException("snapshot missing for service at index " + i + " in " + entries);
-                }
-
-                final Entry entry = entries.get(snapshotIndex - 1);
-
-                if (ENTRY_TYPE_SNAPSHOT == entry.type &&
-                    entry.leadershipTermId == snapshot.leadershipTermId &&
-                    entry.logPosition == snapshot.logPosition)
-                {
-                    snapshots.add(entry.serviceId + 1, new Snapshot(
-                        entry.recordingId,
-                        entry.leadershipTermId,
-                        entry.termBaseLogPosition,
-                        entry.logPosition,
-                        entry.timestamp,
-                        entry.serviceId));
-                }
-            }
+            addSnapshots(snapshots, entries, serviceCount, snapshotIndex);
         }
 
         if (-1 != logIndex)
@@ -977,6 +947,43 @@ public class RecordingLog implements AutoCloseable
                 recordingExtent.termBufferLength,
                 recordingExtent.mtuLength,
                 recordingExtent.sessionId));
+        }
+    }
+
+    static void addSnapshots(
+        final ArrayList<Snapshot> snapshots, final ArrayList<Entry> entries,
+        final int serviceCount, final int snapshotIndex)
+    {
+        final Entry snapshot = entries.get(snapshotIndex);
+        snapshots.add(new Snapshot(
+            snapshot.recordingId,
+            snapshot.leadershipTermId,
+            snapshot.termBaseLogPosition,
+            snapshot.logPosition,
+            snapshot.timestamp,
+            snapshot.serviceId));
+
+        for (int i = 1; i <= serviceCount; i++)
+        {
+            if ((snapshotIndex - i) < 0)
+            {
+                throw new ClusterException("snapshot missing for service at index " + i + " in " + entries);
+            }
+
+            final Entry entry = entries.get(snapshotIndex - i);
+
+            if (ENTRY_TYPE_SNAPSHOT == entry.type &&
+                entry.leadershipTermId == snapshot.leadershipTermId &&
+                entry.logPosition == snapshot.logPosition)
+            {
+                snapshots.add(entry.serviceId + 1, new Snapshot(
+                    entry.recordingId,
+                    entry.leadershipTermId,
+                    entry.termBaseLogPosition,
+                    entry.logPosition,
+                    entry.timestamp,
+                    entry.serviceId));
+            }
         }
     }
 }

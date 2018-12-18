@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.ArrayList;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -33,11 +34,12 @@ import static org.junit.Assert.assertThat;
 public class RecordingLogTest
 {
     private static final File TEMP_DIR = new File(IoUtil.tmpDirName());
+    private boolean ignoreMissingRecordingFile = false;
 
     @After
     public void after()
     {
-        IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_LOG_FILE_NAME), false);
+        IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_LOG_FILE_NAME), ignoreMissingRecordingFile);
     }
 
     @Test
@@ -122,5 +124,36 @@ public class RecordingLogTest
             assertThat(recordingLog.entries().size(), is(1));
             assertThat(recordingLog.nextEntryIndex(), is(2));
         }
+    }
+
+    @Test
+    public void shouldCorrectlyOrderSnapshots()
+    {
+        ignoreMissingRecordingFile = true;
+
+        final ArrayList<RecordingLog.Snapshot> snapshots = new ArrayList<>();
+        final ArrayList<RecordingLog.Entry> entries = new ArrayList<>();
+
+        addRecordingLogEntry(entries, ConsensusModule.Configuration.SERVICE_ID, 0, ENTRY_TYPE_TERM);
+        addRecordingLogEntry(entries, 2, 4, ENTRY_TYPE_SNAPSHOT);
+        addRecordingLogEntry(entries, 1, 5, ENTRY_TYPE_SNAPSHOT);
+        addRecordingLogEntry(entries, 0, 6, ENTRY_TYPE_SNAPSHOT);
+        addRecordingLogEntry(entries, ConsensusModule.Configuration.SERVICE_ID, 7, ENTRY_TYPE_SNAPSHOT);
+
+        RecordingLog.addSnapshots(snapshots, entries, 3, entries.size() - 1);
+
+        assertThat(snapshots.size(), is(4));
+        assertThat(snapshots.get(0).serviceId, is(ConsensusModule.Configuration.SERVICE_ID));
+        assertThat(snapshots.get(1).serviceId, is(0));
+        assertThat(snapshots.get(2).serviceId, is(1));
+        assertThat(snapshots.get(3).serviceId, is(2));
+    }
+
+    private static void addRecordingLogEntry(
+        final ArrayList<RecordingLog.Entry> entries, final int serviceId,
+        final int recordingId, final int entryType)
+    {
+        entries.add(new RecordingLog.Entry(recordingId, 1, 1440, 2880,
+            0L, serviceId, entryType, entries.size()));
     }
 }

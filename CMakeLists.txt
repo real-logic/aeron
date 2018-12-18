@@ -208,6 +208,11 @@ elseif(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX)
 
+    if(${MSVC_VERSION} GREATER_EQUAL 1915)
+        # Acknowledge that we understand MSVC resolved a byte alignment issue in this compiler
+        add_definitions( -D_ENABLE_EXTENDED_ALIGNED_STORAGE )
+    endif()
+
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi /MP")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /MP")
 

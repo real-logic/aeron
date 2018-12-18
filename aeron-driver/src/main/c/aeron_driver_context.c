@@ -45,6 +45,38 @@
 #include "aeron_agent.h"
 #include "concurrent/aeron_counters_manager.h"
 
+inline static const char *tmp_dir()
+{
+#if defined(_MSC_VER)
+    static char buff[MAX_PATH+1];
+
+    if (GetTempPath(MAX_PATH, &buff[0]) > 0)
+    {
+        dir = buff;
+    }
+
+    return buff;
+#else
+    const char *dir = "/tmp";
+
+    if (getenv("TMPDIR"))
+    {
+        dir = getenv("TMPDIR");
+    }
+
+    return dir;
+#endif
+}
+
+inline static bool has_file_separator_at_end(const char *path)
+{
+#if defined(_MSC_VER)
+    return path[strlen(path) - 1] == '\\';
+#else
+    return path[strlen(path) - 1] == '/';
+#endif
+}
+
 inline static const char *username()
 {
     const char *username = getenv("USER");

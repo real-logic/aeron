@@ -76,7 +76,7 @@ normal case.
     $ ./gradlew
 ```
 
-After Agrona & SBE is compiled and installed, then you can build Aeron.
+After Agrona & SBE are compiled and installed, then you can build Aeron.
 
 Full clean and build of all modules
 

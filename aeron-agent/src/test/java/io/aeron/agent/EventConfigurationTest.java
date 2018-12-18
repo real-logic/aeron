@@ -15,7 +15,6 @@
  */
 package io.aeron.agent;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -34,7 +33,7 @@ public class EventConfigurationTest
     @Test
     public void nullPropertyShouldDefaultToProductionEventCodes()
     {
-        assertThat(getEnabledEventCodes(null), Matchers.is(EnumSet.noneOf(EventCode.class)));
+        assertThat(getEnabledEventCodes(null), is(EnumSet.noneOf(EventCode.class)));
     }
 
     @Test
@@ -73,6 +72,6 @@ public class EventConfigurationTest
     {
         final Set<EventCode> eventCodes = EnumSet.of(EventCode.FRAME_OUT, EventCode.FRAME_IN);
         final long bitSet = EventConfiguration.makeTagBitSet(eventCodes);
-        assertThat(bitSet, Matchers.is(EventCode.FRAME_OUT.tagBit() | EventCode.FRAME_IN.tagBit()));
+        assertThat(bitSet, is(EventCode.FRAME_OUT.tagBit() | EventCode.FRAME_IN.tagBit()));
     }
 }

@@ -67,7 +67,7 @@ public:
         }
 #endif
 
-        setMemory(0, (size_t)length, initialValue);
+        setMemory(0, static_cast<size_t>(length), initialValue);
     }
 
     template<size_t N>

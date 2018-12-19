@@ -22,4 +22,5 @@ ${JAVA_HOME}/bin/java \
     -Daeron.sample.messages=1000000 \
     -Daeron.sample.messageLength=32 \
     -Dagrona.disable.bounds.checks=true \
+    -Daeron.sample.exclusive.publications=true \
     ${JVM_OPTS} io.aeron.samples.Ping

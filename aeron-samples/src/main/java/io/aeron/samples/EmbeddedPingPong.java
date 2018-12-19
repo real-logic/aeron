@@ -53,6 +53,7 @@ public class EmbeddedPingPong
     private static final int FRAME_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
+    private static final boolean EXCLUSIVE_PUBLICATIONS = SampleConfiguration.EXCLUSIVE_PUBLICATIONS;
 
     private static final UnsafeBuffer OFFER_BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
@@ -94,15 +95,17 @@ public class EmbeddedPingPong
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
         System.out.println("Message payload length of " + MESSAGE_LENGTH + " bytes");
+        System.out.println("Using exclusive publications " + EXCLUSIVE_PUBLICATIONS);
 
         final FragmentAssembler dataHandler = new FragmentAssembler(EmbeddedPingPong::pongHandler);
 
         try (Aeron aeron = Aeron.connect(ctx);
-            Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-            Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
+            Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID);
+            Publication pingPublication = EXCLUSIVE_PUBLICATIONS ?
+                aeron.addExclusivePublication(PING_CHANNEL, PING_STREAM_ID) :
+                aeron.addPublication(PING_CHANNEL, PING_STREAM_ID))
         {
             System.out.println("Waiting for new image from Pong...");
-
             PONG_IMAGE_LATCH.await();
 
             System.out.println(
@@ -141,8 +144,10 @@ public class EmbeddedPingPong
             final Aeron.Context ctx = new Aeron.Context().aeronDirectoryName(embeddedDirName);
 
             try (Aeron aeron = Aeron.connect(ctx);
-                Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
-                Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID))
+                Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID);
+                Publication pongPublication = EXCLUSIVE_PUBLICATIONS ?
+                    aeron.addExclusivePublication(PONG_CHANNEL, PONG_STREAM_ID) :
+                    aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID))
             {
                 final FragmentAssembler dataHandler = new FragmentAssembler(
                     (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));

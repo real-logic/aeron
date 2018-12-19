@@ -50,6 +50,7 @@ public class Ping
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
     private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
+    private static final boolean EXCLUSIVE_PUBLICATIONS = SampleConfiguration.EXCLUSIVE_PUBLICATIONS;
 
     private static final UnsafeBuffer OFFER_BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
@@ -71,38 +72,40 @@ public class Ping
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
         System.out.println("Message length of " + MESSAGE_LENGTH + " bytes");
+        System.out.println("Using exclusive publications " + EXCLUSIVE_PUBLICATIONS);
 
-        try (Aeron aeron = Aeron.connect(ctx))
+        try (Aeron aeron = Aeron.connect(ctx);
+            Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID);
+            Publication publication = EXCLUSIVE_PUBLICATIONS ?
+                aeron.addExclusivePublication(PING_CHANNEL, PING_STREAM_ID) :
+                aeron.addPublication(PING_CHANNEL, PING_STREAM_ID))
         {
+            System.out.println("Waiting for new image from Pong...");
+            LATCH.await();
+
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS +
                 " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
-            try (Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-                Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
+            for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
-                LATCH.await();
-
-                for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
-                {
-                    roundTripMessages(fragmentHandler, publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
-                }
-
-                Thread.sleep(100);
-                final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
-
-                do
-                {
-                    HISTOGRAM.reset();
-                    System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
-
-                    roundTripMessages(fragmentHandler, publication, subscription, NUMBER_OF_MESSAGES);
-                    System.out.println("Histogram of RTT latencies in microseconds.");
-
-                    HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
-                }
-                while (barrier.await());
+                roundTripMessages(fragmentHandler, publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
             }
+
+            Thread.sleep(100);
+            final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
+
+            do
+            {
+                HISTOGRAM.reset();
+                System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
+
+                roundTripMessages(fragmentHandler, publication, subscription, NUMBER_OF_MESSAGES);
+                System.out.println("Histogram of RTT latencies in microseconds.");
+
+                HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
+            }
+            while (barrier.await());
         }
 
         CloseHelper.quietClose(driver);

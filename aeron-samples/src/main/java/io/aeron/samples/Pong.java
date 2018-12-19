@@ -39,10 +39,12 @@ public class Pong
     private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
     private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
     private static final int FRAME_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
-    private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
-    private static final boolean INFO_FLAG = SampleConfiguration.INFO_FLAG;
     private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
+    private static final boolean INFO_FLAG = SampleConfiguration.INFO_FLAG;
+    private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final boolean EXCLUSIVE_PUBLICATIONS = SampleConfiguration.EXCLUSIVE_PUBLICATIONS;
+
     private static final IdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     public static void main(final String[] args)
@@ -65,20 +67,23 @@ public class Pong
 
         System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
+        System.out.println("Using exclusive publications " + EXCLUSIVE_PUBLICATIONS);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
         try (Aeron aeron = Aeron.connect(ctx);
-            Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
-            Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID))
+            Subscription subscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID);
+            Publication publication = EXCLUSIVE_PUBLICATIONS ?
+                aeron.addExclusivePublication(PONG_CHANNEL, PONG_STREAM_ID) :
+                aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID))
         {
             final FragmentAssembler dataHandler = new FragmentAssembler(
-                (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));
+                (buffer, offset, length, header) -> pingHandler(publication, buffer, offset, length));
 
             while (running.get())
             {
-                idleStrategy.idle(pingSubscription.poll(dataHandler, FRAME_COUNT_LIMIT));
+                idleStrategy.idle(subscription.poll(dataHandler, FRAME_COUNT_LIMIT));
             }
 
             System.out.println("Shutting down...");

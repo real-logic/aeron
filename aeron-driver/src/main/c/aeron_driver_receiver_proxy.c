@@ -112,7 +112,7 @@ void aeron_driver_receiver_proxy_on_add_subscription(
     {
         aeron_command_subscription_t cmd =
             {
-                .base = { aeron_driver_receiver_on_add_subscription, NULL },
+                .base = { .func = aeron_driver_receiver_on_add_subscription, .item = NULL },
                 .endpoint = endpoint,
                 .stream_id = stream_id
             };
@@ -145,7 +145,7 @@ void aeron_driver_receiver_proxy_on_remove_subscription(
     {
         aeron_command_subscription_t cmd =
             {
-                .base = { aeron_driver_receiver_on_remove_subscription, NULL },
+                .base = { .func = aeron_driver_receiver_on_remove_subscription, .item = NULL },
                 .endpoint = endpoint,
                 .stream_id = stream_id
             };
@@ -180,7 +180,7 @@ void aeron_driver_receiver_proxy_on_add_publication_image(
     {
         aeron_command_publication_image_t cmd =
             {
-                .base = { aeron_driver_receiver_on_add_publication_image, NULL },
+                .base = { .func = aeron_driver_receiver_on_add_publication_image, .item = NULL },
                 .endpoint = endpoint,
                 .image = image
             };
@@ -215,7 +215,7 @@ void aeron_driver_receiver_proxy_on_remove_publication_image(
     {
         aeron_command_publication_image_t cmd =
             {
-                .base = { aeron_driver_receiver_on_remove_publication_image, NULL },
+                .base = { .func = aeron_driver_receiver_on_remove_publication_image, .item = NULL },
                 .endpoint = endpoint,
                 .image = image
             };
@@ -251,7 +251,7 @@ void aeron_driver_receiver_proxy_on_remove_cool_down(
     {
         aeron_command_remove_cool_down_t cmd =
             {
-                .base = { aeron_driver_receiver_on_remove_cool_down, NULL },
+                .base = { .func = aeron_driver_receiver_on_remove_cool_down, .item = NULL },
                 .endpoint = endpoint,
                 .session_id = session_id,
                 .stream_id = stream_id

@@ -62,7 +62,7 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     {
         aeron_command_create_publication_image_t cmd =
             {
-                .base = { aeron_driver_conductor_on_create_publication_image, NULL },
+                .base = { .func = aeron_driver_conductor_on_create_publication_image, .item = NULL },
                 .session_id = session_id,
                 .stream_id = stream_id,
                 .initial_term_id = initial_term_id,

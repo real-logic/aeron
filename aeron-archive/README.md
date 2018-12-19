@@ -13,7 +13,7 @@ feature for efficiency. If no subscribers are active then the recording can adva
 
 - **Extend:** service can extend an existing recording by appending.
 
-- **Replay:** service can replay a recorded `recordingId` from a particular `position`, and for a particular `length` which can be `Aeron.NULL_VALUE for an open ended replay.
+- **Replay:** service can replay a recorded `recordingId` from a particular `position`, and for a particular `length` which can be `Aeron.NULL_VALUE` for an open ended replay.
 
 - **Query:** service provides a rudimentary query interface which allows `recordingId` discovery and description. 
 Currently this supports a query for all descriptors, filtered by `<channel, streamId>`, or by specific `recordingId`.

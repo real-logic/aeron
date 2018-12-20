@@ -47,6 +47,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
@@ -82,6 +83,9 @@ public class ClusterFollowerTest
     private final CountDownLatch latchTwo = new CountDownLatch(MEMBER_COUNT - 1);
 
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
+    private final AtomicBoolean[] terminationExpected = new AtomicBoolean[MEMBER_COUNT];
+    private final AtomicBoolean[] serviceWasTerminated = new AtomicBoolean[MEMBER_COUNT];
+    private final AtomicBoolean[] memberWasTerminated = new AtomicBoolean[MEMBER_COUNT];
     private final ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MEMBER_COUNT];
     private final ClusteredServiceContainer[] containers = new ClusteredServiceContainer[MEMBER_COUNT];
     private MediaDriver clientMediaDriver;
@@ -166,7 +170,7 @@ public class ClusterFollowerTest
     }
 
     @Test(timeout = 30_000)
-    public void shouldStopAleaderAndFollowerSAndRestartAllWithSnapshot() throws Exception
+    public void shouldStopAleaderAndFollowersAndRestartAllWithSnapshot() throws Exception
     {
         int leaderMemberId;
         while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
@@ -197,6 +201,53 @@ public class ClusterFollowerTest
         {
             TestUtil.checkInterruptedStatus();
             Thread.sleep(1000);
+        }
+
+        followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        Thread.sleep(1000);
+
+        assertThat(roleOf(followerMemberIdA), is(Cluster.Role.FOLLOWER));
+        assertThat(roleOf(followerMemberIdB), is(Cluster.Role.FOLLOWER));
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldShutdownClusterAndRestartWithSnapshots() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        terminationExpected[leaderMemberId].lazySet(true);
+        terminationExpected[followerMemberIdA].lazySet(true);
+        terminationExpected[followerMemberIdB].lazySet(true);
+
+        shutdownCluster(leaderMemberId);
+        awaitNodeTermination(leaderMemberId);
+        awaitNodeTermination(followerMemberIdA);
+        awaitNodeTermination(followerMemberIdB);
+
+        stopNode(leaderMemberId);
+        stopNode(followerMemberIdA);
+        stopNode(followerMemberIdB);
+
+        Thread.sleep(1000);
+
+        startNode(leaderMemberId, false);
+        startNode(followerMemberIdA, false);
+        startNode(followerMemberIdB, false);
+
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1);
         }
 
         followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
@@ -498,6 +549,10 @@ public class ClusterFollowerTest
             .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
 
+        terminationExpected[index] = new AtomicBoolean(false);
+        memberWasTerminated[index] = new AtomicBoolean(false);
+        serviceWasTerminated[index] = new AtomicBoolean(false);
+
         clusteredMediaDrivers[index] = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirName)
@@ -525,7 +580,8 @@ public class ClusterFollowerTest
                 .clusterDir(new File(baseDirName, "consensus-module"))
                 .ingressChannel("aeron:udp?term-length=64k")
                 .logChannel(memberSpecificPort(LOG_CHANNEL, index))
-                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .terminationHook(TestUtil.dynamicTerminationHook(
+                    terminationExpected[index], memberWasTerminated[index]))
                 .archiveContext(archiveCtx.clone())
                 .deleteDirOnStart(cleanStart));
 
@@ -535,7 +591,8 @@ public class ClusterFollowerTest
                 .archiveContext(archiveCtx.clone())
                 .clusterDir(new File(baseDirName, "service"))
                 .clusteredService(echoServices[index])
-                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .terminationHook(TestUtil.dynamicTerminationHook(
+                    terminationExpected[index], serviceWasTerminated[index]))
                 .errorHandler(Throwable::printStackTrace));
     }
 
@@ -778,12 +835,31 @@ public class ClusterFollowerTest
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
     }
 
+    private void shutdownCluster(final int index)
+    {
+        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+
+        final CountersReader countersReader = driver.consensusModule().context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader);
+        assertNotNull(controlToggle);
+        assertTrue(ClusterControl.ToggleState.SHUTDOWN.toggle(controlToggle));
+    }
+
     private void awaitsSnapshotCounter(final int index, final long value)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
         final Counter snapshotCounter = driver.consensusModule().context().snapshotCounter();
 
         while (snapshotCounter.getWeak() != value)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+    }
+
+    private void awaitNodeTermination(final int index)
+    {
+        while (!memberWasTerminated[index].get())
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();

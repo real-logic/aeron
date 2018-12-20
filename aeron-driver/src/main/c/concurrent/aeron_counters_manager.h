@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_COUNTERS_MANAGER_H
-#define AERON_AERON_COUNTERS_MANAGER_H
+#ifndef AERON_COUNTERS_MANAGER_H
+#define AERON_COUNTERS_MANAGER_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -167,4 +167,4 @@ inline bool aeron_counter_propose_max_ordered(volatile int64_t *addr, int64_t pr
     return updated;
 }
 
-#endif //AERON_AERON_COUNTERS_MANAGER_H
+#endif //AERON_COUNTERS_MANAGER_H

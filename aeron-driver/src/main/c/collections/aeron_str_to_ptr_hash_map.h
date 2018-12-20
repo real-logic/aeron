@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_STR_TO_PTR_HASH_MAP_H
-#define AERON_AERON_STR_TO_PTR_HASH_MAP_H
+#ifndef AERON_STR_TO_PTR_HASH_MAP_H
+#define AERON_STR_TO_PTR_HASH_MAP_H
 
 #include <stdint.h>
 #include <errno.h>
@@ -291,4 +291,4 @@ inline void aeron_str_to_ptr_hash_map_for_each(
     }
 }
 
-#endif //AERON_AERON_STR_TO_PTR_HASH_MAP_H
+#endif //AERON_STR_TO_PTR_HASH_MAP_H

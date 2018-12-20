@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_FILEUTIL_H
-#define AERON_AERON_FILEUTIL_H
+#ifndef AERON_FILEUTIL_H
+#define AERON_FILEUTIL_H
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -97,4 +97,4 @@ int aeron_map_raw_log(
 
 int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *filename);
 
-#endif //AERON_AERON_FILEUTIL_H
+#endif //AERON_FILEUTIL_H

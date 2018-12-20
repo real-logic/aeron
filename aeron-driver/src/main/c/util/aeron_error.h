@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_ERROR_H
-#define AERON_AERON_ERROR_H
+#ifndef AERON_ERROR_H
+#define AERON_ERROR_H
 
 #include "aeron_driver_common.h"
 
@@ -30,4 +30,4 @@ int aeron_errcode();
 const char *aeron_errmsg();
 void aeron_set_err(int errcode, const char *format, ...);
 
-#endif //AERON_AERON_ERROR_H
+#endif //AERON_ERROR_H

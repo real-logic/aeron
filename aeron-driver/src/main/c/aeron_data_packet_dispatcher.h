@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DATA_PACKET_DISPATCHER_H
-#define AERON_AERON_DATA_PACKET_DISPATCHER_H
+#ifndef AERON_DATA_PACKET_DISPATCHER_H
+#define AERON_DATA_PACKET_DISPATCHER_H
 
 #include <netinet/in.h>
 #include "collections/aeron_int64_to_ptr_hash_map.h"
@@ -133,4 +133,4 @@ inline bool aeron_data_packet_dispatcher_should_elicit_setup_message(aeron_data_
     return (0 != dispatcher->session_by_stream_id_map.size);
 }
 
-#endif //AERON_AERON_DATA_PACKET_DISPATCHER_H
+#endif //AERON_DATA_PACKET_DISPATCHER_H

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DRIVER_RECEIVER_PROXY_H
-#define AERON_AERON_DRIVER_RECEIVER_PROXY_H
+#ifndef AERON_DRIVER_RECEIVER_PROXY_H
+#define AERON_DRIVER_RECEIVER_PROXY_H
 
 #include "aeron_driver_context.h"
 
@@ -84,4 +84,4 @@ void aeron_driver_receiver_proxy_on_remove_cool_down(
     int32_t session_id,
     int32_t stream_id);
 
-#endif //AERON_AERON_DRIVER_RECEIVER_PROXY_H
+#endif //AERON_DRIVER_RECEIVER_PROXY_H

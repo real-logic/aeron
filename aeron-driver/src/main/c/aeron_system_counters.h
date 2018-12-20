@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_SYSTEM_COUNTERS_H
-#define AERON_AERON_SYSTEM_COUNTERS_H
+#ifndef AERON_SYSTEM_COUNTERS_H
+#define AERON_SYSTEM_COUNTERS_H
 
 #include <stdint.h>
 #include "concurrent/aeron_counters_manager.h"
@@ -74,4 +74,4 @@ inline int64_t *aeron_system_counter_addr(aeron_system_counters_t *counters, aer
     return aeron_counter_addr(counters->manager, counters->counter_ids[type]);
 }
 
-#endif //AERON_AERON_SYSTEM_COUNTERS_H
+#endif //AERON_SYSTEM_COUNTERS_H

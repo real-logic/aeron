@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_TERM_GAP_FILLER_H
-#define AERON_AERON_TERM_GAP_FILLER_H
+#ifndef AERON_TERM_GAP_FILLER_H
+#define AERON_TERM_GAP_FILLER_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -28,4 +28,4 @@ bool aeron_term_gap_filler_try_fill_gap(
     int32_t gap_offset,
     int32_t gap_length);
 
-#endif //AERON_AERON_TERM_GAP_FILLER_H
+#endif //AERON_TERM_GAP_FILLER_H

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_RECEIVE_CHANNEL_ENDPOINT_H
-#define AERON_AERON_RECEIVE_CHANNEL_ENDPOINT_H
+#ifndef AERON_RECEIVE_CHANNEL_ENDPOINT_H
+#define AERON_RECEIVE_CHANNEL_ENDPOINT_H
 
 #include "aeron_data_packet_dispatcher.h"
 #include "aeron_udp_channel.h"
@@ -160,4 +160,4 @@ inline bool aeron_receive_channel_endpoint_should_elicit_setup_message(aeron_rec
     return aeron_data_packet_dispatcher_should_elicit_setup_message(&endpoint->dispatcher);
 }
 
-#endif //AERON_AERON_RECEIVE_CHANNEL_ENDPOINT_H
+#endif //AERON_RECEIVE_CHANNEL_ENDPOINT_H

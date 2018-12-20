@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_UDP_DESTINATION_TRACKER_H
-#define AERON_AERON_UDP_DESTINATION_TRACKER_H
+#ifndef AERON_UDP_DESTINATION_TRACKER_H
+#define AERON_UDP_DESTINATION_TRACKER_H
 
 #include <netinet/in.h>
 #include "aeronmd.h"
@@ -65,4 +65,4 @@ int aeron_udp_destination_tracker_add_destination(
 int aeron_udp_destination_tracker_remove_destination(
     aeron_udp_destination_tracker_t *tracker, struct sockaddr_storage *addr);
 
-#endif //AERON_AERON_UDP_DESTINATION_TRACKER_H
+#endif //AERON_UDP_DESTINATION_TRACKER_H

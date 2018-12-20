@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_LOGBUFFER_DESCRIPTOR_H
-#define AERON_AERON_LOGBUFFER_DESCRIPTOR_H
+#ifndef AERON_LOGBUFFER_DESCRIPTOR_H
+#define AERON_LOGBUFFER_DESCRIPTOR_H
 
 #include <assert.h>
 #include <string.h>
@@ -189,4 +189,4 @@ inline void aeron_logbuffer_apply_default_header(uint8_t *log_meta_data_buffer, 
     memcpy(buffer, default_header, (size_t)log_meta_data->default_frame_header_length);
 }
 
-#endif //AERON_AERON_LOGBUFFER_DESCRIPTOR_H
+#endif //AERON_LOGBUFFER_DESCRIPTOR_H

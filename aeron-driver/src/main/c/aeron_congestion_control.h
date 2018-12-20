@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_CONGESTION_CONTROL_H
-#define AERON_AERON_CONGESTION_CONTROL_H
+#ifndef AERON_CONGESTION_CONTROL_H
+#define AERON_CONGESTION_CONTROL_H
 
 #include <netinet/in.h>
 #include "aeron_driver_common.h"
@@ -71,4 +71,4 @@ typedef int (*aeron_congestion_control_strategy_supplier_func_t)(
 aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strategy_supplier_load(
     const char *strategy_name);
 
-#endif //AERON_AERON_CONGESTION_CONTROL_H
+#endif //AERON_CONGESTION_CONTROL_H

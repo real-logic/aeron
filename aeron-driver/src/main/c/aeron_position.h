@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_POSITION_H
-#define AERON_AERON_POSITION_H
+#ifndef AERON_POSITION_H
+#define AERON_POSITION_H
 
 #include "concurrent/aeron_counters_manager.h"
 
@@ -138,4 +138,4 @@ int32_t aeron_counter_publisher_position_allocate(
     int32_t stream_id,
     const char *channel);
 
-#endif //AERON_AERON_POSITION_H
+#endif //AERON_POSITION_H

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_AGENT_H
-#define AERON_AERON_AGENT_H
+#ifndef AERON_AGENT_H
+#define AERON_AGENT_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -104,4 +104,4 @@ inline void aeron_agent_idle(aeron_agent_runner_t *runner, int work_count)
 int aeron_agent_stop(aeron_agent_runner_t *runner);
 int aeron_agent_close(aeron_agent_runner_t *runner);
 
-#endif //AERON_AERON_AGENT_H
+#endif //AERON_AGENT_H

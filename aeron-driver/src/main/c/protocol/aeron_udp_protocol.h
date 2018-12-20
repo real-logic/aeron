@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_UDP_PROTOCOL_H
-#define AERON_AERON_UDP_PROTOCOL_H
+#ifndef AERON_UDP_PROTOCOL_H
+#define AERON_UDP_PROTOCOL_H
 
 #include <stdint.h>
 
@@ -113,4 +113,4 @@ aeron_rttm_header_t;
 
 #define AERON_RTTM_HEADER_REPLY_FLAG ((uint8_t)(0x80))
 
-#endif //AERON_AERON_UDP_PROTOCOL_H
+#endif //AERON_UDP_PROTOCOL_H

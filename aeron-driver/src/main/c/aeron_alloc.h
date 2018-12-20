@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_ALLOC_H
-#define AERON_AERON_ALLOC_H
+#ifndef AERON_ALLOC_H
+#define AERON_ALLOC_H
 
 #include <stddef.h>
 
@@ -25,4 +25,4 @@ int aeron_alloc_aligned(void **ptr, size_t *offset, size_t size, size_t alignmen
 int aeron_reallocf(void **ptr, size_t size);
 void aeron_free(void *ptr);
 
-#endif //AERON_AERON_ALLOC_H
+#endif //AERON_ALLOC_H

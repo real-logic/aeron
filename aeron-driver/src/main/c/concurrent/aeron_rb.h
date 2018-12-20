@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_RB_H
-#define AERON_AERON_RB_H
+#ifndef AERON_RB_H
+#define AERON_RB_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -72,4 +72,4 @@ typedef void (*aeron_rb_handler_t)(int32_t, const void *, size_t, void *);
 
 #define AERON_RB_IS_CAPACITY_VALID(capacity) AERON_IS_POWER_OF_TWO(capacity)
 
-#endif //AERON_AERON_RB_H
+#endif //AERON_RB_H

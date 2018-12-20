@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DRIVER_AGENT_H
-#define AERON_AERON_DRIVER_AGENT_H
+#ifndef AERON_DRIVER_AGENT_H
+#define AERON_DRIVER_AGENT_H
 
 #include "aeron_driver_conductor.h"
 #include "command/aeron_control_protocol.h"
@@ -84,4 +84,4 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
 
 /* TODO: hook aeron_driver_init to display options, etc. for instance. */
 
-#endif //AERON_AERON_DRIVER_AGENT_H
+#endif //AERON_DRIVER_AGENT_H

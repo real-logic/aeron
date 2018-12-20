@@ -2,8 +2,8 @@
 // Created by Todd Montgomery on 6/6/17.
 //
 
-#ifndef AERON_AERON_CONCURRENT_ARRAY_QUEUE_H
-#define AERON_AERON_CONCURRENT_ARRAY_QUEUE_H
+#ifndef AERON_CONCURRENT_ARRAY_QUEUE_H
+#define AERON_CONCURRENT_ARRAY_QUEUE_H
 
 typedef enum aeron_queue_offer_result_stct
 {
@@ -15,4 +15,4 @@ aeron_queue_offer_result_t;
 
 typedef void (*aeron_queue_drain_func_t)(void *clientd, volatile void *item);
 
-#endif //AERON_AERON_CONCURRENT_ARRAY_QUEUE_H
+#endif //AERON_CONCURRENT_ARRAY_QUEUE_H

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DRIVER_SENDER_H
-#define AERON_AERON_DRIVER_SENDER_H
+#ifndef AERON_DRIVER_SENDER_H
+#define AERON_DRIVER_SENDER_H
 
 #include "aeron_driver_context.h"
 #include "aeron_driver_sender_proxy.h"
@@ -99,4 +99,4 @@ void aeron_driver_sender_on_remove_destination(void *clientd, void *command);
 
 int aeron_driver_sender_do_send(aeron_driver_sender_t *sender, int64_t now_ns);
 
-#endif //AERON_AERON_DRIVER_SENDER_H
+#endif //AERON_DRIVER_SENDER_H

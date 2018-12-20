@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DRIVER_COMMON_H
-#define AERON_AERON_DRIVER_COMMON_H
+#ifndef AERON_DRIVER_COMMON_H
+#define AERON_DRIVER_COMMON_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -76,4 +76,4 @@ inline void aeron_driver_subscribable_null_hook(void *clientd, int64_t *value_ad
 
 void aeron_command_on_delete_cmd(void *clientd, void *cmd);
 
-#endif //AERON_AERON_DRIVER_COMMON_H
+#endif //AERON_DRIVER_COMMON_H

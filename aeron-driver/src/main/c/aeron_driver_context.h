@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DRIVER_CONTEXT_H
-#define AERON_AERON_DRIVER_CONTEXT_H
+#ifndef AERON_DRIVER_CONTEXT_H
+#define AERON_DRIVER_CONTEXT_H
 
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
@@ -253,4 +253,4 @@ inline size_t aeron_network_publication_term_window_length(aeron_driver_context_
     return publication_term_window_length;
 }
 
-#endif //AERON_AERON_DRIVER_CONTEXT_H
+#endif //AERON_DRIVER_CONTEXT_H

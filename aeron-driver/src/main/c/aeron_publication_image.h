@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_PUBLICATION_IMAGE_H
-#define AERON_AERON_PUBLICATION_IMAGE_H
+#ifndef AERON_PUBLICATION_IMAGE_H
+#define AERON_PUBLICATION_IMAGE_H
 
 #include "aeron_driver_common.h"
 #include "media/aeron_receive_channel_endpoint.h"
@@ -246,4 +246,4 @@ inline size_t aeron_publication_image_num_subscriptions(aeron_publication_image_
     return image->conductor_fields.subscribable.length;
 }
 
-#endif //AERON_AERON_PUBLICATION_IMAGE_H
+#endif //AERON_PUBLICATION_IMAGE_H

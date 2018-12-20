@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_IPC_PUBLICATION_H
-#define AERON_AERON_IPC_PUBLICATION_H
+#ifndef AERON_IPC_PUBLICATION_H
+#define AERON_IPC_PUBLICATION_H
 
 #include "aeron_driver_common.h"
 #include "util/aeron_bitutil.h"
@@ -185,4 +185,4 @@ inline size_t aeron_ipc_publication_num_subscribers(aeron_ipc_publication_t *pub
     return publication->conductor_fields.subscribable.length;
 }
 
-#endif //AERON_AERON_IPC_PUBLICATION_H
+#endif //AERON_IPC_PUBLICATION_H

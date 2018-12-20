@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_TERM_REBUILDER_H
-#define AERON_AERON_TERM_REBUILDER_H
+#ifndef AERON_TERM_REBUILDER_H
+#define AERON_TERM_REBUILDER_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -50,4 +50,4 @@ inline void aeron_term_rebuilder_insert(uint8_t *dest, const uint8_t *src, size_
     }
 }
 
-#endif //AERON_AERON_TERM_REBUILDER_H
+#endif //AERON_TERM_REBUILDER_H

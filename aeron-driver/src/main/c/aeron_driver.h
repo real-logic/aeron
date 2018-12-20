@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DRIVER_H
-#define AERON_AERON_DRIVER_H
+#ifndef AERON_DRIVER_H
+#define AERON_DRIVER_H
 
 #include "aeron_driver_context.h"
 #include "aeron_agent.h"
@@ -43,4 +43,4 @@ aeron_driver_t;
 bool aeron_is_driver_active_with_cnc(
     aeron_mapped_file_t *cnc_map, int64_t timeout, int64_t now, aeron_log_func_t log_func);
 
-#endif //AERON_AERON_DRIVER_H
+#endif //AERON_DRIVER_H

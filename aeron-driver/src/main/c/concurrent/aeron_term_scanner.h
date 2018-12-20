@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_TERM_SCANNER_H
-#define AERON_AERON_TERM_SCANNER_H
+#ifndef AERON_TERM_SCANNER_H
+#define AERON_TERM_SCANNER_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -64,4 +64,4 @@ inline size_t aeron_term_scanner_scan_for_availability(
     return available;
 }
 
-#endif //AERON_AERON_TERM_SCANNER_H
+#endif //AERON_TERM_SCANNER_H

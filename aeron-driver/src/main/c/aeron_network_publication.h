@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_NETWORK_PUBLICATION_H
-#define AERON_AERON_NETWORK_PUBLICATION_H
+#ifndef AERON_NETWORK_PUBLICATION_H
+#define AERON_NETWORK_PUBLICATION_H
 
 #include "util/aeron_bitutil.h"
 #include "util/aeron_fileutil.h"
@@ -254,4 +254,4 @@ inline size_t aeron_network_publication_num_spy_subscribers(aeron_network_public
     return publication->conductor_fields.subscribable.length;
 }
 
-#endif //AERON_AERON_NETWORK_PUBLICATION_H
+#endif //AERON_NETWORK_PUBLICATION_H

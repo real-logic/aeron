@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_LOSS_DETECTOR_H
-#define AERON_AERON_LOSS_DETECTOR_H
+#ifndef AERON_LOSS_DETECTOR_H
+#define AERON_LOSS_DETECTOR_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -121,4 +121,4 @@ inline void aeron_loss_detector_check_timer_expiry(aeron_loss_detector_t *detect
     }
 }
 
-#endif //AERON_AERON_LOSS_DETECTOR_H
+#endif //AERON_LOSS_DETECTOR_H

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_INT32_TO_PTR_HASH_MAP_H
-#define AERON_AERON_INT32_TO_PTR_HASH_MAP_H
+#ifndef AERON_INT32_TO_PTR_HASH_MAP_H
+#define AERON_INT32_TO_PTR_HASH_MAP_H
 
 #include <stddef.h>
 #include <stdint.h>

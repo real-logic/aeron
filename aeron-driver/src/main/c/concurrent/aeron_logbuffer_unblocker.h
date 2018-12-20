@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_LOG_BUFFER_UNBLOCK_H
-#define AERON_AERON_LOG_BUFFER_UNBLOCK_H
+#ifndef AERON_LOG_BUFFER_UNBLOCK_H
+#define AERON_LOG_BUFFER_UNBLOCK_H
 
 #include <stdbool.h>
 #include "util/aeron_fileutil.h"
@@ -26,4 +26,4 @@ bool aeron_logbuffer_unblocker_unblock(
     aeron_logbuffer_metadata_t *log_meta_data,
     int64_t blocked_position);
 
-#endif //AERON_AERON_LOG_BUFFER_UNBLOCK_H
+#endif //AERON_LOG_BUFFER_UNBLOCK_H

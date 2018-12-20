@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_SEND_CHANNEL_ENDPOINT_H
-#define AERON_AERON_SEND_CHANNEL_ENDPOINT_H
+#ifndef AERON_SEND_CHANNEL_ENDPOINT_H
+#define AERON_SEND_CHANNEL_ENDPOINT_H
 
 #include "collections/aeron_int64_to_ptr_hash_map.h"
 #include "aeron_network_publication.h"
@@ -113,4 +113,4 @@ inline int aeron_send_channel_endpoint_remove_destination(
     return aeron_udp_destination_tracker_remove_destination(endpoint->destination_tracker, addr);
 }
 
-#endif //AERON_AERON_SEND_CHANNEL_ENDPOINT_H
+#endif //AERON_SEND_CHANNEL_ENDPOINT_H

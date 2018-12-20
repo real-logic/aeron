@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_BROADCAST_TRANSMITTER_H
-#define AERON_AERON_BROADCAST_TRANSMITTER_H
+#ifndef AERON_BROADCAST_TRANSMITTER_H
+#define AERON_BROADCAST_TRANSMITTER_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -67,4 +67,4 @@ int aeron_broadcast_transmitter_transmit(
     const void *msg,
     size_t length);
 
-#endif //AERON_AERON_BROADCAST_TRANSMITTER_H
+#endif //AERON_BROADCAST_TRANSMITTER_H

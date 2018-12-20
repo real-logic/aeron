@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_STRUTIL_H
-#define AERON_AERON_STRUTIL_H
+#ifndef AERON_STRUTIL_H
+#define AERON_STRUTIL_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -49,4 +49,4 @@ inline uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len)
     return hval;
 }
 
-#endif //AERON_AERON_STRUTIL_H
+#endif //AERON_STRUTIL_H

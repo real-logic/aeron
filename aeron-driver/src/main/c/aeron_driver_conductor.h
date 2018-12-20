@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DRIVER_CONDUCTOR_H
-#define AERON_AERON_DRIVER_CONDUCTOR_H
+#ifndef AERON_DRIVER_CONDUCTOR_H
+#define AERON_DRIVER_CONDUCTOR_H
 
 #include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
@@ -645,4 +645,4 @@ inline int64_t *aeron_driver_conductor_system_counter_addr(
     return aeron_system_counter_addr(&conductor->system_counters, type);
 }
 
-#endif //AERON_AERON_DRIVER_CONDUCTOR_H
+#endif //AERON_DRIVER_CONDUCTOR_H

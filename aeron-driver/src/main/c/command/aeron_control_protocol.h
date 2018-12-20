@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_CONTROL_PROTOCOL_H
-#define AERON_AERON_CONTROL_PROTOCOL_H
+#ifndef AERON_CONTROL_PROTOCOL_H
+#define AERON_CONTROL_PROTOCOL_H
 
 #include <stdint.h>
 
@@ -162,4 +162,4 @@ aeron_counter_update_t;
 
 #pragma pack(pop)
 
-#endif //AERON_AERON_CONTROL_PROTOCOL_H
+#endif //AERON_CONTROL_PROTOCOL_H

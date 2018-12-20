@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_URI_H
-#define AERON_AERON_URI_H
+#ifndef AERON_URI_H
+#define AERON_URI_H
 
 #include <errno.h>
 #include "aeron_driver_common.h"
@@ -132,4 +132,4 @@ int aeron_udp_channel_subscription_params(
     aeron_udp_channel_subscription_params_t *params,
     aeron_driver_context_t *context);
 
-#endif //AERON_AERON_URI_H
+#endif //AERON_URI_H

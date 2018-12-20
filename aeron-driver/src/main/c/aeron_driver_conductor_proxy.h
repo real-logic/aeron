@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_DRIVER_CONDUCTOR_PROXY_H
-#define AERON_AERON_DRIVER_CONDUCTOR_PROXY_H
+#ifndef AERON_DRIVER_CONDUCTOR_PROXY_H
+#define AERON_DRIVER_CONDUCTOR_PROXY_H
 
 #include "aeron_driver_context.h"
 
@@ -64,4 +64,4 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
 
 void aeron_driver_conductor_proxy_on_linger_buffer(aeron_driver_conductor_proxy_t *conductor_proxy, uint8_t *buffer);
 
-#endif //AERON_AERON_DRIVER_CONDUCTOR_PROXY_H
+#endif //AERON_DRIVER_CONDUCTOR_PROXY_H

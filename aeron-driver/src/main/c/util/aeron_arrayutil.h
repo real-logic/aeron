@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_ARRAYUTIL_H
-#define AERON_AERON_ARRAYUTIL_H
+#ifndef AERON_ARRAYUTIL_H
+#define AERON_ARRAYUTIL_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -84,4 +84,4 @@ inline int aeron_array_remove(
     return 0;
 }
 
-#endif //AERON_AERON_ARRAYUTIL_H
+#endif //AERON_ARRAYUTIL_H

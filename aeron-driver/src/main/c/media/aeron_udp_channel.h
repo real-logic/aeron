@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_UDP_CHANNEL_H
-#define AERON_AERON_UDP_CHANNEL_H
+#ifndef AERON_UDP_CHANNEL_H
+#define AERON_UDP_CHANNEL_H
 
 #include <netinet/in.h>
 #include "uri/aeron_uri.h"
@@ -41,4 +41,4 @@ aeron_udp_channel_t;
 int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channel_t **channel);
 void aeron_udp_channel_delete(aeron_udp_channel_t *channel);
 
-#endif //AERON_AERON_UDP_CHANNEL_H
+#endif //AERON_UDP_CHANNEL_H

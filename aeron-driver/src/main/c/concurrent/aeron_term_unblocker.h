@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_AERON_TERM_UNBLOCKER_H
-#define AERON_AERON_TERM_UNBLOCKER_H
+#ifndef AERON_TERM_UNBLOCKER_H
+#define AERON_TERM_UNBLOCKER_H
 
 #include <stdint.h>
 #include "aeron_logbuffer_descriptor.h"
@@ -36,4 +36,4 @@ aeron_term_unblocker_status_t aeron_term_unblocker_unblock(
     int32_t tail_offset,
     int32_t term_id);
 
-#endif //AERON_AERON_TERM_UNBLOCKER_H
+#endif //AERON_TERM_UNBLOCKER_H

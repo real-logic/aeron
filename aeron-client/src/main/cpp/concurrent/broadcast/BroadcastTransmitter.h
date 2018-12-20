@@ -49,7 +49,8 @@ public:
         return m_maxMsgLength;
     }
 
-    void transmit(std::int32_t msgTypeId, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
+    void transmit(
+        std::int32_t msgTypeId, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
     {
         RecordDescriptor::checkMsgTypeId(msgTypeId);
         checkMessageLength(length);
@@ -98,14 +99,14 @@ private:
         if (length > m_maxMsgLength)
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("encoded message exceeds maxMsgLength of %d, length=%d", m_maxMsgLength, length), SOURCEINFO);
+                "encoded message exceeds maxMsgLength of " + std::to_string(m_maxMsgLength) +
+                ", length=" + std::to_string(length), SOURCEINFO);
         }
     }
 
     inline void signalTailIntent(AtomicBuffer& buffer, std::int64_t newTail)
     {
         buffer.putInt64Ordered(m_tailIntentCounterIndex, newTail);
-        // store fence = release()
         atomic::release();
     }
 

@@ -75,7 +75,8 @@ inline static void checkHeaderLength(util::index_t length)
     if (length != DataFrameHeader::LENGTH)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Frame header length %d must be equal to %d", length, DataFrameHeader::LENGTH), SOURCEINFO);
+            "frame header length " + std::to_string(length) +
+            " must be equal to " + std::to_string(DataFrameHeader::LENGTH), SOURCEINFO);
     }
 }
 
@@ -84,7 +85,8 @@ inline static void checkMaxFrameLength(util::index_t length)
     if ((length & (FRAME_ALIGNMENT - 1)) != 0)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Max frame length must be a multiple of %d, length=%d", FRAME_ALIGNMENT, length), SOURCEINFO);
+            "max frame length must be a multiple of " + std::to_string(FRAME_ALIGNMENT) +
+            ", length=" + std::to_string(length), SOURCEINFO);
     }
 }
 

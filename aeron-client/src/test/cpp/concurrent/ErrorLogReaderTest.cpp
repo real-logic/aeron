@@ -53,7 +53,8 @@ public:
             std::int64_t lastObservationTimestamp,
             const std::string &encodedException)
             {
-                m_error.onError(observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException);
+                m_error.onError(
+                    observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException);
             }),
         m_clock([&]() { return m_timestampClock.now(); })
     {

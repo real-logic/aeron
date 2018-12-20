@@ -54,7 +54,6 @@ public:
     MemoryMappedFile(MemoryMappedFile const&) = delete;
     MemoryMappedFile& operator=(MemoryMappedFile const&) = delete;
 
-    // some OS specific utility methods
     static size_t getPageSize();
     static std::int64_t getFileSize(const char *filename);
 

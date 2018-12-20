@@ -28,17 +28,17 @@ namespace TermScanner
 
 inline std::int64_t scanOutcome(std::int32_t padding, std::int32_t available)
 {
-    return ((std::int64_t) padding) << 32 | available;
+    return (static_cast<std::int64_t>(padding) << 32) | available;
 }
 
 inline std::int32_t available(std::int64_t scanOutcome)
 {
-    return (std::int32_t) scanOutcome;
+    return static_cast<std::int32_t>(scanOutcome);
 }
 
 inline std::int32_t padding(std::int64_t scanOutcome)
 {
-    return (std::int32_t) (scanOutcome >> 32);
+    return static_cast<std::int32_t>(scanOutcome >> 32);
 }
 
 inline std::int64_t scanForAvailability(AtomicBuffer& termBuffer, std::int32_t offset, std::int32_t maxLength)

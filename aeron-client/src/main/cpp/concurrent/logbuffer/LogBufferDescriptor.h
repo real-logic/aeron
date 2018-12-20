@@ -139,7 +139,8 @@ const util::index_t LOG_ACTIVE_TERM_COUNT_OFFSET = (util::index_t)offsetof(LogMe
 const util::index_t LOG_END_OF_STREAM_POSITION_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, endOfStreamPosition);
 const util::index_t LOG_IS_CONNECTED_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, isConnected);
 const util::index_t LOG_INITIAL_TERM_ID_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, initialTermId);
-const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
+const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET =
+    (util::index_t)offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
 const util::index_t LOG_MTU_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, mtuLength);
 const util::index_t LOG_TERM_LENGTH_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, termLength);
 const util::index_t LOG_PAGE_SIZE_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, pageSize);
@@ -151,21 +152,21 @@ inline void checkTermLength(std::int32_t termLength)
     if (termLength < TERM_MIN_LENGTH)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Term length less than min size of %d, length=%d",
-                TERM_MIN_LENGTH, termLength), SOURCEINFO);
+            "term length less than min size of " + std::to_string(TERM_MIN_LENGTH) +
+            ", length=" + std::to_string(termLength), SOURCEINFO);
     }
 
     if (termLength > TERM_MAX_LENGTH)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Term length greater than max size of %d, length=%d",
-                TERM_MAX_LENGTH, termLength), SOURCEINFO);
+            "term length greater than max size of " + std::to_string(TERM_MAX_LENGTH) +
+            ", length=" + std::to_string(termLength), SOURCEINFO);
     }
 
     if (!util::BitUtil::isPowerOfTwo(termLength))
     {
         throw util::IllegalStateException(
-            util::strPrintf("Term length not a power of 2, length=%d", termLength), SOURCEINFO);
+            "term length not a power of 2, length=" + std::to_string(termLength), SOURCEINFO);
     }
 }
 
@@ -174,21 +175,21 @@ inline void checkPageSize(std::int32_t pageSize)
     if (pageSize < AERON_PAGE_MIN_SIZE)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Page size less than min size of %d, size=%d",
-                AERON_PAGE_MIN_SIZE, pageSize), SOURCEINFO);
+            "page size less than min size of " + std::to_string(AERON_PAGE_MIN_SIZE) +
+            ", size=" + std::to_string(pageSize), SOURCEINFO);
     }
 
     if (pageSize > AERON_PAGE_MAX_SIZE)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Page Size greater than max size of %d, size=%d",
-                AERON_PAGE_MAX_SIZE, pageSize), SOURCEINFO);
+            "page size greater than max size of " + std::to_string(AERON_PAGE_MAX_SIZE) +
+            ", size=" + std::to_string(pageSize), SOURCEINFO);
     }
 
     if (!util::BitUtil::isPowerOfTwo(pageSize))
     {
         throw util::IllegalStateException(
-            util::strPrintf("Page size not a power of 2, size=%d", pageSize), SOURCEINFO);
+            "page size not a power of 2, size=" + std::to_string(pageSize), SOURCEINFO);
     }
 }
 

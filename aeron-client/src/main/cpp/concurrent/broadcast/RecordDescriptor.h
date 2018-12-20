@@ -71,7 +71,7 @@ inline static void checkMsgTypeId(std::int32_t msgTypeId)
     if (msgTypeId < 1)
     {
         throw util::IllegalArgumentException(
-            util::strPrintf("Message type id must be greater than zero, msgTypeId=%d", msgTypeId), SOURCEINFO);
+            "message type id must be greater than zero, msgTypeId=" + std::to_string(msgTypeId), SOURCEINFO);
     }
 }
 

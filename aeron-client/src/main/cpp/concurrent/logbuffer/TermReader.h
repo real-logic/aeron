@@ -23,13 +23,7 @@
 #include "LogBufferDescriptor.h"
 #include "Header.h"
 
-namespace aeron {
-
-/** Concurrent operations and data structures */
-namespace concurrent {
-
-/** Logbuffer data structure */
-namespace logbuffer {
+namespace aeron { namespace concurrent { namespace logbuffer {
 
 /**
  * Callback for handling fragments of data being read from a log.

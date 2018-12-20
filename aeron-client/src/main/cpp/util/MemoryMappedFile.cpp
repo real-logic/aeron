@@ -124,17 +124,17 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t 
 
     if (fd.handle < 0)
     {
-        throw IOException(std::string("Failed to create file: ") + filename, SOURCEINFO);
+        throw IOException(std::string("failed to create file: ") + filename, SOURCEINFO);
     }
 
-    OnScopeExit tidy ([&]()
+    OnScopeExit tidy([&]()
     {
         close(fd.handle);
     });
 
     if (!fill(fd, size, 0))
     {
-        throw IOException(std::string("Failed to write to file: ") + filename, SOURCEINFO);
+        throw IOException(std::string("failed to write to file: ") + filename, SOURCEINFO);
     }
 
     return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size));
@@ -147,10 +147,10 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, off_
 
     if (fd.handle < 0)
     {
-        throw IOException(std::string("Failed to open existing file: ") + filename, SOURCEINFO);
+        throw IOException(std::string("failed to open existing file: ") + filename, SOURCEINFO);
     }
 
-    OnScopeExit tidy ([&]()
+    OnScopeExit tidy([&]()
     {
         close(fd.handle);
     });
@@ -285,7 +285,7 @@ uint8_t* MemoryMappedFile::doMapping(size_t length, FileHandle fd, size_t offset
 
     if (MAP_FAILED == memory)
     {
-        throw IOException("Failed to Memory Map File", SOURCEINFO);
+        throw IOException("failed to Memory Map File", SOURCEINFO);
     }
 
     return static_cast<uint8_t*>(memory);

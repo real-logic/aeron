@@ -35,7 +35,8 @@ inline static void checkCapacity(util::index_t capacity)
     if (!util::BitUtil::isPowerOfTwo(capacity))
     {
         throw util::IllegalStateException(
-            util::strPrintf("Capacity must be a positive power of 2 + TRAILER_LENGTH: capacity=%d", capacity), SOURCEINFO);
+            "capacity must be a positive power of 2 + TRAILER_LENGTH: capacity=" + std::to_string(capacity),
+            SOURCEINFO);
     }
 }
 

@@ -41,7 +41,8 @@ void CommandOptionParser::parse(int argc, char** argv)
                 auto opt = m_options.find(currentOption);
                 if (m_options.end() == opt)
                 {
-                    throw CommandOptionException(std::string ("-") + currentOption + " is not a valid command option.", SOURCEINFO);
+                    throw CommandOptionException(
+                        std::string("-") + currentOption + " is not a valid command option", SOURCEINFO);
                 }
                 else
                 {
@@ -73,8 +74,8 @@ CommandOption& CommandOptionParser::getOption(char optionChar)
 
     if (m_options.end() == opt)
     {
-        throw CommandOptionException(std::string(
-            "CommandOptionParser::getOption invalid option lookup: ") + optionChar, SOURCEINFO);
+        throw CommandOptionException(
+            std::string("CommandOptionParser::getOption invalid option lookup: ") + optionChar, SOURCEINFO);
     }
 
     return opt->second;

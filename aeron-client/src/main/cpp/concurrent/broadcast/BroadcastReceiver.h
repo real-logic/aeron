@@ -98,8 +98,8 @@ public:
             {
                 recordOffset = 0;
                 m_cursor = m_nextRecord;
-                m_nextRecord += util::BitUtil::align(
-                    m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
+                m_nextRecord += util::BitUtil::align(m_buffer.getInt32(
+                    RecordDescriptor::lengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
             }
 
             m_recordOffset = recordOffset;

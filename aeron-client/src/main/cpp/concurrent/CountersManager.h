@@ -64,7 +64,7 @@ public:
 
         if (label.length() > MAX_LABEL_LENGTH)
         {
-            throw util::IllegalArgumentException("Label too long", SOURCEINFO);
+            throw util::IllegalArgumentException("label too long", SOURCEINFO);
         }
 
         checkCountersCapacity(counterId);
@@ -155,7 +155,8 @@ private:
         auto it = std::find_if(m_freeList.begin(), m_freeList.end(),
             [&](std::int32_t counterId)
             {
-                return nowMs >= m_metadataBuffer.getInt64Volatile(metadataOffset(counterId) + FREE_TO_REUSE_DEADLINE_OFFSET);
+                return nowMs >=
+                    m_metadataBuffer.getInt64Volatile(metadataOffset(counterId) + FREE_TO_REUSE_DEADLINE_OFFSET);
             });
 
         if (it != m_freeList.end())
@@ -176,7 +177,7 @@ private:
     {
         if ((counterOffset(counterId) + COUNTER_LENGTH) > m_valuesBuffer.capacity())
         {
-            throw util::IllegalArgumentException("Unable to allocated counter, values buffer is full", SOURCEINFO);
+            throw util::IllegalArgumentException("unable to allocated counter, values buffer is full", SOURCEINFO);
         }
     }
 
@@ -184,7 +185,7 @@ private:
     {
         if ((recordOffset + METADATA_LENGTH) > m_metadataBuffer.capacity())
         {
-            throw util::IllegalArgumentException("Unable to allocate counter, metadata buffer is full", SOURCEINFO);
+            throw util::IllegalArgumentException("unable to allocate counter, metadata buffer is full", SOURCEINFO);
         }
     }
 };

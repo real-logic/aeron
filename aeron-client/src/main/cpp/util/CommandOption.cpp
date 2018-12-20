@@ -41,7 +41,8 @@ void CommandOption::checkIndex(size_t index) const
 {
     if (index > m_params.size())
     {
-        throw CommandOptionException(std::string("Internal Error: index out of range for option: ") + m_optionChar, SOURCEINFO);
+        throw CommandOptionException(
+            std::string("Internal Error: index out of range for option: ") + m_optionChar, SOURCEINFO);
     }
 }
 
@@ -53,7 +54,6 @@ std::string CommandOption::getParam(size_t index) const
 
 std::string CommandOption::getParam(size_t index, std::string defaultValue) const
 {
-    // if this option was not present on the command line then return the default value.
     if (!isPresent())
     {
         return defaultValue;
@@ -65,7 +65,6 @@ std::string CommandOption::getParam(size_t index, std::string defaultValue) cons
 int CommandOption::getParamAsInt(size_t index) const
 {
     checkIndex(index);
-
     std::string param = m_params[index];
 
     try
@@ -74,14 +73,14 @@ int CommandOption::getParamAsInt(size_t index) const
     }
     catch (const ParseException &)
     {
-        throw CommandOptionException(std::string("Invalid numeric value: \"") + param + "\" on option -" + m_optionChar, SOURCEINFO);
+        throw CommandOptionException(
+            std::string("invalid numeric value: \"") + param + "\" on option -" + m_optionChar, SOURCEINFO);
     }
 }
 
 long CommandOption::getParamAsLong(size_t index) const
 {
     checkIndex(index);
-
     std::string param = m_params[index];
 
     try
@@ -90,7 +89,8 @@ long CommandOption::getParamAsLong(size_t index) const
     }
     catch (const ParseException &)
     {
-        throw CommandOptionException(std::string("Invalid numeric value: \"") + param + "\" on option -" + m_optionChar, SOURCEINFO);
+        throw CommandOptionException(
+            std::string("invalid numeric value: \"") + param + "\" on option -" + m_optionChar, SOURCEINFO);
     }
 }
 
@@ -102,10 +102,12 @@ int CommandOption::getParamAsInt(size_t index, int minValue, int maxValue, int d
     }
 
     int value = getParamAsInt(index);
-    if ((value < minValue) || (value > maxValue))
+    if (value < minValue || value > maxValue)
     {
-        throw CommandOptionException(std::string("Value \"") + toString(value) + "\" out of range: [" +
-            toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar, SOURCEINFO);
+        throw CommandOptionException(
+            std::string("value \"") + toString(value) + "\" out of range: [" +
+            toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar,
+            SOURCEINFO);
     }
 
     return value;
@@ -119,10 +121,12 @@ long CommandOption::getParamAsLong(size_t index, long minValue, long maxValue, l
     }
 
     long value = getParamAsLong(index);
-    if ((value < minValue) || (value > maxValue))
+    if (value < minValue || value > maxValue)
     {
-        throw CommandOptionException(std::string("Value \"") + toString(value) + "\" out of range: [" +
-            toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar, SOURCEINFO);
+        throw CommandOptionException(
+            std::string("value \"") + toString(value) + "\" out of range: [" +
+            toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar,
+            SOURCEINFO);
     }
 
     return value;
@@ -137,12 +141,14 @@ void CommandOption::validate() const
 
     if (m_params.size() > m_maxParams)
     {
-        throw CommandOptionException(std::string("option -") + m_optionChar + " has too many parameters specified.", SOURCEINFO);
+        throw CommandOptionException(
+            std::string("option -") + m_optionChar + " has too many parameters specified.", SOURCEINFO);
     }
 
     if (m_params.size() < m_minParams)
     {
-        throw CommandOptionException(std::string("option -") + m_optionChar + " has too few parameters specified.", SOURCEINFO);
+        throw CommandOptionException(
+            std::string("option -") + m_optionChar + " has too few parameters specified.", SOURCEINFO);
     }
 }
 

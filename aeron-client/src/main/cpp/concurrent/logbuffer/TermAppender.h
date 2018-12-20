@@ -353,8 +353,8 @@ private:
         if (termId != expectedTermId)
         {
             throw util::IllegalStateException(
-                util::strPrintf("Action possibly delayed: expectedTermId=%d termId=%d",
-                    expectedTermId, termId), SOURCEINFO);
+                "action possibly delayed: expectedTermId=" + std::to_string(expectedTermId) +
+                " termId=" + std::to_string(termId), SOURCEINFO);
         }
     }
 

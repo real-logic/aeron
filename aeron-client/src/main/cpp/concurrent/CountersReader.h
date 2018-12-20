@@ -214,7 +214,8 @@ protected:
         if (counterId < 0 || counterId > m_maxCounterId)
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("Counter Id %d out of range: maxCounterId=%d", counterId, m_maxCounterId),
+                "counter id " + std::to_string(counterId) +
+                " out of range: maxCounterId=" + std::to_string(m_maxCounterId),
                 SOURCEINFO);
         }
     }

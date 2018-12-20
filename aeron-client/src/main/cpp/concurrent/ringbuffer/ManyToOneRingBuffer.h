@@ -313,7 +313,7 @@ private:
         }
     }
 
-    inline static bool scanBackToConfirmStillZeroed(AtomicBuffer& buffer, std::int32_t from, std::int32_t limit)
+    inline static bool scanBackToConfirmStillZeroed(const AtomicBuffer& buffer, std::int32_t from, std::int32_t limit)
     {
         std::int32_t i = from - RecordDescriptor::ALIGNMENT;
         bool allZeroes = true;

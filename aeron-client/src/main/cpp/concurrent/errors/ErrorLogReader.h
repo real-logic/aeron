@@ -22,11 +22,7 @@
 #include <util/BitUtil.h>
 #include "ErrorLogDescriptor.h"
 
-namespace aeron {
-
-namespace concurrent {
-
-namespace errors {
+namespace aeron { namespace concurrent { namespace errors {
 
 namespace ErrorLogReader {
 
@@ -54,7 +50,7 @@ inline static int read(
         }
 
         const std::int64_t lastObservationTimestamp =
-            buffer.getInt64Volatile(offset + ErrorLogDescriptor::LAST_OBERSATION_TIMESTAMP_OFFSET);
+            buffer.getInt64Volatile(offset + ErrorLogDescriptor::LAST_OBSERVATION_TIMESTAMP_OFFSET);
 
         if (lastObservationTimestamp >= sinceTimestamp)
         {

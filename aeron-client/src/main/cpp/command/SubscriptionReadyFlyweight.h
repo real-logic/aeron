@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_SUBSCRIPTIONREADYFLYWEIGHT_H
-#define AERON_SUBSCRIPTIONREADYFLYWEIGHT_H
+#ifndef AERON_SUBSCRIPTION_READY_FLYWEIGHT_H
+#define AERON_SUBSCRIPTION_READY_FLYWEIGHT_H
 
 #include <cstdint>
 #include <stddef.h>
@@ -79,4 +79,4 @@ public:
 };
 
 }}
-#endif //AERON_SUBSCRIPTIONREADYFLYWEIGHT_H
+#endif

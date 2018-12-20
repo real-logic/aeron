@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_ATOMIC64_MSVC_
-#define INCLUDED_ATOMIC64_MSVC_
+#ifndef AERON_CONCURRENT_ATOMIC64_MSVC_H
+#define AERON_CONCURRENT_ATOMIC64_MSVC_H
 
 #include <atomic>
 #include "Intrin.h"

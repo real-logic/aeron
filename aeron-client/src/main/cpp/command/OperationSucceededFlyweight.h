@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_OPERATIONSUCCEEDEDFLYWEIGHT_H
-#define AERON_OPERATIONSUCCEEDEDFLYWEIGHT_H
+#ifndef AERON_OPERATION_SUCCEEDED_FLYWEIGHT_H
+#define AERON_OPERATION_SUCCEEDED_FLYWEIGHT_H
 
 
 #include <cstdint>
@@ -66,4 +66,4 @@ public:
 };
 
 }}
-#endif //AERON_OPERATIONSUCCEEDEDFLYWEIGHT_H
+#endif

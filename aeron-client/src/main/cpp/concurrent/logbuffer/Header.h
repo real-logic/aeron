@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_LOGBUFFER_HEADER__
-#define INCLUDED_AERON_CONCURRENT_LOGBUFFER_HEADER__
+#ifndef AERON_CONCURRENT_LOGBUFFER_HEADER_H
+#define AERON_CONCURRENT_LOGBUFFER_HEADER_H
 
 #include <util/Index.h>
 #include <util/BitUtil.h>

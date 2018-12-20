@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_FRAGMENTASSEMBLYADAPTER_H
-#define AERON_FRAGMENTASSEMBLYADAPTER_H
+#ifndef AERON_FRAGMENT_ASSEMBLY_H
+#define AERON_FRAGMENT_ASSEMBLY_H
 
 #include <unordered_map>
 #include "Aeron.h"
@@ -132,4 +132,4 @@ private:
 
 }
 
-#endif //AERON_FRAGMENTASSEMBLYADAPTER_H
+#endif

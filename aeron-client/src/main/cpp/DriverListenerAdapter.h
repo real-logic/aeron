@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_DRIVER_LISTENER_ADAPTER__
-#define INCLUDED_AERON_DRIVER_LISTENER_ADAPTER__
+#ifndef AERON_DRIVER_LISTENER_ADAPTER_H
+#define AERON_DRIVER_LISTENER_ADAPTER_H
 
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include <command/ControlProtocolEvents.h>

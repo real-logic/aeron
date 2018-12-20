@@ -15,8 +15,8 @@
  */
 
 
-#ifndef AERON_DATAHEADERFLYWEIGHT_H
-#define AERON_DATAHEADERFLYWEIGHT_H
+#ifndef AERON_DATA_HEADER_FLYWEIGHT_H
+#define AERON_DATA_HEADER_FLYWEIGHT_H
 
 #include <cstdint>
 #include <string>
@@ -117,4 +117,4 @@ private:
 
 }}
 
-#endif //AERON_DATAHEADERFLYWEIGHT_H
+#endif

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_SUBSCRIPTION__
-#define INCLUDED_AERON_SUBSCRIPTION__
+#ifndef AERON_SUBSCRIPTION_H
+#define AERON_SUBSCRIPTION_H
 
 #include <cstdint>
 #include <iostream>

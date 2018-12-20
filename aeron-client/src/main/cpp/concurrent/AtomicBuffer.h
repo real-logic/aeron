@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_ATOMIC_BUFFER__
-#define INCLUDED_AERON_CONCURRENT_ATOMIC_BUFFER__
+#ifndef AERON_CONCURRENT_ATOMIC_BUFFER_H
+#define AERON_CONCURRENT_ATOMIC_BUFFER_H
 
 #include <cstdint>
 #include <string.h>

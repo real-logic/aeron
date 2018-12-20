@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_LOG_BUFFERS__
-#define INCLUDED_AERON_LOG_BUFFERS__
+#ifndef AERON_LOG_BUFFERS_H
+#define AERON_LOG_BUFFERS_H
 
 #include <memory>
 #include <vector>

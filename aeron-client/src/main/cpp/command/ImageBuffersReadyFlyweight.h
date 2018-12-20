@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_COMMAND_CONNECTIONREADYFLYWEIGHT__
-#define INCLUDED_AERON_COMMAND_CONNECTIONREADYFLYWEIGHT__
+#ifndef AERON_COMMAND_CONNECTION_READY_FLYWEIGHT_H
+#define AERON_COMMAND_CONNECTION_READY_FLYWEIGHT_H
 
 #include <cstdint>
 #include <stddef.h>
@@ -76,8 +76,8 @@ class ImageBuffersReadyFlyweight : public Flyweight<ImageBuffersReadyDefn>
 public:
     typedef ImageBuffersReadyFlyweight this_t;
 
-    inline ImageBuffersReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-        : Flyweight<ImageBuffersReadyDefn>(buffer, offset)
+    inline ImageBuffersReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+        Flyweight<ImageBuffersReadyDefn>(buffer, offset)
     {
     }
 

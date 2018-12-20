@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_CONCURRENT_ATOMIC_COUNTER__
-#define INCLUDED_AERON_CONCURRENT_ATOMIC_COUNTER__
+#ifndef AERON_CONCURRENT_ATOMIC_COUNTER_H
+#define AERON_CONCURRENT_ATOMIC_COUNTER_H
 
 #include <cstdint>
 #include <memory>

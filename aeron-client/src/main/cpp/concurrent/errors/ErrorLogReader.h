@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_ERRORLOGREADER_H
-#define AERON_ERRORLOGREADER_H
+#ifndef AERON_CONCURRENT_ERROR_LOG_READER_H
+#define AERON_CONCURRENT_ERROR_LOG_READER_H
 
 #include <functional>
 #include <util/Index.h>

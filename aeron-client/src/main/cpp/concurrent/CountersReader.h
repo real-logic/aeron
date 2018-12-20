@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_COUNTERSREADER_H
-#define AERON_COUNTERSREADER_H
+#ifndef AERON_COUNTERS_READER_H
+#define AERON_COUNTERS_READER_H
 
 #include <cstdint>
 #include <cstddef>

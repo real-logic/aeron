@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_LOGBUFFER_TERMGAPSCANNER__
-#define INCLUDED_AERON_CONCURRENT_LOGBUFFER_TERMGAPSCANNER__
+#ifndef AERON_CONCURRENT_TERM_GAP_SCANNER_H
+#define AERON_CONCURRENT_TERM_GAP_SCANNER_H
 
 #include <util/BitUtil.h>
 #include "FrameDescriptor.h"

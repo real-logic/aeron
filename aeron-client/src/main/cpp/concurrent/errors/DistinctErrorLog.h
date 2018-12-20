@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_DISTINCTERRORLOG_H
-#define AERON_DISTINCTERRORLOG_H
+#ifndef AERON_CONCURRENT_DISTINCT_ERROR_LOG_H
+#define AERON_CONCURRENT_DISTINCT_ERROR_LOG_H
 
 #include <functional>
 #include <typeinfo>

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_DATAFRAMEHEADER_H
-#define AERON_DATAFRAMEHEADER_H
+#ifndef AERON_CONCURRENT_DATA_FRAME_HEADER_H
+#define AERON_CONCURRENT_DATA_FRAME_HEADER_H
 
 #include <stddef.h>
 #include <util/Index.h>
@@ -67,4 +67,4 @@ static const std::int8_t CURRENT_VERSION = 0x0;
 
 }}}
 
-#endif //AERON_DATAFRAMEHEADER_H
+#endif

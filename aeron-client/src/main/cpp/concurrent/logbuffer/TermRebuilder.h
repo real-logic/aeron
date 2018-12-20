@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_LOGBUFFER_TERMREBUILDER__
-#define INCLUDED_AERON_CONCURRENT_LOGBUFFER_TERMREBUILDER__
+#ifndef AERON_CONCURRENT_LOGBUFFER_TERM_REBUILDER_H
+#define AERON_CONCURRENT_LOGBUFFER_TERM_REBUILDER_H
 
 #include "FrameDescriptor.h"
 
@@ -38,4 +38,4 @@ inline void insert(AtomicBuffer& termBuffer, std::int32_t termOffset, AtomicBuff
 }
 
 }}}
-#endif //AERON_TERMREBUILDER_H
+#endif

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_COMMAND_CORRELATEDMESSAGEFLYWEIGHT__
-#define INCLUDED_AERON_COMMAND_CORRELATEDMESSAGEFLYWEIGHT__
+#ifndef AERON_COMMAND_CORRELATED_MESSAGE_FLYWEIGHT_H
+#define AERON_COMMAND_CORRELATED_MESSAGE_FLYWEIGHT_H
 
 #include <cstdint>
 #include <stddef.h>
@@ -50,8 +50,8 @@ class CorrelatedMessageFlyweight : public Flyweight<CorrelatedMessageDefn>
 public:
     typedef CorrelatedMessageFlyweight this_t;
 
-    inline CorrelatedMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
-            : Flyweight<CorrelatedMessageDefn>(buffer, offset)
+    inline CorrelatedMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset) :
+        Flyweight<CorrelatedMessageDefn>(buffer, offset)
     {
     }
 

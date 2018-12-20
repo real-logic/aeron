@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_LOGBUFFER_TERMSCANNER__
-#define INCLUDED_AERON_CONCURRENT_LOGBUFFER_TERMSCANNER__
+#ifndef AERON_CONCURRENT_LOGBUFFER_TERM_SCANNER_H
+#define AERON_CONCURRENT_LOGBUFFER_TERM_SCANNER_H
 
 #include <util/BitUtil.h>
 #include "FrameDescriptor.h"
@@ -81,4 +81,4 @@ inline std::int64_t scanForAvailability(AtomicBuffer& termBuffer, std::int32_t o
 
 }}}
 
-#endif //AERON_TERMSCANNER_H
+#endif

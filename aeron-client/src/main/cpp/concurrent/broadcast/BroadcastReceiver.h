@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_BROADCAST_RECEIVER__
-#define INCLUDED_AERON_CONCURRENT_BROADCAST_RECEIVER__
+#ifndef AERON_CONCURRENT_BROADCAST_RECEIVER_H
+#define AERON_CONCURRENT_BROADCAST_RECEIVER_H
 
 #include <atomic>
 #include <util/Index.h>

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ERRORFLYWEIGHT_H
-#define AERON_ERRORFLYWEIGHT_H
+#ifndef AERON_ERROR_FLYWEIGHT_H
+#define AERON_ERROR_FLYWEIGHT_H
 
 #include <cstdint>
 #include <stddef.h>
@@ -63,8 +63,8 @@ class ErrorResponseFlyweight : public Flyweight<ErrorResponseDefn>
 public:
     typedef ErrorResponseFlyweight this_t;
 
-    inline ErrorResponseFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-        : Flyweight<ErrorResponseDefn>(buffer, offset)
+    inline ErrorResponseFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+        Flyweight<ErrorResponseDefn>(buffer, offset)
     {
     }
 
@@ -90,4 +90,4 @@ public:
 };
 
 }}
-#endif //AERON_ERRORFLYWEIGHT_H
+#endif

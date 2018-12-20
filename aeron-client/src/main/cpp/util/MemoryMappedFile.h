@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_UTIL_MEMORY_MAPPED_FILE__
-#define INCLUDED_AERON_UTIL_MEMORY_MAPPED_FILE__
+#ifndef AERON_UTIL_MEMORY_MAPPED_FILE_H
+#define AERON_UTIL_MEMORY_MAPPED_FILE_H
 
 #include <cstdint>
 #include <memory>

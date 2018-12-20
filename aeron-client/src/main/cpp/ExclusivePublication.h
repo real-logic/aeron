@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_EXCLUSIVEPUBLICATION_H
-#define AERON_EXCLUSIVEPUBLICATION_H
+#ifndef AERON_EXCLUSIVE_PUBLICATION_H
+#define AERON_EXCLUSIVE_PUBLICATION_H
 
 #include <iostream>
 #include <atomic>

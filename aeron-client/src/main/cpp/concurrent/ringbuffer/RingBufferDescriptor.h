@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_RINGBUFFER_RING_BUFFER_DESCRIPTOR__
-#define INCLUDED_AERON_CONCURRENT_RINGBUFFER_RING_BUFFER_DESCRIPTOR__
+#ifndef AERON_RING_BUFFER_DESCRIPTOR_H
+#define AERON_RING_BUFFER_DESCRIPTOR_H
 
 #include <functional>
 #include <util/Index.h>

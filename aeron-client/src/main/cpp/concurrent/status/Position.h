@@ -42,4 +42,4 @@ public:
 
 }}}
 
-#endif //AERON_POSITION_H
+#endif

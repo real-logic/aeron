@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_COMMAND_CONTROLPROTOCOLEVENTS__
-#define INCLUDED_AERON_COMMAND_CONTROLPROTOCOLEVENTS__
+#ifndef AERON_COMMAND_CONTROL_PROTOCOL_EVENTS_H
+#define AERON_COMMAND_CONTROL_PROTOCOL_EVENTS_H
 
 #include <cstdint>
 #include <string>

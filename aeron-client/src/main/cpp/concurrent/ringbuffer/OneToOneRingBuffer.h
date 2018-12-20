@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ONETOONERINGBUFFER_H
-#define AERON_ONETOONERINGBUFFER_H
+#ifndef AERON_RING_BUFFER_ONE_TO_ONE_H
+#define AERON_RING_BUFFER_ONE_TO_ONE_H
 
 #include <limits.h>
 #include <functional>
@@ -32,8 +32,8 @@ namespace aeron { namespace concurrent { namespace ringbuffer {
 class OneToOneRingBuffer
 {
 public:
-    OneToOneRingBuffer(concurrent::AtomicBuffer &buffer)
-        : m_buffer(buffer)
+    OneToOneRingBuffer(concurrent::AtomicBuffer &buffer) :
+        m_buffer(buffer)
     {
         m_capacity = buffer.capacity() - RingBufferDescriptor::TRAILER_LENGTH;
 
@@ -246,4 +246,4 @@ private:
 
 }}}
 
-#endif //AERON_ONETOONERINGBUFFER_H
+#endif

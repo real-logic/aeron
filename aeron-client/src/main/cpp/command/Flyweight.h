@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_COMMON_FLYWEIGHT__
-#define INCLUDED_AERON_COMMON_FLYWEIGHT__
+#ifndef AERON_COMMON_FLYWEIGHT_H
+#define AERON_COMMON_FLYWEIGHT_H
 
 #include <string>
 #include <concurrent/AtomicBuffer.h>
@@ -25,9 +25,10 @@ template<typename struct_t>
 class Flyweight
 {
 public:
-    Flyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
-        : m_struct(buffer.overlayStruct<struct_t>(offset)),
-          m_buffer(buffer), m_baseOffset(offset)
+    Flyweight (concurrent::AtomicBuffer& buffer, util::index_t offset) :
+        m_struct(buffer.overlayStruct<struct_t>(offset)),
+        m_buffer(buffer),
+        m_baseOffset(offset)
     {
     }
 

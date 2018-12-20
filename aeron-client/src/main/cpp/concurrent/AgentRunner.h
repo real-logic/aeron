@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_COMMON_AGENT_RUNNER__
-#define INCLUDED_AERON_COMMON_AGENT_RUNNER__
+#ifndef AERON_AGENT_RUNNER_H
+#define AERON_AGENT_RUNNER_H
 
 #include <string>
 #include <util/Exceptions.h>

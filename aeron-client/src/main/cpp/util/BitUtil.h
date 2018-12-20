@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_UTIL_BITUTIL__
-#define INCLUDED_AERON_UTIL_BITUTIL__
+#ifndef AERON_UTIL_BITUTIL_H
+#define AERON_UTIL_BITUTIL_H
 
 #include <cstdint>
 #include <type_traits>

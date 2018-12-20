@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_COMMAND_SUBSCRIPTIONMESSAGEFLYWEIGHT__
-#define INCLUDED_AERON_COMMAND_SUBSCRIPTIONMESSAGEFLYWEIGHT__
+#ifndef AERON_COMMAND_SUBSCRIPTION_MESSAGE_FLYWEIGHT_H
+#define AERON_COMMAND_SUBSCRIPTION_MESSAGE_FLYWEIGHT_H
 
 #include <cstdint>
 #include <string>
@@ -63,8 +63,8 @@ class SubscriptionMessageFlyweight : public CorrelatedMessageFlyweight
 public:
     typedef SubscriptionMessageFlyweight this_t;
 
-    inline SubscriptionMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-        : CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<SubscriptionMessageDefn>(0))
+    inline SubscriptionMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+        CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<SubscriptionMessageDefn>(0))
     {
     }
 

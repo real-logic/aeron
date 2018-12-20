@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_CONCURRENT_COUNTERS_MANAGER__
-#define INCLUDED_AERON_CONCURRENT_COUNTERS_MANAGER__
+#ifndef AERON_CONCURRENT_COUNTERS_MANAGER_H
+#define AERON_CONCURRENT_COUNTERS_MANAGER_H
 
 #include <functional>
 #include <cstdint>

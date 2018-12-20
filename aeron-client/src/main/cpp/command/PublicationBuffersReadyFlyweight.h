@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_COMMAND_PUBLICATIONREADYFLYWEIGHT__
-#define INCLUDED_AERON_COMMAND_PUBLICATIONREADYFLYWEIGHT__
+#ifndef AERON_COMMAND_PUBLICATION_READY_FLYWEIGHT_H
+#define AERON_COMMAND_PUBLICATION_READY_FLYWEIGHT_H
 
 #include <cstdint>
 #include <stddef.h>

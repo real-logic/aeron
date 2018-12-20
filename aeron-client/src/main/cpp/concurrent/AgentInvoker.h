@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_AGENTINVOKER_H
-#define AERON_AGENTINVOKER_H
+#ifndef AERON_AGENT_INVOKER_H
+#define AERON_AGENT_INVOKER_H
 
 #include <util/Exceptions.h>
 #include <functional>

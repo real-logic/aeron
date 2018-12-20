@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_COMMAND_STATUSMESSAGEFLYWEIGHT__
-#define INCLUDED_AERON_COMMAND_STATUSMESSAGEFLYWEIGHT__
+#ifndef AERON_STATUS_MESSAGE_FLYWEIGHT_H
+#define AERON_STATUS_MESSAGE_FLYWEIGHT_H
 
 #include <cstdint>
 #include <string>
@@ -150,4 +150,4 @@ private:
 
 }}
 
-#endif //AERON_STATUSMESSAGEFLYWEIGHT_H
+#endif

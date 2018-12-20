@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_CONCURRENT_RINGBUFFER_MANY_TO_ONE_RING_BUFFER__
-#define AERON_CONCURRENT_RINGBUFFER_MANY_TO_ONE_RING_BUFFER__
+#ifndef AERON_RING_BUFFER_MANY_TO_ONE_H
+#define AERON_RING_BUFFER_MANY_TO_ONE_H
 
 #include <limits.h>
 #include <functional>
@@ -32,8 +32,8 @@ namespace aeron { namespace concurrent { namespace ringbuffer {
 class ManyToOneRingBuffer
 {
 public:
-    ManyToOneRingBuffer(concurrent::AtomicBuffer& buffer)
-        : m_buffer(buffer)
+    ManyToOneRingBuffer(concurrent::AtomicBuffer& buffer) :
+        m_buffer(buffer)
     {
         m_capacity = buffer.capacity() - RingBufferDescriptor::TRAILER_LENGTH;
 
@@ -56,7 +56,8 @@ public:
         return m_capacity;
     }
 
-    bool write(std::int32_t msgTypeId, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
+    bool write(
+        std::int32_t msgTypeId, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
     {
         bool isSuccessful = false;
 

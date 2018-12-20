@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_LOGBUFFER_HEADERWRITER_H
-#define INCLUDED_AERON_CONCURRENT_LOGBUFFER_HEADERWRITER_H
+#ifndef AERON_CONCURRENT_LOGBUFFER_HEADER_WRITER_H
+#define AERON_CONCURRENT_LOGBUFFER_HEADER_WRITER_H
 
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>

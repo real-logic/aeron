@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_COMMAND_CONNECTIONMESSAGEFLYWEIGHT__
-#define INCLUDED_AERON_COMMAND_CONNECTIONMESSAGEFLYWEIGHT__
+#ifndef AERON_COMMAND_CONNECTION_MESSAGE_FLYWEIGHT_H
+#define AERON_COMMAND_CONNECTION_MESSAGE_FLYWEIGHT_H
 
 #include <cstdint>
 #include <stddef.h>

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_DESTINATIONMESSAGEFLYWEIGHT_H
-#define AERON_DESTINATIONMESSAGEFLYWEIGHT_H
+#ifndef AERON_DESTINATION_MESSAGE_FLYWEIGHT_H
+#define AERON_DESTINATION_MESSAGE_FLYWEIGHT_H
 
 #include <cstdint>
 #include <string>
@@ -39,8 +39,9 @@ class DestinationMessageFlyweight : public CorrelatedMessageFlyweight
 public:
     typedef DestinationMessageFlyweight this_t;
 
-    inline DestinationMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-        : CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<DestinationMessageDefn>(0))
+    inline DestinationMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+         CorrelatedMessageFlyweight(buffer, offset),
+         m_struct(overlayStruct<DestinationMessageDefn>(0))
     {
     }
 
@@ -77,4 +78,4 @@ private:
 
 }}
 
-#endif //AERON_DESTINATIONMESSAGEFLYWEIGHT_H
+#endif

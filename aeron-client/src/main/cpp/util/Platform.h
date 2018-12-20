@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_PLATFORM_
-#define INCLUDED_PLATFORM_
+#ifndef AERON_PLATFORM_H
+#define AERON_PLATFORM_H
 
 /*
  * Determine platform, compiler, and CPU and set defines to be used later.

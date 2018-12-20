@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_AERON_UTIL_STRING_UTIL_FILE__
-#define INCLUDED_AERON_UTIL_STRING_UTIL_FILE__
+#ifndef AERON_UTIL_STRING_FILE_H
+#define AERON_UTIL_STRING_FILE_H
 
 #include <string>
 #include <sstream>

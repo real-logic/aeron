@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_READONLYPOSITION_H
-#define AERON_READONLYPOSITION_H
+#ifndef AERON_READONLY_POSITION_H
+#define AERON_READONLY_POSITION_H
 
 namespace aeron { namespace concurrent { namespace status {
 
@@ -58,4 +58,4 @@ protected:
 
 }}}
 
-#endif //AERON_READONLYPOSITION_H
+#endif //AERON_READONLY_POSITION_H

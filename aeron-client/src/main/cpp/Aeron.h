@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_AERON__
-#define INCLUDED_AERON_AERON__
+#ifndef INCLUDED_AERON_H
+#define INCLUDED_AERON_H
 
 #include <util/Exceptions.h>
 #include <iostream>

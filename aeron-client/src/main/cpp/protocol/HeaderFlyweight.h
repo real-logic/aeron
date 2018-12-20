@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_COMMAND_HEADERFLYWEIGHT__
-#define INCLUDED_AERON_COMMAND_HEADERFLYWEIGHT__
+#ifndef AERON_HEADER_FLYWEIGHT_H
+#define AERON_HEADER_FLYWEIGHT_H
 
 #include <cstdint>
 #include <string>
@@ -121,4 +121,4 @@ public:
 
 }}
 
-#endif //INCLUDED_AERON_COMMAND_HEADERFLYWEIGHT__
+#endif

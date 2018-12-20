@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_DRIVER_PROXY__
-#define INCLUDED_AERON_DRIVER_PROXY__
+#ifndef AERON_DRIVER_PROXY_H
+#define AERON_DRIVER_PROXY_H
 
 #include <array>
 #include <concurrent/ringbuffer/ManyToOneRingBuffer.h>

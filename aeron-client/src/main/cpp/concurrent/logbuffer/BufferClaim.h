@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_LOGBUFFER_BUFFER_CLAIM__
-#define INCLUDED_AERON_CONCURRENT_LOGBUFFER_BUFFER_CLAIM__
+#ifndef AERON_CONCURRENT_BUFFER_CLAIM_H
+#define AERON_CONCURRENT_BUFFER_CLAIM_H
 
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>

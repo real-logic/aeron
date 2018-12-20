@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_UTIL_MACRO_UTIL_FILE__
-#define INCLUDED_AERON_UTIL_MACRO_UTIL_FILE__
+#ifndef AERON_UTIL_MACRO_UTIL_FILE_H
+#define AERON_UTIL_MACRO_UTIL_FILE_H
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)

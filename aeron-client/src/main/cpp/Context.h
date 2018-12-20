@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONTEXT__
-#define INCLUDED_AERON_CONTEXT__
+#ifndef AERON_CONTEXT_H
+#define AERON_CONTEXT_H
 
 #include <memory>
 #include <util/Exceptions.h>

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_COMMAND_SETUPFLYWEIGHT__
-#define INCLUDED_AERON_COMMAND_SETUPFLYWEIGHT__
+#ifndef AERON_SETUP_FLYWEIGHT_H
+#define AERON_SETUP_FLYWEIGHT_H
 
 #include <cstdint>
 #include <string>
@@ -146,4 +146,4 @@ private:
 
 }}
 
-#endif //INCLUDED_AERON_COMMAND_SETUPFLYWEIGHT__
+#endif

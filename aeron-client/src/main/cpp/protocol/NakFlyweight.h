@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_COMMAND_NAKFLYWEIGHT__
-#define INCLUDED_AERON_COMMAND_NAKFLYWEIGHT__
+#ifndef AERON_NAK_FLYWEIGHT_H
+#define AERON_NAK_FLYWEIGHT_H
 
 #include <cstdint>
 #include <string>
@@ -122,4 +122,4 @@ private:
 
 }}
 
-#endif //INCLUDED_AERON_COMMAND_NAKFLYWEIGHT__
+#endif

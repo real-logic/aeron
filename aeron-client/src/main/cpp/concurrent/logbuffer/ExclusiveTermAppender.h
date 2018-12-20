@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_EXCLUSIVETERMAPPENDER_H
-#define AERON_EXCLUSIVETERMAPPENDER_H
+#ifndef AERON_CONCURRENT_EXCLUSIVE_TERM_APPENDER_H
+#define AERON_CONCURRENT_EXCLUSIVE_TERM_APPENDER_H
 
 #include <functional>
 #include <util/Index.h>

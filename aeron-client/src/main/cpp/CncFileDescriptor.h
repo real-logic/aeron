@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CNC_FILE_DESCRIPTOR__
-#define INCLUDED_AERON_CNC_FILE_DESCRIPTOR__
+#ifndef AERON_CNC_FILE_DESCRIPTOR_H
+#define AERON_CNC_FILE_DESCRIPTOR_H
 
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>

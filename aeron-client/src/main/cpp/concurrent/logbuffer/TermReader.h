@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_LOGBUFFER_TERM_READER__
-#define INCLUDED_AERON_CONCURRENT_LOGBUFFER_TERM_READER__
+#ifndef AERON_CONCURRENT_LOGBUFFER_TERM_READER_H
+#define AERON_CONCURRENT_LOGBUFFER_TERM_READER_H
 
 #include <functional>
 #include <util/Index.h>
@@ -47,8 +47,7 @@ typedef std::function<void(
  *
  * @param exception that has occurred.
  */
-typedef std::function<void(
-    const std::exception& exception)> exception_handler_t;
+typedef std::function<void(const std::exception& exception)> exception_handler_t;
 
 namespace TermReader {
 

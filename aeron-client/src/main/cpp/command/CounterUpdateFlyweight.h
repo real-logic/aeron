@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_COUNTERREADYFLYWEIGHT_H
-#define AERON_COUNTERREADYFLYWEIGHT_H
+#ifndef AERON_COMMAND_COUNTER_READY_FLYWEIGHT_H
+#define AERON_COMMAND_COUNTER_READY_FLYWEIGHT_H
 
 #include <cstdint>
 #include <stddef.h>
@@ -79,4 +79,4 @@ public:
 };
 
 }}
-#endif //AERON_COUNTERREADYFLYWEIGHT_H
+#endif

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_ERRORLOGDESCRIPTOR_H
-#define AERON_ERRORLOGDESCRIPTOR_H
+#ifndef AERON_CONCURRENT_ERROR_LOG_DESCRIPTOR_H
+#define AERON_CONCURRENT_ERROR_LOG_DESCRIPTOR_H
 
 #include <cstddef>
 #include <util/Index.h>

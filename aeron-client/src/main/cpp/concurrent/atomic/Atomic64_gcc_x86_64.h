@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INCLUDED_ATOMIC64_GCC_X86_64_
-#define INCLUDED_ATOMIC64_GCC_X86_64_
+#ifndef AERON_CONCURRENT_ATOMIC64_GCC_X86_64_H
+#define AERON_CONCURRENT_ATOMIC64_GCC_X86_64_H
 
 namespace aeron { namespace concurrent { namespace atomic {
 

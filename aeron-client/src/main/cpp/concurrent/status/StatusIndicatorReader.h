@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_STATUSINDICATORREADER_H
-#define AERON_STATUSINDICATORREADER_H
+#ifndef AERON_STATUS_INDICATOR_READER_H
+#define AERON_STATUS_INDICATOR_READER_H
 
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/CountersManager.h"
@@ -107,4 +107,5 @@ private:
 };
 
 }}}
-#endif //AERON_STATUSINDICATORREADER_H
+
+#endif

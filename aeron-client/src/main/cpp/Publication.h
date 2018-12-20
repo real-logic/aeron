@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_PUBLICATION__
-#define INCLUDED_AERON_PUBLICATION__
+#ifndef AERON_PUBLICATION_H
+#define AERON_PUBLICATION_H
 
 #include <iostream>
 #include <array>

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CLIENT_CONDUCTOR__
-#define INCLUDED_AERON_CLIENT_CONDUCTOR__
+#ifndef AERON_CLIENT_CONDUCTOR_H
+#define AERON_CLIENT_CONDUCTOR_H
 
 #include <vector>
 #include <mutex>

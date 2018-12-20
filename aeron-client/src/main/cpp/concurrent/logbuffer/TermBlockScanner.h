@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_TERMBLOCKSCANNER_H
-#define AERON_TERMBLOCKSCANNER_H
+#ifndef AERON_CONCURRENT_TERM_BLOCK_SCANNER_H
+#define AERON_CONCURRENT_TERM_BLOCK_SCANNER_H
 
 #include <functional>
 #include <util/Index.h>
@@ -82,4 +82,4 @@ inline std::int32_t scan(const AtomicBuffer& termBuffer, const std::int32_t term
 
 }}}
 
-#endif //AERON_TERMBLOCKSCANNER_H
+#endif

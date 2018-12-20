@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_BROADCAST_TRANSMITTER__
-#define INCLUDED_AERON_CONCURRENT_BROADCAST_TRANSMITTER__
+#ifndef AERON_CONCURRENT_BROADCAST_TRANSMITTER_H
+#define AERON_CONCURRENT_BROADCAST_TRANSMITTER_H
 
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>

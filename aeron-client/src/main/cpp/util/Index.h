@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_UTIL_INDEX_FILE__
-#define INCLUDED_AERON_UTIL_INDEX_FILE__
+#ifndef AERON_UTIL_INDEX_FILE_H
+#define AERON_UTIL_INDEX_FILE_H
 
 #include <cstddef>
 #include <cstdint>

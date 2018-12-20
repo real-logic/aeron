@@ -123,7 +123,7 @@ private:
         if (requiredCapacity > m_capacity)
         {
             const std::uint32_t newCapacity = findSuitableCapacity(m_capacity, requiredCapacity);
-            std::unique_ptr < std::uint8_t[] > newBuffer(new std::uint8_t[newCapacity]);
+            std::unique_ptr<std::uint8_t[]> newBuffer(new std::uint8_t[newCapacity]);
 
             ::memcpy(&newBuffer[0], &m_buffer[0], m_limit);
             m_buffer = std::move(newBuffer);

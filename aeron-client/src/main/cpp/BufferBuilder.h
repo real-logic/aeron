@@ -40,7 +40,9 @@ public:
     }
 
     BufferBuilder(BufferBuilder &&builder) :
-        m_capacity(builder.m_capacity), m_limit(builder.m_limit), m_buffer(std::move(builder.m_buffer))
+        m_capacity(builder.m_capacity),
+        m_limit(builder.m_limit),
+        m_buffer(std::move(builder.m_buffer))
     {
     }
 
@@ -59,7 +61,8 @@ public:
         if (limit >= m_capacity)
         {
             throw IllegalArgumentException(
-                strPrintf("Limit outside range: capacity=%d limit=%d", m_capacity, limit), SOURCEINFO);
+                "limit outside range: capacity=" + std::to_string(m_capacity) + " limit=" + std::to_string(limit),
+                SOURCEINFO);
         }
 
         m_limit = limit;
@@ -98,7 +101,7 @@ private:
                 if (capacity == BUFFER_BUILDER_MAX_CAPACITY)
                 {
                     throw util::IllegalStateException(
-                        util::strPrintf("Max capacity reached: %d", BUFFER_BUILDER_MAX_CAPACITY), SOURCEINFO);
+                        "max capacity reached: " + std::to_string(BUFFER_BUILDER_MAX_CAPACITY), SOURCEINFO);
                 }
 
                 capacity = BUFFER_BUILDER_MAX_CAPACITY;

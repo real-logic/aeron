@@ -94,7 +94,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
                 if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
                 {
                     throw DriverTimeoutException(
-                        "No response from driver in " + std::to_string(m_driverTimeoutMs) +" ms", SOURCEINFO);
+                        "no response from driver in " + std::to_string(m_driverTimeoutMs) +" ms", SOURCEINFO);
                 }
                 break;
 
@@ -127,7 +127,7 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [registrationId](const PublicationStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (it != m_publications.end())
@@ -175,7 +175,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
                 if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
                 {
                     throw DriverTimeoutException(
-                        "No response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
+                        "no response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
                 }
                 break;
 
@@ -243,7 +243,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     auto it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [registrationId](const SubscriptionStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (it == m_subscriptions.end())
@@ -265,7 +265,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
         if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
         {
             throw DriverTimeoutException(
-                "No response from driver in " +  std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
+                "no response from driver in " +  std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
         }
     }
     else if (!sub && RegistrationStatus::ERRORED_MEDIA_DRIVER == state.m_status)
@@ -285,7 +285,7 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
     auto it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [registrationId](const SubscriptionStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (it != m_subscriptions.end())
@@ -341,7 +341,7 @@ std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationI
         m_counters.end(),
         [registrationId](const CounterStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (it == m_counters.end())
@@ -362,7 +362,7 @@ std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationI
         if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
         {
             throw DriverTimeoutException(
-                "No response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
+                "no response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
         }
     }
     else if (!counter && RegistrationStatus::ERRORED_MEDIA_DRIVER == state.m_status)
@@ -384,7 +384,7 @@ void ClientConductor::releaseCounter(std::int64_t registrationId)
         m_counters.end(),
         [registrationId](const CounterStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (it != m_counters.end())
@@ -437,7 +437,7 @@ void ClientConductor::onNewPublication(
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [registrationId](const PublicationStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (it != m_publications.end())
@@ -469,7 +469,7 @@ void ClientConductor::onNewExclusivePublication(
     auto it = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
         [registrationId](const ExclusivePublicationStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (it != m_exclusivePublications.end())
@@ -496,7 +496,7 @@ void ClientConductor::onSubscriptionReady(
     auto subIt = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [registrationId](const SubscriptionStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (subIt != m_subscriptions.end() && (*subIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
@@ -521,7 +521,7 @@ void ClientConductor::onAvailableCounter(
     auto counterIt = std::find_if(m_counters.begin(), m_counters.end(),
         [registrationId](const CounterStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (counterIt != m_counters.end() && (*counterIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
@@ -561,7 +561,7 @@ void ClientConductor::onErrorResponse(
     auto subIt = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [offendingCommandCorrelationId](const SubscriptionStateDefn &entry)
         {
-            return (offendingCommandCorrelationId == entry.m_registrationId);
+            return offendingCommandCorrelationId == entry.m_registrationId;
         });
 
     if (subIt != m_subscriptions.end())
@@ -575,7 +575,7 @@ void ClientConductor::onErrorResponse(
     auto pubIt = std::find_if(m_publications.begin(), m_publications.end(),
         [offendingCommandCorrelationId](const PublicationStateDefn &entry)
         {
-            return (offendingCommandCorrelationId == entry.m_registrationId);
+            return offendingCommandCorrelationId == entry.m_registrationId;
         });
 
     if (pubIt != m_publications.end())
@@ -589,7 +589,7 @@ void ClientConductor::onErrorResponse(
     auto exPubIt = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
         [offendingCommandCorrelationId](const ExclusivePublicationStateDefn &entry)
         {
-            return (offendingCommandCorrelationId == entry.m_registrationId);
+            return offendingCommandCorrelationId == entry.m_registrationId;
         });
 
     if (exPubIt != m_exclusivePublications.end())
@@ -603,7 +603,7 @@ void ClientConductor::onErrorResponse(
     auto counterIt = std::find_if(m_counters.begin(), m_counters.end(),
         [offendingCommandCorrelationId](const CounterStateDefn &entry)
         {
-            return (offendingCommandCorrelationId == entry.m_registrationId);
+            return offendingCommandCorrelationId == entry.m_registrationId;
         });
 
     if (counterIt != m_counters.end())
@@ -750,7 +750,7 @@ void ClientConductor::onCheckManagedResources(long long now)
     auto logIt = std::remove_if(m_lingeringLogBuffers.begin(), m_lingeringLogBuffers.end(),
         [now, this](const LogBuffersLingerDefn& entry)
         {
-            return (now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs));
+            return now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs);
         });
 
     m_lingeringLogBuffers.erase(logIt, m_lingeringLogBuffers.end());

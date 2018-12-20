@@ -260,7 +260,10 @@ private:
 
         ExclusivePublicationStateDefn(
             const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long now) :
-            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_timeOfRegistration(now)
+            m_channel(channel),
+            m_registrationId(registrationId),
+            m_streamId(streamId),
+            m_timeOfRegistration(now)
         {
         }
     };
@@ -381,7 +384,7 @@ private:
             onInterServiceTimeout(now);
 
             ConductorServiceTimeoutException exception(
-                "Timeout between service calls over " + std::to_string(m_interServiceTimeoutMs) + " ms", SOURCEINFO);
+                "timeout between service calls over " + std::to_string(m_interServiceTimeoutMs) + " ms", SOURCEINFO);
             m_errorHandler(exception);
         }
 
@@ -396,7 +399,7 @@ private:
                 m_driverActive = false;
 
                 DriverTimeoutException exception(
-                    "Driver has been inactive for over " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
+                    "driver has been inactive for over " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
                 m_errorHandler(exception);
             }
 
@@ -418,7 +421,7 @@ private:
     {
         if (!m_driverActive)
         {
-            throw DriverTimeoutException("Driver is inactive", SOURCEINFO);
+            throw DriverTimeoutException("driver is inactive", SOURCEINFO);
         }
     }
 
@@ -426,7 +429,7 @@ private:
     {
         if (!m_driverActive)
         {
-            DriverTimeoutException exception("Driver is inactive", SOURCEINFO);
+            DriverTimeoutException exception("driver is inactive", SOURCEINFO);
             m_errorHandler(exception);
         }
     }

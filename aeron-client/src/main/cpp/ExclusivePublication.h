@@ -383,10 +383,8 @@ public:
             if (AERON_COND_EXPECT(length + it->capacity() < 0, false))
             {
                 throw aeron::util::IllegalStateException(
-                    aeron::util::strPrintf("length overflow: %d + %d -> %d",
-                        length,
-                        it->capacity(),
-                        length + it->capacity()),
+                    "length overflow: " + std::to_string(length) + " + " + std::to_string(it->capacity()) +
+                    " > " + std::to_string(length + it->capacity()),
                     SOURCEINFO);
             }
 
@@ -636,8 +634,8 @@ private:
         if (length > m_maxMessageLength)
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("Encoded message exceeds maxMessageLength of %d, length=%d",
-                    m_maxMessageLength, length), SOURCEINFO);
+                "encoded message exceeds maxMessageLength of " + std::to_string(m_maxMessageLength) +
+                ", length=" + std::to_string(length), SOURCEINFO);
         }
     }
 
@@ -646,11 +644,10 @@ private:
         if (AERON_COND_EXPECT((length > m_maxPayloadLength), false))
         {
             throw util::IllegalArgumentException(
-                util::strPrintf("Encoded message exceeds maxPayloadLength of %d, length=%d",
-                    m_maxPayloadLength, length), SOURCEINFO);
+                "encoded message exceeds maxPayloadLength of " + std::to_string(m_maxPayloadLength) +
+                ", length=" + std::to_string(length), SOURCEINFO);
         }
     }
-
 };
 
 }

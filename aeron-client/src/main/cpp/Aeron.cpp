@@ -136,7 +136,7 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
         {
             if (currentTimeMillis() > (startMs + context.m_mediaDriverTimeout))
             {
-                throw DriverTimeoutException(std::string("No driver heartbeat detected"), SOURCEINFO);
+                throw DriverTimeoutException(std::string("no driver heartbeat detected"), SOURCEINFO);
             }
 
             std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
@@ -147,7 +147,7 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
         {
             if (timeMs > (startMs + context.m_mediaDriverTimeout))
             {
-                throw DriverTimeoutException(std::string("No driver heartbeat detected"), SOURCEINFO);
+                throw DriverTimeoutException(std::string("no driver heartbeat detected"), SOURCEINFO);
             }
 
             cncBuffer = nullptr;

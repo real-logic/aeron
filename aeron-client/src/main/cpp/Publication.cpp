@@ -44,7 +44,7 @@ Publication::Publication(
     m_positionBitsToShift(util::BitUtil::numberOfTrailingZeroes(logBuffers->atomicBuffer(0).capacity())),
     m_publicationLimit(publicationLimit),
     m_channelStatusId(channelStatusId),
-    m_logBuffers(logBuffers),
+    m_logBuffers(std::move(logBuffers)),
     m_headerWriter(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer))
 {
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
@@ -55,8 +55,8 @@ Publication::Publication(
          * locality.
          */
         m_appenders[i] = std::unique_ptr<TermAppender>(new TermAppender(
-            logBuffers->atomicBuffer(i),
-            logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX),
+            m_logBuffers->atomicBuffer(i),
+            m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX),
             i));
     }
 }

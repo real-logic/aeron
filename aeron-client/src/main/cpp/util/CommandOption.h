@@ -61,7 +61,7 @@ public:
 
     void addParam(std::string p)
     {
-        m_params.push_back(p);
+        m_params.push_back(std::move(p));
     }
 
     void validate() const;

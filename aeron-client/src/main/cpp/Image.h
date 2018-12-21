@@ -119,7 +119,7 @@ public:
             logBuffers->atomicBuffer(0).capacity(),
             this),
         m_subscriberPosition(subscriberPosition),
-        m_logBuffers(logBuffers),
+        m_logBuffers(std::move(logBuffers)),
         m_sourceIdentity(sourceIdentity),
         m_isClosed(false),
         m_exceptionHandler(exceptionHandler),
@@ -129,7 +129,7 @@ public:
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
-            m_termBuffers[i] = logBuffers->atomicBuffer(i);
+            m_termBuffers[i] = m_logBuffers->atomicBuffer(i);
         }
 
         const util::index_t capacity = m_termBuffers[0].capacity();

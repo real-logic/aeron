@@ -74,7 +74,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final UnsafeBuffer dataHeaderBuffer = new UnsafeBuffer(
         allocateDirectAligned(DataHeaderFlyweight.HEADER_LENGTH, 128));
     private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
-        allocateDirectAligned(ReplaySession.REPLAY_BLOCK_LENGTH, 128));
+        allocateDirectAligned(Archive.Configuration.MAX_BLOCK_LENGTH, 128));
 
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;

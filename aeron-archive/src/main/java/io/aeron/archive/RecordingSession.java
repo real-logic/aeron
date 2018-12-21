@@ -28,8 +28,6 @@ import java.nio.channels.FileChannel;
  */
 class RecordingSession implements Session
 {
-    private static final int MAX_BLOCK_LENGTH = 2 * 1204 * 1024;
-
     private enum State
     {
         INIT, RECORDING, INACTIVE, STOPPED
@@ -61,7 +59,7 @@ class RecordingSession implements Session
         this.image = image;
         this.position = position;
 
-        blockLengthLimit = Math.min(image.termBufferLength(), MAX_BLOCK_LENGTH);
+        blockLengthLimit = Math.min(image.termBufferLength(), Archive.Configuration.MAX_BLOCK_LENGTH);
         recordingWriter = new RecordingWriter(recordingId, startPosition, segmentLength, image, ctx, archiveDirChannel);
     }
 

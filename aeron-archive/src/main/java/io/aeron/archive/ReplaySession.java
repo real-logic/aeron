@@ -38,6 +38,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
 
+import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -68,7 +69,6 @@ class ReplaySession implements Session, AutoCloseable
         INIT, REPLAY, INACTIVE, DONE
     }
 
-    static final int REPLAY_BLOCK_LENGTH = 2 * 1024 * 1024;
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
@@ -360,7 +360,7 @@ class ReplaySession implements Session, AutoCloseable
     {
         if (publication.availableWindow() > 0)
         {
-            final int limit = Math.min((int)Math.min(availableReplay, REPLAY_BLOCK_LENGTH), termLength - termOffset);
+            final int limit = Math.min((int)Math.min(availableReplay, MAX_BLOCK_LENGTH), termLength - termOffset);
             final ByteBuffer byteBuffer = replayBuffer.byteBuffer();
             byteBuffer.clear().limit(limit);
 

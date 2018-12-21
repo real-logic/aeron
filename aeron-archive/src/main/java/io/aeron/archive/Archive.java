@@ -196,6 +196,7 @@ public class Archive implements AutoCloseable
 
         static final String CATALOG_FILE_NAME = "archive.catalog";
         static final String RECORDING_SEGMENT_POSTFIX = ".rec";
+        static final int MAX_BLOCK_LENGTH = 2 * 1024 * 1024;
 
         /**
          * Get the directory name to be used for storing the archive.

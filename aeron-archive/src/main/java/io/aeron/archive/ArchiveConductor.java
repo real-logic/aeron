@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.ChannelUriStringBuilder.integerValueOf;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.Archive.segmentFileIndex;
@@ -704,13 +703,16 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             .alias(channelUri.get(CommonContext.ALIAS_PARAM_NAME))
             .tags(channelUri.get(CommonContext.TAGS_PARAM_NAME));
 
-        if (null != sessionIdStr && ChannelUri.isTagged(sessionIdStr))
+        if (null != sessionIdStr)
         {
-            channelBuilder.isSessionIdTagged(true).sessionId((int)ChannelUri.getTag(sessionIdStr));
-        }
-        else
-        {
-            channelBuilder.sessionId(integerValueOf(sessionIdStr));
+            if (ChannelUri.isTagged(sessionIdStr))
+            {
+                channelBuilder.isSessionIdTagged(true).sessionId((int)ChannelUri.getTag(sessionIdStr));
+            }
+            else
+            {
+                channelBuilder.sessionId(Integer.valueOf(sessionIdStr));
+            }
         }
 
         return channelBuilder;

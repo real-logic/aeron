@@ -777,18 +777,6 @@ public class ChannelUriStringBuilder
         return sb.toString();
     }
 
-    /**
-     * Call {@link Integer#valueOf(String)} only if the value param is not null. Else pass null on.
-     *
-     * @param value to check for null and convert if not null.
-     * @return null if value param is null or result of {@link Integer#valueOf(String)}.
-     * @see Integer#valueOf(String)
-     */
-    public static Integer integerValueOf(final String value)
-    {
-        return null == value ? null : Integer.valueOf(value);
-    }
-
     private static String prefixTag(final boolean isTagged, final Integer value)
     {
         return isTagged ? TAG_PREFIX + value.toString() : value.toString();

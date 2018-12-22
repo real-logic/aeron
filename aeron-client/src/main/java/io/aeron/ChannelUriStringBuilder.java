@@ -71,6 +71,7 @@ public class ChannelUriStringBuilder
         tags = null;
         alias = null;
         reliable = null;
+        sparse = null;
         ttl = null;
         mtu = null;
         termLength = null;
@@ -78,6 +79,7 @@ public class ChannelUriStringBuilder
         termId = null;
         termOffset = null;
         sessionId = null;
+        linger = null;
         isSessionIdTagged = false;
 
         return this;

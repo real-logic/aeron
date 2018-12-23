@@ -214,7 +214,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         {
             final ChannelUri channelUri = ChannelUri.parse(originalChannel);
             final String strippedChannel = strippedChannelBuilder(channelUri).build();
-            final String key = makeKey(streamId, strippedChannel);
+            final String key = makeKey(streamId, channelUri);
             final Subscription oldSubscription = recordingSubscriptionMap.get(key);
 
             if (oldSubscription == null)
@@ -232,7 +232,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             }
             else
             {
-                final String msg = "recording already started for subscription " + key;
+                final String msg = "recording exists for streamId=" + streamId + " channel=" + originalChannel;
                 controlSession.sendErrorResponse(correlationId, ACTIVE_SUBSCRIPTION, msg, controlResponseProxy);
             }
         }
@@ -248,7 +248,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     {
         try
         {
-            final String key = makeKey(streamId, strippedChannelBuilder(ChannelUri.parse(channel)).build());
+            final String key = makeKey(streamId, ChannelUri.parse(channel));
             final Subscription oldSubscription = recordingSubscriptionMap.remove(key);
 
             if (oldSubscription != null)
@@ -258,7 +258,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             }
             else
             {
-                final String msg = "no recording subscription found for " + key;
+                final String msg = "no recording found for streamId=" + streamId + " channel=" + channel;
                 controlSession.sendErrorResponse(correlationId, UNKNOWN_SUBSCRIPTION, msg, controlResponseProxy);
             }
         }
@@ -505,7 +505,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         {
             final ChannelUri channelUri = ChannelUri.parse(originalChannel);
             final String strippedChannel = strippedChannelBuilder(channelUri).build();
-            final String key = makeKey(streamId, strippedChannel);
+            final String key = makeKey(streamId, channelUri);
             final Subscription oldSubscription = recordingSubscriptionMap.get(key);
 
             if (oldSubscription == null)
@@ -523,7 +523,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             }
             else
             {
-                final String msg = "recording already setup for subscription to " + key;
+                final String msg = "recording exists for streamId=" + streamId + " channel=" + originalChannel;
                 controlSession.sendErrorResponse(correlationId, ACTIVE_SUBSCRIPTION, msg, controlResponseProxy);
             }
         }
@@ -700,8 +700,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
             .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
             .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME))
-            .alias(channelUri.get(CommonContext.ALIAS_PARAM_NAME))
-            .tags(channelUri.get(CommonContext.TAGS_PARAM_NAME));
+            .tags(channelUri.get(CommonContext.TAGS_PARAM_NAME))
+            .alias(channelUri.get(CommonContext.ALIAS_PARAM_NAME));
 
         if (null != sessionIdStr)
         {
@@ -716,6 +716,41 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
 
         return channelBuilder;
+    }
+
+    private static String makeKey(final int streamId, final ChannelUri channelUri)
+    {
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append(streamId).append(':').append(channelUri.media()).append('?');
+
+        final String endpointStr = channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+        if (null != endpointStr)
+        {
+            sb.append(CommonContext.ENDPOINT_PARAM_NAME).append('=').append(endpointStr).append('|');
+        }
+
+        final String interfaceStr = channelUri.get(CommonContext.INTERFACE_PARAM_NAME);
+        if (null != interfaceStr)
+        {
+            sb.append(CommonContext.INTERFACE_PARAM_NAME).append('=').append(interfaceStr).append('|');
+        }
+
+        final String controlStr = channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
+        if (null != controlStr)
+        {
+            sb.append(CommonContext.MDC_CONTROL_PARAM_NAME).append('=').append(controlStr).append('|');
+        }
+
+        final String tagsStr = channelUri.get(CommonContext.TAGS_PARAM_NAME);
+        if (null != tagsStr)
+        {
+            sb.append(CommonContext.TAGS_PARAM_NAME).append('=').append(tagsStr).append('|');
+        }
+
+        sb.setLength(sb.length() - 1);
+
+        return sb.toString();
     }
 
     private void startRecordingSession(
@@ -893,11 +928,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
-    }
-
-    private static String makeKey(final int streamId, final String strippedChannel)
-    {
-        return streamId + ":" + strippedChannel;
     }
 
     private RecordingSummary validateFramePosition(

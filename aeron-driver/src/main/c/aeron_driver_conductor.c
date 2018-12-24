@@ -800,7 +800,7 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
                 aeron_position_t snd_pos_position;
                 aeron_position_t snd_lmt_position;
                 aeron_flow_control_strategy_supplier_func_t flow_control_strategy_supplier_func =
-                    (udp_channel->explicit_control || udp_channel->multicast) ?
+                    udp_channel->explicit_control || udp_channel->multicast ?
                         conductor->context->multicast_flow_control_supplier_func :
                         conductor->context->unicast_flow_control_supplier_func;
                 aeron_flow_control_strategy_t *flow_control_strategy;
@@ -2035,6 +2035,14 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
+    bool is_reliable = subscription_params.is_reliable;
+    if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, is_reliable))
+    {
+        aeron_set_err(
+            EINVAL, "option conflicts with existing subscriptions: reliable=%s", is_reliable ? "true" : "false");
+        return -1;
+    }
+
     if ((client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id)) == NULL)
     {
         return -1;
@@ -2503,7 +2511,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     rcv_hwm_position.value_addr = aeron_counter_addr(&conductor->counters_manager, (int32_t)rcv_hwm_position.counter_id);
     rcv_pos_position.value_addr = aeron_counter_addr(&conductor->counters_manager, (int32_t)rcv_pos_position.counter_id);
 
-    bool is_reliable = true;
+    bool is_reliable = &conductor->network_subscriptions.array[0].is_reliable;
     aeron_publication_image_t *image = NULL;
     if (aeron_publication_image_create(
         &image,
@@ -2592,6 +2600,10 @@ extern bool aeron_driver_conductor_is_subscribable_linked(
     aeron_subscription_link_t *link, aeron_subscribable_t *subscribable);
 extern bool aeron_driver_conductor_has_network_subscription_interest(
     aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+extern bool aeron_driver_conductor_has_clashing_subscription(
+    aeron_driver_conductor_t *conductor,
+    const aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id, bool is_reliable);
 extern size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor);
 extern size_t aeron_driver_conductor_num_ipc_publications(aeron_driver_conductor_t *conductor);
 extern size_t aeron_driver_conductor_num_ipc_subscriptions(aeron_driver_conductor_t *conductor);

@@ -460,6 +460,25 @@ inline bool aeron_driver_conductor_has_network_subscription_interest(
     return false;
 }
 
+inline bool aeron_driver_conductor_has_clashing_subscription(
+    aeron_driver_conductor_t *conductor,
+    const aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    bool is_reliable)
+{
+    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
+
+        if (endpoint == link->endpoint && stream_id == link->stream_id && link->is_reliable != is_reliable)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 inline size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor)
 {
     return conductor->clients.length;

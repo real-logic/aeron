@@ -39,6 +39,73 @@ final class PublicationParams
     boolean isSessionIdTagged = false;
     boolean isSparse;
 
+    static PublicationParams getPublicationParams(
+        final MediaDriver.Context context,
+        final ChannelUri channelUri,
+        final DriverConductor driverConductor,
+        final boolean isExclusive,
+        final boolean isIpc)
+    {
+        final PublicationParams params = new PublicationParams(context, isIpc);
+
+        params.getTag(channelUri, driverConductor);
+        params.getSessionId(channelUri, driverConductor);
+        params.getTermBufferLength(channelUri);
+        params.getMtuLength(channelUri);
+        params.getLingerTimeoutNs(channelUri);
+        params.getSparse(channelUri);
+
+        if (isExclusive)
+        {
+            int count = 0;
+
+            final String initialTermIdStr = channelUri.get(INITIAL_TERM_ID_PARAM_NAME);
+            count = initialTermIdStr != null ? count + 1 : count;
+
+            final String termIdStr = channelUri.get(TERM_ID_PARAM_NAME);
+            count = termIdStr != null ? count + 1 : count;
+
+            final String termOffsetStr = channelUri.get(TERM_OFFSET_PARAM_NAME);
+            count = termOffsetStr != null ? count + 1 : count;
+
+            if (count > 0)
+            {
+                if (count < 3)
+                {
+                    throw new IllegalArgumentException("params must be used as a complete set: " +
+                        INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME);
+                }
+
+                params.initialTermId = Integer.parseInt(initialTermIdStr);
+                params.termId = Integer.parseInt(termIdStr);
+                params.termOffset = Integer.parseInt(termOffsetStr);
+
+                if (params.termOffset > params.termLength)
+                {
+                    throw new IllegalArgumentException(
+                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
+                            TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
+                }
+
+                if (params.termOffset < 0)
+                {
+                    throw new IllegalArgumentException(
+                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " must be greater than zero");
+                }
+
+                if ((params.termOffset & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
+                {
+                    throw new IllegalArgumentException(
+                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " must be a multiple of FRAME_ALIGNMENT");
+                }
+
+                params.isReplay = true;
+            }
+        }
+
+        return params;
+    }
+
     private PublicationParams(final MediaDriver.Context context, final boolean isIpc)
     {
         termLength = isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength();
@@ -79,6 +146,59 @@ final class PublicationParams
             Configuration.validateMtuLength(mtuLength);
             validateMtuLength(this, mtuLength);
             this.mtuLength = mtuLength;
+        }
+    }
+
+    static void validateMtuForMaxMessage(final PublicationParams params)
+    {
+        final int termLength = params.termLength;
+        final int maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
+
+        if (params.mtuLength > maxMessageLength)
+        {
+            throw new IllegalStateException("MTU greater than max message length for term length: mtu=" +
+                params.mtuLength + " maxMessageLength=" + maxMessageLength + " termLength=" + termLength);
+        }
+    }
+
+    static void validateTermLength(final PublicationParams params, final int explicitTermLength)
+    {
+        if (params.isSessionIdTagged && explicitTermLength != params.termLength)
+        {
+            throw new IllegalArgumentException(
+                TERM_LENGTH_PARAM_NAME + "=" + explicitTermLength + " does not match session-id tag value");
+        }
+    }
+
+    static void validateMtuLength(final PublicationParams params, final int explicitMtuLength)
+    {
+        if (params.isSessionIdTagged && explicitMtuLength != params.mtuLength)
+        {
+            throw new IllegalArgumentException(
+                MTU_LENGTH_PARAM_NAME + "=" + explicitMtuLength + " does not match session-id tag value");
+        }
+    }
+
+    static void confirmMatch(
+        final ChannelUri uri, final PublicationParams params, final RawLog rawLog, final int existingSessionId)
+    {
+        final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
+        if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
+        {
+            throw new IllegalStateException("existing publication has different MTU length: existing=" +
+                mtuLength + " requested=" + params.mtuLength);
+        }
+
+        if (uri.containsKey(TERM_LENGTH_PARAM_NAME) && rawLog.termLength() != params.termLength)
+        {
+            throw new IllegalStateException("existing publication has different term length: existing=" +
+                rawLog.termLength() + " requested=" + params.termLength);
+        }
+
+        if (uri.containsKey(SESSION_ID_PARAM_NAME) && params.sessionId != existingSessionId)
+        {
+            throw new IllegalStateException("existing publication has different session id: existing=" +
+                existingSessionId + " requested=" + params.sessionId);
         }
     }
 
@@ -131,59 +251,6 @@ final class PublicationParams
         }
     }
 
-    static void validateMtuForMaxMessage(final PublicationParams params)
-    {
-        final int termLength = params.termLength;
-        final int maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
-
-        if (params.mtuLength > maxMessageLength)
-        {
-            throw new IllegalStateException("MTU greater than max message length for term length: mtu=" +
-                params.mtuLength + " maxMessageLength=" + maxMessageLength + " termLength=" + termLength);
-        }
-    }
-
-    static void validateTermLength(final PublicationParams params, final int explicitTermLength)
-    {
-        if (params.isSessionIdTagged && explicitTermLength != params.termLength)
-        {
-            throw new IllegalArgumentException(
-                TERM_LENGTH_PARAM_NAME + "=" + explicitTermLength + " does not match session-id tag value");
-        }
-    }
-
-    static void validateMtuLength(final PublicationParams params, final int explicitMtuLength)
-    {
-        if (params.isSessionIdTagged && explicitMtuLength != params.mtuLength)
-        {
-            throw new IllegalArgumentException(
-                MTU_LENGTH_PARAM_NAME + "=" + explicitMtuLength + " does not match session-id tag value");
-        }
-    }
-
-    static void confirmMatch(
-        final ChannelUri uri, final PublicationParams params, final RawLog rawLog, final int existingSessionId)
-    {
-        final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
-        if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
-        {
-            throw new IllegalStateException("Existing publication has different MTU length: existing=" +
-                mtuLength + " requested=" + params.mtuLength);
-        }
-
-        if (uri.containsKey(TERM_LENGTH_PARAM_NAME) && rawLog.termLength() != params.termLength)
-        {
-            throw new IllegalStateException("Existing publication has different term length: existing=" +
-                rawLog.termLength() + " requested=" + params.termLength);
-        }
-
-        if (uri.containsKey(SESSION_ID_PARAM_NAME) && params.sessionId != existingSessionId)
-        {
-            throw new IllegalStateException("Existing publication has different session id: existing=" +
-                existingSessionId + " requested=" + params.sessionId);
-        }
-    }
-
     private static void validateTag(final long tag, final DriverConductor driverConductor)
     {
         if (INVALID_TAG == tag)
@@ -196,72 +263,5 @@ final class PublicationParams
         {
             throw new IllegalArgumentException(tag + " tag already in use");
         }
-    }
-
-    static PublicationParams getPublicationParams(
-        final MediaDriver.Context context,
-        final ChannelUri channelUri,
-        final DriverConductor driverConductor,
-        final boolean isExclusive,
-        final boolean isIpc)
-    {
-        final PublicationParams params = new PublicationParams(context, isIpc);
-
-        params.getTag(channelUri, driverConductor);
-        params.getSessionId(channelUri, driverConductor);
-        params.getTermBufferLength(channelUri);
-        params.getMtuLength(channelUri);
-        params.getLingerTimeoutNs(channelUri);
-        params.getSparse(channelUri);
-
-        if (isExclusive)
-        {
-            int count = 0;
-
-            final String initialTermIdStr = channelUri.get(INITIAL_TERM_ID_PARAM_NAME);
-            count = initialTermIdStr != null ? count + 1 : count;
-
-            final String termIdStr = channelUri.get(TERM_ID_PARAM_NAME);
-            count = termIdStr != null ? count + 1 : count;
-
-            final String termOffsetStr = channelUri.get(TERM_OFFSET_PARAM_NAME);
-            count = termOffsetStr != null ? count + 1 : count;
-
-            if (count > 0)
-            {
-                if (count < 3)
-                {
-                    throw new IllegalArgumentException("Params must be used as a complete set: " +
-                        INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME);
-                }
-
-                params.initialTermId = Integer.parseInt(initialTermIdStr);
-                params.termId = Integer.parseInt(termIdStr);
-                params.termOffset = Integer.parseInt(termOffsetStr);
-
-                if (params.termOffset > params.termLength)
-                {
-                    throw new IllegalArgumentException(
-                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
-                        TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
-                }
-
-                if (params.termOffset < 0)
-                {
-                    throw new IllegalArgumentException(
-                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " must be greater than zero");
-                }
-
-                if ((params.termOffset & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
-                {
-                    throw new IllegalArgumentException(
-                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " must be a multiple of FRAME_ALIGNMENT");
-                }
-
-                params.isReplay = true;
-            }
-        }
-
-        return params;
     }
 }

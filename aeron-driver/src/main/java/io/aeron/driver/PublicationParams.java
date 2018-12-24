@@ -27,7 +27,7 @@ import static io.aeron.CommonContext.*;
 final class PublicationParams
 {
     long lingerTimeoutNs;
-    long tag = ChannelUri.INVALID_TAG;
+    long entityTag = ChannelUri.INVALID_TAG;
     int termLength;
     int mtuLength;
     int initialTermId = 0;
@@ -48,7 +48,7 @@ final class PublicationParams
     {
         final PublicationParams params = new PublicationParams(context, isIpc);
 
-        params.getTag(channelUri, driverConductor);
+        params.getEntityTag(channelUri, driverConductor);
         params.getSessionId(channelUri, driverConductor);
         params.getTermBufferLength(channelUri);
         params.getMtuLength(channelUri);
@@ -114,14 +114,14 @@ final class PublicationParams
         isSparse = context.termBufferSparseFile();
     }
 
-    private void getTag(final ChannelUri channelUri, final DriverConductor driverConductor)
+    private void getEntityTag(final ChannelUri channelUri, final DriverConductor driverConductor)
     {
         final String tagParam = channelUri.entityTag();
         if (null != tagParam)
         {
-            final long tag = Long.parseLong(tagParam);
-            validateTag(tag, driverConductor);
-            this.tag = tag;
+            final long entityTag = Long.parseLong(tagParam);
+            validateEntityTag(entityTag, driverConductor);
+            this.entityTag = entityTag;
         }
     }
 
@@ -251,17 +251,17 @@ final class PublicationParams
         }
     }
 
-    private static void validateTag(final long tag, final DriverConductor driverConductor)
+    private static void validateEntityTag(final long entityTag, final DriverConductor driverConductor)
     {
-        if (INVALID_TAG == tag)
+        if (INVALID_TAG == entityTag)
         {
             throw new IllegalArgumentException(INVALID_TAG + " tag is reserved");
         }
 
-        if (null != driverConductor.findNetworkPublicationByTag(tag) ||
-            null != driverConductor.findIpcPublicationByTag(tag))
+        if (null != driverConductor.findNetworkPublicationByTag(entityTag) ||
+            null != driverConductor.findIpcPublicationByTag(entityTag))
         {
-            throw new IllegalArgumentException(tag + " tag already in use");
+            throw new IllegalArgumentException(entityTag + " entityTag already in use");
         }
     }
 }

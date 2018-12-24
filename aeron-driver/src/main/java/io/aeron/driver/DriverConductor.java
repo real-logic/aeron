@@ -1022,7 +1022,7 @@ public class DriverConductor implements Agent
 
         final NetworkPublication publication = new NetworkPublication(
             registrationId,
-            params.tag,
+            params.entityTag,
             channelEndpoint,
             cachedNanoClock,
             newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
@@ -1415,7 +1415,7 @@ public class DriverConductor implements Agent
 
         final IpcPublication publication = new IpcPublication(
             registrationId,
-            params.tag,
+            params.entityTag,
             sessionId,
             streamId,
             PublisherPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),

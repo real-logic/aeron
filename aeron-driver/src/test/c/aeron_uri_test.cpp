@@ -275,7 +275,7 @@ TEST_F(UriTest, shouldParseSubscriptionParamReliable)
 
     EXPECT_EQ(aeron_uri_parse("aeron:udp?endpoint=224.10.9.8|reliable=false", &m_uri), 0);
     EXPECT_EQ(aeron_udp_channel_subscription_params(&m_uri, &params, m_context), 0);
-    EXPECT_EQ(params.reliable, false);
+    EXPECT_EQ(params.is_reliable, false);
 }
 
 TEST_F(UriTest, shouldParseSubscriptionParamReliableDefault)
@@ -284,7 +284,7 @@ TEST_F(UriTest, shouldParseSubscriptionParamReliableDefault)
 
     EXPECT_EQ(aeron_uri_parse("aeron:udp?endpoint=224.10.9.8", &m_uri), 0);
     EXPECT_EQ(aeron_udp_channel_subscription_params(&m_uri, &params, m_context), 0);
-    EXPECT_EQ(params.reliable, true);
+    EXPECT_EQ(params.is_reliable, true);
 }
 
 class UriResolverTest : public testing::Test
@@ -313,7 +313,8 @@ public:
     {
         struct sockaddr_in6 addr1, addr2;
 
-        if (inet_pton(AF_INET6, addr1_str, &addr1.sin6_addr) != 1 || inet_pton(AF_INET6, addr2_str, &addr2.sin6_addr) != 1)
+        if (inet_pton(AF_INET6, addr1_str, &addr1.sin6_addr) != 1 ||
+            inet_pton(AF_INET6, addr2_str, &addr2.sin6_addr) != 1)
         {
             throw std::runtime_error("could not convert address");
         }

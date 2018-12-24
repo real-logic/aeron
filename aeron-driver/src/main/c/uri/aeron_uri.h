@@ -64,7 +64,7 @@ aeron_uri_publication_params_t;
 
 typedef struct aeron_udp_channel_subscription_params_stct
 {
-    bool reliable;
+    bool is_reliable;
 }
 aeron_udp_channel_subscription_params_t;
 

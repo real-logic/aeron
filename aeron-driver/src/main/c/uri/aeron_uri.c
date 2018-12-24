@@ -333,8 +333,8 @@ int aeron_uri_publication_params(
     params->term_offset = 0;
     params->term_id = 0;
     params->is_replay = false;
-    aeron_uri_params_t *uri_params =
-        (AERON_URI_IPC == uri->type) ? &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
+    aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
+        &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
 
     if (aeron_uri_get_term_length_param(uri_params, params) < 0)
     {
@@ -366,7 +366,7 @@ int aeron_uri_publication_params(
         {
             if (count < 3)
             {
-                aeron_set_err(EINVAL, "Params must be used as a complete set: %s %s %s",
+                aeron_set_err(EINVAL, "params must be used as a complete set: %s %s %s",
                     AERON_URI_INITIAL_TERM_ID_KEY, AERON_URI_TERM_ID_KEY, AERON_URI_TERM_OFFSET_KEY);
                 return -1;
             }
@@ -399,9 +399,7 @@ int aeron_uri_publication_params(
 
             if (params->term_id < INT32_MIN || params->term_id > INT32_MAX)
             {
-                aeron_set_err(
-                    EINVAL,
-                    "Params %s=%" PRId64 " out of range", AERON_URI_TERM_ID_KEY, params->term_id);
+                aeron_set_err(EINVAL, "Params %s=%" PRId64 " out of range", AERON_URI_TERM_ID_KEY, params->term_id);
                 return -1;
             }
 
@@ -439,7 +437,7 @@ int aeron_udp_channel_subscription_params(
     aeron_udp_channel_subscription_params_t *params,
     aeron_driver_context_t *context)
 {
-    params->reliable = true;
+    params->is_reliable = true;
 
     const char *value_str;
 
@@ -450,7 +448,7 @@ int aeron_udp_channel_subscription_params(
         {
             if (strncmp("false", value_str, strlen("false")) == 0)
             {
-                params->reliable = false;
+                params->is_reliable = false;
             }
         }
     }

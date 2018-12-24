@@ -563,7 +563,7 @@ public class DriverConductor implements Agent
 
         if (null == publicationLink)
         {
-            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "unknown publication: " + registrationId);
         }
 
         publicationLink.close();
@@ -588,7 +588,7 @@ public class DriverConductor implements Agent
 
         if (null == sendChannelEndpoint)
         {
-            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "unknown publication: " + registrationId);
         }
 
         sendChannelEndpoint.validateAllowsManualControl();
@@ -616,7 +616,7 @@ public class DriverConductor implements Agent
 
         if (null == sendChannelEndpoint)
         {
-            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_PUBLICATION, "unknown publication: " + registrationId);
         }
 
         sendChannelEndpoint.validateAllowsManualControl();
@@ -744,7 +744,7 @@ public class DriverConductor implements Agent
         final SubscriptionLink subscription = removeSubscriptionLink(subscriptionLinks, registrationId);
         if (null == subscription)
         {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown Subscription: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown subscription: " + registrationId);
         }
 
         subscription.close();
@@ -825,7 +825,7 @@ public class DriverConductor implements Agent
 
         if (null == counterLink)
         {
-            throw new ControlProtocolException(UNKNOWN_COUNTER, "Unknown counter: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_COUNTER, "unknown counter: " + registrationId);
         }
 
         clientProxy.operationSucceeded(correlationId);
@@ -861,7 +861,7 @@ public class DriverConductor implements Agent
 
         if (null == receiveChannelEndpoint)
         {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown subscription: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown subscription: " + registrationId);
         }
 
         receiveChannelEndpoint.validateAllowsDestinationControl();
@@ -892,7 +892,7 @@ public class DriverConductor implements Agent
 
         if (null == receiveChannelEndpoint)
         {
-            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown subscription: " + registrationId);
+            throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "unknown subscription: " + registrationId);
         }
 
         receiveChannelEndpoint.validateAllowsDestinationControl();
@@ -1213,7 +1213,7 @@ public class DriverConductor implements Agent
                     params.isReliable != subscription.isReliable())
                 {
                     throw new IllegalStateException(
-                        "Option conflicts with existing subscriptions: reliable=" + params.isReliable);
+                        "option conflicts with existing subscriptions: reliable=" + params.isReliable);
                 }
             }
         }
@@ -1493,7 +1493,7 @@ public class DriverConductor implements Agent
     {
         if (activeSessionIds.contains(sessionId))
         {
-            throw new IllegalStateException("Existing publication has same session id: " + sessionId);
+            throw new IllegalStateException("existing publication has same session id: " + sessionId);
         }
     }
 

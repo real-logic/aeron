@@ -167,19 +167,19 @@ final class PublicationParams
         final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
         if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
         {
-            throw new IllegalStateException("Existing publication has different MTU length: existing=" +
+            throw new IllegalStateException("existing publication has different MTU length: existing=" +
                 mtuLength + " requested=" + params.mtuLength);
         }
 
         if (uri.containsKey(TERM_LENGTH_PARAM_NAME) && rawLog.termLength() != params.termLength)
         {
-            throw new IllegalStateException("Existing publication has different term length: existing=" +
+            throw new IllegalStateException("existing publication has different term length: existing=" +
                 rawLog.termLength() + " requested=" + params.termLength);
         }
 
         if (uri.containsKey(SESSION_ID_PARAM_NAME) && params.sessionId != existingSessionId)
         {
-            throw new IllegalStateException("Existing publication has different session id: existing=" +
+            throw new IllegalStateException("existing publication has different session id: existing=" +
                 existingSessionId + " requested=" + params.sessionId);
         }
     }
@@ -231,7 +231,7 @@ final class PublicationParams
             {
                 if (count < 3)
                 {
-                    throw new IllegalArgumentException("Params must be used as a complete set: " +
+                    throw new IllegalArgumentException("params must be used as a complete set: " +
                         INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME);
                 }
 

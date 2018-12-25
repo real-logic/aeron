@@ -34,11 +34,12 @@ typedef struct aeron_uri_params_stct
 }
 aeron_uri_params_t;
 
+#define AERON_UDP_CHANNEL_RELIABLE_KEY "reliable"
+#define AERON_UDP_CHANNEL_TTL_KEY "ttl"
+
 #define AERON_UDP_CHANNEL_ENDPOINT_KEY "endpoint"
 #define AERON_UDP_CHANNEL_INTERFACE_KEY "interface"
-#define AERON_UDP_CHANNEL_TTL_KEY "ttl"
 #define AERON_UDP_CHANNEL_CONTROL_KEY "control"
-
 #define AERON_UDP_CHANNEL_CONTROL_MODE_KEY "control-mode"
 #define AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE "manual"
 #define AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC_VALUE "dynamic"
@@ -46,27 +47,31 @@ aeron_uri_params_t;
 #define AERON_URI_INITIAL_TERM_ID_KEY "init-term-id"
 #define AERON_URI_TERM_ID_KEY "term-id"
 #define AERON_URI_TERM_OFFSET_KEY "term-offset"
-#define AERON_URI_TERM_LENGTH_KEY "term-length"
-#define AERON_URI_MTU_LENGTH_KEY "mtu"
 
-#define AERON_UDP_CHANNEL_RELIABLE_STREAM_KEY "reliable"
+#define AERON_URI_TERM_LENGTH_KEY "term-length"
+#define AERON_URI_LINGER_TIMEOUT_KEY "linger"
+#define AERON_URI_MTU_LENGTH_KEY "mtu"
+#define AERON_URI_SPARSE_TERM_KEY "sparse"
 
 typedef struct aeron_uri_publication_params_stct
 {
-    size_t term_length;
-    size_t mtu_length;
+    uint64_t linger_timeout_ns;
     int64_t initial_term_id;
     int64_t term_id;
     uint64_t term_offset;
+    size_t term_length;
+    size_t mtu_length;
     bool is_replay;
+    bool is_sparse;
 }
 aeron_uri_publication_params_t;
 
-typedef struct aeron_udp_channel_subscription_params_stct
+typedef struct aeron_uri_subscription_params_stct
 {
     bool is_reliable;
+    bool is_sparse;
 }
-aeron_udp_channel_subscription_params_t;
+aeron_uri_subscription_params_t;
 
 typedef struct aeron_udp_channel_params_stct
 {
@@ -127,9 +132,9 @@ int aeron_uri_publication_params(
     aeron_driver_context_t *context,
     bool is_exclusive);
 
-int aeron_udp_channel_subscription_params(
+int aeron_uri_subscription_params(
     aeron_uri_t *uri,
-    aeron_udp_channel_subscription_params_t *params,
+    aeron_uri_subscription_params_t *params,
     aeron_driver_context_t *context);
 
 #endif //AERON_URI_H

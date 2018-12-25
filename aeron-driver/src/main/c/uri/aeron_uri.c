@@ -247,8 +247,7 @@ uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri)
     if (AERON_URI_UDP == uri->type && NULL != uri->params.udp.ttl_key)
     {
         uint64_t value = strtoull(uri->params.udp.ttl_key, NULL, 0);
-
-        result = (value > 255u) ? (uint8_t)255 : (uint8_t)value;
+        result = value > 255u ? (uint8_t)255 : (uint8_t)value;
     }
 
     return result;
@@ -321,20 +320,47 @@ int aeron_uri_get_mtu_length_param(aeron_uri_params_t *uri_params, aeron_uri_pub
     return 0;
 }
 
+int aeron_uri_linger_timeout_param(aeron_uri_params_t *uri_params, aeron_uri_publication_params_t *params)
+{
+    const char *value_str;
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_LINGER_TIMEOUT_KEY)) != NULL)
+    {
+        uint64_t value = strtoull(value_str, NULL, 0);
+
+        if (0 == value && EINVAL == errno)
+        {
+            aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_LINGER_TIMEOUT_KEY);
+            return -1;
+        }
+
+        params->linger_timeout_ns = value;
+    }
+
+    return 0;
+}
+
 int aeron_uri_publication_params(
     aeron_uri_t *uri,
     aeron_uri_publication_params_t *params,
     aeron_driver_context_t *context,
     bool is_exclusive)
 {
+    params->linger_timeout_ns = context->publication_linger_timeout_ns;
     params->term_length = AERON_URI_IPC == uri->type ? context->ipc_term_buffer_length : context->term_buffer_length;
     params->mtu_length = AERON_URI_IPC == uri->type ? context->ipc_mtu_length : context->mtu_length;
     params->initial_term_id = 0;
     params->term_offset = 0;
     params->term_id = 0;
     params->is_replay = false;
+    params->is_sparse = context->term_buffer_sparse_file;
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
         &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
+
+    if (aeron_uri_linger_timeout_param(uri_params, params) < 0)
+    {
+        return -1;
+    }
 
     if (aeron_uri_get_term_length_param(uri_params, params) < 0)
     {
@@ -429,27 +455,44 @@ int aeron_uri_publication_params(
         }
     }
 
+    const char *value_str;
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_SPARSE_TERM_KEY)) != NULL)
+    {
+        if (strncmp("true", value_str, strlen("true")) == 0)
+        {
+            params->is_sparse = true;
+        }
+    }
+
     return 0;
 }
 
-int aeron_udp_channel_subscription_params(
+int aeron_uri_subscription_params(
     aeron_uri_t *uri,
-    aeron_udp_channel_subscription_params_t *params,
+    aeron_uri_subscription_params_t *params,
     aeron_driver_context_t *context)
 {
     params->is_reliable = true;
+    params->is_sparse = context->term_buffer_sparse_file;
 
     const char *value_str;
+    aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
+        &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
 
-    if (AERON_URI_UDP == uri->type)
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_UDP_CHANNEL_RELIABLE_KEY)) != NULL)
     {
-        if ((value_str = aeron_uri_find_param_value(
-            &uri->params.udp.additional_params, AERON_UDP_CHANNEL_RELIABLE_STREAM_KEY)) != NULL)
+        if (strncmp("false", value_str, strlen("false")) == 0)
         {
-            if (strncmp("false", value_str, strlen("false")) == 0)
-            {
-                params->is_reliable = false;
-            }
+            params->is_reliable = false;
+        }
+    }
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_SPARSE_TERM_KEY)) != NULL)
+    {
+        if (strncmp("true", value_str, strlen("true")) == 0)
+        {
+            params->is_sparse = true;
         }
     }
 

@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <errno.h>
-#include <uri/aeron_uri.h>
+#include "uri/aeron_uri.h"
 #include "media/aeron_receive_channel_endpoint.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
@@ -221,7 +221,6 @@ aeron_client_t * aeron_driver_conductor_get_or_add_client(aeron_driver_conductor
     if ((index = aeron_driver_conductor_find_client(conductor, client_id)) == -1)
     {
         int ensure_capacity_result = 0;
-
         AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->clients, aeron_client_t);
 
         if (ensure_capacity_result >= 0)
@@ -378,7 +377,6 @@ void aeron_ipc_publication_entry_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry, int64_t now_ns, int64_t now_ms)
 {
     aeron_ipc_publication_t *publication = entry->publication;
-
     aeron_ipc_publication_on_time_event(publication, now_ns, now_ms);
 
     switch (publication->conductor_fields.status)
@@ -668,7 +666,6 @@ aeron_ipc_publication_t * aeron_driver_conductor_get_or_add_ipc_publication(
     bool is_exclusive)
 {
     aeron_ipc_publication_t *publication = NULL;
-    int ensure_capacity_result = 0;
 
     if (!is_exclusive)
     {
@@ -686,6 +683,7 @@ aeron_ipc_publication_t * aeron_driver_conductor_get_or_add_ipc_publication(
         }
     }
 
+    int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
 
     if (ensure_capacity_result >= 0)
@@ -764,7 +762,6 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
     aeron_network_publication_t *publication = NULL;
     aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
     const char *channel = udp_channel->original_uri;
-    int ensure_capacity_result = 0;
 
     if (!is_exclusive)
     {
@@ -783,6 +780,7 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
         }
     }
 
+    int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
 
     if (ensure_capacity_result >= 0)
@@ -1760,8 +1758,14 @@ int aeron_driver_conductor_on_add_network_publication(
     aeron_send_channel_endpoint_t *endpoint = NULL;
     aeron_network_publication_t *publication = NULL;
     const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
+    aeron_uri_publication_params_t params;
 
     if (aeron_udp_channel_parse(uri, (size_t)command->channel_length, &udp_channel) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_uri_publication_params(&udp_channel->uri, &params, conductor->context, is_exclusive) < 0)
     {
         return -1;
     }
@@ -1880,13 +1884,12 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     aeron_subscription_command_t *command)
 {
     aeron_client_t *client = NULL;
-    int ensure_capacity_result = 0;
-
     if ((client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id)) == NULL)
     {
         return -1;
     }
 
+    int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->ipc_subscriptions, aeron_subscription_link_t);
     if (ensure_capacity_result >= 0)
     {
@@ -1945,14 +1948,14 @@ int aeron_driver_conductor_on_add_spy_subscription(
     aeron_udp_channel_t *udp_channel = NULL;
     aeron_send_channel_endpoint_t *endpoint = NULL;
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t) + strlen(AERON_SPY_PREFIX);
-    aeron_udp_channel_subscription_params_t subscription_params;
+    aeron_uri_subscription_params_t params;
 
     if (aeron_udp_channel_parse(uri, (size_t)command->channel_length - strlen(AERON_SPY_PREFIX), &udp_channel) < 0)
     {
         return -1;
     }
 
-    if (aeron_udp_channel_subscription_params(&udp_channel->uri, &subscription_params, conductor->context) < 0)
+    if (aeron_uri_subscription_params(&udp_channel->uri, &params, conductor->context) < 0)
     {
         return -1;
     }
@@ -1976,7 +1979,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
         link->stream_id = command->stream_id;
         link->client_id = command->correlated.client_id;
         link->registration_id = command->correlated.correlation_id;
-        link->is_reliable = subscription_params.is_reliable;
+        link->is_reliable = params.is_reliable;
         link->subscribable_list.length = 0;
         link->subscribable_list.capacity = 0;
         link->subscribable_list.array = NULL;
@@ -2023,19 +2026,19 @@ int aeron_driver_conductor_on_add_network_subscription(
     aeron_udp_channel_t *udp_channel = NULL;
     aeron_receive_channel_endpoint_t *endpoint = NULL;
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
-    aeron_udp_channel_subscription_params_t subscription_params;
+    aeron_uri_subscription_params_t params;
 
     if (aeron_udp_channel_parse(uri, (size_t)command->channel_length, &udp_channel) < 0)
     {
         return -1;
     }
 
-    if (aeron_udp_channel_subscription_params(&udp_channel->uri, &subscription_params, conductor->context) < 0)
+    if (aeron_uri_subscription_params(&udp_channel->uri, &params, conductor->context) < 0)
     {
         return -1;
     }
 
-    bool is_reliable = subscription_params.is_reliable;
+    bool is_reliable = params.is_reliable;
     if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, is_reliable))
     {
         aeron_set_err(
@@ -2076,7 +2079,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->stream_id = command->stream_id;
         link->client_id = command->correlated.client_id;
         link->registration_id = command->correlated.correlation_id;
-        link->is_reliable = subscription_params.is_reliable;
+        link->is_reliable = params.is_reliable;
         link->subscribable_list.length = 0;
         link->subscribable_list.capacity = 0;
         link->subscribable_list.array = NULL;
@@ -2215,6 +2218,7 @@ int aeron_driver_conductor_on_client_keepalive(
         client->time_of_last_keepalive_ms = conductor->epoch_clock();
         aeron_counter_set_ordered(client->heartbeat_status.value_addr, client->time_of_last_keepalive_ms);
     }
+
     return 0;
 }
 

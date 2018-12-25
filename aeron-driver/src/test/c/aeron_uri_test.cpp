@@ -134,6 +134,15 @@ TEST_F(UriTest, shouldParseNoPublicationParams)
     EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, m_context, false), 0);
 }
 
+TEST_F(UriTest, shouldParsePublicationParamLingerTimeout)
+{
+    aeron_uri_publication_params_t params;
+
+    EXPECT_EQ(aeron_uri_parse("aeron:udp?endpoint=224.10.9.8|linger=7777", &m_uri), 0);
+    EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, m_context, false), 0);
+    EXPECT_EQ(params.linger_timeout_ns, 7777u);
+}
+
 TEST_F(UriTest, shouldParsePublicationParamUdpTermLength)
 {
     aeron_uri_publication_params_t params;
@@ -218,6 +227,15 @@ TEST_F(UriTest, shouldParsePublicationParamIpcMtuLengthNotMultipleOfFrameAlignme
     EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, m_context, false), -1);
 }
 
+TEST_F(UriTest, shouldParsePublicationParamIpcSparse)
+{
+    aeron_uri_publication_params_t params;
+
+    EXPECT_EQ(aeron_uri_parse("aeron:ipc?sparse=true", &m_uri), 0);
+    EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, m_context, false), 0);
+    EXPECT_EQ(params.is_sparse, true);
+}
+
 TEST_F(UriTest, shouldParsePublicationParamsForReplayUdp)
 {
     aeron_uri_publication_params_t params;
@@ -271,19 +289,19 @@ TEST_F(UriTest, shouldParsePublicationParamsForReplayIpcTermOffsetBeyondTermLeng
 
 TEST_F(UriTest, shouldParseSubscriptionParamReliable)
 {
-    aeron_udp_channel_subscription_params_t params;
+    aeron_uri_subscription_params_t params;
 
     EXPECT_EQ(aeron_uri_parse("aeron:udp?endpoint=224.10.9.8|reliable=false", &m_uri), 0);
-    EXPECT_EQ(aeron_udp_channel_subscription_params(&m_uri, &params, m_context), 0);
+    EXPECT_EQ(aeron_uri_subscription_params(&m_uri, &params, m_context), 0);
     EXPECT_EQ(params.is_reliable, false);
 }
 
 TEST_F(UriTest, shouldParseSubscriptionParamReliableDefault)
 {
-    aeron_udp_channel_subscription_params_t params;
+    aeron_uri_subscription_params_t params;
 
     EXPECT_EQ(aeron_uri_parse("aeron:udp?endpoint=224.10.9.8", &m_uri), 0);
-    EXPECT_EQ(aeron_udp_channel_subscription_params(&m_uri, &params, m_context), 0);
+    EXPECT_EQ(aeron_uri_subscription_params(&m_uri, &params, m_context), 0);
     EXPECT_EQ(params.is_reliable, true);
 }
 

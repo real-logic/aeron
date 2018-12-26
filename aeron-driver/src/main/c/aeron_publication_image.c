@@ -41,18 +41,18 @@ int aeron_publication_image_create(
     int32_t sender_mtu_length,
     aeron_loss_reporter_t *loss_reporter,
     bool is_reliable,
+    bool is_sparse,
     aeron_system_counters_t *system_counters)
 {
     char path[AERON_MAX_PATH];
-    int path_length =
-        aeron_publication_image_location(
-            path,
-            sizeof(path),
-            context->aeron_dir,
-            endpoint->conductor_fields.udp_channel->canonical_form,
-            session_id,
-            stream_id,
-            correlation_id);
+    int path_length = aeron_publication_image_location(
+        path,
+        sizeof(path),
+        context->aeron_dir,
+        endpoint->conductor_fields.udp_channel->canonical_form,
+        session_id,
+        stream_id,
+        correlation_id);
 
     aeron_publication_image_t *_image = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
@@ -84,7 +84,7 @@ int aeron_publication_image_create(
 
     if (aeron_loss_detector_init(
         &_image->loss_detector,
-        is_multicast ? false : true,
+        is_multicast,
         is_multicast ? aeron_loss_detector_nak_multicast_delay_generator : aeron_loss_detector_nak_unicast_delay_generator,
         aeron_publication_image_on_gap_detected, _image) < 0)
     {
@@ -94,11 +94,7 @@ int aeron_publication_image_create(
     }
 
     if (context->map_raw_log_func(
-        &_image->mapped_raw_log,
-        path,
-        context->term_buffer_sparse_file,
-        (uint64_t)term_buffer_length,
-        context->file_page_size) < 0)
+        &_image->mapped_raw_log, path, is_sparse, (uint64_t)term_buffer_length, context->file_page_size) < 0)
     {
         aeron_free(_image->log_file_name);
         aeron_free(_image);
@@ -299,12 +295,12 @@ void aeron_publication_image_track_rebuild(
     {
         int64_t position = aeron_counter_get_volatile(image->conductor_fields.subscribable.array[i].value_addr);
 
-        min_sub_pos = (position < min_sub_pos) ? (position) : (min_sub_pos);
-        max_sub_pos = (position > max_sub_pos) ? (position) : (max_sub_pos);
+        min_sub_pos = position < min_sub_pos ? position : min_sub_pos;
+        max_sub_pos = position > max_sub_pos ? position : max_sub_pos;
     }
 
-    const int64_t rebuild_position =
-        *image->rcv_pos_position.value_addr > max_sub_pos ? *image->rcv_pos_position.value_addr : max_sub_pos;
+    const int64_t rebuild_position = *image->rcv_pos_position.value_addr > max_sub_pos ?
+        *image->rcv_pos_position.value_addr : max_sub_pos;
 
     bool loss_found = false;
     const size_t index = aeron_logbuffer_index_by_position(rebuild_position, image->position_bits_to_shift);
@@ -572,17 +568,26 @@ void aeron_publication_image_on_time_event(
 }
 
 extern bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length);
+
 extern bool aeron_publication_image_is_end_of_stream(const uint8_t *buffer, size_t length);
+
 extern bool aeron_publication_image_is_flow_control_under_run(
     aeron_publication_image_t *image, int64_t packet_position);
+
 extern bool aeron_publication_image_is_flow_control_over_run(
     aeron_publication_image_t *image, int64_t proposed_position);
+
 extern void aeron_publication_image_schedule_status_message(
     aeron_publication_image_t *image, int64_t now_ns, int64_t sm_position, int32_t window_length);
+
 extern bool aeron_publication_image_is_drained(aeron_publication_image_t *image);
+
 extern bool aeron_publication_image_is_accepting_subscriptions(aeron_publication_image_t *image);
+
 extern void aeron_publication_image_disconnect_endpoint(aeron_publication_image_t *image);
 
-extern const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image);
+extern const char * aeron_publication_image_log_file_name(aeron_publication_image_t *image);
+
 extern int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image);
+
 extern size_t aeron_publication_image_num_subscriptions(aeron_publication_image_t *image);

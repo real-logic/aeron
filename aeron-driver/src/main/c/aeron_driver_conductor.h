@@ -89,6 +89,7 @@ typedef struct aeron_subscription_link_stct
     int64_t registration_id;
     int32_t stream_id;
     bool is_reliable;
+    bool is_sparse;
 
     aeron_receive_channel_endpoint_t *endpoint;
     aeron_udp_channel_t *spy_channel;
@@ -477,6 +478,28 @@ inline bool aeron_driver_conductor_has_clashing_subscription(
     }
 
     return false;
+}
+
+inline bool aeron_driver_conductor_is_oldest_subscription_sparse(
+    aeron_driver_conductor_t *conductor,
+    const aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id)
+{
+    int64_t registration_id = conductor->network_subscriptions.array[0].is_sparse;
+    bool is_sparse = conductor->network_subscriptions.array[0].is_sparse;
+
+    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
+
+        if (endpoint == link->endpoint && stream_id == link->stream_id && link->registration_id < registration_id)
+        {
+            registration_id = link->registration_id;
+            is_sparse = link->is_sparse;
+        }
+    }
+
+    return is_sparse;
 }
 
 inline size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor)

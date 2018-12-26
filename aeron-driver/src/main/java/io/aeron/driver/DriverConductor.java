@@ -225,7 +225,7 @@ public class DriverConductor implements Agent
                 streamId,
                 initialTermId,
                 termBufferLength,
-                isOldestSparse(subscriberPositions),
+                isOldestSubscriptionSparse(subscriberPositions),
                 senderMtuLength,
                 udpChannel,
                 registrationId);
@@ -1592,7 +1592,7 @@ public class DriverConductor implements Agent
         return address.getHostString() + ':' + address.getPort();
     }
 
-    private static boolean isOldestSparse(final ArrayList<SubscriberPosition> subscriberPositions)
+    private static boolean isOldestSubscriptionSparse(final ArrayList<SubscriberPosition> subscriberPositions)
     {
         final SubscriberPosition subscriberPosition = subscriberPositions.get(0);
         long regId = subscriberPosition.subscription().registrationId();

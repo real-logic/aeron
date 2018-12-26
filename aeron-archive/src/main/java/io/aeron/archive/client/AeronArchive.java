@@ -843,10 +843,11 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Get the position recorded for an active recording.
+     * Get the position recorded for an active recording. If no active recording then return {@link #NULL_POSITION}.
      *
      * @param recordingId of the active recording for which the position is required.
      * @return the recorded position for the active recording or {@link #NULL_POSITION} if recording not active.
+     * @see #getStopPosition(long)
      */
     public long getRecordingPosition(final long recordingId)
     {
@@ -873,6 +874,7 @@ public class AeronArchive implements AutoCloseable
      *
      * @param recordingId of the active recording for which the position is required.
      * @return the stop position, or {@link #NULL_POSITION} if still active.
+     * @see #getRecordingPosition(long)
      */
     public long getStopPosition(final long recordingId)
     {

@@ -92,7 +92,7 @@ typedef struct aeron_driver_context_stct
     size_t to_driver_buffer_length;             /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;            /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;       /* aeron.counters.buffer.length = 1MB */
-    size_t counters_metadata_buffer_length;     /* = 2x values - Need to confirm this??? */
+    size_t counters_metadata_buffer_length;     /* counters value length times the ratio of metadata to values record */
     size_t error_buffer_length;                 /* aeron.error.buffer.length = 1MB */
     size_t term_buffer_length;                  /* aeron.term.buffer.length = 16 * 1024 * 1024 */
     size_t ipc_term_buffer_length;              /* aeron.ipc.term.buffer.length = 64 * 1024 * 1024 */

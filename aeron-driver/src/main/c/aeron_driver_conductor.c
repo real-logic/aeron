@@ -1980,6 +1980,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
         link->client_id = command->correlated.client_id;
         link->registration_id = command->correlated.correlation_id;
         link->is_reliable = params.is_reliable;
+        link->is_sparse = params.is_sparse;
         link->subscribable_list.length = 0;
         link->subscribable_list.capacity = 0;
         link->subscribable_list.array = NULL;
@@ -2080,6 +2081,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->client_id = command->correlated.client_id;
         link->registration_id = command->correlated.correlation_id;
         link->is_reliable = params.is_reliable;
+        link->is_sparse = params.is_sparse;
         link->subscribable_list.length = 0;
         link->subscribable_list.capacity = 0;
         link->subscribable_list.array = NULL;
@@ -2536,6 +2538,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         command->mtu_length,
         &conductor->loss_reporter,
         is_reliable,
+        aeron_driver_conductor_is_oldest_subscription_sparse(conductor, endpoint, command->stream_id),
         &conductor->system_counters) < 0)
     {
         return;
@@ -2602,32 +2605,54 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
 
 extern bool aeron_driver_conductor_is_subscribable_linked(
     aeron_subscription_link_t *link, aeron_subscribable_t *subscribable);
+
 extern bool aeron_driver_conductor_has_network_subscription_interest(
     aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+
 extern bool aeron_driver_conductor_has_clashing_subscription(
     aeron_driver_conductor_t *conductor,
     const aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id, bool is_reliable);
+    int32_t stream_id,
+    bool is_reliable);
+
+extern bool aeron_driver_conductor_is_oldest_subscription_sparse(
+    aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+
 extern size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor);
+
 extern size_t aeron_driver_conductor_num_ipc_publications(aeron_driver_conductor_t *conductor);
+
 extern size_t aeron_driver_conductor_num_ipc_subscriptions(aeron_driver_conductor_t *conductor);
+
 extern size_t aeron_driver_conductor_num_network_publications(aeron_driver_conductor_t *conductor);
+
 extern size_t aeron_driver_conductor_num_network_subscriptions(aeron_driver_conductor_t *conductor);
+
 extern size_t aeron_driver_conductor_num_spy_subscriptions(aeron_driver_conductor_t *conductor);
+
 extern size_t aeron_driver_conductor_num_send_channel_endpoints(aeron_driver_conductor_t *conductor);
+
 extern size_t aeron_driver_conductor_num_receive_channel_endpoints(aeron_driver_conductor_t *conductor);
+
 extern size_t aeron_driver_conductor_num_active_ipc_subscriptions(
     aeron_driver_conductor_t *conductor, int32_t stream_id);
+
 extern size_t aeron_driver_conductor_num_active_network_subscriptions(
     aeron_driver_conductor_t *conductor, const char *original_uri, int32_t stream_id);
+
 extern size_t aeron_driver_conductor_num_active_spy_subscriptions(
     aeron_driver_conductor_t *conductor, const char *original_uri, int32_t stream_id);
+
 extern size_t aeron_driver_conductor_num_images(aeron_driver_conductor_t *conductor);
+
 extern aeron_ipc_publication_t *aeron_driver_conductor_find_ipc_publication(
     aeron_driver_conductor_t *conductor, int64_t id);
+
 extern aeron_network_publication_t *aeron_driver_conductor_find_network_publication(
     aeron_driver_conductor_t *conductor, int64_t id);
+
 extern aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
     aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+
 extern int64_t *aeron_driver_conductor_system_counter_addr(
     aeron_driver_conductor_t *conductor, aeron_system_counter_enum_t type);

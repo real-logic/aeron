@@ -128,6 +128,7 @@ int aeron_publication_image_create(
     int32_t sender_mtu_length,
     aeron_loss_reporter_t *loss_reporter,
     bool is_reliable,
+    bool is_sparse,
     aeron_system_counters_t *system_counters);
 
 int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, aeron_publication_image_t *image);

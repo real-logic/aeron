@@ -115,8 +115,8 @@ endif()
 if(AERON_TESTS)
     ExternalProject_Add(
         google_benchmark
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-1.4.0.tar.gz
-        URL_MD5 ccfaf2cd93ae20191b94f730b945423e
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-1.4.1.zip
+        URL_MD5 619674faa0d878e239eaf6766259718b
         CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};
             -DBENCHMARK_ENABLE_GTEST_TESTS=OFF;-DBENCHMARK_ENABLE_ASSEMBLY_TESTS=OFF
         PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/google_benchmark"

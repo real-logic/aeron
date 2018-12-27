@@ -483,10 +483,11 @@ inline bool aeron_driver_conductor_has_clashing_subscription(
 inline bool aeron_driver_conductor_is_oldest_subscription_sparse(
     aeron_driver_conductor_t *conductor,
     const aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id)
+    int32_t stream_id,
+    int64_t highest_id)
 {
-    int64_t registration_id = conductor->network_subscriptions.array[0].is_sparse;
-    bool is_sparse = conductor->network_subscriptions.array[0].is_sparse;
+    int64_t registration_id = highest_id;
+    bool is_sparse = conductor->context->term_buffer_sparse_file;
 
     for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
     {

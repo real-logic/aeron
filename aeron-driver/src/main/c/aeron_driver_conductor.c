@@ -2538,7 +2538,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         command->mtu_length,
         &conductor->loss_reporter,
         is_reliable,
-        aeron_driver_conductor_is_oldest_subscription_sparse(conductor, endpoint, command->stream_id),
+        aeron_driver_conductor_is_oldest_subscription_sparse(conductor, endpoint, command->stream_id, registration_id),
         &conductor->system_counters) < 0)
     {
         return;
@@ -2616,7 +2616,10 @@ extern bool aeron_driver_conductor_has_clashing_subscription(
     bool is_reliable);
 
 extern bool aeron_driver_conductor_is_oldest_subscription_sparse(
-    aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
+    aeron_driver_conductor_t *conductor,
+    const aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int64_t highest_id);
 
 extern size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor);
 

@@ -1006,8 +1006,8 @@ public class DriverConductor implements Agent
         {
             final int bits = LogBufferDescriptor.positionBitsToShift(params.termLength);
             final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
-            senderLimit.setOrdered(position);
             senderPosition.setOrdered(position);
+            senderLimit.setOrdered(position);
         }
 
         final RetransmitHandler retransmitHandler = new RetransmitHandler(

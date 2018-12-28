@@ -53,6 +53,7 @@ int aeron_network_publication_create(
     aeron_position_t *snd_pos_position,
     aeron_position_t *snd_lmt_position,
     aeron_flow_control_strategy_t *flow_control_strategy,
+    uint64_t linger_timeout_ns,
     size_t term_buffer_length,
     bool is_sparse,
     bool is_exclusive,
@@ -175,7 +176,7 @@ int aeron_network_publication_create(
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_buffer_length);
     _pub->mtu_length = mtu_length;
     _pub->term_window_length = (int64_t)aeron_network_publication_term_window_length(context, term_buffer_length);
-    _pub->linger_timeout_ns = (int64_t)context->publication_linger_timeout_ns;
+    _pub->linger_timeout_ns = (int64_t)linger_timeout_ns;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->connection_timeout_ns = (int64_t)context->publication_connection_timeout_ns;
     _pub->time_of_last_send_or_heartbeat_ns = now_ns - AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;

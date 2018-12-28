@@ -860,6 +860,7 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
                         &snd_pos_position,
                         &snd_lmt_position,
                         flow_control_strategy,
+                        params->linger_timeout_ns,
                         params->term_length,
                         params->is_sparse,
                         is_exclusive,

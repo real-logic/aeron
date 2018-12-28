@@ -121,6 +121,7 @@ int aeron_network_publication_create(
     aeron_position_t *snd_pos_position,
     aeron_position_t *snd_lmt_position,
     aeron_flow_control_strategy_t *flow_control_strategy,
+    uint64_t linger_timeout_ns,
     size_t term_buffer_length,
     bool is_sparse,
     bool is_exclusive,

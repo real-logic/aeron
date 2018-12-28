@@ -61,7 +61,7 @@ int64_t aeron_nano_clock()
     }
 #endif
 
-    return (ts.tv_sec * 1000000000 + ts.tv_nsec);
+    return (ts.tv_sec * 1000000000) + ts.tv_nsec;
 }
 
 int64_t aeron_epoch_clock()
@@ -72,7 +72,7 @@ int64_t aeron_epoch_clock()
         return -1;
     }
 
-    return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+    return ((ts.tv_sec * 1000) + ts.tv_nsec) / 1000000;
 }
 
 extern int aeron_number_of_trailing_zeroes(int32_t value);
@@ -161,7 +161,6 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
                 0);
 
             fprintf(saved_errors_file, "\n%" PRIu64 " distinct errors observed.\n", observations);
-
             fprintf(stderr, "WARNING: Existing errors saved to: %s\n", buffer);
 
             fclose(saved_errors_file);
@@ -185,7 +184,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
     const char *dirname = driver->context->aeron_dir;
     aeron_log_func_t log_func = aeron_log_func_none;
 
-    if (stat(dirname, &sb) == 0 && (S_ISDIR(sb.st_mode)))
+    if (stat(dirname, &sb) == 0 && S_ISDIR(sb.st_mode))
     {
         if (driver->context->warn_if_dirs_exist)
         {
@@ -227,7 +226,6 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
             }
 
             aeron_unmap(&cnc_mmap);
-
             aeron_dir_delete(driver->context->aeron_dir);
         }
     }
@@ -294,6 +292,7 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
     }
 
     aeron_driver_fill_cnc_metadata(driver->context);
+
     return 0;
 }
 
@@ -770,7 +769,6 @@ int aeron_driver_main_do_work(aeron_driver_t *driver)
         return -1;
     }
 
-    /* conductor and shared are on 0 */
     return aeron_agent_do_work(&driver->runners[AERON_AGENT_RUNNER_CONDUCTOR]);
 }
 

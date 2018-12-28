@@ -21,7 +21,7 @@ The driver binary requires the following dependencies.
 ## Configuration
 
 All configuration for the C media driver is done, currently, via environment variables. The variables are directly related to the Java properties
-for the Java media driver. The environment variables simply have '_' in the place of ".". For example, setting the environment variable `AERON_TERM_BUFFER_LENGTH` is equivalent
+for the Java media driver. The environment variables simply have '_' in the place of '.'. For example, setting the environment variable `AERON_TERM_BUFFER_LENGTH` is equivalent
 to setting `aeron.term.buffer.length` in the Java media driver.
 
 ## Operation

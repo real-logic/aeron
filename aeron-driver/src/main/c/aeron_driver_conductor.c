@@ -690,7 +690,8 @@ aeron_ipc_publication_t * aeron_driver_conductor_get_or_add_ipc_publication(
     {
         if (NULL == publication)
         {
-            AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->ipc_publications, aeron_ipc_publication_entry_t);
+            AERON_ARRAY_ENSURE_CAPACITY(
+                ensure_capacity_result, conductor->ipc_publications, aeron_ipc_publication_entry_t);
 
             if (ensure_capacity_result >= 0)
             {
@@ -744,7 +745,8 @@ aeron_ipc_publication_t * aeron_driver_conductor_get_or_add_ipc_publication(
             link->registration_id = registration_id;
             client->publication_links.length++;
 
-            publication->conductor_fields.managed_resource.incref(publication->conductor_fields.managed_resource.clientd);
+            publication->conductor_fields.managed_resource.incref(
+                publication->conductor_fields.managed_resource.clientd);
         }
     }
 
@@ -755,6 +757,7 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
     aeron_driver_conductor_t *conductor,
     aeron_client_t *client,
     aeron_send_channel_endpoint_t *endpoint,
+    aeron_uri_publication_params_t *params,
     int64_t registration_id,
     int32_t stream_id,
     bool is_exclusive)
@@ -787,7 +790,8 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
     {
         if (NULL == publication)
         {
-            AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->network_publications, aeron_network_publication_entry_t);
+            AERON_ARRAY_ENSURE_CAPACITY(
+                ensure_capacity_result, conductor->network_publications, aeron_network_publication_entry_t);
 
             if (ensure_capacity_result >= 0)
             {
@@ -797,11 +801,6 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
                 aeron_position_t pub_pos_position;
                 aeron_position_t snd_pos_position;
                 aeron_position_t snd_lmt_position;
-                aeron_flow_control_strategy_supplier_func_t flow_control_strategy_supplier_func =
-                    udp_channel->explicit_control || udp_channel->multicast ?
-                        conductor->context->multicast_flow_control_supplier_func :
-                        conductor->context->unicast_flow_control_supplier_func;
-                aeron_flow_control_strategy_t *flow_control_strategy;
 
                 pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, channel);
@@ -829,13 +828,19 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
                 snd_lmt_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)snd_lmt_position.counter_id);
 
+                aeron_flow_control_strategy_supplier_func_t flow_control_strategy_supplier_func =
+                    udp_channel->explicit_control || udp_channel->multicast ?
+                    conductor->context->multicast_flow_control_supplier_func :
+                    conductor->context->unicast_flow_control_supplier_func;
+                aeron_flow_control_strategy_t *flow_control_strategy;
+
                 if (flow_control_strategy_supplier_func(
                     &flow_control_strategy,
                     endpoint->conductor_fields.udp_channel->original_uri,
                     stream_id,
                     registration_id,
                     initial_term_id,
-                    conductor->context->term_buffer_length) < 0)
+                    params->term_length) < 0)
                 {
                     return NULL;
                 }
@@ -849,13 +854,14 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
                         session_id,
                         stream_id,
                         initial_term_id,
-                        conductor->context->mtu_length,
+                        params->mtu_length,
                         &pub_lmt_position,
                         &pub_pos_position,
                         &snd_pos_position,
                         &snd_lmt_position,
                         flow_control_strategy,
-                        conductor->context->term_buffer_length,
+                        params->term_length,
+                        params->is_sparse,
                         is_exclusive,
                         conductor->context->spies_simulate_connection,
                         &conductor->system_counters) >= 0)
@@ -1753,6 +1759,7 @@ int aeron_driver_conductor_on_add_network_publication(
     aeron_publication_command_t *command,
     bool is_exclusive)
 {
+    int64_t correlation_id = command->correlated.correlation_id;
     aeron_client_t *client = NULL;
     aeron_udp_channel_t *udp_channel = NULL;
     aeron_send_channel_endpoint_t *endpoint = NULL;
@@ -1787,7 +1794,7 @@ int aeron_driver_conductor_on_add_network_publication(
     }
 
     if ((publication = aeron_driver_conductor_get_or_add_network_publication(
-        conductor, client, endpoint, command->correlated.correlation_id, command->stream_id, is_exclusive)) == NULL)
+        conductor, client, endpoint, &params, correlation_id, command->stream_id, is_exclusive)) == NULL)
     {
         return -1;
     }
@@ -1796,7 +1803,7 @@ int aeron_driver_conductor_on_add_network_publication(
 
     aeron_driver_conductor_on_publication_ready(
         conductor,
-        command->correlated.correlation_id,
+        correlation_id,
         publication->conductor_fields.managed_resource.registration_id,
         publication->stream_id,
         publication->session_id,

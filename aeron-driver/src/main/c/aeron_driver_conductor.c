@@ -186,9 +186,9 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     conductor->nano_clock = context->nano_clock;
     conductor->epoch_clock = context->epoch_clock;
-    conductor->next_session_id = aeron_randomised_int32();
     conductor->time_of_last_timeout_check_ns = now_ns;
     conductor->time_of_last_to_driver_position_change_ns = now_ns;
+    conductor->next_session_id = aeron_randomised_int32();
     conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
     conductor->context = context;
@@ -244,9 +244,8 @@ aeron_client_t * aeron_driver_conductor_get_or_add_client(aeron_driver_conductor
                 client->heartbeat_status.value_addr = client_heartbeat.value_addr;
                 aeron_counter_set_ordered(client->heartbeat_status.value_addr, client->time_of_last_keepalive_ms);
 
-                client->client_liveness_timeout_ms =
-                    (conductor->context->client_liveness_timeout_ns < 1000000) ? 1 :
-                    conductor->context->client_liveness_timeout_ns / 1000000;
+                client->client_liveness_timeout_ms = conductor->context->client_liveness_timeout_ns < 1000000 ?
+                    1 : conductor->context->client_liveness_timeout_ns / 1000000;
                 client->publication_links.array = NULL;
                 client->publication_links.length = 0;
                 client->publication_links.capacity = 0;
@@ -562,7 +561,7 @@ void aeron_publication_image_entry_on_time_event(
 bool aeron_publication_image_entry_has_reached_end_of_life(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
 {
-    return (AERON_PUBLICATION_IMAGE_STATUS_DONE == entry->image->conductor_fields.status);
+    return AERON_PUBLICATION_IMAGE_STATUS_DONE == entry->image->conductor_fields.status;
 }
 
 void aeron_publication_image_entry_delete(
@@ -937,9 +936,7 @@ aeron_send_channel_endpoint_t * aeron_driver_conductor_get_or_add_send_channel_e
         }
 
         aeron_driver_sender_proxy_on_add_endpoint(conductor->context->sender_proxy, endpoint);
-
         conductor->send_channel_endpoints.array[conductor->send_channel_endpoints.length++].endpoint = endpoint;
-
         *status_indicator.value_addr = AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     }
 
@@ -993,7 +990,6 @@ aeron_receive_channel_endpoint_t * aeron_driver_conductor_get_or_add_receive_cha
         }
 
         conductor->receive_channel_endpoints.array[conductor->receive_channel_endpoints.length++].endpoint = endpoint;
-
         *status_indicator.value_addr = AERON_COUNTER_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     }
 
@@ -1693,7 +1689,6 @@ void aeron_driver_conductor_unlink_all_subscribable(
     link->subscribable_list.capacity = 0;
 }
 
-/* TODO: add replay params from URIs */
 /* TODO: add params from URIs */
 
 int aeron_driver_conductor_on_add_ipc_publication(

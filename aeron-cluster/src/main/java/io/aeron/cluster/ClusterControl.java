@@ -66,12 +66,12 @@ public class ClusterControl
         SNAPSHOT(3),
 
         /**
-         * Shut down the cluster in an orderly fashion by taking a snapshot first.
+         * Shut down the cluster in an orderly fashion by taking a snapshot first then terminating.
          */
         SHUTDOWN(4),
 
         /**
-         * Abort processing and shutdown the cluster without taking a snapshot.
+         * Abort processing and terminate the cluster without taking a snapshot.
          */
         ABORT(5);
 

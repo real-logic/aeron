@@ -19,6 +19,7 @@
 
 #include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
+#include "uri/aeron_uri.h"
 #include "concurrent/aeron_mpsc_rb.h"
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "concurrent/aeron_distinct_error_log.h"

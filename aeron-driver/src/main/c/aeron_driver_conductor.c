@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <errno.h>
-#include "uri/aeron_uri.h"
 #include "media/aeron_receive_channel_endpoint.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"

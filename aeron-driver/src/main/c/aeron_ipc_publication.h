@@ -85,6 +85,7 @@ int aeron_ipc_publication_create(
     int32_t initial_term_id,
     size_t term_buffer_length,
     size_t mtu_length,
+    bool is_sparse,
     bool is_exclusive,
     aeron_system_counters_t *system_counters);
 
@@ -97,6 +98,7 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
 void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms);
 
 void aeron_ipc_publication_incref(void *clientd);
+
 void aeron_ipc_publication_decref(void *clientd);
 
 void aeron_ipc_publication_check_for_blocked_publisher(
@@ -105,7 +107,6 @@ void aeron_ipc_publication_check_for_blocked_publisher(
 inline void aeron_ipc_publication_add_subscriber_hook(void *clientd, int64_t *value_addr)
 {
     aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
-
     AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 1);
 }
 
@@ -114,9 +115,8 @@ inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, int64_t 
     aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
     int64_t position = aeron_counter_get_volatile(value_addr);
 
-    publication->conductor_fields.consumer_position =
-        position > publication->conductor_fields.consumer_position ?
-            position : publication->conductor_fields.consumer_position;
+    publication->conductor_fields.consumer_position = position > publication->conductor_fields.consumer_position ?
+        position : publication->conductor_fields.consumer_position;
 
     if (1 == publication->conductor_fields.subscribable.length)
     {

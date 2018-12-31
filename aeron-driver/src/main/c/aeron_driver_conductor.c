@@ -1702,11 +1702,11 @@ int aeron_driver_conductor_on_add_ipc_publication(
     int64_t correlation_id = command->correlated.correlation_id;
     aeron_client_t *client = NULL;
     aeron_ipc_publication_t *publication = NULL;
-    const char *channel = (const char *)command + sizeof(aeron_publication_command_t);
+    const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
     aeron_uri_t aeron_uri_params;
     aeron_uri_publication_params_t params;
 
-    if (aeron_uri_parse(channel, &aeron_uri_params) < 0 ||
+    if (aeron_uri_parse(uri, &aeron_uri_params) < 0 ||
         aeron_uri_publication_params(&aeron_uri_params, &params, conductor->context, is_exclusive) < 0)
     {
         goto error_cleanup;
@@ -1714,7 +1714,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
 
     if ((client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id)) == NULL ||
         (publication = aeron_driver_conductor_get_or_add_ipc_publication(
-            conductor, client, &params, correlation_id, command->stream_id, channel, is_exclusive)) == NULL)
+            conductor, client, &params, correlation_id, command->stream_id, uri, is_exclusive)) == NULL)
     {
         goto error_cleanup;
     }
@@ -1737,7 +1737,6 @@ int aeron_driver_conductor_on_add_ipc_publication(
     {
         aeron_subscription_link_t *subscription_link = &conductor->ipc_subscriptions.array[i];
 
-        /* could be old pub, so have to check to see if already linked */
         if (command->stream_id == subscription_link->stream_id &&
             !aeron_driver_conductor_is_subscribable_linked(subscription_link, subscribable))
         {
@@ -1777,10 +1776,10 @@ int aeron_driver_conductor_on_add_network_publication(
     aeron_udp_channel_t *udp_channel = NULL;
     aeron_send_channel_endpoint_t *endpoint = NULL;
     aeron_network_publication_t *publication = NULL;
-    const char *channel = (const char *)command + sizeof(aeron_publication_command_t);
+    const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
     aeron_uri_publication_params_t params;
 
-    if (aeron_udp_channel_parse(channel, (size_t)command->channel_length, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri, (size_t)command->channel_length, &udp_channel) < 0 ||
         aeron_uri_publication_params(&udp_channel->uri, &params, conductor->context, is_exclusive) < 0)
     {
         return -1;
@@ -1892,6 +1891,7 @@ int aeron_driver_conductor_on_remove_publication(
         "unknown publication client_id=%" PRId64 ", registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
+
     return -1;
 }
 
@@ -1899,61 +1899,75 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     aeron_driver_conductor_t *conductor,
     aeron_subscription_command_t *command)
 {
+    const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
+    aeron_uri_t aeron_uri_params;
+    aeron_uri_subscription_params_t params;
+
+    if (aeron_uri_parse(uri, &aeron_uri_params) < 0 ||
+        aeron_uri_subscription_params(&aeron_uri_params, &params, conductor->context) < 0)
+    {
+        goto error_cleanup;
+    }
+
     aeron_client_t *client = NULL;
     if ((client = aeron_driver_conductor_get_or_add_client(conductor, command->correlated.client_id)) == NULL)
     {
-        return -1;
+        goto error_cleanup;
     }
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->ipc_subscriptions, aeron_subscription_link_t);
-    if (ensure_capacity_result >= 0)
+    if (ensure_capacity_result < 0)
     {
-        aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[conductor->ipc_subscriptions.length++];
-
-        link->endpoint = NULL;
-        link->spy_channel = NULL;
-        link->stream_id = command->stream_id;
-        link->client_id = command->correlated.client_id;
-        link->registration_id = command->correlated.correlation_id;
-        link->is_reliable = true;
-        link->subscribable_list.length = 0;
-        link->subscribable_list.capacity = 0;
-        link->subscribable_list.array = NULL;
-
-        aeron_driver_conductor_on_subscription_ready(
-            conductor, command->correlated.correlation_id, AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED);
-
-        for (size_t i = 0; i < conductor->ipc_publications.length; i++)
-        {
-            aeron_ipc_publication_entry_t *publication_entry = &conductor->ipc_publications.array[i];
-
-            if (command->stream_id == publication_entry->publication->stream_id)
-            {
-                aeron_ipc_publication_t *publication = publication_entry->publication;
-
-                if (aeron_driver_conductor_link_subscribable(
-                    conductor,
-                    link,
-                    &publication->conductor_fields.subscribable,
-                    publication->conductor_fields.managed_resource.registration_id,
-                    publication->session_id,
-                    publication->stream_id,
-                    aeron_ipc_publication_joining_position(publication),
-                    AERON_IPC_CHANNEL,
-                    AERON_IPC_CHANNEL,
-                    publication->log_file_name,
-                    publication->log_file_name_length) < 0)
-                {
-                    return -1;
-                }
-            }
-        }
-
-        return 0;
+        goto error_cleanup;
     }
 
-    return -1;
+    aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[conductor->ipc_subscriptions.length++];
+    link->endpoint = NULL;
+    link->spy_channel = NULL;
+    link->stream_id = command->stream_id;
+    link->client_id = command->correlated.client_id;
+    link->registration_id = command->correlated.correlation_id;
+    link->is_reliable = true;
+    link->subscribable_list.length = 0;
+    link->subscribable_list.capacity = 0;
+    link->subscribable_list.array = NULL;
+
+    aeron_driver_conductor_on_subscription_ready(
+        conductor, command->correlated.correlation_id, AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED);
+
+    for (size_t i = 0; i < conductor->ipc_publications.length; i++)
+    {
+        aeron_ipc_publication_entry_t *publication_entry = &conductor->ipc_publications.array[i];
+
+        if (command->stream_id == publication_entry->publication->stream_id)
+        {
+            aeron_ipc_publication_t *publication = publication_entry->publication;
+
+            if (aeron_driver_conductor_link_subscribable(
+                conductor,
+                link,
+                &publication->conductor_fields.subscribable,
+                publication->conductor_fields.managed_resource.registration_id,
+                publication->session_id,
+                publication->stream_id,
+                aeron_ipc_publication_joining_position(publication),
+                uri,
+                AERON_IPC_CHANNEL,
+                publication->log_file_name,
+                publication->log_file_name_length) < 0)
+            {
+                goto error_cleanup;
+            }
+        }
+    }
+
+    aeron_uri_close(&aeron_uri_params);
+    return 0;
+
+    error_cleanup:
+        aeron_uri_close(&aeron_uri_params);
+        return -1;
 }
 
 int aeron_driver_conductor_on_add_spy_subscription(
@@ -1963,10 +1977,10 @@ int aeron_driver_conductor_on_add_spy_subscription(
     aeron_client_t *client = NULL;
     aeron_udp_channel_t *udp_channel = NULL;
     aeron_send_channel_endpoint_t *endpoint = NULL;
-    const char *uri = (const char *)command + sizeof(aeron_subscription_command_t) + strlen(AERON_SPY_PREFIX);
+    const char *uri = (const char *) command + sizeof(aeron_subscription_command_t) + strlen(AERON_SPY_PREFIX);
     aeron_uri_subscription_params_t params;
 
-    if (aeron_udp_channel_parse(uri, (size_t)command->channel_length - strlen(AERON_SPY_PREFIX), &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri, (size_t) command->channel_length - strlen(AERON_SPY_PREFIX), &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor->context) < 0)
     {
         return -1;
@@ -1982,53 +1996,52 @@ int aeron_driver_conductor_on_add_spy_subscription(
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, conductor->spy_subscriptions, aeron_subscription_link_t);
-    if (ensure_capacity_result >= 0)
+    if (ensure_capacity_result < 0)
     {
-        aeron_subscription_link_t *link = &conductor->spy_subscriptions.array[conductor->spy_subscriptions.length++];
-
-        link->endpoint = NULL;
-        link->spy_channel = udp_channel;
-        link->stream_id = command->stream_id;
-        link->client_id = command->correlated.client_id;
-        link->registration_id = command->correlated.correlation_id;
-        link->is_reliable = params.is_reliable;
-        link->is_sparse = params.is_sparse;
-        link->subscribable_list.length = 0;
-        link->subscribable_list.capacity = 0;
-        link->subscribable_list.array = NULL;
-
-        aeron_driver_conductor_on_subscription_ready(
-            conductor, command->correlated.correlation_id, AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED);
-
-        for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
-        {
-            aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
-
-            if (command->stream_id == publication->stream_id && endpoint == publication->endpoint &&
-                AERON_NETWORK_PUBLICATION_STATUS_ACTIVE == publication->conductor_fields.status)
-            {
-                if (aeron_driver_conductor_link_subscribable(
-                    conductor,
-                    link,
-                    &publication->conductor_fields.subscribable,
-                    publication->conductor_fields.managed_resource.registration_id,
-                    publication->session_id,
-                    publication->stream_id,
-                    aeron_network_publication_consumer_position(publication),
-                    endpoint->conductor_fields.udp_channel->original_uri,
-                    AERON_IPC_CHANNEL,
-                    publication->log_file_name,
-                    publication->log_file_name_length) < 0)
-                {
-                    return -1;
-                }
-            }
-        }
-
-        return 0;
+        return -1;
     }
 
-    return -1;
+    aeron_subscription_link_t *link = &conductor->spy_subscriptions.array[conductor->spy_subscriptions.length++];
+    link->endpoint = NULL;
+    link->spy_channel = udp_channel;
+    link->stream_id = command->stream_id;
+    link->client_id = command->correlated.client_id;
+    link->registration_id = command->correlated.correlation_id;
+    link->is_reliable = params.is_reliable;
+    link->is_sparse = params.is_sparse;
+    link->subscribable_list.length = 0;
+    link->subscribable_list.capacity = 0;
+    link->subscribable_list.array = NULL;
+
+    aeron_driver_conductor_on_subscription_ready(
+        conductor, command->correlated.correlation_id, AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED);
+
+    for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
+    {
+        aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
+
+        if (command->stream_id == publication->stream_id && endpoint == publication->endpoint &&
+            AERON_NETWORK_PUBLICATION_STATUS_ACTIVE == publication->conductor_fields.status)
+        {
+            if (aeron_driver_conductor_link_subscribable(
+                conductor,
+                link,
+                &publication->conductor_fields.subscribable,
+                publication->conductor_fields.managed_resource.registration_id,
+                publication->session_id,
+                publication->stream_id,
+                aeron_network_publication_consumer_position(publication),
+                endpoint->conductor_fields.udp_channel->original_uri,
+                AERON_IPC_CHANNEL,
+                publication->log_file_name,
+                publication->log_file_name_length) < 0)
+            {
+                return -1;
+            }
+        }
+    }
+
+    return 0;
 }
 
 int aeron_driver_conductor_on_add_network_subscription(

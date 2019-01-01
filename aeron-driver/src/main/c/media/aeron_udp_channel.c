@@ -73,11 +73,13 @@ int aeron_multicast_control_address(struct sockaddr_storage *data_addr, struct s
 {
     if (AF_INET6 == data_addr->ss_family)
     {
-        return aeron_ipv6_multicast_control_address((struct sockaddr_in6 *)data_addr, (struct sockaddr_in6 *)control_addr);
+        return aeron_ipv6_multicast_control_address(
+            (struct sockaddr_in6 *)data_addr, (struct sockaddr_in6 *)control_addr);
     }
     else if (AF_INET == data_addr->ss_family)
     {
-        return aeron_ipv4_multicast_control_address((struct sockaddr_in *)data_addr, (struct sockaddr_in *)control_addr);
+        return aeron_ipv4_multicast_control_address(
+            (struct sockaddr_in *)data_addr, (struct sockaddr_in *)control_addr);
     }
 
     aeron_set_err(EINVAL, "unknown address family: %d", data_addr->ss_family);
@@ -87,9 +89,9 @@ int aeron_multicast_control_address(struct sockaddr_storage *data_addr, struct s
 int aeron_find_multicast_interface(
     int family, const char *interface_str, struct sockaddr_storage *interface_addr, unsigned int *interface_index)
 {
-    char *wildcard_str = (AF_INET6 == family) ? "[0::]/0" : "0.0.0.0/0";
+    char *wildcard_str = AF_INET6 == family ? "[0::]/0" : "0.0.0.0/0";
 
-    return aeron_find_interface((NULL == interface_str) ? wildcard_str : interface_str, interface_addr, interface_index);
+    return aeron_find_interface(NULL == interface_str ? wildcard_str : interface_str, interface_addr, interface_index);
 }
 
 int aeron_find_unicast_interface(
@@ -306,7 +308,6 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
     return 0;
 
     error_cleanup:
-
         *channel = NULL;
         if (NULL != _channel)
         {

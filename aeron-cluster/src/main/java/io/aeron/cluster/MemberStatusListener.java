@@ -56,4 +56,8 @@ interface MemberStatusListener
     void onSnapshotRecordings(long correlationId, SnapshotRecordingsDecoder snapshotRecordingsDecoder);
 
     void onJoinCluster(long leadershipTermId, int memberId);
+
+    void onTerminationPosition(long logPosition);
+
+    void onTerminationAck(long logPosition, int memberId);
 }

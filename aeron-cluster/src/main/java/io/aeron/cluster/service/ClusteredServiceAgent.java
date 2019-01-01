@@ -32,6 +32,7 @@ import org.agrona.concurrent.status.CountersReader;
 import java.util.Collection;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
@@ -60,6 +61,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private long ackId = 0;
     private long clusterTimeMs;
     private long cachedTimeMs;
+    private long terminationPosition = NULL_POSITION;
     private int memberId = NULL_VALUE;
     private BoundedLogAdapter logAdapter;
     private AtomicCounter heartbeatCounter;
@@ -272,6 +274,11 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         activeLogEvent = new ActiveLogEvent(
             leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, logStreamId, logChannel);
+    }
+
+    public void onServiceTerminationPosition(final long logPosition)
+    {
+        terminationPosition = logPosition;
     }
 
     void onSessionMessage(
@@ -746,6 +753,21 @@ class ClusteredServiceAgent implements Agent, Cluster
         if (null != activeLogEvent && null == logAdapter)
         {
             joinActiveLog();
+        }
+
+        if (NULL_POSITION != terminationPosition)
+        {
+            checkForTermination();
+        }
+    }
+
+    private void checkForTermination()
+    {
+        if (null != logAdapter && logAdapter.position() >= terminationPosition)
+        {
+            consensusModuleProxy.ack(terminationPosition, ackId++, serviceId);
+            terminationPosition = NULL_VALUE;
+            ctx.terminationHook().run();
         }
     }
 }

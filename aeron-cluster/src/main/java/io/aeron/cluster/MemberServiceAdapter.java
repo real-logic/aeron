@@ -19,6 +19,7 @@ import io.aeron.Subscription;
 import io.aeron.cluster.codecs.ClusterMembersResponseDecoder;
 import io.aeron.cluster.codecs.JoinLogDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
+import io.aeron.cluster.codecs.ServiceTerminationPositionDecoder;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
@@ -63,6 +64,7 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
         switch (templateId)
         {
             case JoinLogDecoder.TEMPLATE_ID:
+            case ServiceTerminationPositionDecoder.TEMPLATE_ID:
                 break;
 
             case ClusterMembersResponseDecoder.TEMPLATE_ID:

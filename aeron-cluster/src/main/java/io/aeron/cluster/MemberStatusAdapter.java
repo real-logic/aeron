@@ -43,6 +43,8 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final SnapshotRecordingQueryDecoder snapshotRecordingQueryDecoder = new SnapshotRecordingQueryDecoder();
     private final SnapshotRecordingsDecoder snapshotRecordingsDecoder = new SnapshotRecordingsDecoder();
     private final JoinClusterDecoder joinClusterDecoder = new JoinClusterDecoder();
+    private final TerminationPositionDecoder terminationPositionDecoder = new TerminationPositionDecoder();
+    private final TerminationAckDecoder terminationAckDecoder = new TerminationAckDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -244,6 +246,27 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onJoinCluster(
                     joinClusterDecoder.leadershipTermId(), joinClusterDecoder.memberId());
+                break;
+
+            case TerminationPositionDecoder.TEMPLATE_ID:
+                terminationPositionDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onTerminationPosition(terminationPositionDecoder.logPosition());
+                break;
+
+            case TerminationAckDecoder.TEMPLATE_ID:
+                terminationAckDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                memberStatusListener.onTerminationAck(
+                    terminationAckDecoder.logPosition(), terminationAckDecoder.memberId());
                 break;
 
             default:

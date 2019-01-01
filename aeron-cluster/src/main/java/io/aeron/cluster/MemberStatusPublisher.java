@@ -41,6 +41,8 @@ class MemberStatusPublisher
     private final SnapshotRecordingQueryEncoder snapshotRecordingQueryEncoder = new SnapshotRecordingQueryEncoder();
     private final SnapshotRecordingsEncoder snapshotRecordingsEncoder = new SnapshotRecordingsEncoder();
     private final JoinClusterEncoder joinClusterEncoder = new JoinClusterEncoder();
+    private final TerminationPositionEncoder terminationPositionEncoder = new TerminationPositionEncoder();
+    private final TerminationAckEncoder terminationAckEncoder = new TerminationAckEncoder();
 
     void canvassPosition(
         final Publication publication,
@@ -445,6 +447,64 @@ class MemberStatusPublisher
                 joinClusterEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
+                    .memberId(memberId);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean terminationPosition(
+        final Publication publication,
+        final long logPosition)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + TerminationPositionEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                terminationPositionEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .logPosition(logPosition);
+
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    boolean terminationAck(
+        final Publication publication,
+        final long logPosition,
+        final int memberId)
+    {
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + TerminationAckEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                terminationAckEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .logPosition(logPosition)
                     .memberId(memberId);
 
                 bufferClaim.commit();

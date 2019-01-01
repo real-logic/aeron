@@ -53,6 +53,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
@@ -69,6 +70,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long serviceAckId = 0;
     private long lastAppendedPosition = 0;
     private long followerCommitPosition = 0;
+    private long terminationPosition = NULL_POSITION;
     private long timeOfLastLogUpdateMs = 0;
     private long cachedTimeMs;
     private long clusterTimeMs = NULL_VALUE;
@@ -624,6 +626,19 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
+    public void onTerminationPosition(final long logPosition)
+    {
+        if (Cluster.Role.FOLLOWER == role)
+        {
+            terminationPosition = logPosition;
+        }
+    }
+
+    public void onTerminationAck(final long logPosition, final int memberId)
+    {
+
+    }
+
     void state(final ConsensusModule.State state)
     {
         this.state = state;
@@ -793,6 +808,17 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     break;
 
                 case LEAVING:
+                    recordingLog.commitLogPosition(leadershipTermId, logPosition);
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.terminationHook().run();
+                    break;
+
+                case TERMINATING:
+                    if (Cluster.Role.FOLLOWER == role)
+                    {
+                        memberStatusPublisher.terminationAck(leaderMember.publication(), logPosition, memberId);
+                    }
+
                     recordingLog.commitLogPosition(leadershipTermId, logPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
@@ -1593,6 +1619,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
 
             workCount += count;
+
+            if (NULL_POSITION != terminationPosition)
+            {
+                if (logAdapter.position() >= terminationPosition && ConsensusModule.State.SNAPSHOT != state)
+                {
+                    serviceProxy.terminationPosition(terminationPosition);
+                    expectedAckPosition = terminationPosition;
+                    state(ConsensusModule.State.TERMINATING);
+                }
+            }
         }
 
         workCount += memberStatusAdapter.poll();

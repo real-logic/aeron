@@ -18,6 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Subscription;
 import io.aeron.cluster.codecs.JoinLogDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
+import io.aeron.cluster.codecs.ServiceTerminationPositionDecoder;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
@@ -30,6 +31,8 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final JoinLogDecoder joinLogDecoder = new JoinLogDecoder();
+    private final ServiceTerminationPositionDecoder serviceTerminationPositionDecoder =
+        new ServiceTerminationPositionDecoder();
 
     ServiceAdapter(final Subscription subscription, final ClusteredServiceAgent clusteredServiceAgent)
     {
@@ -68,6 +71,16 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
                 joinLogDecoder.logSessionId(),
                 joinLogDecoder.logStreamId(),
                 joinLogDecoder.logChannel());
+        }
+        else if (ServiceTerminationPositionDecoder.TEMPLATE_ID == templateId)
+        {
+            serviceTerminationPositionDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            clusteredServiceAgent.onServiceTerminationPosition(serviceTerminationPositionDecoder.logPosition());
         }
     }
 }

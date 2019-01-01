@@ -93,10 +93,12 @@ public class ConsensusModule implements AutoCloseable
          */
         LEAVING(6),
 
+        TERMINATING(7),
+
         /**
          * Terminal state.
          */
-        CLOSED(7);
+        CLOSED(8);
 
         static final State[] STATES;
 

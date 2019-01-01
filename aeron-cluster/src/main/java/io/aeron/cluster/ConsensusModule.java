@@ -41,9 +41,7 @@ import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
-import static org.agrona.SystemUtil.getDurationInNanos;
-import static org.agrona.SystemUtil.getSizeAsInt;
-import static org.agrona.SystemUtil.loadPropertiesFiles;
+import static org.agrona.SystemUtil.*;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 /**
@@ -79,26 +77,19 @@ public class ConsensusModule implements AutoCloseable
         SNAPSHOT(3),
 
         /**
-         * In the process of doing an orderly shutdown taking a snapshot first.
-         */
-        SHUTDOWN(4),
-
-        /**
-         * Aborting processing and shutting down as soon as services ack without taking a snapshot.
-         */
-        ABORT(5),
-
-        /**
          * Leaving cluster and shutting down as soon as services ack without taking a snapshot.
          */
-        LEAVING(6),
+        LEAVING(4),
 
-        TERMINATING(7),
+        /**
+         * In the process of terminating the node.
+         */
+        TERMINATING(5),
 
         /**
          * Terminal state.
          */
-        CLOSED(8);
+        CLOSED(6);
 
         static final State[] STATES;
 
@@ -565,6 +556,8 @@ public class ConsensusModule implements AutoCloseable
         public static final int LOG_PUBLICATION_SESSION_ID_TAG = 2;
         public static final String LOG_PUBLICATION_TAGS = "1," + LOG_PUBLICATION_SESSION_ID_TAG;
         public static final String LOG_SUBSCRIPTION_TAGS = "3,4";
+
+        public static final long CLUSTER_TERMINATION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
         /**
          * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
@@ -2427,8 +2420,7 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the {@link Runnable} that is called when the {@link ConsensusModule} processes a termination action such
-         * as a {@link ConsensusModule.State#SHUTDOWN} or {@link ConsensusModule.State#ABORT}.
+         * Set the {@link Runnable} that is called when the {@link ConsensusModule} processes a termination action.
          *
          * @param terminationHook that can be used to terminate a consensus module.
          * @return this for a fluent API.
@@ -2440,8 +2432,7 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the {@link Runnable} that is called when the {@link ConsensusModule} processes a termination action such
-         * as a {@link ConsensusModule.State#SHUTDOWN} or {@link ConsensusModule.State#ABORT}.
+         * Get the {@link Runnable} that is called when the {@link ConsensusModule} processes a termination action.
          * <p>
          * The default action is to call signal on the {@link #shutdownSignalBarrier()}.
          *

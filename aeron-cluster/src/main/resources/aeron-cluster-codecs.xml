@@ -44,8 +44,6 @@
             <validValue name="SUSPEND">0</validValue>
             <validValue name="RESUME">1</validValue>
             <validValue name="SNAPSHOT">2</validValue>
-            <validValue name="SHUTDOWN">3</validValue>
-            <validValue name="ABORT">4</validValue>
         </enum>
         <enum name="SnapshotMark" encodingType="int32" description="Mark within a snapshot">
             <validValue name="BEGIN">0</validValue>

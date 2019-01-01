@@ -676,26 +676,9 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void executeAction(final ClusterAction action, final long position, final long leadershipTermId)
     {
-        if (isRecovering)
+        if (ClusterAction.SNAPSHOT == action)
         {
-            return;
-        }
-
-        switch (action)
-        {
-            case SNAPSHOT:
-                consensusModuleProxy.ack(position, ackId++, onTakeSnapshot(position, leadershipTermId), serviceId);
-                break;
-
-            case SHUTDOWN:
-                consensusModuleProxy.ack(position, ackId++, onTakeSnapshot(position, leadershipTermId), serviceId);
-                ctx.terminationHook().run();
-                break;
-
-            case ABORT:
-                consensusModuleProxy.ack(position, ackId++, serviceId);
-                ctx.terminationHook().run();
-                break;
+            consensusModuleProxy.ack(position, ackId++, onTakeSnapshot(position, leadershipTermId), serviceId);
         }
     }
 

@@ -58,10 +58,10 @@ int32_t aeron_stream_position_counter_allocate(
     const char *suffix)
 {
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
-    int label_length =
-        snprintf(
-            label, sizeof(label), "%s: %" PRId64 " %" PRId32 " %" PRId32 " %s %s",
-            name, registration_id, session_id, stream_id, channel, suffix);
+    int label_length = snprintf(
+        label, sizeof(label), "%s: %" PRId64 " %" PRId32 " %" PRId32 " %s %s",
+        name, registration_id, session_id, stream_id, channel, suffix);
+
     aeron_stream_position_counter_key_layout_t layout =
         {
             .registration_id = registration_id,

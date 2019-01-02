@@ -578,7 +578,6 @@ public class ClusterFollowerTest
         awaitResponses(MESSAGE_COUNT);
     }
 
-
     @Test(timeout = 30_000)
     public void membersShouldHaveOneCommitPositionCounter() throws Exception
     {
@@ -637,6 +636,121 @@ public class ClusterFollowerTest
         assertThat(errors(followerMemberIdA), is(0L));
         assertThat(errors(followerMemberIdB), is(0L));
         assertThat(electionCounterOf(followerMemberIdB), is((long)NULL_VALUE));
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldCatchupFromEmptyLog() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        stopNode(followerMemberIdB);
+
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+
+        startClient();
+
+        sendMessages(msgBuffer);
+        awaitResponses(MESSAGE_COUNT);
+
+        startNode(followerMemberIdB, true);
+
+        while (echoServices[followerMemberIdB].messageCount() < MESSAGE_COUNT)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+
+        startClient();
+
+        sendMessages(msgBuffer);
+        awaitResponses(MESSAGE_COUNT);
+
+        terminationExpected[leaderMemberId].lazySet(true);
+        terminationExpected[followerMemberIdA].lazySet(true);
+        terminationExpected[followerMemberIdB].lazySet(true);
+
+        shutdownCluster(leaderMemberId);
+        awaitNodeTermination(leaderMemberId);
+        awaitNodeTermination(followerMemberIdA);
+        awaitNodeTermination(followerMemberIdB);
+
+        assertTrue(echoServices[leaderMemberId].wasSnapshotTaken());
+        assertTrue(echoServices[followerMemberIdA].wasSnapshotTaken());
+        assertTrue(echoServices[followerMemberIdB].wasSnapshotTaken());
+
+        stopNode(leaderMemberId);
+        stopNode(followerMemberIdA);
+        stopNode(followerMemberIdB);
+
+        terminationExpected[leaderMemberId].lazySet(false);
+        terminationExpected[followerMemberIdA].lazySet(false);
+        terminationExpected[followerMemberIdB].lazySet(false);
+
+        Thread.sleep(1000);
+
+        startNode(leaderMemberId, false);
+        startNode(followerMemberIdA, false);
+        startNode(followerMemberIdB, true);
+
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1);
+        }
+
+        assertNotEquals(leaderMemberId, is(followerMemberIdB));
+
+        followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        final int followerLoadingSnapshot =
+            (echoServices[followerMemberIdA].wasSnapshotLoaded()) ? followerMemberIdA : followerMemberIdB;
+        final int followerCatchingUp =
+            (echoServices[followerMemberIdA].wasSnapshotLoaded()) ? followerMemberIdB : followerMemberIdA;
+
+        Thread.sleep(1000);
+
+        assertThat(roleOf(followerMemberIdA), is(Cluster.Role.FOLLOWER));
+        assertThat(roleOf(followerMemberIdB), is(Cluster.Role.FOLLOWER));
+
+        assertTrue(echoServices[leaderMemberId].wasSnapshotLoaded());
+        assertTrue(echoServices[followerLoadingSnapshot].wasSnapshotLoaded());
+        assertFalse(echoServices[followerCatchingUp].wasSnapshotLoaded());
+
+        while (echoServices[followerCatchingUp].messageCount() < MESSAGE_COUNT)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        awaitsSnapshotCounter(followerCatchingUp, 1);
+        assertTrue(echoServices[followerCatchingUp].wasSnapshotTaken());
     }
 
     private void startNode(final int index, final boolean cleanStart)

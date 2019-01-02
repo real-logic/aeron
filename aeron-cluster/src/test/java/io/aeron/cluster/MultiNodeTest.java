@@ -22,7 +22,6 @@ import io.aeron.cluster.service.ClusteredService;
 import org.agrona.IoUtil;
 import org.agrona.collections.Long2LongHashMap;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -374,76 +373,6 @@ public class MultiNodeTest
             leaderHarness.awaitMemberStatusMessage(2, leaderHarness.onCommitPosition(2));
 
             verify(mockLeaderStatusListeners[2]).onCommitPosition(1, position, 0);
-        }
-    }
-
-    @Ignore
-    @Test(timeout = 10_000L)
-    public void shouldBecomeLeaderStaticNonAppointedThreeNodeConfigWithElection()
-    {
-        final ClusteredService mockService = mock(ClusteredService.class);
-
-        final ConsensusModule.Context context = new ConsensusModule.Context()
-            .clusterMembers(THREE_NODE_MEMBERS);
-
-        try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, mockMemberStatusListeners, true, true, false))
-        {
-            harness.memberStatusPublisher().canvassPosition(
-                harness.memberStatusPublication(1),
-                -1L,
-                0L,
-                1);
-
-            harness.memberStatusPublisher().canvassPosition(
-                harness.memberStatusPublication(2),
-                -1L,
-                0L,
-                2);
-
-            harness.awaitMemberStatusMessage(1, harness.onCanvassPosition(1));
-            harness.awaitMemberStatusMessage(2, harness.onCanvassPosition(2));
-
-            verify(mockMemberStatusListeners[1], atLeastOnce()).onCanvassPosition(-1L, 0L, 0);
-            verify(mockMemberStatusListeners[2], atLeastOnce()).onCanvassPosition(-1L, 0L, 0);
-
-            harness.awaitMemberStatusMessage(1, harness.onRequestVoteCounter(1));
-            harness.awaitMemberStatusMessage(2, harness.onRequestVoteCounter(2));
-
-            verify(mockMemberStatusListeners[1]).onRequestVote(-1L, 0L, 0L, 0);
-            verify(mockMemberStatusListeners[2]).onRequestVote(-1L, 0L, 0L, 0);
-
-            harness.memberStatusPublisher().placeVote(
-                harness.memberStatusPublication(1),
-                0L,
-                -1L,
-                0,
-                0,
-                1,
-                true);
-
-            harness.memberStatusPublisher().placeVote(
-                harness.memberStatusPublication(2),
-                0L,
-                -1L,
-                0,
-                0,
-                2,
-                true);
-
-            harness.awaitMemberStatusMessage(1, harness.onNewLeadershipTermCounter(1));
-            harness.awaitMemberStatusMessage(2, harness.onNewLeadershipTermCounter(2));
-
-            verify(mockMemberStatusListeners[1]).onNewLeadershipTerm(eq(-1L), eq(0L), eq(0L), eq(0L), eq(0), anyInt());
-            verify(mockMemberStatusListeners[2]).onNewLeadershipTerm(eq(-1L), eq(0L), eq(0L), eq(0L), eq(0), anyInt());
-
-            harness.memberStatusPublisher().appendedPosition(
-                harness.memberStatusPublication(1), 0L, 0L, 1);
-
-            harness.memberStatusPublisher().appendedPosition(
-                harness.memberStatusPublication(2), 0L, 0L, 2);
-
-            harness.awaitServiceOnStart();
         }
     }
 }

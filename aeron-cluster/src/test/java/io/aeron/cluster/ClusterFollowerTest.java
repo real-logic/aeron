@@ -17,6 +17,8 @@ package io.aeron.cluster;
 
 import io.aeron.CommonContext;
 import io.aeron.Counter;
+import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
@@ -50,15 +52,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.service.CommitPos.COMMIT_POSITION_TYPE_ID;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Ignore
 public class ClusterFollowerTest
@@ -210,6 +212,10 @@ public class ClusterFollowerTest
 
         assertThat(roleOf(followerMemberIdA), is(Cluster.Role.FOLLOWER));
         assertThat(roleOf(followerMemberIdB), is(Cluster.Role.FOLLOWER));
+
+        awaitSnapshotLoadedForService(leaderMemberId);
+        awaitSnapshotLoadedForService(followerMemberIdA);
+        awaitSnapshotLoadedForService(followerMemberIdB);
     }
 
     @Test(timeout = 30_000)
@@ -234,6 +240,10 @@ public class ClusterFollowerTest
         awaitNodeTermination(followerMemberIdA);
         awaitNodeTermination(followerMemberIdB);
 
+        assertTrue(echoServices[leaderMemberId].wasSnapshotTaken());
+        assertTrue(echoServices[followerMemberIdA].wasSnapshotTaken());
+        assertTrue(echoServices[followerMemberIdB].wasSnapshotTaken());
+
         stopNode(leaderMemberId);
         stopNode(followerMemberIdA);
         stopNode(followerMemberIdB);
@@ -257,6 +267,65 @@ public class ClusterFollowerTest
 
         assertThat(roleOf(followerMemberIdA), is(Cluster.Role.FOLLOWER));
         assertThat(roleOf(followerMemberIdB), is(Cluster.Role.FOLLOWER));
+
+        awaitSnapshotLoadedForService(leaderMemberId);
+        awaitSnapshotLoadedForService(followerMemberIdA);
+        awaitSnapshotLoadedForService(followerMemberIdB);
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldAbortClusterAndRestart() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        terminationExpected[leaderMemberId].lazySet(true);
+        terminationExpected[followerMemberIdA].lazySet(true);
+        terminationExpected[followerMemberIdB].lazySet(true);
+
+        abortCluster(leaderMemberId);
+        awaitNodeTermination(leaderMemberId);
+        awaitNodeTermination(followerMemberIdA);
+        awaitNodeTermination(followerMemberIdB);
+
+        assertFalse(echoServices[leaderMemberId].wasSnapshotTaken());
+        assertFalse(echoServices[followerMemberIdA].wasSnapshotTaken());
+        assertFalse(echoServices[followerMemberIdB].wasSnapshotTaken());
+
+        stopNode(leaderMemberId);
+        stopNode(followerMemberIdA);
+        stopNode(followerMemberIdB);
+
+        Thread.sleep(1000);
+
+        startNode(leaderMemberId, false);
+        startNode(followerMemberIdA, false);
+        startNode(followerMemberIdB, false);
+
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1);
+        }
+
+        followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        Thread.sleep(1000);
+
+        assertThat(roleOf(followerMemberIdA), is(Cluster.Role.FOLLOWER));
+        assertThat(roleOf(followerMemberIdB), is(Cluster.Role.FOLLOWER));
+
+        assertFalse(echoServices[leaderMemberId].wasSnapshotLoaded());
+        assertFalse(echoServices[followerMemberIdA].wasSnapshotLoaded());
+        assertFalse(echoServices[followerMemberIdB].wasSnapshotLoaded());
     }
 
     @Test(timeout = 30_000)
@@ -675,7 +744,10 @@ public class ClusterFollowerTest
     static class EchoService extends StubClusteredService
     {
         private volatile int messageCount;
+        private volatile boolean wasSnapshotTaken = false;
+        private volatile boolean wasSnapshotLoaded = false;
         private final int index;
+        private final AtomicReference<String> messageCountString = new AtomicReference<>("no snapshot loaded");
         private final CountDownLatch latchOne;
         private final CountDownLatch latchTwo;
 
@@ -696,6 +768,16 @@ public class ClusterFollowerTest
             return messageCount;
         }
 
+        boolean wasSnapshotTaken()
+        {
+            return wasSnapshotTaken;
+        }
+
+        boolean wasSnapshotLoaded()
+        {
+            return wasSnapshotLoaded;
+        }
+
         public void onSessionMessage(
             final ClientSession session,
             final long timestampMs,
@@ -710,6 +792,7 @@ public class ClusterFollowerTest
             }
 
             ++messageCount;
+            messageCountString.set(Integer.toString(messageCount));
 
             if (messageCount == MESSAGE_COUNT)
             {
@@ -720,6 +803,46 @@ public class ClusterFollowerTest
             {
                 latchTwo.countDown();
             }
+        }
+
+        public void onTakeSnapshot(final Publication snapshotPublication)
+        {
+            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+
+            int length = 0;
+            buffer.putInt(length, messageCount);
+            length += SIZE_OF_INT;
+            length += buffer.putIntAscii(length, messageCount);
+
+            snapshotPublication.offer(buffer, 0, length);
+            wasSnapshotTaken = true;
+        }
+
+        public void onLoadSnapshot(final Image snapshotImage)
+        {
+            while (true)
+            {
+                final int fragments = snapshotImage.poll(
+                    (buffer, offset, length, header) ->
+                    {
+                        messageCount = buffer.getInt(offset);
+
+                        final String s = buffer.getStringWithoutLengthAscii(
+                            offset + SIZE_OF_INT, length - SIZE_OF_INT);
+
+                        messageCountString.set(s);
+                    },
+                    1);
+
+                if (fragments == 1)
+                {
+                    break;
+                }
+
+                cluster.idle();
+            }
+
+            wasSnapshotLoaded = true;
         }
     }
 
@@ -845,6 +968,16 @@ public class ClusterFollowerTest
         assertTrue(ClusterControl.ToggleState.SHUTDOWN.toggle(controlToggle));
     }
 
+    private void abortCluster(final int index)
+    {
+        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+
+        final CountersReader countersReader = driver.consensusModule().context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader);
+        assertNotNull(controlToggle);
+        assertTrue(ClusterControl.ToggleState.ABORT.toggle(controlToggle));
+    }
+
     private void awaitsSnapshotCounter(final int index, final long value)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
@@ -860,6 +993,15 @@ public class ClusterFollowerTest
     private void awaitNodeTermination(final int index)
     {
         while (!memberWasTerminated[index].get())
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+    }
+
+    private void awaitSnapshotLoadedForService(final int index)
+    {
+        while (!echoServices[index].wasSnapshotLoaded())
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();

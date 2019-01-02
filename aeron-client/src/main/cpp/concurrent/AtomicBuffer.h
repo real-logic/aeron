@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,15 @@
 
 namespace aeron { namespace concurrent {
 
-// note: Atomic Buffer does not own the memory it wraps.
+/**
+ * Wraps, but does not own, a buffer of memory for providing atomic operations.
+ */
 class AtomicBuffer
 {
 public:
     AtomicBuffer() :
-        m_buffer(nullptr), m_length(0)
+        m_buffer(nullptr),
+        m_length(0)
     {
     }
 
@@ -93,7 +96,6 @@ public:
 
     AtomicBuffer& operator=(const AtomicBuffer& buffer) = default;
 
-    // this class does not own the memory. It simply overlays it.
     virtual ~AtomicBuffer() = default;
 
     inline void wrap(std::uint8_t* buffer, size_t length)
@@ -120,7 +122,10 @@ public:
     template<size_t N>
     inline void wrap(std::array<std::uint8_t, N>& buffer)
     {
-        static_assert(N <= std::numeric_limits<util::index_t>::max(), "Requires the array to have a size that fits in an index_t");
+        static_assert(
+            N <= std::numeric_limits<util::index_t>::max(),
+            "Requires the array to have a size that fits in an index_t");
+
         m_buffer = buffer.data();
         m_length = static_cast<util::index_t>(N);
     }
@@ -266,46 +271,68 @@ public:
         atomic::putInt32Atomic((volatile std::int32_t*)(m_buffer + offset), v);
     }
 
-    // increment from single thread
-    inline void addInt64Ordered(util::index_t offset, std::int64_t increment)
+    /**
+     * Single threaded increment with release semantics.
+     *
+     * @param offset in the buffer of the word.
+     * @param delta  for to be applied to the value.
+     */
+    inline void addInt64Ordered(util::index_t offset, std::int64_t delta)
     {
         boundsCheck(offset, sizeof(std::int64_t));
 
         const std::int64_t value = getInt64(offset);
-        atomic::putInt64Ordered((volatile std::int64_t*)(m_buffer + offset), value + increment);
+        atomic::putInt64Ordered((volatile std::int64_t*)(m_buffer + offset), value + delta);
     }
 
     inline bool compareAndSetInt64(util::index_t offset, std::int64_t expectedValue, std::int64_t updateValue)
     {
         boundsCheck(offset, sizeof(std::int64_t));
         std::int64_t original = atomic::cmpxchg((volatile std::int64_t*)(m_buffer + offset), expectedValue, updateValue);
-        return (original == expectedValue);
+        return original == expectedValue;
     }
 
-    // increment from multiple threads
+    /**
+     * Multi threaded increment.
+     *
+     * @param offset in the buffer of the word.
+     * @param delta  for to be applied to the value.
+     * @return the value before applying the delta.
+     */
     inline COND_MOCK_VIRTUAL std::int64_t getAndAddInt64(util::index_t offset, std::int64_t delta)
     {
         boundsCheck(offset, sizeof(std::int64_t));
         return atomic::getAndAddInt64((volatile std::int64_t*)(m_buffer + offset), delta);
     }
 
-    // increment from single thread
-    inline void addInt32Ordered(util::index_t offset, std::int32_t increment)
+    /**
+     * Single threaded add with release semantics.
+     *
+     * @param offset in the buffer of the word.
+     * @param delta  for to be applied to the value.
+     */
+    inline void addInt32Ordered(util::index_t offset, std::int32_t delta)
     {
         boundsCheck(offset, sizeof(std::int32_t));
 
         const std::int32_t value = getInt32(offset);
-        atomic::putInt32Ordered((volatile std::int32_t*)(m_buffer + offset), value + increment);
+        atomic::putInt32Ordered((volatile std::int32_t*)(m_buffer + offset), value + delta);
     }
 
     inline bool compareAndSetInt32(util::index_t offset, std::int32_t expectedValue, std::int32_t updateValue)
     {
         boundsCheck(offset, sizeof(std::int32_t));
         std::int32_t original = atomic::cmpxchg((volatile std::int32_t*)(m_buffer + offset), expectedValue, updateValue);
-        return (original == expectedValue);
+        return original == expectedValue;
     }
 
-    // increment from multiple threads
+    /**
+     * Multi threaded increment.
+     *
+     * @param offset in the buffer of the word.
+     * @param delta  for to be applied to the value.
+     * @return the value before applying the delta.
+     */
     inline COND_MOCK_VIRTUAL std::int32_t getAndAddInt32(util::index_t offset, std::int32_t delta)
     {
         boundsCheck(offset, sizeof(std::int32_t));
@@ -386,7 +413,6 @@ public:
     inline void boundsCheck(util::index_t index, std::uint64_t length) const
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        // This check disallows negative indices
         if (AERON_COND_EXPECT(index < 0 || (static_cast<std::uint64_t>(m_length) - index) < length, false))
         {
             throw aeron::util::OutOfBoundsException(

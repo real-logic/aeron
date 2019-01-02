@@ -329,6 +329,40 @@ public class ClusterFollowerTest
     }
 
     @Test(timeout = 30_000)
+    public void shouldAbortClusterOnTerminationTimeout() throws Exception
+    {
+        int leaderMemberId;
+        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1000);
+        }
+
+        final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        terminationExpected[leaderMemberId].lazySet(true);
+        terminationExpected[followerMemberIdA].lazySet(true);
+
+        stopNode(followerMemberIdB);
+
+        startClient();
+
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        msgBuffer.putStringWithoutLengthAscii(0, MSG);
+
+        sendMessages(msgBuffer);
+        awaitResponses(MESSAGE_COUNT);
+
+        abortCluster(leaderMemberId);
+        awaitNodeTermination(followerMemberIdA);
+        awaitNodeTermination(leaderMemberId);
+
+        stopNode(leaderMemberId);
+        stopNode(followerMemberIdA);
+    }
+
+    @Test(timeout = 30_000)
     public void shouldEchoMessagesThenContinueOnNewLeader() throws Exception
     {
         startClient();

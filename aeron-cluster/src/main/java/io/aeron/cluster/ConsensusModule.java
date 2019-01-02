@@ -557,7 +557,15 @@ public class ConsensusModule implements AutoCloseable
         public static final String LOG_PUBLICATION_TAGS = "1," + LOG_PUBLICATION_SESSION_ID_TAG;
         public static final String LOG_SUBSCRIPTION_TAGS = "3,4";
 
-        public static final long CLUSTER_TERMINATION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
+        /**
+         * Timeout waiting for follower termination by leader.
+         */
+        public static final String TERMINATION_TIMEOUT_PROP_NAME = "aeron.cluster.termination.timeout";
+
+        /**
+         * Timeout waiting for follower termination by leader.
+         */
+        public static final long TERMINATION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
          * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
@@ -790,6 +798,17 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Timeout waiting for follower termination by leader.
+         *
+         * @return timeout in nanoseconds to wait followers to terminate.
+         * @see #TERMINATION_TIMEOUT_PROP_NAME
+         */
+        public static long terminationTimeoutNs()
+        {
+            return getDurationInNanos(TERMINATION_TIMEOUT_PROP_NAME, TERMINATION_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
          * Size in bytes of the error buffer in the mark file.
          *
          * @return length of error buffer in bytes.
@@ -898,6 +917,7 @@ public class ConsensusModule implements AutoCloseable
         private long electionTimeoutNs = Configuration.electionTimeoutNs();
         private long electionStatusIntervalNs = Configuration.electionStatusIntervalNs();
         private long dynamicJoinIntervalNs = Configuration.dynamicJoinIntervalNs();
+        private long terminationTimeoutNs = Configuration.terminationTimeoutNs();
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
@@ -1984,6 +2004,32 @@ public class ConsensusModule implements AutoCloseable
         public long dynamicJoinIntervalNs()
         {
             return dynamicJoinIntervalNs;
+        }
+
+        /**
+         * Timeout to wait for follower termination by leader.
+         *
+         * @param terminationTimeoutNs to wait for follower termination.
+         * @return this for a fluent API.
+         * @see Configuration#TERMINATION_TIMEOUT_PROP_NAME
+         * @see Configuration#TERMINATION_TIMEOUT_DEFAULT_NS
+         */
+        public Context terminationTimeoutNs(final long terminationTimeoutNs)
+        {
+            this.terminationTimeoutNs = terminationTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout to wait for follower termination by leader.
+         *
+         * @return timeout to wait for follower termination by leader.
+         * @see Configuration#TERMINATION_TIMEOUT_PROP_NAME
+         * @see Configuration#TERMINATION_TIMEOUT_DEFAULT_NS
+         */
+        public long terminationTimeoutNs()
+        {
+            return terminationTimeoutNs;
         }
 
         /**

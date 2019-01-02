@@ -17,14 +17,19 @@ package io.aeron.cluster;
 
 public class ClusterTermination
 {
-    private final long deadlineMs;
     private final MemberStatusPublisher memberStatusPublisher;
+    private long deadlineMs;
     private boolean hasServiceTerminated = false;
 
     ClusterTermination(final MemberStatusPublisher memberStatusPublisher, final long deadlineMs)
     {
         this.deadlineMs = deadlineMs;
         this.memberStatusPublisher = memberStatusPublisher;
+    }
+
+    void deadlineMs(final long deadlineM)
+    {
+        this.deadlineMs = deadlineM;
     }
 
     boolean canTerminate(final ClusterMember[] members, final long terminationPosition, final long nowMs)

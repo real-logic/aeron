@@ -815,6 +815,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     else
                     {
                         serviceProxy.terminationPosition(terminationPosition);
+                        if (null != clusterTermination)
+                        {
+                            clusterTermination.deadlineMs(
+                                cachedTimeMs + TimeUnit.NANOSECONDS.toMillis(ctx.terminationTimeoutNs()));
+                        }
+
                         state(ConsensusModule.State.TERMINATING);
                     }
                     break;
@@ -1599,6 +1605,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 workCount += checkSessions(sessionByIdMap, nowMs);
                 workCount += processPassiveMembers(passiveMembers);
             }
+            else if (ConsensusModule.State.TERMINATING == state)
+            {
+                if (clusterTermination.canTerminate(clusterMembers, terminationPosition, cachedTimeMs))
+                {
+                    recordingLog.commitLogPosition(leadershipTermId, terminationPosition);
+                    state(ConsensusModule.State.CLOSED);
+                    ctx.terminationHook().run();
+                }
+            }
         }
         else
         {
@@ -1708,7 +1723,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                     clusterTermination = new ClusterTermination(
                         memberStatusPublisher,
-                        cachedTimeMs + ConsensusModule.Configuration.CLUSTER_TERMINATION_TIMEOUT_MS);
+                        cachedTimeMs + TimeUnit.NANOSECONDS.toMillis(ctx.terminationTimeoutNs()));
                     clusterTermination.terminationPosition(clusterMembers, thisMember, position);
                     terminationPosition = position;
                     expectedAckPosition = position;
@@ -1723,7 +1738,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                     clusterTermination = new ClusterTermination(
                         memberStatusPublisher,
-                        cachedTimeMs + ConsensusModule.Configuration.CLUSTER_TERMINATION_TIMEOUT_MS);
+                        cachedTimeMs + TimeUnit.NANOSECONDS.toMillis(ctx.terminationTimeoutNs()));
                     clusterTermination.terminationPosition(clusterMembers, thisMember, position);
                     terminationPosition = position;
                     expectedAckPosition = position;

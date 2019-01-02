@@ -137,7 +137,7 @@ static void error_log_reader_save_to_file(
 
 int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron_dir)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_MAX_PATH * 2];
     int result = 0;
 
     aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_map->addr;

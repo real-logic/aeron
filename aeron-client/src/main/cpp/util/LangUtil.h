@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef AERON_LANGUTIL_H
-#define AERON_LANGUTIL_H
+#ifndef AERON_LANG_UTIL_H
+#define AERON_LANG_UTIL_H
 
 #include <algorithm>
 
@@ -23,10 +22,11 @@
  * @file
  * Utilities related to C++ and C++ standard libraries
  */
-
 namespace aeron { namespace util {
 
-// Bjarne Stroustrup - Make Simple Tasks Simple - https://www.youtube.com/watch?v=nesCaocNjtQ
+/**
+ * Bjarne Stroustrup - Make Simple Tasks Simple - https://www.youtube.com/watch?v=nesCaocNjtQ
+ */
 template<typename T>
 using Iterator = typename T::iterator;
 
@@ -57,4 +57,4 @@ private:
 
 }}
 
-#endif //AERON_LANGUTIL_H
+#endif

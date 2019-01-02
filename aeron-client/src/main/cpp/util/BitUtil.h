@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef AERON_UTIL_BITUTIL_H
-#define AERON_UTIL_BITUTIL_H
+#ifndef AERON_UTIL_BIT_UTIL_H
+#define AERON_UTIL_BIT_UTIL_H
 
 #include <cstdint>
 #include <type_traits>
@@ -32,34 +31,34 @@ namespace aeron { namespace util {
  */
 namespace BitUtil
 {
-    /** Size of the data blocks used by the CPU cache sub-system in bytes. */
+    /** Length of the data blocks used by the CPU cache sub-system in bytes. */
     static const size_t CACHE_LINE_LENGTH = 64;
 
     template <typename value_t>
     inline bool isPowerOfTwo(value_t value) AERON_NOEXCEPT
     {
-        static_assert (std::is_integral<value_t>::value, "isPowerOfTwo only available on integer types");
+        static_assert(std::is_integral<value_t>::value, "isPowerOfTwo only available on integer types");
         return value > 0 && ((value & (~value + 1)) == value);
     }
 
     template <typename value_t>
     inline value_t align(value_t value, value_t alignment) AERON_NOEXCEPT
     {
-        static_assert (std::is_integral<value_t>::value, "align only available on integer types");
+        static_assert(std::is_integral<value_t>::value, "align only available on integer types");
         return (value + (alignment - 1)) & ~(alignment - 1);
     }
 
     template <typename value_t>
     inline bool isEven(value_t value) AERON_NOEXCEPT
     {
-        static_assert (std::is_integral<value_t>::value, "isEven only available on integer types");
+        static_assert(std::is_integral<value_t>::value, "isEven only available on integer types");
         return (value & 1) == 0;
     }
 
     template <typename value_t>
     inline value_t next(value_t current, value_t max) AERON_NOEXCEPT
     {
-        static_assert (std::is_integral<value_t>::value, "next only available on integer types");
+        static_assert(std::is_integral<value_t>::value, "next only available on integer types");
         value_t next = current + 1;
         if (next == max)
         {
@@ -72,7 +71,7 @@ namespace BitUtil
     template <typename value_t>
     inline value_t previous(value_t current, value_t max) AERON_NOEXCEPT
     {
-        static_assert (std::is_integral<value_t>::value, "previous only available on integer types");
+        static_assert(std::is_integral<value_t>::value, "previous only available on integer types");
         if (0 == current)
         {
             return max - 1;
@@ -153,7 +152,8 @@ namespace BitUtil
 
         value--;
 
-        // Set all bits below the leading one using binary expansion http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+        // Set all bits below the leading one using binary expansion
+        // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
         for (size_t i = 1; i < sizeof(value) * 8; i = i * 2)
         {
             value |= (value >> i);
@@ -188,6 +188,5 @@ namespace BitUtil
 }
 
 }}
-
 
 #endif

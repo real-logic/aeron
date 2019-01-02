@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef AERON_UTIL_INDEX_FILE_H
 #define AERON_UTIL_INDEX_FILE_H
 
@@ -23,8 +22,9 @@
 
 namespace aeron { namespace util {
 
-// a 32bit signed int that is to be used for sizes and offsets to be compatible with
-// java's signed 32 bit int.
+/**
+ * a 32-bit signed int that is used for lengths and offsets to be compatible with Java's 32-bit int.
+ */
 typedef std::int32_t index_t;
 
 inline static index_t convertSizeToIndex(size_t size)

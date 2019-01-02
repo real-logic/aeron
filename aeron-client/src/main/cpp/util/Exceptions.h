@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,8 @@ namespace aeron { namespace util {
 
 static constexpr const char* past_prefix(const char * const prefix, const char * const filename)
 {
-    return
-        *prefix == *filename ? past_prefix(prefix + 1, filename + 1) :
-            *filename == '/' ? filename + 1 : filename;
+    return *prefix == *filename ?
+        past_prefix(prefix + 1, filename + 1) : *filename == '/' ? filename + 1 : filename;
 }
 
 #ifdef __PROJECT_SOURCE_DIR__
@@ -73,25 +72,30 @@ public:
     }
 };
 
-#define DECLARE_SOURCED_EXCEPTION(exceptionName)                                            \
-            class exceptionName : public aeron::util::SourcedException                      \
-            {                                                                               \
-                public:                                                                     \
-                    exceptionName (const std::string &what, const std::string& function, const std::string& file, const int line) \
-                            : SourcedException (what, function, file, line)                 \
-                        {}                                                                  \
-            }                                                                               \
+#define DECLARE_SOURCED_EXCEPTION(exceptionName)                \
+    class exceptionName : public aeron::util::SourcedException  \
+    {                                                           \
+    public:                                                     \
+        exceptionName(                                          \
+            const std::string& what,                            \
+            const std::string& function,                        \
+            const std::string& file,                            \
+            const int line) :                                   \
+            SourcedException(what, function, file, line)        \
+            {                                                   \
+            }                                                   \
+    }                                                           \
 
-DECLARE_SOURCED_EXCEPTION (IOException);
-DECLARE_SOURCED_EXCEPTION (FormatException);
-DECLARE_SOURCED_EXCEPTION (OutOfBoundsException);
-DECLARE_SOURCED_EXCEPTION (ParseException);
-DECLARE_SOURCED_EXCEPTION (ElementNotFound);
-DECLARE_SOURCED_EXCEPTION (IllegalArgumentException);
-DECLARE_SOURCED_EXCEPTION (IllegalStateException);
-DECLARE_SOURCED_EXCEPTION (DriverTimeoutException);
-DECLARE_SOURCED_EXCEPTION (ConductorServiceTimeoutException);
-DECLARE_SOURCED_EXCEPTION (UnknownSubscriptionException);
+DECLARE_SOURCED_EXCEPTION(IOException);
+DECLARE_SOURCED_EXCEPTION(FormatException);
+DECLARE_SOURCED_EXCEPTION(OutOfBoundsException);
+DECLARE_SOURCED_EXCEPTION(ParseException);
+DECLARE_SOURCED_EXCEPTION(ElementNotFound);
+DECLARE_SOURCED_EXCEPTION(IllegalArgumentException);
+DECLARE_SOURCED_EXCEPTION(IllegalStateException);
+DECLARE_SOURCED_EXCEPTION(DriverTimeoutException);
+DECLARE_SOURCED_EXCEPTION(ConductorServiceTimeoutException);
+DECLARE_SOURCED_EXCEPTION(UnknownSubscriptionException);
 
 class RegistrationException : public SourcedException
 {
@@ -100,7 +104,11 @@ private:
 
 public:
     RegistrationException(
-        std::int32_t errorCode, const std::string &what, const std::string& function, const std::string& file, const int line) :
+        std::int32_t errorCode,
+        const std::string& what,
+        const std::string& function,
+        const std::string& file,
+        const int line) :
         SourcedException(what, function, file, line),
         m_errorCode(errorCode)
     {

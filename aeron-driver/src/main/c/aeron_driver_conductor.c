@@ -1424,7 +1424,6 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     malformed_command:
         AERON_FORMAT_BUFFER(error_message, "command=%d too short: length=%lu", msg_type_id, length);
         aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short", error_message);
-        return;
 }
 
 void aeron_driver_conductor_on_command_queue(void *clientd, volatile void *item)

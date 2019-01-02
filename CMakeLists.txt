@@ -28,7 +28,7 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
    set(STANDALONE_BUILD TRUE)
 endif()
 
-option(BUILD_AERON_DRIVER "Build Aeron driver" OFF)
+option(BUILD_AERON_DRIVER "Build Aeron driver" ON)
 
 option(C_WARNINGS_AS_ERRORS "Enable warnings as errors for C" OFF)
 option(CXX_WARNINGS_AS_ERRORS "Enable warnings as errors for C++" OFF)

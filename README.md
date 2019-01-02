@@ -119,25 +119,8 @@ If you are comfortable with using CMake, then a full clean, build, and test look
 
 #### C Media Driver
 
-By default, the C Media Driver is not built as part of the C++ Build. However, it can be enabled via the CMake
-option `BUILD_AERON_DRIVER` being set to `ON`.
-
-For convenience, a script is provided that does a full clean, build, and test of all targets as a Release build of the
-C++ API and the C Media Driver.
-
-```shell
-    $ ./cppbuild/cppbuild -b
-```
-
-If you are comfortable with using CMake, then a full clean, build, and test looks like:
-
-```shell
-    $ mkdir -p cppbuild/Debug
-    $ cd cppbuild/Debug
-    $ cmake -DBUILD_AERON_DRIVER=ON ../..
-    $ cmake --build . --clean-first
-    $ ctest
-```
+By default, the C Media Driver is built as part of the C++ Build. However, it can be disabled via the CMake
+option `BUILD_AERON_DRIVER` being set to `OFF`.
 
 __Note__: C Media Driver is currently only supported on Mac and Linux.
 

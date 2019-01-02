@@ -19,8 +19,7 @@ do
       shift
       ;;
     -b|--build-aeron-driver)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DBUILD_AERON_DRIVER=ON"
-      echo "Enabling building of aeron driver"
+      echo "Enabling building of aeron driver is now the default"
       shift
       ;;
     --sanitise-build)

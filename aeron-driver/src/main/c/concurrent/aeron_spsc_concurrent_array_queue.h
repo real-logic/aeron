@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ inline aeron_queue_offer_result_t aeron_spsc_concurrent_array_queue_offer(
             return AERON_OFFER_FULL;
         }
 
-        queue->producer.head_cache;
+        queue->producer.head_cache = current_head;
     }
 
     const uint64_t index = current_tail & queue->mask;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef AERON_POSITION_H
-#define AERON_POSITION_H
+#ifndef AERON_DRIVER_POSITION_H
+#define AERON_DRIVER_POSITION_H
 
 #include "concurrent/aeron_counters_manager.h"
 
@@ -138,4 +137,4 @@ int32_t aeron_counter_publisher_position_allocate(
     int32_t stream_id,
     const char *channel);
 
-#endif //AERON_POSITION_H
+#endif

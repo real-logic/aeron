@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef AERON_PLATFORM_H
-#define AERON_PLATFORM_H
+#ifndef AERON_DRIVER_PLATFORM_H
+#define AERON_DRIVER_PLATFORM_H
 
 /*
  * Determine platform, compiler, and CPU and set defines to be used later.
@@ -47,4 +46,4 @@
     #error Unsupported compiler!
 #endif
 
-#endif //AERON_PLATFORM_H
+#endif

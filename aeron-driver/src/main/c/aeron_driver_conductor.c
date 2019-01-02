@@ -2538,7 +2538,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     rcv_hwm_position.value_addr = aeron_counter_addr(&conductor->counters_manager, (int32_t)rcv_hwm_position.counter_id);
     rcv_pos_position.value_addr = aeron_counter_addr(&conductor->counters_manager, (int32_t)rcv_pos_position.counter_id);
 
-    bool is_reliable = &conductor->network_subscriptions.array[0].is_reliable;
+    bool is_reliable = conductor->network_subscriptions.array[0].is_reliable;
     aeron_publication_image_t *image = NULL;
     if (aeron_publication_image_create(
         &image,

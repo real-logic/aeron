@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster;
 
-public class ClusterTermination
+class ClusterTermination
 {
     private final MemberStatusPublisher memberStatusPublisher;
     private long deadlineMs;
@@ -27,9 +27,9 @@ public class ClusterTermination
         this.memberStatusPublisher = memberStatusPublisher;
     }
 
-    void deadlineMs(final long deadlineM)
+    void deadlineMs(final long deadlineMs)
     {
-        this.deadlineMs = deadlineM;
+        this.deadlineMs = deadlineMs;
     }
 
     boolean canTerminate(final ClusterMember[] members, final long terminationPosition, final long nowMs)
@@ -39,12 +39,7 @@ public class ClusterTermination
             return false;
         }
 
-        if (haveFollowersTerminated(members, terminationPosition) || nowMs >= deadlineMs)
-        {
-            return true;
-        }
-
-        return false;
+        return haveFollowersTerminated(members, terminationPosition) || nowMs >= deadlineMs;
     }
 
     void hasServiceTerminated(final boolean hasServiceTerminated)

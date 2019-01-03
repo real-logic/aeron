@@ -21,7 +21,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define AERON_MAX_PATH (512)
+#define AERON_MAX_PATH (384)
 #define AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED (-1)
 
 typedef void (*aeron_idle_strategy_func_t)(void *, int);

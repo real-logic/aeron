@@ -696,6 +696,7 @@ inline void aeron_driver_init_subscription_channel(
     copy_length = (size_t)uri_length < copy_length ? (size_t)uri_length : copy_length;
 
     strncpy(link->channel, uri, copy_length);
+    link->channel[copy_length] = '\0';
     link->channel_length = (int32_t)copy_length;
 }
 

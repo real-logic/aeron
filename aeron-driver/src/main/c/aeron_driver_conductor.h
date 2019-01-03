@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef AERON_DRIVER_CONDUCTOR_H
 #define AERON_DRIVER_CONDUCTOR_H
 
@@ -363,11 +362,6 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
 int aeron_driver_conductor_do_work(void *clientd);
 
 void aeron_driver_conductor_on_close(void *clientd);
-
-int aeron_driver_subscribable_add_position(
-    aeron_subscribable_t *subscribable, int64_t counter_id, int64_t *value_addr);
-
-void aeron_driver_subscribable_remove_position(aeron_subscribable_t *subscribable, int64_t counter_id);
 
 int aeron_driver_conductor_link_subscribable(
     aeron_driver_conductor_t *conductor,

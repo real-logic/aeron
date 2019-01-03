@@ -25,6 +25,7 @@ int32_t aeron_stream_position_counter_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel,
     const char *suffix);
 
@@ -32,6 +33,7 @@ int32_t aeron_channel_endpoint_status_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,
     int32_t type_id,
+    int32_t channel_length,
     const char *channel);
 
 int32_t aeron_heartbeat_status_allocate(
@@ -54,6 +56,7 @@ int32_t aeron_counter_publisher_limit_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel);
 
 int32_t aeron_counter_sender_position_allocate(
@@ -61,6 +64,7 @@ int32_t aeron_counter_sender_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel);
 
 int32_t aeron_counter_sender_limit_allocate(
@@ -68,6 +72,7 @@ int32_t aeron_counter_sender_limit_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel);
 
 #define AERON_COUNTER_SUBSCRIPTION_POSITION_NAME "sub-pos"
@@ -78,6 +83,7 @@ int32_t aeron_counter_subscription_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel,
     int64_t joining_position);
 
@@ -89,6 +95,7 @@ int32_t aeron_counter_receiver_hwm_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel);
 
 #define AERON_COUNTER_RECEIVER_POSITION_NAME "rcv-pos"
@@ -99,6 +106,7 @@ int32_t aeron_counter_receiver_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel);
 
 #define AERON_COUNTER_SEND_CHANNEL_STATUS_NAME "snd-channel"
@@ -114,10 +122,12 @@ int32_t aeron_counter_receiver_position_allocate(
 
 int32_t aeron_counter_send_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
+    int32_t channel_length,
     const char *channel);
 
 int32_t aeron_counter_receive_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
+    int32_t channel_length,
     const char *channel);
 
 #define AERON_COUNTER_CLIENT_HEARTBEAT_STATUS_NAME "client-heartbeat"
@@ -135,6 +145,7 @@ int32_t aeron_counter_publisher_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel);
 
 #endif

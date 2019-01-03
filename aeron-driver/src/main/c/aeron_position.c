@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,20 +54,21 @@ int32_t aeron_stream_position_counter_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel,
     const char *suffix)
 {
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
     int label_length = snprintf(
-        label, sizeof(label), "%s: %" PRId64 " %" PRId32 " %" PRId32 " %s %s",
-        name, registration_id, session_id, stream_id, channel, suffix);
+        label, sizeof(label), "%s: %" PRId64 " %" PRId32 " %" PRId32 " %.*s %s",
+        name, registration_id, session_id, stream_id, channel_length, channel, suffix);
 
     aeron_stream_position_counter_key_layout_t layout =
         {
             .registration_id = registration_id,
             .session_id = session_id,
             .stream_id = stream_id,
-            .channel_length = (int32_t)strlen(channel)
+            .channel_length = channel_length
         };
 
     strncpy(layout.channel, channel, sizeof(layout.channel) - 1);
@@ -81,6 +82,7 @@ int32_t aeron_counter_publisher_limit_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel)
 {
     return aeron_stream_position_counter_allocate(
@@ -90,6 +92,7 @@ int32_t aeron_counter_publisher_limit_allocate(
         registration_id,
         session_id,
         stream_id,
+        channel_length,
         channel,
         "");
 }
@@ -99,6 +102,7 @@ int32_t aeron_counter_subscription_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel,
     int64_t joining_position)
 {
@@ -113,6 +117,7 @@ int32_t aeron_counter_subscription_position_allocate(
         registration_id,
         session_id,
         stream_id,
+        channel_length,
         channel,
         buffer);
 }
@@ -122,6 +127,7 @@ int32_t aeron_counter_sender_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel)
 {
     return aeron_stream_position_counter_allocate(
@@ -131,6 +137,7 @@ int32_t aeron_counter_sender_position_allocate(
         registration_id,
         session_id,
         stream_id,
+        channel_length,
         channel,
         "");
 }
@@ -140,6 +147,7 @@ int32_t aeron_counter_sender_limit_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel)
 {
     return aeron_stream_position_counter_allocate(
@@ -149,6 +157,7 @@ int32_t aeron_counter_sender_limit_allocate(
         registration_id,
         session_id,
         stream_id,
+        channel_length,
         channel,
         "");
 }
@@ -158,6 +167,7 @@ int32_t aeron_counter_receiver_hwm_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel)
 {
     return aeron_stream_position_counter_allocate(
@@ -167,6 +177,7 @@ int32_t aeron_counter_receiver_hwm_allocate(
         registration_id,
         session_id,
         stream_id,
+        channel_length,
         channel,
         "");
 }
@@ -176,6 +187,7 @@ int32_t aeron_counter_receiver_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel)
 {
     return aeron_stream_position_counter_allocate(
@@ -185,6 +197,7 @@ int32_t aeron_counter_receiver_position_allocate(
         registration_id,
         session_id,
         stream_id,
+        channel_length,
         channel,
         "");
 }
@@ -193,13 +206,14 @@ int32_t aeron_channel_endpoint_status_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,
     int32_t type_id,
+    int32_t channel_length,
     const char *channel)
 {
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
-    int label_length = snprintf(label, sizeof(label), "%s: %s", name, channel);
+    int label_length = snprintf(label, sizeof(label), "%s: %.*s", name, channel_length, channel);
     aeron_channel_endpoint_status_key_layout_t layout =
         {
-            .channel_length = (int32_t)strlen(channel)
+            .channel_length = channel_length
         };
 
     strncpy(layout.channel, channel, sizeof(layout.channel) - 1);
@@ -210,23 +224,27 @@ int32_t aeron_channel_endpoint_status_allocate(
 
 int32_t aeron_counter_send_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
+    int32_t channel_length,
     const char *channel)
 {
     return aeron_channel_endpoint_status_allocate(
         counters_manager,
         AERON_COUNTER_SEND_CHANNEL_STATUS_NAME,
         AERON_COUNTER_SEND_CHANNEL_STATUS_TYPE_ID,
+        channel_length,
         channel);
 }
 
 int32_t aeron_counter_receive_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
+    int32_t channel_length,
     const char *channel)
 {
     return aeron_channel_endpoint_status_allocate(
         counters_manager,
         AERON_COUNTER_RECEIVE_CHANNEL_STATUS_NAME,
         AERON_COUNTER_RECEIVE_CHANNEL_STATUS_TYPE_ID,
+        channel_length,
         channel);
 }
 
@@ -263,6 +281,7 @@ int32_t aeron_counter_publisher_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
+    int32_t channel_length,
     const char *channel)
 {
     return aeron_stream_position_counter_allocate(
@@ -272,6 +291,7 @@ int32_t aeron_counter_publisher_position_allocate(
         registration_id,
         session_id,
         stream_id,
+        channel_length,
         channel,
         "");
 }

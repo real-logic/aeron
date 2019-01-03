@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,7 +162,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddSingleP
             EXPECT_EQ(response.subscriberRegistrationId(), sub_id);
 
             EXPECT_EQ(log_file_name, response.logFileName());
-            EXPECT_EQ(CHANNEL_1, response.sourceIdentity());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;
@@ -290,7 +290,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddMultipleSubscriptionWithSameStre
             EXPECT_TRUE(response.subscriberRegistrationId() == sub_id_1 || response.subscriberRegistrationId() == sub_id_2);
 
             EXPECT_EQ(log_file_name, response.logFileName());
-            EXPECT_EQ(CHANNEL_1, response.sourceIdentity());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;
@@ -356,7 +356,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddMultipl
             EXPECT_EQ(response.sessionId(), session_id_1);
             EXPECT_EQ(response.correlationId(), pub_id_1);
             EXPECT_EQ(log_file_name_1, response.logFileName());
-            EXPECT_EQ(CHANNEL_1, response.sourceIdentity());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
         else if (3 == response_number)
         {
@@ -380,7 +380,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToAddSingleSubscriptionThenAddMultipl
             EXPECT_EQ(response.sessionId(), session_id_2);
             EXPECT_EQ(response.correlationId(), pub_id_2);
             EXPECT_EQ(log_file_name_2, response.logFileName());
-            EXPECT_EQ(CHANNEL_1, response.sourceIdentity());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
 
         response_number++;
@@ -441,7 +441,7 @@ TEST_F(DriverConductorSpyTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
             EXPECT_EQ(response.sessionId(), session_id);
             EXPECT_EQ(response.correlationId(), pub_id_1);
             EXPECT_EQ(log_file_name, response.logFileName());
-            EXPECT_EQ(CHANNEL_1, response.sourceIdentity());
+            EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
         }
         else if (3 == response_number)
         {

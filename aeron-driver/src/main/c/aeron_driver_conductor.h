@@ -85,9 +85,11 @@ aeron_subscribable_list_entry_t;
 
 typedef struct aeron_subscription_link_stct
 {
+    char channel[AERON_MAX_PATH];
     int64_t client_id;
     int64_t registration_id;
     int32_t stream_id;
+    int32_t channel_length;
     bool is_reliable;
     bool is_sparse;
 
@@ -371,6 +373,7 @@ int aeron_driver_conductor_link_subscribable(
     int32_t session_id,
     int32_t stream_id,
     int64_t join_position,
+    int32_t uri_length,
     const char *original_uri,
     const char *source_identity,
     const char *log_file_name,
@@ -684,6 +687,16 @@ inline int64_t * aeron_driver_conductor_system_counter_addr(
     aeron_driver_conductor_t *conductor, aeron_system_counter_enum_t type)
 {
     return aeron_system_counter_addr(&conductor->system_counters, type);
+}
+
+inline void aeron_driver_init_subscription_channel(
+    int32_t uri_length, const char *uri, aeron_subscription_link_t *link)
+{
+    size_t copy_length = sizeof(link->channel) - 1;
+    copy_length = (size_t)uri_length < copy_length ? (size_t)uri_length : copy_length;
+
+    strncpy(link->channel, uri, copy_length);
+    link->channel_length = (int32_t)copy_length;
 }
 
 #endif //AERON_DRIVER_CONDUCTOR_H

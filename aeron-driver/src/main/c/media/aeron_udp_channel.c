@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +131,7 @@ int aeron_find_unicast_interface(
     return 0;
 }
 
-int aeron_uri_udp_canonicalize(
+int aeron_uri_udp_canonicalise(
     char *canonical_form, size_t length, struct sockaddr_storage *local_data, struct sockaddr_storage *remote_data)
 {
     char local_data_str[AERON_FORMAT_HEX_LENGTH(sizeof(struct sockaddr_in6))];
@@ -200,8 +200,13 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
         goto error_cleanup;
     }
 
-    strncpy(_channel->original_uri, uri, sizeof(_channel->original_uri));
-    _channel->uri_length = uri_length;
+    size_t copy_length = sizeof(_channel->original_uri) - 1;
+    copy_length = uri_length < copy_length ? uri_length : copy_length;
+
+    strncpy(_channel->original_uri, uri, copy_length);
+    _channel->original_uri[copy_length] = '\0';
+    _channel->uri_length = copy_length;
+
     _channel->explicit_control = false;
     _channel->multicast = false;
 
@@ -267,7 +272,7 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
         _channel->multicast_ttl = aeron_uri_multicast_ttl(&_channel->uri);
         memcpy(&_channel->local_data, &interface_addr, AERON_ADDR_LEN(&interface_addr));
         memcpy(&_channel->local_control, &interface_addr, AERON_ADDR_LEN(&interface_addr));
-        aeron_uri_udp_canonicalize(
+        aeron_uri_udp_canonicalise(
             _channel->canonical_form, sizeof(_channel->canonical_form), &interface_addr, &endpoint_addr);
         _channel->canonical_length = strlen(_channel->canonical_form);
         _channel->multicast = true;
@@ -280,7 +285,7 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
         memcpy(&_channel->remote_control, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
         memcpy(&_channel->local_data, &explicit_control_addr, AERON_ADDR_LEN(&explicit_control_addr));
         memcpy(&_channel->local_control, &explicit_control_addr, AERON_ADDR_LEN(&explicit_control_addr));
-        aeron_uri_udp_canonicalize(
+        aeron_uri_udp_canonicalise(
             _channel->canonical_form, sizeof(_channel->canonical_form), &explicit_control_addr, &endpoint_addr);
         _channel->canonical_length = strlen(_channel->canonical_form);
         _channel->explicit_control = true;
@@ -299,7 +304,7 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
         memcpy(&_channel->remote_control, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
         memcpy(&_channel->local_data, &interface_addr, AERON_ADDR_LEN(&interface_addr));
         memcpy(&_channel->local_control, &interface_addr, AERON_ADDR_LEN(&interface_addr));
-        aeron_uri_udp_canonicalize(
+        aeron_uri_udp_canonicalise(
             _channel->canonical_form, sizeof(_channel->canonical_form), &interface_addr, &endpoint_addr);
         _channel->canonical_length = strlen(_channel->canonical_form);
     }

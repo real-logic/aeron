@@ -833,8 +833,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 case TERMINATING:
                     final boolean canTerminate;
-
-                    if (Cluster.Role.FOLLOWER == role)
+                    if (null == clusterTermination)
                     {
                         memberStatusPublisher.terminationAck(leaderMember.publication(), logPosition, memberId);
                         canTerminate = true;

@@ -1205,7 +1205,6 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     conductor->context->to_driver_interceptor_func(msg_type_id, message, length, clientd);
 
     char error_message[AERON_MAX_PATH] = "\0";
-    char *error_description = "generic error";
 
     switch (msg_type_id)
     {
@@ -1414,8 +1413,8 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     {
         int os_errno = aeron_errcode();
         int code = os_errno > 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
+        char *error_description = strerror(os_errno);
 
-        error_description = strerror(os_errno);
         AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
         aeron_driver_conductor_on_error(conductor, code, error_message, strlen(error_message), correlation_id);
         aeron_driver_conductor_error(conductor, code, error_description, error_message);
@@ -1602,8 +1601,6 @@ void aeron_driver_subscribable_remove_position(aeron_subscribable_t *subscribabl
         }
     }
 }
-
-extern void aeron_driver_subscribable_null_hook(void *clientd, int64_t *value_addr);
 
 int aeron_driver_conductor_link_subscribable(
     aeron_driver_conductor_t *conductor,
@@ -2642,6 +2639,8 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
         /* do not know where it came from originally, so just free command on the conductor duty cycle */
     }
 }
+
+extern void aeron_driver_subscribable_null_hook(void *clientd, int64_t *value_addr);
 
 extern bool aeron_driver_conductor_is_subscribable_linked(
     aeron_subscription_link_t *link, aeron_subscribable_t *subscribable);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,8 @@ int aeron_publication_image_create(
 
     aeron_publication_image_t *_image = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
-    const uint64_t log_length = aeron_logbuffer_compute_log_length((uint64_t)term_buffer_length, context->file_page_size);
+    const uint64_t log_length = aeron_logbuffer_compute_log_length((uint64_t)term_buffer_length,
+        context->file_page_size);
     bool is_multicast = endpoint->conductor_fields.udp_channel->multicast;
     int64_t now_ns = context->nano_clock();
 
@@ -88,7 +89,8 @@ int aeron_publication_image_create(
     if (aeron_loss_detector_init(
         &_image->loss_detector,
         is_multicast,
-        is_multicast ? aeron_loss_detector_nak_multicast_delay_generator : aeron_loss_detector_nak_unicast_delay_generator,
+        is_multicast ?
+            aeron_loss_detector_nak_multicast_delay_generator : aeron_loss_detector_nak_unicast_delay_generator,
         aeron_publication_image_on_gap_detected, _image) < 0)
     {
         aeron_free(_image);
@@ -270,7 +272,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
         {
             image->loss_reporter_offset = aeron_loss_reporter_create_entry(
                 image->loss_reporter,
-                (int64_t) length,
+                (int64_t)length,
                 image->epoch_clock(),
                 image->session_id,
                 image->stream_id,
@@ -451,7 +453,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
         {
             const int32_t term_id = image->loss_term_id;
             const int32_t term_offset = image->loss_term_offset;
-            const int32_t length = (int32_t) image->loss_length;
+            const int32_t length = (int32_t)image->loss_length;
 
             aeron_acquire();
 
@@ -531,8 +533,8 @@ void aeron_publication_image_on_time_event(
             if (0 == image->conductor_fields.subscribable.length ||
                 now_ns > (last_packet_timestamp_ns + image->conductor_fields.liveness_timeout_ns) ||
                 (is_end_of_stream &&
-                    aeron_counter_get(image->rcv_pos_position.value_addr) >=
-                        aeron_counter_get_volatile(image->rcv_hwm_position.value_addr)))
+                 aeron_counter_get(image->rcv_pos_position.value_addr) >=
+                 aeron_counter_get_volatile(image->rcv_hwm_position.value_addr)))
             {
                 image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_INACTIVE;
                 image->conductor_fields.time_of_last_status_change_ns = now_ns;
@@ -589,7 +591,7 @@ extern bool aeron_publication_image_is_accepting_subscriptions(aeron_publication
 
 extern void aeron_publication_image_disconnect_endpoint(aeron_publication_image_t *image);
 
-extern const char * aeron_publication_image_log_file_name(aeron_publication_image_t *image);
+extern const char *aeron_publication_image_log_file_name(aeron_publication_image_t *image);
 
 extern int64_t aeron_publication_image_registration_id(aeron_publication_image_t *image);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -638,7 +638,7 @@ void aeron_network_publication_on_rttm(
 void aeron_network_publication_clean_buffer(aeron_network_publication_t *publication, int64_t pub_lmt)
 {
     const int64_t clean_position = publication->conductor_fields.clean_position;
-    const int64_t dirty_range = pub_lmt  - clean_position;
+    const int64_t dirty_range = pub_lmt - clean_position;
     const int32_t buffer_capacity = publication->term_length_mask + 1;
     const int32_t reserved_range = buffer_capacity * 2;
 

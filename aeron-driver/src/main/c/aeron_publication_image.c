@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <inttypes.h>
 #include "util/aeron_netutil.h"
 #include "concurrent/aeron_term_rebuilder.h"
 #include "util/aeron_error.h"
@@ -64,7 +65,9 @@ int aeron_publication_image_create(
 
     if (usable_fs_space < log_length)
     {
-        aeron_set_err(ENOSPC, "Insufficient usable storage for new log of length=%d in %s", log_length, context->aeron_dir);
+        aeron_set_err(
+            ENOSPC,
+            "Insufficient usable storage for new log of length=%" PRId64 " in %s", log_length, context->aeron_dir);
         return -1;
     }
 
@@ -103,7 +106,7 @@ int aeron_publication_image_create(
     }
     _image->map_raw_log_close_func = context->map_raw_log_close_func;
 
-    strncpy(_image->log_file_name, path, path_length);
+    strncpy(_image->log_file_name, path, (size_t)path_length);
     _image->log_file_name[path_length] = '\0';
     _image->log_file_name_length = (size_t)path_length;
     _image->log_meta_data = (aeron_logbuffer_metadata_t *)(_image->mapped_raw_log.log_meta_data.addr);
@@ -233,7 +236,7 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
 
     if (length > 0)
     {
-        memset(image->mapped_raw_log.term_buffers[dirty_term_index].addr + term_offset, 0, length);
+        memset(image->mapped_raw_log.term_buffers[dirty_term_index].addr + term_offset, 0, (size_t)length);
         image->conductor_fields.clean_position = clean_position + (int64_t)length;
     }
 }

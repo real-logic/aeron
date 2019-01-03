@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 #include "concurrent/aeron_counters_manager.h"
 #include "concurrent/aeron_logbuffer_unblocker.h"
 #include "aeron_ipc_publication.h"
@@ -53,7 +54,8 @@ int aeron_ipc_publication_create(
     if (usable_fs_space < log_length)
     {
         aeron_set_err(
-            ENOSPC, "Insufficient usable storage for new log of length=%d in %s", log_length, context->aeron_dir);
+            ENOSPC,
+            "Insufficient usable storage for new log of length=%" PRId64 " in %s", log_length, context->aeron_dir);
         return -1;
     }
 
@@ -81,7 +83,7 @@ int aeron_ipc_publication_create(
     }
     _pub->map_raw_log_close_func = context->map_raw_log_close_func;
 
-    strncpy(_pub->log_file_name, path, path_length);
+    strncpy(_pub->log_file_name, path, (size_t)path_length);
     _pub->log_file_name[path_length] = '\0';
     _pub->log_file_name_length = (size_t)path_length;
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
@@ -217,9 +219,9 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
     int32_t bytes_left_in_term = term_length - term_offset;
     int32_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
 
-    if (0 < length)
+    if (length > 0)
     {
-        memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
+        memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, (size_t)length);
         publication->conductor_fields.cleaning_position = cleaning_position + length;
     }
 }

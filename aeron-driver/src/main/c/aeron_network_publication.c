@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <inttypes.h>
 #include "concurrent/aeron_term_scanner.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
@@ -80,7 +81,8 @@ int aeron_network_publication_create(
     if (usable_fs_space < log_length)
     {
         aeron_set_err(
-            ENOSPC, "Insufficient usable storage for new log of length=%d in %s", log_length, context->aeron_dir);
+            ENOSPC,
+            "Insufficient usable storage for new log of length=%" PRId64 " in %s", log_length, context->aeron_dir);
         return -1;
     }
 
@@ -119,7 +121,7 @@ int aeron_network_publication_create(
     }
     _pub->map_raw_log_close_func = context->map_raw_log_close_func;
 
-    strncpy(_pub->log_file_name, path, path_length);
+    strncpy(_pub->log_file_name, path, (size_t)path_length);
     _pub->log_file_name[path_length] = '\0';
     _pub->log_file_name_length = (size_t)path_length;
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
@@ -182,7 +184,7 @@ int aeron_network_publication_create(
     _pub->time_of_last_send_or_heartbeat_ns = now_ns - AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
     _pub->time_of_last_setup_ns = now_ns - AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS - 1;
     _pub->status_message_deadline_ns = spies_simulate_connection ?
-        now_ns : (now_ns + (int64_t)context->publication_connection_timeout_ns);
+        now_ns : now_ns + (int64_t)context->publication_connection_timeout_ns;
     _pub->is_exclusive = is_exclusive;
     _pub->spies_simulate_connection = spies_simulate_connection;
     _pub->should_send_setup_frame = true;
@@ -362,7 +364,6 @@ int aeron_network_publication_send_data(
 
         uint8_t *ptr = publication->mapped_raw_log.term_buffers[active_index].addr + term_offset;
         const size_t term_length_left = term_length - (size_t)term_offset;
-
         const size_t available = aeron_term_scanner_scan_for_availability(ptr, term_length_left, scan_limit, &padding);
 
         if (available > 0)
@@ -482,7 +483,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
     const int64_t sender_position = aeron_counter_get(publication->snd_pos_position.value_addr);
     const int64_t resend_position = aeron_logbuffer_compute_position(
         term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
-    const size_t term_length = (size_t)(publication->term_length_mask + 1);
+    const size_t term_length = (size_t)(publication->term_length_mask + 1L);
     int result = 0;
 
     if (resend_position < sender_position && resend_position >= (sender_position - (int32_t)term_length))
@@ -553,7 +554,7 @@ void aeron_network_publication_on_nak(
         term_id,
         term_offset,
         (size_t)length,
-        (size_t)(publication->term_length_mask + 1),
+        (size_t)(publication->term_length_mask + 1L),
         publication->nano_clock(),
         aeron_network_publication_resend,
         publication);
@@ -649,7 +650,7 @@ void aeron_network_publication_clean_buffer(aeron_network_publication_t *publica
         int32_t bytes_for_cleaning = (int32_t)(dirty_range - reserved_range);
         int32_t length = bytes_for_cleaning < bytes_left_in_term ? bytes_for_cleaning : bytes_left_in_term;
 
-        memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
+        memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, (size_t)length);
         publication->conductor_fields.clean_position = clean_position + length;
     }
 }

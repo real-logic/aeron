@@ -212,7 +212,7 @@ int aeron_driver_conductor_find_client(aeron_driver_conductor_t *conductor, int6
     return index;
 }
 
-aeron_client_t * aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_t *conductor, int64_t client_id)
+aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_t *conductor, int64_t client_id)
 {
     aeron_client_t *client = NULL;
     int index;
@@ -233,7 +233,7 @@ aeron_client_t * aeron_driver_conductor_get_or_add_client(aeron_driver_conductor
 
             if (client_heartbeat.counter_id >= 0)
             {
-                index = (int) conductor->clients.length;
+                index = (int)conductor->clients.length;
                 client = &conductor->clients.array[index];
 
                 client->client_id = client_id;
@@ -412,7 +412,8 @@ void aeron_ipc_publication_entry_on_time_event(
 
         case AERON_IPC_PUBLICATION_STATUS_LINGER:
             if (now_ns >
-                (publication->conductor_fields.managed_resource.time_of_last_status_change + publication->linger_timeout_ns))
+                (publication->conductor_fields.managed_resource.time_of_last_status_change +
+                publication->linger_timeout_ns))
             {
                 publication->conductor_fields.has_reached_end_of_life = true;
             }
@@ -656,7 +657,7 @@ void aeron_driver_conductor_on_check_managed_resources(
         conductor, conductor->lingering_resources, aeron_linger_resource_entry_t, now_ns, now_ms);
 }
 
-aeron_ipc_publication_t * aeron_driver_conductor_get_or_add_ipc_publication(
+aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     aeron_driver_conductor_t *conductor,
     aeron_client_t *client,
     aeron_uri_publication_params_t *params,
@@ -755,7 +756,7 @@ aeron_ipc_publication_t * aeron_driver_conductor_get_or_add_ipc_publication(
     return ensure_capacity_result >= 0 ? publication : NULL;
 }
 
-aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publication(
+aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publication(
     aeron_driver_conductor_t *conductor,
     aeron_client_t *client,
     aeron_send_channel_endpoint_t *endpoint,
@@ -833,13 +834,14 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
 
                 aeron_flow_control_strategy_supplier_func_t flow_control_strategy_supplier_func =
                     udp_channel->explicit_control || udp_channel->multicast ?
-                    conductor->context->multicast_flow_control_supplier_func :
-                    conductor->context->unicast_flow_control_supplier_func;
+                        conductor->context->multicast_flow_control_supplier_func :
+                        conductor->context->unicast_flow_control_supplier_func;
                 aeron_flow_control_strategy_t *flow_control_strategy;
 
                 if (flow_control_strategy_supplier_func(
                     &flow_control_strategy,
-                    endpoint->conductor_fields.udp_channel->original_uri,
+                    uri_length,
+                    uri,
                     stream_id,
                     registration_id,
                     initial_term_id,
@@ -899,7 +901,7 @@ aeron_network_publication_t * aeron_driver_conductor_get_or_add_network_publicat
     return ensure_capacity_result >= 0 ? publication : NULL;
 }
 
-aeron_send_channel_endpoint_t * aeron_driver_conductor_get_or_add_send_channel_endpoint(
+aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_endpoint(
     aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel)
 {
     aeron_send_channel_endpoint_t *endpoint = aeron_str_to_ptr_hash_map_get(
@@ -948,10 +950,10 @@ aeron_send_channel_endpoint_t * aeron_driver_conductor_get_or_add_send_channel_e
     return endpoint;
 }
 
-aeron_receive_channel_endpoint_t * aeron_driver_conductor_get_or_add_receive_channel_endpoint(
+aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_channel_endpoint(
     aeron_driver_conductor_t *conductor, aeron_udp_channel_t *channel)
 {
-    aeron_receive_channel_endpoint_t * endpoint = aeron_str_to_ptr_hash_map_get(
+    aeron_receive_channel_endpoint_t *endpoint = aeron_str_to_ptr_hash_map_get(
         &conductor->receive_channel_endpoint_by_channel_map, channel->canonical_form, channel->canonical_length);
 
     if (NULL == endpoint)
@@ -1219,7 +1221,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             }
 
             correlation_id = command->correlated.correlation_id;
-            const char* channel = (const char *)message + sizeof(aeron_publication_command_t);
+            const char *channel = (const char *)message + sizeof(aeron_publication_command_t);
 
             if (strncmp(channel, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN) == 0)
             {
@@ -1243,7 +1245,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             }
 
             correlation_id = command->correlated.correlation_id;
-            const char* channel = (const char *)message + sizeof(aeron_publication_command_t);
+            const char *channel = (const char *)message + sizeof(aeron_publication_command_t);
 
             if (strncmp(channel, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN) == 0)
             {
@@ -1423,8 +1425,8 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     return;
 
     malformed_command:
-        AERON_FORMAT_BUFFER(error_message, "command=%d too short: length=%lu", msg_type_id, length);
-        aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short", error_message);
+    AERON_FORMAT_BUFFER(error_message, "command=%d too short: length=%lu", msg_type_id, length);
+    aeron_driver_conductor_error(conductor, AERON_ERROR_CODE_MALFORMED_COMMAND, "command too short", error_message);
 }
 
 void aeron_driver_conductor_on_command_queue(void *clientd, volatile void *item)
@@ -1767,8 +1769,8 @@ int aeron_driver_conductor_on_add_ipc_publication(
     return 0;
 
     error_cleanup:
-        aeron_uri_close(&aeron_uri_params);
-        return -1;
+    aeron_uri_close(&aeron_uri_params);
+    return -1;
 }
 
 int aeron_driver_conductor_on_add_network_publication(
@@ -1974,8 +1976,8 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     return 0;
 
     error_cleanup:
-        aeron_uri_close(&aeron_uri_params);
-        return -1;
+    aeron_uri_close(&aeron_uri_params);
+    return -1;
 }
 
 int aeron_driver_conductor_on_add_spy_subscription(
@@ -1984,10 +1986,10 @@ int aeron_driver_conductor_on_add_spy_subscription(
 {
     aeron_udp_channel_t *udp_channel = NULL;
     aeron_send_channel_endpoint_t *endpoint = NULL;
-    const char *uri = (const char *) command + sizeof(aeron_subscription_command_t) + strlen(AERON_SPY_PREFIX);
+    const char *uri = (const char *)command + sizeof(aeron_subscription_command_t) + strlen(AERON_SPY_PREFIX);
     aeron_uri_subscription_params_t params;
 
-    if (aeron_udp_channel_parse(uri, (size_t) command->channel_length - strlen(AERON_SPY_PREFIX), &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri, (size_t)command->channel_length - strlen(AERON_SPY_PREFIX), &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor->context) < 0)
     {
         return -1;
@@ -2319,6 +2321,7 @@ int aeron_driver_conductor_on_add_destination(
         "unknown add destination registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
+
     return -1;
 }
 
@@ -2385,6 +2388,7 @@ int aeron_driver_conductor_on_remove_destination(
         "unknown remove destination registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
+
     return -1;
 }
 

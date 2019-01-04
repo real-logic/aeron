@@ -92,7 +92,7 @@ int64_t aeron_max_flow_control_strategy_on_sm(
     strategy_state->last_position = position > strategy_state->last_position ? position : strategy_state->last_position;
     strategy_state->time_of_last_status_message = now_ns;
 
-    return (snd_lmt > window_edge) ? snd_lmt : window_edge;
+    return snd_lmt > window_edge ? snd_lmt : window_edge;
 }
 
 bool aeron_max_flow_control_strategy_should_linger(
@@ -116,6 +116,7 @@ int aeron_max_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy
 
 int aeron_max_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
+    int32_t channel_length,
     const char *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -147,6 +148,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
 
 int aeron_unicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
+    int32_t channel_length,
     const char *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -154,5 +156,5 @@ int aeron_unicast_flow_control_strategy_supplier(
     size_t term_buffer_capacity)
 {
     return aeron_max_multicast_flow_control_strategy_supplier(
-        strategy, channel, stream_id, registration_id, initial_term_id, term_buffer_capacity);
+        strategy, channel_length, channel, stream_id, registration_id, initial_term_id, term_buffer_capacity);
 }

@@ -30,7 +30,7 @@ class InterfaceSearchAddress
     private static final Pattern IPV4_ADDRESS_PATTERN = Pattern.compile(
         "([^:/]+)(?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
     private static final Pattern IPV6_ADDRESS_PATTERN = Pattern.compile(
-        "\\[([0-9A-Fa-f:]+)\\](?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
+        "\\[([0-9A-Fa-f:]+)](?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
 
     private final InetSocketAddress address;
     private final int subnetPrefix;
@@ -65,7 +65,7 @@ class InterfaceSearchAddress
     {
         if (Strings.isEmpty(s))
         {
-            throw new IllegalArgumentException("Search address string is null or empty");
+            throw new IllegalArgumentException("search address string is null or empty");
         }
 
         final Matcher matcher = getMatcher(s);
@@ -99,6 +99,6 @@ class InterfaceSearchAddress
             return ipV6Matcher;
         }
 
-        throw new IllegalArgumentException("Invalid search address: " + cs);
+        throw new IllegalArgumentException("invalid search address: " + cs);
     }
 }

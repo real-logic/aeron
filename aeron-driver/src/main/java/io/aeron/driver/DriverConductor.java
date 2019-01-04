@@ -139,9 +139,9 @@ public class DriverConductor implements Agent
 
     public void onClose()
     {
-        publicationImages.forEach(PublicationImage::close);
-        networkPublications.forEach(NetworkPublication::close);
-        ipcPublications.forEach(IpcPublication::close);
+        publicationImages.forEach(PublicationImage::free);
+        networkPublications.forEach(NetworkPublication::free);
+        ipcPublications.forEach(IpcPublication::free);
     }
 
     public String roleName()
@@ -834,13 +834,12 @@ public class DriverConductor implements Agent
         counterLink.close();
     }
 
-    void onClientClose(final long clientId, final long correlationId)
+    void onClientClose(final long clientId)
     {
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {
             client.timeOfLastKeepaliveMs(0);
-            clientProxy.operationSucceeded(correlationId);
         }
     }
 

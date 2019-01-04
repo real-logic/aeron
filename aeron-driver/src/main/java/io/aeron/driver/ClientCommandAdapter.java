@@ -200,8 +200,7 @@ class ClientCommandAdapter implements MessageHandler
                 {
                     correlatedMsgFlyweight.wrap(buffer, index);
 
-                    correlationId = correlatedMsgFlyweight.correlationId();
-                    conductor.onClientClose(correlatedMsgFlyweight.clientId(), correlationId);
+                    conductor.onClientClose(correlatedMsgFlyweight.clientId());
                     break;
                 }
 

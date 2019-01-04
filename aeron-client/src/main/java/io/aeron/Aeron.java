@@ -210,17 +210,21 @@ public class Aeron implements AutoCloseable
         {
             if (null != conductorRunner)
             {
+                conductor.clientClose();
                 conductorRunner.close();
                 if (!conductorRunner.isClosed())
                 {
-                    throw new AeronException("failed to close Aeron client");
+                    isClosed = 0;
+                    throw new AeronException("failed to close Aeron client - possibly due to thread interrupt");
                 }
             }
             else
             {
+                conductor.clientClose();
                 conductorInvoker.close();
                 if (!conductorInvoker.isClosed())
                 {
+                    isClosed = 0;
                     throw new AeronException("failed to close Aeron client");
                 }
             }

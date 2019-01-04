@@ -108,19 +108,28 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 isClosed = true;
 
-                final int lingeringResourcesSize = lingeringResources.size();
                 forceCloseResources();
-
-                if (lingeringResources.size() > lingeringResourcesSize)
-                {
-                    Aeron.sleep(16);
-                }
+                Thread.yield();
 
                 for (int i = 0, size = lingeringResources.size(); i < size; i++)
                 {
                     lingeringResources.get(i).delete();
                 }
+            }
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
 
+    void clientClose()
+    {
+        clientLock.lock();
+        try
+        {
+            if (!isClosed)
+            {
                 driverProxy.clientClose();
             }
         }
@@ -757,6 +766,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 }
                 catch (final InterruptedException ex)
                 {
+                    onClose();
                     Thread.currentThread().interrupt();
                     LangUtil.rethrowUnchecked(ex);
                 }
@@ -780,6 +790,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
             if (Thread.interrupted())
             {
+                onClose();
                 LangUtil.rethrowUnchecked(new InterruptedException());
             }
         }
@@ -831,7 +842,6 @@ class ClientConductor implements Agent, DriverEventsListener
             if (epochClock.time() > (driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs))
             {
                 onClose();
-
                 throw new DriverTimeoutException("MediaDriver keepalive older than (ms): " + driverTimeoutMs);
             }
 

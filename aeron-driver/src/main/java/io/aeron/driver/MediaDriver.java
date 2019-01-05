@@ -242,12 +242,12 @@ public final class MediaDriver implements AutoCloseable
      */
     public void close()
     {
-        CloseHelper.quietClose(sharedRunner);
-        CloseHelper.quietClose(sharedNetworkRunner);
-        CloseHelper.quietClose(receiverRunner);
-        CloseHelper.quietClose(senderRunner);
-        CloseHelper.quietClose(conductorRunner);
-        CloseHelper.quietClose(sharedInvoker);
+        CloseHelper.close(sharedRunner);
+        CloseHelper.close(sharedNetworkRunner);
+        CloseHelper.close(receiverRunner);
+        CloseHelper.close(senderRunner);
+        CloseHelper.close(conductorRunner);
+        CloseHelper.close(sharedInvoker);
 
         if (ctx.useWindowsHighResTimer() && SystemUtil.osName().startsWith("win"))
         {

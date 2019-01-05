@@ -43,7 +43,6 @@ class ClusteredServiceAgent implements Agent, Cluster
         MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
 
     private final int serviceId;
-    private boolean isRecovering;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
     private final Aeron aeron;
@@ -99,28 +98,24 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         service.onStart(this);
 
-        isRecovering = true;
-
         final int recoveryCounterId = awaitRecoveryCounter(counters);
         heartbeatCounter.setOrdered(epochClock.time());
         checkForSnapshot(counters, recoveryCounterId);
         checkForReplay(counters, recoveryCounterId);
-
-        isRecovering = false;
     }
 
     public void onClose()
     {
         if (!ctx.ownsAeronClient())
         {
-            CloseHelper.close(logAdapter);
-            CloseHelper.close(consensusModuleProxy);
-            CloseHelper.close(serviceAdapter);
-
             for (final ClientSession session : sessionByIdMap.values())
             {
                 session.disconnect();
             }
+
+            CloseHelper.close(logAdapter);
+            CloseHelper.close(serviceAdapter);
+            CloseHelper.close(consensusModuleProxy);
         }
     }
 

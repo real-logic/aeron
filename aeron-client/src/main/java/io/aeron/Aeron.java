@@ -201,8 +201,6 @@ public class Aeron implements AutoCloseable
      * <p>
      * This will close all currently open {@link Publication}s, {@link Subscription}s, and {@link Counter}s created
      * from this client.
-     * @throws AeronException if the client conductor does not close cleanly. If this happens then
-     * {@link Context#close()} will not be called so that the CnC file is not unmapped to avoid segfaults.
      */
     public void close()
     {
@@ -210,25 +208,14 @@ public class Aeron implements AutoCloseable
         {
             if (null != conductorRunner)
             {
-                conductor.clientClose();
                 conductorRunner.close();
-                if (!conductorRunner.isClosed())
-                {
-                    isClosed = 0;
-                    throw new AeronException("failed to close Aeron client - possibly due to thread interrupt");
-                }
             }
             else
             {
-                conductor.clientClose();
                 conductorInvoker.close();
-                if (!conductorInvoker.isClosed())
-                {
-                    isClosed = 0;
-                    throw new AeronException("failed to close Aeron client");
-                }
             }
 
+            conductor.clientClose();
             ctx.close();
         }
     }

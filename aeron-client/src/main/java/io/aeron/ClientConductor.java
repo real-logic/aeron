@@ -128,10 +128,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            if (!isClosed)
-            {
-                driverProxy.clientClose();
-            }
+            driverProxy.clientClose();
         }
         finally
         {
@@ -766,7 +763,6 @@ class ClientConductor implements Agent, DriverEventsListener
                 }
                 catch (final InterruptedException ex)
                 {
-                    onClose();
                     Thread.currentThread().interrupt();
                     LangUtil.rethrowUnchecked(ex);
                 }
@@ -790,7 +786,6 @@ class ClientConductor implements Agent, DriverEventsListener
 
             if (Thread.interrupted())
             {
-                onClose();
                 LangUtil.rethrowUnchecked(new InterruptedException());
             }
         }

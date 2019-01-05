@@ -755,7 +755,6 @@ class ClientConductor implements Agent, DriverEventsListener
                 }
                 catch (final InterruptedException ex)
                 {
-                    Thread.currentThread().interrupt();
                     LangUtil.rethrowUnchecked(ex);
                 }
             }

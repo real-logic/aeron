@@ -2523,13 +2523,14 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     const int64_t join_position = aeron_logbuffer_compute_position(command->active_term_id, command->term_offset,
         (size_t)aeron_number_of_trailing_zeroes(command->term_length), command->initial_term_id);
 
-    const char *channel = endpoint->conductor_fields.udp_channel->original_uri;
-    int32_t channel_length = (int32_t)endpoint->conductor_fields.udp_channel->uri_length;
+    const char *uri = endpoint->conductor_fields.udp_channel->original_uri;
+    int32_t uri_length = (int32_t)endpoint->conductor_fields.udp_channel->uri_length;
 
     aeron_congestion_control_strategy_t *congestion_control = NULL;
     if (conductor->context->congestion_control_supplier_func(
         &congestion_control,
-        channel,
+        uri_length,
+        uri,
         command->stream_id,
         command->session_id,
         registration_id,
@@ -2545,9 +2546,9 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     aeron_position_t rcv_pos_position;
 
     rcv_hwm_position.counter_id = aeron_counter_receiver_hwm_allocate(
-        &conductor->counters_manager, registration_id, command->session_id, command->stream_id, channel_length, channel);
+        &conductor->counters_manager, registration_id, command->session_id, command->stream_id, uri_length, uri);
     rcv_pos_position.counter_id = aeron_counter_receiver_position_allocate(
-        &conductor->counters_manager, registration_id, command->session_id, command->stream_id, channel_length, channel);
+        &conductor->counters_manager, registration_id, command->session_id, command->stream_id, uri_length, uri);
 
     if (rcv_hwm_position.counter_id < 0 || rcv_pos_position.counter_id < 0)
     {

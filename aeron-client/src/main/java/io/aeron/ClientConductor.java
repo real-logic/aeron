@@ -125,15 +125,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     void clientClose()
     {
-        clientLock.lock();
-        try
-        {
-            driverProxy.clientClose();
-        }
-        finally
-        {
-            clientLock.unlock();
-        }
+        driverProxy.clientClose();
     }
 
     public int doWork()

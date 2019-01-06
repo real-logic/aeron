@@ -18,6 +18,7 @@
 #include <inttypes.h>
 #include "uri/aeron_uri.h"
 #include "util/aeron_arrayutil.h"
+#include "util/aeron_prop_util.h"
 #include "aeron_driver_context.h"
 #include "aeron_uri.h"
 #include "aeron_alloc.h"
@@ -276,9 +277,9 @@ int aeron_uri_get_term_length_param(aeron_uri_params_t *uri_params, aeron_uri_pu
 
     if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_TERM_LENGTH_KEY)) != NULL)
     {
-        uint64_t value = strtoull(value_str, NULL, 0);
+        uint64_t value;
 
-        if (0 == value && EINVAL == errno)
+        if (-1 == aeron_parse_size64(value_str, &value))
         {
             aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_LENGTH_KEY);
             return -1;
@@ -301,9 +302,9 @@ int aeron_uri_get_mtu_length_param(aeron_uri_params_t *uri_params, aeron_uri_pub
 
     if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_MTU_LENGTH_KEY)) != NULL)
     {
-        uint64_t value = strtoull(value_str, NULL, 0);
+        uint64_t value;
 
-        if (0 == value && EINVAL == errno)
+        if (-1 == aeron_parse_size64(value_str, &value))
         {
             aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_MTU_LENGTH_KEY);
             return -1;
@@ -326,9 +327,9 @@ int aeron_uri_linger_timeout_param(aeron_uri_params_t *uri_params, aeron_uri_pub
 
     if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_LINGER_TIMEOUT_KEY)) != NULL)
     {
-        uint64_t value = strtoull(value_str, NULL, 0);
+        uint64_t value;
 
-        if (0 == value && EINVAL == errno)
+        if (-1 == aeron_parse_duration_ns(value_str, &value))
         {
             aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_LINGER_TIMEOUT_KEY);
             return -1;

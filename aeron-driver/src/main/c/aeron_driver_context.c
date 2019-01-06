@@ -124,9 +124,10 @@ uint64_t aeron_config_parse_uint64(const char *str, uint64_t def, uint64_t min, 
 
     if (NULL != str)
     {
+        errno = 0;
         uint64_t value = strtoull(str, NULL, 0);
 
-        if (0 == value && EINVAL == errno)
+        if (0 == value && 0 != errno)
         {
             value = def;
         }

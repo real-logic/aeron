@@ -35,12 +35,13 @@ int aeron_parse_size64(const char *str, uint64_t *result)
     errno = 0;
     char *end = "";
     const int64_t v = strtoll(str, &end, 10);
-    if (v < 0 || end == str)
+
+    if (0 == v && 0 != errno)
     {
         return -1;
     }
 
-    if (0 == v && (EINVAL == errno || ERANGE == errno))
+    if (v < 0 || end == str)
     {
         return -1;
     }
@@ -100,12 +101,13 @@ int aeron_parse_duration_ns(const char *str, uint64_t *result)
     errno = 0;
     char *end = "";
     const int64_t v = strtoll(str, &end, 10);
-    if (v < 0 || end == str)
+
+    if (0 == v && 0 != errno)
     {
         return -1;
     }
 
-    if (0 == v && (EINVAL == errno || ERANGE == errno))
+    if (v < 0 || end == str)
     {
         return -1;
     }

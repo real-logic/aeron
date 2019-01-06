@@ -32,6 +32,7 @@ int aeron_parse_size64(const char *str, uint64_t *result)
         return -1;
     }
 
+    errno = 0;
     char *end = "";
     const int64_t v = strtoll(str, &end, 10);
     if (v < 0 || end == str)
@@ -96,6 +97,7 @@ int aeron_parse_duration_ns(const char *str, uint64_t *result)
         return -1;
     }
 
+    errno = 0;
     char *end = "";
     const int64_t v = strtoll(str, &end, 10);
     if (v < 0 || end == str)

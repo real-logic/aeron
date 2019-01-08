@@ -235,9 +235,9 @@ public final class AeronCluster implements AutoCloseable
      * <p>
      * This version of the method will set the timestamp value in the header to zero.
      *
-     * @param buffer        containing message.
-     * @param offset        offset in the buffer at which the encoded message begins.
-     * @param length        in bytes of the encoded message.
+     * @param buffer containing message.
+     * @param offset offset in the buffer at which the encoded message begins.
+     * @param length in bytes of the encoded message.
      * @return the same as {@link Publication#offer(DirectBuffer, int, int)}.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
@@ -248,7 +248,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Send a keep alive message to the cluster to keep this session open.
      * <p>
-     * <b>Note:</b> keep alives can fail during a leadership transition. The consumer should continue to call
+     * <b>Note:</b> keepalives can fail during a leadership transition. The consumer should continue to call
      * {@link #pollEgress()} to ensure a connection to the new leader is established.
      *
      * @return true if successfully sent otherwise false.

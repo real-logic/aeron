@@ -406,7 +406,6 @@ class ClusteredServiceAgent implements Agent, Cluster
             {
                 consensusModuleProxy.ack(activeLogEvent.logPosition, ackId++, serviceId);
 
-
                 final Image image = awaitImage(activeLogEvent.sessionId, subscription);
                 final BoundedLogAdapter adapter = new BoundedLogAdapter(image, commitPosition, this);
 

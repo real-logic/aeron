@@ -15,47 +15,60 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
-import io.aeron.cluster.service.ClusteredService;
 import org.junit.Test;
 
-import static org.mockito.Mockito.*;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
 public class SingleNodeTest
 {
     @Test(timeout = 10_000L)
-    public void shouldBeAbleStartWithDefaultConfig()
+    public void shouldStartCluster() throws Exception
     {
-        final ClusteredService mockService = mock(ClusteredService.class);
-
-        try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            new ConsensusModule.Context(), mockService, null, true, true, false))
+        try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
         {
-            harness.awaitServiceOnStart();
-            harness.awaitServiceOnRoleChange(Cluster.Role.LEADER);
+            final TestNode leader = cluster.awaitLeader();
+
+            assertThat(leader.index(), is(0));
+            assertThat(leader.role(), is(Cluster.Role.LEADER));
         }
     }
 
-    @Test(timeout = 15_000L)
-    public void shouldBeAbleToStartFromPreviousLog()
+    @Test(timeout = 10_000L)
+    public void shouldSendMessagesToCluster() throws Exception
     {
-        final int count = 150_000;
-        final int length = 100;
-
-        ConsensusModuleHarness.makeRecordingLog(count, length, null, null, new ConsensusModule.Context());
-
-        final ClusteredService mockService = mock(ClusteredService.class);
-
-        try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            new ConsensusModule.Context(), mockService, null, false, true, false))
+        try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
         {
-            harness.awaitServiceOnStart();
-            harness.awaitServiceOnRoleChange(Cluster.Role.LEADER);
-            harness.awaitServiceOnMessageCounter(count);
+            final TestNode leader = cluster.awaitLeader();
 
-            verify(mockService, times(count))
-                .onSessionMessage(any(ClientSession.class), anyLong(), any(), anyInt(), eq(length), any());
+            assertThat(leader.index(), is(0));
+            assertThat(leader.role(), is(Cluster.Role.LEADER));
+
+            cluster.startClient();
+            cluster.sendMessages(10);
+            cluster.awaitResponses(10);
+            cluster.awaitMessageCountForService(leader, 10);
+        }
+    }
+
+    @Test(timeout = 20_000L)
+    public void shouldReplayLog() throws Exception
+    {
+        try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
+        {
+            final TestNode leader = cluster.awaitLeader();
+
+            cluster.startClient();
+            cluster.sendMessages(10);
+            cluster.awaitResponses(10);
+            cluster.awaitMessageCountForService(leader, 10);
+
+            cluster.stopNode(leader);
+
+            cluster.startStaticNode(0, false);
+            final TestNode newLeader = cluster.awaitLeader();
+            cluster.awaitMessageCountForService(newLeader, 10);
         }
     }
 }

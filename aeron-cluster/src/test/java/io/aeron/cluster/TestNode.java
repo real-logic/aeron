@@ -40,6 +40,7 @@ class TestNode implements AutoCloseable
     private final ClusteredServiceContainer container;
     private final TestService service;
     private final TestNodeContext context;
+    private boolean isClosed = false;
 
     TestNode(final TestNodeContext context)
     {
@@ -71,17 +72,26 @@ class TestNode implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(clusteredMediaDriver);
-        CloseHelper.close(container);
+        if (!isClosed)
+        {
+            CloseHelper.close(clusteredMediaDriver);
+            CloseHelper.close(container);
+
+            if (null != clusteredMediaDriver)
+            {
+                clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
+            }
+
+            isClosed = true;
+        }
     }
 
-    public void cleanUp()
+    void cleanUp()
     {
         if (null != clusteredMediaDriver)
         {
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
             clusteredMediaDriver.archive().context().deleteArchiveDirectory();
-            clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
         }
 
         if (null != container)

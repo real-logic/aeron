@@ -86,14 +86,6 @@ public class TestCluster implements AutoCloseable
         CloseHelper.close(client);
         CloseHelper.close(clientMediaDriver);
 
-        for (int i = 0, length = nodes.length; i < length; i++)
-        {
-            CloseHelper.close(nodes[i]);
-        }
-    }
-
-    public void cleanUp()
-    {
         if (null != clientMediaDriver)
         {
             clientMediaDriver.context().deleteAeronDirectory();
@@ -103,26 +95,27 @@ public class TestCluster implements AutoCloseable
         {
             if (null != nodes[i])
             {
+                nodes[i].close();
                 nodes[i].cleanUp();
             }
         }
     }
 
-    static TestCluster startThreeNodeStaticCluster(final boolean cleanStart, final int appointedLeaderId)
+    static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId)
     {
         final TestCluster testCluster = new TestCluster(3, 0, appointedLeaderId);
         for (int i = 0; i < 3; i++)
         {
-            testCluster.startStaticNode(i, cleanStart);
+            testCluster.startStaticNode(i, true);
         }
 
         return testCluster;
     }
 
-    static TestCluster startSingleNodeStaticCluster(final boolean cleanStart)
+    static TestCluster startSingleNodeStaticCluster()
     {
         final TestCluster testCluster = new TestCluster(1, 0, 0);
-        testCluster.startStaticNode(0, cleanStart);
+        testCluster.startStaticNode(0, true);
 
         return testCluster;
     }
@@ -242,6 +235,14 @@ public class TestCluster implements AutoCloseable
         nodes[index] = new TestNode(testNodeContext);
 
         return nodes[index];
+    }
+
+    void stopNode(final TestNode testNode)
+    {
+        if (testNode == nodes[testNode.index()])
+        {
+            testNode.close();
+        }
     }
 
     AeronCluster client()

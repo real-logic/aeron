@@ -116,6 +116,13 @@ public interface Cluster
     Aeron aeron();
 
     /**
+     * Get the  {@link ClusteredServiceContainer.Context} under which the container is running.
+     *
+     * @return the {@link ClusteredServiceContainer.Context} under which the container is running.
+     */
+    ClusteredServiceContainer.Context context();
+
+    /**
      * Get the {@link ClientSession} for a given cluster session id.
      *
      * @param clusterSessionId to be looked up.

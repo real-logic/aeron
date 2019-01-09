@@ -167,6 +167,11 @@ class ClusteredServiceAgent implements Agent, Cluster
         return aeron;
     }
 
+    public ClusteredServiceContainer.Context context()
+    {
+        return ctx;
+    }
+
     public ClientSession getClientSession(final long clusterSessionId)
     {
         return sessionByIdMap.get(clusterSessionId);

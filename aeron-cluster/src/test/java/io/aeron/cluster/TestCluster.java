@@ -245,6 +245,22 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    void stopAllNodes()
+    {
+        for (int i = 0, length = nodes.length; i < length; i++)
+        {
+            nodes[i].close();
+        }
+    }
+
+    void restartAllNodes(final boolean cleanStart)
+    {
+        for (int i = 0, length = nodes.length; i < length; i++)
+        {
+            startStaticNode(i, cleanStart);
+        }
+    }
+
     AeronCluster client()
     {
         return client;

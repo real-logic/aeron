@@ -15,364 +15,90 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ChannelUri;
-import io.aeron.Publication;
-import io.aeron.cluster.service.ClientSession;
-import io.aeron.cluster.service.ClusteredService;
-import org.agrona.IoUtil;
-import org.agrona.collections.Long2LongHashMap;
-import org.junit.Before;
+import io.aeron.cluster.service.Cluster;
 import org.junit.Test;
 
-import java.io.File;
-
-import static org.mockito.Mockito.*;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
 public class MultiNodeTest
 {
-    private static final String THREE_NODE_MEMBERS =
-        "0,localhost:9010,localhost:9020,localhost:9030,localhost:9040,localhost:8010|" +
-        "1,localhost:9011,localhost:9021,localhost:9031,localhost:9041,localhost:8011|" +
-        "2,localhost:9012,localhost:9022,localhost:9032,localhost:9042,localhost:8012";
-
-    private final MemberStatusListener[] mockMemberStatusListeners = new MemberStatusListener[3];
-
-    @Before
-    public void before()
+    @Test(timeout = 10_000L)
+    public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot() throws Exception
     {
-        for (int i = 0; i < mockMemberStatusListeners.length; i++)
+        final int appointedLeaderIndex = 1;
+
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
-            mockMemberStatusListeners[i] = mock(MemberStatusListener.class);
+            final TestNode leader = cluster.awaitLeader();
+
+            assertThat(leader.index(), is(appointedLeaderIndex));
+            assertThat(leader.role(), is(Cluster.Role.LEADER));
+            assertThat(cluster.node(0).role(), is(Cluster.Role.FOLLOWER));
+            assertThat(cluster.node(2).role(), is(Cluster.Role.FOLLOWER));
         }
     }
 
     @Test(timeout = 10_000L)
-    public void shouldBecomeLeaderStaticThreeNodeConfigWithElection()
+    public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws Exception
     {
-        final ClusteredService mockService = mock(ClusteredService.class);
+        final int appointedLeaderIndex = 1;
+        final int messageCount = 10;
 
-        final ConsensusModule.Context context = new ConsensusModule.Context()
-            .clusterMembers(THREE_NODE_MEMBERS)
-            .appointedLeaderId(0);
-
-        try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, mockMemberStatusListeners, true, true, false))
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
-            harness.memberStatusPublisher().canvassPosition(
-                harness.memberStatusPublication(1),
-                -1L,
-                0L,
-                1);
+            TestNode leader = cluster.awaitLeader();
 
-            harness.memberStatusPublisher().canvassPosition(
-                harness.memberStatusPublication(2),
-                -1L,
-                0L,
-                2);
+            assertThat(leader.index(), is(appointedLeaderIndex));
+            assertThat(leader.role(), is(Cluster.Role.LEADER));
 
-            harness.awaitMemberStatusMessage(1, harness.onRequestVoteCounter(1));
-            harness.awaitMemberStatusMessage(2, harness.onRequestVoteCounter(2));
+            cluster.startClient();
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponses(messageCount);
+            cluster.awaitMessageCountForService(leader, messageCount);
 
-            verify(mockMemberStatusListeners[1]).onRequestVote(-1L, 0L, 0L, 0);
-            verify(mockMemberStatusListeners[2]).onRequestVote(-1L, 0L, 0L, 0);
+            cluster.stopAllNodes();
+            cluster.restartAllNodes(false);
 
-            harness.memberStatusPublisher().placeVote(
-                harness.memberStatusPublication(1),
-                0L,
-                -1L,
-                0,
-                0,
-                1,
-                true);
-
-            harness.memberStatusPublisher().placeVote(
-                harness.memberStatusPublication(2),
-                0L,
-                -1L,
-                0,
-                0,
-                2,
-                true);
-
-            harness.awaitMemberStatusMessage(1, harness.onNewLeadershipTermCounter(1));
-            harness.awaitMemberStatusMessage(2, harness.onNewLeadershipTermCounter(2));
-
-            verify(mockMemberStatusListeners[1]).onNewLeadershipTerm(eq(-1L), eq(0L), eq(0L), eq(0L), eq(0), anyInt());
-            verify(mockMemberStatusListeners[2]).onNewLeadershipTerm(eq(-1L), eq(0L), eq(0L), eq(0L), eq(0), anyInt());
-
-            harness.memberStatusPublisher().appendedPosition(
-                harness.memberStatusPublication(1), 0L, 0L, 1);
-
-            harness.memberStatusPublisher().appendedPosition(
-                harness.memberStatusPublication(2), 0L, 0L, 2);
-
-            harness.awaitServiceOnStart();
+            leader = cluster.awaitLeader();
+            cluster.awaitMessageCountForService(leader, messageCount);
+            cluster.awaitMessageCountForService(cluster.node(0), messageCount);
+            cluster.awaitMessageCountForService(cluster.node(2), messageCount);
         }
     }
 
     @Test(timeout = 10_000L)
-    public void shouldBecomeFollowerStaticThreeNodeConfigWithElection()
+    public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws Exception
     {
-        final ClusteredService mockService = mock(ClusteredService.class);
+        final int appointedLeaderIndex = 1;
+        final int preCatchupMessageCount = 5;
+        final int postCatchupMessageCount = 10;
+        final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
 
-        final ConsensusModule.Context context = new ConsensusModule.Context()
-            .clusterMembers(THREE_NODE_MEMBERS)
-            .appointedLeaderId(1);
-
-        try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, mockMemberStatusListeners, true, true, false))
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
-            harness.awaitMemberStatusMessage(1, harness.onCanvassPosition(1));
+            TestNode leader = cluster.awaitLeader();
 
-            verify(mockMemberStatusListeners[1], atLeastOnce()).onCanvassPosition(-1L, 0L, 0);
+            assertThat(leader.index(), is(appointedLeaderIndex));
+            assertThat(leader.role(), is(Cluster.Role.LEADER));
 
-            harness.memberStatusPublisher().requestVote(
-                harness.memberStatusPublication(1), -1L, 0L, 0L, 1);
+            cluster.startClient();
+            cluster.sendMessages(preCatchupMessageCount);
+            cluster.awaitResponses(preCatchupMessageCount);
+            cluster.awaitMessageCountForService(leader, preCatchupMessageCount);
 
-            harness.awaitMemberStatusMessage(1, harness.onVoteCounter(1));
+            cluster.stopNode(cluster.node(0));
 
-            verify(mockMemberStatusListeners[1]).onVote(0L, -1L, 0L, 1, 0, true);
+            cluster.sendMessages(postCatchupMessageCount);
+            cluster.awaitResponses(postCatchupMessageCount);
 
-            final Publication publication = harness.createLogPublication(
-                ChannelUri.parse(context.logChannel()), null, 0L, true);
+            cluster.stopAllNodes();
+            cluster.restartAllNodes(false);
 
-            harness.memberStatusPublisher().newLeadershipTerm(
-                harness.memberStatusPublication(1), -1L, 0L, 0L, 0L, 1, publication.sessionId());
-
-            harness.awaitMemberStatusMessage(1, harness.onCatchupPosition(1));
-
-            verify(mockMemberStatusListeners[1]).onCatchupPosition(0L, 0L, 0);
-
-            harness.createReplayPublication("localhost:9040", null, 0L, true);
-
-            harness.memberStatusPublisher().stopCatchup(
-                harness.memberStatusPublication(1), 0L, 0L, 0);
-
-            harness.awaitMemberStatusMessage(1, harness.onAppendedPositionCounter(1));
-
-            verify(mockMemberStatusListeners[1]).onAppendedPosition(0L, 0L, 0);
-
-            harness.awaitServiceOnStart();
-        }
-    }
-
-    @Test(timeout = 10_000L)
-    public void shouldBecomeLeaderStaticThreeNodeConfigWithElectionFromPreviousLog()
-    {
-        final long position = ConsensusModuleHarness.makeRecordingLog(
-            10, 100, null, null, new ConsensusModule.Context());
-        final ClusteredService mockService = mock(ClusteredService.class);
-
-        final ConsensusModule.Context context = new ConsensusModule.Context()
-            .clusterMembers(THREE_NODE_MEMBERS)
-            .appointedLeaderId(0);
-
-        try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, mockMemberStatusListeners, false, true, false))
-        {
-            harness.memberStatusPublisher().canvassPosition(
-                harness.memberStatusPublication(1),
-                0L,
-                position,
-                1);
-
-            harness.memberStatusPublisher().canvassPosition(
-                harness.memberStatusPublication(2),
-                0L,
-                position,
-                2);
-
-            harness.awaitMemberStatusMessage(1, harness.onRequestVoteCounter(1));
-            harness.awaitMemberStatusMessage(2, harness.onRequestVoteCounter(2));
-
-            verify(mockMemberStatusListeners[1]).onRequestVote(0L, position, 1L, 0);
-            verify(mockMemberStatusListeners[2]).onRequestVote(0L, position, 1L, 0);
-
-            harness.memberStatusPublisher().placeVote(
-                harness.memberStatusPublication(1),
-                1L,
-                0L,
-                position,
-                0,
-                1,
-                true);
-
-            harness.memberStatusPublisher().placeVote(
-                harness.memberStatusPublication(2),
-                1L,
-                0L,
-                position,
-                0,
-                2,
-                true);
-
-            harness.awaitMemberStatusMessage(1, harness.onNewLeadershipTermCounter(1));
-            harness.awaitMemberStatusMessage(2, harness.onNewLeadershipTermCounter(2));
-
-            verify(mockMemberStatusListeners[1]).onNewLeadershipTerm(
-                eq(0L), eq(position), eq(1L), eq(position), eq(0), anyInt());
-            verify(mockMemberStatusListeners[2]).onNewLeadershipTerm(
-                eq(0L), eq(position), eq(1L), eq(position), eq(0), anyInt());
-
-            harness.memberStatusPublisher().appendedPosition(
-                harness.memberStatusPublication(1), 1L, position, 1);
-
-            harness.memberStatusPublisher().appendedPosition(
-                harness.memberStatusPublication(2), 1L, position, 2);
-
-            harness.awaitServiceOnStart();
-            harness.awaitServiceOnMessageCounter(10);
-
-            verify(mockService, times(10))
-                .onSessionMessage(any(ClientSession.class), anyLong(), any(), anyInt(), eq(100), any());
-
-            harness.awaitMemberStatusMessage(1, harness.onCommitPosition(1));
-            harness.awaitMemberStatusMessage(2, harness.onCommitPosition(2));
-
-            verify(mockMemberStatusListeners[1]).onCommitPosition(1, position, 0);
-            verify(mockMemberStatusListeners[2]).onCommitPosition(1, position, 0);
-        }
-    }
-
-    @Test(timeout = 10_000L)
-    public void shouldBecomeFollowerStaticThreeNodeConfigWithElectionFromPreviousLog()
-    {
-        final long position = ConsensusModuleHarness.makeRecordingLog(
-            10, 100, null, null, new ConsensusModule.Context());
-        final ClusteredService mockService = mock(ClusteredService.class);
-
-        final ConsensusModule.Context context = new ConsensusModule.Context()
-            .clusterMembers(THREE_NODE_MEMBERS)
-            .appointedLeaderId(1);
-
-        try (ConsensusModuleHarness harness = new ConsensusModuleHarness(
-            context, mockService, mockMemberStatusListeners, false, true, false))
-        {
-            final RecordingExtent recordingExtent = new RecordingExtent();
-            harness.recordingExtent(0, recordingExtent);
-
-            harness.awaitMemberStatusMessage(1, harness.onCanvassPosition(1));
-
-            verify(mockMemberStatusListeners[1], atLeastOnce()).onCanvassPosition(0, position, 0);
-
-            harness.memberStatusPublisher().requestVote(
-                harness.memberStatusPublication(1), 0L, position, 1L, 1);
-
-            harness.awaitMemberStatusMessage(1, harness.onVoteCounter(1));
-
-            verify(mockMemberStatusListeners[1]).onVote(1L, 0L, position, 1, 0, true);
-
-            final Publication publication = harness.createLogPublication(
-                ChannelUri.parse(context.logChannel()), recordingExtent, position, false);
-
-            harness.memberStatusPublisher().newLeadershipTerm(
-                harness.memberStatusPublication(1), 0L, position, 1L, position, 1, publication.sessionId());
-
-            harness.awaitMemberStatusMessage(1, harness.onCatchupPosition(1));
-
-            verify(mockMemberStatusListeners[1]).onCatchupPosition(1L, position, 0);
-
-            harness.createReplayPublication("localhost:9040", recordingExtent, position, false);
-
-            harness.memberStatusPublisher().stopCatchup(
-                harness.memberStatusPublication(1), 1L, position, 0);
-
-            harness.awaitEndOfElection();
-            harness.awaitAllMemberStatusMessages(1);
-
-            verify(mockMemberStatusListeners[1], atLeastOnce()).onAppendedPosition(1L, position, 0);
-
-            harness.awaitServiceOnStart();
-            harness.awaitServiceOnMessageCounter(10);
-
-            verify(mockService, times(10))
-                .onSessionMessage(any(ClientSession.class), anyLong(), any(), anyInt(), eq(100), any());
-        }
-    }
-
-    @Test(timeout = 10_000L)
-    public void shouldBecomeFollowerStaticThreeNodeConfigWithElectionFromPreviousLogWithCatchUp()
-    {
-        final ConsensusModule.Context followerContext = new ConsensusModule.Context()
-            .clusterMembers(THREE_NODE_MEMBERS)
-            .clusterMemberId(1)
-            .appointedLeaderId(0);
-
-        final ConsensusModule.Context leaderContext = new ConsensusModule.Context()
-            .clusterMembers(THREE_NODE_MEMBERS)
-            .clusterMemberId(0)
-            .appointedLeaderId(0);
-
-        final File followerHarnessDir = ConsensusModuleHarness.harnessDirectory(1);
-        final File leaderHarnessDir = ConsensusModuleHarness.harnessDirectory(0);
-        final Long2LongHashMap positionMap = new Long2LongHashMap(-1);
-
-        IoUtil.delete(followerHarnessDir, true);
-        IoUtil.delete(leaderHarnessDir, true);
-
-        final long position = ConsensusModuleHarness.makeRecordingLog(
-            10, 100, null, positionMap, new ConsensusModule.Context());
-
-        IoUtil.delete(new File(leaderHarnessDir, ConsensusModuleHarness.DRIVER_DIRECTORY), true);
-        ConsensusModuleHarness.copyDirectory(leaderHarnessDir, followerHarnessDir);
-
-        // 64 for NewLeadershipTermEvent at start of the log
-        final long truncatePosition = positionMap.get(5) + 64;
-
-        ConsensusModuleHarness.truncateRecordingLog(followerHarnessDir, 0, truncatePosition);
-
-        final ClusteredService mockFollowerService = mock(ClusteredService.class);
-        final ClusteredService mockLeaderService = mock(ClusteredService.class);
-
-        final MemberStatusListener[] mockFollowerStatusListeners = new MemberStatusListener[3];
-        final MemberStatusListener[] mockLeaderStatusListeners = new MemberStatusListener[3];
-
-        mockLeaderStatusListeners[2] = mock(MemberStatusListener.class);
-
-        try (ConsensusModuleHarness leaderHarness = new ConsensusModuleHarness(
-            leaderContext, mockLeaderService, mockLeaderStatusListeners, false, true, false);
-            ConsensusModuleHarness followerHarness = new ConsensusModuleHarness(
-                followerContext, mockFollowerService, mockFollowerStatusListeners, false, true, false))
-        {
-            leaderHarness.memberStatusPublisher().canvassPosition(
-                leaderHarness.memberStatusPublication(2),
-                0L,
-                position,
-                2);
-
-            leaderHarness.awaitMemberStatusMessage(2, leaderHarness.onRequestVoteCounter(2));
-
-            verify(mockLeaderStatusListeners[2]).onRequestVote(0L, position, 1L, 0);
-
-            leaderHarness.memberStatusPublisher().placeVote(
-                leaderHarness.memberStatusPublication(2),
-                1L,
-                0L,
-                position,
-                0,
-                2,
-                true);
-
-            leaderHarness.awaitMemberStatusMessage(2, leaderHarness.onNewLeadershipTermCounter(2));
-
-            verify(mockLeaderStatusListeners[2], atLeastOnce()).onNewLeadershipTerm(
-                eq(0L), eq(position), eq(1L), eq(position), eq(0), anyInt());
-
-            leaderHarness.memberStatusPublisher().appendedPosition(
-                leaderHarness.memberStatusPublication(2), 1L, position, 2);
-
-            leaderHarness.awaitServiceOnStart();
-            followerHarness.awaitServiceOnStart();
-            followerHarness.awaitServiceOnMessageCounter(10);
-
-            verify(mockFollowerService, times(10))
-                .onSessionMessage(any(ClientSession.class), anyLong(), any(), anyInt(), eq(100), any());
-
-            // wait until Leader sends commitPosition after election. This will only work while Leader waits for
-            // all followers.
-            leaderHarness.awaitMemberStatusMessage(2, leaderHarness.onCommitPosition(2));
-
-            verify(mockLeaderStatusListeners[2]).onCommitPosition(1, position, 0);
+            leader = cluster.awaitLeader();
+            cluster.awaitMessageCountForService(leader, totalMessageCount);
+            cluster.awaitMessageCountForService(cluster.node(0), totalMessageCount);
+            cluster.awaitMessageCountForService(cluster.node(2), totalMessageCount);
         }
     }
 }

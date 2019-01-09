@@ -363,6 +363,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         if (memberId == this.memberId && changeType == ChangeType.QUIT)
         {
+            service.onTerminate(this);
             consensusModuleProxy.ack(logPosition, ackId++, serviceId);
             ctx.terminationHook().run();
         }
@@ -718,6 +719,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             }
             else
             {
+                service.onTerminate(this);
                 ctx.errorHandler().onError(new ClusterException("Consensus Module not connected"));
                 ctx.terminationHook().run();
             }
@@ -747,6 +749,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         if (null != logAdapter && logAdapter.position() >= terminationPosition)
         {
+            service.onTerminate(this);
             consensusModuleProxy.ack(terminationPosition, ackId++, serviceId);
             terminationPosition = NULL_VALUE;
             ctx.terminationHook().run();

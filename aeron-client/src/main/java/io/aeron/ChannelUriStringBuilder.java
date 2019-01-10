@@ -15,7 +15,6 @@
  */
 package io.aeron;
 
-import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
@@ -44,7 +43,6 @@ public class ChannelUriStringBuilder
     private String tags;
     private String alias;
     private Boolean reliable;
-    private Boolean sparse;
     private Integer ttl;
     private Integer mtu;
     private Integer termLength;
@@ -53,6 +51,7 @@ public class ChannelUriStringBuilder
     private Integer termOffset;
     private Integer sessionId;
     private Long linger;
+    private Boolean sparse;
     private boolean isSessionIdTagged;
 
     /**
@@ -312,31 +311,6 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set to indicate if a term log buffer should be sparse on disk or not. Sparse saves space at the potential
-     * expense of latency.
-     *
-     * @param isSparse true if the term buffer log is sparse on disk.
-     * @return this for a fluent API.
-     * @see CommonContext#SPARSE_PARAM_NAME
-     */
-    public ChannelUriStringBuilder sparse(final Boolean isSparse)
-    {
-        this.sparse = isSparse;
-        return this;
-    }
-
-    /**
-     * Get if a term log buffer should be sparse on disk or not. Sparse saves space at the potential expense of latency.
-     *
-     * @return true if the term buffer log is sparse on disk.
-     * @see CommonContext#SPARSE_PARAM_NAME
-     */
-    public Boolean sparse()
-    {
-        return sparse;
-    }
-
-    /**
      * Set the Time To Live (TTL) for a multicast datagram. Valid values are 0-255 for the number of hops the datagram
      * can progress along.
      *
@@ -577,6 +551,31 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set to indicate if a term log buffer should be sparse on disk or not. Sparse saves space at the potential
+     * expense of latency.
+     *
+     * @param isSparse true if the term buffer log is sparse on disk.
+     * @return this for a fluent API.
+     * @see CommonContext#SPARSE_PARAM_NAME
+     */
+    public ChannelUriStringBuilder sparse(final Boolean isSparse)
+    {
+        this.sparse = isSparse;
+        return this;
+    }
+
+    /**
+     * Get if a term log buffer should be sparse on disk or not. Sparse saves space at the potential expense of latency.
+     *
+     * @return true if the term buffer log is sparse on disk.
+     * @see CommonContext#SPARSE_PARAM_NAME
+     */
+    public Boolean sparse()
+    {
+        return sparse;
+    }
+
+    /**
      * Set the tags for a channel used by a publication or subscription. Tags can be used to identify or tag a
      * channel so that a configuration can be referenced and reused.
      *
@@ -725,11 +724,6 @@ public class ChannelUriStringBuilder
             sb.append(RELIABLE_STREAM_PARAM_NAME).append('=').append(reliable).append('|');
         }
 
-        if (null != sparse)
-        {
-            sb.append(SPARSE_PARAM_NAME).append('=').append(sparse).append('|');
-        }
-
         if (null != ttl)
         {
             sb.append(TTL_PARAM_NAME).append('=').append(ttl.intValue()).append('|');
@@ -773,6 +767,11 @@ public class ChannelUriStringBuilder
         if (null != alias)
         {
             sb.append(ALIAS_PARAM_NAME).append('=').append(alias).append('|');
+        }
+
+        if (null != sparse)
+        {
+            sb.append(SPARSE_PARAM_NAME).append('=').append(sparse).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

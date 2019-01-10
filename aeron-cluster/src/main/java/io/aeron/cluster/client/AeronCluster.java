@@ -65,7 +65,8 @@ public final class AeronCluster implements AutoCloseable
 
     private Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap = new Int2ObjectHashMap<>();
     private final BufferClaim bufferClaim = new BufferClaim();
-    private final UnsafeBuffer msgHeaderBuffer = new UnsafeBuffer(new byte[INGRESS_HEADER_LENGTH]);
+    private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[INGRESS_HEADER_LENGTH]);
+    private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, headerBuffer.capacity());
     private final UnsafeBuffer keepaliveMsgBuffer;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final IngressMessageHeaderEncoder ingressMessageHeaderEncoder = new IngressMessageHeaderEncoder();
@@ -119,7 +120,7 @@ public final class AeronCluster implements AutoCloseable
             clusterSessionId = connectToCluster();
 
             ingressMessageHeaderEncoder
-                .wrapAndApplyHeader(msgHeaderBuffer, 0, messageHeaderEncoder)
+                .wrapAndApplyHeader(headerBuffer, 0, messageHeaderEncoder)
                 .clusterSessionId(clusterSessionId)
                 .leadershipTermId(leadershipTermId);
 
@@ -242,7 +243,25 @@ public final class AeronCluster implements AutoCloseable
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        return publication.offer(msgHeaderBuffer, 0, INGRESS_HEADER_LENGTH, buffer, offset, length, null);
+        return publication.offer(headerBuffer, 0, INGRESS_HEADER_LENGTH, buffer, offset, length, null);
+    }
+
+    /**
+     * Non-blocking publish by gathering buffer vectors into a message. The first vector will be replaced cluster
+     * ingress header so must be left unused.
+     *
+     * @param vectors which make up the message.
+     * @return the same as {@link Publication#offer(DirectBufferVector[])}.
+     * @see Publication#offer(DirectBufferVector[])
+     */
+    public long offer(final DirectBufferVector[] vectors)
+    {
+        if (headerVector != vectors[0])
+        {
+            vectors[0] = headerVector;
+        }
+
+        return publication.offer(vectors, null);
     }
 
     /**

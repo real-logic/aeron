@@ -55,6 +55,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final EpochClock epochClock;
     private final ClusterMarkFile markFile;
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
+    private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, headerBuffer.capacity());
     private final EgressMessageHeaderEncoder egressMessageHeaderEncoder = new EgressMessageHeaderEncoder();
 
     private long ackId = 0;
@@ -255,6 +256,30 @@ class ClusteredServiceAgent implements Agent, Cluster
             .timestamp(clusterTimeMs);
 
         return publication.offer(headerBuffer, 0, headerBuffer.capacity(), buffer, offset, length, null);
+    }
+
+    public long offer(final long clusterSessionId, final Publication publication, final DirectBufferVector[] vectors)
+    {
+        if (role != Cluster.Role.LEADER)
+        {
+            return ClientSession.MOCKED_OFFER;
+        }
+
+        if (null == publication)
+        {
+            return Publication.NOT_CONNECTED;
+        }
+
+        egressMessageHeaderEncoder
+            .clusterSessionId(clusterSessionId)
+            .timestamp(clusterTimeMs);
+
+        if (vectors[0] != headerVector)
+        {
+            vectors[0] = headerVector;
+        }
+
+        return publication.offer(vectors, null);
     }
 
     public void onJoinLog(

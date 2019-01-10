@@ -86,7 +86,7 @@ public class ChannelUriStringBuilderTest
             .ttl(9)
             .termLength(1024 * 128);
 
-        assertThat(builder.build(), is("aeron:udp?endpoint=localhost:9999|ttl=9|term-length=131072"));
+        assertThat(builder.build(), is("aeron:udp?endpoint=localhost:9999|term-length=131072|ttl=9"));
     }
 
     @Test

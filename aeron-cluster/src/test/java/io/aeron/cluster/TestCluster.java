@@ -281,6 +281,11 @@ public class TestCluster implements AutoCloseable
         return client;
     }
 
+    ExpandableArrayBuffer msgBuffer()
+    {
+        return msgBuffer;
+    }
+
     void startClient()
     {
         final String aeronDirName = CommonContext.getAeronDirectoryName();

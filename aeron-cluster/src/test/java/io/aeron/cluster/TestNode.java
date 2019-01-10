@@ -28,12 +28,14 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 
 class TestNode implements AutoCloseable
@@ -110,6 +112,22 @@ class TestNode implements AutoCloseable
     boolean isClosed()
     {
         return isClosed;
+    }
+
+    Election.State electionState()
+    {
+        final MutableInteger electionStateValue = new MutableInteger(NULL_VALUE);
+
+        countersReader().forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                if (typeId == Election.ELECTION_STATE_TYPE_ID)
+                {
+                    electionStateValue.value = (int)countersReader().getCounterValue(counterId);
+                }
+            });
+
+        return (NULL_VALUE != electionStateValue.value) ? Election.State.get(electionStateValue.value) : null;
     }
 
     boolean isLeader()

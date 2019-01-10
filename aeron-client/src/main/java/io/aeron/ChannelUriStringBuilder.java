@@ -500,7 +500,7 @@ public class ChannelUriStringBuilder
                 throw new IllegalArgumentException("term offset not in range 0-1g: " + termOffset);
             }
 
-            if (0 != (termOffset & (FrameDescriptor.FRAME_ALIGNMENT - 1)))
+            if (0 != (termOffset & (FRAME_ALIGNMENT - 1)))
             {
                 throw new IllegalArgumentException("term offset not multiple of FRAME_ALIGNMENT: " + termOffset);
             }
@@ -664,6 +664,11 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder initialPosition(final long position, final int initialTermId, final int termLength)
     {
+        if (position < 0 || 0 != (position & (FRAME_ALIGNMENT - 1)))
+        {
+            throw new IllegalArgumentException("invalid position: " + position);
+        }
+
         final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
 
         this.initialTermId = initialTermId;

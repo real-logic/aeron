@@ -23,6 +23,7 @@ import org.agrona.collections.Object2ObjectHashMap;
 import java.util.*;
 
 import static io.aeron.CommonContext.*;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 /**
  * Parser for Aeron channel URIs. The format is:
@@ -281,6 +282,11 @@ public class ChannelUri
      */
     public void initialPosition(final long position, final int initialTermId, final int termLength)
     {
+        if (position < 0 || 0 != (position & (FRAME_ALIGNMENT - 1)))
+        {
+            throw new IllegalArgumentException("invalid position: " + position);
+        }
+
         final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         final int termId = LogBufferDescriptor.computeTermIdFromPosition(position, bitsToShift, initialTermId);
         final int termOffset = (int)(position & (termLength - 1));

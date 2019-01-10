@@ -31,6 +31,8 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.junit.Assert.assertNotNull;
@@ -74,7 +76,7 @@ public class TestCluster implements AutoCloseable
         this.nodes = new TestNode[staticMemberCount + dynamicMemberCount];
         this.staticClusterMembers = clusterMembersString(staticMemberCount);
         this.staticClusterMemberEndpoints = clientMemberEndpoints(staticMemberCount);
-        this.clusterMembersEndpoints = clusterMembersEndpoints(staticMemberCount);
+        this.clusterMembersEndpoints = clusterMembersEndpoints(staticMemberCount + dynamicMemberCount);
         this.clusterMembersStatusEndpoints = clusterMembersStatusEndpoints(staticMemberCount);
         this.staticMemberCount = staticMemberCount;
         this.dynamicMemberCount = dynamicMemberCount;
@@ -120,6 +122,17 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
+    static TestCluster startCluster(final int staticMemberCount, final int dynamicMemberCount)
+    {
+        final TestCluster testCluster = new TestCluster(staticMemberCount, dynamicMemberCount, NULL_VALUE);
+        for (int i = 0; i < staticMemberCount; i++)
+        {
+            testCluster.startStaticNode(i, true);
+        }
+
+        return testCluster;
+    }
+
     TestNode startStaticNode(final int index, final boolean cleanStart)
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
@@ -128,7 +141,7 @@ public class TestCluster implements AutoCloseable
 
         testNodeContext.aeronArchiveContext
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlRequestStreamId(100 + index)
+            .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
@@ -186,7 +199,7 @@ public class TestCluster implements AutoCloseable
 
         testNodeContext.aeronArchiveContext
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlRequestStreamId(100 + index)
+            .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
             .aeronDirectoryName(baseDirName);
@@ -239,10 +252,7 @@ public class TestCluster implements AutoCloseable
 
     void stopNode(final TestNode testNode)
     {
-        if (testNode == nodes[testNode.index()])
-        {
-            testNode.close();
-        }
+        testNode.close();
     }
 
     void stopAllNodes()
@@ -259,6 +269,11 @@ public class TestCluster implements AutoCloseable
         {
             startStaticNode(i, cleanStart);
         }
+    }
+
+    String staticClusterMembers()
+    {
+        return staticClusterMembers;
     }
 
     AeronCluster client()
@@ -315,7 +330,7 @@ public class TestCluster implements AutoCloseable
 
         for (int i = 0; i < staticMemberCount; i++)
         {
-            if (i == skipIndex || null == nodes[i])
+            if (i == skipIndex || null == nodes[i] || nodes[i].isClosed())
             {
                 continue;
             }
@@ -349,6 +364,21 @@ public class TestCluster implements AutoCloseable
     TestNode awaitLeader() throws InterruptedException
     {
         return awaitLeader(NULL_VALUE);
+    }
+
+    List<TestNode> followers()
+    {
+        final ArrayList<TestNode> followers = new ArrayList<>();
+
+        for (int i = 0, length = nodes.length; i < length; i++)
+        {
+            if (!nodes[i].isClosed() && nodes[i].isFollower())
+            {
+                followers.add(nodes[i]);
+            }
+        }
+
+        return followers;
     }
 
     TestNode node(final int index)
@@ -455,11 +485,11 @@ public class TestCluster implements AutoCloseable
         return builder.toString();
     }
 
-    private static String[] clusterMembersEndpoints(final int staticMemberCount)
+    private static String[] clusterMembersEndpoints(final int maxMemberCount)
     {
-        final String[] clusterMembersEndpoints = new String[staticMemberCount];
+        final String[] clusterMembersEndpoints = new String[maxMemberCount];
 
-        for (int i = 0; i < staticMemberCount; i++)
+        for (int i = 0; i < maxMemberCount; i++)
         {
             clusterMembersEndpoints[i] = "localhost:2011" + i + ',' +
                 "localhost:2022" + i + ',' +

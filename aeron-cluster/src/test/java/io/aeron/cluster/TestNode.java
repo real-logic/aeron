@@ -30,6 +30,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
+import java.io.File;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -105,6 +107,11 @@ class TestNode implements AutoCloseable
         return Cluster.Role.get((int)clusteredMediaDriver.consensusModule().context().clusterNodeCounter().get());
     }
 
+    boolean isClosed()
+    {
+        return isClosed;
+    }
+
     boolean isLeader()
     {
         return role() == Cluster.Role.LEADER;
@@ -143,6 +150,29 @@ class TestNode implements AutoCloseable
     long errors()
     {
         return countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id());
+    }
+
+    ClusterTool.ClusterMembersInfo clusterMembersInfo()
+    {
+        final ClusterTool.ClusterMembersInfo clusterMembersInfo = new ClusterTool.ClusterMembersInfo();
+        final File clusterDir = clusteredMediaDriver.consensusModule().context().clusterDir();
+
+        if (!ClusterTool.listMembers(clusterMembersInfo, clusterDir, TimeUnit.SECONDS.toMillis(1)))
+        {
+            throw new IllegalStateException("timeout waiting for cluster members info");
+        }
+
+        return clusterMembersInfo;
+    }
+
+    void removeMember(final int followerMemberId, final boolean isPassive)
+    {
+        final File clusterDir = clusteredMediaDriver.consensusModule().context().clusterDir();
+
+        if (!ClusterTool.removeMember(clusterDir, followerMemberId, isPassive))
+        {
+            throw new IllegalStateException("could not remove member");
+        }
     }
 
     static class TestService extends StubClusteredService

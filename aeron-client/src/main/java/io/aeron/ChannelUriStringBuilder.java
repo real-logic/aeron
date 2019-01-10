@@ -719,16 +719,6 @@ public class ChannelUriStringBuilder
             sb.append(MDC_CONTROL_MODE_PARAM_NAME).append('=').append(controlMode).append('|');
         }
 
-        if (null != reliable)
-        {
-            sb.append(RELIABLE_STREAM_PARAM_NAME).append('=').append(reliable).append('|');
-        }
-
-        if (null != ttl)
-        {
-            sb.append(TTL_PARAM_NAME).append('=').append(ttl.intValue()).append('|');
-        }
-
         if (null != mtu)
         {
             sb.append(MTU_LENGTH_PARAM_NAME).append('=').append(mtu.intValue()).append('|');
@@ -757,6 +747,16 @@ public class ChannelUriStringBuilder
         if (null != sessionId)
         {
             sb.append(SESSION_ID_PARAM_NAME).append('=').append(prefixTag(isSessionIdTagged, sessionId)).append('|');
+        }
+
+        if (null != ttl)
+        {
+            sb.append(TTL_PARAM_NAME).append('=').append(ttl.intValue()).append('|');
+        }
+
+        if (null != reliable)
+        {
+            sb.append(RELIABLE_STREAM_PARAM_NAME).append('=').append(reliable).append('|');
         }
 
         if (null != linger)

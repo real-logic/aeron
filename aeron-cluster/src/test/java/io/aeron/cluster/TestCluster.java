@@ -356,7 +356,7 @@ public class TestCluster implements AutoCloseable
 
     TestNode awaitLeader(final int skipIndex) throws InterruptedException
     {
-        TestNode leaderNode = null;
+        TestNode leaderNode;
         while (null == (leaderNode = findLeader(skipIndex)))
         {
             TestUtil.checkInterruptedStatus();

@@ -26,15 +26,15 @@
 
     #include <pthread.h>
     #define AERON_MUTEX pthread_mutex_t
-    #define AERON_INIT_ONCE pthread_once_t;
-    #define AERON_INIT_ONCE_VALUE PTHREAD_ONCE_INIT;
+    #define AERON_INIT_ONCE pthread_once_t
+    #define AERON_INIT_ONCE_VALUE PTHREAD_ONCE_INIT
 
     typedef pthread_t aeron_thread_t;
     #define aeron_mutex_init pthread_mutex_init
     #define aeron_mutex_lock pthread_mutex_lock
     #define aeron_mutex_unlock pthread_mutex_unlock
 
-#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#elif defined(AERON_COMPILER_MSVC)
 
     #include <WinSock2.h>
     #include <windows.h>

@@ -20,6 +20,8 @@
 #if defined(AERON_COMPILER_GCC)
 
 #include <fcntl.h>
+#include <unistd.h>
+#include <sys/socket.h> 
 
 void aeron_net_init()
 {

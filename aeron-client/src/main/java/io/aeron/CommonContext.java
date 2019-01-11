@@ -156,16 +156,6 @@ public class CommonContext implements AutoCloseable, Cloneable
     public static final String MDC_CONTROL_MODE_PARAM_NAME = "control-mode";
 
     /**
-     * Key for the session id for a publication or restricted subscription.
-     */
-    public static final String SESSION_ID_PARAM_NAME = "session-id";
-
-    /**
-     * Key for the linger timeout for a publication to wait around after draining in nanoseconds.
-     */
-    public static final String LINGER_PARAM_NAME = "linger";
-
-    /**
      * Valid value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when manual control is desired.
      */
     public static final String MDC_CONTROL_MODE_MANUAL = "manual";
@@ -174,6 +164,16 @@ public class CommonContext implements AutoCloseable, Cloneable
      * Valid value for {@link #MDC_CONTROL_MODE_PARAM_NAME} when dynamic control is desired. Default value.
      */
     public static final String MDC_CONTROL_MODE_DYNAMIC = "dynamic";
+
+    /**
+     * Key for the session id for a publication or restricted subscription.
+     */
+    public static final String SESSION_ID_PARAM_NAME = "session-id";
+
+    /**
+     * Key for the linger timeout for a publication to wait around after draining in nanoseconds.
+     */
+    public static final String LINGER_PARAM_NAME = "linger";
 
     /**
      * Parameter name for channel URI param to indicate if a subscribed must be reliable or not. Value is boolean.

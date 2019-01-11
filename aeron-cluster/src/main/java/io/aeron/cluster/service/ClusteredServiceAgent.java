@@ -63,6 +63,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private long cachedTimeMs;
     private long terminationPosition = NULL_POSITION;
     private int memberId = NULL_VALUE;
+    private boolean isServiceActive;
     private BoundedLogAdapter logAdapter;
     private AtomicCounter heartbeatCounter;
     private ReadableCounter roleCounter;
@@ -98,6 +99,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         commitPosition = awaitCommitPositionCounter(counters);
 
         service.onStart(this);
+        isServiceActive = true;
 
         final int recoveryCounterId = awaitRecoveryCounter(counters);
         heartbeatCounter.setOrdered(epochClock.time());
@@ -107,6 +109,19 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public void onClose()
     {
+        if (isServiceActive)
+        {
+            isServiceActive = false;
+            try
+            {
+                service.onTerminate(this);
+            }
+            catch (final Exception ex)
+            {
+                ctx.countedErrorHandler().onError(ex);
+            }
+        }
+
         if (!ctx.ownsAeronClient())
         {
             for (final ClientSession session : sessionByIdMap.values())
@@ -779,6 +794,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void terminate(final long logPosition)
     {
+        isServiceActive = false;
         try
         {
             service.onTerminate(this);

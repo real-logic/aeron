@@ -22,9 +22,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include "aeron_platform.h"
 #include "aeron_error.h"
+
 #if  defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 #include <WinSock2.h>
 #include <windows.h>
@@ -39,30 +41,6 @@
 #define MAP_SHARED	0x01	
 #define S_IRUSR _S_IREAD
 #define S_IWUSR _S_IWRITE
-
-#ifndef AERON_COMPILER_MSVC
-static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
-{
-    if (remove(path) != 0)
-    {
-        int errcode = errno;
-        aeron_set_err(errcode, "could not remove %s: %s", path, strerror(errcode));
-    }
-
-    return 0;
-}
-
-int aeron_delete_directory(const char *dirname)
-{
-    return nftw(dirname, unlink_func, 64, FTW_DEPTH | FTW_PHYS);
-}
-
-int aeron_is_directory(const char* path)
-{
-    struct stat sb;
-    return stat(dirname, &sb) == 0 && S_ISDIR(sb.st_mode);
-}
-#endif
 
 void* mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset)
 {
@@ -143,6 +121,31 @@ int aeron_create_file(const char* path)
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/statvfs.h>
+#include <errno.h>
+#include <ftw.h>
+#include <stdio.h> 
+
+static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
+{
+    if (remove(path) != 0)
+    {
+        int errcode = errno;
+        aeron_set_err(errcode, "could not remove %s: %s", path, strerror(errcode));
+    }
+
+    return 0;
+}
+
+int aeron_delete_directory(const char *dirname)
+{
+    return nftw(dirname, unlink_func, 64, FTW_DEPTH | FTW_PHYS);
+}
+
+int aeron_is_directory(const char* dirname)
+{
+    struct stat sb;
+    return stat(dirname, &sb) == 0 && S_ISDIR(sb.st_mode);
+}
 
 uint64_t aeron_usable_fs_space(const char *path)
 {

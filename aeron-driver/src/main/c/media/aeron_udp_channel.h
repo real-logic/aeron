@@ -17,7 +17,7 @@
 #ifndef AERON_UDP_CHANNEL_H
 #define AERON_UDP_CHANNEL_H
 
-#include <netinet/in.h>
+#include "aeron_socket.h"
 #include "uri/aeron_uri.h"
 
 typedef struct aeron_udp_channel_stct

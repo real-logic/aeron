@@ -19,11 +19,11 @@
 #define _GNU_SOURCE
 #endif
 
-#include <dlfcn.h>
 #include <errno.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "concurrent/aeron_logbuffer_descriptor.h"
 #include "util/aeron_error.h"
+#include "util/aeron_dlopen.h"
 #include "aeron_flow_control.h"
 #include "aeron_alloc.h"
 

@@ -17,7 +17,7 @@
 #ifndef AERON_FLOW_CONTROL_H
 #define AERON_FLOW_CONTROL_H
 
-#include <netinet/in.h>
+#include "aeron_socket.h"
 #include "aeron_driver_common.h"
 
 typedef struct aeron_flow_control_strategy_stct aeron_flow_control_strategy_t;

@@ -17,7 +17,7 @@
 #ifndef AERON_CONGESTION_CONTROL_H
 #define AERON_CONGESTION_CONTROL_H
 
-#include <netinet/in.h>
+#include "aeron_socket.h"
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 

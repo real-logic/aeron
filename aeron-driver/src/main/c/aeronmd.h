@@ -305,7 +305,7 @@ int aeron_driver_close(aeron_driver_t *driver);
  * @param dirname to delete.
  * @return 0 for success and -1 for error.
  */
-int aeron_dir_delete(const char *dirname);
+int aeron_delete_directory(const char *dirname);
 
 /**
  * Clock function used by aeron.

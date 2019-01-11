@@ -14,24 +14,38 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ERROR_H
-#define AERON_ERROR_H
+#ifndef AERON_DLOPEN_H
+#define AERON_DLOPEN_H
 
-#include "aeron_driver_common.h"
+#include <util/aeron_platform.h>
 
-typedef struct aeron_per_thread_error_stct
+#if defined(AERON_COMPILER_GCC)
+
+    #include <dlfcn.h>
+
+#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+
+    #include <WinSock2.h> 
+    #include <windows.h> 
+
+    #define RTLD_DEFAULT -123    
+    #define RTLD_NEXT -124
+    #define RTLD_LAZY -125
+
+
+#ifdef __cplusplus
+extern "C"
 {
-    int errcode;
-    char errmsg[AERON_MAX_PATH];
+#endif
+    void* dlsym(HMODULE module, LPCSTR name);
+    HMODULE dlopen(LPCSTR filename);
+    char* dlerror();
+#ifdef __cplusplus
 }
-aeron_per_thread_error_t;
-
-int aeron_errcode();
-const char *aeron_errmsg();
-void aeron_set_err(int errcode, const char *format, ...);
-
-#ifdef _MSC_VER
-void aeron_set_windows_error();
 #endif
 
-#endif //AERON_ERROR_H
+#else
+#error Unsupported platform!
+#endif
+
+#endif //AERON_DLOPEN_H

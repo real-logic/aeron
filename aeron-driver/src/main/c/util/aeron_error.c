@@ -19,17 +19,11 @@
 #include <stdarg.h>
 #include <memory.h>
 
-#if !defined(_MSC_VER)
-#include <pthread.h>
-
-#else
-/* Win32 Threads */
-#endif
-
+#include "concurrent/aeron_thread.h"
 #include "util/aeron_error.h"
 #include "aeron_alloc.h"
 
-static pthread_once_t error_is_initialized = PTHREAD_ONCE_INIT;
+static AERON_INIT_ONCE error_is_initialized = AERON_INIT_ONCE_VALUE;
 static pthread_key_t error_key;
 
 static void initialize_per_thread_error()
@@ -98,3 +92,17 @@ void aeron_set_err(int errcode, const char *format, ...)
     va_end(args);
     strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg) - 1);
 }
+
+#ifdef _MSC_VER
+#include <WinSock2.h>
+#include <windows.h>
+
+void aeron_set_windows_error()
+{
+    const DWORD errorId = GetLastError();
+    LPSTR messageBuffer = NULL;
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, errorId, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+    aeron_set_err(errorId, messageBuffer);
+    free(messageBuffer);
+}
+#endif

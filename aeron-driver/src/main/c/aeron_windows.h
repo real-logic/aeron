@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ERROR_H
-#define AERON_ERROR_H
+#ifndef AERON_WINDOWS_H
+#define AERON_WINDOWS_H
 
-#include "aeron_driver_common.h"
+#include "util/aeron_platform.h"
 
-typedef struct aeron_per_thread_error_stct
+#if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+
+double erand48(unsigned short xsubi[3]);
+
+typedef enum
 {
-    int errcode;
-    char errmsg[AERON_MAX_PATH];
-}
-aeron_per_thread_error_t;
+    CLOCK_MONOTONIC_RAW,
+    CLOCK_REALTIME
+} clockid_t;
 
-int aeron_errcode();
-const char *aeron_errmsg();
-void aeron_set_err(int errcode, const char *format, ...);
-
-#ifdef _MSC_VER
-void aeron_set_windows_error();
+int clock_gettime(clockid_t type, struct timespec *tp);
 #endif
 
-#endif //AERON_ERROR_H
+#endif //AERON_WINDOWS_H

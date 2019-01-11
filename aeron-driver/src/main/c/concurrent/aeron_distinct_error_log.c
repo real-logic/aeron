@@ -59,7 +59,7 @@ int aeron_distinct_error_log_init(
     log->next_offset = 0;
     log->observation_list->num_observations = 0;
     log->observation_list->observations = NULL;
-    pthread_mutex_init(&log->mutex, NULL);
+    aeron_mutex_init(&log->mutex, NULL);
 
     return 0;
 }
@@ -184,12 +184,12 @@ int aeron_distinct_error_log_record(
     if ((observation = aeron_distinct_error_log_find_observation(
         observations, num_observations, error_code, description)) == NULL)
     {
-        pthread_mutex_lock(&log->mutex);
+        aeron_mutex_lock(&log->mutex);
 
         observation = aeron_distinct_error_log_new_observation(
             log, num_observations, timestamp, error_code, description, message);
 
-        pthread_mutex_unlock(&log->mutex);
+        aeron_mutex_unlock(&log->mutex);
 
         if (NULL == observation)
         {

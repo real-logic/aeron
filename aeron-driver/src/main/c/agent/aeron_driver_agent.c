@@ -21,30 +21,32 @@
 
 #if !defined(_MSC_VER)
 #include <pthread.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #else
-/* Win32 Threads */
 #endif
 
-static pthread_once_t agent_is_initialized = PTHREAD_ONCE_INIT;
 
 #include <stdio.h>
-#include <dlfcn.h>
 #include <stdlib.h>
-#include <unistd.h>
+
 #include <inttypes.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
 #include <stdarg.h>
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_agent.h"
+#include "util/aeron_dlopen.h"
+#include "concurrent/aeron_thread.h"
+#include "aeron_windows.h"
 
+static AERON_INIT_ONCE agent_is_initialized = AERON_INIT_ONCE_VALUE;
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;
 static uint64_t mask = 0;
 static double receive_data_loss_rate = 0.0;
 static unsigned short receive_data_loss_xsubi[3];
-static pthread_t log_reader_thread;
+static aeron_thread_t log_reader_thread;
 
 int64_t aeron_agent_epoch_clock()
 {
@@ -54,7 +56,7 @@ int64_t aeron_agent_epoch_clock()
         return -1;
     }
 
-    return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+    return (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
 }
 
 bool aeron_agent_should_drop_frame(struct msghdr *message)
@@ -73,10 +75,9 @@ static void *aeron_driver_agent_log_reader(void *arg)
 {
     while (true)
     {
-        struct timespec ts = { .tv_sec = 0, .tv_nsec = 1000 * 1000 };
 
         aeron_mpsc_rb_read(&logging_mpsc_rb, aeron_driver_agent_log_dissector, NULL, 10);
-        nanosleep(&ts, NULL);
+        aeron_nano_sleep(1000 * 1000);
     }
 
     return NULL;
@@ -213,6 +214,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     static const char *aeron_driver_libname = "libaeron_driver.dylib";
 #elif defined(__linux__)
     static const char *aeron_driver_libname = "libaeron_driver.so";
+#elif defined(WINVER)
+    static const char *aeron_driver_libname = "libaeron_driver.dll";
 #endif
 
     if (NULL == _original_func)

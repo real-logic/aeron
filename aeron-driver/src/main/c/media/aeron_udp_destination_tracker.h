@@ -17,7 +17,7 @@
 #ifndef AERON_UDP_DESTINATION_TRACKER_H
 #define AERON_UDP_DESTINATION_TRACKER_H
 
-#include <netinet/in.h>
+#include "aeron_socket.h"
 #include "aeronmd.h"
 #include "aeron_udp_channel_transport.h"
 

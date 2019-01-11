@@ -22,10 +22,148 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#include "aeron_platform.h"
+#include "aeron_error.h"
+#if  defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#include <WinSock2.h>
+#include <windows.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <io.h>
+
+#define PROT_READ  1
+#define PROT_WRITE 2
+#define MAP_FAILED ((void*)-1)
+
+#define MAP_SHARED	0x01	
+#define S_IRUSR _S_IREAD
+#define S_IWUSR _S_IWRITE
+
+#ifndef AERON_COMPILER_MSVC
+static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
+{
+    if (remove(path) != 0)
+    {
+        int errcode = errno;
+        aeron_set_err(errcode, "could not remove %s: %s", path, strerror(errcode));
+    }
+
+    return 0;
+}
+
+int aeron_delete_directory(const char *dirname)
+{
+    return nftw(dirname, unlink_func, 64, FTW_DEPTH | FTW_PHYS);
+}
+
+int aeron_is_directory(const char* path)
+{
+    struct stat sb;
+    return stat(dirname, &sb) == 0 && S_ISDIR(sb.st_mode);
+}
+#endif
+
+void* mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset)
+{
+    size_t len;
+    struct stat st;
+    uint64_t o = offset;
+    uint32_t l = o & 0xFFFFFFFF;
+    uint32_t h = (o >> 32) & 0xFFFFFFFF;
+
+    if (!fstat(fd, &st))
+        len = (size_t)st.st_size;
+    else {
+        fprintf(stderr, "mmap: could not determine filesize");
+        exit(1);
+    }
+
+    if (length + offset > len)
+        length = len - offset;
+
+    HANDLE hmap = CreateFileMapping((HANDLE)_get_osfhandle(fd), 0, PAGE_READWRITE, 0, 0, 0);
+
+    if (!hmap)
+    {
+        aeron_set_windows_error();
+        return MAP_FAILED;
+    }
+
+    void* temp = MapViewOfFileEx(hmap, FILE_MAP_WRITE, h, l, length, start);
+
+    if (!CloseHandle(hmap))
+        fprintf(stderr, "unable to close file mapping handle\n");
+    return temp ? temp : MAP_FAILED;
+}
+
+int munmap(void *start, size_t length)
+{
+    return !UnmapViewOfFile(start);
+}
+
+int ftruncate(int fd, off_t length)
+{
+    int error = _chsize_s(fd, length);
+    if (error != 0)
+        return -1;
+
+    return 0;
+}
+
+uint64_t aeron_usable_fs_space(const char *path)
+{
+    ULARGE_INTEGER  lpAvailableToCaller, lpTotalNumberOfBytes, lpTotalNumberOfFreeBytes;
+
+    if (!GetDiskFreeSpaceExA(
+        path,
+        &lpAvailableToCaller,
+        &lpTotalNumberOfBytes,
+        &lpTotalNumberOfFreeBytes
+    ))
+        return 0;
+
+    return (uint64_t)lpAvailableToCaller.QuadPart;
+}
+
+int aeron_create_file(const char* path)
+{
+    int fd;
+    int error = _sopen_s(&fd, path, _O_RDWR | _O_CREAT | _O_EXCL, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+
+    if (error != NO_ERROR)
+    {
+        return -1;
+    }
+
+    return fd;
+}
+
+#else
 #include <unistd.h>
 #include <sys/mman.h>
-#include <string.h>
 #include <sys/statvfs.h>
+
+uint64_t aeron_usable_fs_space(const char *path)
+{
+    struct statvfs vfs;
+    uint64_t result = 0;
+
+    if (statvfs(path, &vfs) == 0)
+    {
+        result = vfs.f_bsize * vfs.f_bavail;
+    }
+
+    return result;
+}
+
+int aeron_create_file(const char* path)
+{
+    return open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+}
+#endif
+
+#include <string.h>
 #include <stdio.h>
 #include <inttypes.h>
 #include <errno.h>
@@ -93,11 +231,13 @@ int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
     return 0;
 }
 
+
+
 int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool fill_with_zeroes)
 {
     int fd, result = -1;
 
-    if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) >= 0)
+    if ((fd = aeron_create_file(path)) >= 0)
     {
         if (ftruncate(fd, (off_t )mapped_file->length) >= 0)
         {
@@ -182,18 +322,7 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
     return result;
 }
 
-uint64_t aeron_usable_fs_space(const char *path)
-{
-    struct statvfs vfs;
-    uint64_t result = 0;
 
-    if (statvfs(path, &vfs) == 0)
-    {
-        result = vfs.f_bsize * vfs.f_bavail;
-    }
-
-    return result;
-}
 
 uint64_t aeron_usable_fs_space_disabled(const char *path)
 {

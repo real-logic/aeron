@@ -14,24 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ERROR_H
-#define AERON_ERROR_H
+#ifndef AERON_REGEX_H
+#define AERON_REGEX_H
 
-#include "aeron_driver_common.h"
+typedef void* aeron_regex_t;
 
-typedef struct aeron_per_thread_error_stct
+typedef struct
 {
-    int errcode;
-    char errmsg[AERON_MAX_PATH];
-}
-aeron_per_thread_error_t;
+    size_t offset;
+    size_t length;
+} aeron_regex_matches_t;
 
-int aeron_errcode();
-const char *aeron_errmsg();
-void aeron_set_err(int errcode, const char *format, ...);
+int aeron_regcomp(aeron_regex_t* output, const char* pattern, char* error, size_t error_max_size);
 
-#ifdef _MSC_VER
-void aeron_set_windows_error();
-#endif
+int aeron_regexec(aeron_regex_t regex, const char* text, aeron_regex_matches_t* matches, size_t max_matches_count, char* error, size_t max_error_size);
 
-#endif //AERON_ERROR_H
+#endif //AERON_REGEX_H

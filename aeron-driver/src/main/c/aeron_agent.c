@@ -21,13 +21,13 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <dlfcn.h>
-#include <sched.h>
 #include <errno.h>
+#include "concurrent/aeron_thread.h"
 #include "aeron_agent.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
 #include "util/aeron_error.h"
+#include "util/aeron_dlopen.h"
 
 static void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
 {
@@ -36,7 +36,7 @@ static void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
         return;
     }
 
-    nanosleep(&(struct timespec){.tv_nsec=1}, NULL);
+    aeron_nano_sleep(1);
 }
 
 static void aeron_idle_strategy_yielding_idle(void *state, int work_count)
@@ -56,7 +56,7 @@ static void aeron_idle_strategy_busy_spinning_idle(void *state, int work_count)
         return;
     }
 
-    __asm__ volatile("pause\n": : :"memory");
+    proc_yield();
 }
 
 static void aeron_idle_strategy_noop_idle(void *state, int work_count)

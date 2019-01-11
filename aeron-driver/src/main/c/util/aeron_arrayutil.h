@@ -17,6 +17,12 @@
 #ifndef AERON_ARRAYUTIL_H
 #define AERON_ARRAYUTIL_H
 
+#include "aeron_platform.h"
+
+#if  defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#define restrict __restrict
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>

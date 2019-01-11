@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <sched.h>
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_driver_receiver_proxy.h"
 #include "aeron_driver_receiver.h"

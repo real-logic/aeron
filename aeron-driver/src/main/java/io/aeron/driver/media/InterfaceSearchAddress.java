@@ -24,6 +24,7 @@ import java.net.UnknownHostException;
 
 class InterfaceSearchAddress
 {
+    private static final InterfaceSearchAddress WILDCARD = new InterfaceSearchAddress(new InetSocketAddress(0), 0);
     private final InetSocketAddress address;
     private final int subnetPrefix;
 
@@ -55,7 +56,7 @@ class InterfaceSearchAddress
 
     static InterfaceSearchAddress wildcard()
     {
-        return new InterfaceSearchAddress(new InetSocketAddress(0), 0);
+        return WILDCARD;
     }
 
     static InterfaceSearchAddress parse(final String s) throws UnknownHostException

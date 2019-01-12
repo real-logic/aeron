@@ -15,23 +15,15 @@
  */
 package io.aeron.driver.media;
 
+import org.agrona.AsciiEncoding;
 import org.agrona.Strings;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static org.agrona.Strings.parseIntOrDefault;
 
 class InterfaceSearchAddress
 {
-    private static final Pattern IPV4_ADDRESS_PATTERN = Pattern.compile(
-        "([^:/]+)(?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
-    private static final Pattern IPV6_ADDRESS_PATTERN = Pattern.compile(
-        "\\[([0-9A-Fa-f:]+)](?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
-
     private final InetSocketAddress address;
     private final int subnetPrefix;
 
@@ -61,6 +53,11 @@ class InterfaceSearchAddress
         return address.getPort();
     }
 
+    static InterfaceSearchAddress wildcard()
+    {
+        return new InterfaceSearchAddress(new InetSocketAddress(0), 0);
+    }
+
     static InterfaceSearchAddress parse(final String s) throws UnknownHostException
     {
         if (Strings.isEmpty(s))
@@ -68,37 +65,86 @@ class InterfaceSearchAddress
             throw new IllegalArgumentException("search address string is null or empty");
         }
 
-        final Matcher matcher = getMatcher(s);
+        int slashIndex = -1;
+        int colonIndex = -1;
+        int rightAngleBraceIndex = -1;
 
-        final InetAddress hostAddress = InetAddress.getByName(matcher.group(1));
+        for (int i = 0, length = s.length(); i < length; i++)
+        {
+            switch (s.charAt(i))
+            {
+                case '/':
+                    slashIndex = i;
+                    break;
+
+                case ':':
+                    colonIndex = i;
+                    break;
+
+                case ']':
+                    rightAngleBraceIndex = i;
+                    break;
+            }
+        }
+
+        final String addressString = getAddress(s, slashIndex, colonIndex, rightAngleBraceIndex);
+        final InetAddress hostAddress = InetAddress.getByName(addressString);
+        final int port = getPort(s, slashIndex, colonIndex, rightAngleBraceIndex);
         final int defaultSubnetPrefix = hostAddress.getAddress().length * 8;
-        final int port = parseIntOrDefault(matcher.group("port"), 0);
-        final int subnetPrefix = parseIntOrDefault(matcher.group("subnet"), defaultSubnetPrefix);
+        final int subnetPrefix = getSubnet(s, slashIndex, defaultSubnetPrefix);
 
         return new InterfaceSearchAddress(new InetSocketAddress(hostAddress, port), subnetPrefix);
     }
 
-    static InterfaceSearchAddress wildcard()
+    private static int getSubnet(final String s, final int slashIndex, final int defaultSubnetPrefix)
     {
-        return new InterfaceSearchAddress(new InetSocketAddress(0), 0);
+        if (slashIndex < 0)
+        {
+            return defaultSubnetPrefix;
+        }
+        else if (s.length() - 1 == slashIndex)
+        {
+            throw new IllegalArgumentException("invalid subnet: " + s);
+        }
+
+        final int subnetStringBegin = slashIndex + 1;
+
+        return AsciiEncoding.parseIntAscii(s, subnetStringBegin, s.length() - subnetStringBegin);
     }
 
-    private static Matcher getMatcher(final CharSequence cs)
+    private static int getPort(
+        final String s, final int slashIndex, final int colonIndex, final int rightAngleBraceIndex)
     {
-        final Matcher ipV4Matcher = IPV4_ADDRESS_PATTERN.matcher(cs);
-
-        if (ipV4Matcher.matches())
+        if (colonIndex < 0 || rightAngleBraceIndex > colonIndex)
         {
-            return ipV4Matcher;
+            return 0;
+        }
+        else if (s.length() - 1 == colonIndex)
+        {
+            throw new IllegalArgumentException("invalid port: " + s);
         }
 
-        final Matcher ipV6Matcher = IPV6_ADDRESS_PATTERN.matcher(cs);
+        final int portStringBegin = colonIndex + 1;
+        final int portStringEnd = slashIndex > 0 ? slashIndex : s.length();
 
-        if (ipV6Matcher.matches())
+        return AsciiEncoding.parseIntAscii(s, portStringBegin, portStringEnd - portStringBegin);
+    }
+
+    private static String getAddress(
+        final String s, final int slashIndex, final int colonIndex, final int rightAngleBraceIndex)
+    {
+        int addressEnd = s.length();
+
+        if (slashIndex > 0)
         {
-            return ipV6Matcher;
+            addressEnd = slashIndex;
         }
 
-        throw new IllegalArgumentException("invalid search address: " + cs);
+        if (colonIndex > 0 && colonIndex > rightAngleBraceIndex)
+        {
+            addressEnd = colonIndex;
+        }
+
+        return s.substring(0, addressEnd);
     }
 }

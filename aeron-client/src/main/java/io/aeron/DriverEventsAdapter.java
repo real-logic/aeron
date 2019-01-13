@@ -41,6 +41,7 @@ class DriverEventsAdapter implements MessageHandler
 
     private long activeCorrelationId;
     private long receivedCorrelationId;
+    private boolean isInvalid;
 
     DriverEventsAdapter(final CopyBroadcastReceiver broadcastReceiver, final DriverEventsListener listener)
     {
@@ -53,12 +54,25 @@ class DriverEventsAdapter implements MessageHandler
         this.activeCorrelationId = activeCorrelationId;
         this.receivedCorrelationId = Aeron.NULL_VALUE;
 
-        return broadcastReceiver.receive(this);
+        try
+        {
+            return broadcastReceiver.receive(this);
+        }
+        catch (final IllegalStateException ex)
+        {
+            isInvalid = true;
+            throw ex;
+        }
     }
 
     public long receivedCorrelationId()
     {
         return receivedCorrelationId;
+    }
+
+    public boolean isInvalid()
+    {
+        return isInvalid;
     }
 
     @SuppressWarnings("MethodLength")

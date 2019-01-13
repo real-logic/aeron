@@ -726,6 +726,11 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             handleError(throwable);
 
+            if (driverEventsAdapter.isInvalid())
+            {
+                onClose();
+            }
+
             if (isClientApiCall(correlationId))
             {
                 throw throwable;

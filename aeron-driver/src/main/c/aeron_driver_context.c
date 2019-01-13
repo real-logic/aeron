@@ -151,7 +151,9 @@ uint64_t aeron_config_parse_size64(const char *name, const char *str, uint64_t d
 
         if (-1 == aeron_parse_size64(str, &value))
         {
-            printf("WARNING: %s=%s is invalid, using default\n", name, str);
+            char buffer[AERON_MAX_PATH];
+            snprintf(buffer, sizeof(buffer) - 1, "WARNING: %s=%s is invalid, using default\n", name, str);
+            fprintf(stderr, "%s", buffer);
         }
         else
         {
@@ -174,7 +176,9 @@ uint64_t aeron_config_parse_duration_ns(const char *name, const char *str, uint6
 
         if (-1 == aeron_parse_duration_ns(str, &value))
         {
-            printf("WARNING: %s=%s is invalid, using default\n", name, str);
+            char buffer[AERON_MAX_PATH];
+            snprintf(buffer, sizeof(buffer) - 1, "WARNING: %s=%s is invalid, using default\n", name, str);
+            fprintf(stderr, "%s", buffer);
         }
         else
         {

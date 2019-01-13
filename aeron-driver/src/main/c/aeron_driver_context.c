@@ -101,6 +101,13 @@ inline static const char *username()
     return username;
 }
 
+void aeron_config_prop_warning(const char *name, const char *str)
+{
+    char buffer[AERON_MAX_PATH];
+    snprintf(buffer, sizeof(buffer) - 1, "WARNING: %s=%s is invalid, using default\n", name, str);
+    fprintf(stderr, "%s", buffer);
+}
+
 bool aeron_config_parse_bool(const char *str, bool def)
 {
     if (NULL != str)
@@ -119,7 +126,7 @@ bool aeron_config_parse_bool(const char *str, bool def)
     return def;
 }
 
-uint64_t aeron_config_parse_uint64(const char *str, uint64_t def, uint64_t min, uint64_t max)
+uint64_t aeron_config_parse_uint64(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max)
 {
     uint64_t result = def;
 
@@ -130,6 +137,7 @@ uint64_t aeron_config_parse_uint64(const char *str, uint64_t def, uint64_t min, 
 
         if (0 == value && 0 != errno)
         {
+            aeron_config_prop_warning(name, str);
             value = def;
         }
 
@@ -141,6 +149,7 @@ uint64_t aeron_config_parse_uint64(const char *str, uint64_t def, uint64_t min, 
     return result;
 }
 
+
 uint64_t aeron_config_parse_size64(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max)
 {
     uint64_t result = def;
@@ -151,9 +160,7 @@ uint64_t aeron_config_parse_size64(const char *name, const char *str, uint64_t d
 
         if (-1 == aeron_parse_size64(str, &value))
         {
-            char buffer[AERON_MAX_PATH];
-            snprintf(buffer, sizeof(buffer) - 1, "WARNING: %s=%s is invalid, using default\n", name, str);
-            fprintf(stderr, "%s", buffer);
+            aeron_config_prop_warning(name, str);
         }
         else
         {
@@ -176,9 +183,7 @@ uint64_t aeron_config_parse_duration_ns(const char *name, const char *str, uint6
 
         if (-1 == aeron_parse_duration_ns(str, &value))
         {
-            char buffer[AERON_MAX_PATH];
-            snprintf(buffer, sizeof(buffer) - 1, "WARNING: %s=%s is invalid, using default\n", name, str);
-            fprintf(stderr, "%s", buffer);
+            aeron_config_prop_warning(name, str);
         }
         else
         {
@@ -485,12 +490,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         INT32_MAX);
 
     _context->multicast_ttl = (uint8_t)aeron_config_parse_uint64(
+        AERON_SOCKET_MULTICAST_TTL_ENV_VAR,
         getenv(AERON_SOCKET_MULTICAST_TTL_ENV_VAR),
         _context->multicast_ttl,
         0,
         255);
 
     _context->send_to_sm_poll_ratio = (uint8_t)aeron_config_parse_uint64(
+        AERON_SEND_TO_STATUS_POLL_RATIO_ENV_VAR,
         getenv(AERON_SEND_TO_STATUS_POLL_RATIO_ENV_VAR),
         _context->send_to_sm_poll_ratio,
         1,

@@ -109,7 +109,7 @@ static void initialize_agent_logging()
             exit(EXIT_FAILURE);
         }
 
-        if (pthread_create(&log_reader_thread, NULL, aeron_driver_agent_log_reader, NULL) != 0)
+        if (aeron_thread_create(&log_reader_thread, NULL, aeron_driver_agent_log_reader, NULL) != 0)
         {
             fprintf(stderr, "could not start log reader thread. exiting.\n");
             exit(EXIT_FAILURE);
@@ -235,7 +235,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         printf("hooked aeron_driver_context_init\n");
     }
 
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+    (void) aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
 
     int result = _original_func(context);
 
@@ -305,7 +305,7 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
         printf("hooked sendmsg\n");
     }
 
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+    (void) aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
 
     ssize_t result = _original_func(socket, message, flags);
 
@@ -332,7 +332,7 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
         printf("hooked recvmsg\n");
     }
 
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+    (void) aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
 
     ssize_t result = _original_func(socket, message, flags);
 
@@ -373,7 +373,7 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags)
         printf("hooked sendmmsg\n");
     }
 
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+    (void) aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
 
     int result = _original_func(sockfd, msgvec, vlen, flags);
 
@@ -417,7 +417,7 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, r
         printf("hooked recvmmsg\n");
     }
 
-    (void) pthread_once(&agent_is_initialized, initialize_agent_logging);
+    (void) aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
 
     int result = _original_func(sockfd, msgvec, vlen, flags, timeout);
 

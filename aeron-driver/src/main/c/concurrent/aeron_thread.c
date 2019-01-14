@@ -21,7 +21,7 @@
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
-void pthread_once(AERON_INIT_ONCE* s_init_once, void* callback)
+void aeron_thread_once(AERON_INIT_ONCE* s_init_once, void* callback)
 {
     InitOnceExecuteOnce(s_init_once, (PINIT_ONCE_FN)callback, NULL, NULL);
 }
@@ -41,9 +41,9 @@ void aeron_mutex_unlock(HANDLE* mutex)
     ReleaseMutex(mutex);
 }
 
-int pthread_attr_init(pthread_attr_t* attr) { return 0; }
+int aeron_thread_attr_init(pthread_attr_t* attr) { return 0; }
 
-int pthread_create(aeron_thread_t* thread, void* attr, void*(*callback)(void*), void* arg0)
+int aeron_thread_create(aeron_thread_t* thread, void* attr, void*(*callback)(void*), void* arg0)
 {
     DWORD id;
     *thread = CreateThread(
@@ -56,7 +56,7 @@ int pthread_create(aeron_thread_t* thread, void* attr, void*(*callback)(void*), 
     return 0;
 }
 
-void pthread_setname_np(aeron_thread_t self, const char* role_name)
+void aeron_thread_set_name(aeron_thread_t self, const char* role_name)
 {
     size_t wn = mbstowcs(NULL, role_name, 0);
     wchar_t * buf = malloc(sizeof(wchar_t) * (wn + 1));  // value-initialize to 0 (see below)
@@ -66,18 +66,18 @@ void pthread_setname_np(aeron_thread_t self, const char* role_name)
     free(buf);
 }
 
-aeron_thread_t pthread_self()
+aeron_thread_t aeron_thread_self()
 {
     return GetCurrentThread();
 }
 
-DWORD pthread_join(aeron_thread_t thread, void **value_ptr)
+DWORD aeron_thread_join(aeron_thread_t thread, void **value_ptr)
 {
     WaitForSingleObject(thread, INFINITE);
     return 0;
 }
 
-int pthread_key_create(pthread_key_t *key, void(*destr_function) (void *))
+int aeron_thread_key_create(pthread_key_t *key, void(*destr_function) (void *))
 {
     DWORD dkey = TlsAlloc();
     if (dkey != 0xFFFFFFFF) {
@@ -89,7 +89,7 @@ int pthread_key_create(pthread_key_t *key, void(*destr_function) (void *))
     }
 }
 
-int pthread_key_delete(pthread_key_t key)
+int aeron_thread_key_delete(pthread_key_t key)
 {
     if (TlsFree(key)) {
         return 0;
@@ -99,7 +99,7 @@ int pthread_key_delete(pthread_key_t key)
     }
 }
 
-int pthread_setspecific(pthread_key_t key, const void *pointer)
+int aeron_thread_set_specific(pthread_key_t key, const void *pointer)
 {
     if (TlsSetValue(key, (LPVOID)pointer)) {
         return 0;
@@ -109,7 +109,7 @@ int pthread_setspecific(pthread_key_t key, const void *pointer)
     }
 }
 
-void * pthread_getspecific(pthread_key_t key)
+void * aeron_thread_get_specific(pthread_key_t key)
 {
     return TlsGetValue(key);
 }

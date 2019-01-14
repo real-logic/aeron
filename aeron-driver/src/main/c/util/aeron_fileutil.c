@@ -117,6 +117,27 @@ int aeron_create_file(const char* path)
     return fd;
 }
 
+int aeron_delete_directory(const char* directory)
+{
+	CHAR szDir[MAX_PATH + 1];
+	SHFILEOPSTRUCTW fos = { 0 };
+
+	strncpy(szDir, MAX_PATH, directory);
+	int len = lstrlenW(szDir);
+	szDir[len + 1] = 0; 
+
+	// delete the folder and everything inside
+	fos.wFunc = FO_DELETE;
+	fos.pFrom = szDir;
+	fos.fFlags = FOF_NO_UI;
+	return SHFileOperation(&fos);
+}
+
+int aeron_is_directory(const char* path)
+{
+	return GetFileAttributes(path) == FILE_ATTRIBUTE_DIRECTORY;
+}
+
 #else
 #include <unistd.h>
 #include <sys/mman.h>

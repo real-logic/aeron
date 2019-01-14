@@ -127,7 +127,7 @@ SET(SOURCE
     util/aeron_error.c
     util/aeron_netutil.c
     util/aeron_prop_util.c
-    util/aeron_dlopen.cpp
+    util/aeron_dlopen.c
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c
@@ -149,8 +149,8 @@ SET(SOURCE
     aeron_congestion_control.c
     aeron_loss_detector.c
     aeron_retransmit_handler.c
-    util/aeron_regex.cpp
-    aeron_windows.cpp
+    util/aeron_parser.c
+    aeron_windows.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
@@ -196,7 +196,7 @@ SET(HEADERS
     command/aeron_control_protocol.h
     protocol/aeron_udp_protocol.h
     aeronmd.h
-    util/aeron_regex.h
+    util/aeron_parser.h
     aeron_windows.h
     aeron_driver.h
     aeron_driver_context.h
@@ -236,11 +236,11 @@ set(AGENT_SOURCE
     concurrent/aeron_atomic.c
     concurrent/aeron_thread.c
 	util/aeron_fileutil.c
-    util/aeron_dlopen.cpp
+    util/aeron_dlopen.c
 	util/aeron_error.c
-    util/aeron_regex.cpp
+    util/aeron_parser.c
 	aeron_alloc.c		
-	aeron_windows.cpp)
+	aeron_windows.c)
 
 set(AGENT_HEADERS
     agent/aeron_driver_agent.h
@@ -249,7 +249,7 @@ set(AGENT_HEADERS
     util/aeron_fileutil.h
     util/aeron_error.h
     util/aeron_dlopen.h
-    util/aeron_regex.h
+    util/aeron_parser.h
 	aeron_alloc.h	
 	aeron_windows.h)
 

@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_REGEX_H
-#define AERON_REGEX_H
-
-typedef void* aeron_regex_t;
+#ifndef AERON_PARSER_H
+#define AERON_PARSER_H
 
 typedef struct
 {
@@ -25,8 +23,7 @@ typedef struct
     size_t length;
 } aeron_regex_matches_t;
 
-int aeron_regcomp(aeron_regex_t* output, const char* pattern, char* error, size_t error_max_size);
+int aeron_parse_ipv4(const char* text, aeron_regex_matches_t* matches, size_t max_matches_count);
+int aeron_parse_ipv6(const char* text, aeron_regex_matches_t* matches, size_t max_matches_count);
 
-int aeron_regexec(aeron_regex_t regex, const char* text, aeron_regex_matches_t* matches, size_t max_matches_count, char* error, size_t max_error_size);
-
-#endif //AERON_REGEX_H
+#endif //AERON_PARSER_H

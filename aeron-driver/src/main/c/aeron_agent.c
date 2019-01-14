@@ -209,9 +209,9 @@ static void *agent_main(void *arg)
     aeron_agent_runner_t *runner = (aeron_agent_runner_t *)arg;
 
 #if defined(Darwin)
-    pthread_setname_np(runner->role_name);
+    aeron_thread_set_name(runner->role_name);
 #else
-    pthread_setname_np(pthread_self(), runner->role_name);
+    aeron_thread_set_name(aeron_thread_self(), runner->role_name);
 #endif
 
     if (NULL != runner->on_start)
@@ -238,15 +238,15 @@ int aeron_agent_start(aeron_agent_runner_t *runner)
         return -1;
     }
 
-    if ((pthread_result = pthread_attr_init(&attr)) != 0)
+    if ((pthread_result = aeron_thread_attr_init(&attr)) != 0)
     {
-        aeron_set_err(pthread_result, "pthread_attr_init: %s", strerror(pthread_result));
+        aeron_set_err(pthread_result, "aeron_thread_attr_init: %s", strerror(pthread_result));
         return -1;
     }
 
-    if ((pthread_result = pthread_create(&runner->thread, &attr, agent_main, runner)) != 0)
+    if ((pthread_result = aeron_thread_create(&runner->thread, &attr, agent_main, runner)) != 0)
     {
-        aeron_set_err(pthread_result, "pthread_create: %s", strerror(pthread_result));
+        aeron_set_err(pthread_result, "aeron_thread_create: %s", strerror(pthread_result));
         return -1;
     }
 
@@ -275,11 +275,11 @@ int aeron_agent_stop(aeron_agent_runner_t *runner)
     {
         runner->state = AERON_AGENT_STATE_STOPPING;
 
-        /* TODO: should use timed pthread_join _np version when available? */
+        /* TODO: should use timed aeron_thread_join _np version when available? */
 
-        if ((pthread_result = pthread_join(runner->thread, NULL)))
+        if ((pthread_result = aeron_thread_join(runner->thread, NULL)))
         {
-            aeron_set_err(pthread_result, "pthread_join: %s", strerror(pthread_result));
+            aeron_set_err(pthread_result, "aeron_thread_join: %s", strerror(pthread_result));
             return -1;
         }
 

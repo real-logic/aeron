@@ -39,9 +39,6 @@ public:
         m_receiver(receiver),
         m_scratchBuffer(m_scratch)
     {
-        while (m_receiver.receiveNext())
-        {
-        }
     }
 
     int receive(const handler_t& handler)

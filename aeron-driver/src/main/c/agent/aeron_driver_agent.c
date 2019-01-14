@@ -220,15 +220,15 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     if (NULL == _original_func)
     {
-        if ((aeron_lib = dlopen(aeron_driver_libname, RTLD_LAZY)) == NULL)
+        if ((aeron_lib = aeron_dlopen(aeron_driver_libname, RTLD_LAZY)) == NULL)
         {
-            fprintf(stderr, "%s\n", dlerror());
+            fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
 
-        if ((_original_func = (aeron_driver_context_init_t)dlsym(aeron_lib, "aeron_driver_context_init")) == NULL)
+        if ((_original_func = (aeron_driver_context_init_t)aeron_dlsym(aeron_lib, "aeron_driver_context_init")) == NULL)
         {
-            fprintf(stderr, "%s\n", dlerror());
+            fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
 
@@ -296,9 +296,9 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
 
     if (NULL == _original_func)
     {
-        if ((_original_func = (aeron_driver_agent_sendmsg_func_t)dlsym(RTLD_NEXT, "sendmsg")) == NULL)
+        if ((_original_func = (aeron_driver_agent_sendmsg_func_t)aeron_dlsym(RTLD_NEXT, "sendmsg")) == NULL)
         {
-            fprintf(stderr, "%s\n", dlerror());
+            fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
 
@@ -323,9 +323,9 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
 
     if (NULL == _original_func)
     {
-        if ((_original_func = (aeron_driver_agent_recvmsg_func_t)dlsym(RTLD_NEXT, "recvmsg")) == NULL)
+        if ((_original_func = (aeron_driver_agent_recvmsg_func_t)aeron_dlsym(RTLD_NEXT, "recvmsg")) == NULL)
         {
-            fprintf(stderr, "%s\n", dlerror());
+            fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
 
@@ -364,9 +364,9 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags)
 
     if (NULL == _original_func)
     {
-        if ((_original_func = (aeron_driver_agent_sendmmsg_func_t)dlsym(RTLD_NEXT, "sendmmsg")) == NULL)
+        if ((_original_func = (aeron_driver_agent_sendmmsg_func_t)aeron_dlsym(RTLD_NEXT, "sendmmsg")) == NULL)
         {
-            fprintf(stderr, "%s\n", dlerror());
+            fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
 
@@ -408,9 +408,9 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, r
 
     if (NULL == _original_func)
     {
-        if ((_original_func = (aeron_driver_agent_recvmmsg_func_t)dlsym(RTLD_NEXT, "recvmmsg")) == NULL)
+        if ((_original_func = (aeron_driver_agent_recvmmsg_func_t)aeron_dlsym(RTLD_NEXT, "recvmmsg")) == NULL)
         {
-            fprintf(stderr, "%s\n", dlerror());
+            fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
 

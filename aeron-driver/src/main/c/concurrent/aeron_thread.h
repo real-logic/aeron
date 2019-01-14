@@ -96,11 +96,12 @@
 // sched
 
 void aeron_nano_sleep(size_t nanoseconds);
-void aeron_micro_sleep(size_t microseconds);
 
 #if defined(AERON_COMPILER_GCC)
 
 #include <sched.h>
+
+#define aeron_micro_sleep usleep
 
 void proc_yield();
 
@@ -108,6 +109,8 @@ void proc_yield();
 
 #define sched_yield SwitchToThread
 #define proc_yield _mm_pause
+
+void aeron_micro_sleep(size_t microseconds);
 
 #else
 #error Unsupported platform!

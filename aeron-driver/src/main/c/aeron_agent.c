@@ -131,9 +131,9 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
         aeron_idle_strategy_t *idle_strat = NULL;
 
         snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s", idle_strategy_name);
-        if ((idle_strat = (aeron_idle_strategy_t *)dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
+        if ((idle_strat = (aeron_idle_strategy_t *)aeron_dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
         {
-            aeron_set_err(EINVAL, "could not find idle strategy %s: dlsym - %s", idle_func_name, dlerror());
+            aeron_set_err(EINVAL, "could not find idle strategy %s: dlsym - %s", idle_func_name, aeron_dlerror());
             return NULL;
         }
 
@@ -154,9 +154,9 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 aeron_agent_on_start_func_t aeron_agent_on_start_load(const char *name)
 {
     aeron_agent_on_start_func_t func = NULL;
-    if ((func = (aeron_agent_on_start_func_t)dlsym(RTLD_DEFAULT, name)) == NULL)
+    if ((func = (aeron_agent_on_start_func_t)aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
     {
-        aeron_set_err(EINVAL, "could not find agent on_start func %s: dlsym - %s", name, dlerror());
+        aeron_set_err(EINVAL, "could not find agent on_start func %s: dlsym - %s", name, aeron_dlerror());
         return NULL;
     }
 

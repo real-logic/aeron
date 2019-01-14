@@ -16,9 +16,29 @@
 
 #include "concurrent/aeron_thread.h"
 
+void aeron_nano_sleep(size_t nanoseconds)
+{
+#ifdef AERON_COMPILER_MSVC
+    HANDLE timer;
+    LARGE_INTEGER li;
+
+    if (!(timer = CreateWaitableTimer(NULL, TRUE, NULL)))
+        return;
+
+    li.QuadPart = -nanoseconds;
+    if (!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE)) {
+        CloseHandle(timer);
+        return;
+    }
+
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+#else
+    nanosleep(&(struct timespec) { .tv_nsec = 1 }, NULL);
+#endif
+}
 
 #if defined(AERON_COMPILER_GCC)
-
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
 void aeron_thread_once(AERON_INIT_ONCE* s_init_once, void* callback)
@@ -129,7 +149,6 @@ void proc_yield()
 {
     __asm__ volatile("pause\n": : : "memory");
 }
-
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 

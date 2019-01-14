@@ -23,7 +23,7 @@ endif()
 
 if(MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     set (CMAKE_CXX_STANDARD 17)
-	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
     set(BUILD_SHARED_LIBS ON)
 endif()
 
@@ -52,7 +52,7 @@ if(UUID_H_EXISTS)
 endif()
 
 if(MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
-	set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)	
+    set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)	
 endif()
 
 check_symbol_exists(uuid_generate "uuid/uuid.h" UUID_GENERATE_PROTOTYPE_EXISTS)
@@ -235,12 +235,12 @@ set(AGENT_SOURCE
     concurrent/aeron_mpsc_rb.c
     concurrent/aeron_atomic.c
     concurrent/aeron_thread.c
-	util/aeron_fileutil.c
+    util/aeron_fileutil.c
     util/aeron_dlopen.c
-	util/aeron_error.c
+    util/aeron_error.c
     util/aeron_parser.c
-	aeron_alloc.c		
-	aeron_windows.c)
+    aeron_alloc.c
+    aeron_windows.c)
 
 set(AGENT_HEADERS
     agent/aeron_driver_agent.h
@@ -250,8 +250,8 @@ set(AGENT_HEADERS
     util/aeron_error.h
     util/aeron_dlopen.h
     util/aeron_parser.h
-	aeron_alloc.h	
-	aeron_windows.h)
+    aeron_alloc.h
+    aeron_windows.h)
 
 add_library(aeron_driver_agent SHARED ${AGENT_SOURCE} ${AGENT_HEADERS})
 target_include_directories(aeron_driver_agent

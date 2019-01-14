@@ -21,28 +21,24 @@
 
 #if defined(AERON_COMPILER_GCC)
 
-    #include <dlfcn.h>
+#include <dlfcn.h>
+
+#define aeron_dlsym dlsym
+#define aeron_dlopen dlopen
+#define aeron_dlerror dlerror
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
-    #include <WinSock2.h> 
-    #include <windows.h> 
+#include <WinSock2.h> 
+#include <windows.h> 
 
-    #define RTLD_DEFAULT -123    
-    #define RTLD_NEXT -124
-    #define RTLD_LAZY -125
+#define RTLD_DEFAULT -123    
+#define RTLD_NEXT -124
+#define RTLD_LAZY -125
 
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-    void* dlsym(HMODULE module, LPCSTR name);
-    HMODULE dlopen(LPCSTR filename);
-    char* dlerror();
-#ifdef __cplusplus
-}
-#endif
+void* aeron_dlsym(HMODULE module, LPCSTR name);
+HMODULE aeron_dlopen(LPCSTR filename);
+char* aeron_dlerror();
 
 #else
 #error Unsupported platform!

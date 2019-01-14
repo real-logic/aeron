@@ -19,9 +19,7 @@
 
 #include "util/aeron_platform.h"
 
-#if define AERON_COMPILER_GCC
-
-#define aeron_micro_sleep usleep
+#if defined(AERON_COMPILER_GCC)
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 

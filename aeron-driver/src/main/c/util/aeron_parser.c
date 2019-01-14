@@ -16,35 +16,43 @@ int aeron_parse_ipv4(const char* text, aeron_regex_matches_t* matches, size_t ma
     for(size_t i = 0; ; i++)
     {
         // Parsing host
-        if(m == 0)
+        if (m == 0)
         {
-            if(text[i] == ':' || text[i] == '/' || text[i] == 0)
+            if (text[i] == ':' || text[i] == '/' || text[i] == 0)
             {
                 matches[0].length = i;
                 
-                if(text[i] == ':')
+                if (text[i] == ':')
+                {
                     m = 1;
-                else if(text[i] == '/')
+                }
+                else if (text[i] == '/')
+                {
                     m = 2;
+                }
 
                 matches[m].offset = i + 1;
                 matches[0].offset = 0;
 
                 if (matches[0].length == 0)
+                {
                     return -1;
+                }
             }
         }
         // Parsing port
         else if(m == 1)
         {
-            if(text[i] == '/' || text[i] == 0)
+            if (text[i] == '/' || text[i] == 0)
             {                    
                 matches[1].length = i - matches[1].offset;
                 matches[2].offset = i + 1;
                 m++;
 
                 if (matches[1].length == 0)
+                {
                     return -1;
+                }
             }
             else if (text[i] < '0' || text[i] > '9')
             {
@@ -70,7 +78,9 @@ int aeron_parse_ipv4(const char* text, aeron_regex_matches_t* matches, size_t ma
         }
 
         if (text[i] == 0)
+        {
             break;
+        }
     }
 
     return 0;
@@ -82,10 +92,14 @@ int aeron_parse_ipv6(const char* text, aeron_regex_matches_t* matches, size_t ma
 {
     // Expect Host / Port / Prefix
     if (max_matches_count < 3)
+    {
         return -1;
+    }
 
     if (text[0] != '[')
+    {
         return -1;
+    }
 
     memset(matches, 0, sizeof(aeron_regex_matches_t) * max_matches_count);
 
@@ -95,20 +109,24 @@ int aeron_parse_ipv6(const char* text, aeron_regex_matches_t* matches, size_t ma
     for(size_t i = 1; ; i++)
     {
         // Parsing host
-        if(m == 0)
+        if (m == 0)
         {
             if (text[i] == ']' || text[i] == 0)
             {
                 matches[0].length = i - matches[0].offset;
                 if (matches[0].length == 0)
+                {
                     return -1;
+                }
                 m++;
             }
             else if (text[i] == '%')
             {
                 matches[0].length = i - matches[0].offset;
                 if (matches[0].length == 0)
+                {
                     return -1;
+                }
                 m = 4;
             }
             else if (text[i] >= '0' && text[i] <= '9') {}
@@ -127,13 +145,13 @@ int aeron_parse_ipv6(const char* text, aeron_regex_matches_t* matches, size_t ma
             {
                 m = 1;
             }
-            if(text[i] == 0)
+            if (text[i] == 0)
             {
                 return -1;
             }
         }
         // Right after ] of the address part
-        else if(m == 1)
+        else if (m == 1)
         {
             if (text[i] == ':')
             {
@@ -147,7 +165,7 @@ int aeron_parse_ipv6(const char* text, aeron_regex_matches_t* matches, size_t ma
             }
         }
         // Parsing port
-        else if(m == 2)
+        else if (m == 2)
         {
             if(text[i] == '/' || text[i] == 0)
             {
@@ -156,7 +174,9 @@ int aeron_parse_ipv6(const char* text, aeron_regex_matches_t* matches, size_t ma
                 m++;
 
                 if (matches[1].length == 0)
+                {
                     return -1;
+                }
             }
             else if(text[i] < '0' || text[i] > '9')
             {                    
@@ -172,7 +192,9 @@ int aeron_parse_ipv6(const char* text, aeron_regex_matches_t* matches, size_t ma
                 m = 999;
 
                 if (matches[2].length == 0)
+                {
                     return -1;
+                }
             }
             else if(text[i] < '0' || text[i] > '9')
             {                    
@@ -185,7 +207,9 @@ int aeron_parse_ipv6(const char* text, aeron_regex_matches_t* matches, size_t ma
         }
 
         if (text[i] == 0)
+        {
             break;
+        }
     }
 
     return 0;

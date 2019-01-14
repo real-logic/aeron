@@ -120,9 +120,9 @@ int aeron_create_file(const char* path)
 int aeron_delete_directory(const char* directory)
 {
 	CHAR szDir[MAX_PATH + 1];
-	SHFILEOPSTRUCTW fos = { 0 };
+	SHFILEOPSTRUCTA fos = { 0 };
 
-	strncpy(szDir, MAX_PATH, directory);
+	strcpy_s(szDir, MAX_PATH, directory);
 	int len = lstrlenW(szDir);
 	szDir[len + 1] = 0; 
 

@@ -73,4 +73,6 @@ interface DriverEventsListener
     void onUnavailableCounter(
         long correlationId,
         int counterId);
+
+    void onClientTimeout();
 }

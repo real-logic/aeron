@@ -509,6 +509,11 @@ public class DriverConductor implements Agent
         }
     }
 
+    void clientTimeout(final long clientId)
+    {
+        clientProxy.onClientTimeout(clientId);
+    }
+
     void onAddIpcPublication(
         final String channel,
         final int streamId,

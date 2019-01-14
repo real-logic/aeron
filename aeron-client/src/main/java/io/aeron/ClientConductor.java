@@ -89,7 +89,7 @@ class ClientConductor implements Agent, DriverEventsListener
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
         availableCounterHandler = ctx.availableCounterHandler();
         unavailableCounterHandler = ctx.unavailableCounterHandler();
-        driverEventsAdapter = new DriverEventsAdapter(ctx.toClientBuffer(), this);
+        driverEventsAdapter = new DriverEventsAdapter(ctx.toClientBuffer(), ctx.clientId(), this);
         driverAgentInvoker = ctx.driverAgentInvoker();
         counterValuesBuffer = ctx.countersValuesBuffer();
         countersReader = new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer(), US_ASCII);
@@ -366,6 +366,15 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 isInCallback = false;
             }
+        }
+    }
+
+    public void onClientTimeout()
+    {
+        if (!isClosed)
+        {
+            onClose();
+            handleError(new TimeoutException("client timeout from driver"));
         }
     }
 

@@ -133,4 +133,9 @@ public class ControlProtocolEvents
      * Inform clients of removal of counter.
      */
     public static final int ON_UNAVAILABLE_COUNTER = 0x0F09;
+
+    /**
+     * Inform clients of client timeout.
+     */
+    public static final int ON_CLIENT_TIMEOUT = 0x0F0A;
 }

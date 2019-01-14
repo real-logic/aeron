@@ -77,6 +77,7 @@ public class AeronClient implements DriverManagedResource
         {
             reachedEndOfLife = true;
             clientTimeouts.incrementOrdered();
+            conductor.clientTimeout(clientId);
         }
     }
 

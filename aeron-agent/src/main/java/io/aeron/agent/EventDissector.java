@@ -51,6 +51,7 @@ public class EventDissector
     private static final CounterUpdateFlyweight COUNTER_UPDATE = new CounterUpdateFlyweight();
     private static final OperationSucceededFlyweight OPERATION_SUCCEEDED = new OperationSucceededFlyweight();
     private static final SubscriptionReadyFlyweight SUBSCRIPTION_READY = new SubscriptionReadyFlyweight();
+    private static final ClientTimeoutFlyweight CLIENT_TIMEOUT = new ClientTimeoutFlyweight();
 
     public static void dissectAsFrame(
         final EventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
@@ -198,6 +199,12 @@ public class EventDissector
                 final CounterUpdateFlyweight counterUpdate = COUNTER_UPDATE;
                 counterUpdate.wrap(buffer, offset + relativeOffset);
                 dissect(counterUpdate, builder);
+                break;
+
+            case CMD_OUT_ON_CLIENT_TIMEOUT:
+                final ClientTimeoutFlyweight clientTimeout = CLIENT_TIMEOUT;
+                clientTimeout.wrap(buffer, offset + relativeOffset);
+                dissect(clientTimeout, builder);
                 break;
 
             default:
@@ -566,6 +573,11 @@ public class EventDissector
             .append(msg.correlationId())
             .append(' ')
             .append(msg.channelStatusCounterId());
+    }
+
+    private static void dissect(final ClientTimeoutFlyweight msg, final StringBuilder builder)
+    {
+        builder.append(msg.clientId());
     }
 
     public static int frameType(final MutableDirectBuffer buffer, final int termOffset)

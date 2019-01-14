@@ -63,6 +63,11 @@ public class DriverProxy
         return toDriverCommandBuffer.consumerHeartbeatTime();
     }
 
+    public long clientId()
+    {
+        return correlatedMessage.clientId();
+    }
+
     public long addPublication(final String channel, final int streamId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();

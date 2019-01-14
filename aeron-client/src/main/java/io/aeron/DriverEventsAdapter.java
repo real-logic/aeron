@@ -37,15 +37,19 @@ class DriverEventsAdapter implements MessageHandler
     private final OperationSucceededFlyweight operationSucceeded = new OperationSucceededFlyweight();
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
+    private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
     private final DriverEventsListener listener;
 
     private long activeCorrelationId;
     private long receivedCorrelationId;
+    private long clientId;
     private boolean isInvalid;
 
-    DriverEventsAdapter(final CopyBroadcastReceiver broadcastReceiver, final DriverEventsListener listener)
+    DriverEventsAdapter(
+        final CopyBroadcastReceiver broadcastReceiver, final long clientId, final DriverEventsListener listener)
     {
         this.broadcastReceiver = broadcastReceiver;
+        this.clientId = clientId;
         this.listener = listener;
     }
 
@@ -73,6 +77,11 @@ class DriverEventsAdapter implements MessageHandler
     public boolean isInvalid()
     {
         return isInvalid;
+    }
+
+    public long clientId()
+    {
+        return clientId;
     }
 
     @SuppressWarnings("MethodLength")
@@ -213,6 +222,17 @@ class DriverEventsAdapter implements MessageHandler
                 counterUpdate.wrap(buffer, index);
 
                 listener.onUnavailableCounter(counterUpdate.correlationId(), counterUpdate.counterId());
+                break;
+            }
+
+            case ON_CLIENT_TIMEOUT:
+            {
+                clientTimeout.wrap(buffer, index);
+
+                if (clientTimeout.clientId() == clientId)
+                {
+                    listener.onClientTimeout();
+                }
                 break;
             }
         }

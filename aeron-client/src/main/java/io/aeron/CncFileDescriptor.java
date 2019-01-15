@@ -42,7 +42,7 @@ import static org.agrona.BitUtil.*;
  *  +-----------------------------+
  * </pre>
  * <p>
- * Meta Data Layout (CnC Version 13)
+ * Meta Data Layout (CnC Version 15)
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -74,7 +74,7 @@ public class CncFileDescriptor
 {
     public static final String CNC_FILE = "cnc.dat";
 
-    public static final int CNC_VERSION = 14;
+    public static final int CNC_VERSION = 15;
 
     public static final int CNC_VERSION_FIELD_OFFSET;
     public static final int TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET;

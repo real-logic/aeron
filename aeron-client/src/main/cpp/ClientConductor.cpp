@@ -43,6 +43,7 @@ ClientConductor::~ClientConductor()
 std::int64_t ClientConductor::addPublication(const std::string &channel, std::int32_t streamId)
 {
     verifyDriverIsActive();
+    ensureOpen();
 
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     std::int64_t id;
@@ -140,6 +141,7 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
 std::int64_t ClientConductor::addExclusivePublication(const std::string& channel, std::int32_t streamId)
 {
     verifyDriverIsActive();
+    ensureOpen();
 
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     std::int64_t registrationId = m_driverProxy.addExclusivePublication(channel, streamId);
@@ -225,6 +227,7 @@ std::int64_t ClientConductor::addSubscription(
     const on_unavailable_image_t &onUnavailableImageHandler)
 {
     verifyDriverIsActive();
+    ensureOpen();
 
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -312,6 +315,7 @@ std::int64_t ClientConductor::addCounter(
     std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, const std::string& label)
 {
     verifyDriverIsActive();
+    ensureOpen();
 
     if (keyLength > CountersManager::MAX_KEY_LENGTH)
     {
@@ -398,6 +402,7 @@ void ClientConductor::releaseCounter(std::int64_t registrationId)
 void ClientConductor::addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel)
 {
     verifyDriverIsActive();
+    ensureOpen();
 
     m_driverProxy.addDestination(publicationRegistrationId, endpointChannel);
 }
@@ -405,6 +410,7 @@ void ClientConductor::addDestination(std::int64_t publicationRegistrationId, con
 void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel)
 {
     verifyDriverIsActive();
+    ensureOpen();
 
     m_driverProxy.removeDestination(publicationRegistrationId, endpointChannel);
 }
@@ -412,6 +418,7 @@ void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, 
 void ClientConductor::addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel)
 {
     verifyDriverIsActive();
+    ensureOpen();
 
     m_driverProxy.addRcvDestination(subscriptionRegistrationId, endpointChannel);
 }
@@ -419,6 +426,7 @@ void ClientConductor::addRcvDestination(std::int64_t subscriptionRegistrationId,
 void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel)
 {
     verifyDriverIsActive();
+    ensureOpen();
 
     m_driverProxy.removeRcvDestination(subscriptionRegistrationId, endpointChannel);
 }
@@ -699,7 +707,7 @@ void ClientConductor::onUnavailableImage(
 
 void ClientConductor::onClientTimeout(std::int64_t clientId)
 {
-    if (m_driverProxy.clientId() == clientId)
+    if (m_driverProxy.clientId() == clientId && !isClosed())
     {
         const long long now = m_epochClock();
 
@@ -713,6 +721,8 @@ void ClientConductor::onClientTimeout(std::int64_t clientId)
 void ClientConductor::closeAllResources(long long now)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    forceClose();
 
     std::for_each(m_publications.begin(), m_publications.end(),
         [&](PublicationStateDefn& entry)

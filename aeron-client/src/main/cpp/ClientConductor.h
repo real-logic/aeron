@@ -79,7 +79,8 @@ public:
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
-        m_driverActive(true)
+        m_driverActive(true),
+        m_isClosed(false)
     {
     }
 
@@ -206,6 +207,16 @@ public:
             default:
                 return m_countersReader.getCounterValue(counterId);
         }
+    }
+
+    inline bool isClosed() const
+    {
+        return std::atomic_load_explicit(&m_isClosed, std::memory_order_acquire);
+    }
+
+    inline void forceClose()
+    {
+        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
     }
 
 protected:
@@ -373,6 +384,7 @@ private:
     long m_interServiceTimeoutMs;
 
     std::atomic<bool> m_driverActive;
+    std::atomic<bool> m_isClosed;
 
     inline int onHeartbeatCheckTimeouts()
     {
@@ -433,6 +445,14 @@ private:
         {
             DriverTimeoutException exception("driver is inactive", SOURCEINFO);
             m_errorHandler(exception);
+        }
+    }
+
+    inline void ensureOpen()
+    {
+        if (isClosed())
+        {
+            throw AeronException("Aeron client conductor is closed", SOURCEINFO);
         }
     }
 };

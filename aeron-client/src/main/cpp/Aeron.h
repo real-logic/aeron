@@ -283,6 +283,16 @@ public:
         return m_conductor.countersReader();
     }
 
+    /**
+     * Get the client identity that has been allocated for communicating with the media driver.
+     *
+     * @return the client identity that has been allocated for communicating with the media driver.
+     */
+    inline std::int64_t clientId()
+    {
+        return m_driverProxy.clientId();
+    }
+
 private:
     std::random_device m_randomDevice;
     std::default_random_engine m_randomEngine;

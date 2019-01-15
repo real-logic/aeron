@@ -46,7 +46,7 @@ using namespace aeron::concurrent;
 *  +-----------------------------+
 * </pre>
 * <p>
-* Meta Data Layout (CnC Version 7)
+* Meta Data Layout (CnC Version 15)
 * <pre>
 *   0                   1                   2                   3
 *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -77,8 +77,7 @@ using namespace aeron::concurrent;
 namespace CncFileDescriptor {
 
 static const std::string CNC_FILE = "cnc.dat";
-
-static const std::int32_t CNC_VERSION = 14;
+static const std::int32_t CNC_VERSION = 15;
 
 #pragma pack(push)
 #pragma pack(4)

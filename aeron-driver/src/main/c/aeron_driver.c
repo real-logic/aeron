@@ -76,6 +76,11 @@ int64_t aeron_nano_clock()
     {
         return -1;
     }
+#elif defined(AERON_COMPILER_MSVC)
+    if (aeron_clock_gettime_monotonic(&ts) < 0)
+    {
+        return -1;
+    }
 #else
     if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) < 0)
     {
@@ -89,10 +94,17 @@ int64_t aeron_nano_clock()
 int64_t aeron_epoch_clock()
 {
     struct timespec ts;
+#if defined(AERON_COMPILER_MSVC)
+    if (aeron_clock_gettime_realtime(&ts) < 0)
+    {
+        return -1;
+    }
+#else
     if (clock_gettime(CLOCK_REALTIME, &ts) < 0)
     {
         return -1;
     }
+#endif
 
     return (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
 }

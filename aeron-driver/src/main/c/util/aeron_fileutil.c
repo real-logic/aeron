@@ -26,6 +26,7 @@
 
 #include "aeron_platform.h"
 #include "aeron_error.h"
+#include "aeron_fileutil.h"
 
 #if  defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 #include <WinSock2.h>
@@ -42,19 +43,23 @@
 #define S_IRUSR _S_IREAD
 #define S_IWUSR _S_IWRITE
 
-void* mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset)
+static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
 {
+    size_t length = mapping->length;
     size_t len;
-    struct stat st;
-    uint64_t o = offset;
-    uint32_t l = o & 0xFFFFFFFF;
-    uint32_t h = (o >> 32) & 0xFFFFFFFF;
+    struct stat st;    
+    const uint32_t l = offset & 0xFFFFFFFF;
+    const uint32_t h = (offset >> 32) & 0xFFFFFFFF;
 
     if (!fstat(fd, &st))
+    {
         len = (size_t)st.st_size;
-    else {
+    }
+    else 
+    {
         fprintf(stderr, "mmap: could not determine filesize");
-        exit(1);
+        close(fd);
+        return -1;
     }
 
     if (length + offset > len)
@@ -65,22 +70,33 @@ void* mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset
     if (!hmap)
     {
         aeron_set_windows_error();
-        return MAP_FAILED;
+        close(fd);
+        return -1;
     }
 
-    void* temp = MapViewOfFileEx(hmap, FILE_MAP_WRITE, h, l, length, start);
+    mapping->addr = MapViewOfFileEx(hmap, FILE_MAP_WRITE, h, l, length, NULL);
 
     if (!CloseHandle(hmap))
         fprintf(stderr, "unable to close file mapping handle\n");
-    return temp ? temp : MAP_FAILED;
+
+    if (!mapping->addr)
+        mapping->addr = MAP_FAILED;
+
+    close(fd);
+    return (MAP_FAILED == mapping->addr) ? -1 : 0;
 }
 
-int munmap(void *start, size_t length)
+int aeron_unmap(aeron_mapped_file_t *mapped_file)
 {
-    return !UnmapViewOfFile(start);
+    if (NULL != mapped_file->addr)
+    {
+        return UnmapViewOfFile(mapped_file->addr) == true ? 0 : -1;
+    }
+
+    return 0;
 }
 
-int ftruncate(int fd, off_t length)
+int aeron_ftruncate(int fd, off_t length)
 {
     int error = _chsize_s(fd, length);
     if (error != 0)
@@ -117,25 +133,25 @@ int aeron_create_file(const char* path)
     return fd;
 }
 
-int aeron_delete_directory(const char* directory)
+int aeron_delete_directory(const char* dir)
 {
-	CHAR szDir[MAX_PATH + 1];
-	SHFILEOPSTRUCTA fos = { 0 };
-
-	strcpy_s(szDir, MAX_PATH, directory);
-	int len = lstrlenW(szDir);
-	szDir[len + 1] = 0; 
-
-	// delete the folder and everything inside
-	fos.wFunc = FO_DELETE;
-	fos.pFrom = szDir;
-	fos.fFlags = FOF_NO_UI;
-	return SHFileOperation(&fos);
+    SHFILEOPSTRUCT file_op = {
+        NULL,
+        FO_DELETE,
+        dir,
+        "",
+        FOF_NOCONFIRMATION |
+        FOF_NOERRORUI |
+        FOF_SILENT,
+        false,
+        0,
+        "" };
+    return SHFileOperation(&file_op);
 }
 
 int aeron_is_directory(const char* path)
 {
-	return GetFileAttributes(path) == FILE_ATTRIBUTE_DIRECTORY;
+    return GetFileAttributes(path) == FILE_ATTRIBUTE_DIRECTORY;
 }
 
 #else
@@ -145,6 +161,24 @@ int aeron_is_directory(const char* path)
 #include <errno.h>
 #include <ftw.h>
 #include <stdio.h> 
+
+static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
+{
+    mapping->addr = mmap(NULL, mapping->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
+    close(fd);
+
+    return (MAP_FAILED == mapping->addr) ? -1 : 0;
+}
+
+int aeron_unmap(aeron_mapped_file_t *mapped_file)
+{    
+    if (NULL != mapped_file->addr)
+    {
+        return munmap(mapped_file->addr, mapped_file->length);
+    }
+
+    return 0;
+}
 
 static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
 {
@@ -196,25 +230,6 @@ int aeron_create_file(const char* path)
 
 #define AERON_BLOCK_SIZE (4 * 1024)
 
-inline static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
-{
-    mapping->addr = mmap(NULL, mapping->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
-
-    return (MAP_FAILED == mapping->addr) ? -1 : 0;
-}
-
-int aeron_unmap(aeron_mapped_file_t *mapped_file)
-{
-    int result = 0;
-
-    if (NULL != mapped_file->addr)
-    {
-        result = munmap(mapped_file->addr, mapped_file->length);
-    }
-
-    return result;
-}
-
 inline static void aeron_touch_pages(uint8_t *base, size_t length, size_t page_size)
 {
     for (size_t i = 0; i < length; i += page_size)
@@ -239,7 +254,7 @@ int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
         return -1;
     }
 #else
-    if (ftruncate(fd, length) < 0)
+    if (aeron_ftruncate(fd, length) < 0)
     {
         int errcode = errno;
 
@@ -263,19 +278,15 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
 
     if ((fd = aeron_create_file(path)) >= 0)
     {
-        if (ftruncate(fd, (off_t )mapped_file->length) >= 0)
+        if (aeron_ftruncate(fd, (off_t )mapped_file->length) >= 0)
         {
-            void *file_mmap = mmap(NULL, mapped_file->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-            close(fd);
-
-            if (MAP_FAILED != file_mmap)
+            if (aeron_mmap(mapped_file, fd, 0) == 0)
             {
                 if (fill_with_zeroes)
                 {
-                    aeron_touch_pages(file_mmap, mapped_file->length, AERON_BLOCK_SIZE);
+                    aeron_touch_pages(mapped_file->addr, mapped_file->length, AERON_BLOCK_SIZE);
                 }
 
-                mapped_file->addr = file_mmap;
                 result = 0;
             }
             else
@@ -312,12 +323,9 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
         if (fstat(fd, &sb) == 0)
         {
             mapped_file->length = (size_t)sb.st_size;
-
-            void *file_mmap = mmap(NULL, mapped_file->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-            if (MAP_FAILED != file_mmap)
+            
+            if (aeron_mmap(mapped_file, fd, 0) == 0)
             {
-                mapped_file->addr = file_mmap;
                 result = 0;
             }
             else
@@ -333,8 +341,6 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
 
             aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         }
-
-        close(fd);
     }
     else
     {
@@ -413,15 +419,12 @@ int aeron_map_raw_log(
 
     if ((fd = open(path, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)) >= 0)
     {
-        if (ftruncate(fd, (off_t)log_length) >= 0)
+        if (aeron_ftruncate(fd, (off_t)log_length) >= 0)
         {
             mapped_raw_log->mapped_file.length = log_length;
             mapped_raw_log->mapped_file.addr = NULL;
 
-            int mmap_result = aeron_mmap(&mapped_raw_log->mapped_file, fd, 0);
-            close(fd);
-
-            if (mmap_result < 0)
+            if (aeron_mmap(&mapped_raw_log->mapped_file, fd, 0) < 0)
             {
                 int errcode = errno;
 
@@ -455,7 +458,6 @@ int aeron_map_raw_log(
             int errcode = errno;
 
             aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
-            close(fd);
         }
     }
     else
@@ -474,7 +476,7 @@ int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *
 
     if (mapped_raw_log->mapped_file.addr != NULL)
     {
-        if ((result = munmap(mapped_raw_log->mapped_file.addr, mapped_raw_log->mapped_file.length)) < 0)
+        if ((result = aeron_unmap(&mapped_raw_log->mapped_file)) < 0)
         {
             return -1;
         }

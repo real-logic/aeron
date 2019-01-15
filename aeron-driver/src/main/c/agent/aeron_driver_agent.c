@@ -51,11 +51,17 @@ static aeron_thread_t log_reader_thread;
 int64_t aeron_agent_epoch_clock()
 {
     struct timespec ts;
+#if defined(AERON_COMPILER_MSVC)
+    if (aeron_clock_gettime_realtime(&ts) < 0)
+    {
+        return -1;
+    }
+#else
     if (clock_gettime(CLOCK_REALTIME, &ts) < 0)
     {
         return -1;
     }
-
+#endif
     return (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
 }
 
@@ -65,7 +71,7 @@ bool aeron_agent_should_drop_frame(struct msghdr *message)
 
     if (frame_header->type == AERON_HDR_TYPE_DATA || frame_header->type == AERON_HDR_TYPE_PAD)
     {
-        return erand48(receive_data_loss_xsubi) <= receive_data_loss_rate;
+        return aeron_erand48(receive_data_loss_xsubi) <= receive_data_loss_rate;
     }
 
     return false;

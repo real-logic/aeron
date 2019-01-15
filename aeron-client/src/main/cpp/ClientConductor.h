@@ -178,7 +178,9 @@ public:
         std::int64_t registrationId,
         std::int32_t counterId);
 
-    void onInterServiceTimeout(long long now);
+    void onClientTimeout(std::int64_t clientId);
+
+    void closeAllResources(long long now);
 
     void addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
     void removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
@@ -381,7 +383,7 @@ private:
 
         if (now > (m_timeOfLastDoWork + m_interServiceTimeoutMs))
         {
-            onInterServiceTimeout(now);
+            closeAllResources(now);
 
             ConductorServiceTimeoutException exception(
                 "timeout between service calls over " + std::to_string(m_interServiceTimeoutMs) + " ms", SOURCEINFO);

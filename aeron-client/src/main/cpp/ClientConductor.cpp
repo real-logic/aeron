@@ -697,7 +697,20 @@ void ClientConductor::onUnavailableImage(
         });
 }
 
-void ClientConductor::onInterServiceTimeout(long long now)
+void ClientConductor::onClientTimeout(std::int64_t clientId)
+{
+    if (m_driverProxy.clientId() == clientId)
+    {
+        const long long now = m_epochClock();
+
+        closeAllResources(now);
+
+        ClientTimeoutException exception("client timeout from driver", SOURCEINFO);
+        m_errorHandler(exception);
+    }
+}
+
+void ClientConductor::closeAllResources(long long now)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 

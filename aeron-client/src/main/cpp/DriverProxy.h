@@ -49,6 +49,11 @@ public:
         return m_toDriverCommandBuffer.consumerHeartbeatTime();
     }
 
+    inline std::int64_t clientId()
+    {
+        return m_clientId;
+    }
+
     std::int64_t addPublication(const std::string& channel, std::int32_t streamId)
     {
         std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();

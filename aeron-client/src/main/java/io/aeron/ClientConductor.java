@@ -374,7 +374,7 @@ class ClientConductor implements Agent, DriverEventsListener
         if (!isClosed)
         {
             onClose();
-            handleError(new TimeoutException("client timeout from driver"));
+            handleError(new ClientTimeoutException("client timeout from driver"));
         }
     }
 

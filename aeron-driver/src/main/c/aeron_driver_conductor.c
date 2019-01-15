@@ -271,6 +271,7 @@ void aeron_client_on_time_event(
     {
         client->reached_end_of_life = true;
         aeron_counter_ordered_increment(conductor->client_timeouts_counter, 1);
+        aeron_driver_conductor_on_client_timeout(conductor, client->client_id);
     }
 }
 
@@ -1119,6 +1120,19 @@ void aeron_driver_conductor_on_operation_succeeded(
 
     aeron_driver_conductor_client_transmit(
         conductor, AERON_RESPONSE_ON_OPERATION_SUCCESS, response, sizeof(aeron_operation_succeeded_t));
+}
+
+void aeron_driver_conductor_on_client_timeout(
+    aeron_driver_conductor_t *conductor,
+    int64_t client_id)
+{
+    char response_buffer[sizeof(aeron_client_timeout_t)];
+    aeron_client_timeout_t *response = (aeron_client_timeout_t *)response_buffer;
+
+    response->client_id = client_id;
+
+    aeron_driver_conductor_client_transmit(
+        conductor, AERON_RESPONSE_ON_CLIENT_TIMEOUT, response, sizeof(aeron_client_timeout_t));
 }
 
 void aeron_driver_conductor_on_available_image(

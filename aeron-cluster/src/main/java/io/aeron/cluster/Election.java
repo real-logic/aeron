@@ -427,8 +427,11 @@ class Election implements AutoCloseable
             this.logLeadershipTermId = leadershipTermId;
             this.logPosition = logPosition;
 
-            ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, logPosition, nowMs);
-            ctx.recordingLog().force();
+            if (!ctx.recordingLog().hasTermBeenAppended(leadershipTermId))
+            {
+                ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, logPosition, nowMs);
+                ctx.recordingLog().force();
+            }
         }
     }
 

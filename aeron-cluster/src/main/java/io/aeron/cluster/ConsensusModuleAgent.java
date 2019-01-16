@@ -1500,7 +1500,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 }
             }
 
-            commitPosition.setOrdered(image.position());
+            commitPosition.setOrdered(Math.min(image.position(), appendedPosition));
             consensusModuleAdapter.poll();
             cancelMissedTimers();
         }
@@ -2211,7 +2211,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 workCount += 1;
             }
 
-            commitPosition.proposeMaxOrdered(logAdapter.position());
+            commitPosition.proposeMaxOrdered(Math.min(logAdapter.position(), appendedPosition));
 
             if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
             {
@@ -2231,7 +2231,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         election = new Election(
             false,
             leadershipTermId,
-            Math.min(commitPosition.getWeak(), appendedPosition.get()),
+            commitPosition.getWeak(),
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,

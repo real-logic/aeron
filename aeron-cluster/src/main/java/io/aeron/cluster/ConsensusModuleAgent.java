@@ -705,18 +705,18 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             archive.truncateRecording(recordingId, logPosition);
         }
 
-        lastAppendedPosition = recordingExtent.stopPosition;
-        followerCommitPosition = recordingExtent.stopPosition;
+        lastAppendedPosition = logPosition;
+        followerCommitPosition = logPosition;
 
         lastRecordingId = recordingId;
         logPublicationInitialTermId = recordingExtent.initialTermId;
         logPublicationTermBufferLength = recordingExtent.termBufferLength;
         logPublicationMtuLength = recordingExtent.mtuLength;
 
-        commitPosition.setOrdered(recordingExtent.stopPosition);
-        clearSessionsAfter(recordingExtent.stopPosition);
+        commitPosition.setOrdered(logPosition);
+        clearSessionsAfter(logPosition);
 
-        return recordingExtent.stopPosition;
+        return logPosition;
     }
 
     void stopLogRecording()
@@ -2231,7 +2231,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         election = new Election(
             false,
             leadershipTermId,
-            commitPosition.getWeak(),
+            Math.min(commitPosition.getWeak(), appendedPosition.get()),
             clusterMembers,
             clusterMemberByIdMap,
             thisMember,

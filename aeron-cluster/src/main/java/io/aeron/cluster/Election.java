@@ -347,6 +347,7 @@ class Election implements AutoCloseable
             else if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
             {
                 consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logPosition);
+                consensusModuleAgent.prepareForElection(logPosition);
                 this.logPosition = logPosition;
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
@@ -361,6 +362,7 @@ class Election implements AutoCloseable
             if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
             {
                 consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logPosition);
+                consensusModuleAgent.prepareForElection(logPosition);
                 this.logPosition = logPosition;
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
@@ -433,11 +435,6 @@ class Election implements AutoCloseable
     State state()
     {
         return state;
-    }
-
-    boolean notReplaying()
-    {
-        return State.FOLLOWER_READY != state && State.LEADER_REPLAY != state;
     }
 
     ClusterMember leader()

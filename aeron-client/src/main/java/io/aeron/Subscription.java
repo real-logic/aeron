@@ -544,6 +544,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
             "registrationId=" + registrationId +
             ", streamId=" + streamId +
             ", channel='" + channel + '\'' +
+            ", imageCount=" + imageCount() +
             '}';
     }
 }

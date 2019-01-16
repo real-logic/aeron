@@ -624,10 +624,10 @@ public abstract class Publication implements AutoCloseable
         return "Publication{" +
             "originalRegistrationId=" + originalRegistrationId +
             ", registrationId=" + registrationId +
-            ", streamId=" + streamId +
-            ", sessionId=" + sessionId +
             ", initialTermId=" + initialTermId +
             ", termBufferLength=" + termBufferLength +
+            ", sessionId=" + sessionId +
+            ", streamId=" + streamId +
             ", channel='" + channel + '\'' +
             ", position=" + position() +
             '}';

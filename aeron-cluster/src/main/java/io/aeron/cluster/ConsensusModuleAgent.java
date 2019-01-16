@@ -2172,11 +2172,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         int workCount = 0;
 
+        final long appendedPosition = this.appendedPosition.get();
         if (Cluster.Role.LEADER == role)
         {
-            thisMember.logPosition(appendedPosition.get());
+            thisMember.logPosition(appendedPosition);
+            final long quorumPosition = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
 
-            if (commitPosition.proposeMaxOrdered(ClusterMember.quorumPosition(clusterMembers, rankedPositions)) ||
+            if (commitPosition.proposeMaxOrdered(Math.min(quorumPosition, appendedPosition)) ||
                 nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatIntervalMs))
             {
                 final long commitPosition = this.commitPosition.getWeak();
@@ -2201,7 +2203,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else
         {
-            final long appendedPosition = this.appendedPosition.get();
             final Publication publication = leaderMember.publication();
 
             if (appendedPosition != lastAppendedPosition &&

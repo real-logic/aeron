@@ -618,4 +618,18 @@ public abstract class Publication implements AutoCloseable
 
         return totalLength;
     }
+
+    public String toString()
+    {
+        return "Publication{" +
+            "originalRegistrationId=" + originalRegistrationId +
+            ", registrationId=" + registrationId +
+            ", streamId=" + streamId +
+            ", sessionId=" + sessionId +
+            ", initialTermId=" + initialTermId +
+            ", termBufferLength=" + termBufferLength +
+            ", channel='" + channel + '\'' +
+            ", position=" + position() +
+            '}';
+    }
 }

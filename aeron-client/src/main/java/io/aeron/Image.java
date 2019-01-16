@@ -699,4 +699,20 @@ public class Image
         isEos = finalPosition >= endOfStreamPosition(logBuffers.metaDataBuffer());
         isClosed = true;
     }
+
+    public String toString()
+    {
+        return "Image{" +
+            "correlationId=" + correlationId +
+            ", joinPosition=" + joinPosition +
+            ", finalPosition=" + finalPosition +
+            ", sessionId=" + sessionId +
+            ", initialTermId=" + initialTermId +
+            ", termLengthMask=" + termLengthMask +
+            ", isEos=" + isEos +
+            ", sourceIdentity='" + sourceIdentity + '\'' +
+            ", subscription=" + subscription +
+            ", position=" + position() +
+            '}';
+    }
 }

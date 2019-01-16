@@ -705,10 +705,8 @@ public class Image
         return "Image{" +
             "correlationId=" + correlationId +
             ", joinPosition=" + joinPosition +
-            ", finalPosition=" + finalPosition +
             ", sessionId=" + sessionId +
             ", initialTermId=" + initialTermId +
-            ", termLengthMask=" + termLengthMask +
             ", isEos=" + isEos +
             ", sourceIdentity='" + sourceIdentity + '\'' +
             ", subscription=" + subscription +

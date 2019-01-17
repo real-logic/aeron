@@ -21,6 +21,60 @@
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
+#include "aeron_flow_control.h"
+#include "concurrent/aeron_counters_manager.h"
+#include "aeron_driver.h"
+
+#ifdef AERON_DRIVER
+int aeron_max_multicast_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    int32_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_buffer_capacity);
+
+int aeron_unicast_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    int32_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_buffer_capacity);
+
+int aeron_static_window_congestion_control_strategy_supplier(
+    aeron_congestion_control_strategy_t **strategy,
+    int32_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int32_t session_id,
+    int64_t registration_id,
+    int32_t term_length,
+    int32_t sender_mtu_length,
+    aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager);
+
+void* aeron_dlsym_fallback(LPCSTR name)
+{
+    if (strcmp(name, "aeron_unicast_flow_control_strategy_supplier"))
+        return aeron_unicast_flow_control_strategy_supplier;
+    if (strcmp(name, "aeron_max_multicast_flow_control_strategy_supplier"))
+        return aeron_max_multicast_flow_control_strategy_supplier;
+    if (strcmp(name, "aeron_static_window_congestion_control_strategy_supplier"))
+        return aeron_static_window_congestion_control_strategy_supplier;
+
+    return NULL;
+}
+#else 
+void* aeron_dlsym_fallback(LPCSTR name)
+{
+    return NULL;
+}
+#endif
+
+
 static HMODULE* modules = NULL;
 static size_t modules_size = 0;
 static size_t modules_capacity = 10;
@@ -55,10 +109,12 @@ void* aeron_dlsym(HMODULE module, LPCSTR name)
     {
         for (size_t i = 0; i < modules_size; i++)
         {
-            void* res = aeron_dlsym(modules[i], name);
+            void* res = aeron_dlsym(modules[modules_size - i], name);
             if (res != NULL)
                 return res;
         }
+
+        return aeron_dlsym_fallback(name);
     }
 
     if (module == (HMODULE)RTLD_NEXT)
@@ -66,12 +122,14 @@ void* aeron_dlsym(HMODULE module, LPCSTR name)
         BOOL firstFound = FALSE;
 		for (size_t i = 0; i < modules_size; i++)
 		{
-            void* res = aeron_dlsym(modules[i], name);
+            void* res = aeron_dlsym(modules[modules_size - i], name);
 			if (res != NULL && firstFound)
                 return res;
             if (res != NULL && !firstFound)
                 firstFound = TRUE;
         }
+
+        return aeron_dlsym_fallback(name);
     }
 
     return GetProcAddress(module, name);

@@ -221,12 +221,12 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 #elif defined(__linux__)
     static const char *aeron_driver_libname = "libaeron_driver.so";
 #elif defined(WINVER)
-    static const char *aeron_driver_libname = "libaeron_driver.dll";
+    static const char *aeron_driver_libname = "aeron_driver.dll";
 #endif
 
     if (NULL == _original_func)
     {
-        if ((aeron_lib = aeron_dlopen(aeron_driver_libname, RTLD_LAZY)) == NULL)
+        if ((aeron_lib = aeron_dlopen(aeron_driver_libname)) == NULL)
         {
             fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);

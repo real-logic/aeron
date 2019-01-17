@@ -24,7 +24,7 @@
 #include <dlfcn.h>
 
 #define aeron_dlsym dlsym
-#define aeron_dlopen dlopen
+#define aeron_dlopen(x) dlopen(x, RTLD_LAZY)
 #define aeron_dlerror dlerror
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
@@ -34,7 +34,6 @@
 
 #define RTLD_DEFAULT -123    
 #define RTLD_NEXT -124
-#define RTLD_LAZY -125
 
 void* aeron_dlsym(HMODULE module, LPCSTR name);
 HMODULE aeron_dlopen(LPCSTR filename);

@@ -107,7 +107,7 @@ void* aeron_dlsym(HMODULE module, LPCSTR name)
 
     if (module == (HMODULE)RTLD_DEFAULT)
     {
-        for (size_t i = 0; i < modules_size; i++)
+        for (size_t i = 1; i <= modules_size; i++)
         {
             void* res = aeron_dlsym(modules[modules_size - i], name);
             if (res != NULL)
@@ -120,7 +120,7 @@ void* aeron_dlsym(HMODULE module, LPCSTR name)
     if (module == (HMODULE)RTLD_NEXT)
     {
         BOOL firstFound = FALSE;
-		for (size_t i = 0; i < modules_size; i++)
+		for (size_t i = 1; i <= modules_size; i++)
 		{
             void* res = aeron_dlsym(modules[modules_size - i], name);
 			if (res != NULL && firstFound)

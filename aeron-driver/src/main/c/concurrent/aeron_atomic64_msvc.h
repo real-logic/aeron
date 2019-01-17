@@ -27,22 +27,22 @@
 do \
 { \
     dst = src; \
-    _ReadWriteBarrier(); \
+    _ReadBarrier(); \
 } while(false)
 
 #define AERON_PUT_ORDERED(dst,src) \
 do \
 { \
-    _ReadWriteBarrier(); \
+    _WriteBarrier(); \
     dst = src; \
 } while(false)
 
 #define AERON_PUT_VOLATILE(dst,src) \
 do \
 { \
-    _ReadWriteBarrier(); \
+    _WriteBarrier(); \
     dst = src; \
-    _ReadWriteBarrier(); \
+    _WriteBarrier(); \
 } while(false)
 
 #define AERON_GET_AND_ADD_INT64(original,current,value) \

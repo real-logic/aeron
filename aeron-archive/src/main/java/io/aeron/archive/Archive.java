@@ -106,7 +106,6 @@ public class Archive implements AutoCloseable
     {
         CloseHelper.close(conductorInvoker);
         CloseHelper.close(conductorRunner);
-        CloseHelper.close(ctx);
     }
 
     private Archive start()
@@ -1310,8 +1309,11 @@ public class Archive implements AutoCloseable
             }
 
             CloseHelper.close(catalog);
+            catalog = null;
             CloseHelper.close(markFile);
+            markFile = null;
             CloseHelper.close(archiveDirChannel);
+            archiveDirChannel = null;
         }
     }
 

@@ -42,7 +42,7 @@ do \
 { \
     _WriteBarrier(); \
     dst = src; \
-    _WriteBarrier(); \
+    _ReadWriteBarrier(); \
 } while(false)
 
 #define AERON_GET_AND_ADD_INT64(original,current,value) \

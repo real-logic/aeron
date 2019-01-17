@@ -58,11 +58,11 @@ int aeron_static_window_congestion_control_strategy_supplier(
 
 void* aeron_dlsym_fallback(LPCSTR name)
 {
-    if (strcmp(name, "aeron_unicast_flow_control_strategy_supplier"))
+    if (strcmp(name, "aeron_unicast_flow_control_strategy_supplier") == 0)
         return aeron_unicast_flow_control_strategy_supplier;
-    if (strcmp(name, "aeron_max_multicast_flow_control_strategy_supplier"))
+    if (strcmp(name, "aeron_max_multicast_flow_control_strategy_supplier") == 0)
         return aeron_max_multicast_flow_control_strategy_supplier;
-    if (strcmp(name, "aeron_static_window_congestion_control_strategy_supplier"))
+    if (strcmp(name, "aeron_static_window_congestion_control_strategy_supplier") == 0)
         return aeron_static_window_congestion_control_strategy_supplier;
 
     return NULL;

@@ -142,6 +142,8 @@ public class DriverConductor implements Agent
         publicationImages.forEach(PublicationImage::free);
         networkPublications.forEach(NetworkPublication::free);
         ipcPublications.forEach(IpcPublication::free);
+
+        ctx.close();
     }
 
     public String roleName()

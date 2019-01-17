@@ -433,6 +433,9 @@ public class Aeron implements AutoCloseable
      * A number of the properties are for testing and should not be set by end users.
      * <p>
      * <b>Note:</b> Do not reuse instances of the context across different {@link Aeron} clients.
+     * <p>
+     * The context will be owned by {@link ClientConductor} after a successful
+     * {@link Aeron#connect(Context)} and closed via {@link Aeron#close()}.
      */
     public static class Context extends CommonContext
     {

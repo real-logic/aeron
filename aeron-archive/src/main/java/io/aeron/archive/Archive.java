@@ -331,8 +331,11 @@ public class Archive implements AutoCloseable
 
     /**
      * Overrides for the defaults and system properties.
+     * <p>
+     * The context will be owned by {@link ArchiveConductor} after a successful
+     * {@link Archive#launch(Context)} and closed via {@link Archive#close()}.
      */
-    public static class Context implements AutoCloseable, Cloneable
+    public static class Context implements Cloneable
     {
         private boolean deleteArchiveOnStart = false;
         private boolean ownsAeronClient = false;

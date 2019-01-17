@@ -50,7 +50,7 @@ import static java.lang.System.getProperty;
  * <li><code>aeron.dir</code>: Use value as directory name for Aeron buffers and status.</li>
  * </ul>
  */
-public class CommonContext implements AutoCloseable, Cloneable
+public class CommonContext implements Cloneable
 {
     /**
      * Property name for driver timeout after which the driver is considered inactive.

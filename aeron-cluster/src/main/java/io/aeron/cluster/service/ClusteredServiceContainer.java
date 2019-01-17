@@ -82,6 +82,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 ctx.markFile.signalFailedStart();
             }
 
+            ctx.close();
             throw ex;
         }
 
@@ -417,7 +418,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
     }
 
-    public static class Context implements AutoCloseable, Cloneable
+    /**
+     * The context will be owned by {@link ClusteredServiceAgent} after a successful
+     * {@link ClusteredServiceContainer#launch(Context)} and closed via {@link ClusteredServiceContainer#close()}.
+     */
+    public static class Context implements Cloneable
     {
         private int serviceId = Configuration.serviceId();
         private String serviceName = Configuration.serviceName();

@@ -36,7 +36,7 @@ public class StartStopSystemTest
             //noinspection EmptyTryBlock
             try (Aeron ignored = Aeron.connect(clientCtx))
             {
-               // ignore
+                // ignore
             }
         }
         finally
@@ -45,7 +45,6 @@ public class StartStopSystemTest
         }
     }
 
-
     @Ignore
     @Test
     public void shouldNotSegvIfContextIsClosed()
@@ -53,8 +52,8 @@ public class StartStopSystemTest
         final MediaDriver mediaDriver;
 
         try (MediaDriver.Context driverCtx = new MediaDriver.Context()
-                .errorHandler(Throwable::printStackTrace)
-                .threadingMode(ThreadingMode.INVOKER))
+            .errorHandler(Throwable::printStackTrace)
+            .threadingMode(ThreadingMode.INVOKER))
         {
             mediaDriver = MediaDriver.launchEmbedded(driverCtx);
         }

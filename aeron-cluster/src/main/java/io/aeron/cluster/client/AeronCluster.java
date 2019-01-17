@@ -20,6 +20,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthenticationException;
 import io.aeron.security.CredentialsSupplier;
@@ -75,8 +76,10 @@ public final class AeronCluster implements AutoCloseable
     private final EgressMessageHeaderDecoder egressMessageHeaderDecoder = new EgressMessageHeaderDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
-    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment, 0, true);
+    private final FragmentAssembler fragmentAssembler;
     private final EgressListener egressListener;
+    private final ControlledFragmentAssembler controlledFragmentAssembler;
+    private final ControlledEgressListener controlledEgressListener;
 
     /**
      * Connect to the cluster using default configuration.
@@ -113,6 +116,10 @@ public final class AeronCluster implements AutoCloseable
             this.nanoClock = aeron.context().nanoClock();
             this.isUnicast = ctx.clusterMemberEndpoints() != null;
             this.egressListener = ctx.egressListener();
+            this.fragmentAssembler = new FragmentAssembler(this::onFragment, 0, ctx.isDirectAssemblers());
+            this.controlledEgressListener = ctx.controlledEgressListener();
+            this.controlledFragmentAssembler = new ControlledFragmentAssembler(
+                this::onControlledFragment, 0, ctx.isDirectAssemblers());
 
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
             this.subscription = subscription;
@@ -320,6 +327,20 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
+     * Poll the {@link #egressSubscription()} for session messages which are dispatched to
+     * {@link Context#controlledEgressListener()}.
+     * <p>
+     * <b>Note:</b> if {@link Context#controlledEgressListener()} is not set then a {@link ConfigurationException}
+     * could result.
+     *
+     * @return the number of fragments processed.
+     */
+    public int controlledPollEgress()
+    {
+        return subscription.controlledPoll(controlledFragmentAssembler, SESSION_FRAGMENT_LIMIT);
+    }
+
+    /**
      * To be called when a new leader event is delivered. This method needs to be called when using the
      * {@link EgressAdapter} or {@link EgressPoller} rather than {@link #pollEgress()} method.
      *
@@ -348,12 +369,14 @@ public final class AeronCluster implements AutoCloseable
         if (isUnicast)
         {
             CloseHelper.close(publication);
-            fragmentAssembler.clear();
             ctx.clusterMemberEndpoints(memberEndpoints);
             updateMemberEndpoints(memberEndpoints, leaderMemberId);
         }
 
+        fragmentAssembler.clear();
+        controlledFragmentAssembler.clear();
         egressListener.newLeader(clusterSessionId, leadershipTermId, leaderMemberId, memberEndpoints);
+        controlledEgressListener.newLeader(clusterSessionId, leadershipTermId, leaderMemberId, memberEndpoints);
     }
 
     private void updateMemberEndpoints(final String memberEndpoints, final int leaderMemberId)
@@ -461,6 +484,76 @@ public final class AeronCluster implements AutoCloseable
                     sessionEventDecoder.detail());
             }
         }
+    }
+
+    private ControlledFragmentHandler.Action onControlledFragment(
+        final DirectBuffer buffer, final int offset, final int length, final Header header)
+    {
+        messageHeaderDecoder.wrap(buffer, offset);
+
+        final int templateId = messageHeaderDecoder.templateId();
+        if (EgressMessageHeaderDecoder.TEMPLATE_ID == templateId)
+        {
+            egressMessageHeaderDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            final long sessionId = egressMessageHeaderDecoder.clusterSessionId();
+            if (sessionId == clusterSessionId)
+            {
+                return controlledEgressListener.onMessage(
+                    sessionId,
+                    egressMessageHeaderDecoder.timestamp(),
+                    buffer,
+                    offset + EGRESS_HEADER_LENGTH,
+                    length - EGRESS_HEADER_LENGTH,
+                    header);
+            }
+        }
+        else if (NewLeaderEventDecoder.TEMPLATE_ID == templateId)
+        {
+            newLeaderEventDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            final long sessionId = newLeaderEventDecoder.clusterSessionId();
+            if (sessionId == clusterSessionId)
+            {
+                onNewLeader(
+                    sessionId,
+                    newLeaderEventDecoder.leadershipTermId(),
+                    newLeaderEventDecoder.leaderMemberId(),
+                    newLeaderEventDecoder.memberEndpoints());
+
+                return ControlledFragmentHandler.Action.COMMIT;
+            }
+        }
+        else if (SessionEventDecoder.TEMPLATE_ID == templateId)
+        {
+            sessionEventDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            final long sessionId = sessionEventDecoder.clusterSessionId();
+            if (sessionId == clusterSessionId)
+            {
+                controlledEgressListener.sessionEvent(
+                    sessionEventDecoder.correlationId(),
+                    sessionId,
+                    sessionEventDecoder.leadershipTermId(),
+                    sessionEventDecoder.leaderMemberId(),
+                    sessionEventDecoder.code(),
+                    sessionEventDecoder.detail());
+            }
+        }
+
+        return ControlledFragmentHandler.Action.CONTINUE;
     }
 
     private void closeSession()
@@ -873,7 +966,9 @@ public final class AeronCluster implements AutoCloseable
         private boolean ownsAeronClient = false;
         private boolean isIngressExclusive = false;
         private ErrorHandler errorHandler = Aeron.Configuration.DEFAULT_ERROR_HANDLER;
+        private boolean isDirectAssemblers = false;
         private EgressListener egressListener;
+        private ControlledEgressListener controlledEgressListener;
 
         /**
          * Perform a shallow copy of the object.
@@ -921,6 +1016,16 @@ public final class AeronCluster implements AutoCloseable
                     {
                         throw new ConfigurationException(
                             "egressListener must be specified on AeronCluster.Context");
+                    };
+            }
+
+            if (null == controlledEgressListener)
+            {
+                controlledEgressListener =
+                    (clusterSessionId, timestamp, buffer, offset, length, header) ->
+                    {
+                        throw new ConfigurationException(
+                            "controlledEgressListener must be specified on AeronCluster.Context");
                     };
             }
         }
@@ -1243,6 +1348,28 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
+         * Is direct buffers used for fragment assembly on egress.
+         *
+         * @param isDirectAssemblers true if direct buffers used for fragment assembly on egress.
+         * @return this for a fluent API.
+         */
+        public Context isDirectAssemblers(final boolean isDirectAssemblers)
+        {
+            this.isDirectAssemblers = isDirectAssemblers;
+            return this;
+        }
+
+        /**
+         * Is direct buffers used for fragment assembly on egress.
+         *
+         * @return true if direct buffers used for fragment assembly on egress.
+         */
+        public boolean isDirectAssemblers()
+        {
+            return isDirectAssemblers;
+        }
+
+        /**
          * Get the {@link EgressListener} function that will be called when polling for egress via
          * {@link AeronCluster#pollEgress()}.
          *
@@ -1258,12 +1385,44 @@ public final class AeronCluster implements AutoCloseable
          * Get the {@link EgressListener} function that will be called when polling for egress via
          * {@link AeronCluster#pollEgress()}.
          *
+         * Only {@link EgressListener#onMessage(long, long, DirectBuffer, int, int, Header)} will be dispatched
+         * when using {@link AeronCluster#pollEgress()}.
+         *
          * @param listener function that will be called when polling for egress via {@link AeronCluster#pollEgress()}.
          * @return this for a fluent API.
          */
         public Context egressListener(final EgressListener listener)
         {
             this.egressListener = listener;
+            return this;
+        }
+
+        /**
+         * Get the {@link ControlledEgressListener} function that will be called when polling for egress via
+         * {@link AeronCluster#controlledPollEgress()}.
+         *
+         * @return the {@link ControlledEgressListener} function that will be called when polling for egress via
+         * {@link AeronCluster#controlledPollEgress()}.
+         */
+        public ControlledEgressListener controlledEgressListener()
+        {
+            return controlledEgressListener;
+        }
+
+        /**
+         * Get the {@link ControlledEgressListener} function that will be called when polling for egress via
+         * {@link AeronCluster#controlledPollEgress()}.
+         *
+         * Only {@link ControlledEgressListener#onMessage(long, long, DirectBuffer, int, int, Header)} will be
+         * dispatched when using {@link AeronCluster#controlledPollEgress()}.
+         *
+         * @param listener function that will be called when polling for egress via
+         *                 {@link AeronCluster#controlledPollEgress()}.
+         * @return this for a fluent API.
+         */
+        public Context controlledEgressListener(final ControlledEgressListener listener)
+        {
+            this.controlledEgressListener = listener;
             return this;
         }
 

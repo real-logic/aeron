@@ -76,9 +76,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long clusterTimeMs = NULL_VALUE;
     private long lastRecordingId = RecordingPos.NULL_RECORDING_ID;
     private int memberId;
-    private int logPublicationInitialTermId = NULL_VALUE;
-    private int logPublicationTermBufferLength = NULL_VALUE;
-    private int logPublicationMtuLength = NULL_VALUE;
     private int highMemberId;
     private int pendingMemberRemovals = 0;
     private ReadableCounter appendedPosition;
@@ -673,10 +670,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return role;
     }
 
-    long prepareForElection(final long logPosition)
+    void prepareForNewLeadership(final long logPosition)
     {
-        final RecordingExtent recordingExtent = new RecordingExtent();
-
         long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
         if (RecordingPos.NULL_RECORDING_ID == recordingId)
         {
@@ -685,39 +680,24 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         stopLogRecording();
 
+        long stopPosition;
         idleStrategy.reset();
-        while (true)
+        while (AeronArchive.NULL_POSITION == (stopPosition = archive.getStopPosition(recordingId)))
         {
-            if (0 == archive.listRecording(recordingId, recordingExtent))
-            {
-                throw new ClusterException("recording not found id=" + recordingId);
-            }
-
-            if (AeronArchive.NULL_POSITION != recordingExtent.stopPosition)
-            {
-                break;
-            }
-
             idle();
         }
 
-        if (recordingExtent.stopPosition > logPosition)
+        if (stopPosition > logPosition)
         {
             archive.truncateRecording(recordingId, logPosition);
         }
 
         lastAppendedPosition = logPosition;
         followerCommitPosition = logPosition;
-
         lastRecordingId = recordingId;
-        logPublicationInitialTermId = recordingExtent.initialTermId;
-        logPublicationTermBufferLength = recordingExtent.termBufferLength;
-        logPublicationMtuLength = recordingExtent.mtuLength;
 
         commitPosition.setOrdered(logPosition);
         clearSessionsAfter(logPosition);
-
-        return logPosition;
     }
 
     void stopLogRecording()
@@ -2365,15 +2345,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (!plan.logs.isEmpty())
         {
             final RecordingLog.Log log = plan.logs.get(0);
-            logPublicationInitialTermId = log.initialTermId;
-            logPublicationTermBufferLength = log.termBufferLength;
-            logPublicationMtuLength = log.mtuLength;
-        }
 
-        if (NULL_VALUE != logPublicationInitialTermId)
-        {
-            channelUri.initialPosition(position, logPublicationInitialTermId, logPublicationTermBufferLength);
-            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(logPublicationMtuLength));
+            channelUri.initialPosition(position, log.initialTermId, log.termBufferLength);
+            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(log.mtuLength));
         }
 
         final Publication publication = aeron.addExclusivePublication(channelUri.toString(), ctx.logStreamId());

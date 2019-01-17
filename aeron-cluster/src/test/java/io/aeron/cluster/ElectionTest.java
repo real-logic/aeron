@@ -601,7 +601,7 @@ public class ElectionTest
         final long t1 = 1;
         election.doWork(t1);
         assertThat(election.state(), is(Election.State.CANVASS));
-        verify(consensusModuleAgent).prepareForElection(logPosition);
+        verify(consensusModuleAgent).prepareForNewLeadership(logPosition);
         verify(consensusModuleAgent).role(Cluster.Role.FOLLOWER);
     }
 

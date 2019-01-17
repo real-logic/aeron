@@ -705,18 +705,18 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             archive.truncateRecording(recordingId, logPosition);
         }
 
-        lastAppendedPosition = recordingExtent.stopPosition;
-        followerCommitPosition = recordingExtent.stopPosition;
+        lastAppendedPosition = logPosition;
+        followerCommitPosition = logPosition;
 
         lastRecordingId = recordingId;
         logPublicationInitialTermId = recordingExtent.initialTermId;
         logPublicationTermBufferLength = recordingExtent.termBufferLength;
         logPublicationMtuLength = recordingExtent.mtuLength;
 
-        commitPosition.setOrdered(recordingExtent.stopPosition);
-        clearSessionsAfter(recordingExtent.stopPosition);
+        commitPosition.setOrdered(logPosition);
+        clearSessionsAfter(logPosition);
 
-        return recordingExtent.stopPosition;
+        return logPosition;
     }
 
     void stopLogRecording()
@@ -1500,7 +1500,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 }
             }
 
-            commitPosition.setOrdered(image.position());
+            commitPosition.setOrdered(Math.min(image.position(), appendedPosition));
             consensusModuleAdapter.poll();
             cancelMissedTimers();
         }
@@ -2172,11 +2172,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         int workCount = 0;
 
+        final long appendedPosition = this.appendedPosition.get();
         if (Cluster.Role.LEADER == role)
         {
-            thisMember.logPosition(appendedPosition.get());
+            thisMember.logPosition(appendedPosition);
+            final long quorumPosition = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
 
-            if (commitPosition.proposeMaxOrdered(ClusterMember.quorumPosition(clusterMembers, rankedPositions)) ||
+            if (commitPosition.proposeMaxOrdered(Math.min(quorumPosition, appendedPosition)) ||
                 nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatIntervalMs))
             {
                 final long commitPosition = this.commitPosition.getWeak();
@@ -2201,7 +2203,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else
         {
-            final long appendedPosition = this.appendedPosition.get();
             final Publication publication = leaderMember.publication();
 
             if (appendedPosition != lastAppendedPosition &&
@@ -2211,7 +2212,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 workCount += 1;
             }
 
-            commitPosition.proposeMaxOrdered(logAdapter.position());
+            commitPosition.proposeMaxOrdered(Math.min(logAdapter.position(), appendedPosition));
 
             if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
             {

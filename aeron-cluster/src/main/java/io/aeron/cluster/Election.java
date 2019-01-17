@@ -347,6 +347,7 @@ class Election implements AutoCloseable
             else if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
             {
                 consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logPosition);
+                consensusModuleAgent.prepareForElection(logPosition);
                 this.logPosition = logPosition;
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
@@ -361,6 +362,7 @@ class Election implements AutoCloseable
             if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
             {
                 consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logPosition);
+                consensusModuleAgent.prepareForElection(logPosition);
                 this.logPosition = logPosition;
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
@@ -425,19 +427,17 @@ class Election implements AutoCloseable
             this.logLeadershipTermId = leadershipTermId;
             this.logPosition = logPosition;
 
-            ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, logPosition, nowMs);
-            ctx.recordingLog().force();
+            if (!ctx.recordingLog().hasTermBeenAppended(leadershipTermId))
+            {
+                ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, logPosition, nowMs);
+                ctx.recordingLog().force();
+            }
         }
     }
 
     State state()
     {
         return state;
-    }
-
-    boolean notReplaying()
-    {
-        return State.FOLLOWER_READY != state && State.LEADER_REPLAY != state;
     }
 
     ClusterMember leader()

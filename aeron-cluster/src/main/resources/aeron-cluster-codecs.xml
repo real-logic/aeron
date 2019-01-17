@@ -40,7 +40,7 @@
             <validValue name="SERVICE_ACTION">1</validValue>
             <validValue name="TIMEOUT">2</validValue>
         </enum>
-        <enum name="ClusterAction" encodingType="int32" description="Action to be taken by a cluster nodes">
+        <enum name="ClusterAction" encodingType="int32" description="Action to be taken by cluster nodes">
             <validValue name="SUSPEND">0</validValue>
             <validValue name="RESUME">1</validValue>
             <validValue name="SNAPSHOT">2</validValue>

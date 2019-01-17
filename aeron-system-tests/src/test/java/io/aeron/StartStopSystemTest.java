@@ -55,11 +55,10 @@ public class StartStopSystemTest
             .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.INVOKER))
         {
-            mediaDriver = MediaDriver.launchEmbedded(driverCtx);
+            mediaDriver = MediaDriver.launch(driverCtx);
         }
 
         mediaDriver.sharedAgentInvoker().invoke();
-
         mediaDriver.close();
     }
 }

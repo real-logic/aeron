@@ -16,6 +16,8 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class StartStopSystemTest
@@ -41,5 +43,24 @@ public class StartStopSystemTest
         {
             driverCtx.deleteAeronDirectory();
         }
+    }
+
+
+    @Ignore
+    @Test
+    public void shouldNotSegvIfContextIsClosed()
+    {
+        final MediaDriver mediaDriver;
+
+        try (MediaDriver.Context driverCtx = new MediaDriver.Context()
+                .errorHandler(Throwable::printStackTrace)
+                .threadingMode(ThreadingMode.INVOKER))
+        {
+            mediaDriver = MediaDriver.launchEmbedded(driverCtx);
+        }
+
+        mediaDriver.sharedAgentInvoker().invoke();
+
+        mediaDriver.close();
     }
 }

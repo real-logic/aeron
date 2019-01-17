@@ -117,6 +117,7 @@ class Catalog implements AutoCloseable
     private final int maxRecordingId;
     private final boolean forceWrites;
     private final boolean forceMetadata;
+    private boolean isClosed;
     private final File archiveDir;
     private final EpochClock epochClock;
     private final FileChannel catalogChannel;
@@ -259,8 +260,12 @@ class Catalog implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(catalogChannel);
-        IoUtil.unmap(catalogByteBuffer);
+        if (!isClosed)
+        {
+            isClosed = true;
+            CloseHelper.close(catalogChannel);
+            IoUtil.unmap(catalogByteBuffer);
+        }
     }
 
     public int maxEntries()

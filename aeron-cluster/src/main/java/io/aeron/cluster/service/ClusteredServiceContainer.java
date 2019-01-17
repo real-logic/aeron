@@ -129,7 +129,6 @@ public final class ClusteredServiceContainer implements AutoCloseable
     public void close()
     {
         CloseHelper.close(serviceAgentRunner);
-        CloseHelper.close(ctx);
     }
 
     /**
@@ -1251,12 +1250,12 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public void close()
         {
-            CloseHelper.quietClose(markFile);
-
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
             }
+
+            CloseHelper.close(markFile);
         }
 
         private void concludeMarkFile()

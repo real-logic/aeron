@@ -49,7 +49,6 @@ import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
  */
 public class ConsensusModule implements AutoCloseable
 {
-
     /**
      * Possible states for the {@link ConsensusModule}.
      * These will be reflected in the {@link Context#moduleStateCounter()} counter.
@@ -223,7 +222,6 @@ public class ConsensusModule implements AutoCloseable
     public void close()
     {
         CloseHelper.close(conductorRunner);
-        CloseHelper.close(ctx);
     }
 
     /**
@@ -2617,9 +2615,6 @@ public class ConsensusModule implements AutoCloseable
          */
         public void close()
         {
-            CloseHelper.close(markFile);
-            CloseHelper.close(recordingLog);
-
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
@@ -2632,6 +2627,9 @@ public class ConsensusModule implements AutoCloseable
                 CloseHelper.close(controlToggle);
                 CloseHelper.close(snapshotCounter);
             }
+
+            CloseHelper.close(recordingLog);
+            CloseHelper.close(markFile);
         }
 
         private void concludeMarkFile()

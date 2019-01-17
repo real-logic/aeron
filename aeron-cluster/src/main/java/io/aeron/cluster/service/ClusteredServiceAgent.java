@@ -133,6 +133,8 @@ class ClusteredServiceAgent implements Agent, Cluster
             CloseHelper.close(serviceAdapter);
             CloseHelper.close(consensusModuleProxy);
         }
+
+        ctx.close();
     }
 
     public int doWork()

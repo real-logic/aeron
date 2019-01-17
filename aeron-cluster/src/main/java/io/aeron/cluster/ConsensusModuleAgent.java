@@ -205,6 +205,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         CloseHelper.close(archive);
+        ctx.close();
     }
 
     public void onStart()

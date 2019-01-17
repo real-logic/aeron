@@ -1309,9 +1309,7 @@ public class Archive implements AutoCloseable
             }
 
             CloseHelper.close(catalog);
-            catalog = null;
             CloseHelper.close(markFile);
-            markFile = null;
             CloseHelper.close(archiveDirChannel);
             archiveDirChannel = null;
         }

@@ -214,9 +214,6 @@ public class Aeron implements AutoCloseable
             {
                 conductorInvoker.close();
             }
-
-            conductor.clientClose();
-            ctx.close();
         }
     }
 
@@ -1035,8 +1032,9 @@ public class Aeron implements AutoCloseable
          */
         public void close()
         {
+            final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
+            this.cncByteBuffer = null;
             IoUtil.unmap(cncByteBuffer);
-            cncByteBuffer = null;
             super.close();
         }
 

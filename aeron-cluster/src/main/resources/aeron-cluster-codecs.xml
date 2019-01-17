@@ -40,7 +40,7 @@
             <validValue name="SERVICE_ACTION">1</validValue>
             <validValue name="TIMEOUT">2</validValue>
         </enum>
-        <enum name="ClusterAction" encodingType="int32" description="Action to be taken by a cluster nodes">
+        <enum name="ClusterAction" encodingType="int32" description="Action to be taken by cluster nodes">
             <validValue name="SUSPEND">0</validValue>
             <validValue name="RESUME">1</validValue>
             <validValue name="SNAPSHOT">2</validValue>
@@ -260,7 +260,7 @@
         <field name="clusterSize"          id="5" type="int32"/>
         <field name="changeType"           id="6" type="ChangeType"/>
         <field name="memberId"             id="7" type="int32"/>
-        <data  name="clusterMembers"        id="8" type="varAsciiEncoding"/>
+        <data  name="clusterMembers"       id="8" type="varAsciiEncoding"/>
     </sbe:message>
 
     <!-- Messages for service control between clustered services and the Consensus Module -->

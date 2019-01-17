@@ -256,8 +256,6 @@ public final class MediaDriver implements AutoCloseable
                 HighResolutionTimer.disable();
             }
         }
-
-        ctx.close();
     }
 
     /**
@@ -487,8 +485,14 @@ public final class MediaDriver implements AutoCloseable
          */
         public void close()
         {
-            IoUtil.unmap(cncByteBuffer);
+            final MappedByteBuffer lossReportBuffer = this.lossReportBuffer;
+            this.lossReportBuffer = null;
             IoUtil.unmap(lossReportBuffer);
+
+
+            final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
+            this.cncByteBuffer = null;
+            IoUtil.unmap(cncByteBuffer);
 
             super.close();
         }

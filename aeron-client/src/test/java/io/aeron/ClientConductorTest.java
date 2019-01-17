@@ -532,19 +532,29 @@ public class ClientConductorTest
 
         verify(mockClientErrorHandler).onError(any(ConductorServiceTimeoutException.class));
 
-        assertTrue(conductor.isClosed());
+        assertTrue(conductor.isTerminating());
     }
 
     @Test
-    public void shouldCloseAndErrorOnClientTimeoutFromDriver()
+    public void shouldTerminateAndErrorOnClientTimeoutFromDriver()
     {
         suppressPrintError = true;
 
         conductor.onClientTimeout();
-
         verify(mockClientErrorHandler).onError(any(TimeoutException.class));
 
-        assertTrue(conductor.isClosed());
+        boolean threwException = false;
+        try
+        {
+            conductor.doWork();
+        }
+        catch (final AgentTerminationException ex)
+        {
+            threwException = true;
+        }
+
+        assertTrue(threwException);
+        assertTrue(conductor.isTerminating());
     }
 
     @Test

@@ -51,6 +51,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private long timeOfLastServiceNs;
     private boolean isClosed;
     private boolean isInCallback;
+    private boolean isTerminating;
     private String stashedChannel;
     private RegistrationException driverException;
 
@@ -107,7 +108,6 @@ class ClientConductor implements Agent, DriverEventsListener
             if (!isClosed)
             {
                 isClosed = true;
-
                 forceCloseResources();
                 Thread.yield();
 
@@ -115,17 +115,16 @@ class ClientConductor implements Agent, DriverEventsListener
                 {
                     lingeringResources.get(i).delete();
                 }
+
+                driverProxy.clientClose();
+                Thread.yield();
+                ctx.close();
             }
         }
         finally
         {
             clientLock.unlock();
         }
-    }
-
-    void clientClose()
-    {
-        driverProxy.clientClose();
     }
 
     public int doWork()
@@ -136,7 +135,7 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             try
             {
-                if (isClosed)
+                if (isTerminating)
                 {
                     throw new AgentTerminationException();
                 }
@@ -160,6 +159,11 @@ class ClientConductor implements Agent, DriverEventsListener
     boolean isClosed()
     {
         return isClosed;
+    }
+
+    boolean isTerminating()
+    {
+        return isTerminating;
     }
 
     public void onError(final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
@@ -373,7 +377,8 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         if (!isClosed)
         {
-            onClose();
+            isTerminating = true;
+            forceCloseResources();
             handleError(new ClientTimeoutException("client timeout from driver"));
         }
     }
@@ -694,7 +699,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private void ensureOpen()
     {
-        if (isClosed)
+        if (isClosed || isTerminating)
         {
             throw new AeronException("Aeron client conductor is closed");
         }
@@ -769,6 +774,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 }
                 catch (final InterruptedException ex)
                 {
+                    isTerminating = true;
                     LangUtil.rethrowUnchecked(ex);
                 }
             }
@@ -791,6 +797,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
             if (Thread.interrupted())
             {
+                isTerminating = true;
                 LangUtil.rethrowUnchecked(new InterruptedException());
             }
         }
@@ -829,7 +836,8 @@ class ClientConductor implements Agent, DriverEventsListener
                 Aeron.sleep(TimeUnit.NANOSECONDS.toMillis(ctx.resourceLingerDurationNs()));
             }
 
-            onClose();
+            isTerminating = true;
+            forceCloseResources();
 
             throw new ConductorServiceTimeoutException("service interval exceeded (ns): " + interServiceTimeoutNs);
         }
@@ -841,7 +849,8 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (epochClock.time() > (driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs))
             {
-                onClose();
+                isTerminating = true;
+                forceCloseResources();
                 throw new DriverTimeoutException("MediaDriver keepalive older than (ms): " + driverTimeoutMs);
             }
 

@@ -117,7 +117,6 @@ class ClientConductor implements Agent, DriverEventsListener
                 }
 
                 driverProxy.clientClose();
-                Thread.yield();
                 ctx.close();
             }
         }

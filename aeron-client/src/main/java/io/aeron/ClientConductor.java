@@ -28,7 +28,6 @@ import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import static io.aeron.Aeron.Configuration.IDLE_SLEEP_NS;
@@ -826,17 +825,10 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         if ((timeOfLastServiceNs + interServiceTimeoutNs) - nowNs < 0)
         {
-            final int lingeringResourcesSize = lingeringResources.size();
-
-            forceCloseResources();
-
-            if (lingeringResources.size() > lingeringResourcesSize)
-            {
-                Aeron.sleep(TimeUnit.NANOSECONDS.toMillis(ctx.resourceLingerDurationNs()));
-            }
-
             isTerminating = true;
+
             forceCloseResources();
+            Thread.yield();
 
             throw new ConductorServiceTimeoutException("service interval exceeded (ns): " + interServiceTimeoutNs);
         }
@@ -849,7 +841,10 @@ class ClientConductor implements Agent, DriverEventsListener
             if (epochClock.time() > (driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs))
             {
                 isTerminating = true;
+
                 forceCloseResources();
+                Thread.yield();
+
                 throw new DriverTimeoutException("MediaDriver keepalive older than (ms): " + driverTimeoutMs);
             }
 

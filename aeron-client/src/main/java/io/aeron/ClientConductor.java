@@ -396,7 +396,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureOpen();
+            ensureActive();
             ensureNotReentrant();
 
             stashedChannel = channel;
@@ -416,7 +416,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureOpen();
+            ensureActive();
             ensureNotReentrant();
 
             stashedChannel = channel;
@@ -438,7 +438,7 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (!publication.isClosed())
             {
-                ensureOpen();
+                ensureActive();
                 ensureNotReentrant();
 
                 publication.internalClose();
@@ -469,7 +469,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureOpen();
+            ensureActive();
             ensureNotReentrant();
 
             final long correlationId = driverProxy.addSubscription(channel, streamId);
@@ -500,7 +500,7 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (!subscription.isClosed())
             {
-                ensureOpen();
+                ensureActive();
                 ensureNotReentrant();
 
                 subscription.internalClose();
@@ -520,7 +520,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureOpen();
+            ensureActive();
             ensureNotReentrant();
 
             awaitResponse(driverProxy.addDestination(registrationId, endpointChannel));
@@ -536,7 +536,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureOpen();
+            ensureActive();
             ensureNotReentrant();
 
             awaitResponse(driverProxy.removeDestination(registrationId, endpointChannel));
@@ -552,7 +552,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureOpen();
+            ensureActive();
             ensureNotReentrant();
 
             awaitResponse(driverProxy.addRcvDestination(registrationId, endpointChannel));
@@ -568,7 +568,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureOpen();
+            ensureActive();
             ensureNotReentrant();
 
             awaitResponse(driverProxy.removeRcvDestination(registrationId, endpointChannel));
@@ -591,7 +591,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureOpen();
+            ensureActive();
             ensureNotReentrant();
 
             if (keyLength < 0 || keyLength > CountersManager.MAX_KEY_LENGTH)
@@ -622,7 +622,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureOpen();
+            ensureActive();
             ensureNotReentrant();
 
             if (label.length() > CountersManager.MAX_LABEL_LENGTH)
@@ -648,7 +648,7 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (!counter.isClosed())
             {
-                ensureOpen();
+                ensureActive();
                 ensureNotReentrant();
 
                 counter.internalClose();
@@ -695,11 +695,11 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    private void ensureOpen()
+    private void ensureActive()
     {
         if (isClosed || isTerminating)
         {
-            throw new AeronException("Aeron client conductor is closed");
+            throw new AeronException("Aeron client is closed or terminating");
         }
     }
 

@@ -33,12 +33,6 @@
 static aeron_uri_hostname_resolver_func_t aeron_uri_hostname_resolver_func = NULL;
 static void *aeron_uri_hostname_resolver_clientd = NULL;
 
-void aeron_uri_hostname_resolver(aeron_uri_hostname_resolver_func_t func, void *clientd)
-{
-    aeron_uri_hostname_resolver_func = func;
-    aeron_uri_hostname_resolver_clientd = clientd;
-}
-
 int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, int family_hint)
 {
     struct addrinfo hints;
@@ -126,9 +120,10 @@ int aeron_udp_port_resolver(const char *port_str, bool optional)
         }
     }
 
+    errno = 0;
     unsigned long value = strtoul(port_str, NULL, 0);
 
-    if (0 == value && EINVAL == errno)
+    if (0 == value && 0 != errno)
     {
         aeron_set_err(EINVAL, "port invalid: %s", port_str);
         return -1;
@@ -152,12 +147,12 @@ int aeron_host_and_port_resolver(
         if (AF_INET == family_hint)
         {
             result = aeron_ipv4_addr_resolver(host_str, sockaddr);
-            ((struct sockaddr_in *) sockaddr)->sin_port = htons(port);
+            ((struct sockaddr_in *)sockaddr)->sin_port = htons((uint16_t)port);
         }
         else if (AF_INET6 == family_hint)
         {
             result = aeron_ipv6_addr_resolver(host_str, sockaddr);
-            ((struct sockaddr_in6 *) sockaddr)->sin6_port = htons(port);
+            ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons((uint16_t)port);
         }
     }
 
@@ -270,9 +265,10 @@ int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)
         return 0;
     }
 
+    errno = 0;
     unsigned long value = strtoul(prefixlen, NULL, 0);
 
-    if (0 == value && EINVAL == errno)
+    if (0 == value && 0 != errno)
     {
         aeron_set_err(EINVAL, "prefixlen invalid: %s", prefixlen);
         return -1;
@@ -299,17 +295,18 @@ int aeron_host_port_prefixlen_resolver(
     if (AF_INET == family_hint)
     {
         host_result = aeron_ipv4_addr_resolver(host_str, sockaddr);
-        ((struct sockaddr_in *)sockaddr)->sin_port = htons(port_result);
+        ((struct sockaddr_in *)sockaddr)->sin_port = htons((uint16_t)port_result);
     }
     else if (AF_INET6 == family_hint)
     {
         host_result = aeron_ipv6_addr_resolver(host_str, sockaddr);
-        ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons(port_result);
+        ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons((uint16_t)port_result);
     }
 
     if (host_result >= 0 && port_result >= 0)
     {
-        if ((prefixlen_result = aeron_prefixlen_resolver(prefixlen_str, (sockaddr->ss_family == AF_INET6) ? 128 : 32)) >= 0)
+        prefixlen_result = aeron_prefixlen_resolver(prefixlen_str, sockaddr->ss_family == AF_INET6 ? 128 : 32);
+        if (prefixlen_result >= 0)
         {
             *prefixlen = (size_t)prefixlen_result;
         }
@@ -573,7 +570,7 @@ bool aeron_ip_does_prefix_match(struct sockaddr *addr1, struct sockaddr *addr2, 
 
 size_t aeron_ip_netmask_to_prefixlen(struct sockaddr *netmask)
 {
-    return (AF_INET6 == netmask->sa_family) ?
+    return AF_INET6 == netmask->sa_family ?
         aeron_ipv6_netmask_to_prefixlen(&((struct sockaddr_in6 *)netmask)->sin6_addr) :
         aeron_ipv4_netmask_to_prefixlen(&((struct sockaddr_in *)netmask)->sin_addr);
 }
@@ -596,9 +593,9 @@ int aeron_ip_lookup_func(
     {
         struct lookup_state *state = (struct lookup_state *) clientd;
 
-        if (aeron_ip_does_prefix_match((struct sockaddr *) &state->lookup_addr, addr, state->prefixlen))
+        if (aeron_ip_does_prefix_match((struct sockaddr *)&state->lookup_addr, addr, state->prefixlen))
         {
-            size_t addr_len = (AF_INET6 == addr->sa_family) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
+            size_t addr_len = AF_INET6 == addr->sa_family ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
 
             if ((flags & IFF_LOOPBACK) && !state->found)
             {
@@ -667,6 +664,7 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
         aeron_set_err(EINVAL, "could not find matching interface=(%s)", interface_str);
         return -1;
     }
+
     aeron_ip_copy_port(if_addr, &state.lookup_addr);
 
     return 0;
@@ -706,7 +704,7 @@ bool aeron_is_wildcard_addr(struct sockaddr_storage *addr)
     {
         struct sockaddr_in *a = (struct sockaddr_in *)addr;
 
-        result = (a->sin_addr.s_addr == INADDR_ANY);
+        result = a->sin_addr.s_addr == INADDR_ANY;
     }
 
     return result;

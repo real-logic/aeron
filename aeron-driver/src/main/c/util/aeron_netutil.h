@@ -38,7 +38,6 @@ typedef int (*aeron_ifaddr_func_t)
 int aeron_lookup_interfaces(aeron_ifaddr_func_t func, void *clientd);
 int aeron_lookup_interfaces_from_ifaddrs(aeron_ifaddr_func_t func, void *clientd, struct ifaddrs *ifaddrs);
 
-void aeron_uri_hostname_resolver(aeron_uri_hostname_resolver_func_t func, void *clientd);
 void aeron_set_getifaddrs(aeron_getifaddrs_func_t get_func, aeron_freeifaddrs_func_t free_func);
 
 int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockaddr_storage *sockaddr);

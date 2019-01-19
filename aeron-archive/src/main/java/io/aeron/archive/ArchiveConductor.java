@@ -834,7 +834,6 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             image.sourceIdentity());
 
         position.setOrdered(image.joinPosition());
-        catalog.extendRecording(recordingId);
 
         final RecordingSession session = new RecordingSession(
             recordingId,
@@ -848,6 +847,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             ctx);
 
         recordingSessionByIdMap.put(recordingId, session);
+        catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId);
         recorder.addSession(session);
     }
 

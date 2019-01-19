@@ -136,12 +136,12 @@ class InterfaceSearchAddress
     {
         int addressEnd = s.length();
 
-        if (slashIndex > 0)
+        if (slashIndex >= 0)
         {
             addressEnd = slashIndex;
         }
 
-        if (colonIndex > 0 && colonIndex > rightAngleBraceIndex)
+        if (colonIndex >= 0 && colonIndex > rightAngleBraceIndex)
         {
             addressEnd = colonIndex;
         }

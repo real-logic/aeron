@@ -360,7 +360,7 @@ public class TestCluster implements AutoCloseable
         while (null == (leaderNode = findLeader(skipIndex)))
         {
             TestUtil.checkInterruptedStatus();
-            Thread.sleep(100);
+            Thread.sleep(1000);
         }
 
         return leaderNode;

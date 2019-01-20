@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Ignore;
@@ -25,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -565,14 +565,14 @@ public class ClusterTest
 
     private int countersOfType(final CountersReader countersReader, final int typeIdToCount)
     {
-        final AtomicInteger count = new AtomicInteger();
+        final MutableInteger count = new MutableInteger();
 
         countersReader.forEach(
             (counterId, typeId, keyBuffer, label) ->
             {
                 if (typeId == typeIdToCount)
                 {
-                    count.incrementAndGet();
+                    count.value++;
                 }
             });
 

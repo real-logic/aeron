@@ -695,15 +695,18 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             archive.truncateRecording(recordingId, logPosition);
         }
 
-        final RecordingExtent recordingExtent = new RecordingExtent();
-        if (0 == archive.listRecording(recordingId, recordingExtent))
+        if (NULL_VALUE == logInitialTermId)
         {
-            throw new ClusterException("recording not found id=" + recordingId);
-        }
+            final RecordingExtent recordingExtent = new RecordingExtent();
+            if (0 == archive.listRecording(recordingId, recordingExtent))
+            {
+                throw new ClusterException("recording not found id=" + recordingId);
+            }
 
-        logInitialTermId = recordingExtent.initialTermId;
-        logTermBufferLength = recordingExtent.termBufferLength;
-        logMtuLength = recordingExtent.mtuLength;
+            logInitialTermId = recordingExtent.initialTermId;
+            logTermBufferLength = recordingExtent.termBufferLength;
+            logMtuLength = recordingExtent.mtuLength;
+        }
 
         lastAppendedPosition = logPosition;
         followerCommitPosition = logPosition;

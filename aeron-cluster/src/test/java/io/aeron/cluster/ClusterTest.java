@@ -350,6 +350,7 @@ public class ClusterTest
         }
     }
 
+    @Ignore
     @Test(timeout = 30_000)
     public void followerShouldRecoverWhenSnapshotTakenWhileDown() throws Exception
     {
@@ -381,6 +382,7 @@ public class ClusterTest
         }
     }
 
+    @Ignore
     @Test(timeout = 45_000)
     public void shouldTolerateMultipleLeaderFailures() throws Exception
     {

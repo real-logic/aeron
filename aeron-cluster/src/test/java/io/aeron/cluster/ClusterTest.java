@@ -382,7 +382,6 @@ public class ClusterTest
         }
     }
 
-    @Ignore
     @Test(timeout = 45_000)
     public void shouldTolerateMultipleLeaderFailures() throws Exception
     {

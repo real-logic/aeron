@@ -70,7 +70,7 @@ public class ClusterTest
     }
 
     @Test(timeout = 30_000)
-    public void shouldStopAleaderAndFollowersAndRestartAllWithSnapshot() throws Exception
+    public void shouldStopLeaderAndFollowersAndRestartAllWithSnapshot() throws Exception
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {

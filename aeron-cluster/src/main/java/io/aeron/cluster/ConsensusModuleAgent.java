@@ -75,6 +75,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long cachedTimeMs;
     private long clusterTimeMs = NULL_VALUE;
     private long lastRecordingId = RecordingPos.NULL_RECORDING_ID;
+    private int logInitialTermId = NULL_VALUE;
+    private int logTermBufferLength = NULL_VALUE;
+    private int logMtuLength = NULL_VALUE;
     private int memberId;
     private int highMemberId;
     private int pendingMemberRemovals = 0;
@@ -691,6 +694,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             archive.truncateRecording(recordingId, logPosition);
         }
+
+        final RecordingExtent recordingExtent = new RecordingExtent();
+        if (0 == archive.listRecording(recordingId, recordingExtent))
+        {
+            throw new ClusterException("recording not found id=" + recordingId);
+        }
+
+        logInitialTermId = recordingExtent.initialTermId;
+        logTermBufferLength = recordingExtent.termBufferLength;
+        logMtuLength = recordingExtent.mtuLength;
 
         lastAppendedPosition = logPosition;
         followerCommitPosition = logPosition;
@@ -2345,9 +2358,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (!plan.logs.isEmpty())
         {
             final RecordingLog.Log log = plan.logs.get(0);
+            logInitialTermId = log.initialTermId;
+            logTermBufferLength = log.termBufferLength;
+            logMtuLength = log.mtuLength;
+        }
 
-            channelUri.initialPosition(position, log.initialTermId, log.termBufferLength);
-            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(log.mtuLength));
+        if (NULL_VALUE != logInitialTermId)
+        {
+            channelUri.initialPosition(position, logInitialTermId, logTermBufferLength);
+            channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(logMtuLength));
         }
 
         final Publication publication = aeron.addExclusivePublication(channelUri.toString(), ctx.logStreamId());

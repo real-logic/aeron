@@ -254,8 +254,8 @@ class Election implements AutoCloseable
                 memberStatusPublisher.newLeadershipTerm(
                     follower.publication(),
                     logLeadershipTermId,
-                    consensusModuleAgent.logStopPosition(logLeadershipTermId),
-                    logLeadershipTermId + 1,
+                    consensusModuleAgent.logStopPosition(this.logLeadershipTermId),
+                    this.logLeadershipTermId + 1,
                     this.logPosition,
                     thisMember.id(),
                     logSessionId);

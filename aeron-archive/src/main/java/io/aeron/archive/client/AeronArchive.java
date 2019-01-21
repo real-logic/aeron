@@ -561,7 +561,7 @@ public class AeronArchive implements AutoCloseable
      * {@link #startRecording(String, int, SourceLocation)} or
      * {@link #extendRecording(long, String, int, SourceLocation)}.
      *
-     * @param subscriptionId is the {@link Subscription#registrationId()} was registered with for the recording.
+     * @param subscriptionId is the {@link Subscription#registrationId()} for the recording in the archive.
      */
     public void stopRecording(final long subscriptionId)
     {

@@ -331,22 +331,21 @@ public class TestCluster implements AutoCloseable
 
     TestNode findLeader(final int skipIndex)
     {
-        TestNode leaderNode = null;
-
         for (int i = 0; i < staticMemberCount; i++)
         {
-            if (i == skipIndex || null == nodes[i] || nodes[i].isClosed())
+            final TestNode node = nodes[i];
+            if (i == skipIndex || null == node || node.isClosed())
             {
                 continue;
             }
 
-            if (Cluster.Role.LEADER == nodes[i].role())
+            if (Cluster.Role.LEADER == node.role() && null == node.electionState())
             {
-                leaderNode = nodes[i];
+                return node;
             }
         }
 
-        return leaderNode;
+        return null;
     }
 
     TestNode findLeader()

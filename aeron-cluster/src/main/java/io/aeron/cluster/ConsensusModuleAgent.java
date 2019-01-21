@@ -1472,8 +1472,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (pollImageAndLogAdapter(subscription, logSessionId))
         {
-            expectedAckPosition = stopPosition;
-
             final Image image = logAdapter.image();
             if (logAdapter.poll(stopPosition) == 0)
             {
@@ -2116,6 +2114,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (logPosition != expectedAckPosition || ackId != serviceAckId)
         {
             throw new ClusterException("invalid service ACK" +
+                " state " + state +
                 ": serviceId=" + serviceId +
                 ", logPosition=" + logPosition + " expected " + expectedAckPosition +
                 ", ackId=" + ackId + " expected " + serviceAckId);

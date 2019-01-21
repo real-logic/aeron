@@ -350,7 +350,6 @@ public class ClusterTest
         }
     }
 
-    @Ignore
     @Test(timeout = 30_000)
     public void followerShouldRecoverWhenSnapshotTakenWhileDown() throws Exception
     {
@@ -379,6 +378,8 @@ public class ClusterTest
             assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
 
             cluster.awaitMessageCountForService(follower, messageCount);
+
+            assertThat(follower.errors(), is(0L));
         }
     }
 

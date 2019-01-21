@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Ignore;
@@ -25,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -70,7 +70,7 @@ public class ClusterTest
     }
 
     @Test(timeout = 30_000)
-    public void shouldStopAleaderAndFollowersAndRestartAllWithSnapshot() throws Exception
+    public void shouldStopLeaderAndFollowersAndRestartAllWithSnapshot() throws Exception
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -350,6 +350,62 @@ public class ClusterTest
         }
     }
 
+    @Ignore
+    @Test(timeout = 30_000)
+    public void followerShouldRecoverWhenSnapshotTakenWhileDown() throws Exception
+    {
+        final int messageCount = 10;
+
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leader = cluster.awaitLeader();
+            TestNode follower = cluster.followers().get(0);
+
+            cluster.stopNode(follower);
+
+            Thread.sleep(10_000);
+
+            cluster.takeSnapshot(leader);
+            cluster.awaitSnapshotCounter(leader, 1);
+
+            cluster.startClient();
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponses(messageCount);
+
+            follower = cluster.startStaticNode(follower.index(), false);
+
+            Thread.sleep(1_000);
+
+            assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
+
+            cluster.awaitMessageCountForService(follower, messageCount);
+        }
+    }
+
+    @Test(timeout = 45_000)
+    public void shouldTolerateMultipleLeaderFailures() throws Exception
+    {
+        final int messageCount = 10;
+
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode firstLeader = cluster.awaitLeader();
+            cluster.stopNode(firstLeader);
+
+            final TestNode secondLeader = cluster.awaitLeader();
+
+            cluster.startStaticNode(firstLeader.index(), false);
+
+            cluster.stopNode(secondLeader);
+
+            cluster.awaitLeader();
+
+            cluster.startClient();
+            cluster.sendMessages(messageCount);
+            cluster.awaitResponses(messageCount);
+        }
+    }
+
     @Test(timeout = 30_000)
     public void shouldAcceptMessagesAfterTwoNodesGoDownAndComeBackUpClean() throws Exception
     {
@@ -509,14 +565,14 @@ public class ClusterTest
 
     private int countersOfType(final CountersReader countersReader, final int typeIdToCount)
     {
-        final AtomicInteger count = new AtomicInteger();
+        final MutableInteger count = new MutableInteger();
 
         countersReader.forEach(
             (counterId, typeId, keyBuffer, label) ->
             {
                 if (typeId == typeIdToCount)
                 {
-                    count.incrementAndGet();
+                    count.value++;
                 }
             });
 

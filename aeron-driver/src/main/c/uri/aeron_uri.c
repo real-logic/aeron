@@ -18,7 +18,7 @@
 #include <inttypes.h>
 #include "uri/aeron_uri.h"
 #include "util/aeron_arrayutil.h"
-#include "util/aeron_prop_util.h"
+#include "util/aeron_parse_util.h"
 #include "aeron_driver_context.h"
 #include "aeron_uri.h"
 #include "aeron_alloc.h"

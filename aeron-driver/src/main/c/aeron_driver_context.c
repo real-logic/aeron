@@ -39,7 +39,7 @@
 
 #include "util/aeron_error.h"
 #include "protocol/aeron_udp_protocol.h"
-#include "util/aeron_prop_util.h"
+#include "util/aeron_parse_util.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_driver_context.h"
 #include "aeron_alloc.h"

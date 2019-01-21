@@ -115,7 +115,7 @@ SET(SOURCE
     util/aeron_arrayutil.c
     util/aeron_error.c
     util/aeron_netutil.c
-    util/aeron_prop_util.c
+        util/aeron_parse_util.c
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c
@@ -155,7 +155,7 @@ SET(HEADERS
     util/aeron_arrayutil.h
     util/aeron_error.h
     util/aeron_netutil.h
-    util/aeron_prop_util.h
+        util/aeron_parse_util.h
     concurrent/aeron_atomic.h
     concurrent/aeron_atomic64_gcc_x86_64.h
     concurrent/aeron_spsc_rb.h

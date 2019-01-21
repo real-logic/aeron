@@ -148,7 +148,7 @@ public final class AeronCluster implements AutoCloseable
                 CloseHelper.quietClose(subscription);
             }
 
-            CloseHelper.quietClose(ctx);
+            ctx.close();
             throw ex;
         }
     }
@@ -951,7 +951,7 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Context for cluster session and connection.
      */
-    public static class Context implements AutoCloseable, Cloneable
+    public static class Context implements Cloneable
     {
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
         private String clusterMemberEndpoints = Configuration.clusterMemberEndpoints();

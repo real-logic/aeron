@@ -34,7 +34,7 @@ public class StartStopSystemTest
             //noinspection EmptyTryBlock
             try (Aeron ignored = Aeron.connect(clientCtx))
             {
-               // ignore
+                // ignore
             }
         }
         finally

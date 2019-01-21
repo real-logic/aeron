@@ -24,20 +24,15 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
-#include <regex.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
+#include "util/aeron_parse_util.h"
 
 static aeron_uri_hostname_resolver_func_t aeron_uri_hostname_resolver_func = NULL;
-static void *aeron_uri_hostname_resolver_clientd = NULL;
 
-void aeron_uri_hostname_resolver(aeron_uri_hostname_resolver_func_t func, void *clientd)
-{
-    aeron_uri_hostname_resolver_func = func;
-    aeron_uri_hostname_resolver_clientd = clientd;
-}
+static void *aeron_uri_hostname_resolver_clientd = NULL;
 
 int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, int family_hint)
 {
@@ -126,9 +121,10 @@ int aeron_udp_port_resolver(const char *port_str, bool optional)
         }
     }
 
+    errno = 0;
     unsigned long value = strtoul(port_str, NULL, 0);
 
-    if (0 == value && EINVAL == errno)
+    if (0 == value && 0 != errno)
     {
         aeron_set_err(EINVAL, "port invalid: %s", port_str);
         return -1;
@@ -152,12 +148,12 @@ int aeron_host_and_port_resolver(
         if (AF_INET == family_hint)
         {
             result = aeron_ipv4_addr_resolver(host_str, sockaddr);
-            ((struct sockaddr_in *) sockaddr)->sin_port = htons(port);
+            ((struct sockaddr_in *)sockaddr)->sin_port = htons((uint16_t)port);
         }
         else if (AF_INET6 == family_hint)
         {
             result = aeron_ipv6_addr_resolver(host_str, sockaddr);
-            ((struct sockaddr_in6 *) sockaddr)->sin6_port = htons(port);
+            ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons((uint16_t)port);
         }
     }
 
@@ -172,85 +168,19 @@ int aeron_host_and_port_resolver(
 
 int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockaddr_storage *sockaddr)
 {
-    static bool regexs_compiled = false;
-    static regex_t ipv4_regex, ipv6_regex;
-    regmatch_t matches[8];
+    aeron_parsed_address_t parsed_address;
 
-    if (!regexs_compiled)
+    if (-1 == aeron_address_split(address_str, &parsed_address))
     {
-        const char *ipv4 = "([^:]+)(:([0-9]+))?";
-        const char *ipv6 = "\\[([0-9A-Fa-f:]+)(%([a-zA-Z0-9_.~-]+))?\\](:([0-9]+))?";
-
-        int regcomp_result;
-        if ((regcomp_result = regcomp(&ipv4_regex, ipv4, AERON_IPV4_REGCOMP_CFLAGS)) != 0)
-        {
-            char message[AERON_MAX_PATH];
-
-            regerror(regcomp_result, &ipv4_regex, message, sizeof(message));
-            aeron_set_err(EINVAL, "could not regcomp IPv4 regex: %s", message);
-            return -1;
-        }
-
-        if ((regcomp_result = regcomp(&ipv6_regex, ipv6, AERON_IPV4_REGCOMP_CFLAGS)) != 0)
-        {
-            char message[AERON_MAX_PATH];
-
-            regerror(regcomp_result, &ipv6_regex, message, sizeof(message));
-            aeron_set_err(EINVAL, "could not regcomp IPv6 regex: %s", message);
-            return -1;
-        }
-
-        regexs_compiled = true;
-    }
-
-    int regexec_result = regexec(&ipv6_regex, address_str, 8, matches, 0);
-    if (0 == regexec_result)
-    {
-        char host[AERON_MAX_PATH], port[AERON_MAX_PATH];
-        size_t host_len = (size_t)(matches[1].rm_eo - matches[1].rm_so);
-        size_t port_len = (size_t)(matches[4].rm_eo - matches[4].rm_so);
-
-        strncpy(host, &address_str[matches[1].rm_so], host_len);
-        host[host_len] = '\0';
-        strncpy(port, &address_str[matches[4].rm_so], port_len);
-        port[port_len] = '\0';
-
-        return aeron_host_and_port_resolver(host, port, sockaddr, AF_INET6);
-    }
-    else if (REG_NOMATCH != regexec_result)
-    {
-        char message[AERON_MAX_PATH];
-
-        regerror(regexec_result, &ipv4_regex, message, sizeof(message));
-        aeron_set_err(EINVAL, "could not regexec IPv6 regex: %s", message);
         return -1;
     }
 
-    regexec_result = regexec(&ipv4_regex, address_str, 3, matches, 0);
-    if (0 == regexec_result)
+    if (6  == parsed_address.ip_version_hint)
     {
-        char host[AERON_MAX_PATH], port[AERON_MAX_PATH];
-        size_t host_len = (size_t)(matches[1].rm_eo - matches[1].rm_so);
-        size_t port_len = (size_t)(matches[2].rm_eo - matches[2].rm_so);
-
-        strncpy(host, &address_str[matches[1].rm_so], host_len);
-        host[host_len] = '\0';
-        strncpy(port, &address_str[matches[2].rm_so], port_len);
-        port[port_len] = '\0';
-
-        return aeron_host_and_port_resolver(host, port, sockaddr, AF_INET);
-    }
-    else if (REG_NOMATCH != regexec_result)
-    {
-        char message[AERON_MAX_PATH];
-
-        regerror(regexec_result, &ipv4_regex, message, sizeof(message));
-        aeron_set_err(EINVAL, "could not regexec IPv4 regex: %s", message);
-        return -1;
+        return aeron_host_and_port_resolver(parsed_address.host, parsed_address.port, sockaddr, AF_INET6);
     }
 
-    aeron_set_err(EINVAL, "invalid format: %s", address_str);
-    return -1;
+    return aeron_host_and_port_resolver(parsed_address.host, parsed_address.port, sockaddr, AF_INET);
 }
 
 int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)
@@ -270,9 +200,10 @@ int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)
         return 0;
     }
 
+    errno = 0;
     unsigned long value = strtoul(prefixlen, NULL, 0);
 
-    if (0 == value && EINVAL == errno)
+    if (0 == value && 0 != errno)
     {
         aeron_set_err(EINVAL, "prefixlen invalid: %s", prefixlen);
         return -1;
@@ -299,17 +230,18 @@ int aeron_host_port_prefixlen_resolver(
     if (AF_INET == family_hint)
     {
         host_result = aeron_ipv4_addr_resolver(host_str, sockaddr);
-        ((struct sockaddr_in *)sockaddr)->sin_port = htons(port_result);
+        ((struct sockaddr_in *)sockaddr)->sin_port = htons((uint16_t)port_result);
     }
     else if (AF_INET6 == family_hint)
     {
         host_result = aeron_ipv6_addr_resolver(host_str, sockaddr);
-        ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons(port_result);
+        ((struct sockaddr_in6 *)sockaddr)->sin6_port = htons((uint16_t)port_result);
     }
 
     if (host_result >= 0 && port_result >= 0)
     {
-        if ((prefixlen_result = aeron_prefixlen_resolver(prefixlen_str, (sockaddr->ss_family == AF_INET6) ? 128 : 32)) >= 0)
+        prefixlen_result = aeron_prefixlen_resolver(prefixlen_str, sockaddr->ss_family == AF_INET6 ? 128 : 32);
+        if (prefixlen_result >= 0)
         {
             *prefixlen = (size_t)prefixlen_result;
         }
@@ -320,94 +252,25 @@ int aeron_host_port_prefixlen_resolver(
 
 int aeron_interface_parse_and_resolve(const char *interface_str, struct sockaddr_storage *sockaddr, size_t *prefixlen)
 {
-    static bool regexs_compiled = false;
-    static regex_t ipv4_regex, ipv6_regex;
-    regmatch_t matches[10];
+    aeron_parsed_interface_t parsed_interface;
 
-    if (!regexs_compiled)
+    if (-1 == aeron_interface_split(interface_str, &parsed_interface))
     {
-        const char *ipv4 = "([^:/]+)(:([0-9]+))?(/([0-9]+))?";
-        const char *ipv6 = "\\[([0-9A-Fa-f:]+)(%([a-zA-Z0-9_.~-]+))?\\](:([0-9]+))?(/([0-9]+))?";
-
-        int regcomp_result;
-        if ((regcomp_result = regcomp(&ipv4_regex, ipv4, AERON_IPV4_REGCOMP_CFLAGS)) != 0)
-        {
-            char message[AERON_MAX_PATH];
-
-            regerror(regcomp_result, &ipv4_regex, message, sizeof(message));
-            aeron_set_err(EINVAL, "could not regcomp IPv4 regex: %s", message);
-            return -1;
-        }
-
-        if ((regcomp_result = regcomp(&ipv6_regex, ipv6, AERON_IPV4_REGCOMP_CFLAGS)) != 0)
-        {
-            char message[AERON_MAX_PATH];
-
-            regerror(regcomp_result, &ipv6_regex, message, sizeof(message));
-            aeron_set_err(EINVAL, "could not regcomp IPv6 regex: %s", message);
-            return -1;
-        }
-
-        regexs_compiled = true;
-    }
-
-    int regexec_result = regexec(&ipv6_regex, interface_str, 10, matches, 0);
-    if (0 == regexec_result)
-    {
-        char host_str[AERON_MAX_PATH], port_str[AERON_MAX_PATH], prefixlen_str[AERON_MAX_PATH];
-        size_t host_str_len = (size_t)(matches[1].rm_eo - matches[1].rm_so);
-        size_t port_str_len = (size_t)(matches[4].rm_eo - matches[4].rm_so);
-        size_t prefixlen_str_len = (size_t)(matches[6].rm_eo - matches[6].rm_so);
-
-        strncpy(host_str, &interface_str[matches[1].rm_so], host_str_len);
-        host_str[host_str_len] = '\0';
-        strncpy(port_str, &interface_str[matches[4].rm_so], port_str_len);
-        port_str[port_str_len] = '\0';
-        strncpy(prefixlen_str, &interface_str[matches[6].rm_so], prefixlen_str_len);
-        prefixlen_str[prefixlen_str_len] = '\0';
-
-        return aeron_host_port_prefixlen_resolver(host_str, port_str, prefixlen_str, sockaddr, prefixlen, AF_INET6);
-    }
-    else if (REG_NOMATCH != regexec_result)
-    {
-        char message[AERON_MAX_PATH];
-
-        regerror(regexec_result, &ipv4_regex, message, sizeof(message));
-        aeron_set_err(EINVAL, "could not regexec IPv6 regex: %s", message);
         return -1;
     }
 
-    regexec_result = regexec(&ipv4_regex, interface_str, 5, matches, 0);
-    if (0 == regexec_result)
+    if (6 == parsed_interface.ip_version_hint)
     {
-        char host_str[AERON_MAX_PATH], port_str[AERON_MAX_PATH], prefixlen_str[AERON_MAX_PATH];
-        size_t host_str_len = (size_t)(matches[1].rm_eo - matches[1].rm_so);
-        size_t port_str_len = (size_t)(matches[2].rm_eo - matches[2].rm_so);
-        size_t prefixlen_str_len = (size_t)(matches[4].rm_eo - matches[4].rm_so);
-
-        strncpy(host_str, &interface_str[matches[1].rm_so], host_str_len);
-        host_str[host_str_len] = '\0';
-        strncpy(port_str, &interface_str[matches[2].rm_so], port_str_len);
-        port_str[port_str_len] = '\0';
-        strncpy(prefixlen_str, &interface_str[matches[4].rm_so], prefixlen_str_len);
-        prefixlen_str[prefixlen_str_len] = '\0';
-
-        return aeron_host_port_prefixlen_resolver(host_str, port_str, prefixlen_str, sockaddr, prefixlen, AF_INET);
-    }
-    else if (REG_NOMATCH != regexec_result)
-    {
-        char message[AERON_MAX_PATH];
-
-        regerror(regexec_result, &ipv4_regex, message, sizeof(message));
-        aeron_set_err(EINVAL, "could not regexec IPv4 regex: %s", message);
-        return -1;
+        return aeron_host_port_prefixlen_resolver(
+            parsed_interface.host, parsed_interface.port, parsed_interface.prefix, sockaddr, prefixlen, AF_INET6);
     }
 
-    aeron_set_err(EINVAL, "invalid format: %s", interface_str);
-    return -1;
+    return aeron_host_port_prefixlen_resolver(
+        parsed_interface.host, parsed_interface.port, parsed_interface.prefix, sockaddr, prefixlen, AF_INET);
 }
 
 static aeron_getifaddrs_func_t aeron_getifaddrs_func = getifaddrs;
+
 static aeron_freeifaddrs_func_t aeron_freeifaddrs_func = freeifaddrs;
 
 void aeron_set_getifaddrs(aeron_getifaddrs_func_t get_func, aeron_freeifaddrs_func_t free_func)
@@ -573,7 +436,7 @@ bool aeron_ip_does_prefix_match(struct sockaddr *addr1, struct sockaddr *addr2, 
 
 size_t aeron_ip_netmask_to_prefixlen(struct sockaddr *netmask)
 {
-    return (AF_INET6 == netmask->sa_family) ?
+    return AF_INET6 == netmask->sa_family ?
         aeron_ipv6_netmask_to_prefixlen(&((struct sockaddr_in6 *)netmask)->sin6_addr) :
         aeron_ipv4_netmask_to_prefixlen(&((struct sockaddr_in *)netmask)->sin_addr);
 }
@@ -596,9 +459,9 @@ int aeron_ip_lookup_func(
     {
         struct lookup_state *state = (struct lookup_state *) clientd;
 
-        if (aeron_ip_does_prefix_match((struct sockaddr *) &state->lookup_addr, addr, state->prefixlen))
+        if (aeron_ip_does_prefix_match((struct sockaddr *)&state->lookup_addr, addr, state->prefixlen))
         {
-            size_t addr_len = (AF_INET6 == addr->sa_family) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
+            size_t addr_len = AF_INET6 == addr->sa_family ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
 
             if ((flags & IFF_LOOPBACK) && !state->found)
             {
@@ -667,6 +530,7 @@ int aeron_find_interface(const char *interface_str, struct sockaddr_storage *if_
         aeron_set_err(EINVAL, "could not find matching interface=(%s)", interface_str);
         return -1;
     }
+
     aeron_ip_copy_port(if_addr, &state.lookup_addr);
 
     return 0;
@@ -706,7 +570,7 @@ bool aeron_is_wildcard_addr(struct sockaddr_storage *addr)
     {
         struct sockaddr_in *a = (struct sockaddr_in *)addr;
 
-        result = (a->sin_addr.s_addr == INADDR_ANY);
+        result = a->sin_addr.s_addr == INADDR_ANY;
     }
 
     return result;

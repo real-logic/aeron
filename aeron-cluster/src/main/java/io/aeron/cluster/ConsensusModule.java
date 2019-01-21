@@ -175,6 +175,7 @@ public class ConsensusModule implements AutoCloseable
                 ctx.markFile.signalFailedStart();
             }
 
+            ctx.close();
             throw ex;
         }
 
@@ -869,8 +870,11 @@ public class ConsensusModule implements AutoCloseable
 
     /**
      * Programmable overrides for configuring the {@link ConsensusModule} in a cluster.
+     * <p>
+     * The context will be owned by {@link ConsensusModuleAgent} after a successful
+     * {@link ConsensusModule#launch(Context)} and closed via {@link ConsensusModule#close()}.
      */
-    public static class Context implements AutoCloseable, Cloneable
+    public static class Context implements Cloneable
     {
         private boolean ownsAeronClient = false;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();

@@ -21,7 +21,7 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '4.0.3' apply false
+    id 'com.github.johnrengelman.shadow' version '4.0.4' apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -612,7 +612,7 @@ project(':aeron-samples') {
         compile project(':aeron-client')
         compile project(':aeron-driver')
         compile project(':aeron-archive')
-        compile 'org.hdrhistogram:HdrHistogram:2.1.10'
+        compile 'org.hdrhistogram:HdrHistogram:2.1.11'
     }
 
     shadowJar {

@@ -87,7 +87,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         return workCount;
     }
 
-    public void onConnect(final long correlationId, final String channel, final int streamId)
+    public void onConnect(final long correlationId, final int streamId, final String channel)
     {
         final ControlSession session = conductor.newControlSession(correlationId, streamId, channel, this);
         controlSessionByIdMap.put(session.sessionId(), session);

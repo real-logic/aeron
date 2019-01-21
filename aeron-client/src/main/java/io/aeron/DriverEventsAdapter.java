@@ -39,10 +39,10 @@ class DriverEventsAdapter implements MessageHandler
     private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
     private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
     private final DriverEventsListener listener;
+    private final long clientId;
 
     private long activeCorrelationId;
     private long receivedCorrelationId;
-    private long clientId;
     private boolean isInvalid;
 
     DriverEventsAdapter(

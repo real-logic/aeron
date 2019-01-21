@@ -20,7 +20,6 @@ import io.aeron.Counter;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
-import io.aeron.cluster.service.Cluster;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
@@ -339,7 +338,7 @@ public class TestCluster implements AutoCloseable
                 continue;
             }
 
-            if (Cluster.Role.LEADER == node.role() && null == node.electionState())
+            if (node.isLeader() && null == node.electionState())
             {
                 return node;
             }

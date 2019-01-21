@@ -31,7 +31,7 @@ public class AppointedLeaderClusterTest
 
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
-            final TestNode leader = cluster.awaitLeader();
+            cluster.awaitLeader();
 
             cluster.startClient();
             assertTrue(cluster.client().sendKeepAlive());

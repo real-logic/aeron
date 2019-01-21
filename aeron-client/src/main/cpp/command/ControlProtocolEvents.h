@@ -76,6 +76,8 @@ struct ControlProtocolEvents
     static const std::int32_t ON_COUNTER_READY = 0x0F08;
     /** inform clients of removal of counter */
     static const std::int32_t ON_UNAVAILABLE_COUNTER = 0x0F09;
+    /** inform clients of client timeout */
+    static const std::int32_t ON_CLIENT_TIMEOUT = 0x0F0A;
 };
 
 }}

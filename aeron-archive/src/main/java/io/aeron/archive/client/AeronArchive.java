@@ -117,7 +117,7 @@ public class AeronArchive implements AutoCloseable
                 CloseHelper.quietClose(publication);
             }
 
-            CloseHelper.quietClose(ctx);
+            ctx.close();
 
             throw ex;
         }
@@ -160,7 +160,7 @@ public class AeronArchive implements AutoCloseable
                 CloseHelper.close(archiveProxy.publication());
             }
 
-            CloseHelper.close(context);
+            context.close();
         }
         finally
         {
@@ -236,7 +236,7 @@ public class AeronArchive implements AutoCloseable
                 CloseHelper.quietClose(publication);
             }
 
-            CloseHelper.quietClose(ctx);
+            ctx.close();
 
             throw ex;
         }
@@ -1405,8 +1405,11 @@ public class AeronArchive implements AutoCloseable
 
     /**
      * Specialised configuration options for communicating with an Aeron Archive.
+     * <p>
+     * The context will be owned by {@link AeronArchive} after a successful
+     * {@link AeronArchive#connect(Context)} and closed via {@link AeronArchive#close()}.
      */
-    public static class Context implements AutoCloseable, Cloneable
+    public static class Context implements Cloneable
     {
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
         private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
@@ -1887,13 +1890,13 @@ public class AeronArchive implements AutoCloseable
         }
 
         /**
-         * Close any allocated resources if it fails to connect.
+         * Close any allocated resources.
          */
         public void close()
         {
             CloseHelper.close(controlResponsePoller.subscription());
             CloseHelper.close(archiveProxy.publication());
-            CloseHelper.close(ctx);
+            ctx.close();
         }
 
         /**

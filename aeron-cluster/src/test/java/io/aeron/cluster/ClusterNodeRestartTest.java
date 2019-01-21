@@ -400,6 +400,7 @@ public class ClusterNodeRestartTest
         final ClusteredService service =
             new StubClusteredService()
             {
+                private int nextCorrelationId = 0;
                 private int counterValue = 0;
 
                 public void onSessionMessage(
@@ -419,16 +420,11 @@ public class ClusterNodeRestartTest
 
                     if (TIMER_MESSAGE_LENGTH == length)
                     {
-                        final long timerCorrelationId = buffer.getLong(offset + TIMER_MESSAGE_ID_OFFSET);
-                        final long timerDeadlineMs =
-                            timestampMs + buffer.getLong(offset + TIMER_MESSAGE_DELAY_OFFSET);
+                        final long correlationId = serviceCorrelationId(nextCorrelationId++);
+                        final long deadlineMs = timestampMs + buffer.getLong(offset + TIMER_MESSAGE_DELAY_OFFSET);
 
-                        assertTrue(cluster.scheduleTimer(timerCorrelationId, timerDeadlineMs));
+                        assertTrue(cluster.scheduleTimer(correlationId, deadlineMs));
                     }
-                }
-
-                public void onTimerEvent(final long correlationId, final long timestampMs)
-                {
                 }
 
                 public void onTakeSnapshot(final Publication snapshotPublication)
@@ -436,10 +432,13 @@ public class ClusterNodeRestartTest
                     final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
                     int length = 0;
+                    buffer.putInt(length, nextCorrelationId);
+                    length += SIZE_OF_INT;
+
                     buffer.putInt(length, counterValue);
                     length += SIZE_OF_INT;
 
-                    length += buffer.putIntAscii(length, counterValue);
+                    length += buffer.putStringAscii(length, Integer.toString(counterValue));
 
                     snapshotPublication.offer(buffer, 0, length);
                 }
@@ -451,10 +450,13 @@ public class ClusterNodeRestartTest
                         final int fragments = snapshotImage.poll(
                             (buffer, offset, length, header) ->
                             {
-                                counterValue = buffer.getInt(offset);
+                                nextCorrelationId = buffer.getInt(offset);
+                                offset += SIZE_OF_INT;
 
-                                final String s = buffer.getStringWithoutLengthAscii(
-                                    offset + SIZE_OF_INT, length - SIZE_OF_INT);
+                                counterValue = buffer.getInt(offset);
+                                offset += SIZE_OF_INT;
+
+                                final String s = buffer.getStringAscii(offset);
 
                                 serviceState.set(s);
                             },

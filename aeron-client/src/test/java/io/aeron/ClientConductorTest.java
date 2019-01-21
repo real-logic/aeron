@@ -19,6 +19,7 @@ import io.aeron.command.*;
 import io.aeron.exceptions.ConductorServiceTimeoutException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.exceptions.RegistrationException;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.ErrorHandler;
@@ -76,11 +77,13 @@ public class ClientConductorTest
     private final SubscriptionReadyFlyweight subscriptionReady = new SubscriptionReadyFlyweight();
     private final OperationSucceededFlyweight operationSuccess = new OperationSucceededFlyweight();
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
+    private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
 
     private final UnsafeBuffer publicationReadyBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer subscriptionReadyBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer operationSuccessBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer errorMessageBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer clientTimeoutBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
 
     private final CopyBroadcastReceiver mockToClientReceiver = mock(CopyBroadcastReceiver.class);
 
@@ -135,6 +138,7 @@ public class ClientConductorTest
         subscriptionReady.wrap(subscriptionReadyBuffer, 0);
         operationSuccess.wrap(operationSuccessBuffer, 0);
         errorResponse.wrap(errorMessageBuffer, 0);
+        clientTimeout.wrap(clientTimeoutBuffer, 0);
 
         publicationReady.correlationId(CORRELATION_ID);
         publicationReady.registrationId(CORRELATION_ID);
@@ -528,7 +532,48 @@ public class ClientConductorTest
 
         verify(mockClientErrorHandler).onError(any(ConductorServiceTimeoutException.class));
 
-        assertTrue(conductor.isClosed());
+        assertTrue(conductor.isTerminating());
+    }
+
+    @Test
+    public void shouldTerminateAndErrorOnClientTimeoutFromDriver()
+    {
+        suppressPrintError = true;
+
+        conductor.onClientTimeout();
+        verify(mockClientErrorHandler).onError(any(TimeoutException.class));
+
+        boolean threwException = false;
+        try
+        {
+            conductor.doWork();
+        }
+        catch (final AgentTerminationException ex)
+        {
+            threwException = true;
+        }
+
+        assertTrue(threwException);
+        assertTrue(conductor.isTerminating());
+    }
+
+    @Test
+    public void shouldNotCloseAndErrorOnClientTimeoutForAnotherClientIdFromDriver()
+    {
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_CLIENT_TIMEOUT,
+            clientTimeoutBuffer,
+            (buffer) ->
+            {
+                clientTimeout.clientId(conductor.driverListenerAdapter().clientId() + 1);
+                return ClientTimeoutFlyweight.LENGTH;
+            });
+
+        conductor.doWork();
+
+        verify(mockClientErrorHandler, never()).onError(any(TimeoutException.class));
+
+        assertFalse(conductor.isClosed());
     }
 
     private void whenReceiveBroadcastOnMessage(

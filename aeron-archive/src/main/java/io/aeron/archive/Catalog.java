@@ -117,6 +117,7 @@ class Catalog implements AutoCloseable
     private final int maxRecordingId;
     private final boolean forceWrites;
     private final boolean forceMetadata;
+    private boolean isClosed;
     private final File archiveDir;
     private final EpochClock epochClock;
     private final FileChannel catalogChannel;
@@ -259,8 +260,12 @@ class Catalog implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(catalogChannel);
-        IoUtil.unmap(catalogByteBuffer);
+        if (!isClosed)
+        {
+            isClosed = true;
+            CloseHelper.close(catalogChannel);
+            IoUtil.unmap(catalogByteBuffer);
+        }
     }
 
     public int maxEntries()
@@ -503,12 +508,14 @@ class Catalog implements AutoCloseable
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
-    public void extendRecording(final long recordingId)
+    public void extendRecording(final long recordingId, final long controlSessionId, final long correlationId)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
         final long stopPosition = nativeOrder() == BYTE_ORDER ? NULL_POSITION : Long.reverseBytes(NULL_POSITION);
 
+        fieldAccessBuffer.putLong(offset + controlSessionIdEncodingOffset(), controlSessionId);
+        fieldAccessBuffer.putLong(offset + correlationIdEncodingOffset(), correlationId);
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), NULL_TIMESTAMP);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
 

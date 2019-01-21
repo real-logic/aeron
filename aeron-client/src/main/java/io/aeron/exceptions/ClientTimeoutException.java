@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 Real Logic Ltd.
+ *  Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.aeron.exceptions;
 
-#ifndef AERON_PROP_UTIL_H
-#define AERON_PROP_UTIL_H
-
-#include <stdint.h>
-
-int aeron_parse_size64(const char *str, uint64_t *result);
-
-int aeron_parse_duration_ns(const char *str, uint64_t *result);
-
-#endif //AERON_AERON_PROP_UTIL_H
+/**
+ * Client timeout event received from the driver for this client.
+ */
+public class ClientTimeoutException extends TimeoutException
+{
+    public ClientTimeoutException(final String message)
+    {
+        super(message);
+    }
+}

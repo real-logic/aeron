@@ -24,6 +24,7 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -127,7 +128,7 @@ class TestNode implements AutoCloseable
                 }
             });
 
-        return (NULL_VALUE != electionStateValue.value) ? Election.State.get(electionStateValue.value) : null;
+        return NULL_VALUE != electionStateValue.value ? Election.State.get(electionStateValue.value) : null;
     }
 
     boolean isLeader()
@@ -255,14 +256,11 @@ class TestNode implements AutoCloseable
 
         public void onLoadSnapshot(final Image snapshotImage)
         {
+            final FragmentHandler handler = (buffer, offset, length, header) -> messageCount = buffer.getInt(offset);
+
             while (true)
             {
-                final int fragments = snapshotImage.poll(
-                    (buffer, offset, length, header) ->
-                    {
-                        messageCount = buffer.getInt(offset);
-                    },
-                    1);
+                final int fragments = snapshotImage.poll(handler, 1);
 
                 if (fragments == 1)
                 {

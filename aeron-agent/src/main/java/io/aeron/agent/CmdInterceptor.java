@@ -119,6 +119,10 @@ class CmdInterceptor
             case REMOVE_RCV_DESTINATION:
                 LOGGER.log(CMD_IN_REMOVE_RCV_DESTINATION, buffer, index, length);
                 break;
+
+            case ON_CLIENT_TIMEOUT:
+                LOGGER.log(CMD_OUT_ON_CLIENT_TIMEOUT, buffer, index, length);
+                break;
         }
     }
 }

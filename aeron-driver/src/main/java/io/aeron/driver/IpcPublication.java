@@ -248,7 +248,13 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         if (0 == --refCount)
         {
             state = State.INACTIVE;
-            LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition());
+            final long producerPosition = producerPosition();
+            if (publisherLimit.get() > producerPosition)
+            {
+                publisherLimit.setOrdered(producerPosition);
+            }
+
+            LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition);
         }
     }
 

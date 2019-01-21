@@ -95,6 +95,8 @@ DECLARE_SOURCED_EXCEPTION(IllegalArgumentException);
 DECLARE_SOURCED_EXCEPTION(IllegalStateException);
 DECLARE_SOURCED_EXCEPTION(DriverTimeoutException);
 DECLARE_SOURCED_EXCEPTION(ConductorServiceTimeoutException);
+DECLARE_SOURCED_EXCEPTION(ClientTimeoutException);
+DECLARE_SOURCED_EXCEPTION(AeronException);
 DECLARE_SOURCED_EXCEPTION(UnknownSubscriptionException);
 
 class RegistrationException : public SourcedException

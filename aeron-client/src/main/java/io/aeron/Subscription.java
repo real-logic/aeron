@@ -537,4 +537,14 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
             }
         }
     }
+
+    public String toString()
+    {
+        return "Subscription{" +
+            "registrationId=" + registrationId +
+            ", streamId=" + streamId +
+            ", channel='" + channel + '\'' +
+            ", imageCount=" + imageCount() +
+            '}';
+    }
 }

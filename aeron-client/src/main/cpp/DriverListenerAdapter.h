@@ -26,6 +26,7 @@
 #include <command/OperationSucceededFlyweight.h>
 #include <command/SubscriptionReadyFlyweight.h>
 #include <command/CounterUpdateFlyweight.h>
+#include <command/ClientTimeoutFlyweight.h>
 
 namespace aeron {
 
@@ -148,6 +149,14 @@ public:
                         const CounterUpdateFlyweight response(buffer, offset);
 
                         m_driverListener.onUnavailableCounter(response.correlationId(), response.counterId());
+                        break;
+                    }
+
+                    case ControlProtocolEvents::ON_CLIENT_TIMEOUT:
+                    {
+                        const ClientTimeoutFlyweight response(buffer, offset);
+
+                        m_driverListener.onClientTimeout(response.clientId());
                         break;
                     }
 

@@ -142,6 +142,8 @@ public class DriverConductor implements Agent
         publicationImages.forEach(PublicationImage::free);
         networkPublications.forEach(NetworkPublication::free);
         ipcPublications.forEach(IpcPublication::free);
+
+        ctx.close();
     }
 
     public String roleName()
@@ -507,6 +509,11 @@ public class DriverConductor implements Agent
         {
             subscriptionLinks.get(i).unlink(publication);
         }
+    }
+
+    void clientTimeout(final long clientId)
+    {
+        clientProxy.onClientTimeout(clientId);
     }
 
     void onAddIpcPublication(

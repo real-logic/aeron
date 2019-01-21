@@ -18,6 +18,12 @@ matrix:
       os: linux
       script: ./gradlew
 
+    - name: "OpenJDK 8"
+      language: java
+      jdk: openjdk8
+      os: linux
+      script: ./gradlew
+
     - name: "OpenJDK 11"
       language: java
       jdk: openjdk11

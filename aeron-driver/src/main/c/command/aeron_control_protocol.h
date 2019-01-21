@@ -41,6 +41,7 @@
 #define AERON_RESPONSE_ON_SUBSCRIPTION_READY (0x0F07)
 #define AERON_RESPONSE_ON_COUNTER_READY (0x0F08)
 #define AERON_RESPONSE_ON_UNAVAILABLE_COUNTER (0x0F09)
+#define AERON_RESPONSE_ON_CLIENT_TIMEOUT (0x0F0A)
 
 /* error codes */
 #define AERON_ERROR_CODE_GENERIC_ERROR (0)
@@ -159,6 +160,12 @@ typedef struct aeron_counter_update_stct
     int32_t counter_id;
 }
 aeron_counter_update_t;
+
+typedef struct aeron_client_timeout_stct
+{
+    int64_t client_id;
+}
+aeron_client_timeout_t;
 
 #pragma pack(pop)
 

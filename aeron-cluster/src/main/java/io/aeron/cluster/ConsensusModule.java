@@ -49,7 +49,6 @@ import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
  */
 public class ConsensusModule implements AutoCloseable
 {
-
     /**
      * Possible states for the {@link ConsensusModule}.
      * These will be reflected in the {@link Context#moduleStateCounter()} counter.
@@ -176,6 +175,7 @@ public class ConsensusModule implements AutoCloseable
                 ctx.markFile.signalFailedStart();
             }
 
+            ctx.close();
             throw ex;
         }
 
@@ -223,7 +223,6 @@ public class ConsensusModule implements AutoCloseable
     public void close()
     {
         CloseHelper.close(conductorRunner);
-        CloseHelper.close(ctx);
     }
 
     /**
@@ -871,8 +870,11 @@ public class ConsensusModule implements AutoCloseable
 
     /**
      * Programmable overrides for configuring the {@link ConsensusModule} in a cluster.
+     * <p>
+     * The context will be owned by {@link ConsensusModuleAgent} after a successful
+     * {@link ConsensusModule#launch(Context)} and closed via {@link ConsensusModule#close()}.
      */
-    public static class Context implements AutoCloseable, Cloneable
+    public static class Context implements Cloneable
     {
         private boolean ownsAeronClient = false;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
@@ -2617,9 +2619,6 @@ public class ConsensusModule implements AutoCloseable
          */
         public void close()
         {
-            CloseHelper.close(markFile);
-            CloseHelper.close(recordingLog);
-
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
@@ -2632,6 +2631,9 @@ public class ConsensusModule implements AutoCloseable
                 CloseHelper.close(controlToggle);
                 CloseHelper.close(snapshotCounter);
             }
+
+            CloseHelper.close(recordingLog);
+            CloseHelper.close(markFile);
         }
 
         private void concludeMarkFile()

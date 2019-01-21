@@ -41,6 +41,10 @@ public:
         m_lappedCount(0)
     {
         BroadcastBufferDescriptor::checkCapacity(m_capacity);
+
+        m_cursor = m_buffer.getInt64(m_latestCounterIndex);
+        m_nextRecord = m_cursor;
+        m_recordOffset = (std::int32_t)m_cursor & m_mask;
     }
 
     inline util::index_t capacity() const

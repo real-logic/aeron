@@ -60,7 +60,7 @@ import static org.agrona.BitUtil.*;
  *  |              Log Position at beginning of term                |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |              Log Position reached for the entry               |
+ *  |        Log Position when entry was created or committed       |
  *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |               Timestamp when entry was created                |

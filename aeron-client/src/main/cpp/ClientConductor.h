@@ -79,7 +79,8 @@ public:
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
-        m_driverActive(true)
+        m_driverActive(true),
+        m_isClosed(false)
     {
     }
 
@@ -178,7 +179,9 @@ public:
         std::int64_t registrationId,
         std::int32_t counterId);
 
-    void onInterServiceTimeout(long long now);
+    void onClientTimeout(std::int64_t clientId);
+
+    void closeAllResources(long long now);
 
     void addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
     void removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
@@ -204,6 +207,16 @@ public:
             default:
                 return m_countersReader.getCounterValue(counterId);
         }
+    }
+
+    inline bool isClosed() const
+    {
+        return std::atomic_load_explicit(&m_isClosed, std::memory_order_acquire);
+    }
+
+    inline void forceClose()
+    {
+        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
     }
 
 protected:
@@ -371,6 +384,7 @@ private:
     long m_interServiceTimeoutMs;
 
     std::atomic<bool> m_driverActive;
+    std::atomic<bool> m_isClosed;
 
     inline int onHeartbeatCheckTimeouts()
     {
@@ -381,7 +395,7 @@ private:
 
         if (now > (m_timeOfLastDoWork + m_interServiceTimeoutMs))
         {
-            onInterServiceTimeout(now);
+            closeAllResources(now);
 
             ConductorServiceTimeoutException exception(
                 "timeout between service calls over " + std::to_string(m_interServiceTimeoutMs) + " ms", SOURCEINFO);
@@ -431,6 +445,14 @@ private:
         {
             DriverTimeoutException exception("driver is inactive", SOURCEINFO);
             m_errorHandler(exception);
+        }
+    }
+
+    inline void ensureOpen()
+    {
+        if (isClosed())
+        {
+            throw AeronException("Aeron client conductor is closed", SOURCEINFO);
         }
     }
 };

@@ -190,8 +190,10 @@ public class ClusterNodeTest
     {
         final ClusteredService timedService = new StubClusteredService()
         {
-            long clusterSessionId;
-            String msg;
+            private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+            private long clusterSessionId;
+            private int nextCorrelationId;
+            private String msg;
 
             public void onSessionMessage(
                 final ClientSession session,
@@ -204,7 +206,7 @@ public class ClusterNodeTest
                 clusterSessionId = session.id();
                 msg = buffer.getStringWithoutLengthAscii(offset, length);
 
-                while (!cluster.scheduleTimer(clusterSessionId, timestampMs + 100))
+                while (!cluster.scheduleTimer(serviceCorrelationId(nextCorrelationId++), timestampMs + 100))
                 {
                     cluster.idle();
                 }
@@ -213,7 +215,6 @@ public class ClusterNodeTest
             public void onTimerEvent(final long correlationId, final long timestampMs)
             {
                 final String responseMsg = msg + "-scheduled";
-                final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
                 buffer.putStringWithoutLengthAscii(0, responseMsg);
                 final ClientSession clientSession = cluster.getClientSession(clusterSessionId);
 

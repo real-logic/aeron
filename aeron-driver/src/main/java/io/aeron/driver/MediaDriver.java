@@ -256,8 +256,6 @@ public final class MediaDriver implements AutoCloseable
                 HighResolutionTimer.disable();
             }
         }
-
-        ctx.close();
     }
 
     /**
@@ -398,6 +396,9 @@ public final class MediaDriver implements AutoCloseable
      * Configuration for the {@link MediaDriver} that can be used to override {@link Configuration}.
      * <p>
      * <b>Note:</b> Do not reuse instances of this {@link Context} across different {@link MediaDriver}s.
+     * <p>
+     * The context will be owned by {@link DriverConductor} after a successful
+     * {@link MediaDriver#launch(Context)} and closed via {@link MediaDriver#close()}.
      */
     public static class Context extends CommonContext
     {
@@ -487,8 +488,14 @@ public final class MediaDriver implements AutoCloseable
          */
         public void close()
         {
-            IoUtil.unmap(cncByteBuffer);
+            final MappedByteBuffer lossReportBuffer = this.lossReportBuffer;
+            this.lossReportBuffer = null;
             IoUtil.unmap(lossReportBuffer);
+
+
+            final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
+            this.cncByteBuffer = null;
+            IoUtil.unmap(cncByteBuffer);
 
             super.close();
         }

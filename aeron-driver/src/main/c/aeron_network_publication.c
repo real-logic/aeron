@@ -738,6 +738,12 @@ void aeron_network_publication_decref(void *clientd)
 
         publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_DRAINING;
         publication->conductor_fields.time_of_last_activity_ns = publication->nano_clock();
+
+        if (aeron_counter_get(publication->pub_lmt_position.value_addr) > producer_position)
+        {
+            aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, producer_position);
+        }
+
         AERON_PUT_ORDERED(publication->log_meta_data->end_of_stream_position, producer_position);
 
         if (aeron_counter_get_volatile(publication->snd_pos_position.value_addr) >= producer_position)

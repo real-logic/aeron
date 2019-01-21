@@ -18,7 +18,7 @@
 #include <inttypes.h>
 #include "uri/aeron_uri.h"
 #include "util/aeron_arrayutil.h"
-#include "util/aeron_prop_util.h"
+#include "util/aeron_parse_util.h"
 #include "aeron_driver_context.h"
 #include "aeron_uri.h"
 #include "aeron_alloc.h"
@@ -398,19 +398,22 @@ int aeron_uri_publication_params(
                 return -1;
             }
 
-            if ((params->initial_term_id = strtoll(initial_term_id_str, NULL, 0)) == 0 && EINVAL == errno)
+            errno = 0;
+            if ((params->initial_term_id = strtoll(initial_term_id_str, NULL, 0)) == 0 && 0 != errno)
             {
                 aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_INITIAL_TERM_ID_KEY);
                 return -1;
             }
 
-            if ((params->term_id = strtoll(term_id_str, NULL, 0)) == 0 && EINVAL == errno)
+            errno = 0;
+            if ((params->term_id = strtoll(term_id_str, NULL, 0)) == 0 && 0 != errno)
             {
                 aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_ID_KEY);
                 return -1;
             }
 
-            if ((params->term_offset = strtoull(term_offset_str, NULL, 0)) == 0 && EINVAL == errno)
+            errno = 0;
+            if ((params->term_offset = strtoull(term_offset_str, NULL, 0)) == 0 && 0 != errno)
             {
                 aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_OFFSET_KEY);
                 return -1;

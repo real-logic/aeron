@@ -353,6 +353,10 @@ void aeron_driver_conductor_on_unavailable_image(
     const char *channel,
     size_t channel_length);
 
+void aeron_driver_conductor_on_client_timeout(
+    aeron_driver_conductor_t *conductor,
+    int64_t correlation_id);
+
 void aeron_driver_conductor_cleanup_spies(
     aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication);
 

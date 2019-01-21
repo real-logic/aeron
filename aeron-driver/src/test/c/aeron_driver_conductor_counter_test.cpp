@@ -154,6 +154,17 @@ TEST_F(DriverConductorCounterTest, shouldRemoveCounterOnClientTimeout)
     auto counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label) {};
 
     EXPECT_FALSE(findCounter(counter_id, counter_func));
+
+    auto timeout_handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_CLIENT_TIMEOUT);
+
+        const command::ClientTimeoutFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.clientId(), client_id);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(timeout_handler), 1u);
 }
 
 TEST_F(DriverConductorCounterTest, shouldRemoveMultipleCountersOnClientTimeout)

@@ -47,6 +47,7 @@ extern "C"
 #include "command/SubscriptionReadyFlyweight.h"
 #include "command/CounterMessageFlyweight.h"
 #include "command/CounterUpdateFlyweight.h"
+#include "command/ClientTimeoutFlyweight.h"
 
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent::ringbuffer;

@@ -184,12 +184,11 @@ public class LogBuffers implements AutoCloseable, ManagedResource
 
     public void close()
     {
+        CloseHelper.close(fileChannel);
         for (final MappedByteBuffer buffer : mappedByteBuffers)
         {
             IoUtil.unmap(buffer);
         }
-
-        CloseHelper.close(fileChannel);
     }
 
     /**

@@ -729,6 +729,14 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
             break;
         }
 
+        case AERON_RESPONSE_ON_CLIENT_TIMEOUT:
+        {
+            aeron_client_timeout_t *command = (aeron_client_timeout_t *)message;
+
+            snprintf(buffer, sizeof(buffer) - 1, "ON_CLIENT_TIMEOUT %" PRId64, command->client_id);
+            break;
+        }
+
         default:
             break;
     }

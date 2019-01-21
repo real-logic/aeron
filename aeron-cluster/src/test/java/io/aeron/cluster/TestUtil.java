@@ -33,7 +33,7 @@ class TestUtil
     {
         if (Thread.currentThread().isInterrupted())
         {
-            fail("Unexpected interrupt - Test likely to have timed out");
+            fail("unexpected interrupt - test likely to have timed out");
         }
     }
 

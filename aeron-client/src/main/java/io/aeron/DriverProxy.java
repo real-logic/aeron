@@ -20,7 +20,6 @@ import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import static io.aeron.command.ControlProtocolEvents.*;
@@ -30,8 +29,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
  * <p>
  * Writes commands into the client conductor buffer.
  * <p>
- * <b>Note:</b> this class is not thread safe and is expecting to be called within {@link Aeron.Context#clientLock()}
- * with the exception of {@link #clientClose()} which is thread safe.
+ * <b>Note:</b> this class is not thread safe and is expecting to be called within {@link Aeron.Context#clientLock()}.
  */
 public class DriverProxy
 {
@@ -61,6 +59,11 @@ public class DriverProxy
     public long timeOfLastDriverKeepaliveMs()
     {
         return toDriverCommandBuffer.consumerHeartbeatTime();
+    }
+
+    public long clientId()
+    {
+        return correlatedMessage.clientId();
     }
 
     public long addPublication(final String channel, final int streamId)
@@ -287,12 +290,7 @@ public class DriverProxy
 
     public void clientClose()
     {
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[CorrelatedMessageFlyweight.LENGTH]);
-        new CorrelatedMessageFlyweight()
-            .wrap(buffer, 0)
-            .clientId(correlatedMessage.clientId())
-            .correlationId(Aeron.NULL_VALUE);
-
+        correlatedMessage.correlationId(Aeron.NULL_VALUE);
         toDriverCommandBuffer.write(CLIENT_CLOSE, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 }

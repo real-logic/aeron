@@ -761,7 +761,13 @@ public class NetworkPublication
             timeOfLastActivityNs = nanoClock.nanoTime();
 
             final long producerPosition = producerPosition();
+            if (publisherLimit.get() > producerPosition)
+            {
+                publisherLimit.setOrdered(producerPosition);
+            }
+
             endOfStreamPosition(metaDataBuffer, producerPosition);
+
             if (senderPosition.getVolatile() >= producerPosition)
             {
                 isEndOfStream = true;

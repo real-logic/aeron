@@ -88,7 +88,7 @@ Full clean and build of all modules
 
 You require the following to build the C++ API for Aeron:
 
-* 3.0.2 or higher of [CMake](http://www.cmake.org/)
+* 3.1.3 or higher of [CMake](http://www.cmake.org/)
 * C++11 supported compiler for the supported platform
 * C11 supported compiler for the supported platform
 * Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires

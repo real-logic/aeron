@@ -251,13 +251,10 @@ class Election implements AutoCloseable
             }
             else
             {
-                final long relevantLogPosition = NULL_VALUE == logLeadershipTermId ?
-                    0 : consensusModuleAgent.logStopPosition(logLeadershipTermId);
-
                 memberStatusPublisher.newLeadershipTerm(
                     follower.publication(),
                     logLeadershipTermId,
-                    relevantLogPosition,
+                    consensusModuleAgent.logStopPosition(logLeadershipTermId),
                     this.logLeadershipTermId + 1,
                     this.logPosition,
                     thisMember.id(),

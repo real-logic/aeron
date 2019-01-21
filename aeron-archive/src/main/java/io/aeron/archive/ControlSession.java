@@ -288,7 +288,7 @@ class ControlSession implements Session
 
     void attemptErrorResponse(final long correlationId, final String errorMessage, final ControlResponseProxy proxy)
     {
-        proxy.attemptErrorResponse(controlSessionId, GENERIC, correlationId, errorMessage, controlPublication);
+        proxy.attemptErrorResponse(controlSessionId, correlationId, GENERIC, errorMessage, controlPublication);
     }
 
     void attemptErrorResponse(

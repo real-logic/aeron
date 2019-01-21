@@ -391,7 +391,10 @@ class Election implements AutoCloseable
 
         if (null != follower)
         {
-            follower.logPosition(logPosition).leadershipTermId(leadershipTermId);
+            follower
+                .logPosition(logPosition)
+                .leadershipTermId(leadershipTermId)
+                .timeOfLastAppendPositionMs(ctx.epochClock().time());
             consensusModuleAgent.checkCatchupStop(follower);
         }
     }

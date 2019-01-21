@@ -45,6 +45,7 @@ public final class ClusterMember
     private long catchupReplaySessionId = Aeron.NULL_VALUE;
     private long changeCorrelationId = Aeron.NULL_VALUE;
     private long removalPosition = NULL_POSITION;
+    private long timeOfLastAppendPositionMs = Aeron.NULL_VALUE;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
@@ -376,6 +377,28 @@ public final class ClusterMember
     }
 
     /**
+     * Time (in msec) of last received appendPosition.
+     *
+     * @param timeMs of the last received appendPosition
+     * @return this for a fluent API.
+     */
+    public ClusterMember timeOfLastAppendPositionMs(final long timeMs)
+    {
+        this.timeOfLastAppendPositionMs = timeMs;
+        return this;
+    }
+
+    /**
+     * Time (in msec) of last received appendPosition.
+     *
+     * @return time (in msec) of last received appendPosition or {@link Aeron#NULL_VALUE} if none received.
+     */
+    public long timeOfLastAppendPositionMs()
+    {
+        return timeOfLastAppendPositionMs;
+    }
+
+    /**
      * The address:port endpoint for this cluster member that clients will connect to.
      *
      * @return the address:port endpoint for this cluster member that clients will connect to.
@@ -625,6 +648,35 @@ public final class ClusterMember
         {
             clusterMemberByIdMap.put(member.id(), member);
         }
+    }
+
+    /**
+     * Check if the time of last appendPosition from a quorum of cluster members has exceeded a timeout.
+     *
+     * @param clusterMembers to check
+     * @param nowMs for the current time
+     * @param timeoutMs for the timeout to compare
+     * @return true if quorum of cluster members have not sent appendPositions in the timeout period.
+     */
+    public static boolean hasFollowersTimedout(
+        final ClusterMember[] clusterMembers, final long nowMs, final long timeoutMs)
+    {
+        int threshold = (clusterMembers.length / 2) + 1;
+        boolean result = false;
+
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (nowMs > (member.timeOfLastAppendPositionMs() + timeoutMs))
+            {
+                if (--threshold <= 0)
+                {
+                    result = true;
+                    break;
+                }
+            }
+        }
+
+        return result;
     }
 
     /**

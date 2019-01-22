@@ -16,7 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
-import io.aeron.ChannelUri;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
@@ -125,11 +124,9 @@ class ClusterSession
             throw new ClusterException("response publication already added");
         }
 
-        final ChannelUri channelUri = ChannelUri.parse(responseChannel);
-
         try
         {
-            responsePublication = aeron.addPublication(channelUri.toString(), responseStreamId);
+            responsePublication = aeron.addPublication(responseChannel, responseStreamId);
         }
         catch (final InvalidChannelException ignore)
         {

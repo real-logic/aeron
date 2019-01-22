@@ -32,6 +32,8 @@ def aeronJavaVersion = '1.8'
 
 def agronaVersion = '0.9.30'
 def sbeVersion = '1.11.0'
+def byteBuddyVersion = '1.9.3'
+def hdrHistogramVersion = '2.1.11'
 
 group = aeronGroup
 version = aeronVersion
@@ -302,7 +304,7 @@ project(':aeron-agent') {
     dependencies {
         compile project(':aeron-client')
         compile project(':aeron-driver')
-        compile "net.bytebuddy:byte-buddy:1.9.3"
+        compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     jar {
@@ -612,7 +614,7 @@ project(':aeron-samples') {
         compile project(':aeron-client')
         compile project(':aeron-driver')
         compile project(':aeron-archive')
-        compile 'org.hdrhistogram:HdrHistogram:2.1.11'
+        compile "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
     shadowJar {
@@ -727,8 +729,8 @@ project(':aeron-all') {
         compile project(':aeron-archive')
         compile project(':aeron-cluster')
         compile project(':aeron-samples')
-        compile "net.bytebuddy:byte-buddy:1.9.0"
-        compile 'org.hdrhistogram:HdrHistogram:2.1.10'
+        compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+        compile "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
     javadoc {

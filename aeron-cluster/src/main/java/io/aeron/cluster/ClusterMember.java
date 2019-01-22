@@ -377,7 +377,7 @@ public final class ClusterMember
     }
 
     /**
-     * Time (in msec) of last received appendPosition.
+     * Time (in ms) of last received appendPosition.
      *
      * @param timeMs of the last received appendPosition
      * @return this for a fluent API.
@@ -389,9 +389,9 @@ public final class ClusterMember
     }
 
     /**
-     * Time (in msec) of last received appendPosition.
+     * Time (in ms) of last received appendPosition.
      *
-     * @return time (in msec) of last received appendPosition or {@link Aeron#NULL_VALUE} if none received.
+     * @return time (in ms) of last received appendPosition or {@link Aeron#NULL_VALUE} if none received.
      */
     public long timeOfLastAppendPositionMs()
     {
@@ -651,32 +651,30 @@ public final class ClusterMember
     }
 
     /**
-     * Check if the time of last appendPosition from a quorum of cluster members has exceeded a timeout.
+     * Check if the cluster leader has an active quorum of cluster followers.
      *
-     * @param clusterMembers to check
-     * @param nowMs for the current time
-     * @param timeoutMs for the timeout to compare
-     * @return true if quorum of cluster members have not sent appendPositions in the timeout period.
+     * @param clusterMembers for the current cluster.
+     * @param nowMs          for the current time.
+     * @param timeoutMs      after which a follower is not considered active.
+     * @return true if quorum of cluster members are considered active.
      */
-    public static boolean hasFollowersTimedout(
+    public static boolean hasActiveQuorum(
         final ClusterMember[] clusterMembers, final long nowMs, final long timeoutMs)
     {
-        int threshold = (clusterMembers.length / 2) + 1;
-        boolean result = false;
+        int threshold = quorumThreshold(clusterMembers.length);
 
         for (final ClusterMember member : clusterMembers)
         {
-            if (nowMs > (member.timeOfLastAppendPositionMs() + timeoutMs))
+            if (member.isLeader() || nowMs > (member.timeOfLastAppendPositionMs() + timeoutMs))
             {
                 if (--threshold <= 0)
                 {
-                    result = true;
-                    break;
+                    return true;
                 }
             }
         }
 
-        return result;
+        return false;
     }
 
     /**
@@ -803,7 +801,7 @@ public final class ClusterMember
     /**
      * Has the candidate got unanimous support of the cluster?
      *
-     * @param members  to check for votes.
+     * @param members         to check for votes.
      * @param candidateTermId for the vote.
      * @return false if any member has not voted for the candidate.
      */
@@ -827,7 +825,7 @@ public final class ClusterMember
     /**
      * Has sufficient votes being counted for a majority for all members observed during {@link Election.State#CANVASS}?
      *
-     * @param members  to check for votes.
+     * @param members         to check for votes.
      * @param candidateTermId for the vote.
      * @return false if any member has not voted for the candidate.
      */
@@ -889,14 +887,14 @@ public final class ClusterMember
         {
             throw new ClusterException(
                 "archive control request endpoint must match cluster member configuration: " + archiveEndpoint +
-                " != " + member.archiveEndpoint);
+                    " != " + member.archiveEndpoint);
         }
     }
 
     /**
      * Check the member with the memberEndpoints
      *
-     * @param member    to check memberEndpoints against
+     * @param member          to check memberEndpoints against
      * @param memberEndpoints to check member against
      * @see ConsensusModule.Context#memberEndpoints()
      * @see ConsensusModule.Context#clusterMembers()
@@ -909,7 +907,7 @@ public final class ClusterMember
         {
             throw new ClusterException(
                 "clusterMembers and memberEndpoints differ on endpoints: " +
-                member.endpointsDetail() + " != " + memberEndpoints);
+                    member.endpointsDetail() + " != " + memberEndpoints);
         }
     }
 
@@ -981,7 +979,7 @@ public final class ClusterMember
      * @param rhsLogLeadershipTermId term for which the position is most recent.
      * @param rhsLogPosition         reached in the provided term.
      * @return positive if lhs has the more recent log, zero if logs are equal, and negative if rhs has the more
-     *         recent log.
+     * recent log.
      */
     public static int compareLog(
         final long lhsLogLeadershipTermId,
@@ -1016,7 +1014,7 @@ public final class ClusterMember
      * @param lhs member to compare.
      * @param rhs member to compare.
      * @return positive if lhs has the more recent log, zero if logs are equal, and negative if rhs has the more
-     *         recent log.
+     * recent log.
      */
     public static int compareLog(final ClusterMember lhs, final ClusterMember rhs)
     {

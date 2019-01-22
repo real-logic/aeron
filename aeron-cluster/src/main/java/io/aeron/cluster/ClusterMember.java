@@ -1139,6 +1139,7 @@ public final class ClusterMember
             ", catchupReplaySessionId=" + catchupReplaySessionId +
             ", correlationId=" + changeCorrelationId +
             ", removalPosition=" + removalPosition +
+            ", timeOfLastAppendPositionMs=" + timeOfLastAppendPositionMs +
             ", clientFacingEndpoint='" + clientFacingEndpoint + '\'' +
             ", memberFacingEndpoint='" + memberFacingEndpoint + '\'' +
             ", logEndpoint='" + logEndpoint + '\'' +

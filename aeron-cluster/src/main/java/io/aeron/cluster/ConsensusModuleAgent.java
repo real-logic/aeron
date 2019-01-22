@@ -2182,7 +2182,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final long appendedPosition = this.appendedPosition.get();
         if (Cluster.Role.LEADER == role)
         {
-            thisMember.logPosition(appendedPosition);
+            thisMember.logPosition(appendedPosition).timeOfLastAppendPositionMs(nowMs);
             final long quorumPosition = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
 
             if (commitPosition.proposeMaxOrdered(Math.min(quorumPosition, appendedPosition)) ||

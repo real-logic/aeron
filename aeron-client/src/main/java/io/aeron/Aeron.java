@@ -649,9 +649,9 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Get the {@link java.time.Clock} used by the client for the epoch time in milliseconds.
+         * Get the {@link EpochClock} used by the client for the epoch time in milliseconds.
          *
-         * @return the {@link java.time.Clock} used by the client for the epoch time in milliseconds.
+         * @return the {@link EpochClock} used by the client for the epoch time in milliseconds.
          */
         public EpochClock epochClock()
         {

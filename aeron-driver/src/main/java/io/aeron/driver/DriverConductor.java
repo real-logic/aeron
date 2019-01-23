@@ -1125,13 +1125,14 @@ public class DriverConductor implements Agent
     {
         if (params.isReplay)
         {
-            final int termCount = params.termId - initialTermId;
-            int activeIndex = indexByTerm(initialTermId, params.termId);
+            final int termId = params.termId;
+            final int termCount = termId - initialTermId;
+            int activeIndex = indexByTerm(initialTermId, termId);
 
-            rawTail(logMetaData, activeIndex, packTail(params.termId, params.termOffset));
+            rawTail(logMetaData, activeIndex, packTail(termId, params.termOffset));
             for (int i = 1; i < PARTITION_COUNT; i++)
             {
-                final int expectedTermId = (initialTermId + i) - PARTITION_COUNT;
+                final int expectedTermId = (termId + i) - PARTITION_COUNT;
                 activeIndex = nextPartitionIndex(activeIndex);
                 initialiseTailWithTermId(logMetaData, activeIndex, expectedTermId);
             }

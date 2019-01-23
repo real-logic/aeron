@@ -152,7 +152,7 @@ public class ClientSession
         {
             try
             {
-                responsePublication = aeron.addExclusivePublication(responseChannel, responseStreamId);
+                responsePublication = aeron.addPublication(responseChannel, responseStreamId);
             }
             catch (final RegistrationException ignore)
             {

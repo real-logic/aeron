@@ -62,6 +62,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private long clusterTimeMs;
     private long cachedTimeMs;
     private long terminationPosition = NULL_POSITION;
+    private long roleChangePosition = NULL_POSITION;
     private int memberId = NULL_VALUE;
     private boolean isServiceActive;
     private BoundedLogAdapter logAdapter;
@@ -149,6 +150,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         if (null != logAdapter)
         {
+            // TODO: limit consumption up to roleChangePosition if set.
             final int polled = logAdapter.poll();
             if (0 == polled)
             {
@@ -314,6 +316,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             logAdapter = null;
         }
 
+        roleChangePosition = NULL_POSITION;
         activeLogEvent = new ActiveLogEvent(
             leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, logStreamId, logChannel);
     }
@@ -321,6 +324,11 @@ class ClusteredServiceAgent implements Agent, Cluster
     public void onServiceTerminationPosition(final long logPosition)
     {
         terminationPosition = logPosition;
+    }
+
+    public void onElectionStartEvent(final long logPosition)
+    {
+        roleChangePosition = logPosition;
     }
 
     void onSessionMessage(
@@ -782,6 +790,11 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             checkForTermination();
         }
+
+        if (NULL_POSITION != roleChangePosition)
+        {
+            checkForRoleChange();
+        }
     }
 
     private void checkForTermination()
@@ -791,6 +804,15 @@ class ClusteredServiceAgent implements Agent, Cluster
             final long logPosition = terminationPosition;
             terminationPosition = NULL_VALUE;
             terminate(logPosition);
+        }
+    }
+
+    private void checkForRoleChange()
+    {
+        if (null != logAdapter && logAdapter.position() >= roleChangePosition)
+        {
+            roleChangePosition = NULL_VALUE;
+            role(Role.get((int)roleCounter.get()));
         }
     }
 

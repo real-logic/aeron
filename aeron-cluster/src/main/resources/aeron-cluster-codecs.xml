@@ -334,6 +334,12 @@
         <field name="logPosition"          id="1" type="int64"/>
     </sbe:message>
 
+    <sbe:message name="ElectionStartEvent"
+                 id="43"
+                 description="Consensus Module instructing a service that an election has been entered at position">
+        <field name="logPosition"          id="1" type="int64"/>
+    </sbe:message>
+
     <!--
         Cluster Consensus Protocol
         ==========================

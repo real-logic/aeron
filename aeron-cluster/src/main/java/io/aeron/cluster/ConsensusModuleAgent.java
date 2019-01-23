@@ -1686,7 +1686,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 if (heartbeat < heartbeatThreshold)
                 {
-                    ctx.errorHandler().onError(new TimeoutException("no heartbeat from service: " + heartbeat));
+                    ctx.countedErrorHandler().onError(new TimeoutException("no heartbeat from service: " + heartbeat));
                     ctx.terminationHook().run();
                 }
             }

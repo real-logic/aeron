@@ -133,7 +133,7 @@ public class ClientSession
     }
 
     /**
-     * Non-blocking publish by gathering buffer vectors into a message. The first vector will be replaced cluster
+     * Non-blocking publish by gathering buffer vectors into a message. The first vector will be replaced by the cluster
      * egress header so must be left unused.
      *
      * @param vectors which make up the message.
@@ -154,8 +154,9 @@ public class ClientSession
             {
                 responsePublication = aeron.addPublication(responseChannel, responseStreamId);
             }
-            catch (final RegistrationException ignore)
+            catch (final RegistrationException ex)
             {
+                cluster.handleError(ex);
             }
         }
     }

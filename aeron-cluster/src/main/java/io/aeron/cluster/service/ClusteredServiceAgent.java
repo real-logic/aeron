@@ -427,6 +427,11 @@ class ClusteredServiceAgent implements Agent, Cluster
             clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this));
     }
 
+    void handleError(final Throwable ex)
+    {
+        ctx.countedErrorHandler().onError(ex);
+    }
+
     private void role(final Role newRole)
     {
         if (newRole != role)
@@ -767,7 +772,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             }
             else
             {
-                ctx.errorHandler().onError(new ClusterException("Consensus Module not connected"));
+                ctx.countedErrorHandler().onError(new ClusterException("Consensus Module not connected"));
                 ctx.terminationHook().run();
             }
 

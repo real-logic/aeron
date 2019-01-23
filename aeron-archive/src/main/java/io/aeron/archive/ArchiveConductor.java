@@ -907,7 +907,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 " image joinPosition " + image.joinPosition() +
                 " not equal to recording stopPosition " + recordingSummary.stopPosition;
 
-            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
 
@@ -917,7 +917,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 " image termBufferLength " + image.termBufferLength() +
                 " not equal to recording termBufferLength " + recordingSummary.termBufferLength;
 
-            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
 
@@ -927,7 +927,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 " image mtuLength " + image.mtuLength() +
                 " not equal to recording mtuLength " + recordingSummary.mtuLength;
 
-            controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+            controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
     }

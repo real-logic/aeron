@@ -31,6 +31,7 @@ public class ArchiveException extends AeronException
     public static final int UNKNOWN_REPLAY = 6;
     public static final int MAX_REPLAYS = 7;
     public static final int MAX_RECORDINGS = 8;
+    public static final int INVALID_EXTENSION = 9;
 
     private final int errorCode;
 

@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Subscription;
+import io.aeron.cluster.codecs.ElectionStartEventDecoder;
 import io.aeron.cluster.codecs.JoinLogDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.ServiceTerminationPositionDecoder;
@@ -33,6 +34,7 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
     private final JoinLogDecoder joinLogDecoder = new JoinLogDecoder();
     private final ServiceTerminationPositionDecoder serviceTerminationPositionDecoder =
         new ServiceTerminationPositionDecoder();
+    private final ElectionStartEventDecoder electionStartEventDecoder = new ElectionStartEventDecoder();
 
     ServiceAdapter(final Subscription subscription, final ClusteredServiceAgent clusteredServiceAgent)
     {
@@ -55,32 +57,45 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int templateId = messageHeaderDecoder.templateId();
-        if (JoinLogDecoder.TEMPLATE_ID == templateId)
-        {
-            joinLogDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
 
-            clusteredServiceAgent.onJoinLog(
-                joinLogDecoder.leadershipTermId(),
-                joinLogDecoder.logPosition(),
-                joinLogDecoder.maxLogPosition(),
-                joinLogDecoder.memberId(),
-                joinLogDecoder.logSessionId(),
-                joinLogDecoder.logStreamId(),
-                joinLogDecoder.logChannel());
-        }
-        else if (ServiceTerminationPositionDecoder.TEMPLATE_ID == templateId)
+        switch (templateId)
         {
-            serviceTerminationPositionDecoder.wrap(
-                buffer,
-                offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                messageHeaderDecoder.blockLength(),
-                messageHeaderDecoder.version());
+            case JoinLogDecoder.TEMPLATE_ID:
+                joinLogDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
 
-            clusteredServiceAgent.onServiceTerminationPosition(serviceTerminationPositionDecoder.logPosition());
+                clusteredServiceAgent.onJoinLog(
+                    joinLogDecoder.leadershipTermId(),
+                    joinLogDecoder.logPosition(),
+                    joinLogDecoder.maxLogPosition(),
+                    joinLogDecoder.memberId(),
+                    joinLogDecoder.logSessionId(),
+                    joinLogDecoder.logStreamId(),
+                    joinLogDecoder.logChannel());
+                break;
+
+            case ServiceTerminationPositionDecoder.TEMPLATE_ID:
+                serviceTerminationPositionDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                clusteredServiceAgent.onServiceTerminationPosition(serviceTerminationPositionDecoder.logPosition());
+                break;
+
+            case ElectionStartEventDecoder.TEMPLATE_ID:
+                electionStartEventDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                clusteredServiceAgent.onElectionStartEvent(electionStartEventDecoder.logPosition());
+                break;
         }
     }
 }

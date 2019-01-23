@@ -1304,16 +1304,6 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Get the {@link CredentialsSupplier} to be used for authentication with the cluster.
-         *
-         * @return the {@link CredentialsSupplier} to be used for authentication with the cluster.
-         */
-        public CredentialsSupplier credentialsSupplier()
-        {
-            return credentialsSupplier;
-        }
-
-        /**
          * Set the {@link CredentialsSupplier} to be used for authentication with the cluster.
          *
          * @param credentialsSupplier to be used for authentication with the cluster.
@@ -1326,13 +1316,13 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Get the {@link ErrorHandler} to be used for handling any exceptions.
+         * Get the {@link CredentialsSupplier} to be used for authentication with the cluster.
          *
-         * @return The {@link ErrorHandler} to be used for handling any exceptions.
+         * @return the {@link CredentialsSupplier} to be used for authentication with the cluster.
          */
-        public ErrorHandler errorHandler()
+        public CredentialsSupplier credentialsSupplier()
         {
-            return errorHandler;
+            return credentialsSupplier;
         }
 
         /**
@@ -1348,7 +1338,17 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Is direct buffers used for fragment assembly on egress.
+         * Get the {@link ErrorHandler} to be used for handling any exceptions.
+         *
+         * @return The {@link ErrorHandler} to be used for handling any exceptions.
+         */
+        public ErrorHandler errorHandler()
+        {
+            return errorHandler;
+        }
+
+        /**
+         * Are direct buffers used for fragment assembly on egress?
          *
          * @param isDirectAssemblers true if direct buffers used for fragment assembly on egress.
          * @return this for a fluent API.
@@ -1360,7 +1360,7 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Is direct buffers used for fragment assembly on egress.
+         * Are direct buffers used for fragment assembly on egress?
          *
          * @return true if direct buffers used for fragment assembly on egress.
          */
@@ -1370,19 +1370,7 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Get the {@link EgressListener} function that will be called when polling for egress via
-         * {@link AeronCluster#pollEgress()}.
-         *
-         * @return the {@link EgressListener} function that will be called when polling for egress via
-         * {@link AeronCluster#pollEgress()}.
-         */
-        public EgressListener egressListener()
-        {
-            return egressListener;
-        }
-
-        /**
-         * Get the {@link EgressListener} function that will be called when polling for egress via
+         * Set the {@link EgressListener} function that will be called when polling for egress via
          * {@link AeronCluster#pollEgress()}.
          *
          * Only {@link EgressListener#onMessage(long, long, DirectBuffer, int, int, Header)} will be dispatched
@@ -1398,19 +1386,19 @@ public final class AeronCluster implements AutoCloseable
         }
 
         /**
-         * Get the {@link ControlledEgressListener} function that will be called when polling for egress via
-         * {@link AeronCluster#controlledPollEgress()}.
+         * Get the {@link EgressListener} function that will be called when polling for egress via
+         * {@link AeronCluster#pollEgress()}.
          *
-         * @return the {@link ControlledEgressListener} function that will be called when polling for egress via
-         * {@link AeronCluster#controlledPollEgress()}.
+         * @return the {@link EgressListener} function that will be called when polling for egress via
+         * {@link AeronCluster#pollEgress()}.
          */
-        public ControlledEgressListener controlledEgressListener()
+        public EgressListener egressListener()
         {
-            return controlledEgressListener;
+            return egressListener;
         }
 
         /**
-         * Get the {@link ControlledEgressListener} function that will be called when polling for egress via
+         * Set the {@link ControlledEgressListener} function that will be called when polling for egress via
          * {@link AeronCluster#controlledPollEgress()}.
          *
          * Only {@link ControlledEgressListener#onMessage(long, long, DirectBuffer, int, int, Header)} will be
@@ -1424,6 +1412,18 @@ public final class AeronCluster implements AutoCloseable
         {
             this.controlledEgressListener = listener;
             return this;
+        }
+
+        /**
+         * Get the {@link ControlledEgressListener} function that will be called when polling for egress via
+         * {@link AeronCluster#controlledPollEgress()}.
+         *
+         * @return the {@link ControlledEgressListener} function that will be called when polling for egress via
+         * {@link AeronCluster#controlledPollEgress()}.
+         */
+        public ControlledEgressListener controlledEgressListener()
+        {
+            return controlledEgressListener;
         }
 
         /**

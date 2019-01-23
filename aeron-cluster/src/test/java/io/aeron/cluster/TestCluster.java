@@ -20,7 +20,6 @@ import io.aeron.Counter;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
-import io.aeron.cluster.service.Cluster;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
@@ -331,22 +330,21 @@ public class TestCluster implements AutoCloseable
 
     TestNode findLeader(final int skipIndex)
     {
-        TestNode leaderNode = null;
-
         for (int i = 0; i < staticMemberCount; i++)
         {
-            if (i == skipIndex || null == nodes[i] || nodes[i].isClosed())
+            final TestNode node = nodes[i];
+            if (i == skipIndex || null == node || node.isClosed())
             {
                 continue;
             }
 
-            if (Cluster.Role.LEADER == nodes[i].role())
+            if (node.isLeader() && null == node.electionState())
             {
-                leaderNode = nodes[i];
+                return node;
             }
         }
 
-        return leaderNode;
+        return null;
     }
 
     TestNode findLeader()

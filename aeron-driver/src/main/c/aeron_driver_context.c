@@ -48,9 +48,9 @@
 #include "aeron_agent.h"
 #include "concurrent/aeron_counters_manager.h"
 
-#if defined(__GNUG__) && !defined(__clang__)
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wpedantic"
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wunused-function"
 #endif
 
 inline static const char *tmp_dir()
@@ -85,8 +85,8 @@ inline static bool has_file_separator_at_end(const char *path)
 #endif
 }
 
-#if defined(__GNUG__) && !defined(__clang__)
-    #pragma GCC diagnostic pop
+#if defined(__clang__)
+    #pragma clang diagnostic pop
 #endif
 
 inline static const char *username()

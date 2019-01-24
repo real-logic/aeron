@@ -31,6 +31,7 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
 /**
@@ -333,9 +334,14 @@ public class FlowControlStrategiesTest
         {
             if (numMessagesLeftToSend > 0)
             {
-                if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
+                final long result = publication.offer(buffer, 0, buffer.capacity());
+                if (result >= 0L)
                 {
                     numMessagesLeftToSend--;
+                }
+                else if (Publication.NOT_CONNECTED == result)
+                {
+                    fail("Publication not connected");
                 }
             }
 
@@ -343,12 +349,23 @@ public class FlowControlStrategiesTest
             Thread.yield();
 
             // A keeps up
-            numFragmentsFromA += subscriptionA.poll(fragmentHandlerA, 10);
+            final int aFragments = subscriptionA.poll(fragmentHandlerA, 10);
+            if (0 == aFragments && !subscriptionA.isConnected())
+            {
+                fail("Subscription A not connected");
+            }
+            numFragmentsFromA += aFragments;
 
             // B receives slowly
             if ((i % 2) == 0)
             {
-                numFragmentsFromB += subscriptionB.poll(fragmentHandlerB, 1);
+                final int bFragments = subscriptionB.poll(fragmentHandlerB, 1);
+                if (0 == bFragments && !subscriptionB.isConnected())
+                {
+                    fail("Subscription B not connected");
+                }
+
+                numFragmentsFromB += bFragments;
             }
         }
 

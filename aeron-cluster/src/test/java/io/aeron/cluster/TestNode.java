@@ -199,6 +199,7 @@ class TestNode implements AutoCloseable
         private volatile int messageCount;
         private volatile boolean wasSnapshotTaken = false;
         private volatile boolean wasSnapshotLoaded = false;
+        private volatile Cluster.Role roleChangedTo = null;
         private final int index;
 
         TestService(final int index)
@@ -224,6 +225,11 @@ class TestNode implements AutoCloseable
         boolean wasSnapshotLoaded()
         {
             return wasSnapshotLoaded;
+        }
+
+        Cluster.Role roleChangedTo()
+        {
+            return roleChangedTo;
         }
 
         public void onSessionMessage(
@@ -271,6 +277,11 @@ class TestNode implements AutoCloseable
             }
 
             wasSnapshotLoaded = true;
+        }
+
+        public void onRoleChange(final Cluster.Role newRole)
+        {
+            roleChangedTo = newRole;
         }
     }
 

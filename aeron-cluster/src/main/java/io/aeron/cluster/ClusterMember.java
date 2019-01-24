@@ -665,7 +665,7 @@ public final class ClusterMember
 
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.isLeader() || nowMs > (member.timeOfLastAppendPositionMs() + timeoutMs))
+            if (member.isLeader() || nowMs <= (member.timeOfLastAppendPositionMs() + timeoutMs))
             {
                 if (--threshold <= 0)
                 {

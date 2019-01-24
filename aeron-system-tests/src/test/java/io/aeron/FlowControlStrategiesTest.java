@@ -86,8 +86,15 @@ public class FlowControlStrategiesTest
 
         driverA = MediaDriver.launch(driverAContext);
         driverB = MediaDriver.launch(driverBContext);
-        clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverAContext.aeronDirectoryName()));
-        clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
+        clientA = Aeron.connect(
+            new Aeron.Context()
+                .errorHandler(Throwable::printStackTrace)
+                .aeronDirectoryName(driverAContext.aeronDirectoryName()));
+
+        clientB = Aeron.connect(
+            new Aeron.Context()
+                .errorHandler(Throwable::printStackTrace)
+                .aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }
 
     @After
@@ -352,6 +359,11 @@ public class FlowControlStrategiesTest
             final int aFragments = subscriptionA.poll(fragmentHandlerA, 10);
             if (0 == aFragments && !subscriptionA.isConnected())
             {
+                if (subscriptionA.isClosed())
+                {
+                    fail("Subscription A is closed");
+                }
+
                 fail("Subscription A not connected");
             }
             numFragmentsFromA += aFragments;
@@ -362,6 +374,11 @@ public class FlowControlStrategiesTest
                 final int bFragments = subscriptionB.poll(fragmentHandlerB, 1);
                 if (0 == bFragments && !subscriptionB.isConnected())
                 {
+                    if (subscriptionB.isClosed())
+                    {
+                        fail("Subscription B is closed");
+                    }
+
                     fail("Subscription B not connected");
                 }
 

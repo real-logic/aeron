@@ -356,17 +356,20 @@ public class FlowControlStrategiesTest
             Thread.yield();
 
             // A keeps up
-            final int aFragments = subscriptionA.poll(fragmentHandlerA, 10);
-            if (0 == aFragments && !subscriptionA.isConnected())
+            if (numFragmentsFromA < numMessagesToSend)
             {
-                if (subscriptionA.isClosed())
+                final int aFragments = subscriptionA.poll(fragmentHandlerA, 10);
+                if (0 == aFragments && !subscriptionA.isConnected())
                 {
-                    fail("Subscription A is closed");
-                }
+                    if (subscriptionA.isClosed())
+                    {
+                        fail("Subscription A is closed");
+                    }
 
-                fail("Subscription A not connected");
+                    fail("Subscription A not connected");
+                }
+                numFragmentsFromA += aFragments;
             }
-            numFragmentsFromA += aFragments;
 
             // B receives slowly
             if ((i % 2) == 0)

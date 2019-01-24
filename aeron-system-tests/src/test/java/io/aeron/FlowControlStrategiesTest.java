@@ -25,7 +25,6 @@ import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -318,7 +317,6 @@ public class FlowControlStrategiesTest
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
-        int numFragmentsFromA = 0;
         int numFragmentsFromB = 0;
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
@@ -338,7 +336,7 @@ public class FlowControlStrategiesTest
             Thread.yield();
         }
 
-        for (long i = 0; numFragmentsFromB < numMessagesToSend || numFragmentsFromA < numMessagesToSend; i++)
+        for (long i = 0; numFragmentsFromB < numMessagesToSend; i++)
         {
             if (numMessagesLeftToSend > 0)
             {
@@ -357,20 +355,7 @@ public class FlowControlStrategiesTest
             Thread.yield();
 
             // A keeps up
-            if (numFragmentsFromA < numMessagesToSend)
-            {
-                final int aFragments = subscriptionA.poll(fragmentHandlerA, 10);
-                if (0 == aFragments && !subscriptionA.isConnected())
-                {
-                    if (subscriptionA.isClosed())
-                    {
-                        fail("Subscription A is closed");
-                    }
-
-                    fail("Subscription A not connected");
-                }
-                numFragmentsFromA += aFragments;
-            }
+            subscriptionA.poll(fragmentHandlerA, 10);
 
             // B receives slowly
             if ((i % 2) == 0)
@@ -397,67 +382,6 @@ public class FlowControlStrategiesTest
             any(Header.class));
 
         verify(fragmentHandlerB, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-    }
-
-    @Ignore
-    @Test(timeout = 10_000)
-    public void shouldKeepUpToFastPreferredWithPreferredMulticastFlowControlStrategy()
-    {
-        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
-        int numMessagesLeftToSend = numMessagesToSend;
-        int numFragmentsFromA = 0;
-
-        driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-        driverAContext.multicastFlowControlSupplier(
-            (udpChannel, streamId, registrationId) -> new PreferredMulticastFlowControl());
-        driverAContext.applicationSpecificFeedback(PreferredMulticastFlowControl.PREFERRED_ASF_BYTES);
-
-        launch();
-
-        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
-
-        while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
-        {
-            SystemTest.checkInterruptedStatus();
-            Thread.yield();
-        }
-
-        for (long i = 0; numFragmentsFromA < numMessagesToSend; i++)
-        {
-            if (numMessagesLeftToSend > 0)
-            {
-                if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
-                {
-                    numMessagesLeftToSend--;
-                }
-            }
-
-            SystemTest.checkInterruptedStatus();
-            Thread.yield();
-
-            // A keeps up
-            numFragmentsFromA += subscriptionA.poll(fragmentHandlerA, 10);
-
-            // B receives slowly
-            if ((i % 2) == 0)
-            {
-                subscriptionB.poll(fragmentHandlerB, 1);
-            }
-        }
-
-        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
-        verify(fragmentHandlerB, atMost(numMessagesToSend)).onFragment(
             any(DirectBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),

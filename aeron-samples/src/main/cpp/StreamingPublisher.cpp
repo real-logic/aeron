@@ -31,9 +31,9 @@
 using namespace aeron::util;
 using namespace aeron;
 
-std::atomic<bool> running (true);
+std::atomic<bool> running(true);
 
-void sigIntHandler (int param)
+void sigIntHandler(int param)
 {
     running = false;
 }
@@ -121,15 +121,15 @@ on_new_length_t composeLengthGenerator(bool random, int max)
 int main(int argc, char **argv)
 {
     CommandOptionParser cp;
-    cp.addOption(CommandOption (optHelp,     0, 0, "                Displays help information."));
-    cp.addOption(CommandOption (optRandLen,  0, 0, "                Random Message Length."));
-    cp.addOption(CommandOption (optProgress, 0, 0, "                Print rate progress while sending."));
-    cp.addOption(CommandOption (optPrefix,   1, 1, "dir             Prefix directory for aeron driver."));
-    cp.addOption(CommandOption (optChannel,  1, 1, "channel         Channel."));
-    cp.addOption(CommandOption (optStreamId, 1, 1, "streamId        Stream ID."));
-    cp.addOption(CommandOption (optMessages, 1, 1, "number          Number of Messages."));
-    cp.addOption(CommandOption (optLength,   1, 1, "length          Length of Messages."));
-    cp.addOption(CommandOption (optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
+    cp.addOption(CommandOption(optHelp,     0, 0, "                Displays help information."));
+    cp.addOption(CommandOption(optRandLen,  0, 0, "                Random Message Length."));
+    cp.addOption(CommandOption(optProgress, 0, 0, "                Print rate progress while sending."));
+    cp.addOption(CommandOption(optPrefix,   1, 1, "dir             Prefix directory for aeron driver."));
+    cp.addOption(CommandOption(optChannel,  1, 1, "channel         Channel."));
+    cp.addOption(CommandOption(optStreamId, 1, 1, "streamId        Stream ID."));
+    cp.addOption(CommandOption(optMessages, 1, 1, "number          Number of Messages."));
+    cp.addOption(CommandOption(optLength,   1, 1, "length          Length of Messages."));
+    cp.addOption(CommandOption(optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
 
     signal (SIGINT, sigIntHandler);
 
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 
         aeron::Context context;
 
-        if (settings.dirPrefix != "")
+        if (!settings.dirPrefix.empty())
         {
             context.aeronDir(settings.dirPrefix);
         }
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
         }
 
         std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[settings.messageLength]);
-        concurrent::AtomicBuffer srcBuffer(buffer.get(), settings.messageLength);
+        concurrent::AtomicBuffer srcBuffer(buffer.get(), static_cast<size_t>(settings.messageLength));
         BusySpinIdleStrategy offerIdleStrategy;
         on_new_length_t lengthGenerator = composeLengthGenerator(settings.randomMessageLength, settings.messageLength);
         RateReporter rateReporter(std::chrono::seconds(1), printRate);

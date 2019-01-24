@@ -35,8 +35,8 @@ using namespace aeron::concurrent;
 using namespace aeron::concurrent::errors;
 using namespace std::chrono;
 
-static const char optHelp   = 'h';
-static const char optPath   = 'p';
+static const char optHelp = 'h';
+static const char optPath = 'p';
 
 struct Settings
 {
@@ -82,15 +82,15 @@ std::string formatDate(std::int64_t millisecondsSinceEpoch)
 int main (int argc, char** argv)
 {
     CommandOptionParser cp;
-    cp.addOption(CommandOption (optHelp,   0, 0, "                Displays help information."));
-    cp.addOption(CommandOption (optPath,   1, 1, "basePath        Base Path to shared memory. Default: " + Context::defaultAeronPath()));
+    cp.addOption(CommandOption(optHelp,   0, 0, "                Displays help information."));
+    cp.addOption(CommandOption(optPath,   1, 1, "basePath        Base Path to shared memory. Default: " + Context::defaultAeronPath()));
 
     try
     {
         Settings settings = parseCmdLine(cp, argc, argv);
 
-        MemoryMappedFile::ptr_t cncFile =
-            MemoryMappedFile::mapExisting((settings.basePath + "/" + CncFileDescriptor::CNC_FILE).c_str());
+        MemoryMappedFile::ptr_t cncFile = MemoryMappedFile::mapExisting(
+            (settings.basePath + "/" + CncFileDescriptor::CNC_FILE).c_str());
 
         const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
 

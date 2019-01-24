@@ -37,9 +37,9 @@ using namespace std::chrono;
 using namespace aeron::util;
 using namespace aeron;
 
-std::atomic<bool> running (true);
+std::atomic<bool> running(true);
 
-void sigIntHandler (int param)
+void sigIntHandler(int param)
 {
     running = false;
 }
@@ -98,7 +98,7 @@ void sendPingAndReceivePong(
     const Settings& settings)
 {
     std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[settings.messageLength]);
-    concurrent::AtomicBuffer srcBuffer(buffer.get(), settings.messageLength);
+    concurrent::AtomicBuffer srcBuffer(buffer.get(), static_cast<size_t>(settings.messageLength));
     BusySpinIdleStrategy idleStrategy;
 
     while (0 == subscription.imageCount())
@@ -161,16 +161,16 @@ std::shared_ptr<Publication> findPublication(std::shared_ptr<Aeron> aeron, std::
 int main(int argc, char **argv)
 {
     CommandOptionParser cp;
-    cp.addOption(CommandOption (optHelp,          0, 0, "                Displays help information."));
-    cp.addOption(CommandOption (optPrefix,        1, 1, "dir             Prefix directory for aeron driver."));
-    cp.addOption(CommandOption (optPingChannel,   1, 1, "channel         Ping Channel."));
-    cp.addOption(CommandOption (optPongChannel,   1, 1, "channel         Pong Channel."));
-    cp.addOption(CommandOption (optPingStreamId,  1, 1, "streamId        Ping Stream ID."));
-    cp.addOption(CommandOption (optPongStreamId,  1, 1, "streamId        Pong Stream ID."));
-    cp.addOption(CommandOption (optMessages,      1, 1, "number          Number of Messages."));
-    cp.addOption(CommandOption (optLength,        1, 1, "length          Length of Messages."));
-    cp.addOption(CommandOption (optFrags,         1, 1, "limit           Fragment Count Limit."));
-    cp.addOption(CommandOption (optWarmupMessages,1, 1, "number          Number of Messages for warmup."));
+    cp.addOption(CommandOption(optHelp,           0, 0, "                Displays help information."));
+    cp.addOption(CommandOption(optPrefix,         1, 1, "dir             Prefix directory for aeron driver."));
+    cp.addOption(CommandOption(optPingChannel,    1, 1, "channel         Ping Channel."));
+    cp.addOption(CommandOption(optPongChannel,    1, 1, "channel         Pong Channel."));
+    cp.addOption(CommandOption(optPingStreamId,   1, 1, "streamId        Ping Stream ID."));
+    cp.addOption(CommandOption(optPongStreamId,   1, 1, "streamId        Pong Stream ID."));
+    cp.addOption(CommandOption(optMessages,       1, 1, "number          Number of Messages."));
+    cp.addOption(CommandOption(optLength,         1, 1, "length          Length of Messages."));
+    cp.addOption(CommandOption(optFrags,          1, 1, "limit           Fragment Count Limit."));
+    cp.addOption(CommandOption(optWarmupMessages, 1, 1, "number          Number of Messages for warmup."));
 
     signal (SIGINT, sigIntHandler);
 
@@ -185,7 +185,7 @@ int main(int argc, char **argv)
         std::atomic<int> countDown(1);
         std::int64_t pongSubscriptionId, pingPublicationId, pingSubscriptionId, pongPublicationId;
 
-        if (settings.dirPrefix != "")
+        if (!settings.dirPrefix.empty())
         {
             context.aeronDir(settings.dirPrefix);
         }
@@ -331,6 +331,7 @@ int main(int argc, char **argv)
                 << " RTTs/sec" << std::endl;
         }
         while (running && continuationBarrier("Execute again?"));
+
         running = false;
 
         pongThread.join();

@@ -422,7 +422,7 @@ public class ClusterTest
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
-            Thread.sleep(10_000);
+            Thread.sleep(5_000);
 
             followerA = cluster.startStaticNode(followerA.index(), true);
             followerB = cluster.startStaticNode(followerB.index(), true);
@@ -456,6 +456,56 @@ public class ClusterTest
 
             assertThat(countersOfType(followerA.countersReader(), COMMIT_POSITION_TYPE_ID), is(1));
             assertThat(countersOfType(followerB.countersReader(), COMMIT_POSITION_TYPE_ID), is(1));
+        }
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldCallOnROleChangeOnBecomingLeader() throws Exception
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            TestNode leader = cluster.awaitLeader();
+
+            List<TestNode> followers = cluster.followers();
+            final TestNode followerA = followers.get(0), followerB = followers.get(1);
+
+            assertThat(leader.service().roleChangedTo(), is(Cluster.Role.LEADER));
+            assertThat(followerA.service().roleChangedTo(), is((Cluster.Role)null));
+            assertThat(followerB.service().roleChangedTo(), is((Cluster.Role)null));
+
+            cluster.stopNode(leader);
+
+            leader = cluster.awaitLeader(leader.index());
+            followers = cluster.followers();
+            final TestNode follower = followers.get(0);
+
+            assertThat(leader.service().roleChangedTo(), is(Cluster.Role.LEADER));
+            assertThat(follower.service().roleChangedTo(), is((Cluster.Role)null));
+        }
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldLooseLeadershipWhenNoActiveQuorumOfFollowers() throws Exception
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leader = cluster.awaitLeader();
+
+            final List<TestNode> followers = cluster.followers();
+            final TestNode followerA = followers.get(0), followerB = followers.get(1);
+
+            assertThat(leader.service().roleChangedTo(), is(Cluster.Role.LEADER));
+
+            cluster.stopNode(followerA);
+            cluster.stopNode(followerB);
+
+            while (leader.service().roleChangedTo() == Cluster.Role.LEADER)
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            assertThat(leader.service().roleChangedTo(), is(Cluster.Role.FOLLOWER));
         }
     }
 

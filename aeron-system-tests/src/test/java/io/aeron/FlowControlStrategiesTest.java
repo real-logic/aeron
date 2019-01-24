@@ -304,8 +304,8 @@ public class FlowControlStrategiesTest
             any(Header.class));
     }
 
-    @Test(timeout = 10_000)
-    public void shouldSlowDownToSlowPreferredWithPreferredMulticastFlowControlStrategy()
+    @Test(timeout = 15_000)
+    public void shouldSlowToPreferredWithMulticastFlowControlStrategy()
     {
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;

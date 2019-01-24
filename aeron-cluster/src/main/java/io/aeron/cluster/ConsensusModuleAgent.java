@@ -771,6 +771,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
+            if (session.isResponsePublicationConnected())
+            {
+                egressPublisher.sendEvent(
+                    session, leadershipTermId, leaderMember.id(), EventCode.ERROR, SESSION_TERMINATED_MSG);
+            }
+
             session.close(CloseReason.SERVICE_ACTION);
 
             if (Cluster.Role.LEADER == role &&
@@ -1609,6 +1615,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 workCount += processPendingSessions(pendingSessions, nowMs);
                 workCount += checkSessions(sessionByIdMap, nowMs);
                 workCount += processPassiveMembers(passiveMembers);
+
+                if (!ClusterMember.hasActiveQuorum(clusterMembers, nowMs, leaderHeartbeatTimeoutMs))
+                {
+                    enterElection(nowMs);
+                    workCount += 1;
+                }
             }
             else if (ConsensusModule.State.TERMINATING == state)
             {
@@ -2251,6 +2263,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             this);
 
         election.doWork(nowMs);
+
+        serviceProxy.electionStartEvent(commitPosition.getWeak());
     }
 
     private void idle()

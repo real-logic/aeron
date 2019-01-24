@@ -48,10 +48,14 @@
 #include "aeron_agent.h"
 #include "concurrent/aeron_counters_manager.h"
 
+#if defined(__GNUG__) && !defined(__clang__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-function"
+#endif
 inline static const char *tmp_dir()
 {
 #if defined(_MSC_VER)
-    static char buff[MAX_PATH+1];
+    static char buff[MAX_PATH + 1];
 
     if (GetTempPath(MAX_PATH, &buff[0]) > 0)
     {
@@ -70,15 +74,16 @@ inline static const char *tmp_dir()
     return dir;
 #endif
 }
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
+#if defined(_MSC_VER)
 inline static bool has_file_separator_at_end(const char *path)
 {
-#if defined(_MSC_VER)
     return path[strlen(path) - 1] == '\\';
-#else
-    return path[strlen(path) - 1] == '/';
-#endif
 }
+#endif
 
 inline static const char *username()
 {

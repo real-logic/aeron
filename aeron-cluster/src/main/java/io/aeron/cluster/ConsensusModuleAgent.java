@@ -771,6 +771,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
         if (null != session)
         {
+            if (session.isResponsePublicationConnected())
+            {
+                egressPublisher.sendEvent(
+                    session, leadershipTermId, leaderMember.id(), EventCode.ERROR, SESSION_TERMINATED_MSG);
+            }
+
             session.close(CloseReason.SERVICE_ACTION);
 
             if (Cluster.Role.LEADER == role &&

@@ -31,14 +31,14 @@ import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ClusterControl.ToggleState.*;
-import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_LIMIT_MSG;
-import static io.aeron.cluster.ConsensusModule.Configuration.SESSION_TIMEOUT_MSG;
+import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static java.lang.Boolean.TRUE;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -152,6 +152,40 @@ public class ConsensusModuleAgentTest
         verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), anyLong(), eq(timeoutMs));
         verify(mockEgressPublisher).sendEvent(
             any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.ERROR), eq(SESSION_TIMEOUT_MSG));
+    }
+
+    @Test
+    public void shouldCloseTerminatedSession()
+    {
+        final CachedEpochClock clock = new CachedEpochClock();
+        final long startMs = 7L;
+        clock.update(startMs);
+
+        ctx.epochClock(clock);
+
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
+
+        final long correlationId = 1L;
+        agent.state(ConsensusModule.State.ACTIVE);
+        agent.role(Cluster.Role.LEADER);
+        agent.appendedPositionCounter(mock(ReadableCounter.class));
+        agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
+
+        agent.doWork();
+
+        final ArgumentCaptor<ClusterSession> sessionCaptor = ArgumentCaptor.forClass(ClusterSession.class);
+
+        verify(mockLogPublisher).appendSessionOpen(sessionCaptor.capture(), anyLong(), eq(startMs));
+
+        final long timeMs = startMs + 1;
+        clock.update(timeMs);
+        agent.doWork();
+
+        agent.onServiceCloseSession(sessionCaptor.getValue().id());
+
+        verify(mockLogPublisher).appendSessionClose(any(ClusterSession.class), anyLong(), eq(timeMs));
+        verify(mockEgressPublisher).sendEvent(
+            any(ClusterSession.class), anyLong(), anyInt(), eq(EventCode.ERROR), eq(SESSION_TERMINATED_MSG));
     }
 
     @Test

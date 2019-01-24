@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
@@ -162,9 +163,11 @@ public interface Cluster
      * If the correlationId is for an existing scheduled timer then it will be reschedule to the new deadline.
      * <p>
      * Timers should only be scheduled or cancelled in the context of processing a
-     * {@link ClusteredService#onSessionMessage(ClientSession, long, DirectBuffer, int, int, Header)} or
-     * {@link ClusteredService#onTimerEvent(long, long)}. If applied to other events then they are not guaranteed
-     * to be reliable.
+     * {@link ClusteredService#onSessionMessage(ClientSession, long, DirectBuffer, int, int, Header)},
+     * {@link ClusteredService#onTimerEvent(long, long)},
+     * {@link ClusteredService#onSessionOpen(ClientSession, long)}, or
+     * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
+     * If applied to other events then they are not guaranteed to be reliable.
      *
      * @param correlationId to identify the timer when it expires.
      * @param deadlineMs Epoch time in milliseconds after which the timer will fire.
@@ -177,9 +180,11 @@ public interface Cluster
      * Cancel a previous scheduled timer.
      * <p>
      * Timers should only be scheduled or cancelled in the context of processing a
-     * {@link ClusteredService#onSessionMessage(ClientSession, long, DirectBuffer, int, int, Header)} or
-     * {@link ClusteredService#onTimerEvent(long, long)}. If applied to other events then they are not guaranteed
-     * to be reliable.
+     * {@link ClusteredService#onSessionMessage(ClientSession, long, DirectBuffer, int, int, Header)},
+     * {@link ClusteredService#onTimerEvent(long, long)},
+     * {@link ClusteredService#onSessionOpen(ClientSession, long)}, or
+     * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
+     * If applied to other events then they are not guaranteed to be reliable.
      *
      * @param correlationId for the timer provided when it was scheduled.
      * @return true if the event to cancel a scheduled timer has been sent or false if back pressure is applied.

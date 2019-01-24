@@ -23,14 +23,14 @@ ClientConductor::~ClientConductor()
     std::vector<std::shared_ptr<Subscription>> subscriptions;
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
-        [&subscriptions](SubscriptionStateDefn& entry)
+        [&subscriptions](SubscriptionStateDefn &entry)
         {
             subscriptions.push_back(entry.m_subscriptionCache);
             entry.m_subscriptionCache.reset();
         });
 
     std::for_each(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
-        [](ImageListLingerDefn & entry)
+        [](ImageListLingerDefn &entry)
         {
             delete[] entry.m_imageList->m_images;
             delete entry.m_imageList;
@@ -84,7 +84,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
         return std::shared_ptr<Publication>();
     }
 
-    PublicationStateDefn& state = (*it);
+    PublicationStateDefn &state = (*it);
     std::shared_ptr<Publication> pub(state.m_publication.lock());
 
     if (!pub)
@@ -95,7 +95,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
                 if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
                 {
                     throw DriverTimeoutException(
-                        "no response from driver in " + std::to_string(m_driverTimeoutMs) +" ms", SOURCEINFO);
+                        "no response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
                 }
                 break;
 
@@ -104,8 +104,15 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
                 UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_publicationLimitCounterId);
 
                 pub = std::make_shared<Publication>(
-                    *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId,
-                    state.m_streamId, state.m_sessionId, publicationLimit, state.m_channelStatusId, state.m_buffers);
+                    *this,
+                    state.m_channel,
+                    state.m_registrationId,
+                    state.m_originalRegistrationId,
+                    state.m_streamId,
+                    state.m_sessionId,
+                    publicationLimit,
+                    state.m_channelStatusId,
+                    state.m_buffers);
 
                 state.m_publication = std::weak_ptr<Publication>(pub);
                 break;
@@ -138,7 +145,7 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
     }
 }
 
-std::int64_t ClientConductor::addExclusivePublication(const std::string& channel, std::int32_t streamId)
+std::int64_t ClientConductor::addExclusivePublication(const std::string &channel, std::int32_t streamId)
 {
     verifyDriverIsActive();
     ensureOpen();
@@ -166,7 +173,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
         return std::shared_ptr<ExclusivePublication>();
     }
 
-    ExclusivePublicationStateDefn& state = (*it);
+    ExclusivePublicationStateDefn &state = (*it);
     std::shared_ptr<ExclusivePublication> pub(state.m_publication.lock());
 
     if (!pub)
@@ -254,7 +261,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
         return std::shared_ptr<Subscription>();
     }
 
-    SubscriptionStateDefn& state = *it;
+    SubscriptionStateDefn &state = *it;
     std::shared_ptr<Subscription> sub = state.m_subscription.lock();
 
     // now remove the cached value
@@ -268,7 +275,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
         if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
         {
             throw DriverTimeoutException(
-                "no response from driver in " +  std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
+                "no response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
         }
     }
     else if (!sub && RegistrationStatus::ERRORED_MEDIA_DRIVER == state.m_status)
@@ -312,7 +319,7 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
 }
 
 std::int64_t ClientConductor::addCounter(
-    std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, const std::string& label)
+    std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, const std::string &label)
 {
     verifyDriverIsActive();
     ensureOpen();
@@ -353,7 +360,7 @@ std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationI
         return std::shared_ptr<Counter>();
     }
 
-    CounterStateDefn& state = *it;
+    CounterStateDefn &state = *it;
     std::shared_ptr<Counter> counter = state.m_counter.lock();
 
     if (state.m_counterCache)
@@ -399,7 +406,7 @@ void ClientConductor::releaseCounter(std::int64_t registrationId)
     }
 }
 
-void ClientConductor::addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel)
+void ClientConductor::addDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel)
 {
     verifyDriverIsActive();
     ensureOpen();
@@ -407,7 +414,7 @@ void ClientConductor::addDestination(std::int64_t publicationRegistrationId, con
     m_driverProxy.addDestination(publicationRegistrationId, endpointChannel);
 }
 
-void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel)
+void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel)
 {
     verifyDriverIsActive();
     ensureOpen();
@@ -415,7 +422,7 @@ void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, 
     m_driverProxy.removeDestination(publicationRegistrationId, endpointChannel);
 }
 
-void ClientConductor::addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel)
+void ClientConductor::addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel)
 {
     verifyDriverIsActive();
     ensureOpen();
@@ -423,7 +430,7 @@ void ClientConductor::addRcvDestination(std::int64_t subscriptionRegistrationId,
     m_driverProxy.addRcvDestination(subscriptionRegistrationId, endpointChannel);
 }
 
-void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel)
+void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel)
 {
     verifyDriverIsActive();
     ensureOpen();
@@ -450,7 +457,7 @@ void ClientConductor::onNewPublication(
 
     if (it != m_publications.end())
     {
-        PublicationStateDefn& state = (*it);
+        PublicationStateDefn &state = (*it);
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
@@ -482,7 +489,7 @@ void ClientConductor::onNewExclusivePublication(
 
     if (it != m_exclusivePublications.end())
     {
-        ExclusivePublicationStateDefn& state = (*it);
+        ExclusivePublicationStateDefn &state = (*it);
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
@@ -509,7 +516,7 @@ void ClientConductor::onSubscriptionReady(
 
     if (subIt != m_subscriptions.end() && (*subIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
     {
-        SubscriptionStateDefn& state = (*subIt);
+        SubscriptionStateDefn &state = (*subIt);
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_subscriptionCache = std::make_shared<Subscription>(
@@ -534,7 +541,7 @@ void ClientConductor::onAvailableCounter(
 
     if (counterIt != m_counters.end() && (*counterIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
     {
-        CounterStateDefn& state = (*counterIt);
+        CounterStateDefn &state = (*counterIt);
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_counterId = counterId;
@@ -562,7 +569,7 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 void ClientConductor::onErrorResponse(
     std::int64_t offendingCommandCorrelationId,
     std::int32_t errorCode,
-    const std::string& errorMessage)
+    const std::string &errorMessage)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -688,13 +695,13 @@ void ClientConductor::onUnavailableImage(
 
                 if (nullptr != subscription)
                 {
-                    std::pair<struct ImageList *,int> result = subscription->removeImage(correlationId);
+                    std::pair<struct ImageList *, int> result = subscription->removeImage(correlationId);
                     struct ImageList *oldImageList = result.first;
                     const int index = result.second;
 
                     if (nullptr != oldImageList)
                     {
-                        Image* oldArray = oldImageList->m_images;
+                        Image *oldArray = oldImageList->m_images;
 
                         lingerResource(now, oldArray[index].logBuffers());
                         lingerResource(now, oldImageList);
@@ -725,7 +732,7 @@ void ClientConductor::closeAllResources(long long now)
     forceClose();
 
     std::for_each(m_publications.begin(), m_publications.end(),
-        [&](PublicationStateDefn& entry)
+        [&](PublicationStateDefn &entry)
         {
             std::shared_ptr<Publication> pub = entry.m_publication.lock();
 
@@ -738,7 +745,7 @@ void ClientConductor::closeAllResources(long long now)
     m_publications.clear();
 
     std::for_each(m_exclusivePublications.begin(), m_exclusivePublications.end(),
-        [&](ExclusivePublicationStateDefn& entry)
+        [&](ExclusivePublicationStateDefn &entry)
         {
             std::shared_ptr<ExclusivePublication> pub = entry.m_publication.lock();
 
@@ -751,7 +758,7 @@ void ClientConductor::closeAllResources(long long now)
     m_exclusivePublications.clear();
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
-        [&](SubscriptionStateDefn& entry)
+        [&](SubscriptionStateDefn &entry)
         {
             std::shared_ptr<Subscription> sub = entry.m_subscription.lock();
 
@@ -771,7 +778,7 @@ void ClientConductor::onCheckManagedResources(long long now)
     // erase-remove idiom
 
     auto logIt = std::remove_if(m_lingeringLogBuffers.begin(), m_lingeringLogBuffers.end(),
-        [now, this](const LogBuffersLingerDefn& entry)
+        [now, this](const LogBuffersLingerDefn &entry)
         {
             return now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs);
         });
@@ -779,7 +786,7 @@ void ClientConductor::onCheckManagedResources(long long now)
     m_lingeringLogBuffers.erase(logIt, m_lingeringLogBuffers.end());
 
     auto arrayIt = std::remove_if(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
-        [now, this](ImageListLingerDefn & entry)
+        [now, this](ImageListLingerDefn &entry)
         {
             if (now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs))
             {

@@ -50,8 +50,9 @@
 
 #if defined(__GNUG__) && !defined(__clang__)
     #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wunused-function"
+    #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
+
 inline static const char *tmp_dir()
 {
 #if defined(_MSC_VER)
@@ -74,15 +75,18 @@ inline static const char *tmp_dir()
     return dir;
 #endif
 }
-#if defined(__GNUG__) && !defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
 
-#if defined(_MSC_VER)
 inline static bool has_file_separator_at_end(const char *path)
 {
+#if defined(_MSC_VER)
     return path[strlen(path) - 1] == '\\';
+#else
+    return path[strlen(path) - 1] == '/';
+#endif
 }
+
+#if defined(__GNUG__) && !defined(__clang__)
+    #pragma GCC diagnostic pop
 #endif
 
 inline static const char *username()

@@ -375,12 +375,6 @@ public class FlowControlStrategiesTest
             }
         }
 
-        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
-            any(DirectBuffer.class),
-            anyInt(),
-            eq(MESSAGE_LENGTH),
-            any(Header.class));
-
         verify(fragmentHandlerB, times(numMessagesToSend)).onFragment(
             any(DirectBuffer.class),
             anyInt(),

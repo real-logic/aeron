@@ -19,6 +19,7 @@
 
 #include "util/aeron_bitutil.h"
 #include "util/aeron_fileutil.h"
+#include "uri/aeron_uri.h"
 #include "aeron_driver_common.h"
 #include "aeron_driver_context.h"
 #include "concurrent/aeron_counters_manager.h"
@@ -62,8 +63,8 @@ typedef struct aeron_network_publication_stct
         (4 * AERON_CACHE_LINE_LENGTH) - sizeof(struct aeron_network_publication_conductor_fields_stct)];
 
     aeron_mapped_raw_log_t mapped_raw_log;
-    aeron_position_t pub_lmt_position;
     aeron_position_t pub_pos_position;
+    aeron_position_t pub_lmt_position;
     aeron_position_t snd_pos_position;
     aeron_position_t snd_lmt_position;
     aeron_retransmit_handler_t retransmit_handler;
@@ -115,15 +116,12 @@ int aeron_network_publication_create(
     int32_t session_id,
     int32_t stream_id,
     int32_t initial_term_id,
-    size_t mtu_length,
-    aeron_position_t *pub_lmt_position,
     aeron_position_t *pub_pos_position,
+    aeron_position_t *pub_lmt_position,
     aeron_position_t *snd_pos_position,
     aeron_position_t *snd_lmt_position,
     aeron_flow_control_strategy_t *flow_control_strategy,
-    uint64_t linger_timeout_ns,
-    size_t term_buffer_length,
-    bool is_sparse,
+    aeron_uri_publication_params_t *params,
     bool is_exclusive,
     bool spies_simulate_connection,
     aeron_system_counters_t *system_counters);

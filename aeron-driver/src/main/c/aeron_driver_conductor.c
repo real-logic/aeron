@@ -678,7 +678,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
             if (stream_id == pub_entry->stream_id &&
                 !pub_entry->is_exclusive &&
-                pub_entry->conductor_fields.status == AERON_IPC_PUBLICATION_STATUS_ACTIVE)
+                AERON_IPC_PUBLICATION_STATUS_ACTIVE == pub_entry->conductor_fields.status)
             {
                 publication = pub_entry;
                 break;
@@ -699,34 +699,47 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             if (ensure_capacity_result >= 0)
             {
                 int32_t session_id = conductor->next_session_id++;
-                int32_t initial_term_id = aeron_randomised_int32();
-                aeron_position_t pub_lmt_position;
+                int32_t initial_term_id = params->is_replay ?
+                    (int32_t)params->initial_term_id : aeron_randomised_int32();
                 aeron_position_t pub_pos_position;
-
-                pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
-                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
-                pub_lmt_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
+                aeron_position_t pub_lmt_position;
 
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
                 pub_pos_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)pub_pos_position.counter_id);
+                pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
+                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
+                pub_lmt_position.value_addr = aeron_counter_addr(
+                    &conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
 
-                if (pub_lmt_position.counter_id >= 0 &&
-                    pub_pos_position.counter_id >= 0 &&
-                    aeron_ipc_publication_create(
+                if (pub_pos_position.counter_id < 0 || pub_lmt_position.counter_id < 0)
+                {
+                    return NULL;
+                }
+
+                if (params->is_replay)
+                {
+                    int64_t position = aeron_logbuffer_compute_position(
+                        (int32_t)params->term_id,
+                        (int32_t)params->term_offset,
+                        (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length),
+                        initial_term_id);
+
+                    aeron_counter_set_ordered(pub_pos_position.value_addr, position);
+                    aeron_counter_set_ordered(pub_lmt_position.value_addr, position);
+                }
+
+                if (aeron_ipc_publication_create(
                         &publication,
                         conductor->context,
                         session_id,
                         stream_id,
                         registration_id,
-                        &pub_lmt_position,
                         &pub_pos_position,
+                        &pub_lmt_position,
                         initial_term_id,
-                        params->term_length,
-                        params->mtu_length,
-                        params->is_sparse,
+                        params,
                         is_exclusive,
                         &conductor->system_counters) >= 0)
                 {
@@ -801,15 +814,17 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
             if (ensure_capacity_result >= 0)
             {
                 int32_t session_id = conductor->next_session_id++;
-                int32_t initial_term_id = aeron_randomised_int32();
-                aeron_position_t pub_lmt_position;
+                int32_t initial_term_id = params->is_replay ?
+                    (int32_t)params->initial_term_id : aeron_randomised_int32();
+
                 aeron_position_t pub_pos_position;
+                aeron_position_t pub_lmt_position;
                 aeron_position_t snd_pos_position;
                 aeron_position_t snd_lmt_position;
 
-                pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
-                    &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
+                    &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
+                pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 snd_pos_position.counter_id = aeron_counter_sender_position_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
@@ -824,14 +839,29 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     return NULL;
                 }
 
-                pub_lmt_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
                 pub_pos_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)pub_pos_position.counter_id);
+                pub_lmt_position.value_addr = aeron_counter_addr(
+                    &conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
                 snd_pos_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)snd_pos_position.counter_id);
                 snd_lmt_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)snd_lmt_position.counter_id);
+
+
+                if (params->is_replay)
+                {
+                    int64_t position = aeron_logbuffer_compute_position(
+                        (int32_t)params->term_id,
+                        (int32_t)params->term_offset,
+                        (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length),
+                        initial_term_id);
+
+                    aeron_counter_set_ordered(pub_pos_position.value_addr, position);
+                    aeron_counter_set_ordered(pub_lmt_position.value_addr, position);
+                    aeron_counter_set_ordered(snd_pos_position.value_addr, position);
+                    aeron_counter_set_ordered(snd_lmt_position.value_addr, position);
+                }
 
                 aeron_flow_control_strategy_supplier_func_t flow_control_strategy_supplier_func =
                     udp_channel->explicit_control || udp_channel->multicast ?
@@ -860,15 +890,12 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                         session_id,
                         stream_id,
                         initial_term_id,
-                        params->mtu_length,
-                        &pub_lmt_position,
                         &pub_pos_position,
+                        &pub_lmt_position,
                         &snd_pos_position,
                         &snd_lmt_position,
                         flow_control_strategy,
-                        params->linger_timeout_ns,
-                        params->term_length,
-                        params->is_sparse,
+                        params,
                         is_exclusive,
                         conductor->context->spies_simulate_connection,
                         &conductor->system_counters) >= 0)

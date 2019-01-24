@@ -51,7 +51,7 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [channel, streamId](const PublicationStateDefn &entry)
         {
-            return (streamId == entry.m_streamId && channel == entry.m_channel);
+            return streamId == entry.m_streamId && channel == entry.m_channel;
         });
 
     if (it == m_publications.end())
@@ -165,7 +165,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
     auto it = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
         [registrationId](const ExclusivePublicationStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (it == m_exclusivePublications.end())
@@ -217,7 +217,7 @@ void ClientConductor::releaseExclusivePublication(std::int64_t registrationId)
     auto it = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
         [registrationId](const ExclusivePublicationStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (it != m_exclusivePublications.end())
@@ -563,7 +563,6 @@ void ClientConductor::onUnavailableCounter(
 
 void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 }
 
 void ClientConductor::onErrorResponse(

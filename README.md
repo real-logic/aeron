@@ -122,7 +122,7 @@ If you are comfortable with using CMake, then a full clean, build, and test look
 By default, the C Media Driver is built as part of the C++ Build. However, it can be disabled via the CMake
 option `BUILD_AERON_DRIVER` being set to `OFF`.
 
-__Note__: C Media Driver is currently only supported on Mac and Linux.
+__Note__: C Media Driver is currently only supported on Mac and Linux (Windows version is available as a proof-of-concept).
 
 For dependencies and other information, see the
 [README](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/README.md).

@@ -20,14 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#if !defined(_MSC_VER)
-#include <pthread.h>
-typedef pthread_t aeron_thread_t;
-#else
-/* Win32 Threads */
-typedef HANDLE aeron_thread_t;
-#endif
-
+#include "concurrent/aeron_thread.h"
 #include "aeron_driver_common.h"
 #include "concurrent/aeron_atomic.h"
 

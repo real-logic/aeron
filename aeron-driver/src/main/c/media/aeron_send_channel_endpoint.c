@@ -20,7 +20,7 @@
 #endif
 
 #include <string.h>
-#include <sys/socket.h>
+#include "aeron_socket.h"
 #include <uri/aeron_uri.h>
 #include "aeron_driver_sender.h"
 #include "util/aeron_netutil.h"

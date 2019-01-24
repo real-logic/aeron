@@ -19,7 +19,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include <sys/socket.h>
+#include <aeron_socket.h>
 #include <stdio.h>
 
 #if !defined(HAVE_STRUCT_MMSGHDR)

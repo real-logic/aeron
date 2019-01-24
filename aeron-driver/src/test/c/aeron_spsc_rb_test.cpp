@@ -26,6 +26,7 @@ extern "C"
 {
 #include <concurrent/aeron_spsc_rb.h>
 }
+#undef max
 
 #define CAPACITY (1024)
 #define BUFFER_SZ (CAPACITY + AERON_RB_TRAILER_LENGTH)

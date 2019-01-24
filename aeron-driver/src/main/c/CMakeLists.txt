@@ -21,6 +21,11 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     add_definitions(-D_DEFAULT_SOURCE)
 endif()
 
+if(MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(BUILD_SHARED_LIBS ON)
+endif()
+
 check_include_file("bsd/stdlib.h" BSDSTDLIB_H_EXISTS)
 check_include_file("uuid/uuid.h" UUID_H_EXISTS)
 find_library(LIBBSD_EXISTS NAMES bsd libbsd)
@@ -43,6 +48,10 @@ endif()
 
 if(UUID_H_EXISTS)
     add_definitions(-DHAVE_UUID_H)
+endif()
+
+if(MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)	
 endif()
 
 check_symbol_exists(uuid_generate "uuid/uuid.h" UUID_GENERATE_PROTOTYPE_EXISTS)
@@ -110,16 +119,19 @@ SET(SOURCE
     concurrent/aeron_term_unblocker.c
     concurrent/aeron_logbuffer_unblocker.c
     concurrent/aeron_term_gap_filler.c
+    concurrent/aeron_thread.c
     util/aeron_strutil.c
     util/aeron_fileutil.c
     util/aeron_arrayutil.c
     util/aeron_error.c
     util/aeron_netutil.c
-        util/aeron_parse_util.c
+    util/aeron_dlopen.c
+    util/aeron_parse_util.c
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c
     aeron_agent.c
+    aeron_socket.c
     aeron_system_counters.c
     aeron_driver_conductor.c
     aeron_driver_sender.c
@@ -136,6 +148,7 @@ SET(SOURCE
     aeron_congestion_control.c
     aeron_loss_detector.c
     aeron_retransmit_handler.c
+    aeron_windows.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
@@ -148,6 +161,8 @@ SET(SOURCE
     reports/aeron_loss_reporter.c)
 
 SET(HEADERS
+    aeron_socket.h
+    util/aeron_dlopen.h
     util/aeron_platform.h
     util/aeron_bitutil.h
     util/aeron_strutil.h
@@ -155,9 +170,11 @@ SET(HEADERS
     util/aeron_arrayutil.h
     util/aeron_error.h
     util/aeron_netutil.h
-        util/aeron_parse_util.h
+    util/aeron_parse_util.h
+    concurrent/aeron_thread.h
     concurrent/aeron_atomic.h
     concurrent/aeron_atomic64_gcc_x86_64.h
+    concurrent/aeron_atomic64_msvc.h
     concurrent/aeron_spsc_rb.h
     concurrent/aeron_rb.h
     concurrent/aeron_mpsc_rb.h
@@ -177,6 +194,7 @@ SET(HEADERS
     command/aeron_control_protocol.h
     protocol/aeron_udp_protocol.h
     aeronmd.h
+    aeron_windows.h
     aeron_driver.h
     aeron_driver_context.h
     aeron_alloc.h
@@ -213,16 +231,22 @@ set(AGENT_SOURCE
     agent/aeron_driver_agent.c
     concurrent/aeron_mpsc_rb.c
     concurrent/aeron_atomic.c
+    concurrent/aeron_thread.c
     util/aeron_fileutil.c
-    util/aeron_error.c
-    aeron_alloc.c)
+    util/aeron_dlopen.c
+    util/aeron_error.c    
+    aeron_alloc.c
+    aeron_windows.c)
 
 set(AGENT_HEADERS
     agent/aeron_driver_agent.h
     concurrent/aeron_mpsc_rb.h
+    concurrent/aeron_thread.h
     util/aeron_fileutil.h
     util/aeron_error.h
-    aeron_alloc.h)
+    util/aeron_dlopen.h
+    aeron_alloc.h
+    aeron_windows.h)
 
 add_library(aeron_driver_agent SHARED ${AGENT_SOURCE} ${AGENT_HEADERS})
 target_include_directories(aeron_driver_agent
@@ -264,7 +288,8 @@ target_link_libraries(
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
     ${AERON_LIB_M_LIBS}
-    ${CMAKE_THREAD_LIBS_INIT})
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${AERON_LIB_WINSOCK_LIBS})
 
 target_link_libraries(
     aeronmd
@@ -273,7 +298,8 @@ target_link_libraries(
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
     ${AERON_LIB_M_LIBS}
-    ${CMAKE_THREAD_LIBS_INIT})
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${AERON_LIB_WINSOCK_LIBS})
 
 target_link_libraries(
     aeron_driver_agent
@@ -281,7 +307,10 @@ target_link_libraries(
     ${AERON_LIB_BSD_LIBS}
     ${AERON_LIB_UUID_LIBS}
     ${AERON_LIB_M_LIBS}
-    ${CMAKE_THREAD_LIBS_INIT})
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${AERON_LIB_WINSOCK_LIBS})
+	
+target_compile_definitions(aeron_driver PRIVATE -DAERON_DRIVER)
 
 if (AERON_INSTALL_TARGETS)
     install(

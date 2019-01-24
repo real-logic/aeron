@@ -21,7 +21,7 @@
 
 #include <errno.h>
 #include <string.h>
-#include <sys/socket.h>
+#include "aeron_socket.h"
 #include <inttypes.h>
 #include "concurrent/aeron_term_scanner.h"
 #include "util/aeron_netutil.h"

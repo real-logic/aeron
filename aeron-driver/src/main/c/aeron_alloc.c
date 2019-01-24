@@ -71,7 +71,7 @@ int aeron_alloc_aligned(void **ptr, size_t *offset, size_t size, size_t alignmen
 
 int aeron_reallocf(void **ptr, size_t size)
 {
-#if defined(__linux__)
+#if defined(__linux__) || defined(AERON_COMPILER_MSVC)
     /* mimic reallocf */
     if ((*ptr = realloc(*ptr, size)) == NULL)
     {

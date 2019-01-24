@@ -17,7 +17,7 @@
 #ifndef AERON_DATA_PACKET_DISPATCHER_H
 #define AERON_DATA_PACKET_DISPATCHER_H
 
-#include <netinet/in.h>
+#include "aeron_socket.h"
 #include "collections/aeron_int64_to_ptr_hash_map.h"
 #include "aeron_driver_conductor_proxy.h"
 

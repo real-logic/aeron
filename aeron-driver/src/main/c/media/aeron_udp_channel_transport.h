@@ -17,12 +17,9 @@
 #ifndef AERON_UDP_CHANNEL_TRANSPORT_H
 #define AERON_UDP_CHANNEL_TRANSPORT_H
 
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include "aeron_socket.h"
 
 #include "aeron_driver_common.h"
-
-typedef int aeron_fd_t;
 
 typedef struct aeron_udp_channel_transport_stct
 {

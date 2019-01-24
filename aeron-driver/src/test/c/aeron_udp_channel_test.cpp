@@ -17,7 +17,6 @@
 #include <functional>
 
 #include <gtest/gtest.h>
-#include <arpa/inet.h>
 
 extern "C"
 {

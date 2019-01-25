@@ -276,18 +276,6 @@ int aeron_clock_gettime_realtime(struct timespec *tv)
 }
 #else
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#endif
-
-static int aeron_dummy_func()
-{
-    return 0;
-}
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+typedef int aeron_make_into_non_empty_translation_unit_t;
 
 #endif

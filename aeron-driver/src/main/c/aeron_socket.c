@@ -21,7 +21,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/socket.h> 
+#include <sys/socket.h>
 
 void aeron_net_init()
 {
@@ -31,11 +31,15 @@ int set_socket_non_blocking(aeron_fd_t fd)
 {
     int flags;
     if ((flags = fcntl(fd, F_GETFL, 0)) < 0)
+    {
         return -1;
+    }
 
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) < 0)
+    {
         return -1;
+    }
 
     return 0;
 }
@@ -64,7 +68,9 @@ void aeron_net_init()
         const WORD wVersionRequested = MAKEWORD(2, 2);
         WSADATA buffer;
         if (WSAStartup(wVersionRequested, &buffer))
+        {
             return;
+        }
 
         started = 0;
     }
@@ -75,7 +81,9 @@ int set_socket_non_blocking(aeron_fd_t fd)
     u_long iMode = 1;
     int iResult = ioctlsocket(fd, FIONBIO, &iMode);
     if (iResult != NO_ERROR)
+    {
         return -1;
+    }
 
     return 0;
 }
@@ -101,22 +109,27 @@ int getifaddrs(struct ifaddrs **ifap)
             NULL,
             pAdapterAddresses,
             &dwSize);
-        if (ERROR_BUFFER_OVERFLOW == dwRet) {
+
+        if (ERROR_BUFFER_OVERFLOW == dwRet)
+        {
             free(pAdapterAddresses);
             pAdapterAddresses = NULL;
         }
-        else {
+        else
+        {
             break;
         }
     }
 
-    if (dwRet != ERROR_SUCCESS) 
-    {    
+    if (dwRet != ERROR_SUCCESS)
+    {
         if (pAdapterAddresses)
+        {
             free(pAdapterAddresses);
+        }
+
         return -1;
     }
-
 
     struct ifaddrs* ifa = malloc(sizeof(struct ifaddrs));
     struct ifaddrs* ift = NULL;
@@ -130,8 +143,7 @@ int getifaddrs(struct ifaddrs **ifap)
             unicast = unicast->Next, ++unicastIndex)
         {
             /* ensure IP adapter */
-            if (AF_INET != unicast->Address.lpSockaddr->sa_family &&
-                AF_INET6 != unicast->Address.lpSockaddr->sa_family)
+            if (AF_INET != unicast->Address.lpSockaddr->sa_family && AF_INET6 != unicast->Address.lpSockaddr->sa_family)
             {
                 continue;
             }
@@ -159,11 +171,19 @@ int getifaddrs(struct ifaddrs **ifap)
             /* flags */
             ift->ifa_flags = 0;
             if (IfOperStatusUp == adapter->OperStatus)
+            {
                 ift->ifa_flags |= IFF_UP;
+            }
+
             if (IF_TYPE_SOFTWARE_LOOPBACK == adapter->IfType)
+            {
                 ift->ifa_flags |= IFF_LOOPBACK;
+            }
+
             if (!(adapter->Flags & IP_ADAPTER_NO_MULTICAST))
+            {
                 ift->ifa_flags |= IFF_MULTICAST;
+            }
 
             /* netmask */
             ULONG prefixLength = unicast->OnLinkPrefixLength;
@@ -172,41 +192,51 @@ int getifaddrs(struct ifaddrs **ifap)
             ift->ifa_netmask = malloc(sizeof(struct sockaddr));
             ift->ifa_netmask->sa_family = unicast->Address.lpSockaddr->sa_family;
 
-            switch (unicast->Address.lpSockaddr->sa_family) 
+            switch (unicast->Address.lpSockaddr->sa_family)
             {
-            case AF_INET:
-                if (0 == prefixLength || prefixLength > 32)
-                    prefixLength = 32;
+                case AF_INET:
+                    if (0 == prefixLength || prefixLength > 32)
+                    {
+                        prefixLength = 32;
+                    }
 
-                ULONG Mask;
-                ConvertLengthToIpv4Mask(prefixLength, &Mask);
-                ((struct sockaddr_in*)ift->ifa_netmask)->sin_addr.s_addr = htonl(Mask);
-                break;
+                    ULONG Mask;
+                    ConvertLengthToIpv4Mask(prefixLength, &Mask);
+                    ((struct sockaddr_in*)ift->ifa_netmask)->sin_addr.s_addr = htonl(Mask);
+                    break;
 
-            case AF_INET6:
-                if (0 == prefixLength || prefixLength > 128)
-                    prefixLength = 128;
-                
-                for (LONG i = prefixLength, j = 0; i > 0; i -= 8, ++j)
-                {
-                    ((struct sockaddr_in6*)ift->ifa_netmask)->sin6_addr.s6_addr[j] = i >= 8 ? 0xff : (ULONG)((0xffU << (8 - i)) & 0xffU);
-                }
-                break;
+                case AF_INET6:
+                    if (0 == prefixLength || prefixLength > 128)
+                    {
+                        prefixLength = 128;
+                    }
+
+                    for (LONG i = prefixLength, j = 0; i > 0; i -= 8, ++j)
+                    {
+                        ((struct sockaddr_in6*)ift->ifa_netmask)->sin6_addr.s6_addr[j] = i >= 8 ?
+                            0xff : (ULONG)((0xffU << (8 - i)) & 0xffU);
+                    }
+                    break;
             }
         }
     }
 
     if (pAdapterAddresses)
+    {
         free(pAdapterAddresses);
+    }
 
     *ifap = ifa;
+
     return TRUE;
 }
 
 void freeifaddrs(struct ifaddrs *current)
 {
     if (current == NULL)
+    {
         return;
+    }
 
     while (1)
     {
@@ -215,9 +245,10 @@ void freeifaddrs(struct ifaddrs *current)
         current = next;
 
         if (current == NULL)
+        {
             break;
+        }
     }
-
 }
 
 #include <Mswsock.h>
@@ -229,30 +260,52 @@ void freeifaddrs(struct ifaddrs *current)
 ssize_t recvmsg(aeron_fd_t fd, struct msghdr* msghdr, int flags)
 {
     DWORD size = 0;
-    const int result = WSARecvFrom(fd, (LPWSABUF)msghdr->msg_iov, msghdr->msg_iovlen, &size, &msghdr->msg_flags, msghdr->msg_name, &msghdr->msg_namelen, NULL, NULL);
+    const int result = WSARecvFrom(
+        fd,
+        (LPWSABUF)msghdr->msg_iov,
+        msghdr->msg_iovlen,
+        &size,
+        &msghdr->msg_flags,
+        msghdr->msg_name,
+        &msghdr->msg_namelen,
+        NULL,
+        NULL);
 
     if (result == SOCKET_ERROR)
     {
         const int error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
+        {
             return 0;
+        }
 
         return -1;
     }
-    
+
     return size;
 }
 
 ssize_t sendmsg(aeron_fd_t fd, struct msghdr* msghdr, int flags)
-{    
+{
     DWORD size = 0;
-    const int result = WSASendTo(fd, (LPWSABUF)msghdr->msg_iov, msghdr->msg_iovlen, &size, msghdr->msg_flags, (const struct sockaddr*)msghdr->msg_name, msghdr->msg_namelen, NULL, NULL);
-            
+    const int result = WSASendTo(
+        fd,
+        (LPWSABUF)msghdr->msg_iov,
+        msghdr->msg_iovlen,
+        &size,
+        msghdr->msg_flags,
+        (const struct sockaddr*)msghdr->msg_name,
+        msghdr->msg_namelen,
+        NULL,
+        NULL);
+
     if (result == SOCKET_ERROR)
     {
         const int error = WSAGetLastError();
         if (error == WSAEWOULDBLOCK)
+        {
             return 0;
+        }
 
         return -1;
     }
@@ -265,12 +318,11 @@ int aeron_socket(int domain, int type, int protocol)
     aeron_net_init();
     return socket(domain, type, protocol);
 }
-    
+
 void aeron_close_socket(int socket)
 {
     closesocket(socket);
 }
-
 
 #else
 #error Unsupported platform!

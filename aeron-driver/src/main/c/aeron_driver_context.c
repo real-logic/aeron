@@ -28,7 +28,7 @@
 #include "util/aeron_platform.h"
 #if  defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 #include <io.h>
-#else 
+#else
 #include <unistd.h>
 #endif
 
@@ -164,7 +164,6 @@ uint64_t aeron_config_parse_uint64(const char *name, const char *str, uint64_t d
 
     return result;
 }
-
 
 uint64_t aeron_config_parse_size64(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max)
 {

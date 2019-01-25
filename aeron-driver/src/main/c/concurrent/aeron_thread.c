@@ -23,10 +23,13 @@ void aeron_nano_sleep(size_t nanoseconds)
     LARGE_INTEGER li;
 
     if (!(timer = CreateWaitableTimer(NULL, TRUE, NULL)))
+    {
         return;
+    }
 
     li.QuadPart = -nanoseconds;
-    if (!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE)) {
+    if (!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE))
+    {
         CloseHandle(timer);
         return;
     }
@@ -61,18 +64,22 @@ void aeron_mutex_unlock(HANDLE* mutex)
     ReleaseMutex(mutex);
 }
 
-int aeron_thread_attr_init(pthread_attr_t* attr) { return 0; }
+int aeron_thread_attr_init(pthread_attr_t* attr)
+{
+    return 0;
+}
 
 int aeron_thread_create(aeron_thread_t* thread, void* attr, void*(*callback)(void*), void* arg0)
 {
     DWORD id;
     *thread = CreateThread(
-        NULL,                   // default security attributes
-        0,                      // use default stack size  
-        callback,       // thread function name
-        arg0,          // argument to thread function 
-        0,                      // use default creation flags 
-        &id);   // returns the thread identifier 
+        NULL,              // default security attributes
+        0,                 // use default stack size
+        callback,          // thread function name
+        arg0,              // argument to thread function
+        0,                 // use default creation flags
+        &id);              // returns the thread identifier
+
     return 0;
 }
 
@@ -100,31 +107,37 @@ DWORD aeron_thread_join(aeron_thread_t thread, void **value_ptr)
 int aeron_thread_key_create(pthread_key_t *key, void(*destr_function) (void *))
 {
     DWORD dkey = TlsAlloc();
-    if (dkey != 0xFFFFFFFF) {
+    if (dkey != 0xFFFFFFFF)
+    {
         *key = dkey;
         return 0;
     }
-    else {
+    else
+    {
         return EAGAIN;
     }
 }
 
 int aeron_thread_key_delete(pthread_key_t key)
 {
-    if (TlsFree(key)) {
+    if (TlsFree(key))
+    {
         return 0;
     }
-    else {
+    else
+    {
         return EINVAL;
     }
 }
 
 int aeron_thread_set_specific(pthread_key_t key, const void *pointer)
 {
-    if (TlsSetValue(key, (LPVOID)pointer)) {
+    if (TlsSetValue(key, (LPVOID)pointer))
+    {
         return 0;
     }
-    else {
+    else
+    {
         return EINVAL;
     }
 }

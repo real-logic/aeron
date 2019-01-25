@@ -59,15 +59,23 @@ int aeron_static_window_congestion_control_strategy_supplier(
 void* aeron_dlsym_fallback(LPCSTR name)
 {
     if (strcmp(name, "aeron_unicast_flow_control_strategy_supplier") == 0)
+    {
         return aeron_unicast_flow_control_strategy_supplier;
+    }
+
     if (strcmp(name, "aeron_max_multicast_flow_control_strategy_supplier") == 0)
+    {
         return aeron_max_multicast_flow_control_strategy_supplier;
+    }
+
     if (strcmp(name, "aeron_static_window_congestion_control_strategy_supplier") == 0)
+    {
         return aeron_static_window_congestion_control_strategy_supplier;
+    }
 
     return NULL;
 }
-#else 
+#else
 void* aeron_dlsym_fallback(LPCSTR name)
 {
     return NULL;
@@ -111,7 +119,9 @@ void* aeron_dlsym(HMODULE module, LPCSTR name)
         {
             void* res = aeron_dlsym(modules[modules_size - i], name);
             if (res != NULL)
+            {
                 return res;
+            }
         }
 
         return aeron_dlsym_fallback(name);
@@ -124,9 +134,14 @@ void* aeron_dlsym(HMODULE module, LPCSTR name)
 		{
             void* res = aeron_dlsym(modules[modules_size - i], name);
 			if (res != NULL && firstFound)
+			{
                 return res;
+			}
+
             if (res != NULL && !firstFound)
+            {
                 firstFound = TRUE;
+            }
         }
 
         return aeron_dlsym_fallback(name);
@@ -140,7 +155,7 @@ HMODULE aeron_dlopen(LPCSTR filename)
     aeron_init_dlopen_support();
 
     HMODULE module = LoadLibraryA(filename);
-	
+
 	if (modules_size == modules_capacity)
 	{
 		modules_capacity = modules_capacity * 2;
@@ -148,6 +163,7 @@ HMODULE aeron_dlopen(LPCSTR filename)
 	}
 
 	modules[modules_size++] = module;
+
     return module;
 }
 
@@ -155,8 +171,14 @@ char* aeron_dlerror()
 {
     DWORD errorMessageID = GetLastError();
     LPSTR messageBuffer = NULL;
-    size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+    size_t size = FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        errorMessageID,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR)&messageBuffer,
+        0,
+        NULL);
 
     // Leak
 

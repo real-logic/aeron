@@ -39,7 +39,7 @@
 #define PROT_WRITE 2
 #define MAP_FAILED ((void*)-1)
 
-#define MAP_SHARED	0x01	
+#define MAP_SHARED	0x01
 #define S_IRUSR _S_IREAD
 #define S_IWUSR _S_IWRITE
 
@@ -47,7 +47,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
 {
     size_t length = mapping->length;
     size_t len;
-    struct stat st;    
+    struct stat st;
     const uint32_t l = offset & 0xFFFFFFFF;
     const uint32_t h = (offset >> 32) & 0xFFFFFFFF;
 
@@ -55,7 +55,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
     {
         len = (size_t)st.st_size;
     }
-    else 
+    else
     {
         fprintf(stderr, "mmap: could not determine filesize");
         close(fd);
@@ -63,7 +63,9 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
     }
 
     if (length + offset > len)
+    {
         length = len - offset;
+    }
 
     HANDLE hmap = CreateFileMapping((HANDLE)_get_osfhandle(fd), 0, PAGE_READWRITE, 0, 0, 0);
 
@@ -77,13 +79,18 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
     mapping->addr = MapViewOfFileEx(hmap, FILE_MAP_WRITE, h, l, length, NULL);
 
     if (!CloseHandle(hmap))
+    {
         fprintf(stderr, "unable to close file mapping handle\n");
+    }
 
     if (!mapping->addr)
+    {
         mapping->addr = MAP_FAILED;
+    }
 
     close(fd);
-    return (MAP_FAILED == mapping->addr) ? -1 : 0;
+
+    return MAP_FAILED == mapping->addr ? -1 : 0;
 }
 
 int aeron_unmap(aeron_mapped_file_t *mapped_file)
@@ -100,7 +107,9 @@ int aeron_ftruncate(int fd, off_t length)
 {
     int error = _chsize_s(fd, length);
     if (error != 0)
+    {
         return -1;
+    }
 
     return 0;
 }
@@ -113,9 +122,10 @@ uint64_t aeron_usable_fs_space(const char *path)
         path,
         &lpAvailableToCaller,
         &lpTotalNumberOfBytes,
-        &lpTotalNumberOfFreeBytes
-    ))
+        &lpTotalNumberOfFreeBytes))
+    {
         return 0;
+    }
 
     return (uint64_t)lpAvailableToCaller.QuadPart;
 }
@@ -135,7 +145,8 @@ int aeron_create_file(const char* path)
 
 int aeron_delete_directory(const char* dir)
 {
-    SHFILEOPSTRUCT file_op = {
+    SHFILEOPSTRUCT file_op =
+    {
         NULL,
         FO_DELETE,
         dir,
@@ -145,7 +156,9 @@ int aeron_delete_directory(const char* dir)
         FOF_SILENT,
         false,
         0,
-        "" };
+        ""
+    };
+
     return SHFileOperation(&file_op);
 }
 
@@ -160,18 +173,18 @@ int aeron_is_directory(const char* path)
 #include <sys/statvfs.h>
 #include <errno.h>
 #include <ftw.h>
-#include <stdio.h> 
+#include <stdio.h>
 
 static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
 {
     mapping->addr = mmap(NULL, mapping->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
     close(fd);
 
-    return (MAP_FAILED == mapping->addr) ? -1 : 0;
+    return MAP_FAILED == mapping->addr ? -1 : 0;
 }
 
 int aeron_unmap(aeron_mapped_file_t *mapped_file)
-{    
+{
     if (NULL != mapped_file->addr)
     {
         return munmap(mapped_file->addr, mapped_file->length);
@@ -270,8 +283,6 @@ int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
     return 0;
 }
 
-
-
 int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool fill_with_zeroes)
 {
     int fd, result = -1;
@@ -292,21 +303,18 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
             else
             {
                 int errcode = errno;
-
                 aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             }
         }
         else
         {
             int errcode = errno;
-
             aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         }
     }
     else
     {
         int errcode = errno;
-
         aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
     }
 
@@ -323,7 +331,7 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
         if (fstat(fd, &sb) == 0)
         {
             mapped_file->length = (size_t)sb.st_size;
-            
+
             if (aeron_mmap(mapped_file, fd, 0) == 0)
             {
                 result = 0;
@@ -331,28 +339,23 @@ int aeron_map_existing_file(aeron_mapped_file_t *mapped_file, const char *path)
             else
             {
                 int errcode = errno;
-
                 aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             }
         }
         else
         {
             int errcode = errno;
-
             aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         }
     }
     else
     {
         int errcode = errno;
-
         aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
     }
 
     return result;
 }
-
-
 
 uint64_t aeron_usable_fs_space_disabled(const char *path)
 {
@@ -427,7 +430,6 @@ int aeron_map_raw_log(
             if (aeron_mmap(&mapped_raw_log->mapped_file, fd, 0) < 0)
             {
                 int errcode = errno;
-
                 aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
                 return -1;
             }
@@ -448,7 +450,6 @@ int aeron_map_raw_log(
                 (uint8_t *) mapped_raw_log->mapped_file.addr +
                     (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
             mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
-
             mapped_raw_log->term_length = term_length;
 
             result = 0;
@@ -456,14 +457,12 @@ int aeron_map_raw_log(
         else
         {
             int errcode = errno;
-
             aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
         }
     }
     else
     {
         int errcode = errno;
-
         aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
     }
 
@@ -484,7 +483,6 @@ int aeron_map_raw_log_close(aeron_mapped_raw_log_t *mapped_raw_log, const char *
         if (NULL != filename && remove(filename) < 0)
         {
             int errcode = errno;
-
             aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
             return -1;
         }

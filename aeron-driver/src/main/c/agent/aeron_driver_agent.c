@@ -81,7 +81,6 @@ static void *aeron_driver_agent_log_reader(void *arg)
 {
     while (true)
     {
-
         aeron_mpsc_rb_read(&logging_mpsc_rb, aeron_driver_agent_log_dissector, NULL, 10);
         aeron_nano_sleep(1000 * 1000);
     }
@@ -191,7 +190,8 @@ int aeron_driver_agent_map_raw_log_interceptor(
     memcpy(&hdr->map_raw_log.log, mapped_raw_log, sizeof(hdr->map_raw_log.log));
     memcpy(buffer + sizeof(aeron_driver_agent_map_raw_log_op_header_t), path, path_len);
 
-    aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_MAP_RAW_LOG_OP, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t) + path_len);
+    aeron_mpsc_rb_write(
+        &logging_mpsc_rb, AERON_MAP_RAW_LOG_OP, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t) + path_len);
 
     return result;
 }
@@ -206,7 +206,9 @@ int aeron_driver_agent_map_raw_log_close_interceptor(aeron_mapped_raw_log_t *map
     memcpy(&hdr->map_raw_log_close.log, mapped_raw_log, sizeof(hdr->map_raw_log.log));
     hdr->map_raw_log_close.result = aeron_map_raw_log_close(mapped_raw_log, filename);
 
-    aeron_mpsc_rb_write(&logging_mpsc_rb, AERON_MAP_RAW_LOG_OP_CLOSE, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t));
+    aeron_mpsc_rb_write(
+        &logging_mpsc_rb, AERON_MAP_RAW_LOG_OP_CLOSE, buffer, sizeof(aeron_driver_agent_map_raw_log_op_header_t));
+
     return hdr->map_raw_log_close.result;
 }
 
@@ -241,7 +243,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         printf("hooked aeron_driver_context_init\n");
     }
 
-    (void) aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
+    (void)aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
 
     int result = _original_func(context);
 
@@ -311,14 +313,14 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
         printf("hooked sendmsg\n");
     }
 
-    (void) aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
+    (void)aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
 
     ssize_t result = _original_func(socket, message, flags);
 
     if (mask & AERON_FRAME_OUT)
     {
         aeron_driver_agent_log_frame(
-            AERON_FRAME_OUT, socket, message, flags, (int) result, (int32_t) message->msg_iov[0].iov_len);
+            AERON_FRAME_OUT, socket, message, flags, (int)result, (int32_t)message->msg_iov[0].iov_len);
     }
     return result;
 }
@@ -338,7 +340,7 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
         printf("hooked recvmsg\n");
     }
 
-    (void) aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
+    (void)aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
 
     ssize_t result = _original_func(socket, message, flags);
 
@@ -346,13 +348,12 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
     {
         if (receive_data_loss_rate > 0.0 && aeron_agent_should_drop_frame(message))
         {
-            aeron_driver_agent_log_frame(
-                AERON_FRAME_IN_DROPPED, socket, message, flags, (int) result, (int32_t) result);
+            aeron_driver_agent_log_frame(AERON_FRAME_IN_DROPPED, socket, message, flags, (int)result, (int32_t)result);
             result = 0;
         }
         else if (mask & AERON_FRAME_IN)
         {
-            aeron_driver_agent_log_frame(AERON_FRAME_IN, socket, message, flags, (int) result, (int32_t) result);
+            aeron_driver_agent_log_frame(AERON_FRAME_IN, socket, message, flags, (int)result, (int32_t)result);
         }
     }
 
@@ -388,7 +389,12 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags)
         for (int i = 0; i < result; i++)
         {
             aeron_driver_agent_log_frame(
-                AERON_FRAME_OUT, sockfd, &msgvec[i].msg_hdr, flags, msgvec[i].msg_len, msgvec[i].msg_hdr.msg_iov[0].iov_len);
+                AERON_FRAME_OUT,
+                sockfd,
+                &msgvec[i].msg_hdr,
+                flags,
+                msgvec[i].msg_len,
+                msgvec[i].msg_hdr.msg_iov[0].iov_len);
         }
     }
 
@@ -423,7 +429,7 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, r
         printf("hooked recvmmsg\n");
     }
 
-    (void) aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
+    (void)aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
 
     int result = _original_func(sockfd, msgvec, vlen, flags, timeout);
 
@@ -644,7 +650,7 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
 
             const char *log_file_name = (const char *)message + sizeof(aeron_publication_buffers_ready_t);
             snprintf(buffer, sizeof(buffer) - 1, "%s %d:%d %d %d [%" PRId64 " %" PRId64 "]\n    \"%*s\"",
-                (cmd_id == AERON_RESPONSE_ON_PUBLICATION_READY) ? "ON_PUBLICATION_READY" : "ON_EXCLUSIVE_PUBLICATION_READY",
+                cmd_id == AERON_RESPONSE_ON_PUBLICATION_READY ? "ON_PUBLICATION_READY" : "ON_EXCLUSIVE_PUBLICATION_READY",
                 command->session_id,
                 command->stream_id,
                 command->position_limit_counter_id,

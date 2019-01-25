@@ -179,7 +179,7 @@ int aeron_uri_udp_canonicalise(
         canonical_form, length, "UDP-%s-%d-%s-%d", local_data_str, local_data_port, remote_data_str, remote_data_port);
 }
 
- int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channel_t **channel)
+int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channel_t **channel)
 {
     aeron_udp_channel_t *_channel = NULL;
     struct sockaddr_storage endpoint_addr, explicit_control_addr, interface_addr;
@@ -322,7 +322,7 @@ int aeron_uri_udp_canonicalise(
         return -1;
 }
 
- void aeron_udp_channel_delete(aeron_udp_channel_t *channel)
+void aeron_udp_channel_delete(aeron_udp_channel_t *channel)
 {
     if (NULL != channel)
     {

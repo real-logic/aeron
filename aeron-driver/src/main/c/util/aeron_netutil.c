@@ -32,11 +32,11 @@
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 #include <intrin.h>
-#define __builtin_bswap32 _byteswap_ulong 
-#define __builtin_bswap64 _byteswap_uint64 
-#define __builtin_popcount __popcnt 
-#define __builtin_popcountll __popcnt64 
-#else 
+#define __builtin_bswap32 _byteswap_ulong
+#define __builtin_bswap64 _byteswap_uint64
+#define __builtin_popcount __popcnt
+#define __builtin_popcountll __popcnt64
+#else
 #error Unsupported platform!
 #endif
 
@@ -89,6 +89,7 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
     }
 
     freeaddrinfo(info);
+
     return result;
 }
 
@@ -476,7 +477,7 @@ int aeron_ip_lookup_func(
 {
     if (flags & IFF_UP)
     {
-        struct lookup_state *state = (struct lookup_state *) clientd;
+        struct lookup_state *state = (struct lookup_state *)clientd;
 
         if (aeron_ip_does_prefix_match((struct sockaddr *)&state->lookup_addr, addr, state->prefixlen))
         {

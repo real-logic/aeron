@@ -25,14 +25,14 @@
 
 #include "concurrent/aeron_thread.h"
 
-#define __builtin_bswap32 _byteswap_ulong 
-#define __builtin_bswap64 _byteswap_uint64 
-#define __builtin_popcount __popcnt 
-#define __builtin_popcountll __popcnt64 
+#define __builtin_bswap32 _byteswap_ulong
+#define __builtin_bswap64 _byteswap_uint64
+#define __builtin_popcount __popcnt
+#define __builtin_popcountll __popcnt64
 
 static DWORD dwTlsIndex; // address of shared memory
 
-// DllMain() is the entry-point function for this DLL. 
+// DllMain() is the entry-point function for this DLL.
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -40,45 +40,47 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
     switch (fdwReason)
     {
-    case DLL_PROCESS_ATTACH:
+        case DLL_PROCESS_ATTACH:
+            // Allocate a TLS index.
+            if ((dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES)
+            {
+                return FALSE;
+            }
 
-        // Allocate a TLS index.
-        if ((dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES)
-            return FALSE;
+            // No break: Initialize the index for first thread.
 
-        // No break: Initialize the index for first thread.
+        case DLL_THREAD_ATTACH:
+            // Initialize the TLS index for this thread.
+            lpvData = (LPVOID)LocalAlloc(LPTR, 256);
+            if (lpvData != NULL)
+            {
+                TlsSetValue(dwTlsIndex, lpvData);
+            }
+            break;
 
-    case DLL_THREAD_ATTACH:
+        case DLL_THREAD_DETACH:
+            // Release the allocated memory for this thread.
+            lpvData = TlsGetValue(dwTlsIndex);
+            if (lpvData != NULL)
+            {
+                LocalFree((HLOCAL)lpvData);
+            }
+            break;
 
-        // Initialize the TLS index for this thread.
-        lpvData = (LPVOID)LocalAlloc(LPTR, 256);
-        if (lpvData != NULL)
-             TlsSetValue(dwTlsIndex, lpvData);
+        case DLL_PROCESS_DETACH:
+            // Release the allocated memory for this thread.
+            lpvData = TlsGetValue(dwTlsIndex);
+            if (lpvData != NULL)
+            {
+                LocalFree((HLOCAL)lpvData);
+            }
 
-        break;
+            // Release the TLS index.
+            TlsFree(dwTlsIndex);
+            break;
 
-    case DLL_THREAD_DETACH:
-
-        // Release the allocated memory for this thread.
-        lpvData = TlsGetValue(dwTlsIndex);
-        if (lpvData != NULL)
-            LocalFree((HLOCAL)lpvData);
-
-        break;
-
-    case DLL_PROCESS_DETACH:
-
-        // Release the allocated memory for this thread.
-        lpvData = TlsGetValue(dwTlsIndex);
-        if (lpvData != NULL)
-            LocalFree((HLOCAL)lpvData);
-
-        // Release the TLS index.
-        TlsFree(dwTlsIndex);
-        break;
-
-    default:
-        break;
+        default:
+            break;
     }
 
     return TRUE;
@@ -109,8 +111,7 @@ aeron_uint128_t aeron_uint128_bitwise_negate(aeron_uint128_t x)
 
 BOOL aeron_uint128_equals(const aeron_uint128_t lhs, const aeron_uint128_t rhs)
 {
-    return lhs.q[0] == rhs.q[0]
-        && lhs.q[1] == rhs.q[1];
+    return lhs.q[0] == rhs.q[0] && lhs.q[1] == rhs.q[1];
 }
 
 aeron_uint128_t aeron_uint128_bitwise_shift_left(const aeron_uint128_t lhs, size_t n)
@@ -126,13 +127,15 @@ aeron_uint128_t aeron_uint128_bitwise_shift_left(const aeron_uint128_t lhs, size
     {
         const unsigned int halfsize = 128 / 2;
 
-        if (n >= halfsize) {
+        if (n >= halfsize)
+        {
             n -= halfsize;
             result.q[1] = result.q[0];
             result.q[0] = 0;
         }
 
-        if (n != 0) {
+        if (n != 0)
+        {
             // shift high half
             result.q[1] <<= n;
 
@@ -157,7 +160,9 @@ aeron_uint128_t aeron_uint128_sub(const aeron_uint128_t lhs, const aeron_uint128
     result.q[0] -= rhs.q[0];
 
     if (rhs.q[0] >= lhs.q[0])
+    {
         result.q[1] -= 1;
+    }
 
     return result;
 }
@@ -240,9 +245,11 @@ int aeron_clock_gettime_monotonic(struct timespec *tv)
     static LARGE_INTEGER ticksPerSec;
     LARGE_INTEGER ticks;
 
-    if (!ticksPerSec.QuadPart) {
+    if (!ticksPerSec.QuadPart)
+    {
         QueryPerformanceFrequency(&ticksPerSec);
-        if (!ticksPerSec.QuadPart) {
+        if (!ticksPerSec.QuadPart)
+        {
             errno = ENOTSUP;
             return -1;
         }

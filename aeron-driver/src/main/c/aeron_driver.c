@@ -30,7 +30,7 @@
 
 #include "util/aeron_platform.h"
 #include "aeron_windows.h"
-#if  defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
     #include <io.h>
     #include <direct.h>
@@ -39,13 +39,12 @@
     #include <Windows.h>
 
     #define S_IRWXU 0
-    int mkdir(const char *path, int permission) {
+    int mkdir(const char *path, int permission)
+    {
         return _mkdir(path);
     }
-    
 
-
-#else 
+#else
 #include <unistd.h>
 #endif
 
@@ -349,7 +348,6 @@ int aeron_driver_create_loss_report_file(aeron_driver_t *driver)
 
     return 0;
 }
-
 
 int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *driver)
 {

@@ -160,7 +160,7 @@ static int aeron_udp_uri_params_func(void *clientd, const char *key, const char 
     return 0;
 }
 
- int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params)
+int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params)
 {
     params->additional_params.length = 0;
     params->additional_params.array = NULL;

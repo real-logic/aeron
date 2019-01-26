@@ -233,6 +233,7 @@ public class StartClusterFromTruncatedRecordingLogTest
         deleteFile(tmpRecordingFile);
         deleteFile(new File(archiveDataDir, ArchiveMarkFile.FILENAME));
         deleteFile(new File(consensusModuleDataDir, ClusterMarkFile.FILENAME));
+
         try (RecordingLog existingRecordingLog = new RecordingLog(consensusModuleDataDir))
         {
             try (RecordingLog newRecordingLog = new RecordingLog(new File(baseDirName)))
@@ -260,14 +261,16 @@ public class StartClusterFromTruncatedRecordingLogTest
             final LongHashSet recordingIds = new LongHashSet();
             copiedRecordingLog.entries().stream().mapToLong(e -> e.recordingId).forEach(recordingIds::add);
             try (Stream<Path> segments = Files.list(archiveDataDir.toPath())
-                .filter(p -> p.getFileName().toString().endsWith(".rec")))
+                .filter((p) -> p.getFileName().toString().endsWith(".rec")))
             {
-                segments.filter(p ->
-                {
-                    final String fileName = p.getFileName().toString();
-                    final long recording = Long.parseLong(fileName.split("-")[0]);
-                    return !recordingIds.contains(recording);
-                }).map(Path::toFile).forEach(this::deleteFile);
+                segments.filter(
+                    (p) ->
+                    {
+                        final String fileName = p.getFileName().toString();
+                        final long recording = Long.parseLong(fileName.split("-")[0]);
+
+                        return !recordingIds.contains(recording);
+                    }).map(Path::toFile).forEach(this::deleteFile);
             }
 
             // assert that recording log is not growing
@@ -288,6 +291,7 @@ public class StartClusterFromTruncatedRecordingLogTest
                 Assert.fail("Failed to delete file: " + file);
             }
         }
+
         if (file.exists())
         {
             Assert.fail("Failed to delete file: " + file);
@@ -298,8 +302,13 @@ public class StartClusterFromTruncatedRecordingLogTest
         final RecordingLog existingRecordingLog, final RecordingLog newRecordingLog, final int serviceId)
     {
         final RecordingLog.Entry snapshot = existingRecordingLog.getLatestSnapshot(serviceId);
-        newRecordingLog.appendSnapshot(snapshot.recordingId, snapshot.leadershipTermId,
-            snapshot.termBaseLogPosition, snapshot.logPosition, snapshot.timestamp, snapshot.serviceId);
+        newRecordingLog.appendSnapshot(
+            snapshot.recordingId,
+            snapshot.leadershipTermId,
+            snapshot.termBaseLogPosition,
+            snapshot.logPosition,
+            snapshot.timestamp,
+            snapshot.serviceId);
     }
 
     private void startNode(final int index, final boolean cleanStart)
@@ -324,7 +333,7 @@ public class StartClusterFromTruncatedRecordingLogTest
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
                 .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(TestUtil.errorHandler(0))
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -339,7 +348,7 @@ public class StartClusterFromTruncatedRecordingLogTest
                 .deleteArchiveOnStart(cleanStart),
             new ConsensusModule.Context()
                 .epochClock(epochClock)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(TestUtil.errorHandler(0))
                 .clusterMemberId(index)
                 .clusterMembers(CLUSTER_MEMBERS)
                 .aeronDirectoryName(aeronDirName)
@@ -355,7 +364,7 @@ public class StartClusterFromTruncatedRecordingLogTest
                 .archiveContext(archiveCtx.clone())
                 .clusterDir(new File(baseDirName, "service"))
                 .clusteredService(echoServices[index])
-                .errorHandler(Throwable::printStackTrace));
+                .errorHandler(TestUtil.errorHandler(0)));
     }
 
     private void stopNode(final int index)

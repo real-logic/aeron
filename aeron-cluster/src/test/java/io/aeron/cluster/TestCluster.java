@@ -150,7 +150,7 @@ public class TestCluster implements AutoCloseable
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(TestUtil.errorHandler(index))
             .dirDeleteOnStart(true);
 
         testNodeContext.archiveContext
@@ -167,7 +167,7 @@ public class TestCluster implements AutoCloseable
         testNodeContext.service = new TestNode.TestService(index);
 
         testNodeContext.consensusModuleContext
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(TestUtil.errorHandler(index))
             .clusterMemberId(index)
             .clusterMembers(staticClusterMembers)
             .appointedLeaderId(appointedLeaderId)
@@ -183,7 +183,7 @@ public class TestCluster implements AutoCloseable
             .archiveContext(testNodeContext.aeronArchiveContext.clone())
             .clusterDir(new File(baseDirName, "service"))
             .clusteredService(testNodeContext.service)
-            .errorHandler(Throwable::printStackTrace);
+            .errorHandler(TestUtil.errorHandler(index));
 
         nodes[index] = new TestNode(testNodeContext);
 
@@ -208,7 +208,7 @@ public class TestCluster implements AutoCloseable
             .threadingMode(ThreadingMode.SHARED)
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(TestUtil.errorHandler(index))
             .dirDeleteOnStart(true);
 
         testNodeContext.archiveContext
@@ -225,7 +225,7 @@ public class TestCluster implements AutoCloseable
         testNodeContext.service = new TestNode.TestService(index);
 
         testNodeContext.consensusModuleContext
-            .errorHandler(Throwable::printStackTrace)
+            .errorHandler(TestUtil.errorHandler(index))
             .clusterMemberId(NULL_VALUE)
             .clusterMembers("")
             .clusterMembersStatusEndpoints(clusterMembersStatusEndpoints)
@@ -242,7 +242,7 @@ public class TestCluster implements AutoCloseable
             .archiveContext(testNodeContext.aeronArchiveContext.clone())
             .clusterDir(new File(baseDirName, "service"))
             .clusteredService(testNodeContext.service)
-            .errorHandler(Throwable::printStackTrace);
+            .errorHandler(TestUtil.errorHandler(index));
 
         nodes[index] = new TestNode(testNodeContext);
 

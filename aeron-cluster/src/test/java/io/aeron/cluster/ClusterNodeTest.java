@@ -52,14 +52,14 @@ public class ClusterNodeTest
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(TestUtil.errorHandler(0))
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(TestUtil.errorHandler(0))
                 .terminationHook(TestUtil.TERMINATION_HOOK)
                 .deleteDirOnStart(true));
     }
@@ -229,7 +229,7 @@ public class ClusterNodeTest
             new ClusteredServiceContainer.Context()
                 .clusteredService(timedService)
                 .terminationHook(TestUtil.TERMINATION_HOOK)
-                .errorHandler(Throwable::printStackTrace));
+                .errorHandler(TestUtil.errorHandler(0)));
     }
 
     private AeronCluster connectToCluster(final EgressListener egressListener)

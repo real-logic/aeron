@@ -2688,23 +2688,8 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
 
 extern void aeron_driver_subscribable_null_hook(void *clientd, int64_t *value_addr);
 
-extern bool aeron_driver_conductor_is_subscribable_linked(
-    aeron_subscription_link_t *link, aeron_subscribable_t *subscribable);
-
 extern bool aeron_driver_conductor_has_network_subscription_interest(
     aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
-
-extern bool aeron_driver_conductor_has_clashing_subscription(
-    aeron_driver_conductor_t *conductor,
-    const aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id,
-    bool is_reliable);
-
-extern bool aeron_driver_conductor_is_oldest_subscription_sparse(
-    aeron_driver_conductor_t *conductor,
-    const aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id,
-    int64_t highest_id);
 
 extern size_t aeron_driver_conductor_num_clients(aeron_driver_conductor_t *conductor);
 
@@ -2741,9 +2726,3 @@ extern aeron_network_publication_t *aeron_driver_conductor_find_network_publicat
 
 extern aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
     aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
-
-extern void aeron_driver_init_subscription_channel(
-    int32_t uri_length, const char *uri, aeron_subscription_link_t *link);
-
-extern int64_t *aeron_driver_conductor_system_counter_addr(
-    aeron_driver_conductor_t *conductor, aeron_system_counter_enum_t type);

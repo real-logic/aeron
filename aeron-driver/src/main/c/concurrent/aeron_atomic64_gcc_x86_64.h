@@ -25,7 +25,7 @@ do \
     dst = src; \
     __asm__ volatile("" ::: "memory"); \
 } \
-while(false)
+while (false)
 
 #define AERON_PUT_ORDERED(dst, src) \
 do \
@@ -33,7 +33,7 @@ do \
     __asm__ volatile("" ::: "memory"); \
     dst = src; \
 } \
-while(false)
+while (false)
 
 #define AERON_PUT_VOLATILE(dst, src) \
 do \
@@ -42,7 +42,7 @@ do \
     dst = src; \
     __asm__ volatile("" ::: "memory"); \
 } \
-while(false)
+while (false)
 
 #define AERON_GET_AND_ADD_INT64(original, dst, value) \
 do \
@@ -52,7 +52,7 @@ do \
         : "=r"(original), "+m"(dst) \
         : "0"(value)); \
 } \
-while(false)
+while (false)
 
 #define AERON_GET_AND_ADD_INT32(original, dst, value) \
 do \
@@ -62,7 +62,7 @@ do \
         : "=r"(original), "+m"(dst) \
         : "0"(value)); \
 } \
-while(false)
+while (false)
 
 #define AERON_CMPXCHG64(original, dst, expected, desired) \
 do \
@@ -72,7 +72,7 @@ do \
         : "=a"(original), "+m"(dst) \
         : "q"(desired), "0"(expected)); \
 } \
-while(0)
+while (false)
 
 inline bool aeron_cmpxchg64(volatile int64_t* destination, int64_t expected, int64_t desired)
 {
@@ -131,7 +131,7 @@ do \
         : "=a"(original), "+m"(dst) \
         : "q"(desired), "0"(expected)); \
 } \
-while(0)
+while (false)
 
 /*-------------------------------------
  *  Alignment

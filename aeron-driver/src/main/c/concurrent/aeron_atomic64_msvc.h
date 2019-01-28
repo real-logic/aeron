@@ -29,7 +29,7 @@ do \
     dst = src; \
     _ReadBarrier(); \
 } \
-while(false)
+while (false)
 
 #define AERON_PUT_ORDERED(dst, src) \
 do \
@@ -37,7 +37,7 @@ do \
     _WriteBarrier(); \
     dst = src; \
 } \
-while(false)
+while (false)
 
 #define AERON_PUT_VOLATILE(dst, src) \
 do \
@@ -46,14 +46,14 @@ do \
     dst = src; \
     _ReadWriteBarrier(); \
 } \
-while(false)
+while (false)
 
 #define AERON_GET_AND_ADD_INT64(original, current, value) \
 do \
 { \
     original = InterlockedAdd64((long long volatile*)&current, (long long)value) - value; \
 } \
-while(false)
+while (false)
 
 #define AERON_GET_AND_ADD_INT32(original,current,value) \
 do \
@@ -69,7 +69,7 @@ do \
         : "=a"(original), "+m"(dst) \
         : "q"(desired), "0"(expected)); \
 } \
-while(0)
+while (false)
 
 inline bool aeron_cmpxchg64(volatile int64_t* destination, int64_t expected, int64_t desired)
 {
@@ -117,7 +117,7 @@ do \
 { \
     original = InterlockedCompareExchange32(dst, desired, expected); \
 } \
-while(0)
+while (false)
 
 /*-------------------------------------
  *  Alignment

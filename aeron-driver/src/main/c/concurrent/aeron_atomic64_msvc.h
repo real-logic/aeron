@@ -59,7 +59,7 @@ while (false)
 #define AERON_GET_AND_ADD_INT32(original, current, value) \
 do \
 { \
-    original = InterlockedAdd((long volatile*)&current, (long )value) - value; \
+    original = InterlockedAdd((long volatile*)&current, (long)value) - value; \
 }
 while (false)
 

@@ -57,7 +57,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
     }
     else
     {
-        fprintf(stderr, "mmap: could not determine filesize");
+        fprintf(stderr, "mmap: could not determine file length");
         close(fd);
         return -1;
     }
@@ -289,7 +289,7 @@ int aeron_map_new_file(aeron_mapped_file_t *mapped_file, const char *path, bool 
 
     if ((fd = aeron_create_file(path)) >= 0)
     {
-        if (aeron_ftruncate(fd, (off_t )mapped_file->length) >= 0)
+        if (aeron_ftruncate(fd, (off_t)mapped_file->length) >= 0)
         {
             if (aeron_mmap(mapped_file, fd, 0) == 0)
             {
@@ -441,14 +441,12 @@ int aeron_map_raw_log(
 
             for (size_t i = 0; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
             {
-                mapped_raw_log->term_buffers[i].addr =
-                    (uint8_t *) mapped_raw_log->mapped_file.addr + (i * term_length);
+                mapped_raw_log->term_buffers[i].addr = (uint8_t *)mapped_raw_log->mapped_file.addr + (i * term_length);
                 mapped_raw_log->term_buffers[i].length = term_length;
             }
 
             mapped_raw_log->log_meta_data.addr =
-                (uint8_t *) mapped_raw_log->mapped_file.addr +
-                    (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
+                (uint8_t *)mapped_raw_log->mapped_file.addr + (log_length - AERON_LOGBUFFER_META_DATA_LENGTH);
             mapped_raw_log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
             mapped_raw_log->term_length = term_length;
 

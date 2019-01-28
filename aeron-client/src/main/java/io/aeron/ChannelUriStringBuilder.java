@@ -118,7 +118,7 @@ public class ChannelUriStringBuilder
             if (termId - initialTermId < 0)
             {
                 throw new IllegalStateException(
-                    "difference greater than 2^31 - 1: initialTermId=" + initialTermId + " for termId=" + termId);
+                    "difference greater than 2^31 - 1: initialTermId=" + initialTermId + " when termId=" + termId);
             }
 
             if (null != termLength && termOffset > termLength)

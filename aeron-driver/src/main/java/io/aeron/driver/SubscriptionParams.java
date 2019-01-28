@@ -85,8 +85,9 @@ class SubscriptionParams
 
             if (params.termId - params.initialTermId < 0)
             {
-                throw new IllegalStateException("difference greater than 2^31 - 1: initialTermId=" +
-                    params.initialTermId + " for termId=" + params.termId);
+                throw new IllegalStateException(
+                    "difference greater than 2^31 - 1: " + INITIAL_TERM_ID_PARAM_NAME + "=" +
+                    params.initialTermId + " when " + TERM_ID_PARAM_NAME + "=" + params.termId);
             }
 
             params.hasJoinPosition = true;

@@ -45,6 +45,7 @@ do \
     _WriteBarrier(); \
     dst = src; \
     _ReadWriteBarrier(); \
+    _MemoryBarrier(); \
 } \
 while (false)
 
@@ -55,11 +56,12 @@ do \
 } \
 while (false)
 
-#define AERON_GET_AND_ADD_INT32(original,current,value) \
+#define AERON_GET_AND_ADD_INT32(original, current, value) \
 do \
 { \
     original = InterlockedAdd((long volatile*)&current, (long )value) - value; \
-} while(false)
+}
+while (false)
 
 #define AERON_CMPXCHG64(original, dst, expected, desired) \
 do \

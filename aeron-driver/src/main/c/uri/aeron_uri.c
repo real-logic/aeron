@@ -433,7 +433,7 @@ int aeron_uri_publication_params(
                 return -1;
             }
 
-            if ((params->term_id - params->initial_term_id) < 0)
+            if (((int32_t)params->term_id - (int32_t)params->initial_term_id) < 0)
             {
                 aeron_set_err(
                     EINVAL,

@@ -87,16 +87,22 @@ final class PublicationParams
                             TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
                 }
 
-                if (params.termOffset < 0)
+                if (params.termOffset < 0 || params.termOffset > LogBufferDescriptor.TERM_MAX_LENGTH)
                 {
                     throw new IllegalArgumentException(
-                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " must be greater than zero");
+                        TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " out of range");
                 }
 
                 if ((params.termOffset & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
                 {
                     throw new IllegalArgumentException(
                         TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " must be a multiple of FRAME_ALIGNMENT");
+                }
+
+                if (params.termId - params.initialTermId < 0)
+                {
+                    throw new IllegalStateException("difference greater than 2^31 - 1: initialTermId=" +
+                        params.initialTermId + " for termId=" + params.termId);
                 }
 
                 params.isReplay = true;

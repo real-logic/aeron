@@ -107,10 +107,25 @@ public class ChannelUriStringBuilder
         count += null == termId ? 0 : 1;
         count += null == termOffset ? 0 : 1;
 
-        if (count > 0 && count < 3)
+        if (count > 0)
         {
-            throw new IllegalStateException(
-                "if any of then a complete set of 'initialTermId', 'termId', and 'termOffset' must be provided");
+            if (count < 3)
+            {
+                throw new IllegalStateException(
+                    "if any of then a complete set of 'initialTermId', 'termId', and 'termOffset' must be provided");
+            }
+
+            if (termId - initialTermId < 0)
+            {
+                throw new IllegalStateException(
+                    "difference greater than 2^31 - 1: initialTermId=" + initialTermId + " for termId=" + termId);
+            }
+
+            if (null != termLength && termOffset > termLength)
+            {
+                throw new IllegalStateException(
+                    TERM_OFFSET_PARAM_NAME + "=" + termOffset + " > " + TERM_LENGTH_PARAM_NAME + "=" + termLength);
+            }
         }
 
         return this;

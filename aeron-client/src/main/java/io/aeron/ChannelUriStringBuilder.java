@@ -115,16 +115,15 @@ public class ChannelUriStringBuilder
                     "if any of then a complete set of 'initialTermId', 'termId', and 'termOffset' must be provided");
             }
 
-            if (termId - initialTermId < 0)
+            if (termId - initialTermId < 0) // lgtm [java/dereferenced-value-may-be-null]
             {
                 throw new IllegalStateException(
-                    "difference greater than 2^31 - 1: initialTermId=" + initialTermId + " when termId=" + termId);
+                    "difference greater than 2^31 - 1: termId=" + termId + " - initialTermId=" + initialTermId);
             }
 
-            if (null != termLength && termOffset > termLength)
+            if (null != termLength && termOffset > termLength) // lgtm [java/dereferenced-value-may-be-null]
             {
-                throw new IllegalStateException(
-                    TERM_OFFSET_PARAM_NAME + "=" + termOffset + " > " + TERM_LENGTH_PARAM_NAME + "=" + termLength);
+                throw new IllegalStateException("termOffset=" + termOffset + " > termLength=" + termLength);
             }
         }
 

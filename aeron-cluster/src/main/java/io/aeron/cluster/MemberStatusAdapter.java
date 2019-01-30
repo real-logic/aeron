@@ -76,6 +76,12 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
+        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        {
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
@@ -268,9 +274,6 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                 memberStatusListener.onTerminationAck(
                     terminationAckDecoder.logPosition(), terminationAckDecoder.memberId());
                 break;
-
-            default:
-                throw new ClusterException("unknown template id: " + templateId);
         }
     }
 }

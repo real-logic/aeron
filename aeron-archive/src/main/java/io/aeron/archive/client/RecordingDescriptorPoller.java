@@ -134,6 +134,12 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
+        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        {
+            throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
@@ -210,9 +216,6 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
                     }
                 }
                 break;
-
-            default:
-                throw new ArchiveException("unknown templateId: " + templateId);
         }
 
         return Action.CONTINUE;

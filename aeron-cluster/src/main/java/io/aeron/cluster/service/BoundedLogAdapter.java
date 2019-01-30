@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Image;
 import io.aeron.ImageControlledFragmentAssembler;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -80,8 +81,14 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
-        final int templateId = messageHeaderDecoder.templateId();
 
+        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        {
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+
+        final int templateId = messageHeaderDecoder.templateId();
         if (templateId == SessionHeaderDecoder.TEMPLATE_ID)
         {
             sessionHeaderDecoder.wrap(

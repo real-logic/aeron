@@ -154,38 +154,37 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
-        templateId = messageHeaderDecoder.templateId();
-        switch (templateId)
+        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            case ControlResponseDecoder.TEMPLATE_ID:
-                controlResponseDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderEncoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                controlSessionId = controlResponseDecoder.controlSessionId();
-                correlationId = controlResponseDecoder.correlationId();
-                relevantId = controlResponseDecoder.relevantId();
-                code = controlResponseDecoder.code();
-                if (ControlResponseCode.ERROR == code)
-                {
-                    errorMessage = controlResponseDecoder.errorMessage();
-                }
-                else
-                {
-                    errorMessage = "";
-                }
-                break;
-
-            case RecordingDescriptorDecoder.TEMPLATE_ID:
-                break;
-
-            default:
-                throw new ArchiveException("unknown templateId: " + templateId);
+            throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        pollComplete = true;
+        templateId = messageHeaderDecoder.templateId();
+        if (templateId == ControlResponseDecoder.TEMPLATE_ID)
+        {
+            controlResponseDecoder.wrap(
+                buffer,
+                offset + MessageHeaderEncoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            controlSessionId = controlResponseDecoder.controlSessionId();
+            correlationId = controlResponseDecoder.correlationId();
+            relevantId = controlResponseDecoder.relevantId();
+            code = controlResponseDecoder.code();
+
+            if (ControlResponseCode.ERROR == code)
+            {
+                errorMessage = controlResponseDecoder.errorMessage();
+            }
+            else
+            {
+                errorMessage = "";
+            }
+
+            pollComplete = true;
+        }
 
         return Action.BREAK;
     }

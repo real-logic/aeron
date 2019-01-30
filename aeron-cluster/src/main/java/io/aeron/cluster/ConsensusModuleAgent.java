@@ -438,6 +438,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (candidateTermId > this.leadershipTermId)
         {
+            ctx.countedErrorHandler().onError(new ClusterException("unexpected vote request"));
             enterElection(cachedTimeMs);
             election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
@@ -473,6 +474,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
+            ctx.countedErrorHandler().onError(new ClusterException("unexpected new leadership term"));
             enterElection(cachedTimeMs);
         }
     }
@@ -510,6 +512,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
+            ctx.countedErrorHandler().onError(new ClusterException("unexpected commit position from new leader"));
             enterElection(cachedTimeMs);
         }
     }
@@ -1077,11 +1080,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
             else
             {
-                final boolean wasLeader = leaderMemberId == memberId;
-
+                final boolean hasCurrentLeaderSteppedDown = leaderMemberId == memberId;
                 clusterMemberQuit(memberId);
 
-                if (wasLeader)
+                if (hasCurrentLeaderSteppedDown)
                 {
                     enterElection(cachedTimeMs);
                 }
@@ -1618,6 +1620,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 if (!ClusterMember.hasActiveQuorum(clusterMembers, nowMs, leaderHeartbeatTimeoutMs))
                 {
+                    ctx.countedErrorHandler().onError(new ClusterException("lost connection to quorum of followers"));
                     enterElection(nowMs);
                     workCount += 1;
                 }
@@ -1662,6 +1665,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             final int count = logAdapter.poll(followerCommitPosition);
             if (0 == count && logAdapter.isImageClosed())
             {
+                ctx.countedErrorHandler().onError(new ClusterException("lost connection to leader"));
                 enterElection(nowMs);
                 return 1;
             }
@@ -2237,6 +2241,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
             {
+                ctx.countedErrorHandler().onError(new ClusterException("heartbeat timeout from leader"));
                 enterElection(nowMs);
                 workCount += 1;
             }

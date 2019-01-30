@@ -29,7 +29,7 @@ const static std::string DEFAULT_PONG_CHANNEL = "aeron:udp?endpoint=localhost:40
 const static std::int32_t DEFAULT_STREAM_ID = 10;
 const static std::int32_t DEFAULT_PING_STREAM_ID = 10;
 const static std::int32_t DEFAULT_PONG_STREAM_ID = 10;
-const static long DEFAULT_NUMBER_OF_MESSAGES = 1000000;
+const static long DEFAULT_NUMBER_OF_MESSAGES = 10000000;
 const static int DEFAULT_MESSAGE_LENGTH = 32;
 const static int DEFAULT_LINGER_TIMEOUT_MS = 0;
 const static int DEFAULT_FRAGMENT_COUNT_LIMIT = 10;

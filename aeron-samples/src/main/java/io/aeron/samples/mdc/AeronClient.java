@@ -72,6 +72,7 @@ abstract class AeronClient {
 
           MsgPublication msgPublication = new MsgPublication(sessionId, publication);
 
+          // wait for available image
           while (true) {
             if (subscription.imageCount() > 0) {
               break;
@@ -82,18 +83,13 @@ abstract class AeronClient {
           Image image = subscription.images().get(0);
 
           while (true) {
-            int workCount = processOutbound(msgPublication);
-            workCount += processInbound(image);
-            idleStrategy.idle(workCount);
+            idleStrategy.idle(process(image, msgPublication));
           }
         });
   }
 
-  int processInbound(Image image) {
+  int process(Image image, MsgPublication msgPublication) {
     return 0;
   }
 
-  int processOutbound(MsgPublication msgPublication) {
-    return 0;
-  }
 }

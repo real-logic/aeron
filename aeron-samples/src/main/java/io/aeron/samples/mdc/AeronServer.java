@@ -57,6 +57,7 @@ abstract class AeronServer {
 
     scheduler.execute(
         () -> {
+          // wait for available publication and image (duplex connection)
           while (true) {
             int pSize = publications.size();
             int iSize = acceptSubscription.imageCount();
@@ -66,13 +67,12 @@ abstract class AeronServer {
             idleStrategy.idle();
           }
 
+
           MsgPublication publication = publications.get(0);
           Image image = acceptSubscription.images().get(0);
 
           while (true) {
-            int workCount = processOutbound(publication);
-            workCount += processInbound(image);
-            idleStrategy.idle(workCount);
+            idleStrategy.idle(process(image, publication));
           }
         });
   }
@@ -113,11 +113,7 @@ abstract class AeronServer {
         });
   }
 
-  int processInbound(Image image) {
-    return 0;
-  }
-
-  int processOutbound(MsgPublication publication) {
+  int process(Image image, MsgPublication publication) {
     return 0;
   }
 }

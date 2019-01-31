@@ -85,7 +85,7 @@ class AeronResources {
       }
 
       if (result < Publication.ADMIN_ACTION) {
-        System.err.println("aeron.Publication received result: " + result);
+        System.err.println("Publication@" + sessionId + " received result: " + result);
       }
       return 0;
     }

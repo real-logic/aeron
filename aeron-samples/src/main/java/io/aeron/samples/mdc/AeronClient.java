@@ -3,6 +3,7 @@ package io.aeron.samples.mdc;
 import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
+import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.samples.mdc.AeronResources.MsgPublication;
@@ -72,14 +73,23 @@ abstract class AeronClient {
           MsgPublication msgPublication = new MsgPublication(sessionId, publication);
 
           while (true) {
+            if (subscription.imageCount() > 0) {
+              break;
+            }
+            idleStrategy.idle();
+          }
+
+          Image image = subscription.images().get(0);
+
+          while (true) {
             int workCount = processOutbound(msgPublication);
-            workCount += processInbound(subscription);
+            workCount += processInbound(image);
             idleStrategy.idle(workCount);
           }
         });
   }
 
-  int processInbound(Subscription subscription) {
+  int processInbound(Image image) {
     return 0;
   }
 

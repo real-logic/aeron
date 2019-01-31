@@ -2,7 +2,6 @@ package io.aeron.samples.mdc;
 
 import io.aeron.Aeron;
 import io.aeron.Image;
-import io.aeron.Subscription;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.samples.mdc.AeronResources.MsgPublication;
@@ -72,14 +71,8 @@ public class AeronClientPing {
     }
 
     @Override
-    int processInbound(Subscription subscription) {
-
-      int result = 0;
-
-      for (Image image : subscription.images()) {
-        result += image.poll(fragmentHandler, MAX_POLL_FRAGMENT_LIMIT);
-      }
-      return result;
+    int processInbound(Image image) {
+      return image.poll(fragmentHandler, MAX_POLL_FRAGMENT_LIMIT);
     }
 
     private DirectBuffer generatePayload() {

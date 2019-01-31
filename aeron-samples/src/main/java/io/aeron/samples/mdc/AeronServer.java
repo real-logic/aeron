@@ -58,8 +58,20 @@ abstract class AeronServer {
     scheduler.execute(
         () -> {
           while (true) {
-            int workCount = processOutbound(publications);
-            workCount += processInbound(acceptSubscription.images());
+            int pSize = publications.size();
+            int iSize = acceptSubscription.imageCount();
+            if (pSize > 0 && iSize > 0) {
+              break;
+            }
+            idleStrategy.idle();
+          }
+
+          MsgPublication publication = publications.get(0);
+          Image image = acceptSubscription.images().get(0);
+
+          while (true) {
+            int workCount = processOutbound(publication);
+            workCount += processInbound(image);
             idleStrategy.idle(workCount);
           }
         });
@@ -101,11 +113,11 @@ abstract class AeronServer {
         });
   }
 
-  int processInbound(List<Image> images) {
+  int processInbound(Image image) {
     return 0;
   }
 
-  int processOutbound(List<MsgPublication> publications) {
+  int processOutbound(MsgPublication publication) {
     return 0;
   }
 }

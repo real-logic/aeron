@@ -19,8 +19,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
 
@@ -102,7 +100,6 @@ public class AeronServerPong
 
         private final Aeron aeron;
         private final List<MsgPublication> publications = new CopyOnWriteArrayList<>();
-        private final Executor executor = Executors.newSingleThreadExecutor();
         private final IdleStrategy idleStrategy = new BackoffIdleStrategy(1, 1, 1, 100);
         private volatile Subscription acceptSubscription;
 
@@ -122,30 +119,27 @@ public class AeronServerPong
                     this::onAcceptImageAvailable,
                     this::onAcceptImageUnavailable);
 
-            executor.execute(
-                () -> {
-                    // wait for available publication and image (duplex connection)
-                    while (true)
-                    {
-                        int pSize = publications.size();
-                        int iSize = acceptSubscription.imageCount();
-                        if (pSize > 0 && iSize > 0)
-                        {
-                            break;
-                        }
-                        idleStrategy.idle();
-                    }
 
-                    idleStrategy.reset();
+            while (true)
+            {
+                int pSize = publications.size();
+                int iSize = acceptSubscription.imageCount();
+                if (pSize > 0 && iSize > 0)
+                {
+                    break;
+                }
+                idleStrategy.idle();
+            }
 
-                    MsgPublication publication = publications.get(0);
-                    Image image = acceptSubscription.images().get(0);
+            idleStrategy.reset();
 
-                    while (true)
-                    {
-                        idleStrategy.idle(process(image, publication));
-                    }
-                });
+            MsgPublication publication = publications.get(0);
+            Image image = acceptSubscription.images().get(0);
+
+            while (true)
+            {
+                idleStrategy.idle(process(image, publication));
+            }
         }
 
         private int process(Image image, MsgPublication publication)

@@ -80,6 +80,8 @@ abstract class AeronClient {
             idleStrategy.idle();
           }
 
+          idleStrategy.reset();
+
           Image image = subscription.images().get(0);
 
           while (true) {
@@ -91,5 +93,4 @@ abstract class AeronClient {
   int process(Image image, MsgPublication msgPublication) {
     return 0;
   }
-
 }

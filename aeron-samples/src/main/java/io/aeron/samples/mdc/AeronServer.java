@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
@@ -37,8 +38,7 @@ abstract class AeronServer {
   private volatile Subscription acceptSubscription;
   private final List<MsgPublication> publications = new CopyOnWriteArrayList<>();
 
-  private final Executor scheduler = Executors.newSingleThreadExecutor();
-  private final Executor commandExecutor = Executors.newSingleThreadExecutor();
+  private final Executor executor = Executors.newSingleThreadExecutor();
   private final IdleStrategy idleStrategy = new BackoffIdleStrategy(1, 1, 1, 100);
 
   AeronServer(Aeron aeron) {
@@ -55,7 +55,7 @@ abstract class AeronServer {
             this::onAcceptImageAvailable,
             this::onAcceptImageUnavailable);
 
-    scheduler.execute(
+    executor.execute(
         () -> {
           // wait for available publication and image (duplex connection)
           while (true) {
@@ -67,6 +67,7 @@ abstract class AeronServer {
             idleStrategy.idle();
           }
 
+          idleStrategy.reset();
 
           MsgPublication publication = publications.get(0);
           Image image = acceptSubscription.images().get(0);
@@ -90,11 +91,12 @@ abstract class AeronServer {
             + ", create outbound "
             + outboundChannel);
 
-    commandExecutor.execute(
-        () -> {
-          Publication publication = aeron.addExclusivePublication(outboundChannel, STREAM_ID);
-          publications.add(new MsgPublication(sessionId, publication));
-        });
+    ForkJoinPool.commonPool()
+        .execute(
+            () -> {
+              Publication publication = aeron.addExclusivePublication(outboundChannel, STREAM_ID);
+              publications.add(new MsgPublication(sessionId, publication));
+            });
   }
 
   private void onAcceptImageUnavailable(Image image) {
@@ -102,15 +104,16 @@ abstract class AeronServer {
 
     System.out.println("onImageUnavailable: " + sessionId + " / " + image.sourceIdentity());
 
-    commandExecutor.execute(
-        () -> {
-          publications
-              .stream()
-              .filter(publication -> publication.sessionId() == sessionId)
-              .findFirst()
-              .ifPresent(MsgPublication::close);
-          publications.removeIf(msgPublication -> msgPublication.sessionId() == sessionId);
-        });
+    ForkJoinPool.commonPool()
+        .execute(
+            () -> {
+              publications
+                  .stream()
+                  .filter(publication -> publication.sessionId() == sessionId)
+                  .findFirst()
+                  .ifPresent(MsgPublication::close);
+              publications.removeIf(msgPublication -> msgPublication.sessionId() == sessionId);
+            });
   }
 
   int process(Image image, MsgPublication publication) {

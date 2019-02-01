@@ -102,7 +102,7 @@ public class EventLogAgent
         }
     };
 
-    @SuppressWarnings("Indendation")
+    @SuppressWarnings("Indentation")
     private static void agent(final boolean shouldRedefine, final Instrumentation instrumentation)
     {
         if (EventLogger.ENABLED_EVENT_CODES == 0)
